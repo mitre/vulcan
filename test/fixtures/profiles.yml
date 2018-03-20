@@ -1,0 +1,23 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: MyString
+  title: MyString
+  maintainer: MyString
+  copyright: MyString
+  copyright_email: MyString
+  license: MyString
+  summary: MyString
+  version: MyString
+  sha256: MyString
+
+two:
+  name: MyString
+  title: MyString
+  maintainer: MyString
+  copyright: MyString
+  copyright_email: MyString
+  license: MyString
+  summary: MyString
+  version: MyString
+  sha256: MyString

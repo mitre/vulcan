@@ -10,7 +10,34 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180320022934) do
+ActiveRecord::Schema.define(version: 20180320151720) do
+
+  create_table "controls", force: :cascade do |t|
+    t.string "title"
+    t.string "description"
+    t.float "impact"
+    t.string "code"
+    t.string "control_id"
+    t.string "sl_ref"
+    t.string "sl_line"
+    t.text "tag"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "profiles", force: :cascade do |t|
+    t.string "name"
+    t.string "title"
+    t.string "maintainer"
+    t.string "copyright"
+    t.string "copyright_email"
+    t.string "license"
+    t.string "summary"
+    t.string "version"
+    t.string "sha256"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "srg_controls", force: :cascade do |t|
     t.integer "srg_id"
@@ -34,6 +61,13 @@ ActiveRecord::Schema.define(version: 20180320022934) do
     t.string "description"
     t.string "publisher"
     t.string "published"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "tags", force: :cascade do |t|
+    t.string "name"
+    t.text "value"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

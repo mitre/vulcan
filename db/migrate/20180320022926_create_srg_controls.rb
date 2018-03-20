@@ -1,7 +1,6 @@
 class CreateSrgControls < ActiveRecord::Migration[5.1]
   def change
     create_table :srg_controls do |t|
-      t.belongs_to :srg, index: true
       t.string :controlId
       t.string :severity
       t.string :title

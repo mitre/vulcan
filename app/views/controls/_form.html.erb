@@ -1,0 +1,52 @@
+<%= form_with(model: control, local: true) do |form| %>
+  <% if control.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(control.errors.count, "error") %> prohibited this control from being saved:</h2>
+
+      <ul>
+      <% control.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_field :title, id: :control_title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :description %>
+    <%= form.text_field :description, id: :control_description %>
+  </div>
+
+  <div class="field">
+    <%= form.label :impact %>
+    <%= form.text_field :impact, id: :control_impact %>
+  </div>
+
+  <div class="field">
+    <%= form.label :code %>
+    <%= form.text_field :code, id: :control_code %>
+  </div>
+
+  <div class="field">
+    <%= form.label :control_id %>
+    <%= form.text_field :control_id, id: :control_control_id %>
+  </div>
+
+  <div class="field">
+    <%= form.label :sl_ref %>
+    <%= form.text_field :sl_ref, id: :control_sl_ref %>
+  </div>
+
+  <div class="field">
+    <%= form.label :sl_line %>
+    <%= form.text_field :sl_line, id: :control_sl_line %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

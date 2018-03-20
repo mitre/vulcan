@@ -1,0 +1,62 @@
+<%= form_with(model: profile, local: true) do |form| %>
+  <% if profile.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(profile.errors.count, "error") %> prohibited this profile from being saved:</h2>
+
+      <ul>
+      <% profile.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :name %>
+    <%= form.text_field :name, id: :profile_name %>
+  </div>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_field :title, id: :profile_title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :maintainer %>
+    <%= form.text_field :maintainer, id: :profile_maintainer %>
+  </div>
+
+  <div class="field">
+    <%= form.label :copyright %>
+    <%= form.text_field :copyright, id: :profile_copyright %>
+  </div>
+
+  <div class="field">
+    <%= form.label :copyright_email %>
+    <%= form.text_field :copyright_email, id: :profile_copyright_email %>
+  </div>
+
+  <div class="field">
+    <%= form.label :license %>
+    <%= form.text_field :license, id: :profile_license %>
+  </div>
+
+  <div class="field">
+    <%= form.label :summary %>
+    <%= form.text_field :summary, id: :profile_summary %>
+  </div>
+
+  <div class="field">
+    <%= form.label :version %>
+    <%= form.text_field :version, id: :profile_version %>
+  </div>
+
+  <div class="field">
+    <%= form.label :sha256 %>
+    <%= form.text_field :sha256, id: :profile_sha256 %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

@@ -14,6 +14,8 @@ class SrgsController < ApplicationController
   # GET /srgs/1
   # GET /srgs/1.json
   def show
+    puts @srg.srg_controls.inspect
+    puts "here"
   end
 
   # GET /srgs/new
@@ -73,10 +75,9 @@ class SrgsController < ApplicationController
     
     @srg = Srg.create(srg_hash)
     srg_controls.each do |srg_control|
-      puts @srg
-      @srg.srg_control.create(srg_control)
+      @srg.srg_controls.create(srg_control)
     end
-    redirect_to srg_path, notice: 'Srg uploaded.'
+    redirect_to srgs_path, notice: 'Srg uploaded.'
   end
 
   private

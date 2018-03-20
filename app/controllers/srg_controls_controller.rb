@@ -4,6 +4,7 @@ class SrgControlsController < ApplicationController
   # GET /srg_controls
   # GET /srg_controls.json
   def index
+    @srg = Srg.find(params[:srg_id])
     @srg_controls = SrgControl.all
   end
 
@@ -14,7 +15,9 @@ class SrgControlsController < ApplicationController
 
   # GET /srg_controls/new
   def new
-    @srg_control = SrgControl.new
+    @srg = Srg.find(params[:srg_id])
+    authorize! :create, @srg
+    @srg_control = @srg.srg_controls.new(control_params)
   end
 
   # GET /srg_controls/1/edit
@@ -24,7 +27,10 @@ class SrgControlsController < ApplicationController
   # POST /srg_controls
   # POST /srg_controls.json
   def create
-    @srg_control = SrgControl.new(srg_control_params)
+    @srg = Srg.find(params[:srg_id])
+    authorize! :create, @srg
+    puts srg_control_params
+    @srg_control = @srg.srg_controls.new(srg_control_params)
 
     respond_to do |format|
       if @srg_control.save
@@ -69,6 +75,6 @@ class SrgControlsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def srg_control_params
-      params.require(:srg_control).permit(:controlId, :severity, :title, :description, :iacontrols, :ruleID, :fixid, :fixtext, :checkid, :checktext)
+      params.require(:srg_control).permit(:srg_id, :controlId, :severity, :title, :description, :iacontrols, :ruleID, :fixid, :fixtext, :checkid, :checktext)
     end
 end

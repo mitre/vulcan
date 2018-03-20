@@ -1,24 +1,72 @@
 <p id="notice"><%= notice %></p>
+<div id="wrapper">
+    <div id="page-wrapper">
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Uploaded SRGs</h1>
+            </div>
+            <!-- /.col-lg-12 -->
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        SRGs
+                    </div>
+                    <!-- /.panel-heading -->
+                    <div class="panel-body">
+                        <div class="table-responsive">
+                          <table class="table table-striped">
+                            <thead>
+                              <tr>
+                                <th>Controlid</th>
+                                <th>Severity</th>
+                                <th>Title</th>
+                                <th>Description</th>
+                                <th>Iacontrols</th>
+                                <th>Ruleid</th>
+                                <th>Fixid</th>
+                                <th>Fixtext</th>
+                                <th>Checkid</th>
+                                <th>Checktext</th>
+                                <th colspan="3"></th>
+                              </tr>
+                            </thead>
 
-<p>
-  <strong>Title:</strong>
-  <%= @srg.title %>
-</p>
+                            <tbody>
+                              <% @srg.srg_controls.each do |srg_control| %>
+                                <tr>
+                                  <td><%= srg_control.controlId %></td>
+                                  <td><%= srg_control.severity %></td>
+                                  <td><%= srg_control.title %></td>
+                                  <td><%= srg_control.description %></td>
+                                  <td><%= srg_control.iacontrols %></td>
+                                  <td><%= srg_control.ruleID %></td>
+                                  <td><%= srg_control.fixid %></td>
+                                  <td><%= srg_control.fixtext %></td>
+                                  <td><%= srg_control.checkid %></td>
+                                  <td><%= srg_control.checktext %></td>
+                                  <td><%= link_to 'Show', srg_control %></td>
+                                  <td><%= link_to 'Edit', edit_srg_control_path(srg_control) %></td>
+                                  <td><%= link_to 'Destroy', srg_control, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+                                </tr>
+                              <% end %>
+                            </tbody>
+                          </table>
+                        </div>
+                        <!-- /.table-responsive -->
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+                <%= link_to 'Back', srgs_path %> 
 
-<p>
-  <strong>Description:</strong>
-  <%= @srg.description %>
-</p>
+                <!-- /.panel -->
+            </div>
+    </div>
+</div>                      
 
-<p>
-  <strong>Publisher:</strong>
-  <%= @srg.publisher %>
-</p>
+<br>
 
-<p>
-  <strong>Published:</strong>
-  <%= @srg.published %>
-</p>
+<%= link_to 'New Srg Control', new_srg_control_path %>
 
-<%= link_to 'Edit', edit_srg_path(@srg) %> |
-<%= link_to 'Back', srgs_path %>
+
