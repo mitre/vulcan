@@ -1,0 +1,67 @@
+<%= form_with(model: srg_control, local: true) do |form| %>
+  <% if srg_control.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(srg_control.errors.count, "error") %> prohibited this srg_control from being saved:</h2>
+
+      <ul>
+      <% srg_control.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :controlId %>
+    <%= form.text_field :controlId, id: :srg_control_controlId %>
+  </div>
+
+  <div class="field">
+    <%= form.label :severity %>
+    <%= form.text_field :severity, id: :srg_control_severity %>
+  </div>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_field :title, id: :srg_control_title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :description %>
+    <%= form.text_field :description, id: :srg_control_description %>
+  </div>
+
+  <div class="field">
+    <%= form.label :iacontrols %>
+    <%= form.text_field :iacontrols, id: :srg_control_iacontrols %>
+  </div>
+
+  <div class="field">
+    <%= form.label :ruleID %>
+    <%= form.text_field :ruleID, id: :srg_control_ruleID %>
+  </div>
+
+  <div class="field">
+    <%= form.label :fixid %>
+    <%= form.text_field :fixid, id: :srg_control_fixid %>
+  </div>
+
+  <div class="field">
+    <%= form.label :fixtext %>
+    <%= form.text_field :fixtext, id: :srg_control_fixtext %>
+  </div>
+
+  <div class="field">
+    <%= form.label :checkid %>
+    <%= form.text_field :checkid, id: :srg_control_checkid %>
+  </div>
+
+  <div class="field">
+    <%= form.label :checktext %>
+    <%= form.text_field :checktext, id: :srg_control_checktext %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

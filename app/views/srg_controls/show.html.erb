@@ -1,0 +1,54 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Controlid:</strong>
+  <%= @srg_control.controlId %>
+</p>
+
+<p>
+  <strong>Severity:</strong>
+  <%= @srg_control.severity %>
+</p>
+
+<p>
+  <strong>Title:</strong>
+  <%= @srg_control.title %>
+</p>
+
+<p>
+  <strong>Description:</strong>
+  <%= @srg_control.description %>
+</p>
+
+<p>
+  <strong>Iacontrols:</strong>
+  <%= @srg_control.iacontrols %>
+</p>
+
+<p>
+  <strong>Ruleid:</strong>
+  <%= @srg_control.ruleID %>
+</p>
+
+<p>
+  <strong>Fixid:</strong>
+  <%= @srg_control.fixid %>
+</p>
+
+<p>
+  <strong>Fixtext:</strong>
+  <%= @srg_control.fixtext %>
+</p>
+
+<p>
+  <strong>Checkid:</strong>
+  <%= @srg_control.checkid %>
+</p>
+
+<p>
+  <strong>Checktext:</strong>
+  <%= @srg_control.checktext %>
+</p>
+
+<%= link_to 'Edit', edit_srg_control_path(@srg_control) %> |
+<%= link_to 'Back', srg_controls_path %>

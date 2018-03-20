@@ -1,0 +1,37 @@
+<%= form_with(model: srg, local: true) do |form| %>
+  <% if srg.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(srg.errors.count, "error") %> prohibited this srg from being saved:</h2>
+
+      <ul>
+      <% srg.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_field :title, id: :srg_title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :description %>
+    <%= form.text_field :description, id: :srg_description %>
+  </div>
+
+  <div class="field">
+    <%= form.label :publisher %>
+    <%= form.text_field :publisher, id: :srg_publisher %>
+  </div>
+
+  <div class="field">
+    <%= form.label :published %>
+    <%= form.text_field :published, id: :srg_published %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

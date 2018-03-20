@@ -10,6 +10,32 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 0) do
+ActiveRecord::Schema.define(version: 20180320022934) do
+
+  create_table "srg_controls", force: :cascade do |t|
+    t.integer "srg_id"
+    t.string "controlId"
+    t.string "severity"
+    t.string "title"
+    t.string "description"
+    t.string "iacontrols"
+    t.string "ruleID"
+    t.string "fixid"
+    t.string "fixtext"
+    t.string "checkid"
+    t.string "checktext"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["srg_id"], name: "index_srg_controls_on_srg_id"
+  end
+
+  create_table "srgs", force: :cascade do |t|
+    t.string "title"
+    t.string "description"
+    t.string "publisher"
+    t.string "published"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
 end

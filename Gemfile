@@ -63,3 +63,4 @@ gem 'webpacker', '~> 3.3'
 gem 'inspec'
 gem 'word_wrap'
 gem "roo"
+gem 'nokogiri-happymapper', :require => 'happymapper'

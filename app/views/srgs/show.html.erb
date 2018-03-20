@@ -1,0 +1,24 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Title:</strong>
+  <%= @srg.title %>
+</p>
+
+<p>
+  <strong>Description:</strong>
+  <%= @srg.description %>
+</p>
+
+<p>
+  <strong>Publisher:</strong>
+  <%= @srg.publisher %>
+</p>
+
+<p>
+  <strong>Published:</strong>
+  <%= @srg.published %>
+</p>
+
+<%= link_to 'Edit', edit_srg_path(@srg) %> |
+<%= link_to 'Back', srgs_path %>
