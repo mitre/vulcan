@@ -1,49 +1,57 @@
 <p id="notice"><%= notice %></p>
+<div id="wrapper">
+    <div id="page-wrapper">
+      <p>
+        <strong>Name:</strong>
+        <%= @profile.name %>
+      </p>
 
-<p>
-  <strong>Name:</strong>
-  <%= @profile.name %>
-</p>
+      <p>
+        <strong>Title:</strong>
+        <%= @profile.title %>
+      </p>
 
-<p>
-  <strong>Title:</strong>
-  <%= @profile.title %>
-</p>
+      <p>
+        <strong>Maintainer:</strong>
+        <%= @profile.maintainer %>
+      </p>
 
-<p>
-  <strong>Maintainer:</strong>
-  <%= @profile.maintainer %>
-</p>
+      <p>
+        <strong>Copyright:</strong>
+        <%= @profile.copyright %>
+      </p>
 
-<p>
-  <strong>Copyright:</strong>
-  <%= @profile.copyright %>
-</p>
+      <p>
+        <strong>Copyright email:</strong>
+        <%= @profile.copyright_email %>
+      </p>
 
-<p>
-  <strong>Copyright email:</strong>
-  <%= @profile.copyright_email %>
-</p>
+      <p>
+        <strong>License:</strong>
+        <%= @profile.license %>
+      </p>
 
-<p>
-  <strong>License:</strong>
-  <%= @profile.license %>
-</p>
+      <p>
+        <strong>Summary:</strong>
+        <%= @profile.summary %>
+      </p>
 
-<p>
-  <strong>Summary:</strong>
-  <%= @profile.summary %>
-</p>
+      <p>
+        <strong>Version:</strong>
+        <%= @profile.version %>
+      </p>
 
-<p>
-  <strong>Version:</strong>
-  <%= @profile.version %>
-</p>
+      <p>
+        <strong>Sha256:</strong>
+        <%= @profile.sha256 %>
+      </p>
+      
+      <p>
+        <strong>Srgs:</strong>
+        <%= @profile.srg_ids %>
+      </p>
 
-<p>
-  <strong>Sha256:</strong>
-  <%= @profile.sha256 %>
-</p>
-
-<%= link_to 'Edit', edit_profile_path(@profile) %> |
-<%= link_to 'Back', profiles_path %>
+      <%= link_to 'Edit', edit_profile_path(@profile) %> |
+      <%= link_to 'Back', profiles_path %>
+  </div>
+</div> 

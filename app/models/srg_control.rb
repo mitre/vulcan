@@ -1,3 +1,4 @@
 class SrgControl < ApplicationRecord
-  belongs_to :srg, :inverse_of => :srg_controls
+  belongs_to :srg
+  has_many :nist_families
 end

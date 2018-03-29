@@ -10,53 +10,91 @@
       </ul>
     </div>
   <% end %>
+  <div class="col-lg-6">
+    <!-- /.table-responsive -->
+    <div class="field">
+      <%= form.label :name %>
+      <%= form.text_field :name, id: :profile_name %>
+    </div>
 
-  <div class="field">
-    <%= form.label :name %>
-    <%= form.text_field :name, id: :profile_name %>
+    <div class="field">
+      <%= form.label :title %>
+      <%= form.text_field :title, id: :profile_title %>
+    </div>
+
+    <div class="field">
+      <%= form.label :maintainer %>
+      <%= form.text_field :maintainer, id: :profile_maintainer %>
+    </div>
+
+    <div class="field">
+      <%= form.label :copyright %>
+      <%= form.text_field :copyright, id: :profile_copyright %>
+    </div>
+
+    <div class="field">
+      <%= form.label :copyright_email %>
+      <%= form.text_field :copyright_email, id: :profile_copyright_email %>
+    </div>
+
+    <div class="field">
+      <%= form.label :license %>
+      <%= form.text_field :license, id: :profile_license %>
+    </div>
+
+    <div class="field">
+      <%= form.label :summary %>
+      <%= form.text_field :summary, id: :profile_summary %>
+    </div>
+
+    <div class="field">
+      <%= form.label :version %>
+      <%= form.text_field :version, id: :profile_version %>
+    </div>
+
+    <div class="field">
+      <%= form.label :sha256 %>
+      <%= form.text_field :sha256, id: :profile_sha256 %>
+    </div>
+  </div>
+  
+  <div class="col-lg-6">
+    <div class="field">
+      <div class="vertical-menu">
+        <% @srg_data.keys.each do |key| %>
+          <%= form.label key %>
+          <% @srg_data[key].each do |family| %>
+            <%= form.label family, {:style => 'text-indent: 10%;', class: "checkbox"} do %>
+              <%= form.check_box :srg_ids, { multiple: true }, {key: key, family: family}, false %>
+              <%= family %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
   </div>
 
-  <div class="field">
-    <%= form.label :title %>
-    <%= form.text_field :title, id: :profile_title %>
-  </div>
-
-  <div class="field">
-    <%= form.label :maintainer %>
-    <%= form.text_field :maintainer, id: :profile_maintainer %>
-  </div>
-
-  <div class="field">
-    <%= form.label :copyright %>
-    <%= form.text_field :copyright, id: :profile_copyright %>
-  </div>
-
-  <div class="field">
-    <%= form.label :copyright_email %>
-    <%= form.text_field :copyright_email, id: :profile_copyright_email %>
-  </div>
-
-  <div class="field">
-    <%= form.label :license %>
-    <%= form.text_field :license, id: :profile_license %>
-  </div>
-
-  <div class="field">
-    <%= form.label :summary %>
-    <%= form.text_field :summary, id: :profile_summary %>
-  </div>
-
-  <div class="field">
-    <%= form.label :version %>
-    <%= form.text_field :version, id: :profile_version %>
-  </div>
-
-  <div class="field">
-    <%= form.label :sha256 %>
-    <%= form.text_field :sha256, id: :profile_sha256 %>
-  </div>
 
   <div class="actions">
-    <%= form.submit %>
+    <%= submit_tag("Submit") %>
   </div>
 <% end %>
+
+<script>
+  function searchSrgControls() {
+      var input, filter, ul, li, a, i;
+      input = document.getElementById("myInput");
+      filter = input.value.toUpperCase();
+      ul = document.getElementById("myUL");
+      li = ul.getElementsByTagName("li");
+      for (i = 0; i < li.length; i++) {
+          a = li[i].getElementsByTagName("a")[0];
+          if (a.innerHTML.toUpperCase().indexOf(filter) > -1) {
+              li[i].style.display = "";
+          } else {
+              li[i].style.display = "none";
+
+          }
+      }
+  }
+</script>

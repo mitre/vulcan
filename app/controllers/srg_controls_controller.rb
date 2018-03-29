@@ -6,6 +6,7 @@ class SrgControlsController < ApplicationController
   def index
     @srg = Srg.find(params[:srg_id])
     @srg_controls = SrgControl.all
+    puts @srg_controls.nist_families
   end
 
   # GET /srg_controls/1
@@ -16,7 +17,6 @@ class SrgControlsController < ApplicationController
   # GET /srg_controls/new
   def new
     @srg = Srg.find(params[:srg_id])
-    authorize! :create, @srg
     @srg_control = @srg.srg_controls.new(control_params)
   end
 
@@ -28,9 +28,10 @@ class SrgControlsController < ApplicationController
   # POST /srg_controls.json
   def create
     @srg = Srg.find(params[:srg_id])
-    authorize! :create, @srg
-    puts srg_control_params
-    @srg_control = @srg.srg_controls.new(srg_control_params)
+    @srg_control = @srg.srg_controls.new(get_srg_control_hash(params))
+    get_nist_families.each do |nist_params|
+      @srg_control.nist_familys.create(nist_params)
+    end
 
     respond_to do |format|
       if @srg_control.save
@@ -72,9 +73,33 @@ class SrgControlsController < ApplicationController
     def set_srg_control
       @srg_control = SrgControl.find(params[:id])
     end
+    
+    def get_srg_control_hash(params)
+      {
+        id: params[:id],
+        srg_id: params[:srg_id],
+        profile_id: params[:profile_id],
+        controlId: params[:profile_id],
+        severity: params[:severity],
+        title: params[:title],
+        description: params[:description],
+        ruleID: params[:ruleID],
+        fixid: params[:fixid],
+        fixtext: params[:fixtext],
+        checkid: params[:checkid],
+        checktext: params[:checktext]
+      }
+    end
+    
+    def get_nist_families(params)
+      nist = []
+      params[:nistFamily].each do |nist|
+        nist << {family: nist[0], version: nist[1].split('_')[1]}
+      end
+    end
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def srg_control_params
-      params.require(:srg_control).permit(:srg_id, :controlId, :severity, :title, :description, :iacontrols, :ruleID, :fixid, :fixtext, :checkid, :checktext)
+      params.require(:srg_control).permit(:id, :srg_id, :profile_id, :controlId, :severity, :title, :description, :ruleID, :fixid, :fixtext, :checkid, :checktext)
     end
 end

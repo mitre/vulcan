@@ -14,8 +14,6 @@ class SrgsController < ApplicationController
   # GET /srgs/1
   # GET /srgs/1.json
   def show
-    puts @srg.srg_controls.inspect
-    puts "here"
   end
 
   # GET /srgs/new
@@ -75,7 +73,8 @@ class SrgsController < ApplicationController
     
     @srg = Srg.create(srg_hash)
     srg_controls.each do |srg_control|
-      @srg.srg_controls.create(srg_control)
+      @srg_control = @srg.srg_controls.create(srg_control[:control_params])
+      @srg_control.nist_families.create(srg_control[:nist_params])
     end
     redirect_to srgs_path, notice: 'Srg uploaded.'
   end
@@ -100,21 +99,24 @@ class SrgsController < ApplicationController
       xccdf = Services::Benchmark.parse(xccdf_xml)
       srg_hash[:title] = xccdf.title
       srg_hash[:description] = xccdf.description
-      srg_hash[:publisher] = xccdf.release_date
-      srg_hash[:published] = xccdf.title
+      srg_hash[:publisher] = xccdf.reference.publisher
+      srg_hash[:published] = xccdf.release_date.release_date
 
       xccdf.group.each do |group|
-        control = {}
-        control[:controlId]   = group.id
-        control[:title]       = group.rule.title
-        control[:description] = group.rule.description 
-        control[:severity]    = get_impact(group.rule.severity)
-        control[:checktext]   = group.rule.check.check_content
-        control[:fixtext]     = group.rule.fixtext
-        control[:fixid]       = group.rule.fix.id
-        # control[:stig_id]     = group.rule.version
-        # control[:ccis    = group.rule.indents
-        # control[:nists   = cci_items.fetch_nists(group.rule.idents)
+        control = {
+          control_params: {},
+          nist_params: {}
+        }
+        control[:control_params][:controlId]     = group.title
+        control[:control_params][:title]         = group.rule.title
+        control[:control_params][:description]   = group.rule.description 
+        control[:control_params][:severity]      = get_impact(group.rule.severity)
+        control[:control_params][:checktext]     = group.rule.check.check_content
+        control[:control_params][:fixtext]       = group.rule.fixtext
+        control[:control_params][:fixid]         = group.rule.fix.id
+        nist_family = cci_items.fetch_nists(group.rule.idents)
+        control[:nist_params][:family] = nist_family[0]
+        control[:nist_params][:version] = nist_family[1].split('_')[1]
         
         controls << control
       end

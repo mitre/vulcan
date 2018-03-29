@@ -1,54 +1,58 @@
 <p id="notice"><%= notice %></p>
+<div id="wrapper">
+    <div id="page-wrapper">
+      <p>
+        <strong>Srg ID:</strong>
+        <%= @srg_control.controlId %>
+      </p>
 
-<p>
-  <strong>Controlid:</strong>
-  <%= @srg_control.controlId %>
-</p>
+      <p>
+        <strong>Severity:</strong>
+        <%= @srg_control.severity %>
+      </p>
 
-<p>
-  <strong>Severity:</strong>
-  <%= @srg_control.severity %>
-</p>
+      <p>
+        <strong>Title:</strong>
+        <%= @srg_control.title %>
+      </p>
 
-<p>
-  <strong>Title:</strong>
-  <%= @srg_control.title %>
-</p>
+      <p>
+        <strong>Description:</strong>
+        <%= @srg_control.description %>
+      </p>
 
-<p>
-  <strong>Description:</strong>
-  <%= @srg_control.description %>
-</p>
+      <p>
+        <strong>Nist Families:</strong>
+        <% @srg_control.nist_families.each do |nist| %>
+          <td><%= nist.family %></td>
+        <% end %>
+      </p>
 
-<p>
-  <strong>Iacontrols:</strong>
-  <%= @srg_control.iacontrols %>
-</p>
+      <p>
+        <strong>Rule ID:</strong>
+        <%= @srg_control.ruleID %>
+      </p>
 
-<p>
-  <strong>Ruleid:</strong>
-  <%= @srg_control.ruleID %>
-</p>
+      <p>
+        <strong>Fixid:</strong>
+        <%= @srg_control.fixid %>
+      </p>
 
-<p>
-  <strong>Fixid:</strong>
-  <%= @srg_control.fixid %>
-</p>
+      <p>
+        <strong>Fixtext:</strong>
+        <%= @srg_control.fixtext %>
+      </p>
 
-<p>
-  <strong>Fixtext:</strong>
-  <%= @srg_control.fixtext %>
-</p>
+      <p>
+        <strong>Checkid:</strong>
+        <%= @srg_control.checkid %>
+      </p>
 
-<p>
-  <strong>Checkid:</strong>
-  <%= @srg_control.checkid %>
-</p>
+      <p>
+        <strong>Checktext:</strong>
+        <%= @srg_control.checktext %>
+      </p>
 
-<p>
-  <strong>Checktext:</strong>
-  <%= @srg_control.checktext %>
-</p>
-
-<%= link_to 'Edit', edit_srg_control_path(@srg_control) %> |
-<%= link_to 'Back', srg_controls_path %>
+      <%= link_to 'Back', srg_path(@srg_control.srg_id) %>
+    </div>
+</div> 

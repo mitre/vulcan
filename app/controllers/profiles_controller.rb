@@ -1,5 +1,5 @@
 class ProfilesController < ApplicationController
-  before_action :set_profile, only: [:show, :edit, :update, :destroy]
+  before_action :set_profile, only: [:show, :edit, :update, :destroy, :edit_profile_controls]
 
   # GET /profiles
   # GET /profiles.json
@@ -14,17 +14,28 @@ class ProfilesController < ApplicationController
 
   # GET /profiles/new
   def new
+    @srg_data = fetch_srg_data_families
+    @srgs = Srg.all
     @profile = Profile.new
   end
 
   # GET /profiles/1/edit
   def edit
+    puts @srg_data
   end
 
   # POST /profiles
   # POST /profiles.json
   def create
+    profile_params[:srg_ids] = profile_params[:srg_ids].select {|srg_id| srg_id != "0"}
     @profile = Profile.new(profile_params)
+    profile_params[:srg_ids].each do |srg_id|
+      new_srg_id = srg_id.gsub('\"', '"')
+      new_srg_id = new_srg_id.gsub(':', '"')
+      new_srg_id = new_srg_id.gsub('=>', '":')
+      new_srg_id = JSON.parse(new_srg_id)
+      
+    end
 
     respond_to do |format|
       if @profile.save
@@ -60,6 +71,23 @@ class ProfilesController < ApplicationController
       format.json { head :no_content }
     end
   end
+  
+  def fetch_srg_data_families
+    srg_data = {}
+    srgs = Srg.all
+    srgs.each do |srg|
+      srg_controls = srg.srg_controls.all
+      srg_data[srg.title] = []
+      srg_controls.each do |srg_control|
+        srg_control.nist_families.each do |nist|
+          srg_data[srg.title] << nist.family unless srg_data[srg.title].include?(nist.family)
+        end
+      end
+    end
+    srg_data
+  end
+
+
 
   private
     # Use callbacks to share common setup or constraints between actions.
@@ -69,6 +97,6 @@ class ProfilesController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def profile_params
-      params.require(:profile).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256)
+      params.require(:profile).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[])
     end
 end
