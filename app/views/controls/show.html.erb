@@ -1,39 +1,52 @@
 <p id="notice"><%= notice %></p>
+<div id="wrapper">
+  <div id="page-wrapper">
+    <p>
+      <strong>Control:</strong>
+      <%= @control.control_id %>
+    </p>
+    
+    <p>
+      <strong>Title:</strong>
+      <%= @control.title %>
+    </p>
 
-<p>
-  <strong>Title:</strong>
-  <%= @control.title %>
-</p>
+    <p>
+      <strong>Description:</strong>
+      <%= @control.description %>
+    </p>
 
-<p>
-  <strong>Description:</strong>
-  <%= @control.description %>
-</p>
+    <p>
+      <strong>Impact:</strong>
+      <%= @control.impact %>
+    </p>
+    
+    <p>
+      <strong>Check Text:</strong>
+      <%= @control.checktext %>
+    </p>
 
-<p>
-  <strong>Impact:</strong>
-  <%= @control.impact %>
-</p>
+    <p>
+      <strong>Fix Text:</strong>
+      <%= @control.fixtext %>
+    </p>
 
-<p>
-  <strong>Code:</strong>
-  <%= @control.code %>
-</p>
+    <p>
+      <strong>Code:</strong>
+      <%= @control.code %>
+    </p>
 
-<p>
-  <strong>Control:</strong>
-  <%= @control.control_id %>
-</p>
+    <p>
+      <strong>Sl ref:</strong>
+      <%= @control.sl_ref %>
+    </p>
 
-<p>
-  <strong>Sl ref:</strong>
-  <%= @control.sl_ref %>
-</p>
-
-<p>
-  <strong>Sl line:</strong>
-  <%= @control.sl_line %>
-</p>
-
-<%= link_to 'Edit', edit_control_path(@control) %> |
-<%= link_to 'Back', controls_path %>
+    <p>
+      <strong>Sl line:</strong>
+      <%= @control.sl_line %>
+    </p>
+    
+    <%= link_to 'Edit', edit_control_path(@control) %> |
+    <%= link_to 'Back', profile_path(@control.profile_id) %>
+  </div>
+</div>

@@ -14,51 +14,49 @@
     <!-- /.table-responsive -->
     <div class="field">
       <%= form.label :name %>
-      <%= form.text_field :name, id: :profile_name %>
+      <%= form.text_field :name, id: :profile_name, class: "form-control" %>
     </div>
 
     <div class="field">
       <%= form.label :title %>
-      <%= form.text_field :title, id: :profile_title %>
+      <%= form.text_field :title, id: :profile_title, class: "form-control" %>
     </div>
 
     <div class="field">
       <%= form.label :maintainer %>
-      <%= form.text_field :maintainer, id: :profile_maintainer %>
+      <%= form.text_field :maintainer, id: :profile_maintainer, class: "form-control" %>
     </div>
 
     <div class="field">
       <%= form.label :copyright %>
-      <%= form.text_field :copyright, id: :profile_copyright %>
+      <%= form.text_field :copyright, id: :profile_copyright, class: "form-control" %>
     </div>
 
     <div class="field">
       <%= form.label :copyright_email %>
-      <%= form.text_field :copyright_email, id: :profile_copyright_email %>
+      <%= form.text_field :copyright_email, id: :profile_copyright_email, class: "form-control" %>
     </div>
 
     <div class="field">
       <%= form.label :license %>
-      <%= form.text_field :license, id: :profile_license %>
+      <%= form.text_field :license, id: :profile_license, class: "form-control" %>
     </div>
 
     <div class="field">
       <%= form.label :summary %>
-      <%= form.text_field :summary, id: :profile_summary %>
+      <%= form.text_area :summary, id: :profile_summary, class: "form-control", rows:2 %>
     </div>
 
     <div class="field">
       <%= form.label :version %>
-      <%= form.text_field :version, id: :profile_version %>
-    </div>
-
-    <div class="field">
-      <%= form.label :sha256 %>
-      <%= form.text_field :sha256, id: :profile_sha256 %>
+      <%= form.text_field :version, id: :profile_version, class: "form-control" %>
     </div>
   </div>
   
   <div class="col-lg-6">
+    <div class="field">
+       <h3>Select Families from each SRG that will apply to the profile</h3>
+    </div>
     <div class="field">
       <div class="vertical-menu">
         <% @srg_data.keys.each do |key| %>
@@ -76,25 +74,6 @@
 
 
   <div class="actions">
-    <%= submit_tag("Submit") %>
+    <%= form.submit "Submit", {:class => "btn btn-primary"} %>
   </div>
 <% end %>
-
-<script>
-  function searchSrgControls() {
-      var input, filter, ul, li, a, i;
-      input = document.getElementById("myInput");
-      filter = input.value.toUpperCase();
-      ul = document.getElementById("myUL");
-      li = ul.getElementsByTagName("li");
-      for (i = 0; i < li.length; i++) {
-          a = li[i].getElementsByTagName("a")[0];
-          if (a.innerHTML.toUpperCase().indexOf(filter) > -1) {
-              li[i].style.display = "";
-          } else {
-              li[i].style.display = "none";
-
-          }
-      }
-  }
-</script>

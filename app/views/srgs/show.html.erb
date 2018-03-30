@@ -3,7 +3,7 @@
     <div id="page-wrapper">
         <div class="row">
             <div class="col-lg-12">
-                <h1 class="page-header">Uploaded SRGs</h1>
+                <h1 class="page-header"><%= @srg.title %></h1>
             </div>
             <!-- /.col-lg-12 -->
         </div>
@@ -11,26 +11,26 @@
             <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        SRGs
+                        <%= @srg.title %> Controls
                     </div>
                     <!-- /.panel-heading -->
                     <div class="panel-body">
                         <div class="table-responsive">
-                          <table class="table table-striped">
+                          <table id="srg_controls_datatable" class="display">
                             <thead>
                               <tr>
                                 <th>SRG ID</th>
                                 <th>Severity</th>
                                 <th>Title</th>
                                 <th>Nist Families</th>
-                                <th colspan="3"></th>
+                                <th></th>
                               </tr>
                             </thead>
 
                             <tbody>
                               <% @srg.srg_controls.each do |srg_control| %>
                                 <tr>
-                                  <td><%= srg_control.controlId %></td>
+                                  <td><%= srg_control.srg_title_id %></td>
                                   <td><%= srg_control.severity %></td>
                                   <td><%= srg_control.title %></td>
                                     <% srg_control.nist_families.each do |nist| %>

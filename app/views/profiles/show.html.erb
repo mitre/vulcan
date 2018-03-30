@@ -1,57 +1,60 @@
 <p id="notice"><%= notice %></p>
 <div id="wrapper">
     <div id="page-wrapper">
-      <p>
-        <strong>Name:</strong>
-        <%= @profile.name %>
-      </p>
+      <p id="notice"><%= notice %></p>
 
-      <p>
-        <strong>Title:</strong>
-        <%= @profile.title %>
-      </p>
-
-      <p>
-        <strong>Maintainer:</strong>
-        <%= @profile.maintainer %>
-      </p>
-
-      <p>
-        <strong>Copyright:</strong>
-        <%= @profile.copyright %>
-      </p>
-
-      <p>
-        <strong>Copyright email:</strong>
-        <%= @profile.copyright_email %>
-      </p>
-
-      <p>
-        <strong>License:</strong>
-        <%= @profile.license %>
-      </p>
-
-      <p>
-        <strong>Summary:</strong>
-        <%= @profile.summary %>
-      </p>
-
-      <p>
-        <strong>Version:</strong>
-        <%= @profile.version %>
-      </p>
-
-      <p>
-        <strong>Sha256:</strong>
-        <%= @profile.sha256 %>
-      </p>
-      
-      <p>
-        <strong>Srgs:</strong>
-        <%= @profile.srg_ids %>
-      </p>
-
-      <%= link_to 'Edit', edit_profile_path(@profile) %> |
-      <%= link_to 'Back', profiles_path %>
+      <div class="row">
+          <div class="col-lg-12">
+              <h1 class="page-header"><%= @profile.name %></h1>
+          </div>
+          <!-- /.col-lg-12 -->
+      </div>
+      <div class="row">
+          <div class="col-lg-12">
+              <div class="panel panel-default">
+                  <div class="panel-heading">
+                      <%= @profile.name %> Controls
+                  </div>
+                  <!-- /.panel-heading -->
+                  <div class="panel-body">
+                    <div class="table-responsive">
+                      <table id="profile_controls_datatable" class="display">
+                        <thead>
+                          <tr>
+                            <th>Control ID </th>
+                            <th>Title</th>
+                            <th>Impact </th>
+                            <th>Srg Id</th>
+                            <th>Nist Families</th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% @profile.controls.each do |control| %>
+                            <tr>
+                              <td><%= control.control_id %></td>
+                              <td><%= control.title %></td>
+                              <td><%= control.impact %></td>
+                              <td><%= control.srg_title_id %></td>
+                              <% control.nist_families.each do |nist| %>
+                                <td><%= nist.family %></td>
+                              <% end %>
+                              <td><%= link_to 'Show', control %></td>
+                              <td><%= link_to 'Edit', edit_control_path(control) %></td>
+                              <td><%= link_to 'Destroy', control, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                    </div>  
+                  </div>
+              </div>
+              <%= link_to 'Back', profiles_path %>
+                  <!-- /.panel-body -->
+            </div>
+          </div>
+      </div>
   </div>
 </div> 

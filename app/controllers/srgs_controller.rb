@@ -107,7 +107,8 @@ class SrgsController < ApplicationController
           control_params: {},
           nist_params: {}
         }
-        control[:control_params][:controlId]     = group.title
+        control[:control_params][:controlId]     = group.id
+        control[:control_params][:srg_title_id]  = group.title
         control[:control_params][:title]         = group.rule.title
         control[:control_params][:description]   = group.rule.description 
         control[:control_params][:severity]      = get_impact(group.rule.severity)

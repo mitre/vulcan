@@ -1,5 +1,5 @@
 class ProfilesController < ApplicationController
-  before_action :set_profile, only: [:show, :edit, :update, :destroy, :edit_profile_controls]
+  before_action :set_profile, only: [:show, :edit, :update, :destroy]
 
   # GET /profiles
   # GET /profiles.json
@@ -10,6 +10,10 @@ class ProfilesController < ApplicationController
   # GET /profiles/1
   # GET /profiles/1.json
   def show
+    # respond_to do |format|
+    #   format.html
+    #   format.json { render json: ProfileControlsDatatable.new(view_context) }  
+    # end
   end
 
   # GET /profiles/new
@@ -28,15 +32,17 @@ class ProfilesController < ApplicationController
   # POST /profiles.json
   def create
     profile_params[:srg_ids] = profile_params[:srg_ids].select {|srg_id| srg_id != "0"}
-    @profile = Profile.new(profile_params)
+    
+    @profile = Profile.new(get_profile_hash(profile_params))
+    srg_families = []
     profile_params[:srg_ids].each do |srg_id|
       new_srg_id = srg_id.gsub('\"', '"')
       new_srg_id = new_srg_id.gsub(':', '"')
       new_srg_id = new_srg_id.gsub('=>', '":')
       new_srg_id = JSON.parse(new_srg_id)
-      
+      srg_families << new_srg_id
     end
-
+    
     respond_to do |format|
       if @profile.save
         format.html { redirect_to @profile, notice: 'Profile was successfully created.' }
@@ -45,6 +51,9 @@ class ProfilesController < ApplicationController
         format.html { render :new }
         format.json { render json: @profile.errors, status: :unprocessable_entity }
       end
+    end
+    get_profile_controls(srg_families).each do |control|
+      @profile.controls.create(control)
     end
   end
 
@@ -90,6 +99,42 @@ class ProfilesController < ApplicationController
 
 
   private
+    def get_profile_hash(params)
+      new_params = {
+        name: params[:name],
+        title: params[:title],
+        maintainer: params[:maintainer],
+        copyright: params[:copyright],
+        copyright_email: params[:copyright_email],
+        license: params[:license],
+        summary: params[:summary],
+        version: params[:version]
+      }
+    end
+    
+    def get_profile_controls(nists)
+      controls = []
+      nists.each do |nist|
+        nist_families = NistFamily.where("family = ?", nist['family'])
+        nist_families.each do |nist_family|
+          control = {}
+          srg_control = SrgControl.find(nist_family.srg_control_id)
+          puts srg_control.inspect
+          control[:title] = srg_control.title
+          control[:description] = srg_control.description
+          control[:impact] = srg_control.severity
+          control[:control_id] = srg_control.controlId
+          control[:srg_title_id] = srg_control.srg_title_id
+          control[:checktext] = srg_control.checktext
+          control[:fixtext] = srg_control.fixtext
+          control[:nist_families] = srg_control.nist_families  
+          
+          controls << control
+        end
+      end
+      controls
+    end
+    
     # Use callbacks to share common setup or constraints between actions.
     def set_profile
       @profile = Profile.find(params[:id])

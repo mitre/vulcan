@@ -73,6 +73,6 @@ class ControlsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def control_params
-      params.require(:control).permit(:title, :description, :impact, :code, :control_id, :sl_ref, :sl_line)
+      params.require(:control).permit(:title, :description, :impact, :code, :control_id, :sl_ref, :sl_line, :srg_title_id, :nist_families, :checktext, :fixtext)
     end
 end

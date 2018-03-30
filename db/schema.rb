@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180329165522) do
+ActiveRecord::Schema.define(version: 20180329204353) do
 
   create_table "controls", force: :cascade do |t|
     t.string "title"
@@ -23,6 +23,13 @@ ActiveRecord::Schema.define(version: 20180329165522) do
     t.text "tag"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "checktext"
+    t.text "fixtext"
+    t.text "justification"
+    t.text "status"
+    t.integer "profile_id"
+    t.text "srg_title_id"
+    t.index ["profile_id"], name: "index_controls_on_profile_id"
   end
 
   create_table "nist_families", force: :cascade do |t|
@@ -31,6 +38,8 @@ ActiveRecord::Schema.define(version: 20180329165522) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "srg_control_id"
+    t.integer "control_id"
+    t.index ["control_id"], name: "index_nist_families_on_control_id"
     t.index ["srg_control_id"], name: "index_nist_families_on_srg_control_id"
   end
 
@@ -51,6 +60,7 @@ ActiveRecord::Schema.define(version: 20180329165522) do
     t.string "checktext"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "srg_title_id"
     t.index ["srg_id"], name: "index_srg_controls_on_srg_id"
   end
 

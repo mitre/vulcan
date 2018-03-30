@@ -10,12 +10,12 @@
  * files in this directory. Styles in this file should be added after the last require_* statement.
  * It is generally better to create a new file per style scope.
  *
+ *= require jquery-ui
  *= require dataTables/jquery.dataTables
+ *= require dataTables/bootstrap/3/jquery.dataTables.bootstrap
  *= require_tree .
  *= require_self
  */
-@import "jquery-ui";
-@import "bootstrap";
-@import "dataTables/dataTables.bootstrap";
-@import "dataTables/dataTables.responsive";
+
+
 

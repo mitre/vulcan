@@ -1,6 +1,26 @@
-<h1>Editing Control</h1>
+<div id="wrapper">
+    <div id="page-wrapper">
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Edit Control <%= @control.control_id %></h1>
+            </div>
+            <!-- /.col-lg-12 -->
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                    </div>
+                    <!-- /.panel-heading -->
+                    <div class="panel-body">
+                      <%= render 'form', control: @control %>
 
-<%= render 'form', control: @control %>
-
-<%= link_to 'Show', @control %> |
-<%= link_to 'Back', controls_path %>
+                      <%= link_to 'Back', controls_path %>
+                        <!-- /.table-responsive -->
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+                <!-- /.panel -->
+            </div>
+    </div>
+</div>

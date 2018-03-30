@@ -6,7 +6,6 @@ class SrgControlsController < ApplicationController
   def index
     @srg = Srg.find(params[:srg_id])
     @srg_controls = SrgControl.all
-    puts @srg_controls.nist_families
   end
 
   # GET /srg_controls/1

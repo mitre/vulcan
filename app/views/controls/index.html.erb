@@ -8,6 +8,9 @@
       <th>Title</th>
       <th>Description</th>
       <th>Impact</th>
+      <th>Check Text</th>
+      <th>Fix Text</th>
+      <th>Srg Id</th>
       <th>Code</th>
       <th>Control</th>
       <th>Sl ref</th>
@@ -20,10 +23,14 @@
     <% @controls.each do |control| %>
       <tr>
         <td><%= control.title %></td>
+        
         <td><%= control.description %></td>
         <td><%= control.impact %></td>
         <td><%= control.code %></td>
         <td><%= control.control_id %></td>
+        <td><%= control.checktext %></td>
+        <td><%= control.fixtext %></td>
+        <td><%= control.srg_title_id %></td>
         <td><%= control.sl_ref %></td>
         <td><%= control.sl_line %></td>
         <td><%= link_to 'Show', control %></td>
