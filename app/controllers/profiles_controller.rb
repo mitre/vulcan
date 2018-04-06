@@ -5,15 +5,19 @@ class ProfilesController < ApplicationController
   # GET /profiles.json
   def index
     @profiles = Profile.all
+    respond_to do |format|
+      format.html
+      format.json  { send_data Profile.find(params[:id]), :filename => Profile.find(params[:id]).name + '-overview.json' }
+    end
   end
 
   # GET /profiles/1
   # GET /profiles/1.json
   def show
-    # respond_to do |format|
-    #   format.html
-    #   format.json { render json: ProfileControlsDatatable.new(view_context) }  
-    # end
+    respond_to do |format|
+      format.html
+      format.json { send_data create_profile_json(Profile.find(params[:id])), :filename => Profile.find(params[:id]).name + '-overview.json' }  
+    end
   end
 
   # GET /profiles/new
@@ -99,6 +103,14 @@ class ProfilesController < ApplicationController
 
 
   private
+    def create_profile_json(profile)
+      profile_hash = {"profile_data" => profile, "controls" => JSON.parse(profile.controls.to_json)}
+      profile.controls.each_with_index do |control, i|
+        profile_hash["controls"][i]["nist_families"] = control.nist_families
+      end
+      profile_hash.to_json
+    end
+  
     def get_profile_hash(params)
       new_params = {
         name: params[:name],

@@ -25,6 +25,7 @@
                               <th></th>
                               <th></th>
                               <th></th>
+                              <th></th>
                             </tr>
                           </thead>
 
@@ -36,6 +37,7 @@
                                 <td><%= profile.maintainer %></td>
                                 <td><%= link_to 'Show Controls', profile %></td>
                                 <td><%= link_to 'Edit Profile', edit_profile_path(profile) %></td>
+                                <td><%= link_to 'Export Profile', profile_path(profile, format: :json) %></td>
                                 <td><%= link_to 'Delete', profile, method: :delete, data: { confirm: 'Are you sure?' } %></td>
                               </tr>
                             <% end %>
