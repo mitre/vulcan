@@ -73,7 +73,7 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.string "version"
   end
   
-  create_table "srgs_projects", force: :cascade do |t|
+  create_table "projects_srgs", force: :cascade do |t|
     t.references(:srg, index: true)
     t.references(:project, index: true)
   end
