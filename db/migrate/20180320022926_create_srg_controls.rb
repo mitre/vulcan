@@ -1,7 +1,7 @@
 class CreateSrgControls < ActiveRecord::Migration[5.1]
   def change
     create_table :srg_controls do |t|
-      t.string :controlId
+      t.string :control_id
       t.string :severity
       t.string :title
       t.string :description
@@ -11,8 +11,6 @@ class CreateSrgControls < ActiveRecord::Migration[5.1]
       t.string :fixtext
       t.string :checkid
       t.string :checktext
-
-      t.timestamps
     end
   end
 end

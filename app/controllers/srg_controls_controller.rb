@@ -77,7 +77,7 @@ class SrgControlsController < ApplicationController
       {
         id: params[:id],
         srg_id: params[:srg_id],
-        profile_id: params[:profile_id],
+        project_id: params[:profile_id],
         controlId: params[:profile_id],
         severity: params[:severity],
         title: params[:title],

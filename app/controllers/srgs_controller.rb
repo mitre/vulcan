@@ -74,7 +74,7 @@ class SrgsController < ApplicationController
     @srg = Srg.create(srg_hash)
     srg_controls.each do |srg_control|
       @srg_control = @srg.srg_controls.create(srg_control[:control_params])
-      @srg_control.nist_families.create(srg_control[:nist_params])
+      @srg_control.nist_controls << srg_control[:nist_params]
     end
     redirect_to srgs_path, notice: 'Srg uploaded.'
   end
@@ -107,7 +107,7 @@ class SrgsController < ApplicationController
           control_params: {},
           nist_params: {}
         }
-        control[:control_params][:controlId]     = group.id
+        control[:control_params][:control_id]     = group.id
         control[:control_params][:srg_title_id]  = group.title
         control[:control_params][:title]         = group.rule.title
         control[:control_params][:description]   = group.rule.description 
@@ -115,13 +115,21 @@ class SrgsController < ApplicationController
         control[:control_params][:checktext]     = group.rule.check.check_content
         control[:control_params][:fixtext]       = group.rule.fixtext
         control[:control_params][:fixid]         = group.rule.fix.id
-        nist_family = cci_items.fetch_nists(group.rule.idents)
-        control[:nist_params][:family] = nist_family[0]
-        control[:nist_params][:version] = nist_family[1].split('_')[1]
-        
+        nist_family_from_cci = cci_items.fetch_nists(group.rule.idents)
+        puts nist_family_from_cci
+        nist_family = NistFamily.find_by(short_title: nist_family_from_cci[0].split('-')[0])
+        index = nist_family_from_cci[0].split('-')[1].strip.sub(' ', '').sub(' ', '.') + '.'
+        index = nist_family_from_cci[0].split('-')[1].strip.gsub(') (', ')(') if nist_family_from_cci[0].include?('(')
+        index = nist_family_from_cci[0].split('-')[1].strip if nist_family_from_cci[0].split('-')[1].strip.match(/\A\d{1,2}\z/)
+        control[:nist_params] = NistControl.find_by(index: index, nist_families_id: nist_family.id)
+
         controls << control
       end
       [controls, srg_hash]
+    end
+    
+    def import_ccis(cci_items)
+      
     end
     
     # @!method get_impact(severity)

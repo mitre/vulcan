@@ -1,0 +1,46 @@
+<p id="notice"><%= notice %></p>
+
+<h1>Project Controls</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Impact</th>
+      <th>Check Text</th>
+      <th>Fix Text</th>
+      <th>Srg Id</th>
+      <th>Code</th>
+      <th>Control</th>
+      <th>Sl ref</th>
+      <th>Sl line</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @project_controls.each do |project_control| %>
+      <tr>
+        <td><%= project_control.title %></td>
+        
+        <td><%= project_control.description %></td>
+        <td><%= project_control.impact %></td>
+        <td><%= project_control.code %></td>
+        <td><%= project_control.control_id %></td>
+        <td><%= project_control.checktext %></td>
+        <td><%= project_control.fixtext %></td>
+        <td><%= project_control.srg_title_id %></td>
+        <td><%= project_control.sl_ref %></td>
+        <td><%= project_control.sl_line %></td>
+        <td><%= link_to 'Show', project_control %></td>
+        <td><%= link_to 'Edit', edit_project_control_path(project_control) %></td>
+        <td><%= link_to 'Destroy', project_control, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Control', new_project_control_path %>

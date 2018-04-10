@@ -1,0 +1,52 @@
+<%= form_with(model: project_control, local: true) do |form| %>
+  <% if project_control.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(control.errors.count, "error") %> prohibited this control from being saved:</h2>
+
+      <ul>
+      <% control.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+  
+  <div class="field">
+    <%= form.label :project_control_id %>
+    <%= form.text_field :control_id, id: :project_control_control_id %>
+  </div>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:1 %>
+  </div>
+
+  <div class="field">
+    <%= form.label :description %>
+    <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
+  </div>
+
+  <div class="field">
+    <%= form.label :impact %>
+    <%= form.text_field :impact, id: :project_control_impact %>
+  </div>
+
+  <div class="field">
+    <%= form.label :code %>
+    <%= form.text_area :code, id: :project_control_code, class: "form-control", rows:5  %>
+  </div>
+
+  <div class="field">
+    <%= form.label :sl_ref %>
+    <%= form.text_area :sl_ref, id: :project_control_sl_ref, class: "form-control", rows:1 %>
+  </div>
+
+  <div class="field">
+    <%= form.label :sl_line %>
+    <%= form.text_area :sl_line, id: :project_control_sl_line, class: "form-control", rows:1 %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit "Submit", {:class => "btn btn-primary"} %>
+  </div>
+<% end %>

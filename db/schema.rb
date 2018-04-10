@@ -10,9 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180329204353) do
+ActiveRecord::Schema.define(version: 20180406183323) do
 
-  create_table "controls", force: :cascade do |t|
+  create_table "project_controls", force: :cascade do |t|
     t.string "title"
     t.string "description"
     t.float "impact"
@@ -21,34 +21,65 @@ ActiveRecord::Schema.define(version: 20180329204353) do
     t.string "sl_ref"
     t.string "sl_line"
     t.text "tag"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.text "checktext"
     t.text "fixtext"
     t.text "justification"
     t.text "status"
-    t.integer "profile_id"
     t.text "srg_title_id"
-    t.index ["profile_id"], name: "index_controls_on_profile_id"
+    t.references(:project, index: true)
+  end
+
+  create_table "nist_controls_project_controls", id: false, force: :cascade do |t|
+    t.references(:nist_control, index: true)
+    t.references(:project_control, index: true)
+  end
+  
+  create_table "nist_controls_srg_controls", id: false, force: :cascade do |t|
+    t.references(:nist_control, index: true)
+    t.references(:srg_control, index: true)
+  end
+  
+  create_table "ccis_nist_controls", id: false, force: :cascade do |t|
+    t.references(:nist_control, index: true)
+    t.references(:cci, index: true)
   end
 
   create_table "nist_families", force: :cascade do |t|
     t.string "family"
-    t.integer "version"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "srg_control_id"
-    t.integer "control_id"
-    t.index ["control_id"], name: "index_nist_families_on_control_id"
-    t.index ["srg_control_id"], name: "index_nist_families_on_srg_control_id"
+    t.string "version"
+    t.string "short_title"
+    t.string "long_title"
+  end
+  
+  create_table "ccis", force: :cascade do |t|
+    t.string "cci"
+  end
+  
+  create_table "nist_controls", force: :cascade do |t|
+    t.string "family"
+    t.string "index"
+    t.string "version"
+    t.references(:nist_families, index: true)
   end
 
-# Could not dump table "profiles" because of following StandardError
-#   Unknown type 'has_many' for column 'srg_ids'
+  create_table "projects", force: :cascade do |t|
+    t.string "name"
+    t.string "title"
+    t.string "maintainer"
+    t.string "copyright"
+    t.string "copyright_email"
+    t.string "license"
+    t.string "summary"
+    t.string "version"
+  end
+  
+  create_table "srgs_projects", force: :cascade do |t|
+    t.references(:srg, index: true)
+    t.references(:project, index: true)
+  end
 
   create_table "srg_controls", force: :cascade do |t|
-    t.integer "srg_id"
-    t.string "controlId"
+    t.string "control_id"
     t.string "severity"
     t.string "title"
     t.string "description"
@@ -58,10 +89,9 @@ ActiveRecord::Schema.define(version: 20180329204353) do
     t.string "fixtext"
     t.string "checkid"
     t.string "checktext"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.text "srg_title_id"
-    t.index ["srg_id"], name: "index_srg_controls_on_srg_id"
+    t.references(:srg, index: true)
+    # t.index ["srgs_id"], name: "index_srg_controls_on_srgs_id"
   end
 
   create_table "srgs", force: :cascade do |t|
@@ -69,17 +99,6 @@ ActiveRecord::Schema.define(version: 20180329204353) do
     t.string "description"
     t.string "publisher"
     t.string "published"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "tags", force: :cascade do |t|
-    t.string "name"
-    t.text "value"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "control_id"
-    t.index ["control_id"], name: "index_tags_on_control_id"
   end
 
 end

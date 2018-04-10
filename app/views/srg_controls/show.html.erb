@@ -3,7 +3,7 @@
     <div id="page-wrapper">
       <p>
         <strong>Srg ID:</strong>
-        <%= @srg_control.controlId %>
+        <%= @srg_control.control_id %>
       </p>
 
       <p>
@@ -23,8 +23,8 @@
 
       <p>
         <strong>Nist Families:</strong>
-        <% @srg_control.nist_families.each do |nist| %>
-          <td><%= nist.family %></td>
+        <% @srg_control.nist_controls.each do |nist| %>
+          <td><%= nist.family + '-' + nist.index %></td>
         <% end %>
       </p>
 

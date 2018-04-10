@@ -33,8 +33,8 @@
                                   <td><%= srg_control.srg_title_id %></td>
                                   <td><%= srg_control.severity %></td>
                                   <td><%= srg_control.title %></td>
-                                    <% srg_control.nist_families.each do |nist| %>
-                                      <td><%= nist.family %></td>
+                                    <% srg_control.nist_controls.each do |nist_control| %>
+                                      <td><%= nist_control.family + '-' + nist_control.index %></td>
                                     <% end %>
                                   <td><%= link_to 'Show', srg_control %></td>
                                 </tr>

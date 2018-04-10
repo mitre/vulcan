@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
-  resources :controls
-  resources :profiles
+  resources :project_controls
+  resources :projects
   resources :srg_controls
   resources :srgs
   resources :srg

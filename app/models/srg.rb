@@ -1,6 +1,6 @@
 class Srg < ApplicationRecord
   before_destroy :destroy_srg_controls
-
+  
   has_many :srg_controls
   
   private
