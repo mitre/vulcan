@@ -101,6 +101,7 @@ class ProjectsController < ApplicationController
         project_control.nist_controls << NistControl.find(nist_control["id"])
       end
     end
+    redirect_to projects_path, notice: 'Project uploaded.'
   end
 
   private

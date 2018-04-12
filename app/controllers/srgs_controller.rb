@@ -110,7 +110,7 @@ class SrgsController < ApplicationController
         control[:control_params][:control_id]     = group.id
         control[:control_params][:srg_title_id]  = group.title
         control[:control_params][:title]         = group.rule.title
-        control[:control_params][:description]   = group.rule.description 
+        control[:control_params][:description]   = group.rule.description.gsub(/<\w?*>|<\/\w?*>/, '')
         control[:control_params][:severity]      = get_impact(group.rule.severity)
         control[:control_params][:checktext]     = group.rule.check.check_content
         control[:control_params][:fixtext]       = group.rule.fixtext
