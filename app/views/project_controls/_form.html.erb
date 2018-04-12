@@ -15,6 +15,11 @@
     <%= form.label :project_control_id %>
     <%= form.text_field :control_id, id: :project_control_control_id %>
   </div>
+  
+  <div class="field">
+    <%= form.label :justification %>
+    <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
+  </div>
 
   <div class="field">
     <%= form.label :title %>
@@ -30,6 +35,20 @@
     <%= form.label :impact %>
     <%= form.text_field :impact, id: :project_control_impact %>
   </div>
+  
+  <div class="field">
+    <%= form.label :checktext %>
+    <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5  %>
+  </div>
+  
+  <div class="field">
+    <%= form.label :fixtext %>
+    <%= form.text_area :fixtext, id: :project_control_fixtext, class: "form-control", rows:5  %>
+  </div>
+  
+  <div class="field">
+    <%= form.label :fixtext %>
+    <%= form.text_area :fixtext, id: :project_control_fixtext, class: "form-control", rows:5  %>
 
   <div class="field">
     <%= form.label :code %>

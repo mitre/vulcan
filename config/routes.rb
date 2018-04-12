@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   resources :srgs
   resources :srg
   match 'upload_srg' => 'srgs#upload', :as => :upload_srg, :via => :post
+  match 'upload_project' => 'projects#upload', :as => :upload_project, :via => :post
 
   root "pages#index"
 end

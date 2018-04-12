@@ -91,6 +91,17 @@ class ProjectsController < ApplicationController
       format.json { head :no_content }
     end
   end
+  
+  def upload
+    project_json = JSON.parse(File.read(params[:file].path))
+    @project = Project.create(project_json["project_data"].except('id'))
+    project_json["controls"].each do |control|
+      project_control = @project.project_controls.create(control.except("nist_controls"))
+      control["nist_controls"].each do |nist_control|
+        project_control.nist_controls << NistControl.find(nist_control["id"])
+      end
+    end
+  end
 
   private
     def fetch_srg_data_families
@@ -112,10 +123,13 @@ class ProjectsController < ApplicationController
     end
   
     def create_project_json(project)
-      project_hash = {"project_data" => project, "controls" => JSON.parse(project.controls.to_json)}
-      project.controls.each_with_index do |control, i|
-        project_hash["controls"][i]["nist_families"] = control.nist_families
+      project_hash = {"project_data" => project, 
+        "controls" => JSON.parse(project.project_controls.to_json)
+      }
+      project.project_controls.each_with_index do |project_control, i|
+        project_hash["controls"][i]["nist_controls"] = project_control.nist_controls
       end
+      
       project_hash.to_json
     end
   
@@ -139,7 +153,6 @@ class ProjectsController < ApplicationController
         srg_controls = SrgControl.joins(:nist_controls).where(srg_controls: {srg_id: nist["srg_id"]}, nist_controls: {id: nist_control.id})
         # srg_controls = SrgControl.find_by(srg_id: nist["srg_id"]).joins(:nist_controls).where(nist_control_id: nist_control.id)
         srg_controls.each do |srg_control|
-          puts srg_control.inspect
           control = {control_params: {}}
           control[:control_params][:title] = srg_control.title
           control[:control_params][:description] = srg_control.description
