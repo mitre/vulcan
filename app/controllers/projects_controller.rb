@@ -8,6 +8,7 @@ class ProjectsController < ApplicationController
     respond_to do |format|
       format.html
       format.json  { send_data Project.find(params[:id]), :filename => Project.find(params[:id]).name + '-overview.json' }
+      format.csv   { send_data Project.find(params[:id]), :filename => Project.find(params[:id]).name + '-overview.csv' }
     end
   end
 
@@ -16,13 +17,14 @@ class ProjectsController < ApplicationController
   def show
     respond_to do |format|
       format.html
-      format.json { send_data create_project_json(Project.find(params[:id])), :filename => Project.find(params[:id]).name + '-overview.json' }  
+      format.json { send_data create_project_json(Project.find(params[:id])), :filename => Project.find(params[:id]).name + '-overview.json' }
+      format.csv  { send_data Project.find(params[:id]).to_csv, :filename => Project.find(params[:id]).name + '-overview.csv' }
+
     end
   end
 
   # GET /projects/new
   def new
-    @srg_data = fetch_srg_data_families
     @srgs = Srg.all
     @project = Project.new
   end
@@ -36,22 +38,9 @@ class ProjectsController < ApplicationController
   # POST /projects.json
   def create
     project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"}
-    
     @project = Project.new(get_project_hash(project_params))
-    srg_families = []
-    project_params[:srg_ids].each do |srg_id|
-      new_srg_id = srg_id.gsub('\"', '"')
-      new_srg_id = new_srg_id.gsub(':', '"')
-      new_srg_id = new_srg_id.gsub('=>', '":')
-      new_srg_id = JSON.parse(new_srg_id)
-      srg_families << new_srg_id
-    end
-    
-    srgs = []
-    srg_families.each do |srg_family|
-      @project.srgs << Srg.find(srg_family['srg_id']) unless srgs.include?(srg_family['srg_id'])
-      srgs << srg_family['srg_id'] unless srgs.include?(srg_family['srg_id'])
-    end
+    puts Srg.where(id: project_params[:srg_ids])
+    @project.srgs << Srg.where(id: project_params[:srg_ids])
         
     respond_to do |format|
       if @project.save
@@ -62,7 +51,7 @@ class ProjectsController < ApplicationController
         format.json { render json: @project.errors, status: :unprocessable_entity }
       end
     end
-    get_project_controls(srg_families).each do |control|
+    get_project_controls(@project.srgs).each do |control|
       project_control = @project.project_controls.create(control[:control_params])
       project_control.nist_controls << control[:nist_params]
     end
@@ -147,13 +136,10 @@ class ProjectsController < ApplicationController
       }
     end
     
-    def get_project_controls(nists)
+    def get_project_controls(srgs)
       controls = []
-      nists.each do |nist|
-        nist_control = NistControl.find_by(family: nist['family'].split('-')[0], index: nist['family'].split('-')[1])
-        srg_controls = SrgControl.joins(:nist_controls).where(srg_controls: {srg_id: nist["srg_id"]}, nist_controls: {id: nist_control.id})
-        # srg_controls = SrgControl.find_by(srg_id: nist["srg_id"]).joins(:nist_controls).where(nist_control_id: nist_control.id)
-        srg_controls.each do |srg_control|
+      srgs.each do |srg|
+        srg.srg_controls.each do |srg_control|
           control = {control_params: {}}
           control[:control_params][:title] = srg_control.title
           control[:control_params][:description] = srg_control.description

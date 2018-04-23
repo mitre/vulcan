@@ -28,7 +28,7 @@ class ProjectControlsController < ApplicationController
   def create
     @project = project.find(params[:project_id])
     authorize! :create, @project
-    @project_control = @project.project_controls.new(control_params)
+    @project_control = @project.project_controls.new(project_controls_params)
 
     respond_to do |format|
       if @project_control.save
@@ -44,8 +44,9 @@ class ProjectControlsController < ApplicationController
   # PATCH/PUT /project_controls/1
   # PATCH/PUT /project_controls/1.json
   def update
+    puts project_controls_params
     respond_to do |format|
-      if @project_control.update(control_params)
+      if @project_control.update(project_controls_params)
         format.html { redirect_to @project_control, notice: 'Control was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_control }
       else
@@ -73,6 +74,6 @@ class ProjectControlsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_controls_params
-      params.require(:project_control).permit(:title, :description, :impact, :code, :control_id, :sl_ref, :sl_line, :srg_title_id, :nist_families, :checktext, :fixtext)
+      params.require('project_control').permit(:title, :justification, :status, :description, :impact, :code, :control_id, :sl_ref, :sl_line, :srg_title_id, :nist_families, :checktext, :fixtext)
     end
 end

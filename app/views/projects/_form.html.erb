@@ -59,13 +59,10 @@
     </div>
     <div class="field">
       <div class="vertical-menu">
-        <% @srg_data.keys.each do |srg_id| %>
-          <%= form.label @srg_data[srg_id][:title] %>
-          <% @srg_data[srg_id][:families].each do |family| %>
-            <%= form.label family, {:style => 'text-indent: 10%;', class: "checkbox"} do %>
-              <%= form.check_box :srg_ids, { multiple: true }, {srg_id: srg_id, family: family}, false %>
-              <%= family %>
-            <% end %>
+        <% @srgs.each do |srg| %>
+          <%= form.label srg.title, {:style => 'text-indent: 10%;', class: "checkbox"} do %>
+            <%= form.check_box :srg_ids, { multiple: true }, srg.id, false %>
+            <%= srg.title %>
           <% end %>
         <% end %>
       </div>

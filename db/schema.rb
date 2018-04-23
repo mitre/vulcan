@@ -12,6 +12,46 @@
 
 ActiveRecord::Schema.define(version: 20180406183323) do
 
+  create_table "ccis", force: :cascade do |t|
+    t.string "cci"
+  end
+
+  create_table "ccis_nist_controls", id: false, force: :cascade do |t|
+    t.integer "nist_control_id"
+    t.integer "cci_id"
+    t.index ["cci_id"], name: "index_ccis_nist_controls_on_cci_id"
+    t.index ["nist_control_id"], name: "index_ccis_nist_controls_on_nist_control_id"
+  end
+
+  create_table "nist_controls", force: :cascade do |t|
+    t.string "family"
+    t.string "index"
+    t.string "version"
+    t.integer "nist_families_id"
+    t.index ["nist_families_id"], name: "index_nist_controls_on_nist_families_id"
+  end
+
+  create_table "nist_controls_project_controls", id: false, force: :cascade do |t|
+    t.integer "nist_control_id"
+    t.integer "project_control_id"
+    t.index ["nist_control_id"], name: "index_nist_controls_project_controls_on_nist_control_id"
+    t.index ["project_control_id"], name: "index_nist_controls_project_controls_on_project_control_id"
+  end
+
+  create_table "nist_controls_srg_controls", id: false, force: :cascade do |t|
+    t.integer "nist_control_id"
+    t.integer "srg_control_id"
+    t.index ["nist_control_id"], name: "index_nist_controls_srg_controls_on_nist_control_id"
+    t.index ["srg_control_id"], name: "index_nist_controls_srg_controls_on_srg_control_id"
+  end
+
+  create_table "nist_families", force: :cascade do |t|
+    t.string "family"
+    t.string "version"
+    t.string "short_title"
+    t.string "long_title"
+  end
+
   create_table "project_controls", force: :cascade do |t|
     t.string "title"
     t.string "description"
@@ -26,40 +66,8 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.text "justification"
     t.text "status"
     t.text "srg_title_id"
-    t.references(:project, index: true)
-  end
-
-  create_table "nist_controls_project_controls", id: false, force: :cascade do |t|
-    t.references(:nist_control, index: true)
-    t.references(:project_control, index: true)
-  end
-  
-  create_table "nist_controls_srg_controls", id: false, force: :cascade do |t|
-    t.references(:nist_control, index: true)
-    t.references(:srg_control, index: true)
-  end
-  
-  create_table "ccis_nist_controls", id: false, force: :cascade do |t|
-    t.references(:nist_control, index: true)
-    t.references(:cci, index: true)
-  end
-
-  create_table "nist_families", force: :cascade do |t|
-    t.string "family"
-    t.string "version"
-    t.string "short_title"
-    t.string "long_title"
-  end
-  
-  create_table "ccis", force: :cascade do |t|
-    t.string "cci"
-  end
-  
-  create_table "nist_controls", force: :cascade do |t|
-    t.string "family"
-    t.string "index"
-    t.string "version"
-    t.references(:nist_families, index: true)
+    t.integer "project_id"
+    t.index ["project_id"], name: "index_project_controls_on_project_id"
   end
 
   create_table "projects", force: :cascade do |t|
@@ -72,10 +80,12 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.string "summary"
     t.string "version"
   end
-  
+
   create_table "projects_srgs", force: :cascade do |t|
-    t.references(:srg, index: true)
-    t.references(:project, index: true)
+    t.integer "srg_id"
+    t.integer "project_id"
+    t.index ["project_id"], name: "index_projects_srgs_on_project_id"
+    t.index ["srg_id"], name: "index_projects_srgs_on_srg_id"
   end
 
   create_table "srg_controls", force: :cascade do |t|
@@ -90,8 +100,8 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.string "checkid"
     t.string "checktext"
     t.text "srg_title_id"
-    t.references(:srg, index: true)
-    # t.index ["srgs_id"], name: "index_srg_controls_on_srgs_id"
+    t.integer "srg_id"
+    t.index ["srg_id"], name: "index_srg_controls_on_srg_id"
   end
 
   create_table "srgs", force: :cascade do |t|

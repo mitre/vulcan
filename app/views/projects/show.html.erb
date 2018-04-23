@@ -38,9 +38,7 @@
                               <td><%= project_control.title %></td>
                               <td><%= project_control.impact %></td>
                               <td><%= project_control.srg_title_id %></td>
-                              <% project_control.nist_controls.each do |nist| %>
-                                <td><%= nist.family + '-' + nist.index %></td>
-                              <% end %>
+                              <td><%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }%></td>
                               <td><%= link_to 'Show', project_control %></td>
                               <td><%= link_to 'Edit', edit_project_control_path(project_control) %></td>
                               <td><%= link_to 'Destroy', project_control, method: :delete, data: { confirm: 'Are you sure?' } %></td>

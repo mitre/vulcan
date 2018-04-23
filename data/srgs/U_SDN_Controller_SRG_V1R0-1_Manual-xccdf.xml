@@ -1,0 +1,927 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type='text/xsl' href='STIG_unclass.xsl'?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cpe="http://cpe.mitre.org/language/2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" id="SDN_Controller_SRG" xml:lang="en" xsi:schemaLocation="http://checklists.nist.gov/xccdf/1.1 http://nvd.nist.gov/schema/xccdf-1.1.4.xsd http://cpe.mitre.org/dictionary/2.0 http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd">
+  <status date="2018-03-27">draft</status>
+  <title>SDN Controller Security Requirements Guide</title>
+  <description>This Security Requirements Guide is published as a tool to improve the security of Department of Defense (DoD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.</description>
+  <notice id="terms-of-use" xml:lang="en" />
+  <reference href="http://iase.disa.mil">
+    <dc:publisher>DISA, Field Security Operations</dc:publisher>
+    <dc:source>STIG.DOD.MIL</dc:source>
+  </reference>
+  <plain-text id="release-info">Release: 0.1 Benchmark Date: 11 Apr 2018</plain-text>
+  <version>1</version>
+  <Profile id="MAC-1_Public">
+    <title>I - Mission Critical Public</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-1_Sensitive">
+    <title>I - Mission Critical Sensitive</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-1_Classified">
+    <title>I - Mission Critical Classified</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-2_Public">
+    <title>II - Mission Support Public</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-2_Sensitive">
+    <title>II - Mission Support Sensitive</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-2_Classified">
+    <title>II - Mission Support Classified</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-3_Public">
+    <title>III - Administrative Public</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-3_Sensitive">
+    <title>III - Administrative Sensitive</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Profile id="MAC-3_Classified">
+    <title>III - Administrative Classified</title>
+    <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description>
+    <select idref="SRG-NET-000015-SDN-000010" selected="true" />
+    <select idref="SRG-NET-000018-SDN-000015" selected="true" />
+    <select idref="SRG-NET-000074-SDN-000120" selected="true" />
+    <select idref="SRG-NET-000075-SDN-000125" selected="true" />
+    <select idref="SRG-NET-000076-SDN-000130" selected="true" />
+    <select idref="SRG-NET-000077-SDN-000135" selected="true" />
+    <select idref="SRG-NET-000078-SDN-000140" selected="true" />
+    <select idref="SRG-NET-000079-SDN-000145" selected="true" />
+    <select idref="SRG-NET-000131-SDN-000200" selected="true" />
+    <select idref="SRG-NET-000193-SDN-000285" selected="true" />
+    <select idref="SRG-NET-000236-SDN-000365" selected="true" />
+    <select idref="SRG-NET-000362-SDN-000720" selected="true" />
+    <select idref="SRG-NET-000364-SDN-000730" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001020" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001025" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001030" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001035" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001040" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001045" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001050" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001055" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001060" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001065" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001070" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001075" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001080" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001085" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001090" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001095" selected="true" />
+    <select idref="SRG-NET-000512-SDN-001100" selected="true" />
+  </Profile>
+  <Group id="SRG-NET-000015-SDN-000010">
+    <title>SRG-NET-000015-SDN-000010</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000015-SDN-000010_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000015-SDN-000010</version>
+      <title>The SDN controller must be configured to enforce approved authorizations for access to system resources in accordance with applicable access control policies.</title>
+      <description>&lt;VulnDiscussion&gt;To mitigate the risk of unauthorized access to system resources within the SDN framework, authorization procedures and controls must be implemented to ensure each authenticated entity also has a validated and current authorization. Authorization is the process of determining whether an entity, once authenticated, is permitted to access a specific asset.
+
+With a multi-tenant implementation, customers share the network infrastructure and services while they are logically isolated from each other. The controller can provide an abstract view of a virtual network that belongs to each tenant. Hence, a northbound multi-tenancy deployment provides tenants with means to manage and monitor their own virtual networks via a northbound API. The behavior of tenants and their end users should be strictly controlled according to pre-defined access policies.  Role-based access control (RBAC) can be implemented to allow tenants to modify configuration and parameters of the SDN framework that they own and control, while prohibiting access to objects they do not own. Tenants have a self-service model by which they can perform configuration changes, read statistics, and monitor logs that apply only to them. To ensure tenant separation while preserving the integrity and stability of the SDN controller, it is imperative that tenant access to resources within the SDN framework is strictly controlled according to access control policies.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000213</ident>
+      <fixtext fixref="F-SRG-NET-000015-SDN-000010_fix">Configure the SDN controller to utilize RBAC rules to enforce approved authorizations for access to system resources.</fixtext>
+      <fix id="F-SRG-NET-000015-SDN-000010_fix" />
+      <check system="C-SRG-NET-000015-SDN-000010_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN configuration and verify that RBAC rules have been implemented to control access to system resources within the SDN framework. 
+
+If the SDN controller is not configured to enforce approved authorizations for access to system resources, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000018-SDN-000015">
+    <title>SRG-NET-000018-SDN-000015</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000018-SDN-000015_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000018-SDN-000015</version>
+      <title>The SDN controller must be configured to enforce approved authorizations for controlling the flow of traffic within the network based on organization-defined information flow control policies.</title>
+      <description>&lt;VulnDiscussion&gt;Unrestricted traffic may contain malicious traffic which poses a threat to an enclave or data center. Additionally, unrestricted traffic may transit a network consuming bandwidth and network node resources. Access control policies and access control lists implemented on routers and switches can control the flow of network traffic by ensuring that the flow of traffic is only allowed from authorized sources to authorized destinations. Furthermore, the SDN controller provides flow rules to the SDN-enabled routers and switches to populate their forwarding tables. SDN-enabled routers and switches will drop packets for flows that are not permitted by the controller. Also when reactive flow setup occurs (switch has no flow entry in the forwarding table for specific flow), the controller can respond to the switch to drop the packet or provide the device with a new flow entry. It is imperative that both proactive and reactive flow setup must be implemented based on organization-defined information flow control policies.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001368</ident>
+      <fixtext fixref="F-SRG-NET-000018-SDN-000015_fix">Configure the SDN controller to create and distribute forwarding table flow entries based on organization-defined information flow control policies. The implementation could be driven by a service application via the northbound API that contains the flow control policy and forwarding rules.</fixtext>
+      <fix id="F-SRG-NET-000018-SDN-000015_fix" />
+      <check system="C-SRG-NET-000018-SDN-000015_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it creates and distributes forwarding table flow entries based on organization-defined information flow control policies. The implementation could be driven by a service application via the northbound API that contains the flow control policy and forwarding rules. 
+
+If the SDN controller is not configured to enforce approved authorizations for controlling the flow of traffic within the network based on organization-defined information flow control policies, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000074-SDN-000120">
+    <title>SRG-NET-000074-SDN-000120</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000074-SDN-000120_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000074-SDN-000120</version>
+      <title>The SDN controller must be configured to produce audit records containing information to establish what type of events occurred.</title>
+      <description>&lt;VulnDiscussion&gt;Without establishing what type of event occurred, it would be difficult to establish, correlate, and investigate the events leading up to an outage or attack. Audit record content that may be necessary to satisfy this requirement includes, for example, time stamps, source and destination addresses, user/process identifiers, event descriptions, success/fail indications, filenames involved, and access control or flow control rules invoked.
+
+Associating event types with detected events in the network element logs provides a means of investigating an attack; recognizing resource utilization or capacity thresholds; or identifying an improperly configured network element.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000130</ident>
+      <fixtext fixref="F-SRG-NET-000074-SDN-000120_fix">Configure the SDN controller to include the type of event in the log records.</fixtext>
+      <fix id="F-SRG-NET-000074-SDN-000120_fix" />
+      <check system="C-SRG-NET-000074-SDN-000120_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if the audit records will note the type of event that is being logged. 
+
+If the SDN controller is not configured to produce audit records containing information to establish what type of events occurred, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000075-SDN-000125">
+    <title>SRG-NET-000075-SDN-000125</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000075-SDN-000125_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000075-SDN-000125</version>
+      <title>The SDN controller must be configured to produce audit records containing information to establish when the events occurred.</title>
+      <description>&lt;VulnDiscussion&gt;Without establishing when events occurred, it is impossible to establish, correlate, and investigate the events leading up to an outage or attack. In order to compile an accurate risk assessment, and provide forensic analysis of network traffic patterns, it is essential for security personnel to know when (i.e., date and time) flow control events occurred within the infrastructure.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000131</ident>
+      <fixtext fixref="F-SRG-NET-000075-SDN-000125_fix">Configure the SDN controller to include the date and time in the log records.</fixtext>
+      <fix id="F-SRG-NET-000075-SDN-000125_fix" />
+      <check system="C-SRG-NET-000075-SDN-000125_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if the audit records will note the date and time of the event that is being logged. 
+
+If the SDN controller is not configured to produce audit records containing information to establish when (i.e., date and time) the events occurred, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000076-SDN-000130">
+    <title>SRG-NET-000076-SDN-000130</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000076-SDN-000130_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000076-SDN-000130</version>
+      <title>The SDN controller must be configured to produce audit records containing information to establish where the events occurred.</title>
+      <description>&lt;VulnDiscussion&gt;Without establishing where events occurred, it is impossible to establish, correlate, and investigate the events leading up to an outage or attack. In order to compile an accurate risk assessment, and provide forensic analysis, it is essential for security personnel to know where (e.g., interface, node, source IP, etc.) events occurred. Associating information about where the event occurred within the network provides a means of investigating an attack; recognizing resource utilization or capacity thresholds; or identifying an improperly configured network element.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000132</ident>
+      <fixtext fixref="F-SRG-NET-000076-SDN-000130_fix">Configure the SDN controller to include where (i.e. service, interface, node, link, etc.) the event occurred in the log records.</fixtext>
+      <fix id="F-SRG-NET-000076-SDN-000130_fix" />
+      <check system="C-SRG-NET-000076-SDN-000130_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if the audit records will note where (i.e. service, interface, node, link, etc.) the event that is being logged occurred. 
+
+If the SDN controller is not configured to produce audit records containing information to establish where (i.e. service, interface, node, link, etc.) the events occurred, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000077-SDN-000135">
+    <title>SRG-NET-000077-SDN-000135</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000077-SDN-000135_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000077-SDN-000135</version>
+      <title>The SDN controller must be configured to produce audit records containing information to establish the source of the events.</title>
+      <description>&lt;VulnDiscussion&gt;Without establishing the source of the event, it is impossible to establish, correlate, and investigate the events leading up to an outage or attack. In order to compile an accurate risk assessment and provide forensic analysis, security personnel need to know the source (i.e. service, function, node name, IP address, etc.) of the event.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000133</ident>
+      <fixtext fixref="F-SRG-NET-000077-SDN-000135_fix">Configure the SDN controller to include the source (i.e. flow, API, IP address, etc.) of the event in the log records.</fixtext>
+      <fix id="F-SRG-NET-000077-SDN-000135_fix" />
+      <check system="C-SRG-NET-000077-SDN-000135_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if the audit records will note the source (i.e. flow, API, IP address, etc.) the event that is being logged. 
+
+If the SDN controller is not configured to produce audit records containing information to establish the source (i.e. flow, API, IP address, etc.) of the events, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000078-SDN-000140">
+    <title>SRG-NET-000078-SDN-000140</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000078-SDN-000140_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000078-SDN-000140</version>
+      <title>The SDN controller must be configured to produce audit records containing information to establish the outcome of the events.</title>
+      <description>&lt;VulnDiscussion&gt;Without information about the outcome of events, security personnel cannot make an accurate assessment as to whether an attack was successful or if changes were made to the security state of the network. Event outcomes can include indicators of event success or failure and event-specific results (e.g., the security state of the network after the event occurred). As such, they also provide a means to measure the impact of an event and help authorized personnel to determine the appropriate response.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000134</ident>
+      <fixtext fixref="F-SRG-NET-000078-SDN-000140_fix">Configure the SDN controller to include the outcome (i.e. packet allowed, packet dropped, link down, etc.) of the event in the log records.</fixtext>
+      <fix id="F-SRG-NET-000078-SDN-000140_fix" />
+      <check system="C-SRG-NET-000078-SDN-000140_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if the audit records will note the outcome (i.e. packet allowed, packet dropped, link down, etc.) the event that is being logged. 
+
+If the SDN controller is not configured to produce audit records containing information to establish the outcome (i.e. packet allowed, packet dropped, link down, etc.) of the events, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000079-SDN-000145">
+    <title>SRG-NET-000079-SDN-000145</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000079-SDN-000145_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000079-SDN-000145</version>
+      <title>The SDN controller must be configured to generate audit records containing information that establishes the identity of any individual or process associated with the event.</title>
+      <description>&lt;VulnDiscussion&gt;Without information that establishes the identity of the subjects (i.e., users or processes acting on behalf of users) associated with the events, security personnel cannot determine responsibility for the potentially harmful event.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001487</ident>
+      <fixtext fixref="F-SRG-NET-000079-SDN-000145_fix">Configure the SDN controller to the identity of any individual or process associated with an event in the log records.</fixtext>
+      <fix id="F-SRG-NET-000079-SDN-000145_fix" />
+      <check system="C-SRG-NET-000079-SDN-000145_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if the audit records will contain the identity of any individual or process associated with an event that is being logged. 
+
+If the SDN controller is not configured to produce audit records containing the identity of any individual or process associated with an event being logged, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000131-SDN-000200">
+    <title>SRG-NET-000131-SDN-000200</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000131-SDN-000200_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000131-SDN-000200</version>
+      <title>The SDN controller must be configured to disable non-essential capabilities.</title>
+      <description>&lt;VulnDiscussion&gt;It is detrimental for network elements to provide, or enable by default, functionality exceeding requirements or mission objectives. These unnecessary capabilities or services are often overlooked and therefore may remain unsecured. They increase the risk to the platform by providing additional attack vectors.
+
+Some of the functions and services that could be enabled may not be necessary to support essential organizational operations.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000381</ident>
+      <fixtext fixref="F-SRG-NET-000131-SDN-000200_fix">Remove unneeded services and functions from the SDN configuration. Removal is recommended because the service or function may be inadvertently enabled otherwise. However, if removal is not possible, disable the service or function.</fixtext>
+      <fix id="F-SRG-NET-000131-SDN-000200_fix" />
+      <check system="C-SRG-NET-000131-SDN-000200_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if services or functions not required for SDN controller operation are enabled. 
+
+If unnecessary services and functions are enabled on the SDN controller, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000193-SDN-000285">
+    <title>SRG-NET-000193-SDN-000285</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000193-SDN-000285_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000193-SDN-000285</version>
+      <title>The SDN controller must be configured to enforce a Quality-of-Service (QoS) policy to manage bandwidth and to limit the effects of a packet-flooding Denial of Service (DoS) attack.</title>
+      <description>&lt;VulnDiscussion&gt;Different applications have unique requirements and toleration levels for delay, jitter, bandwidth, packet loss, and availability. To manage the multitude of applications and services, a network requires a QoS framework to differentiate traffic and provide a method to manage network congestion. The Differentiated Services Model (DiffServ) is based on per-hop behavior by categorizing traffic into different classes and enabling each node to enforce a forwarding treatment to each packet as dictated by a policy.
+
+Packet markings such as IP Precedence and its successor, Differentiated Services Code Points (DSCP), were defined along with specific per-hop behaviors for key traffic types to enable a scalable QoS solution. DiffServ QoS categorizes network traffic, prioritizes it according to its relative importance, and provides priority treatment based on the classification.
+
+Dynamic QoS through software-defined networking introduces flexibility and agility to normally static policies. SDN helps automate the process as it intelligently and dynamically prioritizes traffic based on current business requirements and network congestion. It is imperative that the SDN controller enforces an end-to-end QoS policy to provide preferred treatment for mission-critical applications, manage network congestion, as well as limit the effect of any packet-flooding DoS attack.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001095</ident>
+      <fixtext fixref="F-SRG-NET-000193-SDN-000285_fix">Configure the SDN controller to enforce a QoS policy. This can be implemented via northbound API from a service application containing the policy and classification mappings.</fixtext>
+      <fix id="F-SRG-NET-000193-SDN-000285_fix" />
+      <check system="C-SRG-NET-000193-SDN-000285_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to verify that it is configured to enforce a QoS policy. The QoS implementation could be driven by a service application via the northbound API that contains the policy and classification mapping. 
+
+If the SDN controller is not configured to enforce a QoS policy to manage bandwidth and limit the effect of a packet-flooding DoS attack, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000236-SDN-000365">
+    <title>SRG-NET-000236-SDN-000365</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000236-SDN-000365_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000236-SDN-000365</version>
+      <title>The SDN controllers must be configured as a cluster in active/active mode to preserve any information necessary to determine cause of a system failure and to maintain network operations with least disruption to workload processes and flows.</title>
+      <description>&lt;VulnDiscussion&gt;Failure in a known state can address safety or security in accordance with the mission needs of the organization. Failure to a known secure state helps prevent a loss of confidentiality, integrity, or availability in the event of a failure of the SDN controller. Preserving network element state information helps to facilitate continuous network operations minimal or no disruption to mission-essential workload processes and flows.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001665</ident>
+      <fixtext fixref="F-SRG-NET-000236-SDN-000365_fix">Configure the SDN controller to peer with one or more controllers in an active/active failover mode.</fixtext>
+      <fix id="F-SRG-NET-000236-SDN-000365_fix" />
+      <check system="C-SRG-NET-000236-SDN-000365_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to peer with one or more controllers in an active/active failover mode.  
+
+If the SDN controller is not configured to be deployed as a cluster in active/active mode, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000362-SDN-000720">
+    <title>SRG-NET-000362-SDN-000720</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000362-SDN-000720_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000362-SDN-000720</version>
+      <title>The SDN controller must be configured to protect against or limit the effects of denial-of-service (DoS) attacks by rate-limiting control-plane communications.</title>
+      <description>&lt;VulnDiscussion&gt;The SDN Controller is critical to all network operations because it is the component used to build all forwarding paths for the data plane via control-plane processes. It is also instrumental with network management and provisioning functions that keep the SDN-enabled network elements and links available for providing network services. Any disruption to the SDN Controller can result in mission-critical network outages. A DoS attack targeting the SDN Controller can result in excessive CPU and memory utilization. The SDN Controller must be configured to rate-limit control-plane traffic destined to itself to mitigate the risk of a DoS attack and ensure network stability.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-002385</ident>
+      <fixtext fixref="F-SRG-NET-000362-SDN-000720_fix">Configure the SDN controller to rate-limit control-plane messages.</fixtext>
+      <fix id="F-SRG-NET-000362-SDN-000720_fix" />
+      <check system="C-SRG-NET-000362-SDN-000720_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to rate-limit control-plane messages. 
+
+If the SDN controller is not configured to rate-limit control-plane messages, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000364-SDN-000730">
+    <title>SRG-NET-000364-SDN-000730</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000364-SDN-000730_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000364-SDN-000730</version>
+      <title>The SDN controller must be configured to only allow incoming communications from organization-defined authorized sources routed to organization-defined authorized destinations.</title>
+      <description>&lt;VulnDiscussion&gt;Unrestricted traffic may contain malicious traffic which poses a threat to an enclave or data center. Additionally, unrestricted traffic may transit a network consuming bandwidth and network node resources. Access control policies and access control lists implemented on routers and switches can control the flow of network traffic by ensuring that the flow of traffic is only allowed from authorized sources to authorized destinations. Furthermore, the SDN controller provides flow rules to the SDN-enabled routers and switches to populate their forwarding tables. SDN-enabled routers and switches will drop packets for flows that are not permitted by the controller. Also when reactive flow setup occurs (switch has no flow entry in the forwarding table for specific flow), the controller can respond to the switch to drop the packet or provide the device with a new flow entry. It is imperative that the SDN controller enforces perimeter security by deploying strict flow entries to the SDN-enabled edge routers&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-002403</ident>
+      <fixtext fixref="F-SRG-NET-000364-SDN-000730_fix">Configure the SDN controller to enforce perimeter security by deploying strict flow entries to the SDN-enabled edge routers to only allow incoming traffic that is authorized.</fixtext>
+      <fix id="F-SRG-NET-000364-SDN-000730_fix" />
+      <check system="C-SRG-NET-000364-SDN-000730_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN configuration to determine if it enforces perimeter security by deploying strict flow entries to the SDN-enabled edge routers to only allow incoming traffic that is authorized. 
+
+If the SDN controller is not configured to only allow incoming communications from organization-defined authorized sources routed to organization-defined authorized destinations, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001020">
+    <title>SRG-NET-000512-SDN-001020</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001020_rule" severity="high" weight="10.0">
+      <version>SRG-NET-000512-SDN-001020</version>
+      <title>The SDN controller must be configured to authenticate southbound API control-plane messages received from SDN-enabled network elements using a FIPS-approved message authentication code algorithm.</title>
+      <description>&lt;VulnDiscussion&gt;Southbound APIs such as OpenFlow provide the forwarding tables to network devices, such as switches and routers, both physical and virtual (hypervisor-based). The SDN controllers use the concept of flows to identify network traffic based on predefined rules that can be statically or dynamically programmed by the SDN control software, thereby determining how traffic should flow through network devices based on usage patterns, applications, and policy that can optimize traffic paths based on business requirements and not network infrastructure design. The SDN controller can receive control-plane messages from the SDN-enabled routers and switches to provide link state information or to require a flow table entry for a packet that does not map to any entries (i.e., reactive flow setup). To ensure the integrity and authenticity of these messages, it is imperative that they are authenticated prior to processing and taking any action.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000803</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001020_fix">Configure the SDN controller to authenticate southbound API control-plane messages using a FIPS-approved message authentication code algorithm. 
+
+FIPS-approved algorithms for authentication are the CMAC and the HMAC. AES and 3DES are NIST-approved CMAC algorithms. The following are NIST-approved HMAC algorithms: SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, and SHA-512/256.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001020_fix" />
+      <check system="C-SRG-NET-000512-SDN-001020_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN configuration, verify that it is configured to authenticate received southbound API control-plane messages using a FIPS-approved message authentication code algorithm. 
+
+FIPS-approved algorithms for authentication are the cipher-based message authentication code (CMAC) and the keyed-hash message authentication code (HMAC). AES and 3DES are NIST-approved CMAC algorithms. The following are NIST-approved HMAC algorithms: SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, and SHA-512/256. 
+
+If the SDN controller is not configured to authenticate received southbound API control-plane messages using a FIPS-approved message authentication code algorithm, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001025">
+    <title>SRG-NET-000512-SDN-001025</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001025_rule" severity="high" weight="10.0">
+      <version>SRG-NET-000512-SDN-001025</version>
+      <title>The SDN controller must be configured to authenticate northbound API messages received from business applications and management systems using a FIPS-approved message authentication code algorithm.</title>
+      <description>&lt;VulnDiscussion&gt;The SDN controller determines how traffic should flow through physical and virtual network devices based on application profiles, network infrastructure resources, security policies, and business requirements that it receives via the northbound API. It also receives network service requests from orchestration and management systems to deploy and configure network elements via this API. In turn, the northbound API presents a network abstraction to these orchestration and management systems. 
+
+If attackers could leverage a vulnerable northbound API, they would have control over the SDN infrastructure through the controller. If the SDN controller were to receive fictitious information from a rogue application or orchestration system, non-optimized network paths would be produced that could disrupt network operations, resulting in inefficient application and business processes. An attacker could also leverage these protocols and attempt to instantiate new flows that could be inadvertently pushed into network devices’ flow-table. The attacker would want to try to spoof new flows to permit specific types of traffic that should be disallowed across the network. If an attacker could create a flow that bypasses the traffic steering that forces traffic through a firewall, the attacker would have a decided advantage. If the attacker can steer traffic in their direction, they may try to leverage that capability to sniff traffic and perform a man-in-the-middle attack.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000803</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001025_fix">Configure the SDN controller to authenticate received northbound API messages using a FIPS-approved message authentication code algorithm. 
+
+FIPS-approved algorithms for authentication are the CMAC and the HMAC. 
+
+AES and 3DES are NIST-approved CMAC algorithms. The following are NIST-approved HMAC algorithms: SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, and SHA-512/256.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001025_fix" />
+      <check system="C-SRG-NET-000512-SDN-001025_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN configuration verify that it is configured to authenticate received northbound API messages using a FIPS-approved message authentication code algorithm. 
+
+FIPS-approved algorithms for authentication are the cipher-based message authentication code (CMAC) and the keyed-hash message authentication code (HMAC). AES and 3DES are NIST-approved CMAC algorithms. The following are NIST-approved HMAC algorithms: SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, and SHA-512/256. 
+
+If the SDN controller is not configured to authenticate northbound API messages received from business applications and management systems using a FIPS-approved message authentication code algorithm, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001030">
+    <title>SRG-NET-000512-SDN-001030</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001030_rule" severity="high" weight="10.0">
+      <version>SRG-NET-000512-SDN-001030</version>
+      <title>The SDN controller must be configured to encrypt all southbound API control-plane messages using a FIPS-validated cryptographic module.</title>
+      <description>&lt;VulnDiscussion&gt;Southbound APIs such as OpenFlow provide the forwarding tables to network devices, such as switches and routers, both physical and virtual (hypervisor-based). The SDN controllers use the concept of flows to identify network traffic based on predefined rules that can be statically or dynamically programmed by the SDN control software, thereby determining how traffic should flow through network devices based on usage patterns, applications, and policy that can optimize traffic paths based on business requirements and not network infrastructure design. 
+
+An attacker could also leverage these protocols and attempt to instantiate new flows into a device’s flow-table. The attacker would want to try to spoof new flows to permit specific types of traffic that should be disallowed across the network. If an attacker could create a flow that bypasses the traffic steering that forces traffic through a firewall, the attacker would have a decided advantage. If an SDN-aware router or switch received erroneous forwarding information from a rogue controller, traffic could be black-holed or even forwarded to a malicious user to sniff traffic and perform a man-in-the-middle attack. Hence, it is imperative to secure flow table updates by encrypting all southbound API traffic or deploying an out-of-band network for this traffic to traverse.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000068</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001030_fix">Deploy an out-of-band network to provision paths between SDN controller and SDN-enabled devices as well as all hypervisor hosts that compose the SDN infrastructure to provide transport for southbound API control-plane traffic. 
+
+An alternative is to configure the SDN controller to encrypt all southbound API control-plane traffic using a using a FIPS-validated cryptographic module. Implement a cryptographic module which has a validation certification and is listed on the NIST Cryptographic Module Validation Program's (CMVP) validation list.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001030_fix" />
+      <check system="C-SRG-NET-000512-SDN-001030_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Determine if the southbound API control-plane traffic traverses an out-of-band path. If not, review the SDN controller configuration to verify that southbound API management-plane traffic is encrypted using a using a FIPS-validated cryptographic module. 
+
+If the southbound API control-plane traffic does not traverse an out-of-band path or is not encrypted using a using a FIPS-validated cryptographic module, this is a finding.
+
+Note: FIPS-validated cryptographic modules are listed on the NIST Cryptographic Module Validation Program's (CMVP) validation list.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001035">
+    <title>SRG-NET-000512-SDN-001035</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001035_rule" severity="high" weight="10.0">
+      <version>SRG-NET-000512-SDN-001035</version>
+      <title>The SDN controller must be configured to encrypt all northbound API messages using a FIPS-validated cryptographic module.</title>
+      <description>&lt;VulnDiscussion&gt;The SDN controller receives network service requests from orchestration and management systems to deploy and configure network elements via the northbound API. In turn, the northbound API presents a network abstraction to these systems. If either the orchestration or management system were breached, a rogue user could make modifications to the business or security policy that could disrupt network operations, resulting in inefficient application and business processes and bypassing security controls. In addition, invalid network service requests could be processed that could exhaust compute, storage, and network resources, leaving no resources available for legitimate business requirements. Hence, it is imperative that all northbound API traffic is secured by encrypting the traffic or deploying an out-of-band network for this traffic to traverse.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000068</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001035_fix">Deploy an out-of-band network to provision paths between the SDN controller and the SDN management/orchestration systems for providing transport for northbound API traffic. 
+
+An alternative is to configure the SDN controller to encrypt all northbound API traffic using a FIPS-validated cryptographic module. Implement a cryptographic module which has a validation certification and is listed on the NIST Cryptographic Module Validation Program's (CMVP) validation list.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001035_fix" />
+      <check system="C-SRG-NET-000512-SDN-001035_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Determine if the northbound API traffic traverses an out-of-band path. If not, review the SDN controller configuration to verify that northbound API traffic is encrypted using a using a FIPS-validated cryptographic module. 
+
+If northbound API traffic does not traverse an out-of-band path and is not encrypted using a using a FIPS-validated cryptographic module, this is a finding.
+
+Note: FIPS-validated cryptographic modules are listed on the NIST Cryptographic Module Validation Program's (CMVP) validation list.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001040">
+    <title>SRG-NET-000512-SDN-001040</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001040_rule" severity="high" weight="10.0">
+      <version>SRG-NET-000512-SDN-001040</version>
+      <title>The SDN controller must be configured to authenticate received southbound API management-plane messages using a FIPS-approved message authentication code algorithm.</title>
+      <description>&lt;VulnDiscussion&gt;The SDN controller can receive management-plane traffic from the SDN-enabled devices that it monitors and manages. The messages could be responses from SNMP get requests as well as SNMP notifications (i.e., traps and informs) provided to note changes in node or link state. NETCONF is also used by the SDN controller to configure SDN-enabled devices as well as to receive state and configuration information. Communication between the SDN controller and NETCONF-enabled devices is session based. A session is established for the purpose of exchanging data using remote procedure call (RPC) requests and replies. If the SDN controller were to receive messages from a rogue device using SNMP or NETCONF providing fraud state information or configuration data, the abstract view of the network topology could be altered thereby providing an attacker with the ability to force traffic to bypass security controls or be forwarded using non-optimized paths. To ensure the integrity and authenticity of these messages, it is imperative that they are authenticated prior to processing and taking any action.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000803</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001040_fix">Configure the SDN controller to authenticate southbound API management-plane messages using a FIPS-approved message authentication code algorithm. 
+
+FIPS-approved algorithms for authentication are the CMAC and the HMAC. AES and 3DES are NIST-approved CMAC algorithms. The following are NIST-approved HMAC algorithms: SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, and SHA-512/256.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001040_fix" />
+      <check system="C-SRG-NET-000512-SDN-001040_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN configuration, verify that it is configured to authenticate received southbound API management-plane messages using a FIPS-approved message authentication code algorithm. 
+
+FIPS-approved algorithms for authentication are the cipher-based message authentication code (CMAC) and the keyed-hash message authentication code (HMAC). AES and 3DES are NIST-approved CMAC algorithms. The following are NIST-approved HMAC algorithms: SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, and SHA-512/256. 
+
+If the SDN controller is not configured to authenticate received southbound API management-plane messages using a FIPS-approved message authentication code algorithm, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001045">
+    <title>SRG-NET-000512-SDN-001045</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001045_rule" severity="high" weight="10.0">
+      <version>SRG-NET-000512-SDN-001045</version>
+      <title>The SDN controller must be configured to encrypt all southbound API management-plane messages using a FIPS-validated cryptographic module.</title>
+      <description>&lt;VulnDiscussion&gt;An SDN controller can manage and configure SDN-enabled devices using protocols such as SNMP and NETCONF. If an SDN-aware router or switch received erroneous configuration information that was altered by a malicious user, interfaces could be disabled, erroneous IP addresses configured, services removed—all resulting a network disruption or even an outage.  Hence, it is imperative to secure the management plane by encrypting all southbound API management-plane traffic or deploying an out-of-band network for this traffic to traverse.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000068</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001045_fix">Deploy an out-of-band network to provision paths between SDN controller and SDN-enabled devices as well as all hypervisor hosts that compose the SDN infrastructure to provide transport for southbound API management-plane traffic. 
+
+An alternative is to configure the SDN controller to encrypt all southbound API management-plane traffic using a FIPS-validated cryptographic module. Implement a cryptographic module which has a validation certification and is listed on the NIST Cryptographic Module Validation Program's (CMVP) validation list.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001045_fix" />
+      <check system="C-SRG-NET-000512-SDN-001045_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Determine if the southbound API management-plane traffic traverses an out-of-band path. If not, review the SDN controller configuration to verify that southbound API management-plane traffic is encrypted using a using a FIPS-validated cryptographic module. 
+
+If the southbound API management-plane traffic does not traverse an out-of-band path and is not encrypted using a FIPS-validated cryptographic module, this is a finding.
+
+Note: FIPS-validated cryptographic modules are listed on the NIST Cryptographic Module Validation Program's (CMVP) validation list.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001050">
+    <title>SRG-NET-000512-SDN-001050</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001050_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001050</version>
+      <title>The SDN controller must be configured to be deployed as a cluster and on separate physical hosts.</title>
+      <description>&lt;VulnDiscussion&gt;SDN relies heavily on control messages between a controller and the forwarding devices for network convergence. The controller uses node and link state discovery information to calculate and determine optimum pathing within the SDN network infrastructure based on application, business, and security policies. Operating in the proactive flow instantiation mode, the SDN controller populates forwarding tables to the SDN-aware forwarding devices. At times, the SDN controller must function in reactive flow instantiation mode; that is, when a forwarding device receives a packet for a flow not found in its forwarding table, it must send it to the controller to receive forwarding instructions.
+
+With total dependence on the SDN controller for determining forwarding decisions and path optimization within the SDN infrastructure for both proactive and reactive flow modes of operation, having a single point of failure is not acceptable. A controller failure with no failover backup leaves the network in an unmanaged state. Hence, it is imperative that the SDN controllers are deployed as clusters on separate physical hosts to guarantee network high availability.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001050_fix">Deploy the SDN controller as a cluster using on a separate physical hosts to eliminate single point of failure. Configure the SDN controller to peer with one or more controllers.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001050_fix" />
+      <check system="C-SRG-NET-000512-SDN-001050_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to peer with one or more controllers. Also verify that the controller resides on a different physical host than any of its peers. 
+
+If the SDN controller is not configured to be deployed as a cluster and on separate physical hosts, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001055">
+    <title>SRG-NET-000512-SDN-001055</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001055_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001055</version>
+      <title>The SDN Controller must be configured to notify the forwarding device to either drop the packet or make an entry in the flow table for a received packet that does not match any flow table entries.</title>
+      <description>&lt;VulnDiscussion&gt;Reactive flow setup occurs when the SDN-aware switch receives a packet that does not match the flow table entries and hence the switch has to send the packet to the controller for processing. Once the controller decides how to process the flow that information is cached on the SDN-aware switch, and the SDN controller determines how long to keep the cache alive. In order to prevent packets from being dropped as a result of no flow table entry, it is imperative that the SDN Controller is configured to enable reactive flow setup.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001055_fix">Configure the SDN controller to enable reactive flow setup so that the controller will notify a forwarding device to either drop the packet or make an entry in the flow table for a received packet that does not match any flow table entries.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001055_fix" />
+      <check system="C-SRG-NET-000512-SDN-001055_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to enable reactive flow setup. 
+
+If the SDN Controller is not configured to notify the forwarding device to either drop the packet or make an entry in the flow table for a received packet that does not match any flow table entries, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001060">
+    <title>SRG-NET-000512-SDN-001060</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001060_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001060</version>
+      <title>SDN controller must be configured to forward traffic based on security requirements.</title>
+      <description>&lt;VulnDiscussion&gt;For security reasons an organization may choose to have traffic that is inbound to a server go through a specific firewall. In order not to consume the resources of the firewall with clean traffic, the organization may want to choose to redirect the traffic that is outbound from the server to not go through the firewall. Today zero-trust models are being implemented within the data center, applications and workloads trust no other workload; hence, connectivity between them are not allowed unless explicitly authorized. Each application or workload can have its own security policies. With the advent of cloud networking and multi-tenancy, security policies have evolved to be more workload and application-centric. For example, what type of application, who the tenant is, and which tier of the application is being protected. The SDN Controller must enforce these policies by controlling the forwarding of packets to specific destinations for specific workloads based on the rules provided within the policies.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001060_fix">Configure the SDN controller to forward traffic based on security requirements.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001060_fix" />
+      <check system="C-SRG-NET-000512-SDN-001060_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to forward traffic based on security requirements that have been provided from a security service or policy engine via the northbound API. 
+
+If the SDN Controller is not configured to forward traffic based on security requirements, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001065">
+    <title>SRG-NET-000512-SDN-001065</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001065_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001065</version>
+      <title>The SDN controller must be configured to enable multi-tenant virtual networks to be fully isolated from one another.</title>
+      <description>&lt;VulnDiscussion&gt;Network-as-a-Service (NaaS) is often implemented in a multi-tenant paradigm, where customers share network infrastructure and services while they are logically isolated from each other. SDN provides an approach to the orchestration and provisioning of virtual network services by the owners of the network infrastructures. This leads to various multi-tenancy deployments: on different layers, for different purposes, using different techniques—each of which provides different levels of control while requiring different types of isolation among users. For instance, implementation can be a southbound multi-tenancy with several guest controllers sharing the same data forwarding elements, or a northbound multi-tenancy with several guest applications sharing the entire SDN infrastructure including the SDN controller. Regardless of the implementation, it is imperative that the controller provides the necessary isolation and separation.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001065_fix">Configure the SDN controller to deploy dedicated instances of virtual networks and separate forwarding tables to the provisioned network elements belonging to each tenant.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001065_fix" />
+      <check system="C-SRG-NET-000512-SDN-001065_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to deploy dedicated instances of virtual networks and separate forwarding tables to the provisioned network elements belonging to each tenant. 
+
+If the SDN Controller is not configured to enable multi-tenant virtual networks to be fully isolated from one another, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001070">
+    <title>SRG-NET-000512-SDN-001070</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001070_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001070</version>
+      <title>The SDN controller must be configured to separate tenant functionality from system management functionality.</title>
+      <description>&lt;VulnDiscussion&gt;Network-as-a-Service (NaaS) is frequently offered in a multi-tenant paradigm, where customers share network infrastructure. SDN provides an approach to the provisioning of virtual network services by owners of the network infrastructures to third parties. This leads to various multi-tenancy deployments using different techniques, each of which provides different levels of control while requiring different types of isolation among users. For example, a southbound implementation allows multiple guest controllers sharing the same data forwarding elements; whereas a northbound implementation enables multiple guest applications sharing the whole SDN infrastructure including the SDN controller. To ensure stable network operations in a multi-tenant deployment, it is imperative that the SDN controller is configured to separate tenant functionality from system management functionality.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001082</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001070_fix">Configure the SDN controller to have tenant functionality separated from system management functionality using separated instances within the controller framework as well as Role-based access control (RBAC).</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001070_fix" />
+      <check system="C-SRG-NET-000512-SDN-001070_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine whether tenant functionality is separated from system management functionality using separated instances within the controller framework as well as Role-based access control (RBAC). 
+
+If the SDN controller is not configured to separate tenant functionality from system management functionality, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001075">
+    <title>SRG-NET-000512-SDN-001075</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001075_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001075</version>
+      <title>The SDN controller must be configured to isolate security functions from non-security functions.</title>
+      <description>&lt;VulnDiscussion&gt;An isolation boundary provides access control and protects the integrity of the hardware, software, and firmware that perform security functions. 
+
+Security functions are the hardware, software, and/or firmware of the information system responsible for enforcing the system security policy and supporting the isolation of code and data on which the protection is based. 
+
+Developers and implementers can increase the assurance in security functions by employing well-defined security policy models; structured, disciplined, and rigorous hardware and software development techniques; and sound system/security engineering principles. Implementation may include isolation of memory space and libraries. Applications restrict access to security functions through the use of access control mechanisms and by implementing least privilege capabilities.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001084</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001075_fix">Configure the SDN controller to isolate objects and code implementing RBAC to restrict access to security functionality from non-security functionality objects and code.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001075_fix" />
+      <check system="C-SRG-NET-000512-SDN-001075_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine whether objects and code implementing security functionality are isolated from non-security functionality objects and code. Role-based access control (RBAC) must also be configured to restrict access to all security functionality. 
+
+If security-related objects and code are not kept separate and are not configured with RBAC access restriction, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001080">
+    <title>SRG-NET-000512-SDN-001080</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001080_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001080</version>
+      <title>The SDN controller must be configured to generate error messages that provide information necessary for corrective actions without revealing information that could be exploited by adversaries.</title>
+      <description>&lt;VulnDiscussion&gt;Providing too much information in error messages on the screen or printout risks compromising the data and security of the SDN controller. The structure and content of error messages need to be carefully considered by the organization. The extent to which information systems are able to identify and handle error conditions is guided by organizational policy and operational requirements.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001312</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001080_fix">Configure the SDN controller to generate error messages that provide information necessary for corrective actions without revealing information that could be exploited by adversaries.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001080_fix" />
+      <check system="C-SRG-NET-000512-SDN-001080_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine that error messages do not contain information beyond what is needed for troubleshooting controller and network problems. 
+
+If the controller is not configured to generate error messages that provide information necessary for corrective actions without revealing information that could be exploited by adversaries, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001085">
+    <title>SRG-NET-000512-SDN-001085</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001085_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001085</version>
+      <title>The SDN controller must be configured to notify ISSO and ISSM of failed security verification tests.</title>
+      <description>&lt;VulnDiscussion&gt;If personnel are not notified of failed security verification tests, they will not be able to take corrective action and the unsecure condition(s) will remain. 
+
+Security function is defined as the hardware, software, and/or firmware of the information system responsible for enforcing the system security policy and supporting the isolation of code and data on which the protection is based. Security functionality includes, but is not limited to, establishing system accounts, configuring access authorizations (i.e., permissions, privileges), setting events to be audited, and setting intrusion detection parameters.
+
+Notifications provided by information systems include messages to local computer consoles, and/or hardware indications, such as lights.
+
+This requirement applies to applications performing security functions and the applications performing security function verification/testing.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001294</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001085_fix">Configure the SDN controller to notify the ISSO and ISSM of failed security verification tests.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001085_fix" />
+      <check system="C-SRG-NET-000512-SDN-001085_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to notify the ISSO and ISSM of failed security verification tests. 
+
+If the SDN controller is not configured to notify the ISSO and ISSM of failed security verification tests, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001090">
+    <title>SRG-NET-000512-SDN-001090</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001090_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001090</version>
+      <title>The SDN controller must be configured to prohibit user installation of software without explicit privileged status.</title>
+      <description>&lt;VulnDiscussion&gt;Allowing regular users to install software, without explicit privileges, creates the risk that untested or potentially malicious software will be installed on the system. Explicit privileges (escalated or administrative privileges) provide the regular user with explicit capabilities and control that exceeds the rights of a regular user.
+
+Application functionality will vary, and while users are not permitted to install unapproved applications, there may be instances where the organization allows the user to install approved software packages such as from an approved software repository. 
+
+The application must enforce software installation by users based upon what types of software installations are permitted (e.g., updates and security patches to existing software) and what types of installations are prohibited (e.g., software whose pedigree with regard to being potentially malicious is unknown or suspect) by the organization. 
+
+This requirement applies, for example, to applications that provide the ability to extend application functionality (e.g., plug-ins, add-ons) and software management applications.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001812</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001090_fix">Document the approval for non-administrative users who require the ability to install, modify or replace software modules within the SDN controller framework. Configure the SDN controller to revoke the installation of software modules by any unapproved permissions or access levels.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001090_fix" />
+      <check system="C-SRG-NET-000512-SDN-001090_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review documentation of non-administrative users who have been given access permissions to install, modify or replace software modules within the SDN controller framework. Review the SDN controller configuration to determine that only authorized users have the permissions to install, modify or replace software modules. 
+
+If the SDN controller is not configured to revoke unauthorized attempts to install, modify or replace software modules, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001095">
+    <title>SRG-NET-000512-SDN-001095</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001095_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001095</version>
+      <title>The SDN controller must be configured to enforce access restrictions associated with changes to the configuration.</title>
+      <description>&lt;VulnDiscussion&gt;Failure to provide logical access restrictions associated with changes to application configuration may have significant effects on the overall security of the system. 
+
+When dealing with access restrictions pertaining to change control, it should be noted that any changes to the hardware, software, and/or firmware components of the information system and/or application can potentially have significant effects on the overall security of the system. 
+
+Accordingly, only qualified and authorized individuals should be allowed to obtain access to application components for the purposes of initiating changes, including upgrades and modifications. 
+
+Logical access restrictions include, for example, controls that restrict access to workflow automation, media libraries, abstract layers (e.g., changes implemented into third-party interfaces rather than directly into information systems), and change windows (e.g., changes occur only during specified times, making unauthorized changes easy to discover).&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001813</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001095_fix">Configure the SDN controller to restrict access to the configuration.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001095_fix" />
+      <check system="C-SRG-NET-000512-SDN-001095_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to restrict access to the configuration. 
+
+If the SDN controller is not configured to enforce access restrictions associated with changes to the configuration, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="SRG-NET-000512-SDN-001100">
+    <title>SRG-NET-000512-SDN-001100</title>
+    <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="SRG-NET-000512-SDN-001100_rule" severity="medium" weight="10.0">
+      <version>SRG-NET-000512-SDN-001100</version>
+      <title>The SDN controller must be configured to audit the enforcement actions used to restrict access associated with changes to any application within the SDN framework.</title>
+      <description>&lt;VulnDiscussion&gt;Without auditing the enforcement of access restrictions against changes to any application within the SDN framework, it will be difficult to identify attempted attacks and an audit trail will not be available for forensic investigation for after-the-fact actions. 
+
+Enforcement actions are the methods or mechanisms used to prevent unauthorized changes to configuration settings. Enforcement action methods may be as simple as denying access to a file based on the application of file permissions (access restriction). Audit items may consist of lists of actions blocked by access restrictions or changes identified after the fact.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://iase.disa.mil/cci">CCI-001814</ident>
+      <fixtext fixref="F-SRG-NET-000512-SDN-001100_fix">Configure the SDN controller to audit enforcement actions used to restrict access associated with changes to any application.</fixtext>
+      <fix id="F-SRG-NET-000512-SDN-001100_fix" />
+      <check system="C-SRG-NET-000512-SDN-001100_chk">
+        <check-content-ref name="M" href="VMS_XCCDF_Benchmark_SRG.xml" />
+        <check-content>Review the SDN controller configuration to determine if it is configured to audit enforcement actions used to restrict access associated with changes to any application. 
+
+If the SDN controller is not configured to audit the enforcement actions used to restrict access associated with changes to any application within the SDN framework, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+</Benchmark>
+

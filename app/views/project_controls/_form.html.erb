@@ -13,57 +13,120 @@
   
   <div class="field">
     <%= form.label :project_control_id %>
-    <%= form.text_field :control_id, id: :project_control_control_id %>
+    <%= @project_control.control_id %>
   </div>
   
   <div class="field">
-    <%= form.label :justification %>
+    <%= form.label :project_control_status %>
+    <%= form.select(:status, options_for_select([[nil, ''], ['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.status)) %>
+  </div>
+  
+  <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='justification_field'>
+    <%= form.label :justification, id: :project_control_just_label %>
     <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
   </div>
+  
+  <div id='main_control_fields' style="<%='display:none' if @project_control.status == nil %>">
+    <div class="col-lg-12">
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :title, id: :project_control_title_label %>
+          <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2 %>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :title, id: :srg_title_label %>
+          <%= @project_control.title %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-12">
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :description, id: :project_control_description_label %>
+          <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :srg_description, id: :srg_description_label %>
+          <%= @project_control.description %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-12">
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :impact, id: :project_control_impact_label %>
+          <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :srg_impact, id: :srg_impact_label %>
+          <%= @project_control.impact %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="field">
+      <%= form.label :code %>
+      <%= form.text_area :code, id: :project_control_code, class: "form-control", rows:5  %>
+    </div>
 
-  <div class="field">
-    <%= form.label :title %>
-    <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:1 %>
-  </div>
+    <div class="field">
+      <%= form.label :sl_ref %>
+      <%= form.text_area :sl_ref, id: :project_control_sl_ref, class: "form-control", rows:1 %>
+    </div>
 
-  <div class="field">
-    <%= form.label :description %>
-    <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
-  </div>
-
-  <div class="field">
-    <%= form.label :impact %>
-    <%= form.text_field :impact, id: :project_control_impact %>
+    <div class="field">
+      <%= form.label :sl_line %>
+      <%= form.text_area :sl_line, id: :project_control_sl_line, class: "form-control", rows:1 %>
+    </div>
   </div>
   
-  <div class="field">
-    <%= form.label :checktext %>
-    <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5  %>
+  <div id='checktext_fields' style="<%='display:none' if @project_control.status == nil %>">
+    <div class="col-lg-12">
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :checktext, id: :project_control_checktext_label %>
+          <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5 %>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :srg_checktext, id: :srg_checktext_label %>
+          <%= @project_control.checktext %>
+        </div>
+      </div>
+    </div>
   </div>
   
-  <div class="field">
-    <%= form.label :fixtext %>
-    <%= form.text_area :fixtext, id: :project_control_fixtext, class: "form-control", rows:5  %>
+  <div id='fixtext_fields' style="<%='display:none' if @project_control.status == nil %>">
+    <div class="col-lg-12">
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :fixtext, id: :project_control_fixtext_label %>
+          <%= form.text_area :fixtext, id: :project_control_checktext, class: "form-control", rows:5 %>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="field">
+          <%= form.label :srg_fixtext, id: :srg_fixtext_label %>
+          <%= @project_control.fixtext %>
+        </div>
+      </div>
+    </div>
   </div>
-  
-  <div class="field">
-    <%= form.label :fixtext %>
-    <%= form.text_area :fixtext, id: :project_control_fixtext, class: "form-control", rows:5  %>
 
-  <div class="field">
-    <%= form.label :code %>
-    <%= form.text_area :code, id: :project_control_code, class: "form-control", rows:5  %>
-  </div>
-
-  <div class="field">
-    <%= form.label :sl_ref %>
-    <%= form.text_area :sl_ref, id: :project_control_sl_ref, class: "form-control", rows:1 %>
-  </div>
-
-  <div class="field">
-    <%= form.label :sl_line %>
-    <%= form.text_area :sl_line, id: :project_control_sl_line, class: "form-control", rows:1 %>
-  </div>
 
   <div class="actions">
     <%= form.submit "Submit", {:class => "btn btn-primary"} %>

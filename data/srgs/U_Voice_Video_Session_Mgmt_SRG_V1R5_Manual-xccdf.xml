@@ -1,0 +1,1566 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type='text/xsl' href='STIG_unclass.xsl'?>
+    <Benchmark xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cpe="http://cpe.mitre.org/language/2.0" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:dc="http://purl.org/dc/elements/1.1/" id="Voice_Video_Session_Management_SRG"
+        xml:lang="en" xsi:schemaLocation="http://checklists.nist.gov/xccdf/1.1 http://nvd.nist.gov/schema/xccdf-1.1.4.xsd http://cpe.mitre.org/dictionary/2.0 http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd" xmlns="http://checklists.nist.gov/xccdf/1.1">
+        <status date="2017-12-28">accepted</status>
+        <title>Voice Video Session Management Security Requirements Guide</title>
+        <description>This Security Requirements Guide is published as a tool to improve the security of Department of Defense (DoD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related
+            documents. Comments or proposed revisions to this document should be sent via e-mail to the following address: disa.stig_spt@mail.mil.</description>
+        <notice id="terms-of-use" xml:lang="en"></notice>
+        <reference href="http://iase.disa.mil">
+            <dc:publisher>DISA</dc:publisher>
+            <dc:source>STIG.DOD.MIL</dc:source>
+        </reference>
+        <plain-text id="release-info">Release: 5 Benchmark Date: 26 Jan 2018</plain-text>
+        <version>1</version>
+        <Profile id="MAC-1_Classified">
+            <title>I - Mission Critical Classified</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-1_Public">
+            <title>I - Mission Critical Public</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-1_Sensitive">
+            <title>I - Mission Critical Sensitive</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-2_Classified">
+            <title>II - Mission Support Classified</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-2_Public">
+            <title>II - Mission Support Public</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-2_Sensitive">
+            <title>II - Mission Support Sensitive</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-3_Classified">
+            <title>III - Administrative Classified</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-3_Public">
+            <title>III - Administrative Public</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Profile id="MAC-3_Sensitive">
+            <title>III - Administrative Sensitive</title>
+            <description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</description><select idref="V-62049" selected="true" /><select idref="V-62051" selected="true" /><select idref="V-62053" selected="true" /><select idref="V-62055" selected="true" /><select
+                idref="V-62057" selected="true" /><select idref="V-62059" selected="true" /><select idref="V-62061" selected="true" /><select idref="V-62063" selected="true" /><select idref="V-62067" selected="true" /><select idref="V-62069" selected="true"
+            /><select idref="V-62071" selected="true" /><select idref="V-62077" selected="true" /><select idref="V-62079" selected="true" /><select idref="V-62081" selected="true" /><select idref="V-62083" selected="true" /><select idref="V-62085" selected="true"
+            /><select idref="V-62087" selected="true" /><select idref="V-62089" selected="true" /><select idref="V-62091" selected="true" /><select idref="V-62093" selected="true" /><select idref="V-62095" selected="true" /><select idref="V-62097" selected="true"
+            /><select idref="V-62099" selected="true" /><select idref="V-62101" selected="true" /><select idref="V-62103" selected="true" /><select idref="V-62105" selected="true" /><select idref="V-62107" selected="true" /><select idref="V-62109" selected="true"
+            /><select idref="V-62111" selected="true" /><select idref="V-62113" selected="true" /><select idref="V-62115" selected="true" /><select idref="V-62117" selected="true" /><select idref="V-62119" selected="true" /><select idref="V-62121" selected="true"
+            /><select idref="V-62123" selected="true" /><select idref="V-62125" selected="true" /><select idref="V-62127" selected="true" /><select idref="V-62129" selected="true" /><select idref="V-62131" selected="true" /><select idref="V-62133" selected="true"
+            /><select idref="V-62135" selected="true" /><select idref="V-62137" selected="true" /><select idref="V-62139" selected="true" /><select idref="V-62141" selected="true" /><select idref="V-62143" selected="true" /><select idref="V-62145" selected="true"
+            /><select idref="V-62147" selected="true" /><select idref="V-62149" selected="true" /><select idref="V-62151" selected="true" /><select idref="V-71683" selected="true" /><select idref="V-71685" selected="true" /><select idref="V-71687" selected="true"
+            /><select idref="V-71689" selected="true" /></Profile>
+        <Group id="V-62049">
+            <title>SRG-NET-000004</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76539r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000004-VVSM-00010</version>
+                <title>The Voice Video Session Manager must automatically disable Voice Video endpoint user access after a 35 day period of account inactivity.</title>
+                <description>&lt;VulnDiscussion&gt;Attackers that are able to exploit an inactive account can potentially obtain and maintain undetected access to an application. Owners of inactive accounts will not notice if unauthorized access to their user account
+                    has been obtained. Voice video session managers must track periods of user inactivity and disable accounts after 35 days of inactivity. Such a process greatly reduces the risk that accounts will be misused, hijacked, or data compromised.
+                    DoD has determined that 35 days is the appropriate time period of inactivity for Inactive accounts. Therefore, systems with a per user paradigm of management would apply.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000017</ident>
+                <fixtext fixref="F-67969r1_fix">Configure the Voice Video Session Manager too automatically disable Voice Video endpoint user access after a 35 day period of account inactivity.</fixtext>
+                <fix id="F-67969r1_fix" />
+                <check system="C-62853r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager automatically disables Voice Video endpoint user access after a 35 day period of account inactivity. This requirement refers to users rather than endpoints. If the Voice Video Session Manager
+                        does not automatically disable Voice Video endpoint user access after a 35 day period of account inactivity, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62051">
+            <title>SRG-NET-000015</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76541r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000015-VVSM-00001</version>
+                <title>The Voice Video Session Manager must enforce registration of only approved Voice Video endpoints prior to operation.</title>
+                <description>&lt;VulnDiscussion&gt;Authentication must not automatically give an entity access to an asset. Authorization procedures and controls must be implemented to ensure each authenticated entity also has a validated and current authorization.
+                    Authorization is the process of determining whether an entity, once authenticated, is permitted to access a specific asset. Registration authenticates and authorizes endpoints with the Voice Video Session Manager. For most VoIP systems,
+                    registration is the process of centrally recording the user ID, endpoint MAC address, service/policy profile with 2 stage authentication prior to authorizing the establishment of the session and user service. The event of successful
+                    registration creates the session record immediately. VC systems register using a similar process with a gatekeeper. Without enforcing registration, an adversary could impersonate a legitimate device on the Voice Video network.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000213</ident>
+                <fixtext fixref="F-67971r1_fix">Configure the Voice Video Session Manager to enforce registration of only approved Voice Video endpoints prior to operating with the system.</fixtext>
+                <fix id="F-67971r1_fix" />
+                <check system="C-62855r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager enforces registration of only approved Voice Video endpoints prior to the endpoints operating with the system. If the Voice Video Session Manager permits registration of unapproved Voice Video
+                        endpoints prior to operation, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62053">
+            <title>SRG-NET-000015</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76543r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000015-VVSM-00002</version>
+                <title>The Voice Video Session Manager must disable (prevent) auto-registration of Voice Video endpoints.</title>
+                <description>&lt;VulnDiscussion&gt;Authentication must not automatically give an entity access to an asset. Authorization procedures and controls must be implemented to ensure each authenticated entity also has a validated and current authorization.
+                    Authorization is the process of determining whether an entity, once authenticated, is permitted to access a specific asset. Registration authenticates and authorizes endpoints with the Voice Video Session Manager. For most VoIP systems,
+                    registration is the process of centrally recording the user ID, endpoint MAC address, service/policy profile with 2 stage authentication prior to authorizing the establishment of the session and user service. The event of successful
+                    registration creates the session record immediately. VC systems register using a similar process with a gatekeeper. Auto-registration is an automatic means of detecting and registering a Voice Video endpoint on the network with a session
+                    manager and then downloading its configuration to the instrument. Auto-registration allows unauthorized instruments to be added or moved without authorization, possibly allowing theft of services or other malicious attack. Configuring
+                    the firewall to deny registration (port 1719, etc.) is another layer of defense.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000213</ident>
+                <fixtext fixref="F-67973r1_fix">Configure the Voice Video Session Manager to disable auto-registration of Voice Video endpoints.</fixtext>
+                <fix id="F-67973r1_fix" />
+                <check system="C-62857r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager prevents auto-registration of Voice Video endpoints. During initial system installation and testing, or subsequent large redeployments and additions, it may be necessary to enable auto-registration
+                        for a short period. When auto-registration is used under these circumstances, it must be disabled within 5 days and before the system is placed into service. If the Voice Video Session Manager does not disable auto-registration
+                        of Voice Video endpoints outside of these conditions, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62055">
+            <title>SRG-NET-000018</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76545r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000018-VVSM-00026</version>
+                <title>The Voice Video Session Manager must control flow within the enclave based on approved dial plans.</title>
+                <description>&lt;VulnDiscussion&gt;Information flow control regulates where information is allowed to travel within a network and between interconnected networks. The flow of all network traffic must be monitored and controlled so it does not introduce
+                    any unacceptable risk to the network infrastructure or data. For voice and video session managers, session flow of information is controlled by dial plans that coordinate connections between endpoints. Dial plans can also reduce connection
+                    costs in some cases, relying on routes across the DoDIN rather than over commercial services. Session managers can routes connections to known commercial services and DoD providers. Using DoDIN network paths reduces the risk of an
+                    adversary to intercept calls. However, dial plans can be mimicked and therefore are only part of a defense in depth approach.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001368</ident>
+                <fixtext fixref="F-67975r1_fix">Configure the Voice Video Session Manager to control flow within the enclave based on approved dial plans.</fixtext>
+                <fix id="F-67975r1_fix" />
+                <check system="C-62859r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager controls flow within the enclave based on approved dial plans. If the Voice Video Session Manager does not control flow within the enclave based on approved dial plans, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62057">
+            <title>SRG-NET-000019</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76547r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000019-VVSM-00027</version>
+                <title>The Voice Video Session Manager must control flow outside the enclave based on approved dial plans.</title>
+                <description>&lt;VulnDiscussion&gt;Information flow control regulates where information is allowed to travel within a network and between interconnected networks. The flow of all network traffic must be monitored and controlled so it does not introduce
+                    any unacceptable risk to the network infrastructure or data. For voice and video session managers, session flow of information is controlled by dial plans that coordinate connections between endpoints. Dial plans can also reduce connection
+                    costs in some cases, relying on routes across the DoDIN rather than over commercial services. Session managers can routes connections to known commercial services and DoD providers. Using DoDIN network paths reduces the risk of an
+                    adversary to intercept calls. However, dial plans can be mimicked and therefore are only part of a defense in depth approach.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001414</ident>
+                <fixtext fixref="F-67977r1_fix">Configure the Voice Video Session Manager to control flow outside the enclave based on approved dial plans.</fixtext>
+                <fix id="F-67977r1_fix" />
+                <check system="C-62861r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager controls flow outside the enclave based on approved dial plans. If the Voice Video Session Manager does not control flow outside the enclaves based on approved dial plans, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62059">
+            <title>SRG-NET-000074</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76549r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000074-VVSM-00029</version>
+                <title>The Voice Video Session Manager must produce session (call) records containing the type of session connection.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000130</ident>
+                <fixtext fixref="F-67979r1_fix">Configure the Voice Video Session Manager to produce session records containing the type of session connection.</fixtext>
+                <fix id="F-67979r1_fix" />
+                <check system="C-62863r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records containing the type of session connection. If the Voice Video Session Manager does not produce session records containing the type of session connection, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62061">
+            <title>SRG-NET-000075</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76551r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000075-VVSM-00031</version>
+                <title>The Voice Video Session Manager must produce session (call) records containing when (date and time) the connection was established.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000131</ident>
+                <fixtext fixref="F-67981r1_fix">Configure the Voice Video Session Manager to produce session records containing when (date and time) the connection was established.</fixtext>
+                <fix id="F-67981r1_fix" />
+                <check system="C-62865r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records containing when (date and time) the connection was established. If the Voice Video Session Manager does not produce session records containing when (date and time) the
+                        connection was established, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62063">
+            <title>SRG-NET-000075</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76553r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000075-VVSM-00032</version>
+                <title>The Voice Video Session Manager must produce session (call) records containing when (date and time) the connection was terminated.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000131</ident>
+                <fixtext fixref="F-67983r1_fix">Configure the Voice Video Session Manager to produce session records containing when (date and time) the connection was terminated.</fixtext>
+                <fix id="F-67983r1_fix" />
+                <check system="C-62867r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records containing when (date and time) the connection was terminated. If the Voice Video Session Manager does not produce session records containing when (date and time) the
+                        connection was terminated, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62067">
+            <title>SRG-NET-000076</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76557r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000076-VVSM-00030</version>
+                <title>The Voice Video Session Manager must produce session (call) records containing where (location) the connection originated.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000132</ident>
+                <fixtext fixref="F-67987r1_fix">Configure the Voice Video Session Manager to produce session records containing where (location) the connection originated.</fixtext>
+                <fix id="F-67987r1_fix" />
+                <check system="C-62871r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records containing where (location) the connection originated. If the Voice Video Session Manager does not produce session records containing where (location) the connection originated,
+                        this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62069">
+            <title>SRG-NET-000077</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76559r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000077-VVSM-00034</version>
+                <title>The Voice Video Session Manager must produce session (call) records containing the identity of the initiator of the call.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000133</ident>
+                <fixtext fixref="F-67989r1_fix">Configure the Voice Video Session Manager to produce session records containing the identity of the initiator of the call.</fixtext>
+                <fix id="F-67989r1_fix" />
+                <check system="C-62873r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records containing the identity of the initiator of the call. The identity of the initiator of the call in this context would be the device ID or the address of the MAC or IP.
+                        For Voice Video Session Managers that have the concept of a user rather than device, this requirement is not applicable. If the Voice Video Session Manager does not produce session records containing the identity of the initiator
+                        of the call, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62071">
+            <title>SRG-NET-000078</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76561r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000078-VVSM-00033</version>
+                <title>The Voice Video Session Manager must produce session (call) records containing the outcome (status) of the connection.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000134</ident>
+                <fixtext fixref="F-67991r1_fix">Configure the Voice Video Session Manager to produce session records containing the outcome (status) of the connection.</fixtext>
+                <fix id="F-67991r1_fix" />
+                <check system="C-62875r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records containing the outcome (status) of the connection. The outcome or status of a call includes call completed normally, busy endpoint, busy network, preempted, or other pertinent
+                        description. If the Voice Video Session Manager does not produce session records containing the outcome (status) of the connection, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62077">
+            <title>SRG-NET-000079</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76567r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000079-VVSM-00035</version>
+                <title>The Voice Video Session Manager must produce session (call) records containing the identity of the users and identifiers associated with the session.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001487</ident>
+                <fixtext fixref="F-67997r1_fix">Configure the Voice Video Session Manager to produce session records containing the identity of the users and identifiers associated with the session.</fixtext>
+                <fix id="F-67997r1_fix" />
+                <check system="C-62881r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records containing the identity of the users and identifiers associated with the session. The identity of the users and identifiers of the call in this context would be the user
+                        ID or user name. For Voice Video Session Managers that have the concept of a device rather than users and identifiers, this requirement is not applicable. If the Voice Video Session Manager does not produce session records containing
+                        the identity of the users and identifiers associated with the session, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62079">
+            <title>SRG-NET-000088</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76569r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000088-VVSM-00038</version>
+                <title>The Voice Video Session Manager must alert the ISSO and SA (at a minimum) in the event of a session (call) record system failure.</title>
+                <description>&lt;VulnDiscussion&gt;It is critical for the appropriate personnel to be aware if a system is at risk of failing to process session records. Without this notification, the security personnel may be unaware of an impending failure of the
+                    session record capability. Session record processing failures include software/hardware errors, failures in the capturing mechanisms, and storage capacity being reached or exceeded. This requirement applies to each session record data
+                    storage repository (i.e., distinct information system component where session records are stored), the centralized session record storage capacity of organizations (i.e., all session record data storage repositories combined), or both.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000139</ident>
+                <fixtext fixref="F-67999r1_fix">Configure the Voice Video Session Manager to alert the ISSO and SA (at a minimum) in the event of a session record system failure.</fixtext>
+                <fix id="F-67999r1_fix" />
+                <check system="C-62883r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager alerts the ISSO and SA (at a minimum) in the event of a session record system failure. If the Voice Video Session Manager does not alert the ISSO and SA (at a minimum) in the event of a session
+                        record system failure, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62081">
+            <title>SRG-NET-000099</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76571r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000099-VVSM-00041</version>
+                <title>The Voice Video Session Manager must protect session (call) records from unauthorized modification.</title>
+                <description>&lt;VulnDiscussion&gt;If session records were to become compromised, then forensic analysis and discovery of the true source of potentially malicious system activity is impossible to achieve. To ensure the veracity of session records,
+                    the information system and/or the application must protect session information from unauthorized modification. This requirement can be achieved through multiple methods, which will depend upon system architecture and design. Some commonly
+                    employed methods include ensuring log files receive the proper file system permissions, and limiting log data locations.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000163</ident>
+                <fixtext fixref="F-68001r1_fix">Configure the Voice Video Session Manager protect session records from unauthorized modification.</fixtext>
+                <fix id="F-68001r1_fix" />
+                <check system="C-62885r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager protects session records from unauthorized modification. If the Voice Video Session Manager does not protect session records from unauthorized modification, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62083">
+            <title>SRG-NET-000100</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76573r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000100-VVSM-00040</version>
+                <title>The Voice Video Session Manager must protect session (call) records from unauthorized deletion.</title>
+                <description>&lt;VulnDiscussion&gt;If session records were to become compromised, then forensic analysis and discovery of the true source of potentially malicious system activity is impossible to achieve. To ensure the veracity of session records,
+                    the information system and/or the application must protect session information from unauthorized modification. This requirement can be achieved through multiple methods, which will depend upon system architecture and design. Some commonly
+                    employed methods include ensuring log files receive the proper file system permissions, and limiting log data locations.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000164</ident>
+                <fixtext fixref="F-68003r1_fix">Configure the Voice Video Session Manager to protect session records from unauthorized deletion.</fixtext>
+                <fix id="F-68003r1_fix" />
+                <check system="C-62887r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager protects session records from unauthorized deletion. If the Voice Video Session Manager does not protect session records from unauthorized deletion, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62085">
+            <title>SRG-NET-000113</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76575r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000113-VVSM-00036</version>
+                <title>The Voice Video Session Manager must produce session (call) records for events determined to be significant and relevant by local policy.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to generate session records, it is difficult to establish, correlate, and investigate the events relating to an incident, or identify those responsible. Session records are generated from several
+                    components within the Voice Video system (e.g., session manager, session border control, gateway, gatekeeper, or endpoints). Session record content that may be necessary to satisfy this requirement includes, for example, type of connection,
+                    connection origination, time stamps, outcome, user identities, and user identifiers. Additionally, an adversary must not be able to modify or delete session records.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000169</ident>
+                <fixtext fixref="F-68005r1_fix">Configure the Voice Video Session Manager to produce session records for events determined to be significant and relevant by local policy.</fixtext>
+                <fix id="F-68005r1_fix" />
+                <check system="C-62889r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager produces session records for events determined to be significant and relevant by local policy. If the Voice Video Session Manager does not produce session records for events determined to be significant
+                        and relevant by local policy, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62087">
+            <title>SRG-NET-000131</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76577r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000131-VVSM-00048</version>
+                <title>The Voice Video Session Manager must be configured to disable non-essential capabilities.</title>
+                <description>&lt;VulnDiscussion&gt;It is detrimental for voice video session managers to provide, or enable by default, functionality exceeding requirements or mission objectives. These unnecessary capabilities or services are often overlooked and
+                    therefore may remain unsecured. They increase the risk to the platform by providing additional attack vectors. Voice video session managers are capable of providing a wide variety of functions and services. Some of the functions and
+                    services, provided by default, may not be necessary to support essential organizational operations (e.g., key missions, functions).&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000381</ident>
+                <fixtext fixref="F-68007r1_fix">Configure the Voice Video Session Manager to be configured to disable non-essential capabilities.</fixtext>
+                <fix id="F-68007r1_fix" />
+                <check system="C-62891r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager is configured to disable non-essential capabilities. If the Voice Video Session Manager is not configured to disable non-essential capabilities, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62089">
+            <title>SRG-NET-000132</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76579r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000131-VVSM-00049</version>
+                <title>The Voice Video Session Manager must only use of ports, protocols, and services allowed per the Ports, Protocols, and Services Management (PPSM) Category Assurance List (CAL) and Vulnerability Assessments (VAs).</title>
+                <description>&lt;VulnDiscussion&gt;In order to prevent unauthorized connection of devices, unauthorized transfer of information, or unauthorized tunneling (i.e., embedding of data types within data types), organizations must disable or restrict unused
+                    or unnecessary physical and logical ports/protocols on information systems. Network elements are capable of providing a wide variety of functions and services. Some of the functions and services provided by default may not be necessary
+                    to support essential organizational operations. Additionally, it is sometimes convenient to provide multiple services from a single component (e.g., VPN and IPS); however, doing so increases risk over limiting the services provided
+                    by any one component. To support the requirements and principles of least functionality, the network element must support the organizational requirements providing only essential capabilities and limiting the use of ports, protocols,
+                    and/or services to only those required, authorized, and approved to conduct official business or to address authorized quality of life issues. Requires further clarification from NIST.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000382</ident>
+                <fixtext fixref="F-68009r1_fix">Configure the Voice Video Session Manager to only use of ports, protocols, and services allowed per the PPSM CAL and VAs.</fixtext>
+                <fix id="F-68009r1_fix" />
+                <check system="C-62893r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager only uses ports, protocols, and services allowed per the PPSM CAL and VAs. If the Verify the Voice Video Session Manager uses ports, protocols, and services other than those permitted by the PPSM
+                        CAL and VAs, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62091">
+            <title>SRG-NET-000147</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76581r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000147-VVSM-00009</version>
+                <title>The Voice Video Session Manager must implement attack-resistant mechanisms for Voice Video endpoint registration.</title>
+                <description>&lt;VulnDiscussion&gt;Attacks against a Voice Video Session Manager may include DoS, replay attacks, or cross site scripting. A replay attack may enable an unauthorized user to gain access to the application. Authentication sessions between
+                    the authenticator and the application validating the user credentials must not be vulnerable to a replay attack. An authentication process resists replay attacks if it is impractical to achieve a successful authentication by recording
+                    and replaying a previous authentication message. Techniques used to address this include protocols using nonces (e.g., numbers generated for a specific one time use) or challenges (e.g., TLS, WS_Security). Additional techniques include
+                    time-synchronous or challenge-response one-time authenticators. A cross site scripting vulnerability was demonstrated on a SIP based IP phone by adding scripting code to the "From" field in the SIP invite. Upon receiving the invite,
+                    the embedded code was executed by the IP phone embedded web server to download additional malicious code.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001942</ident>
+                <fixtext fixref="F-68011r1_fix">Configure the Voice Video Session Manager to implement attack-resistant mechanisms for Voice Video endpoint registration.</fixtext>
+                <fix id="F-68011r1_fix" />
+                <check system="C-62895r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager implements attack-resistant mechanisms for Voice Video endpoint registration. If the Voice Video Session Manager does not implement attack-resistant mechanisms for Voice Video endpoint registration,
+                        this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62093">
+            <title>SRG-NET-000148</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76583r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000148-VVSM-00004</version>
+                <title>The Voice Video Session Manager must uniquely identify each Voice Video endpoint device before registration.</title>
+                <description>&lt;VulnDiscussion&gt;Without identifying devices, unidentified or unknown devices may be introduced, thereby facilitating malicious activity. Typically, devices can be identified by MAC or IP address but certificates provide a greater
+                    level of security. Identification of devices works with registration of devices as part of a defense in depth approach to Voice Video networks. Registration is the process of authorizing endpoints to communicate with the session manager.
+                    Registration occurs with the SIP server in VoIP systems and with a gatekeeper in H.323 systems. Without enforcing registration, an adversary could impersonate a legitimate device on the Voice Video network.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000778</ident>
+                <fixtext fixref="F-68013r1_fix">Configure the Voice Video Session Manager to uniquely identify all Voice Video endpoint devices before registering those devices.</fixtext>
+                <fix id="F-68013r1_fix" />
+                <check system="C-62897r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager uniquely identifies all Voice Video endpoint devices before registration. If the Voice Video Session Manager does not uniquely identify all Voice Video endpoint devices before registration, this
+                        is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62095">
+            <title>SRG-NET-000168</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76585r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000168-VVSM-00016</version>
+                <title>The Voice Video Session Manager must use encryption for signaling and media traffic.</title>
+                <description>&lt;VulnDiscussion&gt;All signaling and media traffic from a Voice Video Session Manager must be encrypted. Network elements utilizing encryption are required to use FIPS compliant mechanisms for authenticating to cryptographic modules.
+                    FIPS 140-2 is the current standard for validating that mechanisms used to access cryptographic modules utilize authentication that meets DoD requirements. Unapproved mechanisms used for authentication to the cryptographic module are
+                    not verified, and therefore cannot be relied upon to provide confidentiality or integrity and DoD data may be compromised. Voice Video protocol suites include SIP, SCCP, and H.323. Each of these protocol suites uses different methodologies
+                    for securing transmitted signaling. The H.323 protocol suite relies on the H.235 series, which describes security within H.323, including security for both signaling and media. For SIP protocol, the DoD has created the AS-SIP protocol,
+                    which provides for implementing Transport Layer Security (TLS), Multi-Level Precedence and Preemption (MLPP), reliance on Secure Real-Time Transport Protocol (SRTP) for media streams, and Differentiated Services Code Point (DSCP) for
+                    traffic management through priority packet routing. To secure SCCP, TLS must be implemented with the protocol.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000803</ident>
+                <fixtext fixref="F-68015r1_fix">Configure the Voice Video Session Manager to use encryption for signaling and media traffic.</fixtext>
+                <fix id="F-68015r1_fix" />
+                <check system="C-62899r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager uses encryption for signaling and media traffic. If the Voice Video Session Manager does not use encryption for signaling and media traffic, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62097">
+            <title>SRG-NET-000213</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76587r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000213-VVSM-00011</version>
+                <title>The Voice Video Session Manager must terminate all network connections associated with a communications session at the end of the session, or the session must be terminated after 15 minutes of inactivity.</title>
+                <description>&lt;VulnDiscussion&gt;Terminating network connections associated with communications sessions includes, for example, de-allocating associated TCP/IP address/port pairs at the operating system level, and de-allocating networking assignments
+                    at the application level if multiple application sessions are using a single, operating system level network connection. Voice Video Session Managers do not conduct media session; they conduct the session termination signaling. Endpoints
+                    and border elements conduct the media sessions and de-allocate those resources. However, sessions that do not receive a response from the far end may require the session manager to request termination of communication sessions.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001133</ident>
+                <fixtext fixref="F-68017r1_fix">Configure the Voice Video Session Manager to terminate all network connections associated with a communications session at the end of the session. Alternatively, configure the Voice Video Session Manager to terminate the session after
+                    15 minutes of inactivity.</fixtext>
+                <fix id="F-68017r1_fix" />
+                <check system="C-62901r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager terminates all network connections associated with a communications session at the end of the session, or the session terminates after 15 minutes of inactivity. If the Voice Video Session Manager
+                        does not terminate all network connections associated with a communications session at the end of the session, this is a finding. If the Voice Video Session Manager does not terminate the session after 15 minutes of inactivity,
+                        this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62099">
+            <title>SRG-NET-000225</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76589r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000225-VVSM-00021</version>
+                <title>The Voice Video Session Manager supporting Command and Control (C2) communications must associate multilevel precedence and preemption (MLPP) attributes when exchanged between unified capabilities (UC) systems.</title>
+                <description>&lt;VulnDiscussion&gt;If MLPP attributes are not associated with the information being transmitted between systems, then access control policies and information flows which depend on these MLPP attributes will not function and unauthorized
+                    access may result. Without the implementation of safeguards which allocate network communication resources based on priority, network availability, and particularly high priority traffic, may be dropped or delayed. DoD relies on the
+                    implementation of MLPP to ensure that flag officers and senior staff are provided higher priority for communications than other users. For VoIP and videoconferencing systems, Voice Video Session Managers must communicate using protocols
+                    and services that provide expedited packets to users and other systems.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-001157</ident>
+                <fixtext fixref="F-68019r1_fix">Configure the Voice Video Session Manager supporting C2 communications to associate MLPP attributes when exchanged between UC systems.</fixtext>
+                <fix id="F-68019r1_fix" />
+                <check system="C-62903r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager supporting C2 communications associates MLPP attributes when exchanged between UC systems. If the Voice Video Session Manager supporting C2 communications does not associate MLPP attributes when
+                        exchanged between UC systems, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62101">
+            <title>SRG-NET-000226</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76591r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000226-VVSM-00022</version>
+                <title>The Voice Video Session Manager supporting Command and Control (C2) communications must validate the integrity of transmitted multilevel precedence and preemption (MLPP) attributes.</title>
+                <description>&lt;VulnDiscussion&gt;If MLPP attributes are not associated with the information being transmitted between components, then access control policies and information flows which depend on these MLPP attributes will not function and unauthorized
+                    access may result. When data is exchanged, the MLPP attributes associated with this data must be validated to ensure the data has not been changed. Without the implementation of safeguards which allocate network communication resources
+                    based on priority, network availability, and particularly high priority traffic, may be dropped or delayed. DoD relies on the implementation of MLPP to ensure that flag officers and senior staff are provided higher priority for communications
+                    than other users. For VoIP and videoconferencing systems, Voice Video Session Managers must communicate using protocols and services that provide expedited packets to users and other systems.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-001158</ident>
+                <fixtext fixref="F-68021r1_fix">Configure the Voice Video Session Manager supporting C2 communications to validate the integrity of transmitted MLPP attributes.</fixtext>
+                <fix id="F-68021r1_fix" />
+                <check system="C-62905r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager supporting C2 communications validates the integrity of transmitted MLPP attributes. If the Voice Video Session Manager supporting C2 communications does not validate the integrity of transmitted
+                        MLPP attributes, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62103">
+            <title>SRG-NET-000230</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76593r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000230-VVSM-00023</version>
+                <title>The Voice Video Session Manager must protect the authenticity of communications sessions.</title>
+                <description>&lt;VulnDiscussion&gt;Authenticity protection provides protection against man-in-the-middle attacks/session hijacking and the insertion of false information into sessions. This requirement focuses on communications protection for the application
+                    session rather than for the network packet and establishes grounds for confidence at both ends of communications sessions in ongoing identities of other parties and in the validity of information transmitted. VC and UC require the
+                    use of TLS mutual authentication (two-way/bidirectional) for authenticity.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001184</ident>
+                <fixtext fixref="F-68023r1_fix">Configure the Voice Video Session Manager to protect the authenticity of communications sessions.</fixtext>
+                <fix id="F-68023r1_fix" />
+                <check system="C-62907r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager protects the authenticity of communications sessions. If the Voice Video Session Manager does not protect the authenticity of communications sessions, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62105">
+            <title>SRG-NET-000235</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76595r2_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000235-VVSM-00046</version>
+                <title>The Voice Video Session Manager must fail to a secure state if system initialization fails, shutdown fails, or aborts fail.</title>
+                <description>&lt;VulnDiscussion&gt;Failure in a known state can address safety or security in accordance with the mission needs of the organization. Failure to a known secure state helps prevent a loss of confidentiality, integrity, or availability
+                    in the event of a failure of the information system or a component of the system. Preserving voice video session manager state information helps to facilitate restart and return to the operational mode of the organization with less
+                    disruption to mission-essential processes. This applies to the configuration of the functionality of the voice video session manager. Abort refers to stopping a program or function before it has finished naturally and refers to both
+                    requested and unexpected terminations. This control only applies to Committee on National Security Systems Instruction (CNSSI) 1253 high confidentiality and integrity baselines.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001190</ident>
+                <fixtext fixref="F-68025r2_fix">Configure the Voice Video Session Manager to fail to a secure state if system initialization fails, shutdown fails, or aborts fail.</fixtext>
+                <fix id="F-68025r2_fix" />
+                <check system="C-62909r2_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager fails to a secure state when system initialization fails, shutdown fails, or aborts fail. If the Voice Video Session Manager does not fail to a secure state if system initialization fails, shutdown
+                        fails, or aborts fail, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62107">
+            <title>SRG-NET-000273</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76597r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000273-VVSM-00037</version>
+                <title>The Voice Video Session Manager must generate session (call) records that provide information necessary for corrective actions without revealing personally identifiable information or sensitive information.</title>
+                <description>&lt;VulnDiscussion&gt;Any Voice Video session manager providing too much information in session records risks compromising the data and security of the application and system. The structure and content of session records must be carefully
+                    considered by the organization and development team.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001312</ident>
+                <fixtext fixref="F-68027r1_fix">Configure the Voice Video Session Manager to generate session records that provide information necessary for corrective actions without revealing personally identifiable information or sensitive information.</fixtext>
+                <fix id="F-68027r1_fix"
+                />
+                <check system="C-62911r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager generates session records that provide information necessary for corrective actions without revealing personally identifiable information or sensitive information. If the Voice Video Session Manager
+                        does not generate session records that provide information necessary for corrective actions without revealing personally identifiable information or sensitive information, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62109">
+            <title>SRG-NET-000315</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76599r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000315-VVSM-00003</version>
+                <title>The Voice Video Session Manager must restrict Voice Video endpoint user access outside of operational hours.</title>
+                <description>&lt;VulnDiscussion&gt;Activity under unusual conditions can indicate hostile activity. For example, what is normal activity during operational hours can indicate hostile activity if it occurs during off hours. Depending on mission needs
+                    and conditions, usage restrictions based on conditions and circumstances may be critical to limit access to resources and data to comply with operational or mission access control requirements. Thus, the network element must be configured
+                    to enforce the specific conditions or circumstances under which application accounts can be used (e.g., by restricting usage to certain days of the week, time of day, or specific durations of time). Limiting access to the voice/video
+                    network by work hours and work week mitigates the risk of unauthorized access to the system outside of duty hours, reducing misuse or abuse of the system and its resources. Areas requiring service during other times may be identified.
+                    However, it is essential that endpoints be allowed access to emergency services at all times.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-002145</ident>
+                <fixtext fixref="F-68029r1_fix">Configure the Voice Video Session Manager to restrict Voice Video endpoint user access outside of operational hours to only essential connections.</fixtext>
+                <fix id="F-68029r1_fix" />
+                <check system="C-62913r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager provides the capability to restrict Voice Video endpoint user access outside of operational hours to allow only essential connection capability. Areas requiring extended service times may be identified
+                        as exceptions. If the Voice Video Session Manager does not restrict Voice Video endpoint user access outside of operational hours allowing for exceptions, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62111">
+            <title>SRG-NET-000321</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76601r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000321-VVSM-00007</version>
+                <title>The Voice Video Session Manager must immediately enforce changes to privileges of Voice Video endpoint user access.</title>
+                <description>&lt;VulnDiscussion&gt;Without the enforcement of immediate change to privilege levels, users and devices may not provide the correct level of service. Privileges include access to outside connections, precedence, and preemption capabilities.
+                    A user with higher precedence and preemption capability may supplant users authorized higher levels of access. Endpoint users must be limited to the privileges needed to conduct business and changes to privileges must be enforced immediately.
+                    Access authorizations should be dynamic to reflect changing conditions; if a revocation is not enforced in a timely manner, users may have inappropriate access. Revocation of access rules may differ based on the types of access revoked.
+                    For example, if a subject (i.e., user or process) is removed from a group, access may not be revoked until the next time the object (e.g., file) is opened or until the next time the subject attempts a new access to the object. Revocation
+                    based on changes to security labels may take effect immediately. It may be necessary to immediately revoke access in certain circumstances (i.e., a compromised account is being used). This may be mitigated by implementing SRG-NET-000321-VVSM-00008.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-002178</ident>
+                <fixtext fixref="F-68031r1_fix">Configure the Voice Video Session Manager to immediately enforce changes to privileges of Voice Video endpoint user access.</fixtext>
+                <fix id="F-68031r1_fix" />
+                <check system="C-62915r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager immediately enforces change to privileges of Voice Video endpoint user access. Privileges include access to outside connections, precedence, and preemption capabilities. If the Voice Video Session
+                        Manager does not immediately enforce changes to privileges of Voice Video endpoint user access, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62113">
+            <title>SRG-NET-000322</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76603r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000322-VVSM-00008</version>
+                <title>The Voice Video Session Manager must immediately enforce changes to privileges of Voice Video endpoint device access.</title>
+                <description>&lt;VulnDiscussion&gt;Without the enforcement of immediate change to privilege levels, users and devices may not provide the correct level of service. Privileges include access to outside connections, precedence, and preemption capabilities.
+                    A user with higher precedence and preemption capability may supplant users authorized higher levels of access. Endpoints must be limited to the privileges needed to conduct business and changes to privileges must be enforced immediately.
+                    Access authorizations should be dynamic to reflect changing conditions; if a revocation is not enforced in a timely manner, users may have inappropriate access. Revocation of access rules may differ based on the types of access revoked.
+                    For example, if a subject (i.e., user or process) is removed from a group, access may not be revoked until the next time the object (e.g., file) is opened or until the next time the subject attempts a new access to the object. Revocation
+                    based on changes to security labels may take effect immediately. It may be necessary to immediately revoke access in certain circumstances (i.e., a compromised account is being used). This may be mitigated by implementing SRG-NET-000321-VVSM-00007.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-002179</ident>
+                <fixtext fixref="F-68033r1_fix">Configure the Voice Video Session Manager to immediately enforce changes to privileges of Voice Video endpoint device access.</fixtext>
+                <fix id="F-68033r1_fix" />
+                <check system="C-62917r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager immediately enforces change to privileges of Voice Video endpoint device access. Privileges include access to outside connections, precedence, and preemption capabilities. If the Voice Video Session
+                        Manager does not immediately enforce changes to privileges of Voice Video endpoint device access, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62115">
+            <title>SRG-NET-000332</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76605r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000332-VVSM-00045</version>
+                <title>The Voice Video Session Manager in support of Communications Assistance for Law Enforcement Act (CALEA) must provide the capability for authorized users to remotely view/hear, in real time, all content related to an established user session
+                    from a separate monitoring component.</title>
+                <description>&lt;VulnDiscussion&gt;Without the capability to remotely view/hear all content related to a user session, investigations into suspicious user activity would be hampered. Real-time monitoring allows authorized personnel to take action before
+                    additional damage is done. The ability to observe user sessions as they are happening allows for interceding in ongoing events that after-the-fact review of captured content would not allow. The requirement does not apply to privileged
+                    user sessions used to manage the network element.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001920</ident>
+                <fixtext fixref="F-68035r1_fix">Configure the Voice Video Session Manager in support of CALEA to provide the capability for authorized users to remotely view/hear, in real time, all content related to an established user session from a separate monitoring component.</fixtext>
+                <fix
+                    id="F-68035r1_fix" />
+                <check system="C-62919r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager in support of CALEA provides the capability for authorized users to remotely view/hear, in real time, all content related to an established user session from a separate monitoring component. If
+                        the Voice Video Session Manager in support of CALEA does not provide the capability for authorized users to remotely view/hear, in real time, all content related to an established user session from a separate monitoring component,
+                        this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62117">
+            <title>SRG-NET-000236</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76607r2_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000236-VVSM-00047</version>
+                <title>In the event of a system failure, Voice Video Session Managers must preserve any information necessary to determine cause of failure and any information necessary to return to operations with least disruption to mission processes.</title>
+                <description>&lt;VulnDiscussion&gt;Failure in a known state can address safety or security in accordance with the mission needs of the organization. Failure to a known secure state helps prevent a loss of confidentiality, integrity, or availability
+                    in the event of a failure of the information system or a component of the system. Preserving voice video session manager state information helps to facilitate restart and return to the operational mode of the organization with less
+                    disruption to mission-essential processes. This control only applies to Committee on National Security Systems Instruction (CNSSI) 1253 high confidentiality and integrity baselines.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001665</ident>
+                <fixtext fixref="F-68037r2_fix">Configure the Voice Video Session Manager, in the event of a system failure, to preserve any information necessary to determine cause of failure and any information necessary to return to operations with least disruption to mission processes.</fixtext>
+                <fix
+                    id="F-68037r2_fix" />
+                <check system="C-62921r2_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify that in the event of a system failure, the Voice Video Session Managers preserves any information necessary to determine cause of failure and any information necessary to return to operations with least disruption to mission
+                        processes. If the Voice Video Session Managers does not preserve all information necessary to determine cause of failure, this is a finding. If the Voice Video Session Managers does not preserve all information necessary to return
+                        to operations with least disruption to mission processes, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62119">
+            <title>SRG-NET-000333</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76609r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000333-VVSM-00028</version>
+                <title>The Voice Video Session Manager must provide centralized management of session (call) records.</title>
+                <description>&lt;VulnDiscussion&gt;Without the ability to centrally manage the content captured in the audit records, identification, troubleshooting, and correlation of suspicious behavior would be difficult and could lead to a delayed or incomplete
+                    analysis of an ongoing attack. The content captured in audit records must be managed from a central location (necessitating automation). Centralized management of audit records and logs provides for efficiency in maintenance and management
+                    of records, as well as the backup and archiving of those records. Network components requiring centralized audit log management must have the capability to support centralized management. Session records for Voice Video systems are
+                    generally handled in a similar fashion to audit records for other systems and are used for billing, usage analysis, and record support for actions taken. These detailed records are typically produced by the session manager.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001844</ident>
+                <fixtext fixref="F-68039r1_fix">Configure the Voice Video Session Manager to provide centralized management of session records.</fixtext>
+                <fix id="F-68039r1_fix" />
+                <check system="C-62923r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager provides centralized management of session records. Centralized management of session records may be a function of the Voice Video Session Manager or offloaded to an ancillary device. When records
+                        are offloaded, the Voice Video Session Manager must provide configuration settings to connect to the ancillary device. If the Voice Video Session Manager does not provide centralized management of session records, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62121">
+            <title>SRG-NET-000334</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76611r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000334-VVSM-00039</version>
+                <title>The Voice Video Session Manager must off-load session (call) records onto a different system or storage media.</title>
+                <description>&lt;VulnDiscussion&gt;Information stored in one location is vulnerable to accidental or incidental deletion or alteration. Off-loading is a common process in information systems with limited session record storage capacity.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001851</ident>
+                <fixtext fixref="F-68041r1_fix">Configure the Voice Video Session Manager to off-load session records onto a different system or storage media.</fixtext>
+                <fix id="F-68041r1_fix" />
+                <check system="C-62925r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager off-loads session records onto a different system or storage media. If the Voice Video Session Manager does not off-load session records onto a different system or storage media, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62123">
+            <title>SRG-NET-000338</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76613r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000338-VVSM-00006</version>
+                <title>The Voice Video Session Manager must require Voice Video endpoints to re-register at least every three (3) hours.</title>
+                <description>&lt;VulnDiscussion&gt;Device registration is a solution enabling an organization to manage devices. It is an additional layer of authentication ensuring only specific pre-authorized devices can access the system. Registration is the process
+                    of authorizing endpoints to communicate with the session manager. Registration occurs with the SIP server in VoIP systems and with a gatekeeper in H.323 systems. Without enforcing registration, an adversary could impersonate a legitimate
+                    device on the Voice Video network.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-002039</ident>
+                <fixtext fixref="F-68043r1_fix">Configure the Voice Video Session Manager to re-register Voice Video endpoints at least every three hours.</fixtext>
+                <fix id="F-68043r1_fix" />
+                <check system="C-62927r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager requires Voice Video endpoints to re-register at least every three hours. If the Voice Video Session Manager does not require Voice Video endpoints to re-register or does not enforce re-registration
+                        at least every three hours, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62125">
+            <title>SRG-NET-000343</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76615r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000343-VVSM-00005</version>
+                <title>The Voice Video Session Manager must authenticate each Voice Video endpoint devices before registration.</title>
+                <description>&lt;VulnDiscussion&gt;Device registration is a solution enabling an organization to manage devices. It is an additional layer of authentication ensuring only specific pre-authorized devices can access the system. Registration is the process
+                    of authorizing endpoints to communicate with the session manager. Registration occurs with the SIP server in VoIP systems and with a gatekeeper in H.323 systems. Without enforcing registration, an adversary could impersonate a legitimate
+                    device on the Voice Video network.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001958</ident>
+                <fixtext fixref="F-68045r1_fix">Configure the Voice Video Session Manager to authenticate all Voice Video endpoint devices before registering those devices.</fixtext>
+                <fix id="F-68045r1_fix" />
+                <check system="C-62929r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager authenticates all Voice Video endpoint devices before establishing any connection. If the Voice Video Session Manager does not authenticate all Voice Video endpoint devices before establishing
+                        any connection, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62127">
+            <title>SRG-NET-000353</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76617r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000353-VVSM-00014</version>
+                <title>The Voice Video Session Manager must provide an explicit indication of current participants in all videoconference-based and IP-based online meetings and conferences (excluding audio-only teleconferences using traditional telephony).</title>
+                <description>&lt;VulnDiscussion&gt;Providing an explicit indication of current participants in videoconferences helps to prevent unauthorized individuals from participating in collaborative videoconference sessions without the explicit knowledge of
+                    other participants. videoconferences allow groups of users to collaborate and exchange information. Without knowing who is in attendance, information could be compromised. For videoconferences with large numbers of people present,
+                    the identified participant may be listed as the room rather than by each individual attending. Voice video session managers that provide a videoconference capability must provide a clear indication of who is attending the meeting,
+                    thus providing all attendees with the capability to clearly identify users who are in attendance.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-002453</ident>
+                <fixtext fixref="F-68047r1_fix">Configure the Voice Video Session Manager to provide an explicit indication of current participants in all videoconference-based and IP-based online meetings and conferences, except audio-only teleconferences using traditional telephony.</fixtext>
+                <fix
+                    id="F-68047r1_fix" />
+                <check system="C-62931r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager provides an explicit indication of current participants in all videoconference-based and IP-based online meetings and conferences. This requirement does not apply to audio-only teleconferences
+                        using traditional telephony. If the Voice Video Session Manager does not provide an explicit indication of current participants in all videoconference-based and IP-based online meetings and conferences, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62129">
+            <title>SRG-NET-000354</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76619r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000354-VVSM-00020</version>
+                <title>The Voice Video Session Manager supporting Command and Control (C2) communications must associate multilevel precedence and preemption (MLPP) attributes when exchanged between unified capabilities (UC) system components.</title>
+                <description>&lt;VulnDiscussion&gt;If MLPP attributes are not associated with the information being transmitted between systems, then access control policies and information flows which depend on these MLPP attributes will not function and unauthorized
+                    access may result. Without the implementation of safeguards which allocate network communication resources based on priority, network availability, and particularly high priority traffic, may be dropped or delayed. DoD relies on the
+                    implementation of MLPP to ensure that flag officers and senior staff are provided higher priority for communications than other users. For VoIP and videoconferencing systems, Voice Video Session Managers must communicate using protocols
+                    and services that provide expedited packets to users and other systems.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-002455</ident>
+                <fixtext fixref="F-68049r1_fix">Configure the Voice Video Session Manager supporting C2 communications to associate MLPP attributes when exchanged between UC system components.</fixtext>
+                <fix id="F-68049r1_fix" />
+                <check system="C-62933r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager supporting C2 communications associates MLPP attributes when exchanged between UC system components. If the Voice Video Session Manager supporting C2 communications does not associate MLPP attributes
+                        when exchanged between UC system components, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62131">
+            <title>SRG-NET-000363</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76621r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000363-VVSM-00019</version>
+                <title>The Voice Video Session Manager supporting Command and Control (C2) communications must limit and reserve bandwidth based on priority of the traffic type.</title>
+                <description>&lt;VulnDiscussion&gt;Without the implementation of safeguards which allocate network communication resources based on priority, network availability, and particularly high priority traffic, may be dropped or delayed. DoD supporting C2
+                    communications relies on the implementation of MLPP to ensure that flag officers and senior staff are provided higher priority for communications than other users. For VoIP and videoconferencing systems, Voice Video Session Managers
+                    must communicate using protocols and services that provide expedited packets to users and other systems. Additionally, Quality of Service (QoS) is an effective security safeguard used to ensure network communications availability based
+                    on priority. Different applications and other network traffic have unique requirements and toleration levels for delay, jitter, bandwidth, packet loss, and availability. To manage the multitude of applications and services, a network
+                    requires a QoS framework to differentiate traffic and provide a method to avoid and manage network congestion. When network congestion occurs, all traffic has an equal chance of being dropped. A QoS implementation categorizes network
+                    traffic into classes and provides priority treatment based on the classification.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-002394</ident>
+                <fixtext fixref="F-68051r1_fix">Configure the Voice Video Session Manager supporting C2 communications to limit and reserve bandwidth based on priority of the traffic type.</fixtext>
+                <fix id="F-68051r1_fix" />
+                <check system="C-62935r2_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager supporting C2 communications limits and reserves bandwidth based on priority of the traffic type. If the Voice Video Session Manager supporting C2 communications does not limit and reserve bandwidth
+                        based on priority of the traffic type, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62133">
+            <title>SRG-NET-000371</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76623r2_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000371-VVSM-00017</version>
+                <title>The Voice Video Session Manager must protect the confidentiality of transmitted configuration files, signaling, and media streams.</title>
+                <description>&lt;VulnDiscussion&gt;Without protection of the transmitted information, confidentiality and integrity may be compromised as unprotected communications can be intercepted and either read or altered. Communication paths outside the physical
+                    protection of a controlled boundary are exposed to the possibility of interception and modification. Voice Video protocol suites include SIP, SCCP, and H.323. Each of these protocol suites uses different methodologies for securing
+                    transmitted signaling. The H.323 protocol suite relies on the H.235 series, which describes security within H.323, including security for both signaling and media. For SIP protocol, the DoD has created the AS-SIP protocol, which provides
+                    for implementing Transport Layer Security (TLS), Multi-Level Precedence and Preemption (MLPP), reliance on Secure Real-Time Transport Protocol (SRTP) for media streams, and Differentiated Services Code Point (DSCP) for traffic management
+                    through priority packet routing. To secure SCCP, TLS must be implemented with the protocol. Note: It is expected that this requirement be used to address each protocol individually. A separate STIG requirement for each protocol used
+                    identifying the methods to protect the confidentiality and integrity of transmitted control information (including registration files) and media streams must be produced.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-002418</ident>
+                <fixtext fixref="F-68053r1_fix">Configure the Voice Video Session Manager to protect the confidentiality of transmitted configuration files, signaling, and media streams.</fixtext>
+                <fix id="F-68053r1_fix" />
+                <check system="C-62937r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager protects the confidentiality of transmitted configuration files, signaling, and media streams. If the Voice Video Session Manager does not protect the confidentiality of transmitted configuration
+                        files, signaling, and media streams, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62135">
+            <title>SRG-NET-000371</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76625r2_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000371-VVSM-00018</version>
+                <title>The Voice Video Session Manager must protect the integrity of transmitted configuration files, signaling, and media streams.</title>
+                <description>&lt;VulnDiscussion&gt;Without protection of the transmitted information, confidentiality and integrity may be compromised as unprotected communications can be intercepted and either read or altered. Communication paths outside the physical
+                    protection of a controlled boundary are exposed to the possibility of interception and modification. Voice Video protocol suites include SIP, SCCP, and H.323. Each of these protocol suites uses different methodologies for securing
+                    transmitted signaling. The H.323 protocol suite relies on the H.235 series, which describes security within H.323, including security for both signaling and media. For SIP protocol, the DoD has created the AS-SIP protocol, which provides
+                    for implementing Transport Layer Security (TLS), Multi-Level Precedence and Preemption (MLPP), reliance on Secure Real-Time Transport Protocol (SRTP) for media streams, and Differentiated Services Code Point (DSCP) for traffic management
+                    through priority packet routing. To secure SCCP, TLS must be implemented with the protocol. Note: It is expected that this requirement be used to address each protocol individually. A separate STIG requirement for each protocol used
+                    identifying the methods to protect the confidentiality and integrity of transmitted control information (including registration files) and media streams must be produced.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-002418</ident>
+                <fixtext fixref="F-68055r1_fix">Configure the Voice Video Session Manager to protect the integrity of transmitted configuration files, signaling, and media streams.</fixtext>
+                <fix id="F-68055r1_fix" />
+                <check system="C-62939r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager protects the integrity of transmitted configuration files, signaling, and media streams. If the Voice Video Session Manager does not protect the integrity of transmitted configuration files, signaling,
+                        and media streams, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62137">
+            <title>SRG-NET-000510</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76627r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000510-VVSM-00015</version>
+                <title>The Voice Video Session Manager must implement NIST FIPS-validated cryptography to generate cryptographic hashes and to protect sensitive unclassified information.</title>
+                <description>&lt;VulnDiscussion&gt;Use of weak or untested encryption algorithms undermines the purposes of utilizing encryption to protect data. The network element must implement cryptographic modules adhering to the higher standards approved by
+                    the federal government since this provides assurance they have been tested and validated. Voice Video protocol suites include SIP, SCCP, and H.323. Each of these protocol suites uses different methodologies for securing transmitted
+                    signaling. The H.323 protocol suite relies on the H.235 series, which describes security within H.323, including security for both signaling and media. For SIP protocol, the DoD has created the AS-SIP protocol, which provides for implementing
+                    Transport Layer Security (TLS), Multi-Level Precedence and Preemption (MLPP), reliance on Secure Real-Time Transport Protocol (SRTP) for media streams, and Differentiated Services Code Point (DSCP) for traffic management through priority
+                    packet routing. To secure SCCP, TLS must be implemented with the protocol.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-002450</ident>
+                <fixtext fixref="F-68057r1_fix">Configure the Voice Video Session Manager to implement NIST FIPS-validated cryptography to generate cryptographic hashes and to protect sensitive unclassified information.</fixtext>
+                <fix id="F-68057r1_fix" />
+                <check system="C-62941r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager implements NIST FIPS-validated cryptography to generate cryptographic hashes and to protect sensitive unclassified information. If the Voice Video Session Manager does not implements NIST FIPS-validated
+                        cryptography to generate cryptographic hashes, this is a finding. If the Voice Video Session Manager does not implements NIST FIPS-validated cryptography to protect sensitive unclassified information, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62139">
+            <title>SRG-NET-000512</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76629r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000512-VVSM-00012</version>
+                <title>The Voice Video Session Manager must prohibit remote activation of collaborative computing devices (excluding centrally managed, dedicated videoconference suites located in approved videoconference locations).</title>
+                <description>&lt;VulnDiscussion&gt;An adversary may be able to gain access to information on whiteboards, listen to conversations on a microphone, or view areas with a camera since collaboration equipment is typically not designed with security access
+                    controls and protection measures of more sophisticated networked clients. Collaborative computing devices include, for example, networked whiteboards, cameras, and microphones. This requirement applies to collaboration applications
+                    that control collaborative computing devices. Exceptions to this would require acceptance of the risk by a cognizant AO. This requirement is not intended to prohibit remote activation of centrally managed, dedicated videoconferencing
+                    Suites for the purpose of remote testing of the equipment.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001150</ident>
+                <fixtext fixref="F-68059r1_fix">Configure the Voice Video Session Manager, except for centrally managed, dedicated videoconference suites located in approved videoconference locations, to prohibit remote activation of collaborative computing devices.</fixtext>
+                <fix id="F-68059r1_fix"
+                />
+                <check system="C-62943r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager prohibits remote activation of collaborative computing devices. For centrally managed, dedicated videoconference suites located in approved videoconference locations with full documentation, this
+                        requirement is not applicable. If the Voice Video Session Manager does not prohibit remote activation of collaborative computing devices, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62141">
+            <title>SRG-NET-000512</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76631r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000512-VVSM-00042</version>
+                <title>The Voice Video Session Manager must route Fire and Emergency Services (FES) communications as a priority call in a non-blocking manner.</title>
+                <description>&lt;VulnDiscussion&gt;Configuring the voice video session manager to implement enhanced 911 (E911) and FES ensures compliance with Federal Communications Commission rules and establishes a common security baseline across DoD Voice Video
+                    systems. If E911 services are incorrectly configured, first responders may not have sufficient information to provide emergency services. Additionally, an adversary may use incorrectly configured E911 services to attack a system or
+                    location. For DoD systems, it is essential for FES communications to have sufficient priority, providing number and location information that is accurate. The FCC requires that providers of interconnected VoIP telephone services meet
+                    E911 obligations. E911 systems automatically provide to emergency service personnel a 911 caller's call back number and, in most cases, location information. Next Generation 9-1-1 (NG911) is an initiative updating the current E911
+                    service infrastructure in the United States and Canada to improve public emergency communications services in a growingly wireless mobile society. This new service would enable the public to transmit text, images, video and data to
+                    the PSAP.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <fixtext fixref="F-68061r1_fix">Configure the Voice Video Session Manager to route FES communications as a priority call in a non-blocking manner.</fixtext>
+                <fix id="F-68061r1_fix" />
+                <check system="C-62945r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager routes FES communications as a priority call in a non-blocking manner. If the Voice Video Session Manager does not route FES communications as a priority call in a non-blocking manner, this is
+                        a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62143">
+            <title>SRG-NET-000512</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76633r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000512-VVSM-00043</version>
+                <title>The Voice Video Session Manager must provide Fire and Emergency Services (FES) with the Automatic Number Identification (ANI) of the initiator of the call.</title>
+                <description>&lt;VulnDiscussion&gt;Configuring the voice video session manager to implement enhanced 911 (E911) and FES ensures compliance with Federal Communications Commission rules and establishes a common security baseline across DoD Voice Video
+                    systems. If E911 services are incorrectly configured, first responders may not have sufficient information to provide emergency services. Additionally, an adversary may use incorrectly configured E911 services to attack a system or
+                    location. For DoD systems, it is essential for FES communications to have sufficient priority, providing number and location information that is accurate. The FCC requires that providers of interconnected VoIP telephone services meet
+                    E911 obligations. E911 systems automatically provide to emergency service personnel a 911 caller's call back number and, in most cases, location information. Next Generation 9-1-1 (NG911) is an initiative updating the current E911
+                    service infrastructure in the United States and Canada to improve public emergency communications services in a growingly wireless mobile society. This new service would enable the public to transmit text, images, video and data to
+                    the PSAP.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <fixtext fixref="F-68063r1_fix">Configure the Voice Video Session Manager to provide FES with the ANI of the initiator of the call.</fixtext>
+                <fix id="F-68063r1_fix" />
+                <check system="C-62947r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager provides FES with the ANI of the initiator of the call. If the Voice Video Session Manager does not provide FES with the ANI of the initiator of the call, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62145">
+            <title>SRG-NET-000512</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76635r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000512-VVSM-00044</version>
+                <title>The Voice Video Session Manager must provide Fire and Emergency Services (FES) with the Automatic Location Identification (ALI) of the initiator of the call.</title>
+                <description>&lt;VulnDiscussion&gt;Configuring the voice video session manager to implement enhanced 911 (E911) and FES ensures compliance with Federal Communications Commission rules and establishes a common security baseline across DoD Voice Video
+                    systems. If E911 services are incorrectly configured, first responders may not have sufficient information to provide emergency services. Additionally, an adversary may use incorrectly configured E911 services to attack a system or
+                    location. For DoD systems, it is essential for FES communications to have sufficient priority, providing number and location information that is accurate. The FCC requires that providers of interconnected VoIP telephone services meet
+                    E911 obligations. E911 systems automatically provide to emergency service personnel a 911 caller's call back number and, in most cases, location information. Next Generation 9-1-1 (NG911) is an initiative updating the current E911
+                    service infrastructure in the United States and Canada to improve public emergency communications services in a growingly wireless mobile society. This new service would enable the public to transmit text, images, video and data to
+                    the PSAP.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <fixtext fixref="F-68065r1_fix">Configure the Voice Video Session Manager to provide FES with the ALI of the initiator of the call.</fixtext>
+                <fix id="F-68065r1_fix" />
+                <check system="C-62949r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager provides FES with the ALI of the initiator of the call. If the Voice Video Session Manager does not provide FES with the ALI of the initiator of the call, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62147">
+            <title>SRG-NET-000512</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76637r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000512-VVSM-00050</version>
+                <title>The Voice Video Session Manager must be configured in accordance with the security configuration settings based on DoD security configuration or implementation guidance, including STIGs, NSA configuration guides, Communication Tasking
+                    Orders (CTOs), and DTMs.</title>
+                <description>&lt;VulnDiscussion&gt;Configuring the network element to implement organization-wide security implementation guides and security checklists ensures compliance with federal standards and establishes a common security baseline across DoD
+                    that reflects the most restrictive security posture consistent with operational requirements. Configuration settings are the set of parameters that can be changed that affect the security posture and/or functionality of the network
+                    element. Security-related parameters are those parameters impacting the security state of the network element, including the parameters required to satisfy other security control requirements. For the network element, security-related
+                    parameters include settings for network traffic management configurations.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <fixtext fixref="F-68067r1_fix">Configure the Voice Video Session Manager to be configured in accordance with the security configuration settings based on DoD security configuration or implementation guidance, including STIGs, NSA configuration guides, CTOs, and DTMs.</fixtext>
+                <fix
+                    id="F-68067r1_fix" />
+                <check system="C-62951r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager is configured in accordance with the security configuration settings based on DoD security configuration or implementation guidance, including STIGs, NSA configuration guides, CTOs, and DTMs.
+                        If the Voice Video Session Manager is not configured in accordance with the security configuration settings based on DoD security configuration or implementation guidance, including STIGs, NSA configuration guides, CTOs, and DTMs,
+                        this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62149">
+            <title>SRG-NET-000520</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76639r2_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000520-VVSM-00024</version>
+                <title>The Voice Video Session Manager must apply 802.1Q VLAN tags to signaling and media traffic.</title>
+                <description>&lt;VulnDiscussion&gt;When network elements do not dynamically reconfigure the data security attributes as data is created and combined, the possibility exists that security attributes will not correctly reflect the data with which they
+                    are associated. For the Voice Video Session Manager, the use of 802.1q tags on media and signaling, and the use of VLANs provides this layer of security. VLANs facilitate access and traffic control for voice video system components
+                    and enhanced QoS. Virtualized networking is used to separate voice video traffic from other types of traffic, such as data, management, and other special types. VLANs provide segmentation at layer 2. Virtual Routing and Forwarding
+                    (VRF) provides segmentation at layer 3, and works with Multiprotocol Label Switching (MPLS) for enterprise and WAN environments. When VRF is used without MPLS, it is referred to as VRF lite. For Voice Video systems, VLANs and VRFs
+                    are used to separate media and signaling streams from all other traffic.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-002272</ident>
+                <fixtext fixref="F-68069r2_fix">Configure the Voice Video Session Manager to apply 802.1Q VLAN tags to signaling and media traffic.</fixtext>
+                <fix id="F-68069r2_fix" />
+                <check system="C-62953r2_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager applies 802.1Q VLAN tags to signaling and media traffic. If the Voice Video Session Manager does not apply 802.1Q VLAN tags to signaling and media traffic, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-62151">
+            <title>SRG-NET-000520</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-76641r2_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000520-VVSM-00025</version>
+                <title>The Voice Video Session Manager must use a voice or video VLAN, separate from all other VLANs.</title>
+                <description>&lt;VulnDiscussion&gt;When network elements do not dynamically reconfigure the data security attributes as data is created and combined, the possibility exist that security attributes will not correctly reflect the data with which they
+                    are associated. For the Voice Video Session Manager, the use of 802.1q tags on media and signaling, and the use of VLANs provides this layer of security. VLANs facilitate access and traffic control for voice video system components
+                    and enhanced QoS. Virtualized networking is used to separate voice video traffic from other types of traffic, such as data, management, and other special types. VLANs provide segmentation at layer 2. Virtual Routing and Forwarding
+                    (VRF) provides segmentation at layer 3, and works with Multiprotocol Label Switching (MPLS) for enterprise and WAN environments. When VRF is used without MPLS, it is referred to as VRF lite. For Voice Video systems, VLANs and VRFs
+                    are used to separate media and signaling streams from all other traffic.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <ident system="http://iase.disa.mil/cci">CCI-002272</ident>
+                <fixtext fixref="F-68071r3_fix">Configure the Voice Video Session Manager to use a voice or video VLAN, separate from all other VLANs.</fixtext>
+                <fix id="F-68071r3_fix" />
+                <check system="C-62955r3_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager uses a voice or video VLAN separate from all other VLANs. If the Voice Video Session Manager uses a voice or video VLAN that is not separate from all other VLANs, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-71683">
+            <title>SRG-NET-000512</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-86307r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000512-VVSM-00054</version>
+                <title>The Voice Video Session Manager must be configured to obfuscate passwords within configuration files.</title>
+                <description>&lt;VulnDiscussion&gt;Passwords need to be protected at all times and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised. Voice
+                    Video Session Managers must enforce password encryption when storing passwords within configuration files.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <fixtext fixref="F-78011r1_fix">Configure the Voice Video Session Manager to obfuscate passwords within configuration files.</fixtext>
+                <fix id="F-78011r1_fix" />
+                <check system="C-71993r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager is configured to obfuscate passwords within configuration files. If the Voice Video Session Manager is not configured to obfuscate passwords within configuration files, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-71685">
+            <title>SRG-NET-000343</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-86309r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000343-VVSM-00055</version>
+                <title>The Voice Video Session Manager must authenticate each Voice Video peer (trunk) before registration.</title>
+                <description>&lt;VulnDiscussion&gt;Device registration is a solution enabling an organization to manage devices. It is an additional layer of authentication ensuring only specific pre-authorized devices and trunks can access the system. Registration
+                    is the process of authorizing endpoints and trunks to communicate with the session manager. Registration occurs with the SIP server in VoIP systems and with a gatekeeper in H.323 systems. Without enforcing registration, an adversary
+                    could impersonate a legitimate device or peer on the Voice Video network.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-001958</ident>
+                <fixtext fixref="F-78013r1_fix">Configure the Voice Video Session Manager to authenticate all Voice Video peers (trunks) before registration.</fixtext>
+                <fix id="F-78013r1_fix" />
+                <check system="C-71995r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager authenticates all Voice Video peers (trunks) before establishing any connection. If the Voice Video Session Manager does not authenticate all Voice Video peers (trunks) before establishing any
+                        connection, this is a finding.
+                    </check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-71687">
+            <title>SRG-NET-000338</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-86311r1_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000338-VVSM-00056</version>
+                <title>The Voice Video Session Manager must require Voice Video peers (trunks) to re-register at least every hour.</title>
+                <description>&lt;VulnDiscussion&gt;Device registration is a solution enabling an organization to manage devices. It is an additional layer of authentication ensuring only specific pre-authorized devices and trunks can access the system. Registration
+                    is the process of authorizing endpoints and trunks to communicate with the session manager. Registration occurs with the SIP server in VoIP systems and with a gatekeeper in H.323 systems. Without enforcing registration, an adversary
+                    could impersonate a legitimate device or peer on the Voice Video network.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-002039</ident>
+                <fixtext fixref="F-78015r1_fix">Configure the Voice Video Session Manager to re-register Voice Video peers (trunks) to re-register at least every hour.</fixtext>
+                <fix id="F-78015r1_fix" />
+                <check system="C-71997r1_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>Verify the Voice Video Session Manager requires Voice Video peers (trunks) to re-register at least every hour. If the Voice Video Session Manager does not require Voice Video peers (trunks) to re-register at least every hour, this
+                        is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+        <Group id="V-71689">
+            <title>SRG-NET-000512</title>
+            <description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+            <Rule id="SV-86313r3_rule" severity="medium" weight="10.0">
+                <version>SRG-NET-000512-VVSM-00057</version>
+                <title>The Voice Video Session Manager used for unclassified communication within a Sensitive Compartmented Information Facility (SCIF) or Special Access Program Facility (SAPF) must be configured in accordance with the Committee on National
+                    Security Systems Instruction (CNSSI) 5000.</title>
+                <description>&lt;VulnDiscussion&gt;Configuring the Voice Video Session Manager in accordance with CNSSI 5000 for unclassified communication systems supporting VVoIP endpoints within SCIFs and SAPFs ensures compliance with federal standards and establishes
+                    a common security baseline across DoD that reflects the most restrictive security posture consistent with operational requirements. Voice Video Session Managers may support voice video endpoints that could potentially be activated
+                    from the session manager (inadvertently or covertly) and transmit classified conversations over unclassified networks if not properly configured. Voice Video Endpoint microphones and speakers may be activated to pick up conversation
+                    audio within the area and conduct it over the network connection, even when the endpoint is on-hook. The Technical Surveillance Counter-Measures (TSCM) program protects sensitive government information, to include classified information,
+                    through the establishment of on-hook audio security standards. References: CNSS Instruction No. 5000, Guidelines for Voice over Internet Protocol (VoIP), dated September 2016 IC Tech Spec-For ICD/ICS 705, Technical Specifications for
+                    Construction and Management of Sensitive Compartmented Information Facilities, version 1.3 dated September 10, 2015 Joint Air Force, Army, Navy (JAFAN) 6/0 Manual; Special Access Program Security Manual – Revision 1, dated May 29,
+                    2008 Joint Air Force, Army, Navy (JAFAN) 6/9 Manual; Physical Security Standards for Special Access Program Facilities, dated March 23, 2004&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+                <reference>
+                    <dc:title>DPMS Target SRG-NET-VVSM</dc:title>
+                    <dc:publisher>DISA</dc:publisher>
+                    <dc:type>DPMS Target</dc:type>
+                    <dc:subject>SRG-NET-VVSM</dc:subject>
+                    <dc:identifier>2849</dc:identifier>
+                </reference>
+                <ident system="http://iase.disa.mil/cci">CCI-000366</ident>
+                <fixtext fixref="F-78017r3_fix">Configure the Voice Video Session Manager supporting voice video endpoints used for unclassified communication within a SCIF or SAPF to be configured in accordance with CNSSI 5000.</fixtext>
+                <fix id="F-78017r3_fix" />
+                <check system="C-71999r3_chk">
+                    <check-content-ref name="M" href="DPMS_XCCDF_Benchmark_Voice_Video_Session_Management_SRG.xml" />
+                    <check-content>If the Voice Video Session Manager does not support voice video endpoints used for unclassified communication within a SCIF or SAPFs, this check procedure is Not Applicable. Verify the Voice Video Session Manager supporting voice video
+                        endpoints used for unclassified communication within a SCIF or SAPF is configured in accordance with the CNSSI 5000. If the Voice Video Session Manager is not configured in accordance with the CNSSI 5000, this is a finding.</check-content>
+                </check>
+            </Rule>
+        </Group>
+    </Benchmark>
