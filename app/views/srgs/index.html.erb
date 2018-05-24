@@ -1,51 +1,50 @@
 <div id="wrapper">
-    <div id="page-wrapper">
-        <div class="row">
-            <div class="col-lg-12">
-                <h1 class="page-header">Uploaded SRGs</h1>
-            </div>
-            <!-- /.col-lg-12 -->
-        </div>
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        SRGs
-                    </div>
-                    <!-- /.panel-heading -->
-                    <div class="panel-body">
-                        <div class="table-responsive">
-                            <table id="srgs_datatable" class="display">
-                              <thead>
-                                <tr>
-                                  <th>Title</th>
-                                  <th>Description</th>
-                                  <th>Publisher</th>
-                                  <th>Published</th>
-                                  <th></th>
-                                  <th></th>
-                                </tr>
-                              </thead>
+  <div class="row">
+      <div class="col-lg-12">
+          <h1 class="page-header">Uploaded SRGs</h1>
+      </div>
+      <!-- /.col-lg-12 -->
+  </div>
+  <div class="row">
+      <div class="col-lg-12">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  SRGs
+              </div>
+              <!-- /.panel-heading -->
+              <div class="panel-body">
+                  <div class="table-responsive">
+                      <table id="srgs_datatable" class="display">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Publisher</th>
+                            <th>Published</th>
+                            <th></th>
+                            <th></th>
+                          </tr>
+                        </thead>
 
-                              <tbody>
-                                <% @srgs.each do |srg| %>
-                                  <tr>
-                                    <td><%= srg.title %></td>
-                                    <td><%= srg.description %></td>
-                                    <td><%= srg.publisher %></td>
-                                    <td><%= srg.published %></td>
-                                    <td><%= link_to 'Show Controls', srg %></td>
-                                    <td><%= link_to 'Destroy', srg, method: :delete, data: { confirm: 'Are you sure?' } %></td>
-                                  </tr>
-                                <% end %>
-                              </tbody>
-                            </table>
-                        </div>
-                        <!-- /.table-responsive -->
-                    </div>
-                    <!-- /.panel-body -->
-                </div>
-                <!-- /.panel -->
-            </div>
-    </div>
+                        <tbody>
+                          <% @srgs.each do |srg| %>
+                            <tr>
+                              <td><%= srg.title %></td>
+                              <td><%= srg.description %></td>
+                              <td><%= srg.publisher %></td>
+                              <td><%= srg.published %></td>
+                              <td><%= link_to 'Show Controls', srg %></td>
+                              <td><%= link_to 'Destroy', srg, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                  </div>
+                  <!-- /.table-responsive -->
+              </div>
+              <!-- /.panel-body -->
+          </div>
+          <!-- /.panel -->
+      </div>
+  </div>
 </div>

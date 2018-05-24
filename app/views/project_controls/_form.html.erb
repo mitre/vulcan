@@ -17,7 +17,7 @@
   </div>
   
   <div class="field">
-    <%= form.label :project_control_status %>
+    <%= form.label :project_control_applicability %>
     <%= form.select(:status, options_for_select([[nil, ''], ['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.status)) %>
   </div>
   
@@ -37,7 +37,7 @@
       
       <div class="col-lg-6">
         <div class="field">
-          <%= form.label :title, id: :srg_title_label %>
+          <%= form.label :srg_title, id: :srg_title_label %>
           <%= @project_control.title %>
         </div>
       </div>

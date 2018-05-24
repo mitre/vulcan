@@ -19,7 +19,7 @@ class ProjectsController < ApplicationController
       format.html
       format.json { send_data create_project_json(Project.find(params[:id])), :filename => Project.find(params[:id]).name + '-overview.json' }
       format.csv  { send_data Project.find(params[:id]).to_csv, :filename => Project.find(params[:id]).name + '-overview.csv' }
-
+      format.xlsx
     end
   end
 
@@ -81,19 +81,39 @@ class ProjectsController < ApplicationController
     end
   end
   
+  # Upload an xlsx or json file and create a project
   def upload
-    project_json = JSON.parse(File.read(params[:file].path))
-    @project = Project.create(project_json["project_data"].except('id'))
-    project_json["controls"].each do |control|
-      project_control = @project.project_controls.create(control.except("nist_controls"))
-      control["nist_controls"].each do |nist_control|
-        project_control.nist_controls << NistControl.find(nist_control["id"])
+    if params[:file].content_type == "application/json"
+      begin
+        project_json = JSON.parse(File.read(params[:file].path))
+        @project = Project.create(project_json["project_data"].except('id'))
+        project_json["controls"].each do |control|
+          project_control = @project.project_controls.create(control.except("nist_controls"))
+          control["nist_controls"].each do |nist_control|
+            project_control.nist_controls << NistControl.find(nist_control["id"])
+          end
+        end
+      rescue StandardError => e
+      end
+    elsif params[:file].content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      begin
+        project_xlsx = Roo::Excelx.new(params[:file].path)
+        project_info = project_xlsx.sheet('Profile').row(2)
+        if detect_upload_project_doesnt_exist(project_info[0])
+          
+        end
+      rescue StandardError => e
+        
       end
     end
     redirect_to projects_path, notice: 'Project uploaded.'
   end
 
   private
+    def detect_upload_project_doesnt_exist(project_name)
+      Project.all.select {|project| project.title == project_name}.empty?
+    end
+  
     def fetch_srg_data_families
       srg_data = {}
       srgs = Srg.all

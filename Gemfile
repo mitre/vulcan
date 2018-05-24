@@ -64,3 +64,5 @@ gem 'inspec'
 gem 'word_wrap'
 gem "roo"
 gem 'nokogiri-happymapper', :require => 'happymapper'
+gem 'axlsx', '2.1.0.pre'
+gem 'axlsx_rails'

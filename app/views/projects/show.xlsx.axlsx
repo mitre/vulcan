@@ -1,0 +1,45 @@
+##
+# Script used for exporting a project as an xlsx
+##
+
+wb = xlsx_package.workbook
+
+styles = xlsx_package.workbook.styles
+                          
+wb.add_worksheet(name: "Project") do |sheet|
+  sheet.add_row ['Name', 'Title', 'Maintainer', 'Copyright', 'Copyright Email', 'License', 'Summary', 'Version']
+  sheet.add_row [@project.name, @project.title, @project.maintainer, 
+                 @project.copyright, @project.copyright_email, @project.license, @project.summary, @project.version]
+end
+
+wb.add_worksheet(name: "Project_Controls") do |sheet|
+  sheet.add_row ['Title', 'Description', 'Impact', 'Code', 'Control_id', 'sl_ref', 'sl_line', 'Checktext', 'Fixtext', 
+                 'Justification', 'Status', 'Srg Title ID', 'Related Nist Controls']
+  @project.project_controls.each do |project_control|
+    nist_families = project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index}
+    
+    sheet.add_row [project_control.title, project_control.description, project_control.impact, project_control.code, 
+                   project_control.control_id, project_control.sl_ref, project_control.sl_line, project_control.checktext, 
+                   project_control.fixtext, project_control.justification, project_control.status, project_control.srg_title_id, nist_families]
+  end
+end
+
+wb.add_worksheet(name: "Project_Srgs") do |sheet|
+  sheet.add_row ['Title', 'Description', 'Publisher', 'Published']
+  @project.srgs.each do |srg|
+    sheet.add_row [srg.title, srg.description, srg.publisher, srg.published]
+  end
+end
+
+wb.add_worksheet(name: "Project_Srg_Controls") do |sheet|
+  sheet.add_row ['Srg Title', 'Control Id', 'Severity', 'Title', 'Description', 'Rule ID', 'Fix ID', 'Fixtext', 'Check ID', 'Checktext', 'Srg Title ID', 'Related Nist Controls']
+  
+  @project.srgs.each do |srg|
+      srg.srg_controls.each do |srg_control|
+        nist_families = srg_control.nist_controls.collect {|nist| nist.family + '-' + nist.index}
+        sheet.add_row [srg.title, srg_control.control_id, srg_control.severity, srg_control.title, srg_control.description, 
+                     srg_control.ruleID, srg_control.fixid, srg_control.fixtext, srg_control.checkid, srg_control.checktext, 
+                     srg_control.srg_title_id, srg_control.nistFamilies]
+     end
+  end
+end
