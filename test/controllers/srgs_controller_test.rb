@@ -17,7 +17,7 @@ class SrgsControllerTest < ActionDispatch::IntegrationTest
 
   test "should create srg" do
     assert_difference('Srg.count') do
-      post srgs_url, params: { srg: { description: @srg.description, published: @srg.published, publisher: @srg.publisher, title: @srg.title } }
+      post srgs_url, params: { srg: {  } }
     end
 
     assert_redirected_to srg_url(Srg.last)
@@ -34,7 +34,7 @@ class SrgsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update srg" do
-    patch srg_url(@srg), params: { srg: { description: @srg.description, published: @srg.published, publisher: @srg.publisher, title: @srg.title } }
+    patch srg_url(@srg), params: { srg: {  } }
     assert_redirected_to srg_url(@srg)
   end
 

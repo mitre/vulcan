@@ -7,6 +7,8 @@ Rails.application.routes.draw do
   resources :pages
   match 'upload_srg' => 'srgs#upload', :as => :upload_srg, :via => :post
   match 'upload_project' => 'projects#upload', :as => :upload_project, :via => :post
-
+  match 'render_modal' => 'project_controls#render_modal', :as => :render_modal, :via => :get
+  match 'project/:id/edit_controls' => 'projects#edit_project_controls', :as => :project_edit_controls, :via => :get
+  
   root "srgs#index"
 end

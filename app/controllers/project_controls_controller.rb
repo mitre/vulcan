@@ -1,5 +1,6 @@
 class ProjectControlsController < ApplicationController
   before_action :set_project_control, only: [:show, :edit, :update, :destroy]
+  respond_to :html, :json
 
   # GET /controls
   # GET /controls.json
@@ -11,6 +12,7 @@ class ProjectControlsController < ApplicationController
   # GET /project_controls/1.json
   def show
   end
+  
 
   # GET /controls/new
   def new
@@ -44,10 +46,9 @@ class ProjectControlsController < ApplicationController
   # PATCH/PUT /project_controls/1
   # PATCH/PUT /project_controls/1.json
   def update
-    puts project_controls_params
     respond_to do |format|
       if @project_control.update(project_controls_params)
-        format.html { redirect_to @project_control, notice: 'Control was successfully updated.' }
+        format.html { redirect_to project_edit_controls_path(@project_control.project_id), notice: 'Control was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_control }
       else
         format.html { render :edit }

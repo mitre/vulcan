@@ -1,76 +1,96 @@
-<%= form_with(model: project, local: true) do |form| %>
-  <% if project.errors.any? %>
-    <div id="error_explanation">
-      <h2><%= pluralize(project.errors.count, "error") %> prohibited this project from being saved:</h2>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card-box">
+            <h4 class="m-t-0 header-title"><b>Start New Profile</h4>
 
-      <ul>
-      <% project.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-      </ul>
-    </div>
-  <% end %>
-  <div class="col-lg-6">
-    <!-- /.table-responsive -->
-    <div class="field">
-      <%= form.label :name %>
-      <%= form.text_field :name, id: :project_name, class: "form-control" %>
-    </div>
+            <%= form_with(model: project, local: true, :html => {:id=>"basic-form"}) do |form| %>
+                <% if project.errors.any? %>
+                  <div id="error_explanation">
+                    <h2><%= pluralize(project.errors.count, "error") %> prohibited this project from being saved:</h2>
 
-    <div class="field">
-      <%= form.label :title %>
-      <%= form.text_field :title, id: :project_title, class: "form-control" %>
-    </div>
+                    <ul>
+                    <% project.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                    </ul>
+                  </div>
+                <% end %>
+                <div>
+                    <h3>Details</h3>
+                    <section>
+                        <div class="form-group clearfix">
+                            <label class="control-label"> Project Name *</label>
+                            <div class="">
+                              <%= form.text_field :name, id: :project_name, class: "form-control" %>
+                            </div>
+                        </div>
+                        <div class="form-group clearfix">
+                            <label class="control-label " for="password"> Profile Title *</label>
+                            <div class="">
+                              <%= form.text_field :title, id: :project_title, class: "form-control" %>
+                            </div>
+                        </div>
 
-    <div class="field">
-      <%= form.label :maintainer %>
-      <%= form.text_field :maintainer, id: :project_maintainer, class: "form-control" %>
-    </div>
+                        <div class="form-group clearfix">
+                            <label class="control-label " for="confirm"> Maintainer *</label>
+                            <div class="">
+                              <%= form.text_field :maintainer, id: :project_maintainer, class: "form-control" %>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group clearfix">
+                            <label class="control-label " for="confirm"> Copyright *</label>
+                            <div class="">
+                              <%= form.text_field :copyright, id: :project_copyright, class: "form-control" %>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group clearfix">
+                            <label class="control-label " for="confirm"> Copyright Email *</label>
+                            <div class="">
+                              <%= form.text_field :copyright_email, id: :project_copyright_email, class: "form-control" %>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group clearfix">
+                            <label class="control-label " for="confirm"> License *</label>
+                            <div class="">
+                              <%= form.text_field :license, id: :project_license, class: "form-control" %>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group clearfix">
+                            <label class="control-label " for="confirm"> Version *</label>
+                            <div class="field">
+                              <%= form.text_field :version, id: :project_version, class: "form-control" %>
+                            </div>
+                        </div>
 
-    <div class="field">
-      <%= form.label :copyright %>
-      <%= form.text_field :copyright, id: :project_copyright, class: "form-control" %>
-    </div>
+                    </section>
+                    <h3>Summary</h3>
+                    <section>
+                        <div class="form-group clearfix">
+                            <label class="control-label" for="name"> Project Summary *</label>
+                            <div class="field">
+                              <%= form.text_area :summary, id: :project_summary, class: "form-control", rows:2 %>
+                            </div>
+                        </div>
 
-    <div class="field">
-      <%= form.label :copyright_email %>
-      <%= form.text_field :copyright_email, id: :project_copyright_email, class: "form-control" %>
+                    </section>
+                    <h3>SRGs</h3>
+                    <section>
+                        <div class="form-group clearfix">
+                            <div class="col-lg-12">
+                              <%= form.select :srg_ids, options_for_select(@srgs.collect {|srg| srg.title}), {}, {:id => "srg_ids", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            <% end %>
+            <script>
+              load_wizard();
+              $("#srg_ids").multiSelect();
+            </script>
+        </div>
     </div>
-
-    <div class="field">
-      <%= form.label :license %>
-      <%= form.text_field :license, id: :project_license, class: "form-control" %>
-    </div>
-
-    <div class="field">
-      <%= form.label :summary %>
-      <%= form.text_area :summary, id: :project_summary, class: "form-control", rows:2 %>
-    </div>
-
-    <div class="field">
-      <%= form.label :version %>
-      <%= form.text_field :version, id: :project_version, class: "form-control" %>
-    </div>
-  </div>
-  
-  <div class="col-lg-6">
-    <div class="field">
-       <h3>Select Families from each SRG that will apply to the project</h3>
-    </div>
-    <div class="field">
-      <div class="vertical-menu">
-        <% @srgs.each do |srg| %>
-          <%= form.label srg.title, {:style => 'text-indent: 10%;', class: "checkbox"} do %>
-            <%= form.check_box :srg_ids, { multiple: true }, srg.id, false %>
-            <%= srg.title %>
-          <% end %>
-        <% end %>
-      </div>
-    </div>
-  </div>
-
-
-  <div class="actions">
-    <%= form.submit "Submit", {:class => "btn btn-primary"} %>
-  </div>
-<% end %>
+</div>

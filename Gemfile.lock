@@ -51,13 +51,6 @@ GEM
     aws-sdk-resources (2.11.49)
       aws-sdk-core (= 2.11.49)
     aws-sigv4 (1.0.2)
-    axlsx (2.1.0.pre)
-      htmlentities (~> 4.3.1)
-      nokogiri (>= 1.4.1)
-      rubyzip (~> 1.1.7)
-    axlsx_rails (0.5.2)
-      actionpack (>= 3.1)
-      axlsx (>= 2.0.1)
     azure_mgmt_resources (0.16.0)
       ms_rest_azure (~> 0.10.0)
     bindex (0.5.0)
@@ -203,8 +196,6 @@ GEM
     public_suffix (3.0.2)
     puma (3.11.4)
     rack (2.0.5)
-    rack-proxy (0.6.4)
-      rack
     rack-test (1.0.0)
       rack (>= 1.0, < 3)
     rails (5.1.6)
@@ -234,6 +225,9 @@ GEM
     rb-fsevent (0.10.3)
     rb-inotify (0.9.10)
       ffi (>= 0.5.0, < 2)
+    responders (2.4.0)
+      actionpack (>= 4.2.0, < 5.3)
+      railties (>= 4.2.0, < 5.3)
     roo (2.7.1)
       nokogiri (~> 1)
       rubyzip (~> 1.1, < 2.0.0)
@@ -255,7 +249,7 @@ GEM
     rspec-support (3.7.1)
     ruby_dep (1.5.0)
     rubyntlm (0.6.2)
-    rubyzip (1.1.7)
+    rubyzip (1.2.1)
     sass (3.5.6)
       sass-listen (~> 4.0.0)
     sass-listen (4.0.0)
@@ -267,9 +261,9 @@ GEM
       sprockets (>= 2.8, < 4.0)
       sprockets-rails (>= 2.0, < 4.0)
       tilt (>= 1.1, < 3)
-    selenium-webdriver (3.8.0)
+    selenium-webdriver (3.12.0)
       childprocess (~> 0.5)
-      rubyzip (~> 1.0)
+      rubyzip (~> 1.2)
     semverse (2.0.0)
     spring (2.0.2)
       activesupport (>= 4.2)
@@ -316,10 +310,6 @@ GEM
       activemodel (>= 5.0)
       bindex (>= 0.4.0)
       railties (>= 5.0)
-    webpacker (3.5.3)
-      activesupport (>= 4.2)
-      rack-proxy (>= 0.6.1)
-      railties (>= 4.2)
     websocket-driver (0.6.5)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.3)
@@ -345,8 +335,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  axlsx (= 2.1.0.pre)
-  axlsx_rails
   bootstrap (~> 4.0.0)
   byebug
   capybara (~> 2.13)
@@ -361,7 +349,8 @@ DEPENDENCIES
   listen (>= 3.0.5, < 3.2)
   nokogiri-happymapper
   puma (~> 3.7)
-  rails (~> 5.1.4)
+  rails (~> 5.1.6)
+  responders (~> 2.0)
   roo
   sass-rails (~> 5.0)
   selenium-webdriver
@@ -372,7 +361,6 @@ DEPENDENCIES
   tzinfo-data
   uglifier (>= 1.3.0)
   web-console (>= 3.3.0)
-  webpacker (~> 3.3)
   word_wrap
 
 BUNDLED WITH

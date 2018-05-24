@@ -1,32 +1,44 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
     <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="">
-        <meta name="author" content="">
-        <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
-        <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+        <meta charset="utf-8" />
+        <title>Vulcan Profile Builder</title>
         <%= csrf_meta_tags %>
 
-        <title>SRG Profile Builder</title>
-    </head>
-    <body>
-      <div class="wrapper">
+        <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+        <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
+        <meta content="Coderthemes" name="author" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-        <%= render :partial => 'layouts/header' %>
-        <div id="content">
-          <%= yield %>
+        <link rel="shortcut icon" href="assets/images/favicon.ico">
+
+
+    </head>
+
+    <body>
+        <div class="wrapper">
+            <div class="container-fluid">
+                <%= render :partial => 'layouts/header' %>
+                <%= yield %>
+            </div>
         </div>
 
-        <footer class="main-footer">
-          <div class="pull-right hidden-xs">
-            Version: 0.0.1 
-          </div>
-          <strong>Copyright &copy; 2017 <a href="#">MITRE</a>.</strong> All rights reserved.
-        </footer>
-      </div>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                $('.counter').counterUp({
+                    delay: 100,
+                    time: 1200
+                });
+            });
+        </script>
+
     </body>
+    <footer class="main-footer">
+      <div class="pull-right hidden-xs">
+        Version: 0.0.1 
+      </div>
+      <strong>Copyright &copy; 2017 <a href="#">MITRE</a>.</strong> All rights reserved.
+    </footer>
 </html>

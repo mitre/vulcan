@@ -19,7 +19,7 @@ add_fields = ->
       $('#main_control_fields').hide()
       $('#checktext_fields').hide()
       $('#fixtext_fields').hide()
-    
+
 $(document).ready(ready)
 $(document).ready(add_fields)
-$(document).on('page:load', ready)
+$(document).on('turbolinks:load', ready)

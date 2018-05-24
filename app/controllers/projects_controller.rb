@@ -1,6 +1,5 @@
 class ProjectsController < ApplicationController
-  before_action :set_project, only: [:show, :edit, :update, :destroy]
-
+  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls]
   # GET /projects
   # GET /projects.json
   def index
@@ -22,6 +21,10 @@ class ProjectsController < ApplicationController
       format.xlsx
     end
   end
+  
+  # GET /project_controls/1/edit_controls
+  def edit_project_controls
+  end
 
   # GET /projects/new
   def new
@@ -40,9 +43,10 @@ class ProjectsController < ApplicationController
     project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"}
     @project = Project.new(get_project_hash(project_params))
     puts Srg.where(id: project_params[:srg_ids])
-    @project.srgs << Srg.where(id: project_params[:srg_ids])
+    @project.srgs << Srg.where(title: project_params[:srg_ids])
         
     respond_to do |format|
+      puts format
       if @project.save
         format.html { redirect_to @project, notice: 'Project was successfully created.' }
         format.json { render :show, status: :created, location: @project }

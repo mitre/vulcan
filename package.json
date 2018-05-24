@@ -1,10 +1,5 @@
 {
-  "name": "profile_builder",
+  "name": "vulcan_new",
   "private": true,
-  "dependencies": {
-    "@rails/webpacker": "^3.3.1"
-  },
-  "devDependencies": {
-    "webpack-dev-server": "2.11.2"
-  }
+  "dependencies": {}
 }
