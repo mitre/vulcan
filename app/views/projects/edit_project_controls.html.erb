@@ -59,7 +59,6 @@
 </div>
 
 <script>
-  $('[name="project_control[status]"]').on("change", add_fields)
   
   function render_form (control_id) {
     hsh = "#form_card";
@@ -74,6 +73,7 @@
           var found = $('#edit_project_control_id', elements);
           card_holder.append('<div id="form_holder"></div>');
           $('#form_holder').append($(data).find('#edit_control_form_id').html());
+          $('[name="project_control[status]"]').on("change", add_fields);
           add_fields();
         },
         error: function() {

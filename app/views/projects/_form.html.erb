@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card-box">
-            <h4 class="m-t-0 header-title"><b>Start New Profile</h4>
+            <h4 class="m-t-0 header-title"><b>Start New Project</h4>
 
             <%= form_with(model: project, local: true, :html => {:id=>"basic-form"}) do |form| %>
                 <% if project.errors.any? %>
@@ -16,70 +16,134 @@
                   </div>
                 <% end %>
                 <div>
-                    <h3>Details</h3>
+                    <h3>Vendor details</h3>
                     <section>
-                        <div class="form-group clearfix">
-                            <label class="control-label"> Project Name *</label>
-                            <div class="">
-                              <%= form.text_field :name, id: :project_name, class: "form-control" %>
-                            </div>
-                        </div>
-                        <div class="form-group clearfix">
-                            <label class="control-label " for="password"> Profile Title *</label>
-                            <div class="">
-                              <%= form.text_field :title, id: :project_title, class: "form-control" %>
-                            </div>
-                        </div>
-
-                        <div class="form-group clearfix">
-                            <label class="control-label " for="confirm"> Maintainer *</label>
-                            <div class="">
-                              <%= form.text_field :maintainer, id: :project_maintainer, class: "form-control" %>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group clearfix">
-                            <label class="control-label " for="confirm"> Copyright *</label>
-                            <div class="">
-                              <%= form.text_field :copyright, id: :project_copyright, class: "form-control" %>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group clearfix">
-                            <label class="control-label " for="confirm"> Copyright Email *</label>
-                            <div class="">
-                              <%= form.text_field :copyright_email, id: :project_copyright_email, class: "form-control" %>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group clearfix">
-                            <label class="control-label " for="confirm"> License *</label>
-                            <div class="">
-                              <%= form.text_field :license, id: :project_license, class: "form-control" %>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group clearfix">
-                            <label class="control-label " for="confirm"> Version *</label>
-                            <div class="field">
-                              <%= form.text_field :version, id: :project_version, class: "form-control" %>
-                            </div>
-                        </div>
-
+                      <div class="form-group clearfix">
+                          <label class="control-label"> Vendor Name *</label>
+                          <div class="">
+                            <%= form.text_field :vendor_name, id: :project_vendor_name, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label"> Point Of Contact *</label>
+                          <div class="">
+                            <%= form.text_field :poc, id: :project_vendor_poc, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label"> Point Of Contact Email *</label>
+                          <div class="">
+                            <%= form.text_field :poc_email, id: :project_vendor_poc_email, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label"> Point Of Contact Phone Number *</label>
+                          <div class="">
+                            <%= form.text_field :poc_number, id: :project_vendor_poc_number, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label"> Point Of Contact Email *</label>
+                          <div class="">
+                            <%= form.text_field :poc_email, id: :project_vendor_poc_email, class: "form-control" %>
+                          </div>
+                      </div>
                     </section>
-                    <h3>Summary</h3>
+                    <h3>DoD Sponsor</h3>
                     <section>
-                        <div class="form-group clearfix">
-                            <label class="control-label" for="name"> Project Summary *</label>
-                            <div class="field">
-                              <%= form.text_area :summary, id: :project_summary, class: "form-control", rows:2 %>
-                            </div>
-                        </div>
+                      <div class="form-group clearfix">
+                          <label class="control-label"> DoD Sponsor Name *</label>
+                          <div class="">
+                            <%= form.text_field :dod_name, id: :project_dod_sponsor_name, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label"> DoD Sponsor Organization *</label>
+                          <div class="">
+                            <%= form.text_field :dod_organization, id: :project_dod_organization, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label"> DoD Sponsor Phone Number *</label>
+                          <div class="">
+                            <%= form.text_field :dod_number, id: :project_dod_number, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label"> DoD Sponsor Email *</label>
+                          <div class="">
+                            <%= form.text_field :dod_email, id: :project_dod_email, class: "form-control" %>
+                          </div>
+                      </div>
+                    </section>
+                    <h3>Project Details</h3>
+                    <section>
+                      <div class="form-group clearfix">
+                          <label class="control-label"> Project Name *</label>
+                          <div class="">
+                            <%= form.text_field :name, id: :project_name, class: "form-control" %>
+                          </div>
+                      </div>
+                      <div class="form-group clearfix">
+                          <label class="control-label " for="password"> Profile Title *</label>
+                          <div class="">
+                            <%= form.text_field :title, id: :project_title, class: "form-control" %>
+                          </div>
+                      </div>
 
+                      <div class="form-group clearfix">
+                          <label class="control-label " for="confirm"> Maintainer *</label>
+                          <div class="">
+                            <%= form.text_field :maintainer, id: :project_maintainer, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label " for="confirm"> Copyright *</label>
+                          <div class="">
+                            <%= form.text_field :copyright, id: :project_copyright, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label " for="confirm"> Copyright Email *</label>
+                          <div class="">
+                            <%= form.text_field :copyright_email, id: :project_copyright_email, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label " for="confirm"> License *</label>
+                          <div class="">
+                            <%= form.text_field :license, id: :project_license, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label " for="confirm"> Version *</label>
+                          <div class="field">
+                            <%= form.text_field :version, id: :project_version, class: "form-control" %>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group clearfix">
+                          <label class="control-label" for="name"> Project Summary *</label>
+                          <div class="field">
+                            <%= form.text_area :summary, id: :project_summary, class: "form-control", rows:2 %>
+                          </div>
+                      </div>
                     </section>
                     <h3>SRGs</h3>
                     <section>
                         <div class="form-group clearfix">
+                            <label class="control-label" for="name"> Relevant SRG(s) *</label>
                             <div class="col-lg-12">
                               <%= form.select :srg_ids, options_for_select(@srgs.collect {|srg| srg.title}), {}, {:id => "srg_ids", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>
                             </div>

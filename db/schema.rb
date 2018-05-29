@@ -79,6 +79,8 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.string "license"
     t.string "summary"
     t.string "version"
+    t.integer "dod_agencies_id"
+    t.index ["dod_agencies_id"], name: "index_projects_on_dod_agencies_id"
   end
 
   create_table "projects_srgs", force: :cascade do |t|
@@ -110,5 +112,11 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.string "publisher"
     t.string "published"
   end
-
+  
+  create_table "dod_agencies", force: :cascade do |t|
+    t.string "name"
+    t.string "phone_number"
+    t.string "email"
+    t.string "organization"
+  end
 end

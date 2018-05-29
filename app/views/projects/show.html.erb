@@ -9,7 +9,6 @@
                         <th>Title</th>
                         <th>Impact </th>
                         <th>Nist Families</th>
-                        <th>Edit</th>
                     </tr>
                 </thead>
                 <div class="form-inline m-b-20">
@@ -20,37 +19,28 @@
                     </div>
                 </div>
                 <tbody>
-                    <% counter = 0 %>
                     <% @project.project_controls.each do |project_control| %>
                       <tr>
                           <% if project_control.status.nil? %>
-                             <td><button class="pc-app-id btn btn-warning" >Not Set Yet</button></td>
+                             <td><button class="btn btn-warning" >Not Set Yet</button></td>
                           <% elsif project_control.status == 'Not Applicable' %>
-                             <td><button class="pc-app-id btn btn-primary" >Not Applicable</button></td>
+                             <td><button class="btn btn-primary" >Not Applicable</button></td>
                           <% elsif project_control.status == 'Applicable - Configurable' %>
-                             <td><button class="pc-app-id btn btn-success" >Applicable - Configurable</button></td>
+                             <td><button class="btn btn-success" >Applicable - Configurable</button></td>
                           <% elsif project_control.status == 'Applicable - Does Not Meet' %>
-                             <td><button class="pc-app-id btn btn-danger" >Applicable - Does Not Meet</button></td>
+                             <td><button class="btn btn-danger" >Applicable - Does Not Meet</button></td>
                           <% elsif project_control.status == 'Applicable - Inherently Meets' %>
-                             <td><button class="pc-app-id btn btn-danger" >Applicable - Inherently Meets</button></td>
+                             <td><button class="btn btn-danger" >Applicable - Inherently Meets</button></td>
                           <% end %>
                           <td><%= project_control.title %></td>
                           <td><%= project_control.impact %></td>
-                          <td><%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }%></td>
-                          <td>
-                            <div class="button-list">
-                                <!-- Large modal -->
-                                <!-- <button type="button" class="btn btn-info waves-effect waves-light" data-toggle="modal" data-target=".<%= counter %>">Edit Control</button> -->
-                                <%= link_to 'Edit Control', edit_project_control_path(project_control), data: { modal: true } %>
-                            </div>
-                          </td>
+                          <td><%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index } %></td>
                       </tr>
-                      <% counter += 1 %>
                     <% end %>
                 </tbody>
                 <tfoot>
                   <tr class="active">
-                      <td colspan="5">
+                      <td colspan="4">
                           <div class="text-right">
                               <ul class="pagination pagination-split justify-content-end footable-pagination m-t-10 m-b-0"></ul>
                           </div>

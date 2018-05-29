@@ -54,5 +54,4 @@ search_project_controls = (e) ->
     e.preventDefault()
     $('#project-controls-datatable').trigger('footable_filter', {filter: $('#project-controls-search').val()})
 
-$(document).on('ready', ready)
 $(document).on('turbolinks:load', ready)
