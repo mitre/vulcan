@@ -1,64 +1,68 @@
 <div class="row">
-  <h4 class="m-t-0 header-title" style="padding: 15px">Edit Project <%= @project.name %></h4>
-<div>
+    <div class="col-lg-12">
+      <div class="card-box">
+        <div class="row">
+          <div class="col-lg-12">
+            <h4 class="m-t-0 header-title" style="padding: 15px">Edit Project <%= @project.name %></h4>
+          </div>
+        </div>
 
-<div class="row">
-  <!-- Left sidebar -->
-    <div class="col-xl-3 col-lg-4">
-        <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;">
-            <div class="list-group">
-              <% @project.project_controls.each do |project_control| %>
-                <% if project_control.status.nil? %>
-                  <button class="list-group-item list-group-item-action" onclick="render_form(<%= project_control.id %>);">
-                    <div class="row">
-                        Title: <%= project_control.title %> <br>
-                        Nist Controls: <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }%>
-                    </div>
-                  </button>
-                <% elsif project_control.status == 'Not Applicable' %>
-                  <button class="list-group-item list-group-item-action list-group-item-primary" onclick="render_form(<%= project_control.id %>);">
-                    <div class="row">
-                        Title: <%= project_control.title %> <br>
-                        Nist Controls: <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }%>
-                    </div>
-                  </button>
-                <% elsif project_control.status == 'Applicable - Configurable' %>
-                  <button class="list-group-item list-group-item-action list-group-item-success" onclick="render_form(<%= project_control.id %>);">
-                    <div class="row">
-                        Title: <%= project_control.title %> <br>
-                        Nist Controls: <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }%>
-                    </div>
-                  </button>
-                <% elsif project_control.status == 'Applicable - Does Not Meet' %>
-                  <button class="list-group-item list-group-item-action list-group-item-danger" onclick="render_form(<%= project_control.id %>);">
-                    <div class="row">
-                        Title: <%= project_control.title %> <br>
-                        Nist Controls: <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }%>
-                    </div>
-                  </button>
-                <% elsif project_control.status == 'Applicable - Inherently Meets' %>
-                  <button class="list-group-item list-group-item-action list-group-item-warning" onclick="render_form(<%= project_control.id %>);">
-                    <div class="row">
-                        Title: <%= project_control.title %> <br>
-                        Nist Controls: <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }%>
-                    </div>
-                  </button>
-                <% end %>
-              <% end %>
-            </div>
-        </div>
-    </div>
-    <!-- End Left sidebar -->
-    <div class="col-xl-9 col-lg-8">
         <div class="row no-gutters">
-            <div class="col-lg-12">
-                <div class="card" id="form_card" style="position: relative; overflow-y: scroll; height: 500px;"></div>
+          <div class="col-lg-2">
+            <h6>1. Filter NIST Family</h6>
+            <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;">
+                <div class="list-group" id="nist_family_list">
+                  <% @nist_families.each do |nist_family| %>
+                    <div class='row'>
+                      <div class='col-lg-12'>
+                        <button class="list-group-item list-group-item-action" onclick="filter_controls_on_nist('<%= nist_family.short_title %>', <%= @project.project_controls.collect {|control| [control.control_id, control.nist_controls.collect {|nist_family| nist_family.family + '-' + nist_family.index}, control.id]} %>)">
+                          <%= nist_family.long_title %>
+                        </button>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
             </div>
+          </div>
+          
+          <div class="col-lg-2">
+              <h6>2. Select Control</h6>
+              <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;" id="controls_container">
+                  <div class="list-group" id="controls_list">
+                    <% @project.project_controls.each do |project_control| %>
+                        <button class="list-group-item list-group-item-action" onclick="render_form('<%= project_control.id %>')">
+                          <%= project_control.control_id %> - <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }[0] %>
+                        </button>
+                    <% end %>
+                  </div>
+              </div>
+          </div>
+          
+          <div class="col-lg-8">
+              <div class="row">
+                  <h6>3. Build Control</h6>
+                  <div class="col-lg-12">
+                      <div class="card" id="form_card" style="position: relative; overflow-y: scroll; height: 500px;"></div>
+                  </div>
+              </div>
+          </div>
         </div>
-    </div>
+      </div>
+  </div>
 </div>
 
 <script>
+
+  function filter_controls_on_nist(nist_family, project_controls) {
+    $("#controls_list").empty();
+    project_controls.forEach((control) =>{
+      control[1].forEach((nist_control) =>{
+        if(nist_control.indexOf(nist_family) != -1) {
+          $("#controls_list").append('<button class="list-group-item list-group-item-action" onclick="render_form(' + control[2] + ')">' + control[0] + ' - ' + control[1][0] + '</button>');
+        }
+      })
+    });
+  }
   
   function render_form (control_id) {
     hsh = "#form_card";
@@ -83,23 +87,25 @@
   }
   
   function add_fields() {
-    if ($('[name="project_control[status]"]').val() == 'Applicable - Does Not Meet') {
-      $('#checktext_fields').show();
-      $('#main_control_fields').hide();
-      $('#justification_field').hide();
-      $('#fixtext_fields').hide();
-    }
     if ($('[name="project_control[status]"]').val() == 'Applicable - Configurable') {
       $('#justification_field').hide();
       $('#main_control_fields').show();
       $('#checktext_fields').show();
       $('#fixtext_fields').show();
-    }
-    if ($('[name="project_control[status]"]').val() == 'Applicable - Inherently Meets' || $('#project_control_status').val() == 'Not Applicable') {
+      $('#code_field').show();
+      $('#nothing_to_fill_code_field').hide();
+      $('#nothing_to_fill_checkfix_field').hide();
+    } else if (($('[name="project_control[status]"]').val() == 'Applicable - Inherently Meets') || ($('[name="project_control[status]"]').val() == 'Not Applicable')
+                || $('[name="project_control[status]"]').val() == 'Applicable - Does Not Meet') {
       $('#justification_field').show();
       $('#main_control_fields').hide();
       $('#checktext_fields').hide();
       $('#fixtext_fields').hide();
+      $('#code_field').hide();
+      $('#nothing_to_fill_code_field').show();
+      $('#nothing_to_fill_checkfix_field').show();
+      $('#nothing_to_fill_checkfix_label').text("Controls with applicability \'" + $('[name="project_control[status]"]').val() + "\' do not have any fields to fill out in this section." );
+      $('#nothing_to_fill_code_label').text("Controls with applicability \'" + $('[name="project_control[status]"]').val() + "\' do not have any fields to fill out in this section." );
     }
   }
 </script>

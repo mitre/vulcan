@@ -1,6 +1,8 @@
 ready = ->
   jQuery ->
     $('[name="project_control[status]"]').on("change", add_fields)
+    $('#srg_pop').popover()
+    
 
 add_fields = ->
   jQuery ->

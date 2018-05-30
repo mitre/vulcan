@@ -24,6 +24,7 @@ class ProjectsController < ApplicationController
   
   # GET /project_controls/1/edit_controls
   def edit_project_controls
+    @nist_families = NistFamily.all
   end
 
   # GET /projects/new
@@ -165,15 +166,15 @@ class ProjectsController < ApplicationController
       srgs.each do |srg|
         srg.srg_controls.each do |srg_control|
           control = {control_params: {}}
-          control[:control_params][:title] = srg_control.title
-          control[:control_params][:description] = srg_control.description
-          control[:control_params][:impact] = srg_control.severity
-          control[:control_params][:control_id] = srg_control.control_id
+          control[:control_params][:title]        = srg_control.title
+          control[:control_params][:description]  = srg_control.description
+          control[:control_params][:impact]       = srg_control.severity
+          control[:control_params][:control_id]   = srg_control.control_id
           control[:control_params][:srg_title_id] = srg_control.srg_title_id
-          control[:control_params][:checktext] = srg_control.checktext
-          control[:control_params][:fixtext] = srg_control.fixtext
-          control[:nist_params] = srg_control.nist_controls
-          
+          control[:control_params][:checktext]    = srg_control.checktext
+          control[:control_params][:fixtext]      = srg_control.fixtext
+          control[:nist_params]                   = srg_control.nist_controls
+                      
           controls << control
         end
       end

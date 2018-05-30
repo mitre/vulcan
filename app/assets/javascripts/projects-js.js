@@ -4,7 +4,7 @@
 * Form wizard page
 */
 
-function load_wizard() {
+function load_wizard(form_id) {
   var FormWizard = function() {};
 
   FormWizard.prototype.createBasic = function($form_container) {
@@ -26,13 +26,13 @@ function load_wizard() {
       });
       return $form_container;
   },
-  FormWizard.prototype.init = function() {
+  FormWizard.prototype.init = function(form_id) {
       //basic form
-      this.createBasic($("#basic-form"));
+      this.createBasic($(form_id));
   },
   //init
   $.FormWizard = new FormWizard, $.FormWizard.Constructor = FormWizard
-  $.FormWizard.init();
+  $.FormWizard.init(form_id);
 }
 
 // Add event listener for opening and closing details
