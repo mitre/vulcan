@@ -11,6 +11,10 @@ class ProjectControlsController < ApplicationController
   # GET /project_controls/1
   # GET /project_controls/1.json
   def show
+    respond_to do |format|
+      format.html
+      format.json  { render json: ProjectControl.find(params[:id]) }
+    end
   end
   
 

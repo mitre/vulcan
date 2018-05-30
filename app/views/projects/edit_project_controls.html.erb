@@ -52,7 +52,7 @@
 </div>
 
 <script>
-
+  ch_fx_sect = '';
   function filter_controls_on_nist(nist_family, project_controls) {
     $("#controls_list").empty();
     project_controls.forEach((control) =>{
@@ -76,6 +76,8 @@
           var elements = $(data);
           var found = $('#edit_project_control_id', elements);
           card_holder.append('<div id="form_holder"></div>');
+          ch_fx_sect = $(data).find('#ch_fx_sect').html();
+          code_sect = $(data).find('#code_sect').html();
           $('#form_holder').append($(data).find('#edit_control_form_id').html());
           $('[name="project_control[status]"]').on("change", add_fields);
           add_fields();
@@ -90,22 +92,14 @@
     if ($('[name="project_control[status]"]').val() == 'Applicable - Configurable') {
       $('#justification_field').hide();
       $('#main_control_fields').show();
-      $('#checktext_fields').show();
-      $('#fixtext_fields').show();
-      $('#code_field').show();
-      $('#nothing_to_fill_code_field').hide();
-      $('#nothing_to_fill_checkfix_field').hide();
+      $('.wizard').steps('add', { title: "Check and Fix Text", content: ch_fx_sect })
+      $('.wizard').steps('add', { title: "InSpec Code", content: code_sect })
     } else if (($('[name="project_control[status]"]').val() == 'Applicable - Inherently Meets') || ($('[name="project_control[status]"]').val() == 'Not Applicable')
                 || $('[name="project_control[status]"]').val() == 'Applicable - Does Not Meet') {
       $('#justification_field').show();
       $('#main_control_fields').hide();
-      $('#checktext_fields').hide();
-      $('#fixtext_fields').hide();
-      $('#code_field').hide();
-      $('#nothing_to_fill_code_field').show();
-      $('#nothing_to_fill_checkfix_field').show();
-      $('#nothing_to_fill_checkfix_label').text("Controls with applicability \'" + $('[name="project_control[status]"]').val() + "\' do not have any fields to fill out in this section." );
-      $('#nothing_to_fill_code_label').text("Controls with applicability \'" + $('[name="project_control[status]"]').val() + "\' do not have any fields to fill out in this section." );
+      $('.wizard').steps('remove', Number(3));
+      $('.wizard').steps('remove', Number(2));
     }
   }
 </script>

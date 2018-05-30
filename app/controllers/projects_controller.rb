@@ -6,7 +6,7 @@ class ProjectsController < ApplicationController
     @projects = Project.all
     respond_to do |format|
       format.html
-      format.json  { send_data Project.find(params[:id]), :filename => Project.find(params[:id]).name + '-overview.json' }
+      format.json  { Project.find(params[:id]) }
       format.csv   { send_data Project.find(params[:id]), :filename => Project.find(params[:id]).name + '-overview.csv' }
     end
   end
@@ -26,7 +26,6 @@ class ProjectsController < ApplicationController
   def edit_project_controls
     nist_families = NistFamily.all.collect{|nist| nist.short_title}
     @nist_families = []
-    
     
     @project.project_controls.each do |control|
       control.nist_controls.each do |nist_control|
