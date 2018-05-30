@@ -24,7 +24,18 @@ class ProjectsController < ApplicationController
   
   # GET /project_controls/1/edit_controls
   def edit_project_controls
-    @nist_families = NistFamily.all
+    nist_families = NistFamily.all.collect{|nist| nist.short_title}
+    @nist_families = []
+    
+    
+    @project.project_controls.each do |control|
+      control.nist_controls.each do |nist_control|
+        if nist_families.include?(nist_control.family)
+          nist_family = NistFamily.find(nist_control.nist_families_id)
+          @nist_families << nist_family unless @nist_families.include?(nist_family)
+        end
+      end
+    end
   end
 
   # GET /projects/new
