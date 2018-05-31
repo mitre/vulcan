@@ -34,56 +34,82 @@
                           <% end %>
                           <td><%= project_control.title %></td>
                           <td><%= project_control.impact %></td>
-                          <td><%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index } %></td>
+                          <td>
+                            <% project_control.nist_controls.each do |nist| %>
+                              <div class="row">
+                                <span class="badge label-table badge-success"><%= nist.family + '-' + nist.index %></span>
+                              </div>
+                            <% end %>
+                          </td>
                       </tr>
                     <% end %>
                 </tbody>
                 <tfoot>
                   <tr class="active">
-                      <td colspan="4">
+                      <td colspan="6">
                           <div class="text-right">
-                              <ul class="pagination pagination-split justify-content-end footable-pagination m-t-10 m-b-0"></ul>
+                              <ul class="pagination justify-content-center footable-pagination"></ul>
                           </div>
                       </td>
                   </tr>
                 </tfoot>
             </table>
+            <script>
+              $(".pagination").rPage();
+            </script>
         </div>
         <%= link_to 'Back', projects_path %>
     </div>
 </div>
 
+<div class="modal fade" id="reviewControlModal" tabindex="-1" role="dialog" aria-labelledby="reviewControlModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reviewControlModalLabel">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="reviewModal">
+        <div id="reviewForm">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+        <button type="button" class="btn btn-success">Approve Control</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 
 // Add event listener for opening and closing details
-$('#project-controls-datatable tr').on('click', function () {
+$('#project-controls-datatable td').on('click', function () {
+  
   control_id = $(this).closest('tr').attr('value');
-  url = '/project_controls/' + control_id + '.json';
-  $.ajax({
-    url: url,
-    type: "get",
-    datatype: 'json',
-    success: function(data) {
-      var table = $('#project-controls-datatable');
-      var tr = $(this).closest('tr');
-      console.log(details_panel(data));
-      tr.append(details_panel(data)).show();
-      
-      
-      // if ( row.child.isShown() ) {
-      //   row.child.hide();
-      //   tr.removeClass('shown');
-      // } else {
-      //    if ( table.row( '.shown' ).length ) {
-      //       $('.table_row', table.row( '.shown' ).node()).click();
-      //    }
-      //    row.child( details_panel(data)).show();
-      // }
-    },
-    error: function() {
-      console.log("Error occured");
-    }   
-  });
+  hsh = "#review_modal_card";
+  url = '/project_controls/' + control_id + '/review_control';
+  var card_holder = $(hsh);
+  if (control_id != undefined) {
+    if ($('#reviewForm').length) {
+      $('#reviewForm').empty();
+    }
+    $.ajax({
+      url: url,
+      type: "get",
+      datatype: 'json',
+      success: function(data) {
+        $('#reviewForm').append(data);
+        $('#reviewControlModal').modal();
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
+  }
 });
 
   function details_panel ( d ) {

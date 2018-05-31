@@ -8,6 +8,7 @@ ready = ->
     $('#project-controls-search').on('input', search_project_controls)
     $('#project-controls-datatable').footable().on('footable_filtering', filter_project_controls)
     $('[name="project_control[status]"]').on("change", add_fields)
+    $(".pagination").rPage()
 
 add_fields = ->
   jQuery ->

@@ -1,0 +1,255 @@
+<div>
+  <%= form_with(model: @project_control, local: true, html: { id: 'review_control_form_id', remote: true}) do |form| %>
+    <%= hidden_field_tag :project_control_id, @project_control.id %>
+    <% if @project_control.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(control.errors.count, "error") %> prohibited this control from being saved:</h2>
+
+        <ul>
+        <% control.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+        </ul>
+      </div>
+    <% end %>
+    <div>
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Applicability</h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :status, id: :project_control_status, class: "form-control", rows:1, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area @project_control.project_control_histories, id: :project_control_status_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Applicability', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Title
+            : (SRG Title <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).title %>" id="srg_title_pop"></i> )
+          </h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area :title_comment, id: :project_control_title_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Title', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Description
+            : (SRG Description <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).description %>" id="srg_desc_pop"></i> )
+          </h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area :description_comment, id: :project_control_description_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Description', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Impact
+            : (SRG Impact <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).severity %>" id="srg_sev_pop"></i> )
+          </h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area :impact_comment, id: :project_control_impact_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Impact', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Justification</h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area :justification_comment, id: :project_control_justification_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Justification', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Check Text
+            : (SRG Check Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).checktext %>" id="srg_ck_pop"></i> )
+          </h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area :checktext_comment, id: :project_control_checktext_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Check Text', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Fix Text
+            : (SRG Fix Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).fixtext %>" id="srg_fx_pop"></i> )
+          </h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :fixtext, id: :project_control_fixtext, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area :fixtext_comment, id: :project_control_fixtext_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Fix Text', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">InSpec Code</h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :code, id: :project_control_code, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer" style="height: 3.5rem;">
+            <div class="row no-gutters h-100">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Comment</span>
+                </div>
+                <%= form.text_area :code_comment, id: :project_control_code_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <div class="input-group-append">
+                  <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'InSpec Code', $('#project_control_status_comment').val())"></input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  <% end %>
+  <script>
+    
+    function add_history(project_control_id, project_control_attr, comment) {
+      console.log(comment);
+      project_control_id = parseInt(project_control_id)
+      $.ajax({
+        url: "/add_history",
+        type: "post",
+        data: {'project_control_histories': {project_control_id, project_control_attr, comment}},
+        success: function(data) {
+          console.log(data);
+        },
+        error: function() {
+          console.log("Error occured");
+        }   
+      });
+    }
+  
+    $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
+    $('#srg_ck_pop').popover(); $('#srg_fx_pop').popover();
+  </script>
+</div>

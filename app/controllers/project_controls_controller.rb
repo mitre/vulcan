@@ -1,5 +1,5 @@
 class ProjectControlsController < ApplicationController
-  before_action :set_project_control, only: [:show, :edit, :update, :destroy]
+  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control]
   respond_to :html, :json
 
   # GET /controls
@@ -27,6 +27,11 @@ class ProjectControlsController < ApplicationController
 
   # GET /project_controls/1/edit
   def edit
+  end
+  
+  # GET /project_controls/1/review_control
+  def review_control
+    render partial: 'review_control_form', project_control: @project_control
   end
 
   # POST /project_controls
@@ -69,6 +74,11 @@ class ProjectControlsController < ApplicationController
       format.html { redirect_to project_controls_url, notice: 'Control was successfully destroyed.' }
       format.json { head :no_content }
     end
+  end
+  
+  def add_history
+    project_control_history = ProjectControlHistory.create(params)
+    return "Success"
   end
 
   private

@@ -69,6 +69,14 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.integer "project_id"
     t.index ["project_id"], name: "index_project_controls_on_project_id"
   end
+  
+  create_table "project_control_histories", force: :cascade do |t|
+    t.timestamps
+    t.text "project_control_attr"
+    t.text "comment"
+    t.integer "project_control_id"
+    t.index ["project_id"], name: "index_project_control_history_on_project_control_id"
+  end
 
   create_table "projects", force: :cascade do |t|
     t.string "name"
