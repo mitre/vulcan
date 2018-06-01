@@ -4,7 +4,8 @@ class ProjectsController < ApplicationController
   # GET /projects
   # GET /projects.json
   def index
-    @projects = Project.all
+    
+    @projects = current_user.projects
     respond_to do |format|
       format.html
       format.json  { Project.find(params[:id]) }
@@ -56,6 +57,7 @@ class ProjectsController < ApplicationController
     @project = Project.new(get_project_hash(project_params))
     puts Srg.where(id: project_params[:srg_ids])
     @project.srgs << Srg.where(title: project_params[:srg_ids])
+    @project.users << current_user
         
     respond_to do |format|
       puts format
