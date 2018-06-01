@@ -24,12 +24,17 @@
             </div>
           </div>
           <div class="card-footer" style="height: 3.5rem;">
+            <% @project_control.project_control_historys.each do |history| %>
+              <div class="comment mb-2 row">
+                
+              </div>
+            <% end %>
             <div class="row no-gutters h-100">
               <div class="input-group">
                 <div class="input-group-prepend">
                   <span class="input-group-text">Comment</span>
                 </div>
-                <%= form.text_area @project_control.project_control_histories, id: :project_control_status_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                <%= form.text_area :status_comment, id: :project_control_status_comment, class: "form-control", rows:1, placeholder: "Comment" %>
                 <div class="input-group-append">
                   <input type="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), 'Applicability', $('#project_control_status_comment').val())"></input>
                 </div>

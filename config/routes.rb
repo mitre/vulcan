@@ -1,10 +1,12 @@
 Rails.application.routes.draw do
+  devise_for :users
   resources :project_controls
   resources :projects
   resources :srg_controls
   resources :srgs
   resources :srg
   resources :pages
+  
   match 'upload_srg' => 'srgs#upload', :as => :upload_srg, :via => :post
   match 'upload_project' => 'projects#upload', :as => :upload_project, :via => :post
   match 'render_modal' => 'project_controls#render_modal', :as => :render_modal, :via => :get
@@ -13,5 +15,5 @@ Rails.application.routes.draw do
   match 'add_history' => 'project_control_histories#add_history', :as => :add_history, :via => :post
 
   
-  root "srgs#index"
+  root 'dashboard#index', as: :home
 end

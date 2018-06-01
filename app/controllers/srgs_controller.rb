@@ -3,6 +3,7 @@ require 'services/CCIAttributes'
 require 'services/StigAttributes'
 
 class SrgsController < ApplicationController
+  before_action :authenticate_user!
   before_action :set_srg, only: [:show, :edit, :update, :destroy]
 
   # GET /srgs
