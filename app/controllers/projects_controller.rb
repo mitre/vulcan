@@ -43,6 +43,7 @@ class ProjectsController < ApplicationController
   def new
     @srgs = Srg.all
     @project = Project.new
+    @users = User.all
   end
 
   # GET /projects/1/edit
@@ -53,11 +54,12 @@ class ProjectsController < ApplicationController
   # POST /projects
   # POST /projects.json
   def create
-    project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"}
+    project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"} unless project_params[:srg_ids].nil?
+    project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:srg_ids].nil?
     @project = Project.new(get_project_hash(project_params))
-    puts Srg.where(id: project_params[:srg_ids])
     @project.srgs << Srg.where(title: project_params[:srg_ids])
     @project.users << current_user
+    @project.users << User.where(email: project_params[:users])
         
     respond_to do |format|
       puts format
@@ -201,6 +203,6 @@ class ProjectsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_params
-      params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[])
+      params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[], users:[])
     end
 end

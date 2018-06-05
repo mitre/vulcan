@@ -65,8 +65,10 @@ ActiveRecord::Schema.define(version: 20180601141707) do
     t.text "project_control_attr"
     t.text "comment"
     t.integer "project_control_id"
-    t.boolean "is_reply", default: false
-    t.index ['project_control_id'], name: "index_project_control_history_on_project_control_id"
+    t.integer "user_id"
+    t.integer "is_reply_to", default: false
+    t.index ['project_control_id'], name: "index_project_control_histories_on_project_control_id"
+    t.index ['user_id'], name: "index_project_control_histories_on_user_id"
   end
 
   create_table "project_controls", force: :cascade do |t|

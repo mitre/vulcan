@@ -148,12 +148,19 @@
                               <%= form.select :srg_ids, options_for_select(@srgs.collect {|srg| srg.title}), {}, {:id => "srg_ids", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>
                             </div>
                         </div>
+                        <div class="form-group clearfix">
+                            <label class="control-label" for="name"> Add Other Users to View this Project *</label>
+                            <div class="col-lg-12">
+                              <%= form.select :users, options_for_select(@users.collect {|user| user.email}), {}, {:id => "users", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>
+                            </div>
+                        </div>
                     </section>
                 </div>
             <% end %>
             <script>
               load_wizard("#basic-form");
               $("#srg_ids").multiSelect();
+              $("#users").multiSelect();
             </script>
         </div>
     </div>
