@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180406183323) do
+ActiveRecord::Schema.define(version: 20180601141707) do
 
   create_table "ccis", force: :cascade do |t|
     t.string "cci"
@@ -21,6 +21,13 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.integer "cci_id"
     t.index ["cci_id"], name: "index_ccis_nist_controls_on_cci_id"
     t.index ["nist_control_id"], name: "index_ccis_nist_controls_on_nist_control_id"
+  end
+
+  create_table "dod_agencies", force: :cascade do |t|
+    t.string "name"
+    t.string "phone_number"
+    t.string "email"
+    t.string "organization"
   end
 
   create_table "nist_controls", force: :cascade do |t|
@@ -50,6 +57,18 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.string "version"
     t.string "short_title"
     t.string "long_title"
+  end
+
+  create_table "project_control_histories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "project_control_attr"
+    t.text "comment"
+    t.integer "project_control_id"
+    t.integer "user_id"
+    t.integer "is_reply_to", default: false
+    t.index ['project_control_id'], name: "index_project_control_histories_on_project_control_id"
+    t.index ['user_id'], name: "index_project_control_histories_on_user_id"
   end
 
   create_table "project_controls", force: :cascade do |t|
@@ -112,11 +131,29 @@ ActiveRecord::Schema.define(version: 20180406183323) do
     t.string "publisher"
     t.string "published"
   end
-  
-  create_table "dod_agencies", force: :cascade do |t|
-    t.string "name"
-    t.string "phone_number"
-    t.string "email"
-    t.string "organization"
+
+  create_table "users", force: :cascade do |t|
+    t.string "email", default: "", null: false
+    t.string "encrypted_password", default: "", null: false
+    t.string "reset_password_token"
+    t.datetime "reset_password_sent_at"
+    t.datetime "remember_created_at"
+    t.integer "sign_in_count", default: 0, null: false
+    t.datetime "current_sign_in_at"
+    t.datetime "last_sign_in_at"
+    t.string "current_sign_in_ip"
+    t.string "last_sign_in_ip"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
+  
+  create_table "projects_users", id: false, force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "project_id"
+    t.index ["project_id"], name: "index_users_projects_on_project_id"
+    t.index ["user_id"], name: "index_users_projects_on_user_id"
+  end
+
 end

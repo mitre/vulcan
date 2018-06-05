@@ -68,3 +68,5 @@ gem 'nokogiri-happymapper', :require => 'happymapper'
 # gem 'axlsx_rails'
 
 gem 'responders', '~> 2.0'
+
+gem 'devise'

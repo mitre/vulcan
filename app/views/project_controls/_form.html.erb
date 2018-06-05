@@ -11,126 +11,104 @@
         </ul>
       </div>
     <% end %>
-    
-    <div class="field">
-      <%= form.label :project_control_id %>
-      <%= @project_control.control_id %>
-    </div>
-    
-    <div class="field">
-      <%= form.label :project_control_applicability %>
-      <%= form.select(:status, options_for_select([[nil, ''], ['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.status)) %>
-    </div>
-    
-    <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='justification_field'>
-      <%= form.label :justification, id: :project_control_just_label %>
-      <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
-    </div>
-    
-    <div id='main_control_fields' style="<%='display:none' if @project_control.status == nil %>">
-      <div class="row">
-        <div class="col-lg-6">
+    <div>
+        <h3>Applicability</h3>
+        <section id="app_sect">
           <div class="field">
-            <%= form.label :title, id: :project_control_title_label %>
-            <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2 %>
+            <%= form.label :project_control_applicability %>
+            <%= form.select(:status, options_for_select([[nil, ''], ['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.status), {}, {class: "form-control"}) %>
           </div>
-        </div>
+        </section>
         
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :srg_title, id: :srg_title_label %>
-            <%= @project_control.title %>
-          </div>
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :description, id: :project_control_description_label %>
-            <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
-          </div>
-        </div>
-        
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :srg_description, id: :srg_description_label %>
-            <%= @project_control.description %>
-          </div>
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :impact, id: :project_control_impact_label %>
-            <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
-          </div>
-        </div>
-        
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :srg_impact, id: :srg_impact_label %>
-            <%= @project_control.impact %>
-          </div>
-        </div>
-      </div>
-      
-      <div class="field">
-        <%= form.label :code %>
-        <%= form.text_area :code, id: :project_control_code, class: "form-control", rows:5  %>
-      </div>
+        <h3>Details</h3>
+        <section id="det_sect">
+          <div id='main_control_fields' style="<%='display:none' if @project_control.status == nil %>">
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="field">
+                  <%= form.label :title, id: :project_control_title_label %>
+                  : (SRG Title <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).title %>" id="srg_title_pop"></i> )
+                  <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2 %>
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="field">
+                  <%= form.label :description, id: :project_control_description_label %>
+                  : (SRG Description <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).description %>" id="srg_desc_pop"></i> )
+                  <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-lg-4">
+                <div class="field">
+                  <%= form.label :impact, id: :project_control_impact_label %>
+                  : (SRG Impact <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).severity %>" id="srg_sev_pop"></i> )
+                  <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
+                  <!-- <%= form.select(:status, options_for_select([[nil, ''], ['Low', 'Low'], ['Medium', 'Medium'], ['High', 'High']], @project_control.impact), {}, {class: "form-control"}) %> -->
 
-      <div class="field">
-        <%= form.label :sl_ref %>
-        <%= form.text_area :sl_ref, id: :project_control_sl_ref, class: "form-control", rows:1 %>
-      </div>
-
-      <div class="field">
-        <%= form.label :sl_line %>
-        <%= form.text_area :sl_line, id: :project_control_sl_line, class: "form-control", rows:1 %>
-      </div>
-    </div>
-    
-    <div id='checktext_fields' style="<%='display:none' if @project_control.status == nil %>">
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :checktext, id: :project_control_checktext_label %>
-            <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5 %>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+          <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='justification_field'>
+            <%= form.label :justification, id: :project_control_just_label %>
+            <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
+          </div>
+        </section>
         
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :srg_checktext, id: :srg_checktext_label %>
-            <%= @project_control.checktext %>
+        <h3>Check and Fix Text</h3>
+        <section id="ch_fx_sect">
+          <div id='checktext_fields'>
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="field">
+                  <%= form.label :checktext, id: :project_control_checktext_label %>
+                  : (SRG Check Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).checktext %>" id="srg_ck_pop"></i> )
+                  <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5 %>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-    
-    <div id='fixtext_fields' style="<%='display:none' if @project_control.status == nil %>">
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :fixtext, id: :project_control_fixtext_label %>
-            <%= form.text_area :fixtext, id: :project_control_checktext, class: "form-control", rows:5 %>
+          
+          <div id='fixtext_fields'>
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="field">
+                  <%= form.label :fixtext, id: :project_control_fixtext_label %>
+                  : (SRG Fix Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).fixtext %>" id="srg_fx_pop"></i> )
+                  <%= form.text_area :fixtext, id: :project_control_checktext, class: "form-control", rows:5 %>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+          
+          <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='nothing_to_fill_checkfix_field'>
+            <h3 id="nothing_to_fill_checkfix_label"></h3>
+          </div>
+        </section>
         
-        <div class="col-lg-6">
-          <div class="field">
-            <%= form.label :srg_fixtext, id: :srg_fixtext_label %>
-            <%= @project_control.fixtext %>
+        <h3>InSpec Code</h3>
+        <section id="code_sect">
+          <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='nothing_to_fill_code_field'>
+            <h3 id="nothing_to_fill_code_label"></h3>
           </div>
-        </div>
-      </div>
-    </div>
-
-
-    <div class="actions">
-      <%= form.submit "Submit", {:class => "btn btn-primary"} %>
+          <div id="code_field">
+            <div class="field">
+              <%= form.label :InSpec_code %>
+              <%= form.text_area :code, id: :project_control_code, class: "form-control", rows:5  %>
+            </div>
+          </div>
+        </section>
     </div>
   <% end %>
+  <script>
+    load_wizard("#edit_project_control_id");
+    $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
+    $('#srg_ck_pop').popover(); $('#srg_fx_pop').popover();
+  </script>
 </div>

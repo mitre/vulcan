@@ -3,6 +3,7 @@ class Project < ApplicationRecord
   
   has_many  :project_controls
   has_and_belongs_to_many :srgs
+  has_and_belongs_to_many :users
   serialize :srg_ids
   accepts_nested_attributes_for :project_controls
   
