@@ -17,7 +17,6 @@
             <div class="menu-extras topbar-custom">
 
                 <ul class="list-inline float-right mb-0">
-
                     <li class="menu-item list-inline-item">
                         <!-- Mobile menu toggle-->
                         <a class="navbar-toggle nav-link">
@@ -67,35 +66,38 @@
                         </div>
                     </li>
 
+                    <% if current_user %>
+
+                    <!-- User Account Menu -->
                     <li class="list-inline-item dropdown notification-list">
-                        <div class="dropdown-menu dropdown-menu-right profile-dropdown " aria-labelledby="Preview">
-                            <!-- item-->
-                            <div class="dropdown-item noti-title">
-                                <h5 class="text-overflow"><small class="text-white">Welcome ! John</small> </h5>
-                            </div>
-
-                            <!-- item-->
-                            <a href="javascript:void(0);" class="dropdown-item notify-item">
-                                <i class="mdi mdi-account"></i> <span>Profile</span>
-                            </a>
-
-                            <!-- item-->
-                            <a href="javascript:void(0);" class="dropdown-item notify-item">
-                                <i class="mdi mdi-settings"></i> <span>Settings</span>
-                            </a>
-
-                            <!-- item-->
-                            <a href="javascript:void(0);" class="dropdown-item notify-item">
-                                <i class="mdi mdi-lock-open"></i> <span>Lock Screen</span>
-                            </a>
-
-                            <!-- item-->
-                            <a href="javascript:void(0);" class="dropdown-item notify-item">
-                                <i class="mdi mdi-logout"></i> <span>Logout</span>
-                            </a>
+                      <!-- Menu Toggle Button -->
+                      <a class="nav-link dropdown-toggle arrow-none waves-effect" data-toggle="dropdown" href="#" role="button"
+                         aria-haspopup="false" aria-expanded="false">
+                          <i class="ion-android-social-user" style="font-size:22px"></i>
+                      </a>
+                      <div class="dropdown-menu dropdown-menu-right dropdown-arrow dropdown-menu-lg" aria-labelledby="Preview">
+                        <!-- item-->
+                        <div class="dropdown-item noti-title">
+                          <p>
+                            <%= current_user.email %>
+                          </p>
                         </div>
-                    </li>
 
+                        <!-- item-->
+                        <div class="dropdown-item noti-title">
+                          <div class="pull-left">
+                            <%= link_to "Profile", edit_user_registration_path, :class => "btn btn-default btn-flat" %>
+                          </div>
+                          <div class="pull-right">
+                            <%= link_to "Logout", destroy_user_session_path, :method => :delete, :class => "btn btn-default btn-flat" %>
+                          </div>
+                        </div>
+                        <!-- Menu Body -->
+                      </div>
+                    </li>
+                    <% else %>
+                      <li class="list-inline-item"><%= link_to "Login", new_user_session_path, :class => "dropdown-toggle" %></li>
+                    <% end %>
                 </ul>
             </div>
             <!-- end menu-extras -->
@@ -105,34 +107,36 @@
         </div> <!-- end container -->
     </div>
     <!-- end topbar-main -->
+    <% if current_user %>
 
-    <div class="navbar-custom">
-        <div class="container-fluid">
-            <div id="navigation">
-                <!-- Navigation Menu-->
-                <ul class="navigation-menu">
-                    <li class="has-submenu">
-                        <a href="<%= srgs_path %>"><i class="ti-home"></i>Dashboard</a>
-                    </li>
+      <div class="navbar-custom">
+          <div class="container-fluid">
+              <div id="navigation">
+                  <!-- Navigation Menu-->
+                  <ul class="navigation-menu">
+                      <li class="has-submenu">
+                          <a href="/"><i class="ti-home"></i>Dashboard</a>
+                      </li>
 
-                    <li>
-                        <a href="<%= srgs_path %>" id="srg_link_id"><i class="fa fa-folder"></i> SRGs</a>
-                    </li>
-                    
-                    <li>
-                        <a href="<%= new_srg_path %>"><i class="fa fa-file-archive-o"></i> Upload SRG</a>
-                    </li>
-                    <li>
-                        <a href="<%= new_project_path %>" id="new_project_link_id"><i class="fa fa-hourglass-start"></i> Start New Project</a>
-                    </li>
-                    <li>
-                        <a href="<%= projects_path %>"><i class="fa fa-folder-open-o"></i> Projects</a>
-                    </li>
+                      <li>
+                          <a href="<%= srgs_path %>" id="srg_link_id"><i class="fa fa-folder"></i> SRGs</a>
+                      </li>
+                      
+                      <li>
+                          <a href="<%= new_srg_path %>"><i class="fa fa-file-archive-o"></i> Upload SRG</a>
+                      </li>
+                      <li>
+                          <a href="<%= new_project_path %>" id="new_project_link_id"><i class="fa fa-hourglass-start"></i> Start New Project</a>
+                      </li>
+                      <li>
+                          <a href="<%= projects_path %>"><i class="fa fa-folder-open-o"></i> Projects</a>
+                      </li>
 
-                </ul>
-                <!-- End navigation menu -->
-            </div> <!-- end #navigation -->
-        </div> <!-- end container -->
-    </div> <!-- end navbar-custom -->
+                  </ul>
+                  <!-- End navigation menu -->
+              </div> <!-- end #navigation -->
+          </div> <!-- end container -->
+      </div> <!-- end navbar-custom -->
+    <% end %>
 </header>
 <!-- End Navigation Bar-->

@@ -1,12 +1,14 @@
 class ProjectsController < ApplicationController
+  before_action :authenticate_user!
   before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls]
   # GET /projects
   # GET /projects.json
   def index
-    @projects = Project.all
+    
+    @projects = current_user.projects
     respond_to do |format|
       format.html
-      format.json  { send_data Project.find(params[:id]), :filename => Project.find(params[:id]).name + '-overview.json' }
+      format.json  { Project.find(params[:id]) }
       format.csv   { send_data Project.find(params[:id]), :filename => Project.find(params[:id]).name + '-overview.csv' }
     end
   end
@@ -24,12 +26,24 @@ class ProjectsController < ApplicationController
   
   # GET /project_controls/1/edit_controls
   def edit_project_controls
+    nist_families = NistFamily.all.collect{|nist| nist.short_title}
+    @nist_families = []
+    
+    @project.project_controls.each do |control|
+      control.nist_controls.each do |nist_control|
+        if nist_families.include?(nist_control.family)
+          nist_family = NistFamily.find(nist_control.nist_families_id)
+          @nist_families << nist_family unless @nist_families.include?(nist_family)
+        end
+      end
+    end
   end
 
   # GET /projects/new
   def new
     @srgs = Srg.all
     @project = Project.new
+    @users = User.all
   end
 
   # GET /projects/1/edit
@@ -40,10 +54,12 @@ class ProjectsController < ApplicationController
   # POST /projects
   # POST /projects.json
   def create
-    project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"}
+    project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"} unless project_params[:srg_ids].nil?
+    project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:srg_ids].nil?
     @project = Project.new(get_project_hash(project_params))
-    puts Srg.where(id: project_params[:srg_ids])
     @project.srgs << Srg.where(title: project_params[:srg_ids])
+    @project.users << current_user
+    @project.users << User.where(email: project_params[:users])
         
     respond_to do |format|
       puts format
@@ -165,15 +181,15 @@ class ProjectsController < ApplicationController
       srgs.each do |srg|
         srg.srg_controls.each do |srg_control|
           control = {control_params: {}}
-          control[:control_params][:title] = srg_control.title
-          control[:control_params][:description] = srg_control.description
-          control[:control_params][:impact] = srg_control.severity
-          control[:control_params][:control_id] = srg_control.control_id
+          control[:control_params][:title]        = srg_control.title
+          control[:control_params][:description]  = srg_control.description
+          control[:control_params][:impact]       = srg_control.severity
+          control[:control_params][:control_id]   = srg_control.control_id
           control[:control_params][:srg_title_id] = srg_control.srg_title_id
-          control[:control_params][:checktext] = srg_control.checktext
-          control[:control_params][:fixtext] = srg_control.fixtext
-          control[:nist_params] = srg_control.nist_controls
-          
+          control[:control_params][:checktext]    = srg_control.checktext
+          control[:control_params][:fixtext]      = srg_control.fixtext
+          control[:nist_params]                   = srg_control.nist_controls
+                      
           controls << control
         end
       end
@@ -187,6 +203,6 @@ class ProjectsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_params
-      params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[])
+      params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[], users:[])
     end
 end

@@ -13,6 +13,7 @@
 //= require rails-ujs
 //= require jquery.min
 //= require popper.min
+//= require responsive-pagination
 //= require jquery.slimscroll
 //= require jquery.scrollTo.min
 //= require jquery.app

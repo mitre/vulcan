@@ -20,7 +20,7 @@
                 </div>
                 <tbody>
                     <% @project.project_controls.each do |project_control| %>
-                      <tr>
+                      <tr value="<%= project_control.id %>">
                           <% if project_control.status.nil? %>
                              <td><button class="btn btn-warning" >Not Set Yet</button></td>
                           <% elsif project_control.status == 'Not Applicable' %>
@@ -34,21 +34,122 @@
                           <% end %>
                           <td><%= project_control.title %></td>
                           <td><%= project_control.impact %></td>
-                          <td><%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index } %></td>
+                          <td>
+                            <% project_control.nist_controls.each do |nist| %>
+                              <div class="row">
+                                <span class="badge label-table badge-success"><%= nist.family + '-' + nist.index %></span>
+                              </div>
+                            <% end %>
+                          </td>
                       </tr>
                     <% end %>
                 </tbody>
                 <tfoot>
                   <tr class="active">
-                      <td colspan="4">
+                      <td colspan="6">
                           <div class="text-right">
-                              <ul class="pagination pagination-split justify-content-end footable-pagination m-t-10 m-b-0"></ul>
+                              <ul class="pagination justify-content-center footable-pagination"></ul>
                           </div>
                       </td>
                   </tr>
                 </tfoot>
             </table>
+            <script>
+              $(".pagination").rPage();
+            </script>
         </div>
         <%= link_to 'Back', projects_path %>
     </div>
 </div>
+
+<div class="modal fade" id="reviewControlModal" tabindex="-1" role="dialog" aria-labelledby="reviewControlModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reviewControlModalLabel">Review Control</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="reviewModal">
+        <div id="reviewForm">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-success">Approve Control</button>
+      </div>
+    </div>
+  </div>
+</div>
+            
+<script>
+
+// Add event listener for opening and closing details
+$('#project-controls-datatable td').on('click', function () {
+  
+  control_id = $(this).closest('tr').attr('value');
+  hsh = "#review_modal_card";
+  url = '/project_controls/' + control_id + '/review_control';
+  var card_holder = $(hsh);
+  if (control_id != undefined) {
+    if ($('#reviewForm').length) {
+      $('#reviewForm').empty();
+    }
+    $.ajax({
+      url: url,
+      type: "get",
+      datatype: 'json',
+      success: function(data) {
+        $('#reviewForm').append(data);
+        $('#reviewControlModal').modal();
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
+  }
+});
+
+  function details_panel ( d ) {
+    // 'd' is the original data object for the row
+  var details_panel = '';
+  details_panel +=
+  '<ul class="nav nav-tabs">'+
+    '<li><a data-toggle="tab" href="#details" >Details</a></li>'+
+    '<li><a data-toggle="tab" href="#inspec_code">Inspec Code</a></li>'+
+  '</ul>'+
+  '<div class="tab-content">'+
+    '<div id="details" class="tab-pane">'+
+      '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">';
+
+
+    //Mandatory feilds
+    details_panel += '<tr>'+ '<td>Control:</td>'+ '<td>'+d['control_id']    +'</td>'+ '</tr>';
+    details_panel += '<tr>'+ '<td>Title:</td>'  + '<td>'+d['title']  +'</td>'+ '</tr>';
+    details_panel += '<tr>'+ '<td>Desc:</td>'   + '<td>'+d['description']+'</td>'+ '</tr>';
+
+    var  DATA_NOT_FOUND_MESSAGE = 'N/A'
+    // Optional Tags
+    if (d['status']        != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Status:</td>'    + '<td>'+d['status']             +'</td>'+ '</tr>'; }
+    if (d['impact']        != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Impact:</td>'    + '<td>'+d['impact']             +'</td>'+ '</tr>'; }
+    if (d['check_content'] != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr class="overflow-wrap">'+ '<td>Check Text:</td>'+ '<td>'+d['checktext']+'</td>'+ '</tr>'; }
+    if (d['fix_text']      != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Fix Text:</td>'  + '<td>'+d['fixtext']           +'</td>'+ '</tr>'; }
+    if (d['justification'] != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Justification:</td>'  + '<td>'+d['justification'] +'</td>'+ '</tr>'; }
+
+
+    details_panel +=
+      '</table>'+
+    '</div>'+
+    '<div id="inspec_code" class="tab-pane">'+
+      '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
+        '<tr>'+
+            '<td><pre id="precode" class="line-numbers"><code id="code" class="language-ruby">'+d.code+'</code></pre></td>'+
+        '</tr>'+
+      '</table>'+
+    '</div>' +
+  '</div>';
+
+  return details_panel;
+}
+</script>

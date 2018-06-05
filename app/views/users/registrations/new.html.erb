@@ -1,0 +1,68 @@
+<div class="wrapper-page">
+  <div class="text-center">
+      <a href="/" class="logo-lg"><i class="md md-equalizer"></i> <span>Vulcan</span> </a>
+  </div>
+
+  <%= form_for(resource, as: resource_name, url: registration_path(resource_name), class: "form-horizontal m-t-20") do |f| %>
+      <div class="form-group row">
+          <div class="col-12">
+              <div class="input-group">
+                  <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="mdi mdi-email"></i></span>
+                  </div>
+                  <%= f.email_field :email, autofocus: true, autocomplete: "email", placeholder: "Email", class: "form-control" %>
+              </div>
+          </div>
+      </div>
+      
+      <% if @minimum_password_length %>
+      <em>(<%= @minimum_password_length %> characters minimum)</em>
+      <% end %><br />
+      <div class="form-group row">
+          <div class="col-12">
+              <div class="input-group">
+                  <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="mdi mdi-key"></i></span>
+                  </div>
+                  <%= f.password_field :password, autocomplete: "off", class: "form-control", placeholder: "Password" %>
+              </div>
+          </div>
+      </div>
+      <% if @minimum_password_length %>
+      <em>(<%= @minimum_password_length %> characters minimum)</em>
+      <% end %><br />
+      <div class="form-group row">
+          <div class="col-12">
+              <div class="input-group">
+                  <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="mdi mdi-key"></i></span>
+                  </div>
+                  <%= f.password_field :password_confirmation, autocomplete: "off", class: "form-control", placeholder: "Password" %>
+              </div>
+          </div>
+      </div>
+
+      <div class="form-group row">
+          <div class="col-12">
+              <div class="checkbox checkbox-primary">
+                  <input id="checkbox-signup" type="checkbox" checked="checked">
+                  <label for="checkbox-signup">
+                      I accept <a href="#">Terms and Conditions</a>
+                  </label>
+              </div>
+          </div>
+      </div>
+
+      <div class="form-group text-right m-t-20">
+          <div class="col-xs-12">
+              <button class="btn btn-primary btn-custom waves-effect waves-light w-md" type="submit">Register</button>
+          </div>
+      </div>
+
+      <div class="form-group row m-t-30">
+          <div class="col-12 text-center">
+              <%= link_to 'Already have account?', new_user_session_path, class: 'text-muted' %>
+          </div>
+      </div>
+  <% end %>
+</div>

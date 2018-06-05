@@ -1,0 +1,59 @@
+<div class="wrapper-page">
+
+    <div class="text-center">
+        <a href="index.html" class="logo-lg"><i class="mdi mdi-radar"></i> <span>Vulcan</span> </a>
+    </div>
+    <%= form_for(resource, as: resource_name, url: session_path(resource_name), class: "form-horizontal m-t-20") do |f| %>
+        <div class="form-group row">
+            <div class="col-12">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="mdi mdi-account"></i></span>
+                    </div>
+                    <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control", placeholder: "Email" %>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <div class="col-12">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="mdi mdi-radar"></i></span>
+                    </div>
+                    <%= f.password_field :password, autocomplete: "off", class: "form-control", placeholder: "Password" %>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <div class="col-12">
+                <div class="checkbox checkbox-primary">
+                    <input id="checkbox-signup" type="checkbox">
+                    <label for="checkbox-signup">
+                        Remember me
+                    </label>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="form-group text-right m-t-20">
+            <div class="col-xs-12">
+                <button class="btn btn-primary btn-custom w-md waves-effect waves-light" type="submit">Log In
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group row m-t-30">
+            <%- if devise_mapping.recoverable? && controller_name != 'passwords' && controller_name != 'registrations' %>
+              <div class="col-sm-7">
+                  <%= link_to "Forgot your password?", new_password_path(resource_name), class: "text-muted" %> <i class="fa fa-lock m-r-5"></i><br />
+              </div>
+            <% end -%>
+            <div class="col-sm-5 text-right">
+                <%= link_to 'Create an account', new_user_registration_path, class: 'text-muted' %>
+            </div>
+        </div>
+    <% end %>
+</div>
