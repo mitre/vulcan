@@ -22,6 +22,14 @@ class Users::RegistrationsController < Devise::RegistrationsController
   # PUT /resource
   def update
     super
+    if params['user']['profile_picture']
+      uploaded_io = params['user']['profile_picture']
+      puts uploaded_io.inspect
+      File.open(Rails.root.join('app', 'assets', 'images', 'profile_pics', current_user.email + '.' + uploaded_io.original_filename.split('.')[1]), 'wb') do |file|
+        file.write(uploaded_io.read)
+      end
+      current_user.update_attribute(:profile_pic_name, current_user.email + '.' + uploaded_io.original_filename.split('.')[1])
+    end
   end
 
   # DELETE /resource
