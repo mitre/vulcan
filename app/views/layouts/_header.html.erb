@@ -69,28 +69,28 @@
                     <% if current_user %>
 
                     <!-- User Account Menu -->
-                    <li class="list-inline-item dropdown notification-list">
+                    <li class="list-inline-item dropdown notification-list clearfix">
                       <!-- Menu Toggle Button -->
                       <a class="nav-link dropdown-toggle arrow-none waves-effect" data-toggle="dropdown" href="#" role="button"
                          aria-haspopup="false" aria-expanded="false">
                           <i class="ion-android-social-user" style="font-size:22px"></i>
                       </a>
-                      <div class="dropdown-menu dropdown-menu-right dropdown-arrow dropdown-menu-lg" aria-labelledby="Preview">
+                      <div class="dropdown-menu dropdown-menu-right profile-dropdown dropdown-menu-lg" aria-labelledby="Preview">
                         <!-- item-->
-                        <div class="dropdown-item noti-title">
-                          <p>
-                            <%= current_user.email %>
-                          </p>
+                        <div class="dropdown-item noti-title" style="white-space: normal;">
+                            <h5 class="text-overflow"><small class="text-white">Welcome, <%= current_user.email.split('@')[0] %></small> </h5>
                         </div>
-
-                        <!-- item-->
-                        <div class="dropdown-item noti-title">
-                          <div class="pull-left">
-                            <%= link_to "Profile", edit_user_registration_path, :class => "btn btn-default btn-flat" %>
-                          </div>
-                          <div class="pull-right">
-                            <%= link_to "Logout", destroy_user_session_path, :method => :delete, :class => "btn btn-default btn-flat" %>
-                          </div>
+                      
+                        <div class="dropdown-item notify-item">
+                          <i class="mdi mdi-account"></i><%= link_to "Profile", show_user_path(current_user.id), :class => "btn btn-default btn-flat" %>
+                        </div>
+                        
+                        <div class="dropdown-item notify-item">
+                          <i class="mdi mdi-settings"></i><%= link_to "Edit Profile", edit_user_registration_path, :class => "btn btn-default btn-flat" %>
+                        </div>
+                        
+                        <div class="dropdown-item notify-item">
+                          <i class="mdi mdi-logout"></i><%= link_to "Logout", destroy_user_session_path, :method => :delete, :class => "btn btn-default btn-flat" %>
                         </div>
                         <!-- Menu Body -->
                       </div>
@@ -100,7 +100,6 @@
                     <% end %>
                 </ul>
             </div>
-            <!-- end menu-extras -->
 
             <div class="clearfix"></div>
 

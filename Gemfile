@@ -70,3 +70,5 @@ gem 'nokogiri-happymapper', :require => 'happymapper'
 gem 'responders', '~> 2.0'
 
 gem 'devise'
+
+gem 'omniauth-github'
