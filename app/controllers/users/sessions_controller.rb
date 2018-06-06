@@ -17,6 +17,10 @@ class Users::SessionsController < Devise::SessionsController
   def destroy
     super
   end
+  
+  def show
+    @user = current_user
+  end
 
   protected
 

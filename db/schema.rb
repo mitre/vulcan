@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180601141707) do
+ActiveRecord::Schema.define(version: 20180606140347) do
 
   create_table "ccis", force: :cascade do |t|
     t.string "cci"
@@ -66,9 +66,9 @@ ActiveRecord::Schema.define(version: 20180601141707) do
     t.text "comment"
     t.integer "project_control_id"
     t.integer "user_id"
-    t.integer "is_reply_to", default: false
-    t.index ['project_control_id'], name: "index_project_control_histories_on_project_control_id"
-    t.index ['user_id'], name: "index_project_control_histories_on_user_id"
+    t.integer "is_reply_to", default: 0
+    t.index ["project_control_id"], name: "index_project_control_histories_on_project_control_id"
+    t.index ["user_id"], name: "index_project_control_histories_on_user_id"
   end
 
   create_table "project_controls", force: :cascade do |t|
@@ -109,6 +109,13 @@ ActiveRecord::Schema.define(version: 20180601141707) do
     t.index ["srg_id"], name: "index_projects_srgs_on_srg_id"
   end
 
+  create_table "projects_users", id: false, force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "project_id"
+    t.index ["project_id"], name: "index_users_projects_on_project_id"
+    t.index ["user_id"], name: "index_users_projects_on_user_id"
+  end
+
   create_table "srg_controls", force: :cascade do |t|
     t.string "control_id"
     t.string "severity"
@@ -145,15 +152,11 @@ ActiveRecord::Schema.define(version: 20180601141707) do
     t.string "last_sign_in_ip"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "provider"
+    t.string "uid"
+    t.string 'profile_pic_name'
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
-  end
-  
-  create_table "projects_users", id: false, force: :cascade do |t|
-    t.integer "user_id"
-    t.integer "project_id"
-    t.index ["project_id"], name: "index_users_projects_on_project_id"
-    t.index ["user_id"], name: "index_users_projects_on_user_id"
   end
 
 end
