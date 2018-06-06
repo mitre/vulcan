@@ -32,10 +32,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
-                          <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                          <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                            <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                          <% else %>
+                            <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                          <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -62,10 +66,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
@@ -130,10 +138,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
                           <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -160,10 +172,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
@@ -227,10 +243,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
                           <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -257,10 +277,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
@@ -325,10 +349,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
                           <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -355,10 +383,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
@@ -421,10 +453,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
                           <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -451,10 +487,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
@@ -519,10 +559,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
                           <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -549,10 +593,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
@@ -617,10 +665,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
                           <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -647,10 +699,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
@@ -713,10 +769,14 @@
                   <div class="comment mb-2 row">
                     <% if history.is_reply_to == -1%>
                       <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
                           <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
                       </div>
                       <div class="comment-content col-md-11 col-sm-10">
-                          <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                           <div class="comment-body">
                               <p>
                                   <%= history.comment %>
@@ -743,10 +803,14 @@
                       <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                           <div class="row">
                               <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
                                   <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
                               </div>
                               <div class="comment-content col-md-11 col-sm-10 col-12">
-                                  <h6 class="small comment-meta"><a href="#"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                                   <div class="comment-body">
                                       <p><%= history.comment %>
                                           <br>
