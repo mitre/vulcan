@@ -20,7 +20,7 @@ function load_wizard(form_id) {
           onFinished: function (event, currentIndex) {
              //NOTE: Submit the form, if all validation passed.
               console.log("Form can be submitted using submit method. E.g. $('#basic-form').submit()"); 
-              $("#basic-form").submit();
+              $($form_container).submit();
 
           }
       });

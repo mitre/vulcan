@@ -1,5 +1,5 @@
 <div id="edit_control_form_id">
-  <%= form_with(model: project_control, local: true, html: { id: 'edit_project_control_id', remote: true}) do |form| %>
+  <%= form_with(model: project_control, local: true, html: { id: 'edit_project_control_id'}) do |form| %>
     <% if project_control.errors.any? %>
       <div id="error_explanation">
         <h2><%= pluralize(control.errors.count, "error") %> prohibited this control from being saved:</h2>
@@ -16,7 +16,7 @@
         <section id="app_sect">
           <div class="field">
             <%= form.label :project_control_applicability %>
-            <%= form.select(:status, options_for_select([[nil, ''], ['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.status), {}, {class: "form-control"}) %>
+            <%= form.select(:status, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.status), {}, {class: "form-control"}) %>
           </div>
         </section>
         

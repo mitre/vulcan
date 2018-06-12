@@ -18,6 +18,7 @@
 //= require jquery.scrollTo.min
 //= require jquery.app
 //= require jquery.core
+//= require jquery_ujs
 //= require waves
 //= require modernizr.min
 //= require turbolinks

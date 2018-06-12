@@ -22,6 +22,7 @@ Rails.application.routes.draw do
   match 'project/:id/edit_controls' => 'projects#edit_project_controls', :as => :project_edit_controls, :via => :get
   match 'project_controls/:id/review_control' => 'project_controls#review_control', :as => :review_control, :via => :get
   match 'add_history' => 'project_control_histories#add_history', :as => :add_history, :via => :post
-  
+  match 'project_controls/:id/test_controls' => 'projects#test', :as => :test, :via => :get
+  match 'project_controls/:id/run_test' => 'project_controls#run_test', :as => :run_test, :via => :get
   root 'dashboard#index', as: :home
 end
