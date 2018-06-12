@@ -41,6 +41,8 @@ GEM
     addressable (2.5.2)
       public_suffix (>= 2.0.2, < 4.0)
     arel (8.0.0)
+    attr_encrypted (3.0.3)
+      encryptor (~> 3.0.0)
     autoprefixer-rails (8.6.0)
       execjs
     aws-sdk (2.11.63)
@@ -95,6 +97,7 @@ GEM
       multi_json
     domain_name (0.5.20180417)
       unf (>= 0.0.5, < 1.0.0)
+    encryptor (3.0.0)
     erubi (1.7.1)
     erubis (2.7.0)
     excon (0.62.0)
@@ -228,6 +231,7 @@ GEM
       googleauth (~> 0.6.2)
       grpc (>= 1.7.2, < 2.0)
       rly (~> 0.2.3)
+    google-protobuf (3.5.1.2)
     google-protobuf (3.5.1.2-universal-darwin)
     googleapis-common-protos (1.3.7)
       google-protobuf (~> 3.0)
@@ -243,6 +247,10 @@ GEM
       multi_json (~> 1.11)
       os (~> 0.9)
       signet (~> 0.7)
+    grpc (1.12.0)
+      google-protobuf (~> 3.1)
+      googleapis-common-protos-types (~> 1.0.0)
+      googleauth (>= 0.5.1, < 0.7)
     grpc (1.12.0-universal-darwin)
       google-protobuf (~> 3.1)
       googleapis-common-protos-types (~> 1.0.0)
@@ -526,6 +534,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  attr_encrypted (~> 3.0.0)
   bootstrap (~> 4.0.0)
   byebug
   capybara (~> 2.13)

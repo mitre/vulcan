@@ -1,7 +1,7 @@
 class SrgControlsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_srg_control, only: [:show, :edit, :update, :destroy]
-
+  
   # GET /srg_controls
   # GET /srg_controls.json
   def index

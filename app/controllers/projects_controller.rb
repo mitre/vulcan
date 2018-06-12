@@ -1,11 +1,17 @@
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls]
+  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test]
+  respond_to :html, :json
   # GET /projects
   # GET /projects.json
   def index
     
     @projects = current_user.projects
+    # @projects.each do |project|
+    #   puts project.title
+    #   project.title = decrypt_title(project.title)
+    # end
+    
     respond_to do |format|
       format.html
       format.json  { Project.find(params[:id]) }
@@ -38,6 +44,21 @@ class ProjectsController < ApplicationController
       end
     end
   end
+  
+  # Test /project_controls/1/test_controls
+  def test
+    project_nist_controls
+    if request.xhr?
+      project_control = ProjectControl.find(params[:control_id])
+      @result = run_test(project_control)
+      respond_to do |format|
+        format.html
+        format.js
+      end
+    else
+      project_nist_controls  
+    end
+  end
 
   # GET /projects/new
   def new
@@ -54,9 +75,11 @@ class ProjectsController < ApplicationController
   # POST /projects
   # POST /projects.json
   def create
+    puts Rails.application.secrets.db.length
+    
     project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"} unless project_params[:srg_ids].nil?
     project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:srg_ids].nil?
-    @project = Project.new(get_project_hash(project_params))
+    @project = Project.new(get_project_json(project_params))
     @project.srgs << Srg.where(title: project_params[:srg_ids])
     @project.users << current_user
     @project.users << User.where(email: project_params[:users])
@@ -128,8 +151,37 @@ class ProjectsController < ApplicationController
     end
     redirect_to projects_path, notice: 'Project uploaded.'
   end
+  
+  def run_test(project_control)
+    begin
+      myfile = File.new("tmp_control.rb", 'w')
+      myfile.puts(project_control.code)
+      myfile.close
+      runner = ::Inspec::Runner.new({'color' => true})
+      runner.add_target("tmp_control.rb", 'new test suite')
+      result = runner.run
+      File.delete("tmp_control.rb")
+      return runner.report
+    rescue StandardError => e
+      
+    end
+  end
 
   private
+    def project_nist_controls
+      nist_families = NistFamily.all.collect{|nist| nist.short_title}
+      @nist_families = []
+      
+      @project.project_controls.each do |control|
+        control.nist_controls.each do |nist_control|
+          if nist_families.include?(nist_control.family)
+            nist_family = NistFamily.find(nist_control.nist_families_id)
+            @nist_families << nist_family unless @nist_families.include?(nist_family)
+          end
+        end
+      end
+    end
+  
     def detect_upload_project_doesnt_exist(project_name)
       Project.all.select {|project| project.title == project_name}.empty?
     end
@@ -163,7 +215,7 @@ class ProjectsController < ApplicationController
       project_hash.to_json
     end
   
-    def get_project_hash(params)
+    def get_project_json(params)
       new_params = {
         name: params[:name],
         title: params[:title],

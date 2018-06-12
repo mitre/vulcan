@@ -72,3 +72,5 @@ gem 'responders', '~> 2.0'
 gem 'devise'
 
 gem 'omniauth-github'
+
+gem "attr_encrypted", "~> 3.0.0"

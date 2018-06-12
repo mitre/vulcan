@@ -30,9 +30,18 @@
                       <div class="dropdown-menu">
                           <%= link_to 'Show Controls', project, class: 'dropdown-item btn btn-success' %>
                           <%= link_to 'Edit Controls', project_edit_controls_path(project), class: 'dropdown-item btn btn-info' %>
+                          <%= link_to 'Test Controls', test_path(project), class: 'dropdown-item btn btn-primary' %>
                           <%= link_to 'Edit Profile', edit_project_path(project), class: 'dropdown-item btn btn-warning' %>
-                          <%= link_to 'Export Profile', project_path(project, format: :xlsx), class: 'dropdown-item btn btn-primary'%>
                           <%= link_to 'Delete', project, method: :delete, data: { confirm: 'Are you sure?' }, class: 'dropdown-item btn btn-danger' %>
+                      </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="btn-group">
+                      <button type="button" class="btn btn-secondary dropdown-toggle waves-effect" data-toggle="dropdown" aria-expanded="false"> Export As <span class="caret"></span> </button>
+                      <div class="dropdown-menu">
+                          <%= link_to 'JSON', project_path(project, format: :json), class: 'dropdown-item btn btn-primary'%>
+                          <%= link_to 'Excell', project_path(project, format: :xlsx), class: 'dropdown-item btn btn-primary'%>
                       </div>
                   </div>
                 </td>

@@ -62,9 +62,9 @@ ActiveRecord::Schema.define(version: 20180606140347) do
   create_table "project_control_histories", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.text "project_control_attr"
-    t.text "comment"
-    t.integer "project_control_id"
+    t.string "project_control_attr"
+    t.string "comment" 
+    t.string "project_control_id"
     t.integer "user_id"
     t.integer "is_reply_to", default: 0
     t.index ["project_control_id"], name: "index_project_control_histories_on_project_control_id"
@@ -72,32 +72,49 @@ ActiveRecord::Schema.define(version: 20180606140347) do
   end
 
   create_table "project_controls", force: :cascade do |t|
-    t.string "title"
-    t.string "description"
-    t.float "impact"
-    t.string "code"
-    t.string "control_id"
+    t.string :encrypted_title
+    t.string :encrypted_title_iv
+    t.string :encrypted_description
+    t.string :encrypted_description_iv
+    t.string :encrypted_impact
+    t.string :encrypted_impact_iv
+    t.string :encrypted_code
+    t.string :encrypted_code_iv
+    t.string :encrypted_control_id
+    t.string :encrypted_control_id_iv
+    t.string :encrypted_checktext
+    t.string :encrypted_checktext_iv
+    t.string :encrypted_fixtext
+    t.string :encrypted_fixtext_iv
+    t.string :encrypted_justification
+    t.string :encrypted_justification_iv
+    t.string :encrypted_status
+    t.string :encrypted_status_iv
     t.string "sl_ref"
     t.string "sl_line"
     t.text "tag"
-    t.text "checktext"
-    t.text "fixtext"
-    t.text "justification"
-    t.text "status"
     t.text "srg_title_id"
     t.integer "project_id"
     t.index ["project_id"], name: "index_project_controls_on_project_id"
   end
 
   create_table "projects", force: :cascade do |t|
-    t.string "name"
-    t.string "title"
-    t.string "maintainer"
-    t.string "copyright"
-    t.string "copyright_email"
-    t.string "license"
-    t.string "summary"
-    t.string "version"
+    t.string :encrypted_name
+    t.string :encrypted_name_iv
+    t.string :encrypted_title
+    t.string :encrypted_title_iv
+    t.string :encrypted_maintainer
+    t.string :encrypted_maintainer_iv
+    t.string :encrypted_copyright
+    t.string :encrypted_copyright_iv
+    t.string :encrypted_copyright_email
+    t.string :encrypted_copyright_email_iv
+    t.string :encrypted_license
+    t.string :encrypted_license_iv
+    t.string :encrypted_summary
+    t.string :encrypted_summary_iv
+    t.string :encrypted_version
+    t.string :encrypted_version_iv
     t.integer "dod_agencies_id"
     t.index ["dod_agencies_id"], name: "index_projects_on_dod_agencies_id"
   end

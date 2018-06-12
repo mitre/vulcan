@@ -9,6 +9,7 @@ ready = ->
     $('#project-controls-datatable').footable().on('footable_filtering', filter_project_controls)
     $('[name="project_control[status]"]').on("change", add_fields)
     $(".pagination").rPage()
+    $('#project-controls-filter-applicability').on('change', filter_applicability)
 
 add_fields = ->
   jQuery ->
@@ -41,6 +42,12 @@ search_projects = (e) ->
   jQuery ->
     e.preventDefault()
     $('#projects-datatable').trigger('footable_filter', {filter: $('#projects-search').val()})
+
+
+filter_applicability = (e) ->
+  jQuery ->
+    e.preventDefault()
+    $('#project-controls-datatable').trigger('footable_filter', {filter: $('#project-controls-filter-applicability').val()})
     
 # Filtering
 # ----------------------------------------------------------------

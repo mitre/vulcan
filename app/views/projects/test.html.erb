@@ -3,7 +3,24 @@
       <div class="card-box">
         <div class="row">
           <div class="col-lg-12">
-            <h4 class="m-t-0 header-title" style="padding: 15px">Edit Project <%= @project.name %></h4>
+            <h4 class="m-t-0 header-title" style="padding: 15px">Test Project <%= @project.name %> Controls</h4>
+          </div>
+        </div>
+        <div class="form-inline m-b-20">
+          <div class="row">
+            <div class="col-lg-6 text-center text-right">
+                  <label class="control-label">Target Host</label>
+                  <select id="target_host" class="form-control input-sm">
+                      <option value="Not Yet Set">localhost</option>
+                  </select>
+            </div>
+            <div class="col-lg-6 text-center text-right">
+                <label class="control-label">Run Code</label>      
+                <%= form_tag(test_path, method: "get", id: 'run_test', remote: true) do %>
+                  <%= hidden_field_tag 'control_id' %>
+                  <%= submit_tag 'Run Test', class: 'btn btn-success' %>
+                <% end %>
+            </div>
           </div>
         </div>
 
@@ -30,7 +47,7 @@
               <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;" id="controls_container">
                   <div class="list-group" id="controls_list">
                     <% @project.project_controls.each do |project_control| %>
-                        <button class="list-group-item list-group-item-action" onclick="render_form('<%= project_control.id %>')">
+                        <button class="list-group-item list-group-item-action" onclick="set_code_text('<%= project_control.id %>', '<%=j ProjectControl.find(project_control.id).code%>')">
                           <%= project_control.control_id %> - <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }[0] %>
                         </button>
                     <% end %>
@@ -38,11 +55,20 @@
               </div>
           </div>
           
-          <div class="col-lg-8">
+          <div class="col-lg-4">
               <div class="row">
-                  <h6>3. Build Control</h6>
+                  <h6>3. InSpec Code</h6>
                   <div class="col-lg-12">
-                      <div class="card" id="form_card" style="position: relative; overflow-y: scroll; height: 500px;"></div>
+                      <div class="card" id="code_text" style="position: relative; overflow-y: scroll; height: 500px;"></div>
+                  </div>
+              </div>
+          </div>
+          
+          <div class="col-lg-4">
+              <div class="row">
+                  <h6>4. Code Result</h6>
+                  <div class="col-lg-12">
+                      <div class="card" id="code_results" style="position: relative; overflow-y: scroll; height: 500px;"></div>
                   </div>
               </div>
           </div>
@@ -52,6 +78,11 @@
 </div>
 
 <script>
+  function set_code_text(control_id, code) {
+    $('#control_id').val(control_id)
+    $('#code_text').html(code.replace(/\n/g, '<br>').replace(/\s/g, '&ensp;'));
+  }
+
   ch_fx_sect = '';
   function filter_controls_on_nist(nist_family, project_controls) {
     $("#controls_list").empty();
@@ -62,43 +93,5 @@
         }
       })
     });
-  }
-  
-  function render_form (control_id) {
-    hsh = "#form_card";
-    url = '/project_controls/' + control_id + '/edit';
-    var card_holder = $(hsh);
-    if ($('#form_holder').length) {
-      $('#form_holder').remove();
-    }
-    $.ajax(url, {
-        success: function(data) {
-          var elements = $(data);
-          var found = $('#edit_project_control_id', elements);
-          card_holder.append('<div id="form_holder"></div>');
-          ch_fx_sect = $(data).find('#ch_fx_sect').html();
-          code_sect = $(data).find('#code_sect').html();
-          $('#form_holder').append($(data).find('#edit_control_form_id').html());
-          $('[name="project_control[status]"]').on("change", add_fields);
-        },
-        error: function() {
-          console.log("Error occured");
-        }
-     }); 
-  }
-  
-  function add_fields() {
-    if ($('[name="project_control[status]"]').val() == 'Applicable - Configurable') {
-      $('#justification_field').hide();
-      $('#main_control_fields').show();
-      $('.wizard').steps('add', { title: "Check and Fix Text", content: ch_fx_sect })
-      $('.wizard').steps('add', { title: "InSpec Code", content: code_sect })
-    } else if (($('[name="project_control[status]"]').val() == 'Applicable - Inherently Meets') || ($('[name="project_control[status]"]').val() == 'Not Applicable')
-                || $('[name="project_control[status]"]').val() == 'Applicable - Does Not Meet') {
-      $('#justification_field').show();
-      $('#main_control_fields').hide();
-      $('.wizard').steps('remove', Number(3));
-      $('.wizard').steps('remove', Number(2));
-    }
   }
 </script>
