@@ -50,7 +50,7 @@ class ProjectsController < ApplicationController
     project_nist_controls
     if request.xhr?
       project_control = ProjectControl.find(params[:control_id])
-      @result = run_test(project_control)
+      @result = run_test(project_control, params)
       respond_to do |format|
         format.html
         format.js
@@ -152,18 +152,30 @@ class ProjectsController < ApplicationController
     redirect_to projects_path, notice: 'Project uploaded.'
   end
   
-  def run_test(project_control)
+  def run_test(project_control, params)
+    puts params
+    opts = {}
+    opts['host']     = params['host'].strip     if params['host']      != ""
+    opts['user']     = params['user'].strip if params['user']  != ""
+    opts['password'] = params['pass'] if params['pass'] != ""
+    opts['port']     = params['port'].strip if params['port']          != ""
+    opts['backend']  = params['transport_method'].strip
+    # opts['key_files'] = '/Users/dromazmj/Documents/MITRE/disa_stig-el7-hardening/.kitchen/kitchen-vagrant/default-centos-74'
+    puts opts
+    runner = params['backend'] == 'Local' ? ::Inspec::Runner.new({'color' => true}) : ::Inspec::Runner.new(opts)
+    puts runner.backend
     begin
       myfile = File.new("tmp_control.rb", 'w')
       myfile.puts(project_control.code)
       myfile.close
-      runner = ::Inspec::Runner.new({'color' => true})
       runner.add_target("tmp_control.rb", 'new test suite')
       result = runner.run
       File.delete("tmp_control.rb")
       return runner.report
+    rescue ArgumentError, RuntimeError, Train::UserError => e
+      return e.message
     rescue StandardError => e
-      
+      return e.message
     end
   end
 
