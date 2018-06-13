@@ -78,11 +78,6 @@ class ProjectControlsController < ApplicationController
       format.json { head :no_content }
     end
   end
-  
-  def add_history
-    project_control_history = ProjectControlHistory.create(params)
-    return "Success"
-  end
 
   private
     
