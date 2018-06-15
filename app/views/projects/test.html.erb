@@ -131,4 +131,19 @@
       }   
     });
   }
+  
+  function delete_host_config() {
+    var selected_id = $('#host_configs option:selected').val();
+    $.ajax({
+      url: "/delete_host_config",
+      type: "post",
+      data: {'host_configs': {'id':selected_id}},
+      success: function(data) {
+        $(`#host_configs option[value="${selected_id}"]`).remove();
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
+  }
 </script>

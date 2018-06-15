@@ -1,3 +1,4 @@
+require 'json'
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test]
@@ -50,7 +51,12 @@ class ProjectsController < ApplicationController
     project_nist_controls
     if request.xhr?
       project_control = ProjectControl.find(params[:control_id])
-      @result = run_test(project_control, params)
+
+      # puts run_test(project_control, params)[:controls].tap {|control| control.delete(:resource_title).to_s.gsub(/"/, "\"")}
+      # @result = JSON.generate({controls: run_test(project_control, params)[:controls].each {|control| control.tap {|key| key.delete(:resource_title)}.to_s.gsub('\"', "'")}})
+      @results = JSON.parse(run_test(project_control, params).to_json)
+      puts @results
+      @results = {'controls' => @results['profiles'].first['controls'].collect {|control| control['results']}}.to_json
       respond_to do |format|
         format.html
         format.js
@@ -151,35 +157,36 @@ class ProjectsController < ApplicationController
     end
     redirect_to projects_path, notice: 'Project uploaded.'
   end
-  
-  def run_test(project_control, params)
-    puts params
-    opts = {}
-    opts['host']     = params['host'].strip     if params['host']      != ""
-    opts['user']     = params['user'].strip if params['user']  != ""
-    opts['password'] = params['pass'] if params['pass'] != ""
-    opts['port']     = params['port'].strip if params['port']          != ""
-    opts['backend']  = params['transport_method'].strip
-    # opts['key_files'] = '/Users/dromazmj/Documents/MITRE/disa_stig-el7-hardening/.kitchen/kitchen-vagrant/default-centos-74'
-    puts opts
-    runner = params['backend'] == 'Local' ? ::Inspec::Runner.new({'color' => true}) : ::Inspec::Runner.new(opts)
-    puts runner.backend
-    begin
-      myfile = File.new("tmp_control.rb", 'w')
-      myfile.puts(project_control.code)
-      myfile.close
-      runner.add_target("tmp_control.rb", 'new test suite')
-      result = runner.run
-      File.delete("tmp_control.rb")
-      return runner.report
-    rescue ArgumentError, RuntimeError, Train::UserError => e
-      return e.message
-    rescue StandardError => e
-      return e.message
-    end
-  end
 
   private
+  
+    def run_test(project_control, params)
+      puts params
+      opts = {}
+      opts['host']     = params['host'].strip     if params['host']      != ""
+      opts['user']     = params['user'].strip if params['user']  != ""
+      opts['password'] = params['pass'] if params['pass'] != ""
+      opts['port']     = params['port'].strip if params['port']          != ""
+      opts['backend']  = params['transport_method'].strip
+      opts['reporter'] = ['json']
+      # opts['key_files'] = '/Users/dromazmj/Documents/MITRE/disa_stig-el7-hardening/.kitchen/kitchen-vagrant/default-centos-74'
+      runner = params['backend'] == 'Local' ? ::Inspec::Runner.new({'color' => true}) : ::Inspec::Runner.new(opts)
+      begin
+        myfile = File.new("tmp_control.rb", 'w')
+        myfile.puts(project_control.code)
+        myfile.close
+        runner.add_target("tmp_control.rb", 'new test suite')
+        result = runner.run
+        File.delete("tmp_control.rb")
+        puts runner.report
+        return runner.report
+      rescue ArgumentError, RuntimeError, Train::UserError => e
+        return e.message
+      rescue StandardError => e
+        return e.message
+      end
+    end
+  
     def project_nist_controls
       nist_families = NistFamily.all.collect{|nist| nist.short_title}
       @nist_families = []
