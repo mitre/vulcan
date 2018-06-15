@@ -7,6 +7,11 @@ class HostConfigsController < ApplicationController
     render json: {id: host_config.id, option: format_host_as_option(host_config)}
   end
   
+  def delete_host_config
+    host_config = HostConfig.find(params['host_configs']['id'])
+    host_config.destroy
+  end
+  
   private 
   def format_host_as_option(config)
     return "SSH - " + config.user + " - " + config.host + ' - ' + config.port if config.transport_method == 'SSH'

@@ -2,20 +2,29 @@
   <div class="form-group row">
     <div class="col-lg-5 text-center text-right">
         <label class="control-label">Select Predefined Host Configuration</label>
-        <select id="host_configs" class="form-control">
-          <% current_user.host_configs.each do |config| %>
-           <% puts config.inspect %>
-            <option value="<%= config.id %>">
-              <% if config.transport_method == 'SSH' %>
-                <%= "SSH - " + config.user + " - " + config.host + ' - ' + config.port %>
-              <% elsif config.transport_method == 'Docker' %>
-                <%= "Docker - " + config.user + " - " + config.host + ' - ' + config.port %>
-              <% elsif config.transport_method == 'AWS' %>
-                <%= "AWS - " + (config.aws_region || 'null') + ' - ' + (config.aws_profile || 'null') %>
+        <div class="row">
+          <div class="col-lg-11">
+            <select id="host_configs" class="form-control">
+              <% current_user.host_configs.each do |config| %>
+               <% puts config.inspect %>
+                <option value="<%= config.id %>">
+                  <% if config.transport_method == 'SSH' %>
+                    <%= "SSH - " + config.user + " - " + config.host + ' - ' + config.port %>
+                  <% elsif config.transport_method == 'Docker' %>
+                    <%= "Docker - " + config.user + " - " + config.host + ' - ' + config.port %>
+                  <% elsif config.transport_method == 'AWS' %>
+                    <%= "AWS - " + (config.aws_region || 'null') + ' - ' + (config.aws_profile || 'null') %>
+                  <% end %>
+                </option>
               <% end %>
-            </option>
-          <% end %>
-        </select>
+            </select>
+          </div>
+          <div class="col-lg-1">
+            <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="delete_host_config()">
+              <i class="ti-close"></i>
+            </span>
+          </div>
+        </div>
     </div>
     <div class="col-lg-1 text-center text-right">
         <label class="control-label">OR</label>
@@ -25,15 +34,15 @@
       <label class="control-label">Manually Enter (saved data will be encrypted)</label>
       <div class="row">
         <div class="col-lg-4 text-center text-right">
-            <label class="control-label">Method</label>
+            <!-- <label class="control-label">Method</label> -->
             <%= select_tag "transport_method", options_for_select([['local', 'local'], ['SSH', 'ssh'], ['Docker', 'docker'], ['AWS', 'aws']]), class: "form-control" %>
         </div>
         <div class="col-sm-2">
-          <label class="control-label">Run Test</label>
+          <!-- <label class="control-label">Run Test</label> -->
           <%= submit_tag 'Run Test', class: 'btn btn-success' %>
         </div>
         <div class="col-sm-2">
-          <label class="control-label">Save</label>
+          <!-- <label class="control-label">Save</label> -->
           <span role="button" class="btn btn-icon waves-effect waves-light btn-primary" onclick="add_host_config(<%= current_user.id %>, $('#host').val(), $('#user').val(), $('#pass').val(), $('#port').val(), $('#transport_method').val())">
             <i class="ti-plus"></i>
           </span>
@@ -93,3 +102,13 @@
     </div>
   </div>
 <% end %>
+
+<script>
+  $('#run_test').submit(function(e){
+    e.preventDefault();
+    if ($('#code_text').html() == '') {
+      alert("Please select a control to run under step 2.");
+      return false;
+    }
+   });
+</script>

@@ -23,6 +23,7 @@ Rails.application.routes.draw do
   match 'project_controls/:id/review_control' => 'project_controls#review_control', :as => :review_control, :via => :get
   match 'add_history' => 'project_control_histories#add_history', :as => :add_history, :via => :post
   match 'add_host_config' => 'host_configs#add_host_config', :as => :add_host_config, :via => :post
+  match 'delete_host_config' => 'host_configs#delete_host_config', :as => :delete_host_config, :via => :post
   match 'project_controls/:id/test_controls' => 'projects#test', :as => :test, :via => :get
   match 'project_controls/:id/run_test' => 'project_controls#run_test', :as => :run_test, :via => :get
   root 'dashboard#index', as: :home

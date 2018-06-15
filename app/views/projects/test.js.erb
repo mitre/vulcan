@@ -1,1 +1,15 @@
-$('#code_results').html('<%= @result %>');
+$('#code_results').html(formatResults('<%=j @results.html_safe %>'));
+
+function formatResults(data) {
+  formattedResults = ""
+  console.log(data)
+  data = JSON.parse(data)
+
+  data['controls'].forEach((control) => {
+    console.log(control)
+    control.forEach((result) => {
+      formattedResults += "<p>Test: " + result['code_desc'] + "</p>" + "<p>Status: " + result['status'] + "</p>"
+    })
+  })
+  return formattedResults
+}
