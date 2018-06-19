@@ -23,6 +23,7 @@
 //= require waves
 //= require modernizr.min
 //= require turbolinks
+//= require ace-rails-ap
 //= require bootstrap.min
 //= require_tree ./morris/
 //= require_tree ./counterup

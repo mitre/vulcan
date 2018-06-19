@@ -13,13 +13,9 @@
             <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;">
                 <div class="list-group" id="nist_family_list">
                   <% @nist_families.each do |nist_family| %>
-                    <div class='row'>
-                      <div class='col-lg-12'>
-                        <button class="list-group-item list-group-item-action" onclick="filter_controls_on_nist('<%= nist_family.short_title %>', <%= @project.project_controls.collect {|control| [control.control_id, control.nist_controls.collect {|nist_family| nist_family.family + '-' + nist_family.index}, control.id]} %>)">
-                          <%= nist_family.long_title %>
-                        </button>
-                      </div>
-                    </div>
+                    <button class="list-group-item list-group-item-action" onclick="filter_controls('<%= nist_family.short_title %>')">
+                      <%= nist_family.long_title %>
+                    </button>
                   <% end %>
                 </div>
             </div>
@@ -30,7 +26,7 @@
               <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;" id="controls_container">
                   <div class="list-group" id="controls_list">
                     <% @project.project_controls.each do |project_control| %>
-                        <button class="list-group-item list-group-item-action" onclick="set_code_text('<%= project_control.id %>', '<%=j ProjectControl.find(project_control.id).code%>')">
+                        <button class="control list-group-item list-group-item-action" onclick="set_code_text('<%= project_control.id %>', '<%=j ProjectControl.find(project_control.id).code%>')">
                           <%= project_control.control_id %> - <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }[0] %>
                         </button>
                     <% end %>
@@ -41,8 +37,9 @@
           <div class="col-lg-4">
               <div class="row">
                   <h6>3. InSpec Code</h6>
-                  <div class="col-lg-12">
-                      <div class="card" id="code_text" style="position: relative; overflow-y: scroll; height: 500px;"></div>
+                  <div class="col-lg-12">                      
+                    <div class="card" id="code_text" style="position: relative; overflow-y: scroll; height: 450px;"></div>
+                    <button class="btn btn-warning" onclick="update_project_control_code()">Save Code</button>
                   </div>
               </div>
           </div>
@@ -61,9 +58,43 @@
 </div>
 
 <script>
+  function filter_controls(nist_id) {
+    $('.control').filter(function(index) {
+      return $(this).html().indexOf(nist_id) != -1;
+    }).show();
+    $('.control').filter(function(index) {
+      return $(this).html().indexOf(nist_id) == -1;
+    }).hide();
+  }
+
+  var sessions = {}
+  var EditSession = require("ace/edit_session").EditSession;
+  var editor = ace.edit("code_text");
+  editor.session.setMode('ace/mode/ruby');
   function set_code_text(control_id, code) {
+    if (sessions[control_id] == undefined) {
+      sessions[control_id] = new EditSession(code)
+    }
     $('#control_id').val(control_id)
-    $('#code_text').html(code.replace(/\n/g, '<br>').replace(/\s/g, '&ensp;'));
+    editor.setSession(sessions[control_id])
+    editor.session.setMode('ace/mode/ruby');
+  }
+  
+  function update_project_control_code() {
+    
+    var id = $('#control_id').val();
+    var code = editor.session.getValue();
+    $.ajax({
+      url: "/update_code",
+      type: "post",
+      data: {id, code},
+      success: function(data) {
+        
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
   }
   
   $('#transport_method').on('change', function() {
@@ -103,16 +134,6 @@
   });
 
   ch_fx_sect = '';
-  function filter_controls_on_nist(nist_family, project_controls) {
-    $("#controls_list").empty();
-    project_controls.forEach((control) =>{
-      control[1].forEach((nist_control) =>{
-        if(nist_control.indexOf(nist_family) != -1) {
-          $("#controls_list").append('<button class="list-group-item list-group-item-action" onclick="render_form(' + control[2] + ')">' + control[0] + ' - ' + control[1][0] + '</button>');
-        }
-      })
-    });
-  }
   
   function add_host_config(user_id, host, user, password, port, transport_method) {
     $.ajax({

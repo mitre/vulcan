@@ -1,18 +1,14 @@
 require 'json'
+require 'ripper'
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test]
   respond_to :html, :json
   # GET /projects
   # GET /projects.json
-  def index
-    
+  def index  
     @projects = current_user.projects
-    # @projects.each do |project|
-    #   puts project.title
-    #   project.title = decrypt_title(project.title)
-    # end
-    
+
     respond_to do |format|
       format.html
       format.json  { Project.find(params[:id]) }
@@ -50,13 +46,12 @@ class ProjectsController < ApplicationController
   def test
     project_nist_controls
     if request.xhr?
-      project_control = ProjectControl.find(params[:control_id])
-
-      # puts run_test(project_control, params)[:controls].tap {|control| control.delete(:resource_title).to_s.gsub(/"/, "\"")}
-      # @result = JSON.generate({controls: run_test(project_control, params)[:controls].each {|control| control.tap {|key| key.delete(:resource_title)}.to_s.gsub('\"', "'")}})
-      @results = JSON.parse(run_test(project_control, params).to_json)
-      puts @results
-      @results = {'controls' => @results['profiles'].first['controls'].collect {|control| control['results']}}.to_json
+      if Ripper.sexp(params['code']).nil?
+        return "ERROR: SYNTAX"
+      end
+      @results = run_test(params)
+      @results = JSON.parse(@results.to_json) if @results.is_a?(Hash)
+      @results = {'controls' => @results['profiles'].first['controls'].collect {|control| control['results']}}.to_json if @results.is_a?(Hash)
       respond_to do |format|
         format.html
         format.js
@@ -160,31 +155,44 @@ class ProjectsController < ApplicationController
 
   private
   
-    def run_test(project_control, params)
-      puts params
-      opts = {}
-      opts['host']     = params['host'].strip     if params['host']      != ""
-      opts['user']     = params['user'].strip if params['user']  != ""
-      opts['password'] = params['pass'] if params['pass'] != ""
-      opts['port']     = params['port'].strip if params['port']          != ""
-      opts['backend']  = params['transport_method'].strip
-      opts['reporter'] = ['json']
-      # opts['key_files'] = '/Users/dromazmj/Documents/MITRE/disa_stig-el7-hardening/.kitchen/kitchen-vagrant/default-centos-74'
-      runner = params['backend'] == 'Local' ? ::Inspec::Runner.new({'color' => true}) : ::Inspec::Runner.new(opts)
+    def run_test(params)
+      runner = get_runner(params)
+      code = get_code_to_test(params)
+      
       begin
         myfile = File.new("tmp_control.rb", 'w')
-        myfile.puts(project_control.code)
+        myfile.puts(code)
         myfile.close
         runner.add_target("tmp_control.rb", 'new test suite')
         result = runner.run
         File.delete("tmp_control.rb")
-        puts runner.report
         return runner.report
       rescue ArgumentError, RuntimeError, Train::UserError => e
-        return e.message
+        return "ERROR: " + e.message
       rescue StandardError => e
-        return e.message
+        return "ERROR: " + e.message
       end
+    end
+    
+    def get_code_to_test(params)
+      puts @project.project_controls.collect{|control| control.code}.join(' ')
+      return @project.project_controls.collect{|control| control.code}.join("\n") if params['run_all'].include?('1')
+      return params['code'] if params['run_all'].include?('1')
+      puts @project.project_controls.collect{|control| control.code}.join(' ')
+    end
+    
+    def get_runner(params)
+      opts = {}
+      opts['host']              = params['host'].strip     if params['host']                       != ""
+      opts['user']              = params['user'].strip if params['user']                           != ""
+      opts['password']          = params['pass'] if params['pass']                                 != ""
+      opts['port']              = params['port'].strip if params['port']                           != ""
+      opts['backend']           = params['transport_method'].strip
+      opts['region']            = params['aws_region'].strip if params['region']                       != ''
+      opts['access_key_id']     = params['access_key_id'].strip if params['access_key_id']         != ''
+      opts['secret_access_key'] = params['secret_access_key'].strip if params['secret_access_key'] != ''
+      opts['reporter'] = ['json']
+      runner = params['backend'] == 'Local' ? ::Inspec::Runner.new({'color' => true}) : ::Inspec::Runner.new(opts)
     end
   
     def project_nist_controls

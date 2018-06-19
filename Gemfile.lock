@@ -1,6 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    ace-rails-ap (4.1.4)
     actioncable (5.1.6)
       actionpack (= 5.1.6)
       nio4r (~> 2.0)
@@ -232,7 +233,6 @@ GEM
       grpc (>= 1.7.2, < 2.0)
       rly (~> 0.2.3)
     google-protobuf (3.5.1.2)
-    google-protobuf (3.5.1.2-universal-darwin)
     googleapis-common-protos (1.3.7)
       google-protobuf (~> 3.0)
       googleapis-common-protos-types (~> 1.0)
@@ -248,10 +248,6 @@ GEM
       os (~> 0.9)
       signet (~> 0.7)
     grpc (1.12.0)
-      google-protobuf (~> 3.1)
-      googleapis-common-protos-types (~> 1.0.0)
-      googleauth (>= 0.5.1, < 0.7)
-    grpc (1.12.0-universal-darwin)
       google-protobuf (~> 3.1)
       googleapis-common-protos-types (~> 1.0.0)
       googleauth (>= 0.5.1, < 0.7)
@@ -534,6 +530,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  ace-rails-ap
   attr_encrypted (~> 3.0.0)
   bootstrap (~> 4.0.0)
   byebug

@@ -1,4 +1,15 @@
 <%= form_tag(test_path, method: "get", id: 'run_test', remote: true) do %>
+  <% if @project.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(control.errors.count, "error") %> prohibited this control from being saved:</h2>
+        
+      <ul>
+      <% control.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
   <div class="form-group row">
     <div class="col-lg-5 text-center text-right">
         <label class="control-label">Select Predefined Host Configuration</label>
@@ -31,6 +42,7 @@
     </div>
     <div class="col-lg-6 text-center text-right">
       <%= hidden_field_tag 'control_id',nil, id: 'control_id' %>
+      <%= hidden_field_tag 'code',nil, id: 'code' %>
       <label class="control-label">Manually Enter (saved data will be encrypted)</label>
       <div class="row">
         <div class="col-lg-4 text-center text-right">
@@ -46,6 +58,12 @@
           <span role="button" class="btn btn-icon waves-effect waves-light btn-primary" onclick="add_host_config(<%= current_user.id %>, $('#host').val(), $('#user').val(), $('#pass').val(), $('#port').val(), $('#transport_method').val())">
             <i class="ti-plus"></i>
           </span>
+        </div>
+        <div class="col-sm-1">
+          <%= check_box("run_all", nil, {class: 'js-switch'}) %>
+        </div>
+        <div class="col-sm-2">
+          <label class="control-label">Run All Tests</label>
         </div>
       </div>
       <div class="row" id="host_row" style='display:none;'>
@@ -69,7 +87,7 @@
       <div class="row" id="sudo_row" style='display:none;'>
         <div class="col-lg-1 col-sm-3 text-center text-right">
             <label class="control-label">Sudo?</label>
-            <input type="checkbox" data-plugin="switchery" data-color="#00b19d"/>
+            <%= check_box("sudo", nil, {class: 'js-switch'}) %>
         </div>
         <div class="col-lg-3 text-center text-right">
             <label class="control-label">Sudo Username</label>
@@ -91,12 +109,12 @@
             <%= text_field_tag :aws_region, nil,  class: "form-control" %>
         </div>
         <div class="col-lg-4 text-center text-right">
-            <label class="control-label">AWS Profile</label>
-            <%= text_field_tag :aws_profile, nil,  class: "form-control" %>
+            <label class="control-label">AWS Access Key</label>
+            <%= text_field_tag :access_key_id, nil,  class: "form-control" %>
         </div>
         <div class="col-lg-4 text-center text-right">
-            <label class="control-label">AWS Access Key</label>
-            <%= text_field_tag :aws_access, nil,  class: "form-control" %>
+            <label class="control-label">AWS Secret Key</label>
+            <%= text_field_tag :secret_access_key, nil,  class: "form-control" %>
         </div>
       </div>
     </div>
@@ -104,11 +122,20 @@
 <% end %>
 
 <script>
+  var elems = Array.prototype.slice.call(document.querySelectorAll('.js-switch'));
+
+  elems.forEach(function(html) {
+  var switchery = new Switchery(html);
+  });
+  
   $('#run_test').submit(function(e){
     e.preventDefault();
     if ($('#code_text').html() == '') {
       alert("Please select a control to run under step 2.");
       return false;
     }
+    console.log(editor.getValue());
+    $('#code').val(editor.getValue());
+    return true;
    });
 </script>
