@@ -1,4 +1,7 @@
+require 'ripper'
+
 class ProjectControl < ApplicationRecord
+  # validates_with ControlValidator
   belongs_to :project, :inverse_of => :project_controls
   has_many :tags
   has_many  :project_control_historys
