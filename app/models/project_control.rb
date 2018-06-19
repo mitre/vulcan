@@ -1,5 +1,7 @@
 require 'ripper'
-
+###
+# TODO: FORM VALIDATION
+###
 class ProjectControl < ApplicationRecord
   # validates_with ControlValidator
   belongs_to :project, :inverse_of => :project_controls
