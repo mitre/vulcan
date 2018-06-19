@@ -100,7 +100,7 @@
           <div id="code_field">
             <div class="field">
               <%= form.label :InSpec_code %>
-              <%= form.text_area :code, id: :project_control_code, class: "form-control", rows:5  %>
+              <div class='card' id="project_control_code" style="position: relative; overflow-y: scroll; height: 500px;"></div>
             </div>
           </div>
         </section>
@@ -110,5 +110,8 @@
     load_wizard("#edit_project_control_id");
     $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
     $('#srg_ck_pop').popover(); $('#srg_fx_pop').popover();
+    ace_editor = ace.edit("project_control_code");
+    ace_editor.session.setMode('ace/mode/ruby');
+    ace_editor.session.setValue('<%=j @project_control.code.html_safe unless @project_control.code.nil? %>');
   </script>
 </div>

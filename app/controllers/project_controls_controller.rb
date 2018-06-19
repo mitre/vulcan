@@ -2,7 +2,7 @@ require 'inspec/objects'
 
 class ProjectControlsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test]
+  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test, :update_code]
   respond_to :html, :json
 
   # GET /controls
@@ -68,6 +68,14 @@ class ProjectControlsController < ApplicationController
       end
     end
   end
+  
+  def update_code
+    if @project_control.update_attribute(:code, params[:code])
+      render json: @project_control
+    else
+      redner json: @project_control.errors
+    end
+  end
 
   # DELETE /project_controls/1
   # DELETE /project_controls/1.json
@@ -77,11 +85,6 @@ class ProjectControlsController < ApplicationController
       format.html { redirect_to project_controls_url, notice: 'Control was successfully destroyed.' }
       format.json { head :no_content }
     end
-  end
-  
-  def add_history
-    project_control_history = ProjectControlHistory.create(params)
-    return "Success"
   end
 
   private

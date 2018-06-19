@@ -6,6 +6,7 @@ class User < ApplicationRecord
          
   has_and_belongs_to_many :projects
   has_many :project_control_histories
+  has_many :host_configs
   
   def self.from_omniauth(auth)  
     where(provider: auth.provider, uid: auth.uid).first_or_create do |user|

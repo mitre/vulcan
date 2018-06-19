@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180606140347) do
+ActiveRecord::Schema.define(version: 20180612210017) do
 
   create_table "ccis", force: :cascade do |t|
     t.string "cci"
@@ -28,6 +28,29 @@ ActiveRecord::Schema.define(version: 20180606140347) do
     t.string "phone_number"
     t.string "email"
     t.string "organization"
+  end
+
+  create_table "host_configs", force: :cascade do |t|
+    t.string "encrypted_host"
+    t.string "encrypted_host_iv"
+    t.string "encrypted_user"
+    t.string "encrypted_user_iv"
+    t.string "encrypted_password"
+    t.string "encrypted_password_iv"
+    t.string "encrypted_transport_method"
+    t.string "encrypted_transport_method_iv"
+    t.string "encrypted_port"
+    t.string "encrypted_port_iv"
+    t.string "encrypted_aws_region"
+    t.string "encrypted_aws_region_iv"
+    t.string "encrypted_aws_access_key"
+    t.string "encrypted_aws_access_key_iv"
+    t.string "encrypted_aws_secret_key"
+    t.string "encrypted_aws_secret_key_iv"
+    t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_users_host_configs_on_user_id"
   end
 
   create_table "nist_controls", force: :cascade do |t|
@@ -63,7 +86,7 @@ ActiveRecord::Schema.define(version: 20180606140347) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "project_control_attr"
-    t.string "comment" 
+    t.string "comment"
     t.string "project_control_id"
     t.integer "user_id"
     t.integer "is_reply_to", default: 0
@@ -72,24 +95,24 @@ ActiveRecord::Schema.define(version: 20180606140347) do
   end
 
   create_table "project_controls", force: :cascade do |t|
-    t.string :encrypted_title
-    t.string :encrypted_title_iv
-    t.string :encrypted_description
-    t.string :encrypted_description_iv
-    t.string :encrypted_impact
-    t.string :encrypted_impact_iv
-    t.string :encrypted_code
-    t.string :encrypted_code_iv
-    t.string :encrypted_control_id
-    t.string :encrypted_control_id_iv
-    t.string :encrypted_checktext
-    t.string :encrypted_checktext_iv
-    t.string :encrypted_fixtext
-    t.string :encrypted_fixtext_iv
-    t.string :encrypted_justification
-    t.string :encrypted_justification_iv
-    t.string :encrypted_status
-    t.string :encrypted_status_iv
+    t.string "encrypted_title"
+    t.string "encrypted_title_iv"
+    t.string "encrypted_description"
+    t.string "encrypted_description_iv"
+    t.string "encrypted_impact"
+    t.string "encrypted_impact_iv"
+    t.string "encrypted_code"
+    t.string "encrypted_code_iv"
+    t.string "encrypted_control_id"
+    t.string "encrypted_control_id_iv"
+    t.string "encrypted_checktext"
+    t.string "encrypted_checktext_iv"
+    t.string "encrypted_fixtext"
+    t.string "encrypted_fixtext_iv"
+    t.string "encrypted_justification"
+    t.string "encrypted_justification_iv"
+    t.string "encrypted_status"
+    t.string "encrypted_status_iv"
     t.string "sl_ref"
     t.string "sl_line"
     t.text "tag"
@@ -99,22 +122,22 @@ ActiveRecord::Schema.define(version: 20180606140347) do
   end
 
   create_table "projects", force: :cascade do |t|
-    t.string :encrypted_name
-    t.string :encrypted_name_iv
-    t.string :encrypted_title
-    t.string :encrypted_title_iv
-    t.string :encrypted_maintainer
-    t.string :encrypted_maintainer_iv
-    t.string :encrypted_copyright
-    t.string :encrypted_copyright_iv
-    t.string :encrypted_copyright_email
-    t.string :encrypted_copyright_email_iv
-    t.string :encrypted_license
-    t.string :encrypted_license_iv
-    t.string :encrypted_summary
-    t.string :encrypted_summary_iv
-    t.string :encrypted_version
-    t.string :encrypted_version_iv
+    t.string "encrypted_name"
+    t.string "encrypted_name_iv"
+    t.string "encrypted_title"
+    t.string "encrypted_title_iv"
+    t.string "encrypted_maintainer"
+    t.string "encrypted_maintainer_iv"
+    t.string "encrypted_copyright"
+    t.string "encrypted_copyright_iv"
+    t.string "encrypted_copyright_email"
+    t.string "encrypted_copyright_email_iv"
+    t.string "encrypted_license"
+    t.string "encrypted_license_iv"
+    t.string "encrypted_summary"
+    t.string "encrypted_summary_iv"
+    t.string "encrypted_version"
+    t.string "encrypted_version_iv"
     t.integer "dod_agencies_id"
     t.index ["dod_agencies_id"], name: "index_projects_on_dod_agencies_id"
   end
@@ -171,9 +194,8 @@ ActiveRecord::Schema.define(version: 20180606140347) do
     t.datetime "updated_at", null: false
     t.string "provider"
     t.string "uid"
-    t.string 'profile_pic_name'
+    t.string "profile_pic_name"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
-
 end

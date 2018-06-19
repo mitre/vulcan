@@ -13,6 +13,7 @@
 //= require rails-ujs
 //= require jquery.min
 //= require popper.min
+//= require switchery.min
 //= require responsive-pagination
 //= require jquery.slimscroll
 //= require jquery.scrollTo.min
@@ -22,6 +23,7 @@
 //= require waves
 //= require modernizr.min
 //= require turbolinks
+//= require ace-rails-ap
 //= require bootstrap.min
 //= require_tree ./morris/
 //= require_tree ./counterup
