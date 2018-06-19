@@ -154,7 +154,11 @@ class ProjectsController < ApplicationController
   end
 
   private
-  
+    ###
+    # TODO: Add functionality for sudo options.
+    # TODO: Test functionality for error handling with incorrect hosts.
+    # TODO: Change to create temporary directory and seperate controls
+    ###
     def run_test(params)
       runner = get_runner(params)
       code = get_code_to_test(params)
@@ -175,12 +179,13 @@ class ProjectsController < ApplicationController
     end
     
     def get_code_to_test(params)
-      puts @project.project_controls.collect{|control| control.code}.join(' ')
       return @project.project_controls.collect{|control| control.code}.join("\n") if params['run_all'].include?('1')
       return params['code'] if params['run_all'].include?('1')
-      puts @project.project_controls.collect{|control| control.code}.join(' ')
     end
     
+    ###
+    # TODO: Integrate sudo options
+    ###
     def get_runner(params)
       opts = {}
       opts['host']              = params['host'].strip     if params['host']                       != ""

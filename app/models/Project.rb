@@ -1,3 +1,6 @@
+###
+# TODO: FORM VALIDATION
+###
 class Project < ApplicationRecord
   before_destroy :destroy_project_controls
   
@@ -28,24 +31,6 @@ class Project < ApplicationRecord
   # end
   
   private
-  
-  # def encrypt_title
-  #   self.title = CRYPT.encrypt_and_sign(self.title) # or crypt.encrypt_and_sign(self.consumer_key)
-  #   # self.title = crypt.decrypt_and_verify(encrypted_data)  
-  # end
-  # 
-  # def decrypt
-  #   self.title = CRYPT.decrypt_and_verify(self.title)
-  # end
-  
-  # def encryptor
-  #   # key = ENV['KEY']  # We save the value of: ActiveSupport::KeyGenerator.new('password').generate_key(salt)
-  #   # len   = ActiveSupport::MessageEncryptor.key_len
-  #   # salt  = SecureRandom.random_bytes(len)
-  #   # sub_key   = ActiveSupport::KeyGenerator.new(key).generate_key(salt, len)
-  #   # ENV['key'] = sub_key
-  #   # ActiveSupport::MessageEncryptor.new(key)
-  # end
 
   def destroy_project_controls
     self.project_controls.destroy_all   
