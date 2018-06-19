@@ -26,5 +26,6 @@ Rails.application.routes.draw do
   match 'delete_host_config' => 'host_configs#delete_host_config', :as => :delete_host_config, :via => :post
   match 'project_controls/:id/test_controls' => 'projects#test', :as => :test, :via => :get
   match 'project_controls/:id/run_test' => 'project_controls#run_test', :as => :run_test, :via => :get
+  match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
   root 'dashboard#index', as: :home
 end

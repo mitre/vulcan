@@ -21,6 +21,6 @@ class HostConfigsController < ApplicationController
   
   # Never trust parameters from the scary internet, only allow the white list through.
   def host_config_params
-    params.require('host_configs').permit(:user_id, :host, :user, :password, :port, :transport_method, :aws_region, :aws_profile)
+    params.require('host_configs').permit(:user_id, :host, :user, :password, :port, :transport_method, :aws_region, :aws_access_key, :aws_secret_key)
   end
 end

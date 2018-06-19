@@ -14,5 +14,6 @@ class HostConfig < ApplicationRecord
   attr_encrypted :transport_method, key: Rails.application.secrets.db
   attr_encrypted :port, key: Rails.application.secrets.db
   attr_encrypted :aws_region, key: Rails.application.secrets.db
-  attr_encrypted :aws_profile, key: Rails.application.secrets.db
+  attr_encrypted :aws_access_key, key: Rails.application.secrets.db
+  attr_encrypted :aws_secret_key, key: Rails.application.secrets.db
 end

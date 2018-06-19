@@ -2,7 +2,7 @@ require 'inspec/objects'
 
 class ProjectControlsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test]
+  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test, :update_code]
   respond_to :html, :json
 
   # GET /controls
@@ -66,6 +66,14 @@ class ProjectControlsController < ApplicationController
         format.html { render :edit }
         format.json { render json: @project_control.errors, status: :unprocessable_entity }
       end
+    end
+  end
+  
+  def update_code
+    if @project_control.update_attribute(:code, params[:code])
+      render json: @project_control
+    else
+      redner json: @project_control.errors
     end
   end
 

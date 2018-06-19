@@ -2,14 +2,22 @@ $('#code_results').html(formatResults('<%=j @results.html_safe %>'));
 
 function formatResults(data) {
   formattedResults = ""
-  console.log(data)
-  data = JSON.parse(data)
-
-  data['controls'].forEach((control) => {
-    console.log(control)
-    control.forEach((result) => {
-      formattedResults += "<p>Test: " + result['code_desc'] + "</p>" + "<p>Status: " + result['status'] + "</p>"
+  if (data.split(' ')[0] != "ERROR:") {
+    data = JSON.parse(data)
+    data['controls'].forEach((control) => {
+      control.forEach((result) => { 
+        if (result['status'] == 'passed') {
+          formattedResults += "<span class='badge label-table badge-success'>Status: " + result['status'] + "</span>"
+        } else if (result['status'] == 'failed') {
+          formattedResults += "<span class='badge label-table badge-danger'>Status: " + result['status'] + "</span>"
+        } else if (result['status'] == 'skipped') {
+          formattedResults += "<span class='badge label-table badge-warning'>Status: " + result['status'] + "</span>"
+        }
+        formattedResults += "<p>Test: " + result['code_desc'] + "<br>Run Time: " + result['run_time'] + "<br>Result Message: " + result['message'] + "</p>"
+      })
     })
-  })
+  } else formattedResults = data;
   return formattedResults
 }
+
+

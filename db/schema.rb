@@ -43,8 +43,10 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.string "encrypted_port_iv"
     t.string "encrypted_aws_region"
     t.string "encrypted_aws_region_iv"
-    t.string "encrypted_aws_profile"
-    t.string "encrypted_aws_profile_iv"
+    t.string "encrypted_aws_access_key"
+    t.string "encrypted_aws_access_key_iv"
+    t.string "encrypted_aws_secret_key"
+    t.string "encrypted_aws_secret_key_iv"
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
