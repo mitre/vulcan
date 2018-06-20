@@ -7,7 +7,13 @@ Rails.application.routes.draw do
   
   devise_scope :user do
     get 'show_user', to: 'users/sessions#show'
+    # put 'users' => 'users/registrations#update', :as => 'edit_user_profile'
+    # match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
   end
+  
+  # devise_for :user                                      
+  #   put 'users' => 'users/registrations#update', :as => 'user_registration'            
+  # end
 
   resources :project_controls
   resources :projects

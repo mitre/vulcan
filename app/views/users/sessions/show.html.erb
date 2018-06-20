@@ -2,13 +2,6 @@
 <div class="row">
     <div class="col-sm-12">
         <div class="page-title-box">
-            <div class="btn-group pull-right">
-                <ol class="breadcrumb hide-phone p-0 m-0">
-                    <li class="breadcrumb-item"><a href="#">Minton</a></li>
-                    <li class="breadcrumb-item"><a href="#">Extras</a></li>
-                    <li class="breadcrumb-item active">Profile</li>
-                </ol>
-            </div>
             <h4 class="page-title">Profile</h4>
         </div>
     </div>
@@ -20,7 +13,7 @@
         <div class="text-center card-box">
             <div class="member-card">
                 <div class="thumb-xl member-thumb m-b-10 center-block">
-                  <% if File.file?("app/assets/images/profile_pics/" + current_user.profile_pic_name) %>
+                  <% if current_user.profile_pic_name %>
                     <%= image_tag "profile_pics/" + current_user.profile_pic_name, class: "rounded-circle img-thumbnail" %>
                   <% else %>
                     <%= image_tag "default_profile_pic.jpeg", class: "rounded-circle img-thumbnail" %>
@@ -29,18 +22,16 @@
                 </div>
 
                 <div class="">
-                    <h5 class="m-b-5">Mark McKnight</h5>
-                    <p class="text-muted">@webdesigner</p>
+                    <h5 class="m-b-5"><%= current_user.first_name + " " + current_user.first_name %></h5>
                 </div>
 
                 <div class="text-left m-t-40">
-                    <p class="text-muted font-13"><strong>Full Name :</strong> <span class="m-l-15"></span></p>
+                    <p class="text-muted font-13"><strong>Full Name :</strong> <span class="m-l-15"><%= @user.first_name + " " + @user.first_name %></span></p>
 
-                    <p class="text-muted font-13"><strong>Mobile :</strong><span class="m-l-15"></span></p>
+                    <p class="text-muted font-13"><strong>Mobile :</strong><span class="m-l-15"><%= @user.phone_number %></span></p>
 
-                    <p class="text-muted font-13"><strong>Email :</strong> <span class="m-l-15"><%= @user.email %></span></p>
+                    <p class="text-muted font-13"><strong>Email :</strong><span class="m-l-15"><%= @user.email %></span></p>
 
-                    <p class="text-muted font-13"><strong>Location :</strong> <span class="m-l-15"></span></p>
                 </div>
             </div>
 
@@ -57,37 +48,23 @@
                             ABOUT ME
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="#settings" data-toggle="tab" aria-expanded="false" class="nav-link">
-                            SETTINGS
-                        </a>
-                    </li>
+                    <% if @user == current_user %>
+                      <li class="nav-item">
+                          <a href="#settings" data-toggle="tab" aria-expanded="false" class="nav-link">
+                              SETTINGS
+                          </a>
+                      </li>
+                    <% end %>
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane" id="home">
-                        <p class="m-b-5">Hi I'm Johnathn Deo,has been the industry's standard dummy text ever
-                            since the 1500s, when an unknown printer took a galley of type.
-                            Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.
-                            In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo.
-                            Nullam dictum felis eu pede mollis pretium. Integer tincidunt.Cras
-                            dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend
-                            tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend
-                            ac, enim.</p>
+                        <p class="m-b-5"></p>
 
                         <div class="m-t-30">
-                            <h5>Experience</h5>
+                            <!-- <h5>Experience</h5> -->
 
-                            <div class=" p-t-10">
-                                <h6 class="text-primary m-b-5">Lead designer / Developer</h6>
-                                <p class="">websitename.com</p>
-                                <p><b>2010-2015</b></p>
-
-                                <p class="text-muted font-13 m-b-0">Lorem Ipsum is simply dummy text
-                                    of the printing and typesetting industry. Lorem Ipsum has
-                                    been the industry's standard dummy text ever since the
-                                    1500s, when an unknown printer took a galley of type and
-                                    scrambled it to make a type specimen book.
-                                </p>
+                            <!-- <div class=" p-t-10">
+                                
                             </div>
 
                             <hr>
@@ -103,38 +80,14 @@
                                     1500s, when an unknown printer took a galley of type and
                                     scrambled it to make a type specimen book.
                                 </p>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
-                    <div class="tab-pane" id="settings">
-                        <form role="form">
-                            <div class="form-group">
-                                <label for="FullName">Full Name</label>
-                                <input type="text" value="John Doe" id="FullName" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label for="Email">Email</label>
-                                <input type="email" value="first.last@example.com" id="Email" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label for="Username">Username</label>
-                                <input type="text" value="john" id="Username" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label for="Password">Password</label>
-                                <input type="password" placeholder="6 - 15 Characters" id="Password" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label for="RePassword">Re-Password</label>
-                                <input type="password" placeholder="6 - 15 Characters" id="RePassword" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label for="AboutMe">About Me</label>
-                                <textarea style="height: 125px" id="AboutMe" class="form-control">Loren gypsum dolor sit mate, consecrate disciplining lit, tied diam nonunion nib modernism tincidunt it Loretta dolor manga Amalia erst volute. Ur wise denim ad minim venial, quid nostrum exercise ration perambulator suspicious cortisol nil it applique ex ea commodore consequent.</textarea>
-                            </div>
-                            <button class="btn btn-primary waves-effect waves-light w-md" type="submit">Save</button>
-                        </form>
-                    </div>
+                    <% if @user == current_user %>
+                      <div class="tab-pane" id="settings">
+                          <%= render "users/registrations/edit" %>
+                      </div>
+                    <% end %>
                 </div>
             </div>
         </div>
