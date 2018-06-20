@@ -1,3 +1,4 @@
+require 'inspec/objects'
 ###
 # TODO: FORM VALIDATION
 ###
@@ -30,7 +31,68 @@ class Project < ApplicationRecord
   #   end
   # end
   
+  def to_prof
+    @controls = []
+    @random = rand(1000..100000)
+    generate_controls
+    create_skeleton
+    write_controls
+    create_json
+    File.read("#{Rails.root}/temp/#{@random}/#{self.name}-overview.json")
+  end
+  
   private
+  
+  # sets max length of a line before line break
+  def wrap(s, width = WIDTH)
+    s.gsub!("desc  \"\n    ", 'desc  "')
+    s.gsub!(/\\r/, "\n")
+    s.gsub!(/\\n/, "\n")
+
+    WordWrap.ww(s.to_s, width)
+  end
+
+  
+  # converts passed in data into InSpec format
+  def generate_controls
+    self.project_controls.select {|control| control.status == 'Applicable - Configurable'}.each do |contr|
+      print '.'
+      control = Inspec::Control.new
+      control.id = contr.control_id
+      control.title = contr.title
+      control.desc = contr.description
+      control.impact = control.impact
+      control.add_tag(Inspec::Tag.new('nist', contr.nist_controls.collect{|nist| nist.family + '-' + nist.index})) unless contr.nist_controls.nil?  # tag nist: [AC-3, 4]  ##4 is the version
+      control.add_tag(Inspec::Tag.new('audit text', contr.checktext)) unless contr.checktext.nil?
+      control.add_tag(Inspec::Tag.new('fix', contr.fixtext)) unless contr.fixtext.nil?
+      control.add_tag(Inspec::Tag.new('Related SRG', contr.srg_title_id)) unless contr.srg_title_id.nil?
+      @controls << [control, contr.code]
+    end
+  end
+  
+  def create_skeleton
+    Dir.mkdir("#{Rails.root}/tmp/#{@random}")
+    system("inspec init profile #{Rails.root}/temp/#{@random}/#{self.name}")
+    system("rm #{Rails.root}/temp/#{@random}/#{self.name}/controls/example.rb")
+  end
+
+  def create_json
+    system("inspec json #{Rails.root}/temp/#{@random}/#{self.name} | jq . | tee #{Rails.root}/temp/#{@random}/#{self.name}-overview.json")
+  end
+  
+  # Writes InSpec controls to file
+  def write_controls
+    @controls.each do |control, code|
+      file_name = control.id.to_s
+      myfile = File.new("#{Rails.root}/temp/#{@random}/#{self.name}/controls/#{file_name}.rb", 'w')
+      width = 80
+
+      content = control.to_ruby.gsub(/\nend/, "\n\n" + code + "\nend\n")
+      myfile.puts wrap(content, width)
+      
+      myfile.close
+    end
+  end
 
   def destroy_project_controls
     self.project_controls.destroy_all   
