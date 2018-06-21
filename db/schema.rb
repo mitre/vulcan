@@ -24,10 +24,29 @@ ActiveRecord::Schema.define(version: 20180612210017) do
   end
 
   create_table "dod_agencies", force: :cascade do |t|
-    t.string "name"
-    t.string "phone_number"
-    t.string "email"
-    t.string "organization"
+    t.string "encrypted_dod_name"
+    t.string "encrypted_dod_name_iv"
+    t.string "encrypted_phone_number"
+    t.string "encrypted_phone_number_iv"
+    t.string "encrypted_email"
+    t.string "encrypted_email_iv"
+    t.string "encrypted_organization"
+    t.string "encrypted_organization_iv"
+    t.integer "project_id"
+    t.index ["project_id"], name: "index_dod_agencies_on_project_id"
+  end
+  
+  create_table "vendors", force: :cascade do |t|
+    t.string "encrypted_vendor_name"
+    t.string "encrypted_vendor_name_iv"
+    t.string "encrypted_point_of_contact"
+    t.string "encrypted_point_of_contact_iv"
+    t.string "encrypted_poc_email"
+    t.string "encrypted_poc_email_iv"
+    t.string "encrypted_poc_phone_number"
+    t.string "encrypted_poc_phone_number_iv"
+    t.integer "project_id"
+    t.index ["project_id"], name: "index_vendors_on_project_id"
   end
 
   create_table "host_configs", force: :cascade do |t|
