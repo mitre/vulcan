@@ -38,10 +38,17 @@ class Project < ApplicationRecord
     create_skeleton
     write_controls
     create_json
-    File.read("#{Rails.root}/temp/#{@random}/#{self.name}-overview.json")
+    compress_profile
+    File.read("tmp/#{@random}/#{self.name}.zip")
   end
   
   private
+  
+  def compress_profile
+    Dir.chdir "tmp/#{@random}"
+    system("zip -r #{Rails.root}/tmp/#{@random}/#{self.name}.zip #{self.name}")
+    Dir.chdir "#{Rails.root}"
+  end
   
   # sets max length of a line before line break
   def wrap(s, width = WIDTH)
@@ -72,19 +79,19 @@ class Project < ApplicationRecord
   
   def create_skeleton
     Dir.mkdir("#{Rails.root}/tmp/#{@random}")
-    system("inspec init profile #{Rails.root}/temp/#{@random}/#{self.name}")
+    system("inspec init profile #{Rails.root}/tmp/#{@random}/#{self.name}")
     system("rm #{Rails.root}/temp/#{@random}/#{self.name}/controls/example.rb")
   end
 
   def create_json
-    system("inspec json #{Rails.root}/temp/#{@random}/#{self.name} | jq . | tee #{Rails.root}/temp/#{@random}/#{self.name}-overview.json")
+    system("inspec json #{Rails.root}/tmp/#{@random}/#{self.name} | jq . | tee #{Rails.root}/tmp/#{@random}/#{self.name}-overview.json")
   end
   
   # Writes InSpec controls to file
   def write_controls
     @controls.each do |control, code|
       file_name = control.id.to_s
-      myfile = File.new("#{Rails.root}/temp/#{@random}/#{self.name}/controls/#{file_name}.rb", 'w')
+      myfile = File.new("#{Rails.root}/tmp/#{@random}/#{self.name}/controls/#{file_name}.rb", 'w')
       width = 80
 
       content = control.to_ruby.gsub(/\nend/, "\n\n" + code + "\nend\n")
