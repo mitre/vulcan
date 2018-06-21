@@ -85,6 +85,8 @@ class ProjectsController < ApplicationController
     @project.srgs << Srg.where(title: project_params[:srg_ids])
     @project.users << current_user
     @project.users << User.where(email: project_params[:users])
+    @project.vendor = Vendor.new(vendor_params)
+    @project.dod_agency = DodAgency.new(dod_params)
         
     respond_to do |format|
       puts format
@@ -289,5 +291,13 @@ class ProjectsController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_params
       params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[], users:[])
+    end
+    
+    def vendor_params
+      params.require(:project).permit(:vendor_name, :point_of_contact, :poc_email, :poc_phone_number)
+    end
+    
+    def dod_params
+      params.require(:project).permit(:dod_name, :phone_number, :email, :organization)
     end
 end
