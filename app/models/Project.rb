@@ -7,7 +7,7 @@ class Project < ApplicationRecord
   
   has_many  :project_controls
   has_one  :vendor
-  has_one  :dod_agency
+  has_one  :sponsor_agency
   has_and_belongs_to_many :srgs
   has_and_belongs_to_many :users
   serialize :srg_ids
