@@ -12,7 +12,7 @@ class CreateControls < ActiveRecord::Migration[5.1]
       t.text "checktext"
       t.text "fixtext"
       t.text "justification"
-      t.text "status"
+      t.text "applicability"
       t.text "srg_title_id"
       t.references(:projects, index: true)
     end

@@ -17,5 +17,6 @@ class ProjectControl < ApplicationRecord
   attr_encrypted :checktext, key: Rails.application.secrets.db
   attr_encrypted :fixtext, key: Rails.application.secrets.db
   attr_encrypted :justification, key: Rails.application.secrets.db
+  attr_encrypted :applicability, key: Rails.application.secrets.db
   attr_encrypted :status, key: Rails.application.secrets.db
 end

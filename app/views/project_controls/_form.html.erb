@@ -16,13 +16,13 @@
         <section id="app_sect">
           <div class="field">
             <%= form.label :project_control_applicability %>
-            <%= form.select(:status, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.status), {}, {class: "form-control"}) %>
+            <%= form.select(:applicability, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.applicability), {}, {class: "form-control"}) %>
           </div>
         </section>
         
         <h3>Details</h3>
         <section id="det_sect">
-          <div id='main_control_fields' style="<%='display:none' if @project_control.status == nil %>">
+          <div id='main_control_fields' style="<%='display:none' if @project_control.applicability == nil %>">
             <div class="row">
               <div class="col-lg-12">
                 <div class="field">
@@ -49,13 +49,12 @@
                   <%= form.label :impact, id: :project_control_impact_label %>
                   : (SRG Impact <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).severity %>" id="srg_sev_pop"></i> )
                   <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
-                  <!-- <%= form.select(:status, options_for_select([[nil, ''], ['Low', 'Low'], ['Medium', 'Medium'], ['High', 'High']], @project_control.impact), {}, {class: "form-control"}) %> -->
 
                 </div>
               </div>
             </div>
           </div>
-          <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='justification_field'>
+          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='justification_field'>
             <%= form.label :justification, id: :project_control_just_label %>
             <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
           </div>
@@ -87,14 +86,14 @@
             </div>
           </div>
           
-          <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='nothing_to_fill_checkfix_field'>
+          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_checkfix_field'>
             <h3 id="nothing_to_fill_checkfix_label"></h3>
           </div>
         </section>
         
         <h3>InSpec Code</h3>
         <section id="code_sect">
-          <div class="field" style="<%='display:none' if @project_control.status == nil %>", id='nothing_to_fill_code_field'>
+          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_code_field'>
             <h3 id="nothing_to_fill_code_label"></h3>
           </div>
           <div id="code_field">
