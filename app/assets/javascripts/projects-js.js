@@ -34,3 +34,11 @@ function load_wizard(form_id) {
   $.FormWizard = new FormWizard, $.FormWizard.Constructor = FormWizard
   $.FormWizard.init(form_id);
 }
+
+function createMorrisChart(id, data) {
+  console.log(data);
+  data = JSON.parse(data)
+  console.log(data['results']);
+  var colors = ['#63AC56', '#DB4B42', '#429CF6', '#B1E6FB', '#E9B655']
+  new Morris.Donut({element: id, data: data['results'], resize: true, colors: colors})
+}

@@ -14,6 +14,7 @@
 //= require jquery.min
 //= require popper.min
 //= require switchery.min
+//= require raphael-min
 //= require responsive-pagination
 //= require jquery.slimscroll
 //= require jquery.scrollTo.min

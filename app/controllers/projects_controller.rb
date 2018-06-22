@@ -86,7 +86,7 @@ class ProjectsController < ApplicationController
     @project.users << current_user
     @project.users << User.where(email: project_params[:users])
     @project.vendor = Vendor.new(vendor_params)
-    @project.dod_agency = DodAgency.new(dod_params)
+    @project.sponsor_agency = SponsorAgency.new(sponsor_params)
         
     respond_to do |format|
       puts format
@@ -275,6 +275,7 @@ class ProjectsController < ApplicationController
           control[:control_params][:srg_title_id] = srg_control.srg_title_id
           control[:control_params][:checktext]    = srg_control.checktext
           control[:control_params][:fixtext]      = srg_control.fixtext
+          control[:control_params][:status]       = 'Not Started'
           control[:nist_params]                   = srg_control.nist_controls
                       
           controls << control
@@ -297,7 +298,7 @@ class ProjectsController < ApplicationController
       params.require(:project).permit(:vendor_name, :point_of_contact, :poc_email, :poc_phone_number)
     end
     
-    def dod_params
-      params.require(:project).permit(:dod_name, :phone_number, :email, :organization)
+    def sponsor_params
+      params.require(:project).permit(:sponsor_name, :phone_number, :email, :organization)
     end
 end
