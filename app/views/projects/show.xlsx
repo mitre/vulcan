@@ -14,7 +14,7 @@ end
 
 wb.add_worksheet(name: "Project_Controls") do |sheet|
   sheet.add_row ['Title', 'Description', 'Impact', 'Code', 'Control_id', 'sl_ref', 'sl_line', 'Checktext', 'Fixtext', 
-                 'Justification', 'Status', 'Srg Title ID', 'Related Nist Controls']
+                 'Justification', 'Applicability', 'Srg Title ID', 'Related Nist Controls']
   @project.project_controls.each do |project_control|
     nist_families = project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index}
     

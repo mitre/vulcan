@@ -1,4 +1,38 @@
 <div class="row">
+    <div class="col-lg-3 col-md-6">
+        <!-- <div class="widget-simple-chart text-right card-box">
+            <div class="circliful-chart" data-dimension="90" data-text="35%" data-width="5" data-fontsize="14" data-percent="35" data-fgcolor="#7266ba" data-bgcolor="#ebeff2"></div>
+            <h3 class="text-inverse counter m-t-10">586</h3>
+            <p class="text-muted mb-0">Not Started</p>
+        </div> -->
+        <div class="widget-simple text-center card-box">
+            <h3 class="text-inverse counter font-bold mt-0"><%= get_not_started_count %></h3>
+            <p class="text-muted mb-0">Not Started</p>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="widget-simple text-center card-box">
+            <h3 class="text-primary counter font-bold mt-0"><%= get_awaiting_review_count %></h3>
+            <p class="text-muted mb-0">Awaiting Review</p>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="widget-simple text-center card-box">
+            <h3 class="text-danger font-bold mt-0"><span class="counter"><%= get_need_changes_count %></span></h3>
+            <p class="text-muted mb-0">Need Changes</p>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="widget-simple text-center card-box">
+            <h3 class="text-success counter font-bold mt-0"><%= get_approved_count %></h3>
+            <p class="text-muted mb-0">Approved</p>
+        </div>
+    </div>
+</div>
+<div class="row no-gutters">
     <div class="col-lg-12">
         <div class="card-box">
             <h4 class="m-t-0 header-title"><%= @project.name %> Controls</h4>
@@ -13,7 +47,22 @@
                 </thead>
                 <div class="form-inline m-b-20">
                   <div class="row">
-                    <div class="col-md-6 text-center text-right">
+                    <div class="col-lg-6 text-center text-right">
+                      <div class="portlet">
+                          <!-- /primary heading -->
+                          <div class="portlet-heading">
+                              <h3 class="portlet-title text-dark"> Requested Changes </h3>
+                              <div class="clearfix"></div>
+                          </div>
+                          <div id="portlet5" class="panel-collapse collapse show">
+                              <div class="portlet-body">
+                                  <div style="height: 200px;">
+                                    <!-- TODO: implement requested changes history -->
+                                    No controls need changes at the moment.
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
                       <div class="form-group">
                           <label class="control-label m-r-5">Applicability</label>
                           <select id="project-controls-filter-applicability" class="form-control input-sm">
@@ -23,30 +72,72 @@
                               <option value="Applicable - Inherently Meets">Applicable - Inherently Meets</option>
                               <option value="Not Applicable">Not Applicable</option>
                           </select>
+                          <input id="project-controls-search" type="text" placeholder="Search" class="form-control" autocomplete="on">
+                      </div>
+                    </div>
+                    <div class="col-md-6 text-center text-right">
+                      <div class="portlet">
+                          <!-- /primary heading -->
+                          <div class="portlet-heading">
+                              <h3 class="portlet-title text-dark"> Controls Applicability </h3>
+                              <div class="portlet-widgets">
+                                  <a href="javascript:;" data-toggle="reload"><i class="ion-refresh"></i></a>
+                                  <span class="divider"></span>
+                                  <a data-toggle="collapse" data-parent="#accordion1" href="#portlet5"><i class="ion-minus-round"></i></a>
+                                  <span class="divider"></span>
+                                  <a href="#" data-toggle="remove"><i class="ion-close-round"></i></a>
+                              </div>
+                              <div class="clearfix"></div>
+                          </div>
+                          <div id="portlet5" class="panel-collapse collapse show">
+                              <div class="portlet-body">
+                                  <div id="morris-donut-example" style="height: 200px;"></div>
+
+                                  <div class="text-center">
+                                      <ul class="list-inline chart-detail-list">
+                                          <li class="list-inline-item">
+                                              <h5><i class="fa fa-circle m-r-5" style="color: #63AC56;"></i>Applicable - Configurable</h5>
+                                          </li>
+                                          <li class="list-inline-item">
+                                              <h5><i class="fa fa-circle m-r-5" style="color: #DB4B42;"></i>Applicable - Does Not Meet</h5>
+                                          </li>
+                                          <li class="list-inline-item">
+                                              <h5><i class="fa fa-circle m-r-5" style="color: #B1E6FB;"></i>Applicable - Inherently Meets</h5>
+                                          </li>
+                                          <li class="list-inline-item">
+                                              <h5><i class="fa fa-circle m-r-5" style="color: #429CF6;"></i>Not Applicable</h5>
+                                          </li>
+                                          <li class="list-inline-item">
+                                              <h5><i class="fa fa-circle m-r-5" style="color: #E9B655;"></i>Not Yet Set</h5>
+                                          </li>
+                                      </ul>
+                                  </div>
+                              </div>
+                          </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div class="form-inline m-b-20">
+                <!-- <div class="form-inline m-b-20">
                     <div class="row">
                         <div class="col-md-6 text-center text-right">
                             <input id="project-controls-search" type="text" placeholder="Search" class="form-control" autocomplete="on">
                         </div>
                     </div>
-                </div>
+                </div> -->
                 <tbody>
                     <% @project.project_controls.each do |project_control| %>
                       <tr value="<%= project_control.id %>">
-                          <% if project_control.status.nil? %>
+                          <% if project_control.applicability.nil? %>
                              <td><button class="btn btn-warning" >Not Yet Set</button></td>
-                          <% elsif project_control.status == 'Not Applicable' %>
+                          <% elsif project_control.applicability == 'Not Applicable' %>
                              <td><button class="btn btn-primary" >Not Applicable</button></td>
-                          <% elsif project_control.status == 'Applicable - Configurable' %>
+                          <% elsif project_control.applicability == 'Applicable - Configurable' %>
                              <td><button class="btn btn-success" >Applicable - Configurable</button></td>
-                          <% elsif project_control.status == 'Applicable - Does Not Meet' %>
+                          <% elsif project_control.applicability == 'Applicable - Does Not Meet' %>
                              <td><button class="btn btn-danger" >Applicable - Does Not Meet</button></td>
-                          <% elsif project_control.status == 'Applicable - Inherently Meets' %>
-                             <td><button class="btn btn-danger" >Applicable - Inherently Meets</button></td>
+                          <% elsif project_control.applicability == 'Applicable - Inherently Meets' %>
+                             <td><button class="btn btn-info" >Applicable - Inherently Meets</button></td>
                           <% end %>
                           <td><%= project_control.title %></td>
                           <td><%= project_control.impact %></td>
@@ -100,6 +191,7 @@
 </div>
             
 <script>
+createMorrisChart('morris-donut-example', '<%=j get_applicability_count.html_safe %>');
 
 // Add event listener for opening and closing details
 $('#project-controls-datatable td').on('click', function () {

@@ -23,9 +23,9 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.index ["nist_control_id"], name: "index_ccis_nist_controls_on_nist_control_id"
   end
 
-  create_table "dod_agencies", force: :cascade do |t|
-    t.string "encrypted_dod_name"
-    t.string "encrypted_dod_name_iv"
+  create_table "sponsor_agencies", force: :cascade do |t|
+    t.string "encrypted_sponsor_name"
+    t.string "encrypted_sponsor_name_iv"
     t.string "encrypted_phone_number"
     t.string "encrypted_phone_number_iv"
     t.string "encrypted_email"
@@ -33,7 +33,7 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.string "encrypted_organization"
     t.string "encrypted_organization_iv"
     t.integer "project_id"
-    t.index ["project_id"], name: "index_dod_agencies_on_project_id"
+    t.index ["project_id"], name: "index_sponsor_agencies_on_project_id"
   end
   
   create_table "vendors", force: :cascade do |t|
@@ -130,6 +130,8 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.string "encrypted_fixtext_iv"
     t.string "encrypted_justification"
     t.string "encrypted_justification_iv"
+    t.string "encrypted_applicability"
+    t.string "encrypted_applicability_iv"
     t.string "encrypted_status"
     t.string "encrypted_status_iv"
     t.string "sl_ref"
