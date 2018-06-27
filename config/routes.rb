@@ -7,6 +7,8 @@ Rails.application.routes.draw do
   
   devise_scope :user do
     get 'show_user', to: 'users/sessions#show'
+    get 'set_role' => 'users/registrations#set_role', :as => :set_role, :via => :get
+
     # put 'users' => 'users/registrations#update', :as => 'edit_user_profile'
     # match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
   end
@@ -21,7 +23,10 @@ Rails.application.routes.draw do
   resources :srgs
   resources :srg
   resources :pages
-  
+  resources :requests
+  resources :vendors
+  resources :sponsor_agencies
+
   match 'upload_srg' => 'srgs#upload', :as => :upload_srg, :via => :post
   match 'upload_project' => 'projects#upload', :as => :upload_project, :via => :post
   match 'render_modal' => 'project_controls#render_modal', :as => :render_modal, :via => :get
@@ -33,5 +38,7 @@ Rails.application.routes.draw do
   match 'project_controls/:id/test_controls' => 'projects#test', :as => :test, :via => :get
   match 'project_controls/:id/run_test' => 'project_controls#run_test', :as => :run_test, :via => :get
   match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
+  match 'create_request' => 'resuests#create_request', :as => :create_request, :via => :post
+  
   root 'dashboard#index', as: :home
 end

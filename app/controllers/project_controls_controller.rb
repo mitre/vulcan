@@ -8,7 +8,7 @@ class ProjectControlsController < ApplicationController
   # GET /controls
   # GET /controls.json
   def index
-    @project_controls = ProjectControl.all
+    # @project_controls = ProjectControl.all
   end
 
   # GET /project_controls/1
@@ -40,17 +40,19 @@ class ProjectControlsController < ApplicationController
   # POST /project_controls
   # POST /project_controls.json
   def create
-    @project = project.find(params[:project_id])
-    authorize! :create, @project
-    @project_control = @project.project_controls.new(project_controls_params)
+    if current_user.has_role?(:vendor) || current_user.has_role(:admin)
+      @project = project.find(params[:project_id])
+      authorize! :create, @project
+      @project_control = @project.project_controls.new(project_controls_params)
 
-    respond_to do |format|
-      if @project_control.save
-        format.html { redirect_to @project_control, notice: 'Control was successfully created.' }
-        format.json { render :show, status: :created, location: @project_control }
-      else
-        format.html { render :new }
-        format.json { render json: @project_control.errors, status: :unprocessable_entity }
+      respond_to do |format|
+        if @project_control.save
+          format.html { redirect_to @project_control, notice: 'Control was successfully created.' }
+          format.json { render :show, status: :created, location: @project_control }
+        else
+          format.html { render :new }
+          format.json { render json: @project_control.errors, status: :unprocessable_entity }
+        end
       end
     end
   end
@@ -91,7 +93,8 @@ class ProjectControlsController < ApplicationController
     
     # Use callbacks to share common setup or constraints between actions.
     def set_project_control
-      @project_control = ProjectControl.find(params[:id])
+      @project_control = ProjectControl.find(params[:id]) if current_user.has_role?(:vendor, ProjectControl.find(params[:id])) || current_user.has_role?(:sponsor, ProjectControl.find(params[:id])) ||
+                                                          current_user.has_role?(:admin, ProjectControl.find(params[:id]))
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.

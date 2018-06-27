@@ -1,5 +1,6 @@
 class Vendor < ApplicationRecord
-  belongs_to :project, :inverse_of => :vendor
+  resourcify
+  has_and_belongs_to_many :user
   
   attr_encrypted :vendor_name, key: Rails.application.secrets.db
   attr_encrypted :point_of_contact, key: Rails.application.secrets.db
