@@ -3,6 +3,7 @@ require 'ripper'
 # TODO: FORM VALIDATION
 ###
 class ProjectControl < ApplicationRecord
+  resourcify
   # validates_with ControlValidator
   belongs_to :project, :inverse_of => :project_controls
   has_many :tags

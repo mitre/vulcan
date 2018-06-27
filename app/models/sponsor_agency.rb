@@ -1,5 +1,6 @@
 class SponsorAgency < ApplicationRecord
-  belongs_to :project, :inverse_of => :sponsor_agency
+  resourcify
+  has_and_belongs_to_many :user
   
   attr_encrypted :sponsor_name, key: Rails.application.secrets.db
   attr_encrypted :phone_number, key: Rails.application.secrets.db

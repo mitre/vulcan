@@ -12,6 +12,20 @@ class Users::RegistrationsController < Devise::RegistrationsController
   # POST /resource
   def create
     super
+    # puts vendor_params
+    # if params['type'] == 'Sponsor'
+    #   sponsor = SponsorAgency.where("'sponsor_name' = ? AND 'phone_number' = ? AND 'email' = ? AND 'organization' = ?",
+    #                       sponsor_params['sponsor_name'], sponsor_params['phone_number'], sponsor_params['email'], sponsor_params['organization'] )
+    #   current_user.sponsor_agency = SponsorAgency.new(sponsor_params) unless sponsor.exists
+    #   current_user.sponsor_agency = sponsor if sponsor.exists
+    #   current_user.requests.create({status: 'Pending', role: 'sponsor'})
+    # else
+    #   vendor = Vendor.where("'vendor_name' = ? AND 'point_of_contact' = ? AND 'poc_email' = ? AND 'poc_phone_number' = ?",
+    #         vendor_params['vendor_name'], vendor_params['point_of_contact'], vendor_params['poc_email'], vendor_params['poc_phone_number'])
+    #   current_user.vendor = Vendor.new(vendor_params) unless vendor.exists
+    #   current_user.vendor = vendor if vendor.exists  
+    #   current_user.requests.create({status: 'Pending', role: 'vendor'})
+    # end
   end
 
   # GET /resource/edit
@@ -50,6 +64,14 @@ class Users::RegistrationsController < Devise::RegistrationsController
   def cancel
     super
   end
+  
+  def set_role
+    if current_user.has_role? :admin
+      @user = User.find(params['role']['user_id'])
+      @user.add_role params['role']['role']
+      redirect_to "/"
+    end
+  end
 
   protected
 
@@ -76,5 +98,13 @@ class Users::RegistrationsController < Devise::RegistrationsController
   def user_params
     # NOTE: Using `strong_parameters` gem
     params.require(:user).permit(:email, :first_name, :last_name, :phone_number, :password, :password_confirmation, :first_name, :last_name, :phone_number)
+  end
+  
+  def vendor_params
+    params.permit(:vendor_name, :point_of_contact, :poc_email, :poc_phone_number)
+  end
+  
+  def sponsor_params
+    params.permit(:sponsor_name, :phone_number, :email, :organization)
   end
 end
