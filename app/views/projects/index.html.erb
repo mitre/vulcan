@@ -59,6 +59,50 @@
           </tfoot>
         </table>
         <br>
+        <h4 class="m-t-0 header-title">Pending Projects</h4>
+        <table id="pending-projects-datatable" class="table table-striped table-bordered toggle-circle m-b-0" data-page-size="7">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Title</th>
+              <th>Maintainer</th>
+              <% if current_user.has_role? :sponsor %>
+                <th></th>
+              <% end %>
+            </tr>
+          </thead>
+          <div class="form-inline m-b-20">
+              <div class="row">
+                  <div class="col-md-6 text-center text-right">
+                      <input id="pending-projects-search" type="text" placeholder="Search" class="form-control" autocomplete="on">
+                  </div>
+              </div>
+          </div>
+          <tbody>
+            <% @pending_projects.each do |project| %>
+              <tr value="<%= project.id %>">
+                <td><%= project.name %></td>
+                <td><%= project.title %></td>
+                <td><%= project.maintainer %></td>
+                <% if current_user.has_role? :sponsor %>
+                  <td></td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+          <tfoot>
+            <tr class="active">
+                <td colspan="5">
+                    <div class="text-right">
+                        <ul class="pagination pagination-split justify-content-end footable-pagination m-t-10 m-b-0"></ul>
+                    </div>
+                </td>
+            </tr>
+          </tfoot>
+        </table>
+        
+        
+        <br>
         <h3>Upload A Project</h3>
         <%= form_tag(upload_project_path, multipart: true, :html => {class: 'form-control'}) do %>
           <div class="input-group">
@@ -72,4 +116,55 @@
       </div>
   </div>
 </div>
+
+<div class="modal fade" id="reviewProjectModal" tabindex="-1" role="dialog" aria-labelledby="reviewProjectModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reviewControlModalLabel">Review Project</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="reviewProjectModal">
+        <div id="reviewProjectForm">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <% if current_user.has_role? :sponsor %>
+          <button type="button" class="btn btn-success">Approve Control</button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add event listener for opening and closing details
+  $('#pending-projects-datatable td').on('click', function () {
+    alert("here")
+    project_id = $(this).closest('tr').attr('value');
+    hsh = "#review_modal_card";
+    url = '/project/' + project_id + '/review_project';
+    var card_holder = $(hsh);
+    if (project_id != undefined) {
+      if ($('#reviewProjectForm').length) {
+        $('#reviewProjectForm').empty();
+      }
+      $.ajax({
+        url: url,
+        type: "get",
+        datatype: 'json',
+        success: function(data) {
+          $('#reviewProjectForm').append(data);
+          $('#reviewProjectModal').modal();
+        },
+        error: function() {
+          console.log("Error occured");
+        }   
+      });
+    }
+  });
+</script>
 

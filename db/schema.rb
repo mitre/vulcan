@@ -97,6 +97,18 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.index ["project_control_id"], name: "index_project_control_histories_on_project_control_id"
     t.index ["user_id"], name: "index_project_control_histories_on_user_id"
   end
+  
+  create_table "project_histories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "project_attr"
+    t.string "comment"
+    t.integer "project_id"
+    t.integer "user_id"
+    t.integer "is_reply_to", default: 0
+    t.index ["project_id"], name: "index_project_histories_on_project_id"
+    t.index ["user_id"], name: "index_project_histories_on_user_id"
+  end
 
   create_table "project_controls", force: :cascade do |t|
     t.string "encrypted_title"
@@ -144,6 +156,8 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.string "encrypted_summary_iv"
     t.string "encrypted_version"
     t.string "encrypted_version_iv"
+    t.string "encrypted_status"
+    t.string "encrypted_status_iv"
     t.integer "sponsor_agency_id"
     t.integer "vendor_id"
     t.index ["vendor_id"], name: "index_projects_on_vendor_id"

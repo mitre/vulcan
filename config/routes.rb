@@ -32,7 +32,9 @@ Rails.application.routes.draw do
   match 'render_modal' => 'project_controls#render_modal', :as => :render_modal, :via => :get
   match 'project/:id/edit_controls' => 'projects#edit_project_controls', :as => :project_edit_controls, :via => :get
   match 'project_controls/:id/review_control' => 'project_controls#review_control', :as => :review_control, :via => :get
+  match 'project/:id/review_project' => 'projects#review_project', :as => :review_project, :via => :get
   match 'add_history' => 'project_control_histories#add_history', :as => :add_history, :via => :post
+  match 'add_project_history' => 'project_histories#add_project_history', :as => :add_project_history, :via => :post
   match 'add_host_config' => 'host_configs#add_host_config', :as => :add_host_config, :via => :post
   match 'delete_host_config' => 'host_configs#delete_host_config', :as => :delete_host_config, :via => :post
   match 'project_controls/:id/test_controls' => 'projects#test', :as => :test, :via => :get
