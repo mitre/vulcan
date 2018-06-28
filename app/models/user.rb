@@ -8,6 +8,7 @@ class User < ApplicationRecord
          
   has_and_belongs_to_many :projects
   has_many :project_control_histories
+  has_many :project_histories
   has_many :host_configs
   has_many :requests
   has_and_belongs_to_many  :vendor

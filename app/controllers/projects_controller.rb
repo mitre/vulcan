@@ -2,12 +2,14 @@ require 'json'
 require 'ripper'
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test]
+  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test, :review_project]
   respond_to :html, :json
   # GET /projects
   # GET /projects.json
   def index  
-    @projects = current_user.projects
+    
+    @projects = current_user.projects.select {|project| project.status != 'pending'}
+    @pending_projects = current_user.projects.select {|project| project.status == 'pending'}
     respond_to do |format|
       format.html
       format.json  { Project.find(params[:id]) }
@@ -62,6 +64,11 @@ class ProjectsController < ApplicationController
       project_nist_controls  
     end
   end
+  
+  # GET /projects/1/review_project
+  def review_project
+    render partial: 'components/project_review_form', project: @project
+  end
 
   # GET /projects/new
   def new
@@ -92,11 +99,6 @@ class ProjectsController < ApplicationController
       respond_to do |format|
         puts format
         if @project.save
-          get_project_controls(@project.srgs).each do |control|
-            project_control = @project.project_controls.create(control[:control_params])
-            project_control.nist_controls << control[:nist_params]
-            assign_control_to_users(project_control)
-          end
           assign_project_to_users
           format.html { redirect_to @project, notice: 'Project was successfully created.' }
           format.json { render :show, status: :created, location: @project }
@@ -106,6 +108,11 @@ class ProjectsController < ApplicationController
           format.json { render json: @project.errors, status: :unprocessable_entity }
         end
       end
+      # get_project_controls(@project.srgs).each do |control|
+      #   project_control = @project.project_controls.create(control[:control_params])
+      #   project_control.nist_controls << control[:nist_params]
+      #   assign_control_to_users(project_control)
+      # end
     end
   end
 
@@ -277,7 +284,8 @@ class ProjectsController < ApplicationController
         copyright_email: params[:copyright_email],
         license: params[:license],
         summary: params[:summary],
-        version: params[:version]
+        version: params[:version],
+        status: 'pending'
       }
     end
     

@@ -5,6 +5,8 @@ ready = ->
   jQuery ->
     $('#projects-search').on('input', search_projects)
     $('#projects-datatable').footable().on('footable_filtering', filter_projects)
+    $('#pending-projects-search').on('input', search_pending_projects)
+    $('#pending-projects-datatable').footable().on('footable_filtering', filter_pending_projects)
     $('#project-controls-search').on('input', search_project_controls)
     $('#project-controls-datatable').footable().on('footable_filtering', filter_project_controls)
     $('[name="project_control[status]"]').on("change", add_fields)
@@ -37,11 +39,22 @@ filter_projects = (e) ->
     e.filter += (e.filter && e.filter.length > 0) ?
     e.clear = !e.filter
 
+filter_pending_projects = (e) ->
+  jQuery ->
+    e.filter += (e.filter && e.filter.length > 0) ?
+    e.clear = !e.filter
+
 # Search input
 search_projects = (e) ->
   jQuery ->
     e.preventDefault()
     $('#projects-datatable').trigger('footable_filter', {filter: $('#projects-search').val()})
+    
+# Search input
+search_pending_projects = (e) ->
+  jQuery ->
+    e.preventDefault()
+    $('#pending-projects-datatable').trigger('footable_filter', {filter: $('#pending-projects-search').val()})
 
 
 filter_applicability = (e) ->

@@ -7,6 +7,7 @@ class Project < ApplicationRecord
   before_destroy :destroy_project_controls
   
   has_many  :project_controls
+  has_many  :project_histories
   has_and_belongs_to_many :srgs
   has_and_belongs_to_many :users
   belongs_to :vendor
@@ -22,6 +23,7 @@ class Project < ApplicationRecord
   attr_encrypted :license, key: Rails.application.secrets.db
   attr_encrypted :summary, key: Rails.application.secrets.db
   attr_encrypted :version, key: Rails.application.secrets.db
+  attr_encrypted :status, key: Rails.application.secrets.db
 
   
   # def to_csv

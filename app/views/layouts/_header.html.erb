@@ -73,6 +73,8 @@
                       <a class="nav-link dropdown-toggle arrow-none waves-effect" data-toggle="dropdown" href="#" role="button"
                          aria-haspopup="false" aria-expanded="false">
                           <i class="ion-android-social-user" style="font-size:22px"></i>
+                            Role: <%= current_user.roles[0].nil? ? "Pending" : current_user.roles[0].name if !current_user.requests[0].nil? %>
+                            <%= current_user.roles[0].nil? ? "Waiting For Admin" : current_user.roles[0].name if current_user.requests[0].nil? %>
                       </a>
                       <div class="dropdown-menu dropdown-menu-right profile-dropdown dropdown-menu-lg" aria-labelledby="Preview">
                         <!-- item-->
@@ -88,10 +90,6 @@
                         </div>
                         <!-- Menu Body -->
                       </div>
-                    </li>
-                    <li class="list-inline-item">
-                      Role: <%= current_user.roles[0].nil? ? "Pending" : current_user.roles[0].name if !current_user.requests[0].nil? %>
-                      <%= current_user.roles[0].nil? ? "Waiting For Admin" : current_user.roles[0].name if current_user.requests[0].nil? %>
                     </li>
                     
                     <% else %>
