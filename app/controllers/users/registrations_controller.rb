@@ -5,12 +5,13 @@ class Users::RegistrationsController < Devise::RegistrationsController
   before_action :configure_account_update_params, only: [:update]
 
   # GET /resource/sign_up
-  def new
+  def new!
+    puts "here"
     super
   end
 
   # POST /resource
-  def create
+  def create!
     super
     # puts vendor_params
     # if params['type'] == 'Sponsor'
@@ -67,8 +68,13 @@ class Users::RegistrationsController < Devise::RegistrationsController
   
   def set_role
     if current_user.has_role? :admin
-      @user = User.find(params['role']['user_id'])
-      @user.add_role params['role']['role']
+      user = User.find(params['user_id'])
+      if !user.roles.blank?
+        user.remove_role user.roles.first.name
+      end
+      user.add_role params['org'].split('-')[1]
+      user.vendors << Vendor.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'vendor'
+      user.sponsor_agencies << SponsorAgency.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'sponsor'
       redirect_to "/"
     end
   end
@@ -77,12 +83,12 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
   # If you have extra params to permit, append them to the sanitizer.
   def configure_sign_up_params
-    devise_parameter_sanitizer.permit(:sign_up, keys: [:attribute])
+    devise_parameter_sanitizer.permit(:sign_up, keys: [:attribute, :vendor, :sponsor_agency])
   end
 
   # If you have extra params to permit, append them to the sanitizer.
   def configure_account_update_params
-    devise_parameter_sanitizer.permit(:account_update, keys: [:attribute, :first_name, :last_name, :phone_number])
+    devise_parameter_sanitizer.permit(:account_update, keys: [:attribute, :first_name, :last_name, :phone_number, :vendor, :sponsor_agency])
   end
 
   # The path used after sign up.
@@ -98,13 +104,5 @@ class Users::RegistrationsController < Devise::RegistrationsController
   def user_params
     # NOTE: Using `strong_parameters` gem
     params.require(:user).permit(:email, :first_name, :last_name, :phone_number, :password, :password_confirmation, :first_name, :last_name, :phone_number)
-  end
-  
-  def vendor_params
-    params.permit(:vendor_name, :point_of_contact, :poc_email, :poc_phone_number)
-  end
-  
-  def sponsor_params
-    params.permit(:sponsor_name, :phone_number, :email, :organization)
   end
 end

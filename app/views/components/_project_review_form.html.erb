@@ -1,4 +1,4 @@
-<div>
+<div class="modal-body">
   <%= form_with(model: @project, local: true, html: { id: 'review_project_form_id', remote: true}) do |form| %>
     <%= hidden_field_tag :project_id, @project.id %>
     <%= hidden_field_tag :user_id, current_user.id %>
@@ -337,7 +337,7 @@
           </div>
           <div class="card-footer">
             <a class="btn btn-primary dropdown-toggle" data-toggle="collapse" href="#srgs_comments" role="button" aria-expanded="false" aria-controls="srgs_comments"> Comments</a>
-            <div class="collapse" id="summary_comments"><br>
+            <div class="collapse" id="srgs_comments"><br>
               <div class="comments col-md-9" id="comments_srgs">
                 <% get_project_history('srgs').each do |history| %>
                   <div class="comment mb-2 row">
@@ -429,37 +429,44 @@
         </div>
       </div>
   <% end %>
-  <script>
-    
-    function add_project_history(project_id, project_attr, comment, is_reply_to, user_id) {
-      console.log(comment);
-      project_id = parseInt(project_id)
-      $.ajax({
-        url: "/add_project_history",
-        type: "post",
-        data: {'project_histories': {project_id, project_attr, comment, is_reply_to, user_id}},
-        success: function(data) {
-          console.log(data);
-          url = '/project/' + project_id + '/review_project';
-          if ($('#reviewProjectForm').length) {
-            $('#reviewProjectForm').empty();
-          }
-          $.ajax({
-            url: url,
-            type: "get",
-            datatype: 'json',
-            success: function(data) {
-              $('#reviewProjectForm').append(data);
-            },
-            error: function() {
-              console.log("Error occured");
-            }   
-          });
-        },
-        error: function() {
-          console.log("Error occured");
-        }   
-      });
-    }
-  </script>
 </div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+  <% if current_user.has_role? :sponsor %>
+    <%= link_to 'Approve project', approve_project_path(@project), class: 'btn btn-success', method: :post %>
+  <% end %>
+</div>
+
+<script>
+  
+  function add_project_history(project_id, project_attr, comment, is_reply_to, user_id) {
+    console.log(comment);
+    project_id = parseInt(project_id)
+    $.ajax({
+      url: "/add_project_history",
+      type: "post",
+      data: {'project_histories': {project_id, project_attr, comment, is_reply_to, user_id}},
+      success: function(data) {
+        console.log(data);
+        url = '/project/' + project_id + '/review_project';
+        if ($('#reviewProjectForm').length) {
+          $('#reviewProjectForm').empty();
+        }
+        $.ajax({
+          url: url,
+          type: "get",
+          datatype: 'json',
+          success: function(data) {
+            $('#reviewProjectForm').append(data);
+          },
+          error: function() {
+            console.log("Error occured");
+          }   
+        });
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
+  }
+</script>

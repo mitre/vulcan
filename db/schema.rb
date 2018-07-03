@@ -258,8 +258,12 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.string "provider"
     t.string "uid"
     t.string "profile_pic_name"
+    # t.integer "sponsor_agency_id"
+    # t.integer "vendor_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    # t.index ["vendor_id"], name: "index_users_on_vendor_id"
+    # t.index ["sponsor_agency_id"], name: "index_users_on_sponsor_agency_id"
   end
 
   create_table "users_roles", id: false, force: :cascade do |t|

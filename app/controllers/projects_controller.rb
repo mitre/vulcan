@@ -2,7 +2,7 @@ require 'json'
 require 'ripper'
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test, :review_project]
+  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test, :review_project, :approve_project]
   respond_to :html, :json
   # GET /projects
   # GET /projects.json
@@ -91,16 +91,19 @@ class ProjectsController < ApplicationController
       project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:users].nil?
       @project = Project.new(get_project_json(project_params))
       @project.srgs << Srg.where(title: project_params[:srg_ids])
-      @project.users << current_user
-      @project.users << User.where(email: project_params[:users])
       @project.vendor = Vendor.find(params[:project][:vendor_id])
       @project.sponsor_agency = SponsorAgency.find(params[:project][:sponsor_agency_id])
+      
+      @project.users << @project.vendor.users
+      @project.users << @project.sponsor_agency.users
+      
+      puts @project.users.inspect
           
       respond_to do |format|
         puts format
         if @project.save
           assign_project_to_users
-          format.html { redirect_to @project, notice: 'Project was successfully created.' }
+          format.html { redirect_to projects_path, notice: 'Project was successfully created.' }
           format.json { render :show, status: :created, location: @project }
         else
           puts @project.errors.inspect
@@ -170,6 +173,11 @@ class ProjectsController < ApplicationController
       end
     end
     redirect_to projects_path, notice: 'Project uploaded.'
+  end
+  
+  def approve_project
+    @project.update_attribute(:status, 'approved')
+    redirect_to projects_path, notice: 'Project Approved.'
   end
 
   private

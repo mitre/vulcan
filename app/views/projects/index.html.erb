@@ -126,15 +126,7 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body" id="reviewProjectModal">
-        <div id="reviewProjectForm">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <% if current_user.has_role? :sponsor %>
-          <button type="button" class="btn btn-success">Approve Control</button>
-        <% end %>
+      <div id="reviewProjectForm">
       </div>
     </div>
   </div>
@@ -143,7 +135,6 @@
 <script>
   // Add event listener for opening and closing details
   $('#pending-projects-datatable td').on('click', function () {
-    alert("here")
     project_id = $(this).closest('tr').attr('value');
     hsh = "#review_modal_card";
     url = '/project/' + project_id + '/review_project';
