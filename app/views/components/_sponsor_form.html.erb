@@ -1,0 +1,44 @@
+<%= form_with(model: sponsor_agency, local: true) do |form| %>
+  <% if sponsor_agency.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(sponsor_agency.errors.count, "error") %> prohibited this sponsor agency from being saved:</h2>
+
+      <ul>
+      <% sponsor_agency.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <div class="form-group clearfix">
+      <label class="control-label"> Sponsor Name *</label>
+      <div class="">
+        <%= form.text_field :sponsor_name, id: :sponsor_name, class: "form-control" %>
+      </div>
+  </div>
+  
+  <div class="form-group clearfix">
+      <label class="control-label"> Sponsor Organization *</label>
+      <div class="">
+        <%= form.text_field :organization, id: :sponsor_organization, class: "form-control" %>
+      </div>
+  </div>
+  
+  <div class="form-group clearfix">
+      <label class="control-label"> Sponsor Phone Number *</label>
+      <div class="">
+        <%= form.text_field :phone_number, id: :sponsor_number, class: "form-control" %>
+      </div>
+  </div>
+  
+  <div class="form-group clearfix">
+      <label class="control-label"> Sponsor Email *</label>
+      <div class="">
+        <%= form.text_field :email, id: :sponsor_email, class: "form-control" %>
+      </div>
+  </div>
+
+  <div class="actions">
+    <%= form.submit "Submit Sponsor Agency", {:class => "btn btn-primary"} %>
+  </div>
+<% end %>

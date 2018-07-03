@@ -64,6 +64,7 @@ GEM
       sass (>= 3.5.2)
     builder (3.2.3)
     byebug (10.0.2)
+    cancancan (2.1.4)
     capybara (2.18.0)
       addressable
       mini_mime (>= 0.1.3)
@@ -409,6 +410,7 @@ GEM
       railties (>= 4.2.0, < 5.3)
     retriable (3.1.1)
     rly (0.2.3)
+    rolify (5.2.0)
     roo (2.7.1)
       nokogiri (~> 1)
       rubyzip (~> 1.1, < 2.0.0)
@@ -534,6 +536,7 @@ DEPENDENCIES
   attr_encrypted (~> 3.0.0)
   bootstrap (~> 4.0.0)
   byebug
+  cancancan
   capybara (~> 2.13)
   coffee-rails (~> 4.2)
   devise
@@ -550,6 +553,7 @@ DEPENDENCIES
   puma (~> 3.7)
   rails (~> 5.1.6)
   responders (~> 2.0)
+  rolify
   roo
   sass-rails (~> 5.0)
   selenium-webdriver

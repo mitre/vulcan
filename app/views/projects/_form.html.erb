@@ -17,64 +17,12 @@
                 <% end %>
                 <div>
                     <h3>Vendor details</h3>
-                    <section>
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Vendor Name *</label>
-                          <div class="">
-                            <%= form.text_field :vendor_name, id: :vendor_name, class: "form-control" %>
-                          </div>
-                      </div>
-                      
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Point Of Contact *</label>
-                          <div class="">
-                            <%= form.text_field :point_of_contact, id: :vendor_point_of_contact, class: "form-control" %>
-                          </div>
-                      </div>
-                      
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Point Of Contact Email *</label>
-                          <div class="">
-                            <%= form.text_field :poc_email, id: :vendor_poc_email, class: "form-control" %>
-                          </div>
-                      </div>
-                      
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Point Of Contact Phone Number *</label>
-                          <div class="">
-                            <%= form.text_field :poc_phone_number, id: :vendor_poc_phone_number, class: "form-control" %>
-                          </div>
-                      </div>
+                    <section>                      
+                        <%= form.collection_select(:vendor_id, Vendor.all, :id, :vendor_name, {}, id: 'vendor_name', class: 'form-control select2') %>
                     </section>
                     <h3>Sponsor</h3>
                     <section>
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Sponsor Name *</label>
-                          <div class="">
-                            <%= form.text_field :sponsor_name, id: :sponsor_name, class: "form-control" %>
-                          </div>
-                      </div>
-                      
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Sponsor Organization *</label>
-                          <div class="">
-                            <%= form.text_field :organization, id: :sponsor_organization, class: "form-control" %>
-                          </div>
-                      </div>
-                      
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Sponsor Phone Number *</label>
-                          <div class="">
-                            <%= form.text_field :phone_number, id: :sponsor_number, class: "form-control" %>
-                          </div>
-                      </div>
-                      
-                      <div class="form-group clearfix">
-                          <label class="control-label"> Sponsor Email *</label>
-                          <div class="">
-                            <%= form.text_field :email, id: :sponsor_email, class: "form-control" %>
-                          </div>
-                      </div>
+                        <%= form.collection_select(:sponsor_agency_id, SponsorAgency.all, :id, :sponsor_name, {}, id: 'sponsor_name', class: 'form-control') %>
                     </section>
                     <h3>Project Details</h3>
                     <section>
@@ -136,16 +84,12 @@
                     <h3>SRGs</h3>
                     <section>
                         <div class="form-group clearfix">
-                            <label class="control-label" for="name"> Relevant SRG(s) *</label>
-                            <div class="col-lg-12">
-                              <%= form.select :srg_ids, options_for_select(@srgs.collect {|srg| srg.title}), {}, {:id => "srg_ids", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>
-                            </div>
+                          <label class="control-label" for="name"> Relevant SRG(s) *</label>
+                          <%= form.select :srg_ids, options_for_select(@srgs.collect {|srg| srg.title}), {}, {:id => "srg_ids", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>
                         </div>
                         <div class="form-group clearfix">
                             <label class="control-label" for="name"> Add Other Users to View this Project *</label>
-                            <div class="col-lg-12">
-                              <%= form.select :users, options_for_select(@users.collect {|user| user.email}), {}, {:id => "users", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>
-                            </div>
+                            <%= form.select :users, options_for_select(@users.collect {|user| user.email}), {}, {:id => "users", :multiple => "multiple", :class => "multi-select", 'data-plugin'=>"multiselect" } %>                        
                         </div>
                     </section>
                 </div>
@@ -153,7 +97,9 @@
             <script>
               load_wizard("#basic-form");
               $("#srg_ids").multiSelect();
-              $("#users").multiSelect();
+              $("#users").multiSelect({ width: '500px' });
+              $("#vendor_name").select2();
+              $("#sponsor_name").select2();
             </script>
         </div>
     </div>

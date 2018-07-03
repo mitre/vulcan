@@ -2,6 +2,7 @@
 # TODO: FORM VALIDATION
 ###
 class HostConfig < ApplicationRecord
+  resourcify
   belongs_to :user, :inverse_of => :host_configs, required: false
   
   attr_encrypted :host, key: Rails.application.secrets.db
