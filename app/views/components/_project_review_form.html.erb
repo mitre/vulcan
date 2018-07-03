@@ -1,0 +1,472 @@
+<div class="modal-body">
+  <%= form_with(model: @project, local: true, html: { id: 'review_project_form_id', remote: true}) do |form| %>
+    <%= hidden_field_tag :project_id, @project.id %>
+    <%= hidden_field_tag :user_id, current_user.id %>
+    <% if @project.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@project.errors.count, "error") %> prohibited this project from being saved:</h2>
+
+        <ul>
+        <% @project.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+        </ul>
+      </div>
+    <% end %>
+    <div>
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Title</h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :title, id: :project_title, class: "form-control", rows:1, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <a class="btn btn-primary dropdown-toggle" data-toggle="collapse" href="#app_comments" role="button" aria-expanded="false" aria-controls="app_comments"> Comments</a>
+            <div class="collapse" id="app_comments"><br>
+              <div class="comments col-md-9" id="comments_title">
+                <% get_project_history('title').each do |history| %>
+                  <div class="comment mb-2 row">
+                    <% if history.is_reply_to == -1%>
+                      <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                          <% if User.find(history.user_id).profile_pic_name %>
+                            <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                          <% else %>
+                            <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                          <% end %>
+                      </div>
+                      <div class="comment-content col-md-11 col-sm-10">
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <div class="comment-body">
+                              <p>
+                                  <%= history.comment %>
+                                  <br>
+                                  <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_app_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_app_<%history.id%>"><i class="ion-reply"></i> Reply</a>
+                                  <div class="collapse" id="history_reply_app_<%=history.id%>">
+                                    <div class="input-group">
+                                      <div class="input-group-prepend">
+                                        <span class="input-group-text">Comment</span>
+                                      </div>
+                                      <%= form.text_area :title_comment, id: 'history_reply_app_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                      <div class="input-group-append">
+                                        <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'title', $('#history_reply_app_id_<%=history.id%>').val(), <%= history.id %>, $('#user_id').val())">
+                                          <i class="ti-plus"></i>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                              </p>
+                          </div>
+                      </div>
+                    <% else %>
+                      <!-- reply is indented -->
+                      <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
+                          <div class="row">
+                              <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if User.find(history.user_id).profile_pic_name %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
+                                  <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
+                              </div>
+                              <div class="comment-content col-md-11 col-sm-10 col-12">
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <div class="comment-body">
+                                      <p><%= history.comment %>
+                                          <br>
+                                          <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_reply_app_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_reply_<%=history.id%>"><i class="ion-reply"></i> Reply</a>
+                                          <div class="collapse" id="history_reply_reply_app_<%=history.id%>">
+                                            <div class="input-group">
+                                              <div class="input-group-prepend">
+                                                <span class="input-group-text">Comment</span>
+                                              </div>
+                                              <%= form.text_area :title_comment, id: 'history_reply_reply_app_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                              <div class="input-group-append">
+                                                <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'title', $('#history_reply_reply_app_id_<%=history.id.to_s%>').val(), <%= history.id %>, $('#user_id').val())">
+                                                  <i class="ti-plus"></i>
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                      </p>
+                                  </div>
+                              </div>
+                          </div>
+                     </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+              <div class="row no-gutters h-100">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text">Comment</span>
+                  </div>
+                  <%= form.text_area :title_comment, id: :project_title_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                  <div class="input-group-append">
+                    <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_project_history($('#project_id').val(), 'title', $('#project_title_comment').val(), -1, $('#user_id').val())">
+                      <i class="ti-plus"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Name</h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :name, id: :project_name, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <a class="btn btn-primary dropdown-toggle" data-toggle="collapse" href="#name_comments" role="button" aria-expanded="false" aria-controls="name_comments"> Comments</a>
+            <div class="collapse" id="name_comments"><br>
+              <div class="comments col-md-9" id="comments_name">
+                <% get_project_history('name').each do |history| %>
+                  <div class="comment mb-2 row">
+                    <% if history.is_reply_to == -1%>
+                      <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if User.find(history.user_id).profile_pic_name %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
+                          <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
+                      </div>
+                      <div class="comment-content col-md-11 col-sm-10">
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <div class="comment-body">
+                              <p>
+                                  <%= history.comment %>
+                                  <br>
+                                  <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_name_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_name_<%history.id%>"><i class="ion-reply"></i> Reply</a>
+                                  <div class="collapse" id="history_reply_name_<%=history.id%>">
+                                    <div class="input-group">
+                                      <div class="input-group-prepend">
+                                        <span class="input-group-text">Comment</span>
+                                      </div>
+                                      <%= form.text_area :name_comment, id: 'history_reply_name_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                      <div class="input-group-append">
+                                        <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'name', $('#history_reply_name_id_<%=history.id%>').val(), <%= history.id %>, $('#user_id').val())">
+                                          <i class="ti-plus"></i>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                              </p>
+                          </div>
+                      </div>
+                    <% else %>
+                      <!-- reply is indented -->
+                      <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
+                          <div class="row">
+                              <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if User.find(history.user_id).profile_pic_name %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
+                                  <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
+                              </div>
+                              <div class="comment-content col-md-11 col-sm-10 col-12">
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <div class="comment-body">
+                                      <p><%= history.comment %>
+                                          <br>
+                                          <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_reply_name_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_reply_name_<%=history.id%>"><i class="ion-reply"></i> Reply</a>
+                                          <div class="collapse" id="history_reply_reply_name_<%=history.id%>">
+                                            <div class="input-group">
+                                              <div class="input-group-prepend">
+                                                <span class="input-group-text">Comment</span>
+                                              </div>
+                                              <%= form.text_area :name_comment, id: 'history_reply_reply_name_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                              <div class="input-group-append">
+                                                <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'name', $('#history_reply_reply_name_id_<%=history.id.to_s%>').val(), <%= history.id %>, $('#user_id').val())">
+                                                  <i class="ti-plus"></i>
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                      </p>
+                                  </div>
+                              </div>
+                          </div>
+                     </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+              <div class="row no-gutters h-100">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text">Comment</span>
+                  </div>
+                  <%= form.text_area :name_comment, id: :project_name_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                  <div class="input-group-append">
+                    <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_project_history($('#project_id').val(), 'name', $('#project_name_comment').val(), -1, $('#user_id').val())">
+                      <i class="ti-plus"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">summary</h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= form.text_area :summary, id: :project_summary, class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <a class="btn btn-primary dropdown-toggle" data-toggle="collapse" href="#summary_comments" role="button" aria-expanded="false" aria-controls="summary_comments"> Comments</a>
+            <div class="collapse" id="summary_comments"><br>
+              <div class="comments col-md-9" id="comments_summary">
+                <% get_project_history('summary').each do |history| %>
+                  <div class="comment mb-2 row">
+                    <% if history.is_reply_to == -1%>
+                      <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if User.find(history.user_id).profile_pic_name %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
+                          <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
+                      </div>
+                      <div class="comment-content col-md-11 col-sm-10">
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <div class="comment-body">
+                              <p>
+                                  <%= history.comment %>
+                                  <br>
+                                  <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_summary_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_summary_<%history.id%>"><i class="ion-reply"></i> Reply</a>
+                                  <div class="collapse" id="history_reply_summary_<%=history.id%>">
+                                    <div class="input-group">
+                                      <div class="input-group-prepend">
+                                        <span class="input-group-text">Comment</span>
+                                      </div>
+                                      <%= form.text_area :summary_comment, id: 'history_reply_summary_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                      <div class="input-group-append">
+                                        <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'summary', $('#history_reply_summary_id_<%=history.id%>').val(), <%= history.id %>, $('#user_id').val())">
+                                          <i class="ti-plus"></i>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                              </p>
+                          </div>
+                      </div>
+                    <% else %>
+                      <!-- reply is indented -->
+                      <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
+                          <div class="row">
+                              <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if User.find(history.user_id).profile_pic_name %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
+                                  <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
+                              </div>
+                              <div class="comment-content col-md-11 col-sm-10 col-12">
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <div class="comment-body">
+                                      <p><%= history.comment %>
+                                          <br>
+                                          <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_reply_summary_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_reply_summary_<%=history.id%>"><i class="ion-reply"></i> Reply</a>
+                                          <div class="collapse" id="history_reply_reply_summary_<%=history.id%>">
+                                            <div class="input-group">
+                                              <div class="input-group-prepend">
+                                                <span class="input-group-text">Comment</span>
+                                              </div>
+                                              <%= form.text_area :summary_comment, id: 'history_reply_reply_summary_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                              <div class="input-group-append">
+                                                <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'Description', $('#history_reply_reply_summary_id_<%=history.id.to_s%>').val(), <%= history.id %>, $('#user_id').val())">
+                                                  <i class="ti-plus"></i>
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                      </p>
+                                  </div>
+                              </div>
+                          </div>
+                     </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+              <div class="row no-gutters h-100">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text">Comment</span>
+                  </div>
+                  <%= form.text_area :summary_comment, id: :project_summary_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                  <div class="input-group-append">
+                    <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_project_history($('#project_id').val(), 'summary', $('#project_summary_comment').val(), -1, $('#user_id').val())">
+                      <i class="ti-plus"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="field">
+        <div class="card">
+          <h5 class="card-header">Relavent SRGs</h5>
+          <div class="card-body">
+            <div class="row no-gutters">
+              <div class="input-group">
+                <%= text_area_tag :srg_ids, Srg.find(@project.srg_ids).collect {|srg| srg.title }.join("\n"), class: "form-control", rows:2, :readonly => true %>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <a class="btn btn-primary dropdown-toggle" data-toggle="collapse" href="#srgs_comments" role="button" aria-expanded="false" aria-controls="srgs_comments"> Comments</a>
+            <div class="collapse" id="srgs_comments"><br>
+              <div class="comments col-md-9" id="comments_srgs">
+                <% get_project_history('srgs').each do |history| %>
+                  <div class="comment mb-2 row">
+                    <% if history.is_reply_to == -1%>
+                      <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                        <% if User.find(history.user_id).profile_pic_name %>
+                          <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% else %>
+                          <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                        <% end %>
+                      </div>
+                      <div class="comment-content col-md-11 col-sm-10">
+                          <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
+                          <div class="comment-body">
+                              <p>
+                                  <%= history.comment %>
+                                  <br>
+                                  <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_srgs_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_srgs_<%history.id%>"><i class="ion-reply"></i> Reply</a>
+                                  <div class="collapse" id="history_reply_srgs_<%=history.id%>">
+                                    <div class="input-group">
+                                      <div class="input-group-prepend">
+                                        <span class="input-group-text">Comment</span>
+                                      </div>
+                                      <%= form.text_area :srgs_comment, id: 'history_reply_srgs_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                      <div class="input-group-append">
+                                        <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'srgs', $('#history_reply_srgs_id_<%=history.id%>').val(), <%= history.id %>, $('#user_id').val())">
+                                          <i class="ti-plus"></i>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                              </p>
+                          </div>
+                      </div>
+                    <% else %>
+                      <!-- reply is indented -->
+                      <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
+                          <div class="row">
+                              <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
+                                <% if User.find(history.user_id).profile_pic_name %>
+                                  <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% else %>
+                                  <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
+                                <% end %>
+                              </div>
+                              <div class="comment-content col-md-11 col-sm-10 col-12">
+                                  <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
+                                  <div class="comment-body">
+                                      <p><%= history.comment %>
+                                          <br>
+                                          <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_reply_srgs_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_reply_srgs_<%=history.id%>"><i class="ion-reply"></i> Reply</a>
+                                          <div class="collapse" id="history_reply_reply_srgs_<%=history.id%>">
+                                            <div class="input-group">
+                                              <div class="input-group-prepend">
+                                                <span class="input-group-text">Comment</span>
+                                              </div>
+                                              <%= form.text_area :srgs_comment, id: 'history_reply_reply_srgs_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
+                                              <div class="input-group-append">
+                                                <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_project_history($('#project_id').val(), 'srgs', $('#history_reply_reply_srgs_id_<%=history.id.to_s%>').val(), <%= history.id %>, $('#user_id').val())">
+                                                  <i class="ti-plus"></i>
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                      </p>
+                                  </div>
+                              </div>
+                          </div>
+                     </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+              <div class="row no-gutters h-100">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text">Comment</span>
+                  </div>
+                  <%= form.text_area :sgs_comment, id: :project_srgs_comment, class: "form-control", rows:1, placeholder: "Comment" %>
+                  <div class="input-group-append">
+                    <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_project_history($('#project_id').val(), 'srgs', $('#project_srgs_comment').val(), -1, $('#user_id').val())">
+                      <i class="ti-plus"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  <% end %>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+  <% if current_user.has_role? :sponsor %>
+    <%= link_to 'Approve project', approve_project_path(@project), class: 'btn btn-success', method: :post %>
+  <% end %>
+</div>
+
+<script>
+  
+  function add_project_history(project_id, project_attr, comment, is_reply_to, user_id) {
+    console.log(comment);
+    project_id = parseInt(project_id)
+    $.ajax({
+      url: "/add_project_history",
+      type: "post",
+      data: {'project_histories': {project_id, project_attr, comment, is_reply_to, user_id}},
+      success: function(data) {
+        console.log(data);
+        url = '/project/' + project_id + '/review_project';
+        if ($('#reviewProjectForm').length) {
+          $('#reviewProjectForm').empty();
+        }
+        $.ajax({
+          url: url,
+          type: "get",
+          datatype: 'json',
+          success: function(data) {
+            $('#reviewProjectForm').append(data);
+          },
+          error: function() {
+            console.log("Error occured");
+          }   
+        });
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
+  }
+</script>

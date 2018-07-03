@@ -2,13 +2,14 @@ require 'json'
 require 'ripper'
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test]
+  before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test, :review_project, :approve_project]
   respond_to :html, :json
   # GET /projects
   # GET /projects.json
   def index  
-    @projects = current_user.projects
-
+    
+    @projects = current_user.projects.select {|project| project.status != 'pending'}
+    @pending_projects = current_user.projects.select {|project| project.status == 'pending'}
     respond_to do |format|
       format.html
       format.json  { Project.find(params[:id]) }
@@ -19,12 +20,14 @@ class ProjectsController < ApplicationController
   # GET /projects/1
   # GET /projects/1.json
   def show
-    respond_to do |format|
-      format.html
-      # format.json { send_data create_project_json(Project.find(params[:id])), :filename => Project.find(params[:id]).name + '-overview.json' }
-      format.csv  { send_data Project.find(params[:id]).to_csv, :filename => Project.find(params[:id]).name + '-overview.csv' }
-      format.json { send_data Project.find(params[:id]).to_prof, :filename => Project.find(params[:id]).name + '-overview.zip' }
-      format.xlsx
+    if current_user.has_role?(current_user.roles.first.name, @project)
+      respond_to do |format|
+        format.html
+        # format.json { send_data create_project_json(Project.find(params[:id])), :filename => Project.find(params[:id]).name + '-overview.json' }
+        format.csv  { send_data Project.find(params[:id]).to_csv, :filename => Project.find(params[:id]).name + '-overview.csv' }
+        format.json { send_data Project.find(params[:id]).to_prof, :filename => Project.find(params[:id]).name + '-overview.zip' }
+        format.xlsx
+      end
     end
   end
   
@@ -61,6 +64,11 @@ class ProjectsController < ApplicationController
       project_nist_controls  
     end
   end
+  
+  # GET /projects/1/review_project
+  def review_project
+    render partial: 'components/project_review_form', project: @project
+  end
 
   # GET /projects/new
   def new
@@ -77,43 +85,52 @@ class ProjectsController < ApplicationController
   # POST /projects
   # POST /projects.json
   def create
-    puts Rails.application.secrets.db.length
-    
-    project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"} unless project_params[:srg_ids].nil?
-    project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:srg_ids].nil?
-    @project = Project.new(get_project_json(project_params))
-    @project.srgs << Srg.where(title: project_params[:srg_ids])
-    @project.users << current_user
-    @project.users << User.where(email: project_params[:users])
-    @project.vendor = Vendor.new(vendor_params)
-    @project.sponsor_agency = SponsorAgency.new(sponsor_params)
-        
-    respond_to do |format|
-      puts format
-      if @project.save
-        format.html { redirect_to @project, notice: 'Project was successfully created.' }
-        format.json { render :show, status: :created, location: @project }
-      else
-        format.html { render :new }
-        format.json { render json: @project.errors, status: :unprocessable_entity }
+    if current_user.has_role?(:vendor) || current_user.has_role?(:admin) 
+      project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"} unless project_params[:srg_ids].nil?
+      project_params[:srg_ids] = project_params[:srg_ids].drop(1)
+      project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:users].nil?
+      @project = Project.new(get_project_json(project_params))
+      @project.srgs << Srg.where(title: project_params[:srg_ids])
+      @project.vendor = Vendor.find(params[:project][:vendor_id])
+      @project.sponsor_agency = SponsorAgency.find(params[:project][:sponsor_agency_id])
+      
+      @project.users << @project.vendor.users
+      @project.users << @project.sponsor_agency.users
+      
+      puts @project.users.inspect
+          
+      respond_to do |format|
+        puts format
+        if @project.save
+          assign_project_to_users
+          format.html { redirect_to projects_path, notice: 'Project was successfully created.' }
+          format.json { render :show, status: :created, location: @project }
+        else
+          puts @project.errors.inspect
+          format.html { render :new }
+          format.json { render json: @project.errors, status: :unprocessable_entity }
+        end
       end
-    end
-    get_project_controls(@project.srgs).each do |control|
-      project_control = @project.project_controls.create(control[:control_params])
-      project_control.nist_controls << control[:nist_params]
+      # get_project_controls(@project.srgs).each do |control|
+      #   project_control = @project.project_controls.create(control[:control_params])
+      #   project_control.nist_controls << control[:nist_params]
+      #   assign_control_to_users(project_control)
+      # end
     end
   end
 
   # PATCH/PUT /projects/1
   # PATCH/PUT /projects/1.json
   def update
-    respond_to do |format|
-      if @project.update(project_params)
-        format.html { redirect_to @project, notice: 'Project was successfully updated.' }
-        format.json { render :show, status: :ok, location: @project }
-      else
-        format.html { render :edit }
-        format.json { render json: @project.errors, status: :unprocessable_entity }
+    if current_user.has_role?(current_user.roles.first.name, @project)
+      respond_to do |format|
+        if @project.update(project_params)
+          format.html { redirect_to @project, notice: 'Project was successfully updated.' }
+          format.json { render :show, status: :ok, location: @project }
+        else
+          format.html { render :edit }
+          format.json { render json: @project.errors, status: :unprocessable_entity }
+        end
       end
     end
   end
@@ -121,10 +138,12 @@ class ProjectsController < ApplicationController
   # DELETE /projects/1
   # DELETE /projects/1.json
   def destroy
-    @project.destroy
-    respond_to do |format|
-      format.html { redirect_to projects_url, notice: 'Project was successfully destroyed.' }
-      format.json { head :no_content }
+    if current_user.has_role?(current_user.roles.first.name, @project)
+      @project.destroy
+      respond_to do |format|
+        format.html { redirect_to projects_url, notice: 'Project was successfully destroyed.' }
+        format.json { head :no_content }
+      end
     end
   end
   
@@ -155,8 +174,22 @@ class ProjectsController < ApplicationController
     end
     redirect_to projects_path, notice: 'Project uploaded.'
   end
+  
+  def approve_project
+    @project.update_attribute(:status, 'approved')
+    redirect_to projects_path, notice: 'Project Approved.'
+  end
 
   private
+    def assign_control_to_users(control)
+      @project.users.each {|user| user.add_role(user.roles.first.name, control) }
+    end
+    
+    def assign_project_to_users
+      @project.users.each {|user| user.add_role(user.roles.first.name, @project) }
+    end
+  
+  
     ###
     # TODO: Add functionality for sudo options.
     # TODO: Test functionality for error handling with incorrect hosts.
@@ -259,7 +292,8 @@ class ProjectsController < ApplicationController
         copyright_email: params[:copyright_email],
         license: params[:license],
         summary: params[:summary],
-        version: params[:version]
+        version: params[:version],
+        status: 'pending'
       }
     end
     
@@ -285,20 +319,14 @@ class ProjectsController < ApplicationController
     end
     
     # Use callbacks to share common setup or constraints between actions.
+    # Only give the project if the user has a role to that project
     def set_project
-      @project = Project.find(params[:id])
+      @project = Project.find(params[:id]) if current_user.has_role?(:vendor, Project.find(params[:id])) || current_user.has_role?(:sponsor, Project.find(params[:id])) ||
+                                              current_user.has_role?(:admin, Project.find(params[:id]))
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_params
       params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[], users:[])
-    end
-    
-    def vendor_params
-      params.require(:project).permit(:vendor_name, :point_of_contact, :poc_email, :poc_phone_number)
-    end
-    
-    def sponsor_params
-      params.require(:project).permit(:sponsor_name, :phone_number, :email, :organization)
     end
 end

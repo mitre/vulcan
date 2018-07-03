@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180612210017) do
+ActiveRecord::Schema.define(version: 20180626153503) do
 
   create_table "ccis", force: :cascade do |t|
     t.string "cci"
@@ -21,32 +21,6 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.integer "cci_id"
     t.index ["cci_id"], name: "index_ccis_nist_controls_on_cci_id"
     t.index ["nist_control_id"], name: "index_ccis_nist_controls_on_nist_control_id"
-  end
-
-  create_table "sponsor_agencies", force: :cascade do |t|
-    t.string "encrypted_sponsor_name"
-    t.string "encrypted_sponsor_name_iv"
-    t.string "encrypted_phone_number"
-    t.string "encrypted_phone_number_iv"
-    t.string "encrypted_email"
-    t.string "encrypted_email_iv"
-    t.string "encrypted_organization"
-    t.string "encrypted_organization_iv"
-    t.integer "project_id"
-    t.index ["project_id"], name: "index_sponsor_agencies_on_project_id"
-  end
-  
-  create_table "vendors", force: :cascade do |t|
-    t.string "encrypted_vendor_name"
-    t.string "encrypted_vendor_name_iv"
-    t.string "encrypted_point_of_contact"
-    t.string "encrypted_point_of_contact_iv"
-    t.string "encrypted_poc_email"
-    t.string "encrypted_poc_email_iv"
-    t.string "encrypted_poc_phone_number"
-    t.string "encrypted_poc_phone_number_iv"
-    t.integer "project_id"
-    t.index ["project_id"], name: "index_vendors_on_project_id"
   end
 
   create_table "host_configs", force: :cascade do |t|
@@ -101,6 +75,17 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.string "long_title"
   end
 
+  create_table "permissions", force: :cascade do |t|
+    t.integer "user_id"
+    t.string "name"
+    t.string "subject_class"
+    t.integer "subject_id"
+    t.string "action"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "project_control_histories", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -111,6 +96,18 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.integer "is_reply_to", default: 0
     t.index ["project_control_id"], name: "index_project_control_histories_on_project_control_id"
     t.index ["user_id"], name: "index_project_control_histories_on_user_id"
+  end
+  
+  create_table "project_histories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "project_attr"
+    t.string "comment"
+    t.integer "project_id"
+    t.integer "user_id"
+    t.integer "is_reply_to", default: 0
+    t.index ["project_id"], name: "index_project_histories_on_project_id"
+    t.index ["user_id"], name: "index_project_histories_on_user_id"
   end
 
   create_table "project_controls", force: :cascade do |t|
@@ -159,8 +156,12 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.string "encrypted_summary_iv"
     t.string "encrypted_version"
     t.string "encrypted_version_iv"
-    t.integer "dod_agencies_id"
-    t.index ["dod_agencies_id"], name: "index_projects_on_dod_agencies_id"
+    t.string "encrypted_status"
+    t.string "encrypted_status_iv"
+    t.integer "sponsor_agency_id"
+    t.integer "vendor_id"
+    t.index ["vendor_id"], name: "index_projects_on_vendor_id"
+    t.index ["sponsor_agency_id"], name: "index_projects_on_sponsor_agency_id"
   end
 
   create_table "projects_srgs", force: :cascade do |t|
@@ -175,6 +176,44 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.integer "project_id"
     t.index ["project_id"], name: "index_users_projects_on_project_id"
     t.index ["user_id"], name: "index_users_projects_on_user_id"
+  end
+
+  create_table "requests", force: :cascade do |t|
+    t.string "encrypted_status"
+    t.string "encrypted_status_iv"
+    t.string "encrypted_role"
+    t.string "encrypted_role_iv"
+    t.integer "user_id"
+    t.index ["user_id"], name: "index_requests_on_user_id"
+  end
+
+  create_table "roles", force: :cascade do |t|
+    t.string "name"
+    t.string "resource_type"
+    t.integer "resource_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name", "resource_type", "resource_id"], name: "index_roles_on_name_and_resource_type_and_resource_id"
+    t.index ["name"], name: "index_roles_on_name"
+    t.index ["resource_type", "resource_id"], name: "index_roles_on_resource_type_and_resource_id"
+  end
+
+  create_table "sponsor_agencies", force: :cascade do |t|
+    t.string "encrypted_sponsor_name"
+    t.string "encrypted_sponsor_name_iv"
+    t.string "encrypted_phone_number"
+    t.string "encrypted_phone_number_iv"
+    t.string "encrypted_email"
+    t.string "encrypted_email_iv"
+    t.string "encrypted_organization"
+    t.string "encrypted_organization_iv"
+  end
+
+  create_table "sponsor_agencies_users", id: false, force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "sponsor_agency_id"
+    t.index ["sponsor_agency_id"], name: "index_users_sponsor_agencies_on_sponsor_agency_id"
+    t.index ["user_id"], name: "index_users_sponsor_agencies_on_user_id"
   end
 
   create_table "srg_controls", force: :cascade do |t|
@@ -219,7 +258,38 @@ ActiveRecord::Schema.define(version: 20180612210017) do
     t.string "provider"
     t.string "uid"
     t.string "profile_pic_name"
+    # t.integer "sponsor_agency_id"
+    # t.integer "vendor_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    # t.index ["vendor_id"], name: "index_users_on_vendor_id"
+    # t.index ["sponsor_agency_id"], name: "index_users_on_sponsor_agency_id"
   end
+
+  create_table "users_roles", id: false, force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "role_id"
+    t.index ["role_id"], name: "index_users_roles_on_role_id"
+    t.index ["user_id", "role_id"], name: "index_users_roles_on_user_id_and_role_id"
+    t.index ["user_id"], name: "index_users_roles_on_user_id"
+  end
+
+  create_table "users_vendors", id: false, force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "vendor_id"
+    t.index ["user_id"], name: "index_users_vendors_on_user_id"
+    t.index ["vendor_id"], name: "index_users_vendors_on_vendor_id"
+  end
+
+  create_table "vendors", force: :cascade do |t|
+    t.string "encrypted_vendor_name"
+    t.string "encrypted_vendor_name_iv"
+    t.string "encrypted_point_of_contact"
+    t.string "encrypted_point_of_contact_iv"
+    t.string "encrypted_poc_email"
+    t.string "encrypted_poc_email_iv"
+    t.string "encrypted_poc_phone_number"
+    t.string "encrypted_poc_phone_number_iv"
+  end
+
 end

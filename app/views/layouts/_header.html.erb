@@ -6,7 +6,7 @@
             <!-- Logo container-->
             <div class="logo">
                 <!-- Text Logo -->
-                <a href="index.html" class="logo">
+                <a href="/" class="logo">
                     <span class="logo-small"><i class="mdi mdi-radar"></i></span>
                     <span class="logo-large"><i class="mdi mdi-radar"></i> Vulcan</span>
                 </a>
@@ -73,6 +73,8 @@
                       <a class="nav-link dropdown-toggle arrow-none waves-effect" data-toggle="dropdown" href="#" role="button"
                          aria-haspopup="false" aria-expanded="false">
                           <i class="ion-android-social-user" style="font-size:22px"></i>
+                            Role: <%= current_user.roles[0].nil? ? "Pending" : current_user.roles[0].name if !current_user.requests[0].nil? %>
+                            <%= current_user.roles[0].nil? ? "Waiting For Admin" : current_user.roles[0].name if current_user.requests[0].nil? %>
                       </a>
                       <div class="dropdown-menu dropdown-menu-right profile-dropdown dropdown-menu-lg" aria-labelledby="Preview">
                         <!-- item-->
@@ -89,6 +91,7 @@
                         <!-- Menu Body -->
                       </div>
                     </li>
+                    
                     <% else %>
                       <li class="list-inline-item"><%= link_to "Login", new_user_session_path, :class => "dropdown-toggle" %></li>
                     <% end %>
@@ -101,7 +104,6 @@
     </div>
     <!-- end topbar-main -->
     <% if current_user %>
-
       <div class="navbar-custom">
           <div class="container-fluid">
               <div id="navigation">
@@ -118,9 +120,11 @@
                       <li>
                           <a href="<%= new_srg_path %>"><i class="fa fa-file-archive-o"></i> Upload SRG</a>
                       </li>
-                      <li>
-                          <a href="<%= new_project_path %>" id="new_project_link_id"><i class="fa fa-hourglass-start"></i> Start New Project</a>
-                      </li>
+                      <% if current_user.has_role?(:vendor) || current_user.has_role?(:admin) %>
+                        <li>
+                            <a href="<%= new_project_path %>" id="new_project_link_id"><i class="fa fa-hourglass-start"></i> Start New Project</a>
+                        </li>
+                      <% end %>
                       <li>
                           <a href="<%= projects_path %>"><i class="fa fa-folder-open-o"></i> Projects</a>
                       </li>

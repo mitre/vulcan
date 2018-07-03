@@ -5,13 +5,28 @@ class Users::RegistrationsController < Devise::RegistrationsController
   before_action :configure_account_update_params, only: [:update]
 
   # GET /resource/sign_up
-  def new
+  def new!
+    puts "here"
     super
   end
 
   # POST /resource
-  def create
+  def create!
     super
+    # puts vendor_params
+    # if params['type'] == 'Sponsor'
+    #   sponsor = SponsorAgency.where("'sponsor_name' = ? AND 'phone_number' = ? AND 'email' = ? AND 'organization' = ?",
+    #                       sponsor_params['sponsor_name'], sponsor_params['phone_number'], sponsor_params['email'], sponsor_params['organization'] )
+    #   current_user.sponsor_agency = SponsorAgency.new(sponsor_params) unless sponsor.exists
+    #   current_user.sponsor_agency = sponsor if sponsor.exists
+    #   current_user.requests.create({status: 'Pending', role: 'sponsor'})
+    # else
+    #   vendor = Vendor.where("'vendor_name' = ? AND 'point_of_contact' = ? AND 'poc_email' = ? AND 'poc_phone_number' = ?",
+    #         vendor_params['vendor_name'], vendor_params['point_of_contact'], vendor_params['poc_email'], vendor_params['poc_phone_number'])
+    #   current_user.vendor = Vendor.new(vendor_params) unless vendor.exists
+    #   current_user.vendor = vendor if vendor.exists  
+    #   current_user.requests.create({status: 'Pending', role: 'vendor'})
+    # end
   end
 
   # GET /resource/edit
@@ -50,17 +65,30 @@ class Users::RegistrationsController < Devise::RegistrationsController
   def cancel
     super
   end
+  
+  def set_role
+    if current_user.has_role? :admin
+      user = User.find(params['user_id'])
+      if !user.roles.blank?
+        user.remove_role user.roles.first.name
+      end
+      user.add_role params['org'].split('-')[1]
+      user.vendors << Vendor.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'vendor'
+      user.sponsor_agencies << SponsorAgency.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'sponsor'
+      redirect_to "/"
+    end
+  end
 
   protected
 
   # If you have extra params to permit, append them to the sanitizer.
   def configure_sign_up_params
-    devise_parameter_sanitizer.permit(:sign_up, keys: [:attribute])
+    devise_parameter_sanitizer.permit(:sign_up, keys: [:attribute, :vendor, :sponsor_agency])
   end
 
   # If you have extra params to permit, append them to the sanitizer.
   def configure_account_update_params
-    devise_parameter_sanitizer.permit(:account_update, keys: [:attribute, :first_name, :last_name, :phone_number])
+    devise_parameter_sanitizer.permit(:account_update, keys: [:attribute, :first_name, :last_name, :phone_number, :vendor, :sponsor_agency])
   end
 
   # The path used after sign up.

@@ -32,5 +32,6 @@
 //= require_tree ./jquery-steps
 //= require_tree ./jquery-validate
 //= require_tree ./multiselect
+//= require_tree ./select2
 //= require_tree .
 //= require_self

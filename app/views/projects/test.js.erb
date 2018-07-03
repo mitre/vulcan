@@ -1,6 +1,7 @@
 $('#code_results').html(formatResults('<%=j @results.html_safe %>'));
 
 function formatResults(data) {
+  console.log(data);
   formattedResults = ""
   if (data.split(' ')[0] != "ERROR:") {
     data = JSON.parse(data)

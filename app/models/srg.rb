@@ -1,4 +1,5 @@
 class Srg < ApplicationRecord
+  resourcify
   before_destroy :destroy_srg_controls
   
   has_many :srg_controls
