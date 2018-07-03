@@ -2,7 +2,7 @@
 
 class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   # You should configure your model like this:
-  # devise :omniauthable, omniauth_providers: [:twitter]
+  devise :omniauthable, omniauth_providers: [:github]
 
   # You should also create an action method in this controller like this:
   # def twitter
@@ -12,7 +12,8 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   # https://github.com/plataformatec/devise#omniauth
 
   # GET|POST /resource/auth/twitter
-  def passthru
+  def passthru!
+    puts "PASSTHRU"
     super
   end
 

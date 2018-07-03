@@ -3,6 +3,9 @@
   <h1>
     Welcome to Vulcan!
   </h1>
+  <h1>
+    TODO: Documentation for each role
+  </h1>
 </section>
 <% if current_user %>
   <% if current_user.has_role? :admin %>
@@ -14,24 +17,24 @@
               <thead>
                 <tr>
                   <th>Email</th>
-                  <th>Set Role</th>
+                  <th>Set Organization</th>
+                  <th>Submit</th>
                 </tr>
               </thead>
               <tbody>
                 <% User.all.each do |user| %>
-                  <% if user.roles.blank? %>
-                    <tr>
-                      <td><%= user.email%></td>
-                      <td>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-secondary dropdown-toggle waves-effect" data-toggle="dropdown" aria-expanded="false">  Action <span class="caret"></span> </button>
-                            <div class="dropdown-menu">
-                                <%= link_to 'Vendor', set_role_url(role: {:user_id => user.id, role: 'vendor'}), class: 'dropdown-item btn btn-success'%>
-                                <%= link_to 'Sponsor', set_role_url(role: {:user_id => user.id, role: 'sponsor'}), class: 'dropdown-item btn btn-danger'%>
-                                <%= link_to 'Admin', set_role_url(role: {:user_id => user.id, role: 'admin'}), class: 'dropdown-item btn btn-info'%>
-                            </div>
-                        </div>
-                      </td>
+                  <% if !user.has_role?(:vendor) && !user.has_role?(:sponsor) %>
+                    <tr value='<%= user.id %>'>
+                      <%= form_tag(set_role_url, method: "post", id: 'set_role_org', remote: true) do %>
+                        <%= hidden_field_tag 'user_id', user.id, id: 'user_id' %>
+                        <td><%= user.email%></td>
+                        <td>
+                          <%= select_tag('org', grouped_options_for_select(get_grouped_orgs), {class: 'form-control select2', id: 'org', include_blank: 'Select Organization'})%>
+                        </td>
+                        <td>
+                            <%= submit_tag 'Submit', class: 'btn btn-success' %>
+                        </td>
+                      <% end %>
                     </tr>
                   <% end %>
                 <% end %>
@@ -61,6 +64,12 @@
 <% end %>
 
 <script>
+  $('.select2').select2();
+  
+  $('.select2').on('change', function() {
+    user_id = $(this).closest('tr').attr('value')
+    
+  })
   // $('[name="type"]').on("change", function() {
   //   if ($('[name="type"]').val() == 'Vendor') {
   //     $('#vendor_group').show();

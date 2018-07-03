@@ -7,7 +7,7 @@ Rails.application.routes.draw do
   
   devise_scope :user do
     get 'show_user', to: 'users/sessions#show'
-    get 'set_role' => 'users/registrations#set_role', :as => :set_role, :via => :get
+    post 'set_role' => 'users/registrations#set_role', :as => :set_role, :via => :post
 
     # put 'users' => 'users/registrations#update', :as => 'edit_user_profile'
     # match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
@@ -41,6 +41,7 @@ Rails.application.routes.draw do
   match 'project_controls/:id/run_test' => 'project_controls#run_test', :as => :run_test, :via => :get
   match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
   match 'create_request' => 'resuests#create_request', :as => :create_request, :via => :post
-  
+  match 'project/:id/approve_project' => 'projects#approve_project', :as => :approve_project, :via => :post
+
   root 'dashboard#index', as: :home
 end
