@@ -9,27 +9,29 @@ sync-repo:
 
   before_script:
     # add the MITRE certificates to the docker image
-    - apk update && apk add git openssh-client ca-certificates
+    - apk update && apk add git openssh-client ca-certificates curl libressl
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_Root.crt http://pki.mitre.org/MITRE%20BA%20Root.crt
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-1.crt http://pki.mitre.org/MITRE%20BA%20NPE%20CA-1.crt
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-3.crt http://pki.mitre.org/MITRE%20BA%20NPE%20CA-3.crt
     - update-ca-certificates
 
+    - export https_proxy="http://gatekeeper.mitre.org:80"
+    
     # create a file called push_key that contains the $GITLAB_PUSH_KEY
     - mkdir -p /root/.ssh
     - echo "$GITLAB_PUSH_KEY" > ~/push_key
     - chmod 600 ~/push_key
 
     # configure git
-    - git config --global user.email 'jsauriol@mitre.org' # Normally this is associated with the $GITLAB_PUSH_KEY
-    - git config --global user.name 'Jack Sauriol' # Normally this is associated with the $GITLAB_PUSH_KEY
+    - git config --global user.email 'deployer@mitre.org' # Normally this is associated with the $GITLAB_PUSH_KEY
+    - git config --global user.name 'inspec-dev Deployer' # Normally this is associated with the $GITLAB_PUSH_KEY
 
     # add gitlab.mitre.org to known_hosts to avoid "host key verification failed" error
     - touch ~/.ssh/known_hosts
     - echo $GITLAB_KEYSCAN >> ~/.ssh/known_hosts
 
   script:
-    - git clone https://aaronlippold:$(echo $GITHUB_ACCESS_TOKEN)@github.com/aaronlippold/vulcan vulcan
+    - git clone https://aaronlippold:$(echo $GITHUB_ACCESS_TOKEN)@github.com/aaronlippold/vulcan vulcan 2>/dev/null
     - cd vulcan
     - git remote add github git@gitlab.mitre.org:inspec/vulcan.git
-    - ssh-agent sh -c 'ssh-add ~/push_key; git push --force --tags github master || true' # REMOTE NAME from previous line
+    - ssh-agent sh -c 'ssh-add ~/push_key; git push --tags github master || true' # REMOTE NAME from previous line
