@@ -1,0 +1,2 @@
+rake db:reset
+git add ./db/*
