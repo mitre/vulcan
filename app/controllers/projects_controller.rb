@@ -177,6 +177,11 @@ class ProjectsController < ApplicationController
   
   def approve_project
     @project.update_attribute(:status, 'approved')
+    get_project_controls(@project.srgs).each do |control|
+      project_control = @project.project_controls.create(control[:control_params])
+      project_control.nist_controls << control[:nist_params]
+      assign_control_to_users(project_control)
+    end
     redirect_to projects_path, notice: 'Project Approved.'
   end
 
@@ -216,7 +221,7 @@ class ProjectsController < ApplicationController
     
     def get_code_to_test(params)
       return @project.project_controls.collect{|control| control.code}.join("\n") if params['run_all'].include?('1')
-      return params['code'] if params['run_all'].include?('1')
+      return params['code'] unless params['run_all'].include?('1')
     end
     
     ###

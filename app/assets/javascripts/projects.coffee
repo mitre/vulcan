@@ -9,6 +9,7 @@ ready = ->
     $('#pending-projects-datatable').footable().on('footable_filtering', filter_pending_projects)
     $('#project-controls-search').on('input', search_project_controls)
     $('#project-controls-datatable').footable().on('footable_filtering', filter_project_controls)
+    $('#awaiting-approval-datatable').footable()
     $('[name="project_control[status]"]').on("change", add_fields)
     $(".pagination").rPage()
     $('#project-controls-filter-applicability').on('change', filter_applicability)
