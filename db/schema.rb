@@ -90,7 +90,8 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "project_control_attr"
-    t.string "comment"
+    t.string "text"
+    t.string "history_type"
     t.string "project_control_id"
     t.integer "user_id"
     t.integer "is_reply_to", default: 0
@@ -102,12 +103,21 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "project_attr"
-    t.string "comment"
+    t.string "text"
+    t.string "history_type"
     t.integer "project_id"
     t.integer "user_id"
     t.integer "is_reply_to", default: 0
     t.index ["project_id"], name: "index_project_histories_on_project_id"
     t.index ["user_id"], name: "index_project_histories_on_user_id"
+  end
+  
+  create_table "project_change_statuses", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "status"
+    t.integer "project_history_id"
+    t.index ["project_history_id"], name: "index_project_change_status_on_project_history_id"
   end
 
   create_table "project_controls", force: :cascade do |t|

@@ -3,7 +3,7 @@ class ProjectControlHistoriesController < ApplicationController
   skip_before_action :verify_authenticity_token
 
   def add_history
-    ProjectControlHistory.create(project_control_histories_params)
+    project_history = ProjectControlHistory.create(project_control_histories_params)
     return "Success"
   end
   
