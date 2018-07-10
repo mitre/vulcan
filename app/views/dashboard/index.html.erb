@@ -23,7 +23,7 @@
               </thead>
               <tbody>
                 <% User.all.each do |user| %>
-                  <% if !user.has_role?(:vendor) && !user.has_role?(:sponsor) %>
+                  <% if !user.has_role?(:vendor) && !user.has_role?(:sponsor) && !user.has_role?(:admin) %>
                     <tr value='<%= user.id %>'>
                       <%= form_tag(set_role_url, method: "post", id: 'set_role_org', remote: true) do %>
                         <%= hidden_field_tag 'user_id', user.id, id: 'user_id' %>
