@@ -10,13 +10,13 @@
     </div>
     <div class="card-footer">
       <a class="btn btn-primary dropdown-toggle" data-toggle="collapse" href="#<%= attribute %>_comments" role="button" aria-expanded="false" aria-controls="<%= attribute %>_comments"> Comments</a>
-      <div class="collapse" id="app_comments"><br>
+      <div class="collapse" id="<%= attribute %>_comments"><br>
         <div class="comments col-md-9" id="comments_<%= attribute %>">
           <% get_history(attribute, 'comment').each do |history| %>
             <div class="comment mb-2 row">
               <% if history.is_reply_to == -1%>
                 <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
-                    <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                    <% if User.find(history.user_id).profile_pic_name %>
                       <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
                     <% else %>
                       <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
@@ -26,7 +26,7 @@
                     <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %></a><%= history.created_at %></h6>
                     <div class="comment-body">
                         <p>
-                            <%= history.comment %>
+                            <%= history.text %>
                             <br>
                             <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_<%= attribute %>_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_<%= attribute %>_<%history.id%>"><i class="ion-reply"></i> Reply</a>
                             <div class="collapse" id="history_reply_<%= attribute %>_<%=history.id%>">
@@ -36,7 +36,7 @@
                                 </div>
                                 <%= form.text_area attribute + '_comment', id: 'history_reply_' + attribute + '_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
                                 <div class="input-group-append">
-                                  <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_history($('#project_control_id').val(), '<%= attribute %>', $('#history_reply_app_id_<%=history.id%>').val(), 'comment', <%= history.id %>, $('#user_id').val())">
+                                  <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_history($('#project_control_id').val(), '<%= attribute %>', $('#history_reply_<%= attribute %>_id_<%=history.id%>').val(), 'comment', <%= history.id %>, $('#user_id').val())">
                                     <i class="ti-plus"></i>
                                   </span>
                                 </div>
@@ -50,7 +50,7 @@
                 <div class="comment-reply col-md-11 offset-md-1 col-sm-10 offset-sm-2">
                     <div class="row">
                         <div class="comment-avatar col-md-1 col-sm-2 text-center pr-1">
-                          <% if File.file?("app/assets/images/profile_pics/" + User.find(history.user_id).profile_pic_name) %>
+                          <% if User.find(history.user_id).profile_pic_name %>
                             <a href=""><%= image_tag "profile_pics/" + User.find(history.user_id).profile_pic_name, class: "mx-auto rounded-circle img-fluid" %></a>
                           <% else %>
                             <a href=""><%= image_tag "default_profile_pic.jpeg", class: "mx-auto rounded-circle img-fluid" %></a>
@@ -59,7 +59,7 @@
                         <div class="comment-content col-md-11 col-sm-10 col-12">
                             <h6 class="small comment-meta"><a href="<%= show_user_path(history.user_id) %>"><%= User.find(history.user_id).email %> </a><%= history.created_at %></h6>
                             <div class="comment-body">
-                                <p><%= history.comment %>
+                                <p><%= history.text %>
                                     <br>
                                     <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_reply_<%= attribute %>_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_reply_<%= attribute %>_<%=history.id%>"><i class="ion-reply"></i> Reply</a>
                                     <div class="collapse" id="history_reply_reply_<%= attribute %>_<%=history.id%>">
@@ -69,7 +69,7 @@
                                         </div>
                                         <%= form.text_area attribute + '_comment', id: 'history_reply_reply_' + attribute + '_id_' + history.id.to_s, class: "form-control", rows:1, placeholder: "Reply" %>
                                         <div class="input-group-append">
-                                          <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_history($('#project_control_id').val(), '<%= attribute %>', $('#history_reply_reply_app_id_<%=history.id.to_s%>').val(), 'comment', <%= history.id %>, $('#user_id').val())">
+                                          <span role="button" class="btn btn-icon waves-effect waves-light btn-danger" onclick="add_history($('#project_control_id').val(), '<%= attribute %>', $('#history_reply_reply_<%= attribute %>_id_<%=history.id.to_s%>').val(), 'comment', <%= history.id %>, $('#user_id').val())">
                                             <i class="ti-plus"></i>
                                           </span>
                                         </div>
@@ -91,12 +91,13 @@
             </div>
             <%= form.text_area attribute + '_comment', id: 'project_control_' + attribute + '_comment', class: "form-control", rows:1, placeholder: "Comment" %>
             <div class="input-group-append">
-              <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), '<%= attribute %>', $('#project_control_status_comment').val(), 'comment', -1, $('#user_id').val())">
+              <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), '<%= attribute %>', $('#project_control_<%= attribute %>_comment').val(), 'comment', -1, $('#user_id').val())">
                 <i class="ti-plus"></i>
               </span>
             </div>
           </div>
         </div>
+        <br>
       </div>
       <a class="btn btn-danger dropdown-toggle" data-toggle="collapse" href="#<%= attribute %>_change" role="button" aria-expanded="false" aria-controls="<%= attribute %>_change"> Requested Changes</a>
       <div class="collapse" id="<%= attribute %>_change"><br>
@@ -114,6 +115,13 @@
                 <div class="comment-body">
                     <p>
                         <%= history.text %>
+                        <div class='row'>
+                          <% if history.control_change_status.status == 'open'%>
+                            <span class="badge label-table badge-danger">OPEN</span>
+                          <% else %>
+                            <span class="badge label-table badge-success">CLOSED</span>
+                          <% end %>
+                        </div>
                         <br>
                         <!-- <a lass="btn btn-primary" data-toggle="collapse" href="#history_reply_<%= attribute %>_<%=history.id%>" role="button" aria-expanded="false" aria-controls="history_reply_<%= attribute %>_<%history.id%>"><i class="ion-reply"></i> Reply</a>
                         <div class="collapse" id="history_reply_<%= attribute %>_<%=history.id%>">
@@ -142,7 +150,7 @@
               </div>
               <%= form.text_area attribute + '_change', id: 'project_control_' + attribute + '_change', class: "form-control", rows:1, placeholder: "Request Change" %>
               <div class="input-group-append">
-                <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_id').val(), '<%= attribute %>', $('#project_control_<%= attribute %>_change').val(),'change', -1, $('#user_id').val())">
+                <span role="button" class="btn btn-dark waves-effect waves-light" onclick="add_history($('#project_control_id').val(), '<%= attribute %>', $('#project_control_<%= attribute %>_change').val(),'change', -1, $('#user_id').val())">
                   <i class="ti-plus"></i>
                 </span>
               </div>
