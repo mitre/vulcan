@@ -1,6 +1,6 @@
 module ProjectHistoriesHelper
-  def get_project_history(type)
-    comments = ProjectHistory.where("project_id = ? AND project_attr = ?", @project.id, type).order(:created_at)
+  def get_project_history(control_attr, history_type)
+    comments = ProjectHistory.where("project_id = ? AND project_attr = ? AND history_type = ?", @project.id, control_attr, history_type).order(:created_at)
     comments.each do |comment|
       if comment.is_reply_to != -1
         comments = comments.to_a - [comment]

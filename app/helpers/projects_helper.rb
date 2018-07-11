@@ -27,7 +27,7 @@ module ProjectsHelper
   
   def get_need_changes_count
     controls = @project.project_controls.group_by {|control| control.status }
-    controls['Need Changes'].nil? ? 0 : controls['Need Changes'].count
+    controls['Needs Changes'].nil? ? 0 : controls['Needs Changes'].count
   end
   
   def get_approved_count
