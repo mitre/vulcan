@@ -124,7 +124,7 @@ cci_items.each do |cci_item|
 end
 
 user = User.new
-user.email = 'dromazmj@gmail.com'
-user.password = ENV['VULCAN_ADMIN_PASSWORD']
+user.email = 'admin@admin.com'
+user.password = 'admin1'
 user.save
 user.add_role "admin"

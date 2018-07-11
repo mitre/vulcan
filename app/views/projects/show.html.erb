@@ -1,3 +1,4 @@
+<h4 class="m-t-0 header-title"><%= @project.name %> Controls</h4>
 <div class="row">
     <div class="col-lg-3 col-md-6">
         <!-- <div class="widget-simple-chart text-right card-box">
@@ -35,7 +36,138 @@
 <div class="row no-gutters">
     <div class="col-lg-12">
         <div class="card-box">
-            <h4 class="m-t-0 header-title"><%= @project.name %> Controls</h4>
+            <div class="form-inline m-b-20">
+              <div class="row">
+                <div class="col-lg-6 text-center text-right">
+                  <div class="portlet">
+                      <!-- /primary heading -->
+                      <div class="portlet-heading">
+                          <% if current_user.has_role?(:vendor) %>
+                            <h3 class="portlet-title text-dark"> Controls Needing Changes </h3>
+                          <% elsif current_user.has_role?(:sponsor) %>
+                            <h3 class="portlet-title text-dark"> Controls Awaiting Approval </h3>
+                          <% end %>
+                          <div class="clearfix"></div>
+                      </div>
+                      <div id="portlet5" class="panel-collapse collapse show">
+                          <div class="portlet-body">
+                              <div style="height: 268px;">
+                                <% if current_user.has_role?(:vendor) %>
+                                  <table id="requested-changes-datatable" class="table table-striped toggle-circle m-b-0" data-page-size="4">
+                                    <thead>
+                                        <tr>
+                                            <th>Control ID</th>
+                                            <th>Impact </th>
+                                            <th>Request</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                      <% @project.project_controls.group_by {|control| control.status }['Needs Changes'].each do |project_control| %>
+                                        <tr value="<%=  project_control.id %>">
+                                          <td><%= project_control.control_id %></td>
+                                          <td><%= project_control.impact %></td>
+                                          <td><%= project_control.project_control_historys.select {|history| history.control_change_status.status == 'open' && history.history_type == 'change'}.collect {|history| history.text}.join(",<br />").html_safe %></td>
+                                        </tr>
+                                      <% end unless @project.project_controls.group_by {|control| control.status }['Needs Changes'].nil? %>
+                                    </tbody>
+                                    <tfoot>
+                                      <tr class="active">
+                                          <td colspan="6">
+                                              <div class="text-right">
+                                                  <ul class="pagination justify-content-center footable-pagination"></ul>
+                                              </div>
+                                          </td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                <% elsif current_user.has_role?(:sponsor) %>
+                                  <table id="awaiting-approval-datatable" class="table table-striped toggle-circle m-b-0" data-page-size="4">
+                                    <thead>
+                                        <tr>
+                                            <th>Control ID</th>
+                                            <th>Impact </th>
+                                            <th>Nist Families</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                      <% @project.project_controls.group_by {|control| control.status }['Awaiting Review'].each do |project_control| %>
+                                        <tr value="<%=  project_control.id %>">
+                                          <td><%= project_control.control_id %></td>
+                                          <td><%= project_control.impact %></td>
+                                          <td><%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index}.join() %></td>
+                                        </tr>
+                                      <% end unless @project.project_controls.group_by {|control| control.status }['Awaiting Review'].nil?%>
+                                    </tbody>
+                                    <tfoot>
+                                      <tr class="active">
+                                          <td colspan="6">
+                                              <div class="text-right">
+                                                  <ul class="pagination justify-content-center footable-pagination"></ul>
+                                              </div>
+                                          </td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                <% end %>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="form-group">
+                      <label class="control-label m-r-5">Applicability</label>
+                      <select id="project-controls-filter-applicability" class="form-control input-sm">
+                          <option value="Not Yet Set">Not Yet Set</option>
+                          <option value="Applicable - Configurable">Applicable - Configurable</option>
+                          <option value="Applicable - Does Not Meet">Applicable - Does Not Meet</option>
+                          <option value="Applicable - Inherently Meets">Applicable - Inherently Meets</option>
+                          <option value="Not Applicable">Not Applicable</option>
+                      </select>
+                      <input id="project-controls-search" type="text" placeholder="Search" class="form-control" autocomplete="on">
+                  </div>
+                </div>
+                <div class="col-md-6 text-center text-right">
+                  <div class="portlet">
+                      <!-- /primary heading -->
+                      <div class="portlet-heading">
+                          <h3 class="portlet-title text-dark"> Controls Applicability </h3>
+                          <div class="portlet-widgets">
+                              <a href="javascript:;" data-toggle="reload"><i class="ion-refresh"></i></a>
+                              <span class="divider"></span>
+                              <a data-toggle="collapse" data-parent="#accordion1" href="#portlet5"><i class="ion-minus-round"></i></a>
+                              <span class="divider"></span>
+                              <a href="#" data-toggle="remove"><i class="ion-close-round"></i></a>
+                          </div>
+                          <div class="clearfix"></div>
+                      </div>
+                      <div id="portlet5" class="panel-collapse collapse show">
+                          <div class="portlet-body">
+                              <div id="morris-donut-example" style="height: 200px;"></div>
+
+                              <div class="text-center">
+                                  <ul class="list-inline chart-detail-list">
+                                      <li class="list-inline-item">
+                                          <h5><i class="fa fa-circle m-r-5" style="color: #63AC56;"></i>Applicable - Configurable</h5>
+                                      </li>
+                                      <li class="list-inline-item">
+                                          <h5><i class="fa fa-circle m-r-5" style="color: #DB4B42;"></i>Applicable - Does Not Meet</h5>
+                                      </li>
+                                      <li class="list-inline-item">
+                                          <h5><i class="fa fa-circle m-r-5" style="color: #B1E6FB;"></i>Applicable - Inherently Meets</h5>
+                                      </li>
+                                      <li class="list-inline-item">
+                                          <h5><i class="fa fa-circle m-r-5" style="color: #429CF6;"></i>Not Applicable</h5>
+                                      </li>
+                                      <li class="list-inline-item">
+                                          <h5><i class="fa fa-circle m-r-5" style="color: #E9B655;"></i>Not Yet Set</h5>
+                                      </li>
+                                  </ul>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <table id="project-controls-datatable" class="table table-striped table-bordered toggle-circle m-b-0" data-page-size="7">
                 <thead>
                     <tr>
@@ -45,79 +177,6 @@
                         <th>Nist Families</th>
                     </tr>
                 </thead>
-                <div class="form-inline m-b-20">
-                  <div class="row">
-                    <div class="col-lg-6 text-center text-right">
-                      <div class="portlet">
-                          <!-- /primary heading -->
-                          <div class="portlet-heading">
-                              <h3 class="portlet-title text-dark"> Requested Changes </h3>
-                              <div class="clearfix"></div>
-                          </div>
-                          <div id="portlet5" class="panel-collapse collapse show">
-                              <div class="portlet-body">
-                                  <div style="height: 200px;">
-                                    <!-- TODO: implement requested changes history -->
-                                    No controls need changes at the moment.
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                      <div class="form-group">
-                          <label class="control-label m-r-5">Applicability</label>
-                          <select id="project-controls-filter-applicability" class="form-control input-sm">
-                              <option value="Not Yet Set">Not Yet Set</option>
-                              <option value="Applicable - Configurable">Applicable - Configurable</option>
-                              <option value="Applicable - Does Not Meet">Applicable - Does Not Meet</option>
-                              <option value="Applicable - Inherently Meets">Applicable - Inherently Meets</option>
-                              <option value="Not Applicable">Not Applicable</option>
-                          </select>
-                          <input id="project-controls-search" type="text" placeholder="Search" class="form-control" autocomplete="on">
-                      </div>
-                    </div>
-                    <div class="col-md-6 text-center text-right">
-                      <div class="portlet">
-                          <!-- /primary heading -->
-                          <div class="portlet-heading">
-                              <h3 class="portlet-title text-dark"> Controls Applicability </h3>
-                              <div class="portlet-widgets">
-                                  <a href="javascript:;" data-toggle="reload"><i class="ion-refresh"></i></a>
-                                  <span class="divider"></span>
-                                  <a data-toggle="collapse" data-parent="#accordion1" href="#portlet5"><i class="ion-minus-round"></i></a>
-                                  <span class="divider"></span>
-                                  <a href="#" data-toggle="remove"><i class="ion-close-round"></i></a>
-                              </div>
-                              <div class="clearfix"></div>
-                          </div>
-                          <div id="portlet5" class="panel-collapse collapse show">
-                              <div class="portlet-body">
-                                  <div id="morris-donut-example" style="height: 200px;"></div>
-
-                                  <div class="text-center">
-                                      <ul class="list-inline chart-detail-list">
-                                          <li class="list-inline-item">
-                                              <h5><i class="fa fa-circle m-r-5" style="color: #63AC56;"></i>Applicable - Configurable</h5>
-                                          </li>
-                                          <li class="list-inline-item">
-                                              <h5><i class="fa fa-circle m-r-5" style="color: #DB4B42;"></i>Applicable - Does Not Meet</h5>
-                                          </li>
-                                          <li class="list-inline-item">
-                                              <h5><i class="fa fa-circle m-r-5" style="color: #B1E6FB;"></i>Applicable - Inherently Meets</h5>
-                                          </li>
-                                          <li class="list-inline-item">
-                                              <h5><i class="fa fa-circle m-r-5" style="color: #429CF6;"></i>Not Applicable</h5>
-                                          </li>
-                                          <li class="list-inline-item">
-                                              <h5><i class="fa fa-circle m-r-5" style="color: #E9B655;"></i>Not Yet Set</h5>
-                                          </li>
-                                      </ul>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 <!-- <div class="form-inline m-b-20">
                     <div class="row">
                         <div class="col-md-6 text-center text-right">
@@ -221,45 +280,55 @@ $('#project-controls-datatable td').on('click', function () {
   }
 });
 
-  function details_panel ( d ) {
-    // 'd' is the original data object for the row
-  var details_panel = '';
-  details_panel +=
-  '<ul class="nav nav-tabs">'+
-    '<li><a data-toggle="tab" href="#details" >Details</a></li>'+
-    '<li><a data-toggle="tab" href="#inspec_code">Inspec Code</a></li>'+
-  '</ul>'+
-  '<div class="tab-content">'+
-    '<div id="details" class="tab-pane">'+
-      '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">';
+// Add event listener for opening and closing details
+$('#awaiting-approval-datatable td').on('click', function () {
+  
+  control_id = $(this).closest('tr').attr('value');
+  hsh = "#review_modal_card";
+  url = '/project_controls/' + control_id + '/review_control';
+  var card_holder = $(hsh);
+  if (control_id != undefined) {
+    if ($('#reviewForm').length) {
+      $('#reviewForm').empty();
+    }
+    $.ajax({
+      url: url,
+      type: "get",
+      datatype: 'json',
+      success: function(data) {
+        $('#reviewForm').append(data);
+        $('#reviewControlModal').modal();
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
+  }
+});
 
-
-    //Mandatory feilds
-    details_panel += '<tr>'+ '<td>Control:</td>'+ '<td>'+d['control_id']    +'</td>'+ '</tr>';
-    details_panel += '<tr>'+ '<td>Title:</td>'  + '<td>'+d['title']  +'</td>'+ '</tr>';
-    details_panel += '<tr>'+ '<td>Desc:</td>'   + '<td>'+d['description']+'</td>'+ '</tr>';
-
-    var  DATA_NOT_FOUND_MESSAGE = 'N/A'
-    // Optional Tags
-    if (d['status']        != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Status:</td>'    + '<td>'+d['status']             +'</td>'+ '</tr>'; }
-    if (d['impact']        != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Impact:</td>'    + '<td>'+d['impact']             +'</td>'+ '</tr>'; }
-    if (d['check_content'] != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr class="overflow-wrap">'+ '<td>Check Text:</td>'+ '<td>'+d['checktext']+'</td>'+ '</tr>'; }
-    if (d['fix_text']      != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Fix Text:</td>'  + '<td>'+d['fixtext']           +'</td>'+ '</tr>'; }
-    if (d['justification'] != DATA_NOT_FOUND_MESSAGE) { details_panel += '<tr>'+ '<td>Justification:</td>'  + '<td>'+d['justification'] +'</td>'+ '</tr>'; }
-
-
-    details_panel +=
-      '</table>'+
-    '</div>'+
-    '<div id="inspec_code" class="tab-pane">'+
-      '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
-        '<tr>'+
-            '<td><pre id="precode" class="line-numbers"><code id="code" class="language-ruby">'+d.code+'</code></pre></td>'+
-        '</tr>'+
-      '</table>'+
-    '</div>' +
-  '</div>';
-
-  return details_panel;
-}
+// Add event listener for opening and closing details
+$('#requested-changes-datatable td').on('click', function () {
+  
+  control_id = $(this).closest('tr').attr('value');
+  hsh = "#review_modal_card";
+  url = '/project_controls/' + control_id + '/review_control';
+  var card_holder = $(hsh);
+  if (control_id != undefined) {
+    if ($('#reviewForm').length) {
+      $('#reviewForm').empty();
+    }
+    $.ajax({
+      url: url,
+      type: "get",
+      datatype: 'json',
+      success: function(data) {
+        $('#reviewForm').append(data);
+        $('#reviewControlModal').modal();
+      },
+      error: function() {
+        console.log("Error occured");
+      }   
+    });
+  }
+});
 </script>

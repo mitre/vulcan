@@ -61,7 +61,7 @@ class ProjectControlsController < ApplicationController
   # PATCH/PUT /project_controls/1.json
   def update
     respond_to do |format|
-      if @project_control.update(project_controls_params) && @project_control.update_attribute(:code, params[:code])
+      if @project_control.update(project_controls_params) && @project_control.update_attribute(:code, params[:code]) && @project_control.update_attribute(:status, 'Awaiting Review')
         format.html { redirect_to project_edit_controls_path(@project_control.project_id), notice: 'Control was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_control }
       else
