@@ -99,6 +99,14 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.index ["user_id"], name: "index_project_control_histories_on_user_id"
   end
   
+  create_table "control_change_statuses", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "status"
+    t.integer "project_control_history_id"
+    t.index ["project_control_history_id"], name: "index_control_change_status_on_project_control_history_id"
+  end
+  
   create_table "project_histories", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
