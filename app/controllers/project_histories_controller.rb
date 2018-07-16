@@ -5,7 +5,7 @@ class ProjectHistoriesController < ApplicationController
   def add_project_history
     puts params
     project_history = ProjectHistory.create(project_histories_params)
-    project_history.project_change_status = ProjectChangeStatus.create({status: 'open'}) if project_history.type == 'change'
+    project_history.project_change_status = ProjectChangeStatus.create({status: 'open'}) if project_history.history_type == 'change'
     return "Success"
   end
   
