@@ -39,19 +39,20 @@ class Project < ApplicationRecord
   def to_prof
     @controls = []
     @random = rand(1000..100000)
+    @name = self.name.gsub(/\s/, '_')
     generate_controls
     create_skeleton
     write_controls
     create_json
     compress_profile
-    File.read("tmp/#{@random}/#{self.name}.zip")
+    File.read("tmp/#{@random}/#{@name}.zip")
   end
   
   private
   
   def compress_profile
     Dir.chdir "tmp/#{@random}"
-    system("zip -r #{Rails.root}/tmp/#{@random}/#{self.name}.zip #{self.name}")
+    system("zip -r #{Rails.root}/tmp/#{@random}/#{@name}.zip #{@name}")
     Dir.chdir "#{Rails.root}"
   end
   
@@ -67,7 +68,7 @@ class Project < ApplicationRecord
   
   # converts passed in data into InSpec format
   def generate_controls
-    self.project_controls.select {|control| control.status == 'Applicable - Configurable'}.each do |contr|
+    self.project_controls.select {|control| control.applicability == 'Applicable - Configurable'}.each do |contr|
       print '.'
       control = Inspec::Control.new
       control.id = contr.control_id
@@ -84,19 +85,23 @@ class Project < ApplicationRecord
   
   def create_skeleton
     Dir.mkdir("#{Rails.root}/tmp/#{@random}")
-    system("inspec init profile #{Rails.root}/tmp/#{@random}/#{self.name}")
-    system("rm #{Rails.root}/temp/#{@random}/#{self.name}/controls/example.rb")
+    Dir.chdir "tmp/#{@random}"
+    system("inspec init profile #{@name}")
+    system("rm #{Rails.root}/tmp/#{@random}/#{@name}/controls/example.rb")
+    Dir.chdir "#{Rails.root}"
   end
 
   def create_json
-    system("inspec json #{Rails.root}/tmp/#{@random}/#{self.name} | jq . | tee #{Rails.root}/tmp/#{@random}/#{self.name}-overview.json")
+    Dir.chdir "#{Rails.root}/tmp/#{@random}"
+    system("inspec json #{@name} | jq . | tee #{@name}-overview.json")
+    Dir.chdir "#{Rails.root}"
   end
   
   # Writes InSpec controls to file
   def write_controls
     @controls.each do |control, code|
       file_name = control.id.to_s
-      myfile = File.new("#{Rails.root}/tmp/#{@random}/#{self.name}/controls/#{file_name}.rb", 'w')
+      myfile = File.new("#{Rails.root}/tmp/#{@random}/#{@name}/controls/#{file_name}.rb", 'w')
       width = 80
 
       content = control.to_ruby.gsub(/\nend/, "\n\n" + code + "\nend\n")
