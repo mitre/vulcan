@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
+  # extend Devise::Models
   # You should configure your model like this:
   devise :omniauthable, omniauth_providers: [:github]
 
@@ -13,7 +14,6 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
 
   # GET|POST /resource/auth/twitter
   def passthru!
-    puts "PASSTHRU"
     super
   end
 
