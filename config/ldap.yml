@@ -38,21 +38,21 @@ development:
   # <<: *AUTHORIZATIONS
 
 test:
-  host: localhost
-  port: 3389
-  attribute: cn
-  base: ou=people,dc=test,dc=com
-  admin_user: cn=admin,dc=test,dc=com
-  admin_password: admin_password
-  ssl: simple_tls
+  host: ldap-user.mitre.org
+  port: 636
+  attribute: mail
+  base: ou=People,o=mitre.org
+  # admin_user: cn="Dromazos, Matthew J.",dc=test,dc=com
+  # admin_password: admin_password
+  ssl: true
   # <<: *AUTHORIZATIONS
 
 production:
-  host: localhost
+  host: ldap-user.mitre.org
   port: 636
-  attribute: cn
-  base: ou=people,dc=test,dc=com
-  admin_user: cn=admin,dc=test,dc=com
-  admin_password: admin_password
-  ssl: start_tls
+  attribute: mail
+  base: ou=People,o=mitre.org
+  # admin_user: cn="Dromazos, Matthew J.",dc=test,dc=com
+  # admin_password: admin_password
+  ssl: true
   # <<: *AUTHORIZATIONS
