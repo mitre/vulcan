@@ -3319,7 +3319,7 @@ label {
 .ms-selectable {
   box-shadow: none;
   outline: none !important;
-  width: 45%%;
+  width: 45%;
 }
 
 .ms-container .ms-list.ms-focus {
