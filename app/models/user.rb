@@ -1,9 +1,9 @@
 class User < ApplicationRecord
-  
+  extend Devise::Models
   rolify
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable and :omniauthable
-  devise :database_authenticatable, :registerable,
+  devise :ldap_authenticatable, :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable, :omniauthable
          
   has_and_belongs_to_many :projects
@@ -16,9 +16,12 @@ class User < ApplicationRecord
   has_and_belongs_to_many :sponsor_agencies
   # accepts_nested_attributes_for :sponsor_agency
   
+  def ldap_before_save
+    self.email = Devise::LDAP::Adapter.get_ldap_param(self.email,"mail").first
+  end
+
   def self.from_omniauth(auth)  
     where(provider: auth.provider, uid: auth.uid).first_or_create do |user|
-      puts "HERE"
       user.provider = auth.provider
       user.uid = auth.uid
       user.email = auth.info.email

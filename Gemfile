@@ -78,3 +78,5 @@ gem "attr_encrypted", "~> 3.0.0"
 gem 'ace-rails-ap'
 
 gem 'rolify'
+
+gem "devise_ldap_authenticatable"
