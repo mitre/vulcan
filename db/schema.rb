@@ -154,6 +154,7 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.text "tag"
     t.text "srg_title_id"
     t.integer "project_id"
+    t.integer "parent_id", index: true
     t.index ["project_id"], name: "index_project_controls_on_project_id"
   end
 

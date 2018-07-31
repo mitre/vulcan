@@ -1,6 +1,6 @@
 class SrgControlsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_srg_control, only: [:show, :edit, :update, :destroy]
+  before_action :set_srg_control, only: [:show, :edit, :update, :destroy, :review_srg_control]
   
   # GET /srg_controls
   # GET /srg_controls.json
@@ -23,6 +23,11 @@ class SrgControlsController < ApplicationController
   # GET /srg_controls/1/edit
   def edit
   end
+  
+  # # GET /srg_controls/1/review_srg_control
+  # def review_srg_control
+  #   render partial: 'srg_controls/show'
+  # end
 
   # POST /srg_controls
   # POST /srg_controls.json

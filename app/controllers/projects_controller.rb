@@ -79,6 +79,7 @@ class ProjectsController < ApplicationController
 
   # GET /projects/1/edit
   def edit
+    puts params
     puts @srg_data
   end
 
@@ -125,7 +126,7 @@ class ProjectsController < ApplicationController
     if current_user.has_role?(current_user.roles.first.name, @project)
       respond_to do |format|
         if @project.update(project_params)
-          format.html { redirect_to @project, notice: 'Project was successfully updated.' }
+          format.html { redirect_to projects_path, notice: 'Project was successfully updated.' }
           format.json { render :show, status: :ok, location: @project }
         else
           format.html { render :edit }
