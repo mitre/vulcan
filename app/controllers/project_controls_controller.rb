@@ -2,7 +2,7 @@ require 'inspec/objects'
 
 class ProjectControlsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test, :update_code]
+  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test, :update_code, :link_control]
   respond_to :html, :json
 
   # GET /controls
@@ -35,6 +35,10 @@ class ProjectControlsController < ApplicationController
   # GET /project_controls/1/review_control
   def review_control
     render partial: 'review_control_form', project_control: @project_control
+  end
+  
+  def link_control
+    puts "HERE"
   end
 
   # POST /project_controls
@@ -99,6 +103,6 @@ class ProjectControlsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_controls_params
-      params.require('project_control').permit(:title, :justification, :applicability, :description, :impact, :code, :control_id, :sl_ref, :sl_line, :srg_title_id, :nist_families, :checktext, :fixtext)
+      params.require('project_control').permit(:title, :justification, :applicability, :description, :impact, :code, :control_id, :sl_ref, :sl_line, :srg_title_id, :nist_families, :checktext, :fixtext, :parent_id)
     end
 end

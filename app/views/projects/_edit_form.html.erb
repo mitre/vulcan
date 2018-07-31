@@ -1,4 +1,4 @@
-<%= form_with(model: project, local: true) do |form| %>
+<%= form_with(model: project, local: true, id: 'edit_project_form') do |form| %>
   <% if project.errors.any? %>
     <div id="error_explanation">
       <h2><%= pluralize(project.errors.count, "error") %> prohibited this project from being saved:</h2>
@@ -10,53 +10,129 @@
       </ul>
     </div>
   <% end %>
-  <div class="col-lg-6">
-    <!-- /.table-responsive -->
-    <div class="field">
-      <%= form.label :name %>
-      <%= form.text_field :name, id: :project_name, class: "form-control" %>
-    </div>
+  <div class="row">
+    <div class="col-lg-6">
+      <!-- /.table-responsive -->
+      <div class="field">
+        <%= form.label :name %>
+        <%= form.text_field :name, id: :project_name, class: "form-control" %>
+      </div>
 
-    <div class="field">
-      <%= form.label :title %>
-      <%= form.text_field :title, id: :project_title, class: "form-control" %>
-    </div>
+      <div class="field">
+        <%= form.label :title %>
+        <%= form.text_field :title, id: :project_title, class: "form-control" %>
+      </div>
 
-    <div class="field">
-      <%= form.label :maintainer %>
-      <%= form.text_field :maintainer, id: :project_maintainer, class: "form-control" %>
-    </div>
+      <div class="field">
+        <%= form.label :maintainer %>
+        <%= form.text_field :maintainer, id: :project_maintainer, class: "form-control" %>
+      </div>
 
-    <div class="field">
-      <%= form.label :copyright %>
-      <%= form.text_field :copyright, id: :project_copyright, class: "form-control" %>
-    </div>
+      <div class="field">
+        <%= form.label :copyright %>
+        <%= form.text_field :copyright, id: :project_copyright, class: "form-control" %>
+      </div>
+      
+      <div class="field">
+        <%= form.label :copyright_email %>
+        <%= form.text_field :copyright_email, id: :project_copyright_email, class: "form-control" %>
+      </div>
+      
+      <div class="field">
+        <%= form.label :license %>
+        <%= form.text_field :license, id: :project_license, class: "form-control" %>
+      </div>
+      
+      <div class="field">
+        <%= form.label :version %>
+        <%= form.text_field :version, id: :project_version, class: "form-control" %>
+      </div>
 
-    <div class="field">
-      <%= form.label :copyright_email %>
-      <%= form.text_field :copyright_email, id: :project_copyright_email, class: "form-control" %>
+      <div class="field">
+        <%= form.label :summary %>
+        <%= form.text_area :summary, id: :project_summary, class: "form-control", rows:2 %>
+      </div>
+      
+      <%= hidden_field(:controls, :satisfied) %>
+    </div>
+    <div class="col-lg-6">
+      <!-- <div class="card-box">
+        <h4 class="m-t-0 header-title"><b>Collapse Controls (Controls that satisfy other controls)</b></h4>
+        <p class="text-muted m-b-30 font-13">
+            Drag & drop hierarchical list to show that one control is satisfied by another.
+        </p>
+
+        <div class="custom-dd-empty dd" id="satisfy_controls_nestable_list">
+          <%= content_tag(:ol, class: "dd-list", id: :project_list, name: 'project[nestable_list]') do %>
+            <% project.project_controls.each do |project_control| %>
+              <%= content_tag(:li, options = {class: "dd-item dd3-item", 'data-id' => project_control.id}) do %>
+                <div class="dd-handle dd3-handle"></div>
+                <div class="dd3-content" value='<%= project_control.id %>'>
+                    <%= project_control.control_id + ' : ' + project_control.title %>
+                </div>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </div> -->
     </div>
   </div>
-  <div class="col-lg-6">
-
-    <div class="field">
-      <%= form.label :license %>
-      <%= form.text_field :license, id: :project_license, class: "form-control" %>
-    </div>
-
-    <div class="field">
-      <%= form.label :summary %>
-      <%= form.text_area :summary, id: :project_summary, class: "form-control", rows:2 %>
-    </div>
-
-    <div class="field">
-      <%= form.label :version %>
-      <%= form.text_field :version, id: :project_version, class: "form-control" %>
-    </div>
-  </div>
-
-
   <div class="actions">
     <%= form.submit "Submit Edit", {:class => "btn btn-primary"} %>
   </div>
 <% end %>
+
+<!-- <div class="modal fade" id="reviewControlModal" tabindex="-1" role="dialog" aria-labelledby="reviewControlModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reviewControlModalLabel">Review Control</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="reviewModal">
+        <div id="reviewForm">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <% if current_user.has_role? :sponsor %>
+          <button type="button" class="btn btn-success">Approve Control</button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<script data-turbolinks-eval=false>
+  // $('#satisfy_controls_nestable_list').nestable('serialize');
+  // 
+  // $('.dd3-content').on('click', function () {
+  //   control_id = $(this).attr('value');
+  //   hsh = "#review_modal_card";
+  //   url = '/srg_controls/' + control_id + '/review_srg_control';
+  //   var card_holder = $(hsh);
+  //   if (control_id != undefined) {
+  //     if ($('#reviewForm').length) {
+  //       $('#reviewForm').empty();
+  //     }
+  //     $.ajax({
+  //       url: url,
+  //       type: "get",
+  //       // datatype: 'json',
+  //       success: function(data) {
+  //         $('#reviewForm').append(data);
+  //         $('#reviewControlModal').modal();
+  //       },
+  //       error: function() {
+  //         console.log("Error occured");
+  //       }   
+  //     });
+  //   }
+  // });
+  // 
+  // $('#edit_project_form').submit(function(e){
+  //   $('#controls_satisfied').val($('#satisfy_controls_nestable_list').nestable('serialize'))
+  // });
+</script>

@@ -66,9 +66,7 @@
               <th>Name</th>
               <th>Title</th>
               <th>Maintainer</th>
-              <% if current_user.has_role? :sponsor %>
-                <th></th>
-              <% end %>
+              <th></th>
             </tr>
           </thead>
           <div class="form-inline m-b-20">
@@ -84,9 +82,16 @@
                 <td><%= project.name %></td>
                 <td><%= project.title %></td>
                 <td><%= project.maintainer %></td>
-                <% if current_user.has_role? :sponsor %>
-                  <td></td>
-                <% end %>
+                <td>
+                  <div class="btn-group">
+                      <button type="button" class="btn btn-secondary dropdown-toggle waves-effect" data-toggle="dropdown" aria-expanded="false"> Actions <span class="caret"></span> </button>
+                      <div class="dropdown-menu">
+                          <a onclick="review_project(<%= project.id %>)" class="dropdown-item btn btn-info">Review Project</a>
+                          <%= link_to 'Edit/Collapse Controls', edit_project_path(project), class: 'dropdown-item btn btn-warning'%>
+                          <%= link_to 'Delete', project, method: :delete, data: { confirm: 'Are you sure?' }, class: 'dropdown-item btn btn-danger' %>
+                      </div>
+                  </div>
+                </td>
               </tr>
             <% end %>
           </tbody>
@@ -134,8 +139,7 @@
 
 <script>
   // Add event listener for opening and closing details
-  $('#pending-projects-datatable td').on('click', function () {
-    project_id = $(this).closest('tr').attr('value');
+  function review_project(project_id) {
     hsh = "#review_modal_card";
     url = '/project/' + project_id + '/review_project';
     var card_holder = $(hsh);
@@ -156,6 +160,6 @@
         }   
       });
     }
-  });
+  }
 </script>
 

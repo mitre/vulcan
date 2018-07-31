@@ -12,6 +12,7 @@
       </div>
     <% end %>
     <div>
+        <a class='btn btn-success' onclick="get_link_modal()">Link Control</a>
         <h3>Applicability</h3>
         <section id="app_sect">
           <div class="field">
@@ -107,13 +108,42 @@
         </section>
     </div>
   <% end %>
+  <div class="modal fade" id="linkControlModal" tabindex="-1" role="dialog" aria-labelledby="linkControlModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="linkControlModalLabel">Link Control</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="linkModal">
+          <%= form_for(@project_control, options: {:url => link_control_path(@project_control), local: true}, html: { id: 'link_project_control_form_id'}) do |linkForm| %>
+            <div class="field">
+              <label class="control-label" for="name"> Controls *</label>
+              <%= linkForm.select :parent_id, options_for_select(Project.find(@project_control.project_id).project_controls.collect {|project_control| [project_control.control_id, project_control.id]}), {}, {:id => "link_list", :class => "form-control select2" } %>
+            </div>
+            <%= linkForm.submit "Link Control", {:class => "btn btn-primary"} %>
+          <% end %>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
   <script>
-//   describe command('ls /User') do
-//    its('stdout') { should include 'dromazmj' } 
-// end
+    function get_link_modal() {
+      $('#linkControlModal').modal();
+    }
+    $("#link_list").select2({ dropdownParent: $('#linkControlModal') });
+    
     load_wizard("#edit_project_control_id");
     $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
     $('#srg_ck_pop').popover(); $('#srg_fx_pop').popover();
+    
+    
     ace_editor = ace.edit("code");
     ace_editor.session.setMode('ace/mode/ruby');
     ace_editor.session.setValue('<%=j @project_control.code.html_safe unless @project_control.code.nil? %>');
