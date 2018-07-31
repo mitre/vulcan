@@ -12,132 +12,172 @@
       </div>
     <% end %>
     <div>
+      <div class='row'>
         <a class='btn btn-success' onclick="get_link_modal()">Link Control</a>
-        <h3>Applicability</h3>
-        <section id="app_sect">
-          <div class="field">
-            <%= form.label :project_control_applicability %>
-            <%= form.select(:applicability, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.applicability), {}, {class: "form-control"}) %>
+        <h4 id="link_control_label" style='margin:10px;'>Linked Control: <%= project_control.parent.control_id unless project_control.parent.nil?%></h4>
+      </div>
+      <br>
+      <h3>Applicability</h3>
+      <section id="app_sect">
+        <div class="field">
+          <%= form.label :project_control_applicability %>
+          <%= form.select(:applicability, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.applicability), {}, {class: "form-control"}) %>
+        </div>
+      </section>
+      
+      <h3>Details</h3>
+      <section id="det_sect">
+        <div id='main_control_fields'>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :title, id: :project_control_title_label %>
+                : (SRG Title <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).title %>" id="srg_title_pop"></i> )
+                <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2 %>
+              </div>
+            </div>
           </div>
-        </section>
-        
-        <h3>Details</h3>
-        <section id="det_sect">
-          <div id='main_control_fields'>
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :title, id: :project_control_title_label %>
-                  : (SRG Title <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).title %>" id="srg_title_pop"></i> )
-                  <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2 %>
-                </div>
+          
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :description, id: :project_control_description_label %>
+                : (SRG Description <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).description %>" id="srg_desc_pop"></i> )
+                <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
               </div>
             </div>
-            
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :description, id: :project_control_description_label %>
-                  : (SRG Description <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).description %>" id="srg_desc_pop"></i> )
-                  <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
-                </div>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="col-lg-4">
-                <div class="field">
-                  <%= form.label :impact, id: :project_control_impact_label %>
-                  : (SRG Impact <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).severity %>" id="srg_sev_pop"></i> )
-                  <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
+          </div>
+          
+          <div class="row">
+            <div class="col-lg-4">
+              <div class="field">
+                <%= form.label :impact, id: :project_control_impact_label %>
+                : (SRG Impact <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).severity %>" id="srg_sev_pop"></i> )
+                <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
 
-                </div>
               </div>
             </div>
           </div>
-          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='justification_field'>
-            <%= form.label :justification, id: :project_control_just_label %>
-            <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
+        </div>
+        <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='justification_field'>
+          <%= form.label :justification, id: :project_control_just_label %>
+          <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
+        </div>
+      </section>
+      
+      <h3>Check and Fix Text</h3>
+      <section id="ch_fx_sect">
+        <div id='checktext_fields'>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :checktext, id: :project_control_checktext_label %>
+                : (SRG Check Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).checktext %>" id="srg_ck_pop"></i> )
+                <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5 %>
+              </div>
+            </div>
           </div>
-        </section>
+        </div>
         
-        <h3>Check and Fix Text</h3>
-        <section id="ch_fx_sect">
-          <div id='checktext_fields'>
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :checktext, id: :project_control_checktext_label %>
-                  : (SRG Check Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).checktext %>" id="srg_ck_pop"></i> )
-                  <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5 %>
-                </div>
+        <div id='fixtext_fields'>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :fixtext, id: :project_control_fixtext_label %>
+                : (SRG Fix Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).fixtext %>" id="srg_fx_pop"></i> )
+                <%= form.text_area :fixtext, id: :project_control_checktext, class: "form-control", rows:5 %>
               </div>
             </div>
           </div>
-          
-          <div id='fixtext_fields'>
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :fixtext, id: :project_control_fixtext_label %>
-                  : (SRG Fix Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).fixtext %>" id="srg_fx_pop"></i> )
-                  <%= form.text_area :fixtext, id: :project_control_checktext, class: "form-control", rows:5 %>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_checkfix_field'>
-            <h3 id="nothing_to_fill_checkfix_label"></h3>
-          </div>
-        </section>
+        </div>
         
-        <h3>InSpec Code</h3>
-        <section id="code_sect">
-          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_code_field'>
-            <h3 id="nothing_to_fill_code_label"></h3>
-          </div>
-          <div id="code_field">
-            <div class="field">
-              <%= form.label :InSpec_code %>
-              <%= hidden_field_tag 'code',nil, id: 'project_control_code' %>
-              <div class='card' id="code" style="position: relative; overflow-y: scroll; height: 500px;">
-              </div>
+        <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_checkfix_field'>
+          <h3 id="nothing_to_fill_checkfix_label"></h3>
+        </div>
+      </section>
+      
+      <h3>InSpec Code</h3>
+      <section id="code_sect">
+        <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_code_field'>
+          <h3 id="nothing_to_fill_code_label"></h3>
+        </div>
+        <div id="code_field">
+          <div class="field">
+            <%= form.label :InSpec_code %>
+            <%= hidden_field_tag 'code',nil, id: 'project_control_code' %>
+            <div class='card' id="code" style="position: relative; overflow-y: scroll; height: 500px;">
             </div>
           </div>
-        </section>
+        </div>
+      </section>
+      
+      <div class="modal fade" id="linkControlModal" tabindex="-1" role="dialog" aria-labelledby="linkControlModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="linkControlModalLabel">Link Control</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body" id="linkModal">
+              <div class="field">
+                <label class="control-label" for="name"> Controls *</label>
+                <!-- <%= form.select :parent_id, options_for_select(Project.find(@project_control.project_id).project_controls.collect {|project_control| [project_control.control_id + ' : ' + project_control.title, project_control.id]}), {}, {:id => "link_list", :class => "form-control select2" } %> -->
+                <%= form.select :parent_id, options_for_select(Project.find(@project_control.project_id).project_controls.select {|project_control| project_control.parent.nil? && project_control.id != @project_control.id}.collect {|project_control| [project_control.control_id + ' : ' + project_control.title, project_control.id]}), {:include_blank => 'Select Control to Link To'}, {:id => "link_list", :class => "form-control select2" } %>
+
+              </div>
+              <div class='row'>
+                <label id='modal_link_description'> <strong>Description:</strong> </label>
+              </div>
+              <div class='row'>
+                <label id='modal_link_checktext'> <strong>Check Text:</strong> </label>
+              </div>
+              <div class='row'>
+                <label id='modal_link_fixtext'> <strong>Fix Text:</strong> </label>
+              </div>
+            </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
     </div>
   <% end %>
-  <div class="modal fade" id="linkControlModal" tabindex="-1" role="dialog" aria-labelledby="linkControlModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="linkControlModalLabel">Link Control</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body" id="linkModal">
-          <%= form_for(@project_control, options: {:url => link_control_path(@project_control), local: true}, html: { id: 'link_project_control_form_id'}) do |linkForm| %>
-            <div class="field">
-              <label class="control-label" for="name"> Controls *</label>
-              <%= linkForm.select :parent_id, options_for_select(Project.find(@project_control.project_id).project_controls.collect {|project_control| [project_control.control_id, project_control.id]}), {}, {:id => "link_list", :class => "form-control select2" } %>
-            </div>
-            <%= linkForm.submit "Link Control", {:class => "btn btn-primary"} %>
-          <% end %>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  
+  <style>
+    .select2-search { background-color: #f2f2f2; }
+    .select2-search input { background-color: #f2f2f2; }
+    .select2-results { background-color: #f2f2f2; }
+  </style>
   
   <script>
+  
     function get_link_modal() {
+      $(".select2").select2({ dropdownParent: $('#linkControlModal') });
+      $('.select2').on('select2:select', function (e) {
+        $('#link_control_label').text('Linked Control: ' + $('#link_list option:selected').text().split(' : ')[0])
+        append_text_to_link($('#link_list option:selected').val())
+      });
       $('#linkControlModal').modal();
     }
-    $("#link_list").select2({ dropdownParent: $('#linkControlModal') });
+    
+    function append_text_to_link(project_id) {
+      $.ajax({
+        url: '/project_controls/' + project_id + '.json',
+        type: "get",
+        datatype: 'json',
+        success: function(data) {
+          $('#modal_link_checktext').append(data.checktext);
+          $('#modal_link_fixtext').append(data.fixtext);
+          $('#modal_link_description').append(data.description);
+        },
+        error: function() {
+          console.log("Error occured");
+        }   
+      });
+    }
     
     load_wizard("#edit_project_control_id");
     $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
@@ -149,8 +189,22 @@
     ace_editor.session.setValue('<%=j @project_control.code.html_safe unless @project_control.code.nil? %>');
     
     $('#edit_project_control_id').submit(function(e){
-      alert("here")
       $('#project_control_code').val(ace_editor.getValue());
-     }); 
+    }); 
+     
+    function add_fields() {
+      if ($('[name="project_control[applicability]"]').val() == 'Applicable - Configurable') {
+        $('#justification_field').hide();
+        $('#main_control_fields').show();
+        $('.wizard').steps('add', { title: "Check and Fix Text", content: ch_fx_sect })
+        $('.wizard').steps('add', { title: "InSpec Code", content: code_sect })
+      } else if (($('[name="project_control[applicability]"]').val() == 'Applicable - Inherently Meets') || ($('[name="project_control[applicability]"]').val() == 'Not Applicable')
+                  || $('[name="project_control[applicability]"]').val() == 'Applicable - Does Not Meet') {
+        $('#justification_field').show();
+        $('#main_control_fields').hide();
+        $('.wizard').steps('remove', Number(3));
+        $('.wizard').steps('remove', Number(2));
+      }
+    }
   </script>
 </div>

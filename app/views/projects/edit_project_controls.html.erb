@@ -87,19 +87,4 @@
         }
      }); 
   }
-  
-  function add_fields() {
-    if ($('[name="project_control[applicability]"]').val() == 'Applicable - Configurable') {
-      $('#justification_field').hide();
-      $('#main_control_fields').show();
-      $('.wizard').steps('add', { title: "Check and Fix Text", content: ch_fx_sect })
-      $('.wizard').steps('add', { title: "InSpec Code", content: code_sect })
-    } else if (($('[name="project_control[applicability]"]').val() == 'Applicable - Inherently Meets') || ($('[name="project_control[applicability]"]').val() == 'Not Applicable')
-                || $('[name="project_control[applicability]"]').val() == 'Applicable - Does Not Meet') {
-      $('#justification_field').show();
-      $('#main_control_fields').hide();
-      $('.wizard').steps('remove', Number(3));
-      $('.wizard').steps('remove', Number(2));
-    }
-  }
 </script>
