@@ -2,11 +2,15 @@
 
 ##Get Started
 
-In Bash
+### Run with Docker
 
-1. `docker-compose build`
-2. `docker-compose run web rake db:migrate`
-3. `docker-compose`
+1. Install Docker, and docker-compose 
+
+In Bash:
+
+2. `docker-compose build`
+3. `docker-compose run web rake db:migrate`
+4. `docker-compose up -d   #This deploys the server on http://localhost:3030 `
 
 If #2 in the above only printed a couple lines, maybe 2/3 insert statements
 then the db didnt build, you'll have to do the following to fix the named volume.
