@@ -44,7 +44,7 @@ Rails.application.routes.draw do
   match 'create_request' => 'resuests#create_request', :as => :create_request, :via => :post
   match 'project/:id/approve_project' => 'projects#approve_project', :as => :approve_project, :via => :post
   
-  match 'link_control/:id' => 'project_controls#link_control', :as => :link_control, :via => :post
+  match 'link_control' => 'project_controls#link_control', :as => :link_control, :via => :post
 
 
   root 'dashboard#index', as: :home
