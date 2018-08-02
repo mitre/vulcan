@@ -2,7 +2,7 @@ require 'inspec/objects'
 
 class ProjectControlsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test, :update_code, :link_control]
+  before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test, :update_code]
   respond_to :html, :json
 
   # GET /controls
@@ -38,7 +38,15 @@ class ProjectControlsController < ApplicationController
   end
   
   def link_control
-    puts "HERE"
+    link = params[:link]
+    control = ProjectControl.find(params[:control_id])
+    parent_control = params[:parent_id].empty? ? nil : ProjectControl.find(params[:parent_id])
+    
+    control.update_attribute(:applicability, '') if link == 'false'
+    return control.update_attribute(:parent, nil) if link == 'false'
+    
+    control.update_attribute(:applicability, parent_control.applicability)
+    return control.update_attribute(:parent, parent_control)
   end
 
   # POST /project_controls
@@ -65,7 +73,10 @@ class ProjectControlsController < ApplicationController
   # PATCH/PUT /project_controls/1.json
   def update
     respond_to do |format|
-      if @project_control.update(project_controls_params) && @project_control.update_attribute(:code, params[:code]) && @project_control.update_attribute(:status, 'Awaiting Review')
+      if @project_control.update(project_controls_params) && 
+         @project_control.update_attribute(:code, params[:code]) && 
+         @project_control.update_attribute(:status, 'Awaiting Review') &&
+         @project_control.children.each {|child| child.update_attribute(:applicability, @project_control.applicability)}
         format.html { redirect_to project_edit_controls_path(@project_control.project_id), notice: 'Control was successfully updated.' }
         format.json { render :show, status: :ok, location: @project_control }
       else

@@ -6,6 +6,8 @@ class Project < ApplicationRecord
   resourcify
   before_destroy :destroy_project_controls
   
+  validates_presence_of :name, :title
+
   has_many  :project_controls
   has_many  :project_histories
   has_and_belongs_to_many :srgs
@@ -14,6 +16,17 @@ class Project < ApplicationRecord
   belongs_to :sponsor_agency
   serialize :srg_ids
   accepts_nested_attributes_for :project_controls
+  
+  
+  attribute :name
+  attribute :title
+  attribute :maintainer
+  attribute :copyright 
+  attribute :copyright_email
+  attribute :license
+  attribute :summary
+  attribute :version
+  attribute :status
   
   attr_encrypted :name, key: Rails.application.secrets.db
   attr_encrypted :title, key: Rails.application.secrets.db

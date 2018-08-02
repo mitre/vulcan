@@ -6,6 +6,8 @@ class User < ApplicationRecord
   devise :ldap_authenticatable, :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable, :omniauthable
          
+  validates_presence_of :email, :encrypted_password, :sign_in_count, :created_at, :updated_at
+         
   has_and_belongs_to_many :projects
   has_many :project_control_histories
   has_many :project_histories
