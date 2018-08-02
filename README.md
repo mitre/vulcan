@@ -1,5 +1,13 @@
 # README
 
+##Get Started
+
+In Bash
+
+1. `docker-compose build`
+2. `docker-compose run web rake db:migrate`
+3. `docker-compose`
+
 This README would normally document whatever steps are necessary to get the
 application up and running.
 
