@@ -1,6 +1,6 @@
 FROM ruby:2.4.4
 
-RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs
+RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs sqlite
 
 ENV RAILS_ROOT /var/www/vulcan
 
@@ -11,7 +11,7 @@ WORKDIR $RAILS_ROOT
 COPY Gemfile Gemfile
 COPY Gemfile.lock Gemfile.lock
 
-RUN gem install bundler && bundle install
+RUN gem install bundler && bundle install --jobs 20 --retry 5
 
 ENV RAILS_ENV=production
 #ENV RAILS_RELATIVE_URL_ROOT=/vulcan
@@ -22,3 +22,5 @@ COPY . .
 RUN bash -c "RAILS_ENV=$RAILS_ENV RAILS_RELATIVE_URL_ROOT=$RAILS_RELATIVE_URL_ROOT bundle exec rake assets:precompile"
 
 EXPOSE 3000
+
+ENTRYPOINT ["bundle", "exec"]
