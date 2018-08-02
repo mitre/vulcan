@@ -15,6 +15,7 @@
  *= require_tree ./footable
  *= require_tree ./multiselect
  *= require_tree ./select2
+ *= require_tree ./nestable
  *= require_tree ./scss
  *= require_self
  */

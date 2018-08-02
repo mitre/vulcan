@@ -79,6 +79,7 @@ class ProjectsController < ApplicationController
 
   # GET /projects/1/edit
   def edit
+    puts params
     puts @srg_data
   end
 
@@ -86,30 +87,36 @@ class ProjectsController < ApplicationController
   # POST /projects.json
   def create
     if current_user.has_role?(:vendor) || current_user.has_role?(:admin) 
-      project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"} unless project_params[:srg_ids].nil?
-      project_params[:srg_ids] = project_params[:srg_ids].drop(1)
-      project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:users].nil?
-      @project = Project.new(get_project_json(project_params))
-      @project.srgs << Srg.where(title: project_params[:srg_ids])
-      @project.vendor = Vendor.find(params[:project][:vendor_id])
-      @project.sponsor_agency = SponsorAgency.find(params[:project][:sponsor_agency_id])
-      
-      @project.users << @project.vendor.users
-      @project.users << @project.sponsor_agency.users
-      
-      puts @project.users.inspect
-          
-      respond_to do |format|
-        puts format
-        if @project.save
-          assign_project_to_users
-          format.html { redirect_to projects_path, notice: 'Project was successfully created.' }
-          format.json { render :show, status: :created, location: @project }
-        else
-          puts @project.errors.inspect
-          format.html { render :new }
+      begin
+        project_params[:srg_ids] = project_params[:srg_ids].select {|srg_id| srg_id != "0"} unless project_params[:srg_ids].nil?
+        project_params[:srg_ids] = project_params[:srg_ids].drop(1) unless project_params[:srg_ids].nil?
+        project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:users].nil?
+        @project = Project.new(get_project_json(project_params))
+        @project.srgs << Srg.where(title: project_params[:srg_ids]) unless project_params[:users].nil?
+        @project.vendor = Vendor.find(params[:project][:vendor_id])
+        @project.sponsor_agency = SponsorAgency.find(params[:project][:sponsor_agency_id])
+        
+        @project.users << @project.vendor.users
+        @project.users << @project.sponsor_agency.users
+        respond_to do |format|
+          puts format
+          if @project.save
+            assign_project_to_users
+            format.html { redirect_to projects_path, notice: 'Project was successfully created.' }
+            format.json { render :show, status: :created, location: @project }
+          else
+            puts @project.errors.inspect
+            format.html { redirect_to projects_path, error: 'Profile was not successfully created.' }
+            format.json { render json: @project.errors, status: :unprocessable_entity }
+          end
+        end
+      rescue ActiveRecord::RecordNotFound
+        respond_to do |format|
+          format.html { redirect_to projects_path, error: 'Profile was not successfully created.' }
           format.json { render json: @project.errors, status: :unprocessable_entity }
         end
+      rescue StandardError => e 
+        puts e
       end
       # get_project_controls(@project.srgs).each do |control|
       #   project_control = @project.project_controls.create(control[:control_params])
@@ -125,10 +132,10 @@ class ProjectsController < ApplicationController
     if current_user.has_role?(current_user.roles.first.name, @project)
       respond_to do |format|
         if @project.update(project_params)
-          format.html { redirect_to @project, notice: 'Project was successfully updated.' }
+          format.html { redirect_to project_path(@project), notice: 'Project was successfully updated.' }
           format.json { render :show, status: :ok, location: @project }
         else
-          format.html { render :edit }
+          format.html { redirect_to edit_project_path(@project), notice: 'Project was not successfully updated.' }
           format.json { render json: @project.errors, status: :unprocessable_entity }
         end
       end
@@ -141,7 +148,7 @@ class ProjectsController < ApplicationController
     if current_user.has_role?(current_user.roles.first.name, @project)
       @project.destroy
       respond_to do |format|
-        format.html { redirect_to projects_url, notice: 'Project was successfully destroyed.' }
+        format.html { redirect_to projects_path, notice: 'Project was successfully destroyed.' }
         format.json { head :no_content }
       end
     end
