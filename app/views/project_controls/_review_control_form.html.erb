@@ -45,6 +45,10 @@
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'code', title: 'InSpec Code' %>
       </div>
+      <div class="field">
+        <%= render 'components/project_control_review_sect', form: form, attribute: 'children', title: 'Child Controls' unless @project_control.children.empty? %>
+        <%= render 'components/project_control_review_sect', form: form, attribute: 'parent', title: 'Parent Control' if @project_control.parent %>
+      </div>
     </div>
   <% end %>
   <script>

@@ -27,14 +27,33 @@
           
           <div class="col-lg-2">
               <h6>2. Select Control</h6>
+              
               <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;" id="controls_container">
-                  <div class="list-group" id="controls_list">
-                    <% @project.project_controls.each do |project_control| %>
-                        <button class="list-group-item list-group-item-action" onclick="render_form('<%= project_control.id %>')">
-                          <%= project_control.control_id %> - <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }[0] %>
-                        </button>
+                <div class="custom-dd-empty dd" id="satisfy_control_nestable_list">
+                  <%= content_tag(:ol, class: "dd-list", id: :control_list, name: 'project[nestable_list]') do %>
+                    <% @project.project_controls.select { |control| control.parent.nil? }.each do |project_control| %>
+                      <%= content_tag(:li, options = {class: "dd-item dd3-item", 'data-id' => project_control.id, id: project_control.control_id + '_' + project_control.id.to_s + '_control'}) do %>
+                        <div class="dd-handle dd3-handle"></div>
+                        <div class="dd3-content" value='<%= project_control.id %>'>
+                            <%= project_control.control_id %> - <%= project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }[0] %>
+                        </div>
+                        <% if !project_control.children.empty? %>
+                          <%= content_tag(:ol, class: "dd-list", id: :sub_control_list, name: 'project[nestable_list]') do %>
+                            <% project_control.children.each do |child| %>
+                              <%= content_tag(:li, options = {class: "dd-item dd3-item", 'data-id' => child.id, id: project_control.control_id + '_' + child.id.to_s + '_subcontrol'}) do %>
+                                <div class="dd-handle dd3-handle">
+                                </div>
+                                <div class="dd3-content" value='<%= project_control.id %>'>
+                                    <%= child.control_id %> - <%= child.nist_controls.collect {|nist| nist.family + '-' + nist.index }[0] %>
+                                </div>
+                              <% end %>
+                            <% end %>
+                          <% end %>
+                        <% end %> <!-- end if -->
+                      <% end %>
                     <% end %>
-                  </div>
+                  <% end %> <!-- end content -->
+                </div>
               </div>
           </div>
           
@@ -52,20 +71,80 @@
 </div>
 
 <script>
+    
   var ace_editor;
   ch_fx_sect = '';
-  function filter_controls_on_nist(nist_family, project_controls) {
-    $("#controls_list").empty();
-    project_controls.forEach((control) =>{
-      control[1].forEach((nist_control) =>{
-        if(nist_control.indexOf(nist_family) != -1) {
-          $("#controls_list").append('<button class="list-group-item list-group-item-action" onclick="render_form(' + control[2] + ')">' + control[0] + ' - ' + control[1][0] + '</button>');
+  
+  $('#satisfy_control_nestable_list').nestable({
+    maxDepth: 2,
+    threshold: 20,
+    beforeDragStop: function(l,e, p){
+      // l is the main container
+      // e is the element that was moved
+      // p is the place where element was moved.
+      console.log(this.placeEl.parent().parent().attr('id'))
+      console.log(this);
+      if ((this.placeEl.offsetParent().parent().attr('id').split('_')[0] == e.attr('id').split('_')[0]) ||
+           this.placeEl.parent().parent().attr('id').split('_')[1] == e.attr('id').split('_')[2])  {
+        return false;
+      }
+      
+      control_id = e.attr('id').split('_')[1]
+      control_v_number = $.trim(e[0].outerText).split(' - ')[0]
+      parent_id = this.placeEl.offsetParent().parent().attr('id').split('_')[1]
+      parent_v_number = this.placeEl.offsetParent().parent().attr('id').split('_')[0]
+      if (parent_id == 'control') { parent_id = null; }
+      var response = '';
+      var link = false;
+      if (parent_v_number == 'satisfy') {
+        var response = confirm('Would you like to unlink control ' + control_v_number);
+      } else {
+        var response = confirm('Would you like to link control ' + control_v_number + ' with control ' + parent_v_number);
+        link = true
+      }
+      if (!response) {
+        return false;
+      }
+      
+      
+      
+      $.ajax({
+        url: '/link_control',
+        type: "post",
+        data: {control_id, parent_id, link},
+        datatype: 'json',
+        success: function(data) {
+          
+        },
+        error: function() {
+          console.log("Error occured");
         }
-      })
+      });
+      return true;
+    }, 
+    callback: function(l,e, p) {
+      location.reload();
+    }
+  });
+  
+  function setParent(control_id, parent_id) {
+    
+  }
+  
+  function filter_controls_on_nist(nist_family, project_controls) {
+    var liContents = [];
+    $('ol li .dd3-content').each(function() {
+      if($(this).html().indexOf(nist_family) == -1) {
+        console.log($(this).parent());
+        $(this).parent().hide()
+      } else {
+        $(this).parent().show();
+      }
     });
   }
   
-  function render_form (control_id) {
+  $('.dd3-content').on('click', function(e) {
+    var control_id = $(this).attr('value');
     hsh = "#form_card";
     url = '/project_controls/' + control_id + '/edit';
     var card_holder = $(hsh);
@@ -73,33 +152,17 @@
       $('#form_holder').remove();
     }
     $.ajax(url, {
-        success: function(data) {
-          var elements = $(data);
-          var found = $('#edit_project_control_id', elements);
-          card_holder.append('<div id="form_holder"></div>');
-          ch_fx_sect = $(data).find('#ch_fx_sect').html();
-          code_sect = $(data).find('#code_sect').html();
-          $('#form_holder').append($(data).find('#edit_control_form_id').html());
-          $('[name="project_control[applicability]"]').on("change", add_fields);
-        },
-        error: function() {
-          console.log("Error occured");
-        }
-     }); 
-  }
-  
-  function add_fields() {
-    if ($('[name="project_control[applicability]"]').val() == 'Applicable - Configurable') {
-      $('#justification_field').hide();
-      $('#main_control_fields').show();
-      $('.wizard').steps('add', { title: "Check and Fix Text", content: ch_fx_sect })
-      $('.wizard').steps('add', { title: "InSpec Code", content: code_sect })
-    } else if (($('[name="project_control[applicability]"]').val() == 'Applicable - Inherently Meets') || ($('[name="project_control[applicability]"]').val() == 'Not Applicable')
-                || $('[name="project_control[applicability]"]').val() == 'Applicable - Does Not Meet') {
-      $('#justification_field').show();
-      $('#main_control_fields').hide();
-      $('.wizard').steps('remove', Number(3));
-      $('.wizard').steps('remove', Number(2));
-    }
-  }
+      success: function(data) {
+        var elements = $(data);
+        var found = $('#edit_project_control_id', elements);
+        card_holder.append('<div id="form_holder"></div>');
+        ch_fx_sect = $(data).find('#ch_fx_sect').html();
+        code_sect = $(data).find('#code_sect').html();
+        $('#form_holder').append($(data).find('#edit_control_form_id').html());
+      },
+      error: function() {
+        console.log("Error occured");
+      }
+    });
+  });
 </script>

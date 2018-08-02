@@ -95,11 +95,15 @@
                 </div>
             <% end %>
             <script>
-              load_wizard("#basic-form");
+              load_wizard("#basic-form", validate_step);
               $("#srg_ids").multiSelect();
               $("#users").multiSelect({ width: '500px' });
               $("#vendor_name").select2();
               $("#sponsor_name").select2();
+              
+              function validate_step(event, currentIndex, nextIndex) {
+                return 1;
+              }
             </script>
         </div>
     </div>
