@@ -43,7 +43,6 @@ group :development, :test do
   gem 'factory_bot_rails'
   gem 'database_cleaner', '~> 1.6', '>= 1.6.1'
   gem 'rails-controller-testing'
-  gem "attr_encrypted", "~> 3.0.0"
 end
 
 group :development do
@@ -57,7 +56,6 @@ end
 
 group :test do
   gem 'shoulda-matchers'
-  gem 'database_cleaner', '~> 1.6', '>= 1.6.1'
 end
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem

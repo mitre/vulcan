@@ -13,9 +13,7 @@ RSpec.describe User, type: :model do
   
   describe User do
     it { is_expected.to validate_presence_of(:email) }
+    it { is_expected.to validate_presence_of(:password) }
     it { is_expected.to validate_presence_of(:encrypted_password) }
-    it { is_expected.to validate_presence_of(:sign_in_count) }
-    it { is_expected.to validate_presence_of(:created_at) }
-    it { is_expected.to validate_presence_of(:updated_at) }
   end
 end
