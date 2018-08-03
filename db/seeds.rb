@@ -128,3 +128,28 @@ user.email = 'admin@admin.com'
 user.password = 'admin1'
 user.save
 user.add_role "admin"
+
+if true
+  puts "DEVELOPMENT"
+  vendor = Vendor.new
+  vendor.vendor_name = 'vendor'
+  vendor.save
+  
+  sponsor = SponsorAgency.new
+  sponsor.sponsor_name = 'sponsor'
+  sponsor.save
+  
+  user_vendor = User.new
+  user_vendor.email = 'vendor@vendor.com'
+  user_vendor.password = 'vvvvvv'
+  user_vendor.vendors << vendor
+  user_vendor.save
+  user_vendor.add_role 'vendor'
+  
+  user_sponsor = User.new
+  user_sponsor.email = 'sponsor@sponsor.com'
+  user_sponsor.password = 'vvvvvv'
+  user_sponsor.sponsor_agencies << sponsor
+  user_sponsor.save
+  user_sponsor.add_role 'sponsor'
+end

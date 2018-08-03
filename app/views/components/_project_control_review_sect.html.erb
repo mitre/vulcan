@@ -4,7 +4,17 @@
     <div class="card-body">
       <div class="row no-gutters">
         <div class="input-group">
-          <%= form.text_area attribute, id: 'project_control_' + attribute, class: "form-control", rows:1, :readonly => true %>
+          <% if attribute == 'children' %>
+            <% @project_control.children.each_with_index do |child, i| %>
+              <%= (i + 1).to_s + ': '%><%= link_to child.control_id, project_control_path(child) %>
+              <%= child.title %>
+            <% end %>
+          <% elsif attribute == 'parent'%>
+            <%= link_to @project_control.parent.control_id, project_control_path(@project_control.parent) %>
+            <%= @project_control.parent.title %>
+          <% else %>
+            <%= form.text_area attribute, id: 'project_control_' + attribute, class: "form-control", rows:1, :readonly => true %>
+          <% end %>
         </div>
       </div>
     </div>

@@ -12,115 +12,295 @@
       </div>
     <% end %>
     <div>
-        <h3>Applicability</h3>
-        <section id="app_sect">
+      <div class='row'>
+        <a class='btn btn-success' onclick="get_link_modal()" id='link_button'>Link Control</a>
+        <h4 id="link_control_label" style='margin:10px;'>Linked Control: <%= project_control.parent.control_id unless project_control.parent.nil?%></h4>
+      </div>
+      <br>
+      <h3>Applicability</h3>
+      <section id="app_sect">
+        <div class="field">
+          <%= form.label :project_control_applicability %> <label id="invalid_applicability_label" style='margin:10px; display: none;'>Please Pick an Applicability *</label>
+          <%= form.select(:applicability, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.applicability), {:include_blank => 'Select Applicability'}, {class: "form-control", id: 'applicability_select'}) %>
+        </div>
+      </section>
+      
+      <h3>Details</h3>
+      <section id="det_sect">
+        <div id='main_control_fields'>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :title, id: :project_control_title_label %> <label id="invalid_title_label" style='margin:10px; display: none;'>Title cannot be empty!!! *</label>
+                : (SRG Title <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).title %>" id="srg_title_pop"></i> )
+                <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2 %>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :description, id: :project_control_description_label %> <label id="invalid_description_label" style='margin:10px; display: none;'>Description cannot be empty!! *</label>
+                : (SRG Description <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).description %>" id="srg_desc_pop"></i> )
+                <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-lg-4">
+              <div class="field">
+                <%= form.label :impact, id: :project_control_impact_label %> <label id="invalid_impact_label" style='margin:10px; display: none;'>Impact must be between 0 and 1 *</label>
+                : (SRG Impact <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).severity %>" id="srg_sev_pop"></i> )
+                <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div id='disabled_fields' style='display:none'>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :title, options: {id: :project_control_title_label_disabled}%>
+                : (SReG Title <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).title %>" id="srg_title_pop"></i> )
+                <%= form.text_area :title, id: :project_control_title_disabled, class: "form-control", rows:2,:readonly => true %>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :description, id: :project_control_description_label_disabled %>
+                : (SRG Description <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).description %>" id="srg_desc_pop"></i> )
+                <%= form.text_area :description, id: :project_control_description_disabled, class: "form-control", rows:5,:readonly => true %>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :justification, id: :project_control_just_label_disabled %>
+                <%= form.text_area :justification, id: :project_control_justification_disabled, class: "form-control", rows:5 %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <h3>Check and Fix Text</h3>
+      <section id="ch_fx_sect">
+        <div id='checktext_fields'>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :checktext, id: :project_control_checktext_label %> <label id="invalid_checktext_label" style='margin:10px; display: none;'>Check Text must be between 0 and 1 *</label>
+                : (SRG Check Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).checktext %>" id="srg_ck_pop"></i> )
+                <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5 %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div id='fixtext_fields'>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="field">
+                <%= form.label :fixtext, id: :project_control_fixtext_label %> <label id="invalid_fixtext_label" style='margin:10px; display: none;'>Fixtext must be between 0 and 1 *</label>
+                : (SRG Fix Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).fixtext %>" id="srg_fx_pop"></i> )
+                <%= form.text_area :fixtext, id: :project_control_fixtext, class: "form-control", rows:5 %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_checkfix_field'>
+          <h3 id="nothing_to_fill_checkfix_label"></h3>
+        </div>
+      </section>
+      
+      <h3>InSpec Code</h3>
+      <section id="code_sect">
+        <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_code_field'>
+          <h3 id="nothing_to_fill_code_label"></h3>
+        </div>
+        <div id="code_field">
           <div class="field">
-            <%= form.label :project_control_applicability %>
-            <%= form.select(:applicability, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.applicability), {}, {class: "form-control"}) %>
+            <%= form.label :InSpec_code %>
+            <%= hidden_field_tag 'code',nil, id: 'project_control_code' %>
+            <div class='card' id="code" style="position: relative; overflow-y: scroll; height: 500px;">
+            </div>
           </div>
-        </section>
-        
-        <h3>Details</h3>
-        <section id="det_sect">
-          <div id='main_control_fields'>
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :title, id: :project_control_title_label %>
-                  : (SRG Title <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).title %>" id="srg_title_pop"></i> )
-                  <%= form.text_area :title, id: :project_control_title, class: "form-control", rows:2 %>
-                </div>
-              </div>
+        </div>
+      </section>
+      
+      <div class="modal fade" id="linkControlModal" tabindex="-1" role="dialog" aria-labelledby="linkControlModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="linkControlModalLabel">Link Control</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-            
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :description, id: :project_control_description_label %>
-                  : (SRG Description <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).description %>" id="srg_desc_pop"></i> )
-                  <%= form.text_area :description, id: :project_control_description, class: "form-control", rows:5 %>
-                </div>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="col-lg-4">
-                <div class="field">
-                  <%= form.label :impact, id: :project_control_impact_label %>
-                  : (SRG Impact <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).severity %>" id="srg_sev_pop"></i> )
-                  <%= form.text_area :impact, id: :project_control_impact, class: "form-control", rows:1 %>
+            <div class="modal-body" id="linkModal">
+              <div class="field">
+                <label class="control-label" for="name"> Controls *</label>
+                <!-- <%= form.select :parent_id, options_for_select(Project.find(@project_control.project_id).project_controls.collect {|project_control| [project_control.control_id + ' : ' + project_control.title, project_control.id]}), {}, {:id => "link_list", :class => "form-control select2" } %> -->
+                <%= form.select :parent_id, options_for_select(Project.find(@project_control.project_id).project_controls.select {|project_control| project_control.parent.nil? && project_control.id != @project_control.id}.collect {|project_control| [project_control.control_id + ' : ' + project_control.title, project_control.id]}), {:include_blank => 'Select Control to Link To'}, {:id => "link_list", :class => "form-control select2" } %>
 
-                </div>
+              </div>
+              <div class='row'>
+                <strong>Description:</strong><textarea rows="4" id='modal_link_description' class="form-control" readonly></textarea>
+              </div>
+              <div class='row'>
+                <strong>Check Text:</strong><textarea rows="4" id='modal_link_checktext' class="form-control" readonly></textarea>
+              </div>
+              <div class='row'>
+                <strong>Fix Text:</strong><textarea rows="4" id='modal_link_fixtext' class="form-control" readonly></textarea>
               </div>
             </div>
-          </div>
-          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='justification_field'>
-            <%= form.label :justification, id: :project_control_just_label %>
-            <%= form.text_area :justification, id: :project_control_justification, class: "form-control", rows:5 %>
-          </div>
-        </section>
-        
-        <h3>Check and Fix Text</h3>
-        <section id="ch_fx_sect">
-          <div id='checktext_fields'>
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :checktext, id: :project_control_checktext_label %>
-                  : (SRG Check Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).checktext %>" id="srg_ck_pop"></i> )
-                  <%= form.text_area :checktext, id: :project_control_checktext, class: "form-control", rows:5 %>
-                </div>
-              </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
           </div>
-          
-          <div id='fixtext_fields'>
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="field">
-                  <%= form.label :fixtext, id: :project_control_fixtext_label %>
-                  : (SRG Fix Text <i class="mdi mdi-information-outline" data-toggle="popover" data-content="<%= SrgControl.find_by(srg_title_id: @project_control.srg_title_id).fixtext %>" id="srg_fx_pop"></i> )
-                  <%= form.text_area :fixtext, id: :project_control_checktext, class: "form-control", rows:5 %>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_checkfix_field'>
-            <h3 id="nothing_to_fill_checkfix_label"></h3>
-          </div>
-        </section>
-        
-        <h3>InSpec Code</h3>
-        <section id="code_sect">
-          <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_code_field'>
-            <h3 id="nothing_to_fill_code_label"></h3>
-          </div>
-          <div id="code_field">
-            <div class="field">
-              <%= form.label :InSpec_code %>
-              <%= hidden_field_tag 'code',nil, id: 'project_control_code' %>
-              <div class='card' id="code" style="position: relative; overflow-y: scroll; height: 500px;">
-              </div>
-            </div>
-          </div>
-        </section>
+        </div>
+      </div>
     </div>
   <% end %>
+  
+  <style>
+    .select2-search { background-color: #f2f2f2; }
+    .select2-search input { background-color: #f2f2f2; }
+    .select2-results { background-color: #f2f2f2; }
+  </style>
+  
   <script>
-//   describe command('ls /User') do
-//    its('stdout') { should include 'dromazmj' } 
-// end
-    load_wizard("#edit_project_control_id");
+    function get_link_modal() {
+      $(".select2").select2({ dropdownParent: $('#linkControlModal') });
+      $('.select2').on('select2:select', function (e) {
+        if ($('#link_list').val() != '') {
+          $('#link_control_label').text('Linked Control: ' + $('#link_list option:selected').text().split(' : ')[0])
+          append_text_to_link($('#link_list option:selected').val())
+        } else {
+          $('#link_control_label').text('Selected: ');
+          $('#modal_link_checktext').empty();
+          $('#modal_link_fixtext').empty();
+          $('#modal_link_description').empty();
+        }
+      });
+      $('#linkControlModal').modal();
+    }
+    
+    function append_text_to_link(project_id) {
+      $.ajax({
+        url: '/project_controls/' + project_id + '.json',
+        type: "get",
+        datatype: 'json',
+        success: function(data) {
+          $('#modal_link_checktext').empty(); $('#modal_link_checktext').append(data.checktext);
+          $('#modal_link_fixtext').empty(); $('#modal_link_fixtext').append(data.fixtext);
+          $('#modal_link_description').empty(); $('#modal_link_description').append(data.description);
+          $('#applicability_select').val(data.applicability)
+        },
+        error: function() {
+          console.log("Error occured");
+        }   
+      });
+    }
+    
+    function add_fields() {
+      if ($('[name="project_control[applicability]"]').val() == 'Applicable - Configurable') {
+        $('#disabled_fields').hide();
+        $('#main_control_fields').show();
+        $('.wizard').steps('add', { title: "Check and Fix Text", content: ch_fx_sect })
+        $('.wizard').steps('add', { title: "InSpec Code", content: code_sect })
+      } else if (($('[name="project_control[applicability]"]').val() == 'Applicable - Inherently Meets') || ($('[name="project_control[applicability]"]').val() == 'Not Applicable')
+                  || $('[name="project_control[applicability]"]').val() == 'Applicable - Does Not Meet') {
+        $('#disabled_fields').show();
+        $('#main_control_fields').hide();
+        $('.wizard').steps('remove', Number(3));
+        $('.wizard').steps('remove', Number(2));
+      }
+    }
+    
+    function validate_step(e, currentIndex, newIndex) {
+      status = 1;
+      if ((currentIndex == 0) && ($('[name="project_control[applicability]"]').val() == '')) {
+        $('[name="project_control[applicability]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+        $('#invalid_applicability_label').show();
+        return 0;
+      } else if (currentIndex == 1) {
+        if ($('#project_control_title').val() == '') {
+          $('[name="project_control[title]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+          $('#invalid_title_label').show();
+          status = 0;
+        }
+        if ($('#project_control_description').val() == '') {
+          $('[name="project_control[description]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+          $('#invalid_description_label').show();
+          status = 0;
+        }
+        if ((!/^0*\.\d+$/.test($('#project_control_impact').val())) || (parseInt($('#project_control_impact').val()) > 1) || (parseInt($('#project_control_applicability').val()) < 0)) {
+          $('[name="project_control[impact]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+          $('#invalid_impact_label').show();
+          status = 0
+        }
+        if (status == 1) {return 1;} else { return 0; }
+      } else if (currentIndex == 2) {
+        if ($('#project_control_checktext').val() == '') {
+          $('[name="project_control[checktext]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+          $('#invalid_checktext_label').show();
+          status = 0;
+        }
+        if ($('#project_control_fixtext').val() == '') {
+          $('[name="project_control[fixtext]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+          $('#invalid_fixtext_label').show();
+          status = 0;
+        }
+        if (status == 1) {return 1;} else { return 0; }
+      }
+      return 1;
+    }
+    
+    // function on_finish() {
+    //   if ($('#link_list').val() == '') {
+    //     $('#link_button').attr('style', "border-radius: 5px; border:#FF0000 1px solid;");
+    //     return false;
+    //   }
+    //   return true;
+    // }
+    
+    load_wizard("#edit_project_control_id", validate_step);
     $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
     $('#srg_ck_pop').popover(); $('#srg_fx_pop').popover();
+    
+    $('#applicability_select').change(function () {
+      if ($('[name="project_control[applicability]"]').val() == 'Applicable - Configurable') {
+        try {
+          $('.wizard').steps('getStep', 3);
+        } catch (err) {
+          add_fields();
+        }
+      } else {
+        add_fields();
+      }
+    });
+    
+    
+      
     ace_editor = ace.edit("code");
     ace_editor.session.setMode('ace/mode/ruby');
     ace_editor.session.setValue('<%=j @project_control.code.html_safe unless @project_control.code.nil? %>');
     
     $('#edit_project_control_id').submit(function(e){
-      alert("here")
       $('#project_control_code').val(ace_editor.getValue());
-     }); 
+    });
+    
+    if ($('[name="project_control[applicability]"]').val() != 'Applicable - Configurable') { add_fields(); }
+     
   </script>
 </div>

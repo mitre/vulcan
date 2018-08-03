@@ -1,60 +1,70 @@
-<p id="notice"><%= notice %></p>
-<div id="wrapper">
-  <p>
-    <strong>Project Control:</strong>
-    <%= @project_control.control_id %>
-  </p>
-  
-  <p>
-    <strong>Title:</strong>
-    <%= @project_control.title %>
-  </p>
+<div class="card">
+  <h5 class="card-header"><%= @project_control.control_id %></h5>
+  <div class='card-body'>
+    <p>
+      <strong>Project Control:</strong>
+      <%= @project_control.control_id %>
+    </p>
+    
+    <% if !@project_control.parent.nil? %>
+      <p>
+        <strong>Project Control Linked Control:</strong>
+        <%= link_to @project_control.parent.control_id, project_control_path(@project_control.parent), class:'btn btn-success' %>
+      </p>
+    <% end %>
+    
+    <p>
+      <strong>Title:</strong>
+      <%= @project_control.title %>
+    </p>
 
-  <p>
-    <strong>Description:</strong>
-    <%= @project_control.description %>
-  </p>
-  
-  <p>
-    <strong>Applicability:</strong>
-    <%= @project_control.applicability %>
-  </p>
+    <p>
+      <strong>Description:</strong>
+      <%= @project_control.description %>
+    </p>
+    
+    <p>
+      <strong>Applicability:</strong>
+      <%= @project_control.applicability %>
+    </p>
 
-  <p>
-    <strong>Impact:</strong>
-    <%= @project_control.impact %>
-  </p>
-  
-  <p>
-    <strong>Check Text:</strong>
-    <%= @project_control.checktext %>
-  </p>
+    <p>
+      <strong>Impact:</strong>
+      <%= @project_control.impact %>
+    </p>
+    
+    <p>
+      <strong>Check Text:</strong>
+      <%= @project_control.checktext %>
+    </p>
 
-  <p>
-    <strong>Fix Text:</strong>
-    <%= @project_control.fixtext %>
-  </p>
-  
-  <p>
-    <strong>Justification:</strong>
-    <%= @project_control.justification %>
-  </p>
+    <p>
+      <strong>Fix Text:</strong>
+      <%= @project_control.fixtext %>
+    </p>
+    
+    <p>
+      <strong>Justification:</strong>
+      <%= @project_control.justification %>
+    </p>
 
-  <p>
-    <strong>Inspec Code:</strong>
-    <%= @project_control.code %>
-  </p>
+    <p>
+      <strong>Inspec Code:</strong>
+      <%= @project_control.code %>
+    </p>
 
-  <p>
-    <strong>Sl ref:</strong>
-    <%= @project_control.sl_ref %>
-  </p>
+    <p>
+      <strong>Sl ref:</strong>
+      <%= @project_control.sl_ref %>
+    </p>
 
-  <p>
-    <strong>Sl line:</strong>
-    <%= @project_control.sl_line %>
-  </p>
-  
-  <%= link_to 'Edit', edit_project_control_path(@project_control) %> |
-  <%= link_to 'Back', project_path(@project_control.project_id) %>
+    <p>
+      <strong>Sl line:</strong>
+      <%= @project_control.sl_line %>
+    </p>
+  </div>
+  <div class='card-footer'>
+    <%= link_to 'Edit', edit_project_control_path(@project_control) %> |
+    <%= link_to 'Back', project_path(@project_control.project_id) %>
+  </div>
 </div>

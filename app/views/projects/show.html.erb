@@ -172,6 +172,7 @@
                 <thead>
                     <tr>
                         <th>Applicability</th>
+                        <th>Control ID</th>
                         <th>Title</th>
                         <th>Impact </th>
                         <th>Nist Families</th>
@@ -198,6 +199,7 @@
                           <% elsif project_control.applicability == 'Applicable - Inherently Meets' %>
                              <td><button class="btn btn-info" >Applicable - Inherently Meets</button></td>
                           <% end %>
+                          <td><%= project_control.control_id %></td>
                           <td><%= project_control.title %></td>
                           <td><%= project_control.impact %></td>
                           <td>
