@@ -1,6 +1,6 @@
 require 'happymapper'
-require 'services/CCIAttributes'
-require 'services/StigAttributes'
+require 'CCIAttributes'
+require 'StigAttributes'
 
 class SrgsController < ApplicationController
   before_action :authenticate_user!
