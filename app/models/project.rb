@@ -6,14 +6,13 @@ class Project < ApplicationRecord
   resourcify
   before_destroy :destroy_project_controls
   
-  validates_presence_of :name, :title
 
   has_many  :project_controls
   has_many  :project_histories
   has_and_belongs_to_many :srgs
   has_and_belongs_to_many :users
-  belongs_to :vendor
-  belongs_to :sponsor_agency
+  belongs_to :vendor, optional: true
+  belongs_to :sponsor_agency, optional: true
   serialize :srg_ids
   accepts_nested_attributes_for :project_controls
   
