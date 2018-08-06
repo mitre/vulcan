@@ -3,7 +3,7 @@
     <div class="text-center">
         <a href="index.html" class="logo-lg"><i class="mdi mdi-radar"></i> <span>Vulcan</span> </a>
     </div>
-    <%= form_for(resource, as: resource_name, url: session_path(resource_name), class: "form-horizontal m-t-20") do |f| %>
+    <%= form_for(resource, as: resource_name, url: session_path(resource_name), class: "form-horizontal m-t-20", id: 'new_user') do |f| %>
         <div class="form-group row">
             <div class="col-12">
                 <div class="input-group">
@@ -34,9 +34,8 @@
                         Remember me
                     </label>
                 </div>
-
+                <%= select_tag(:log, options_for_select([ [" LDAP Server","domain"],["Local Server", "local"]]), {class: 'form-control', id: 'log', include_blank: 'Select Login Server'})%>
             </div>
-            <label for="check_box_type">Login Server </label><%= select_tag :log, options_for_select([ [" Domain Server","domain"],["Local Server", "local"]])%>
         </div>
 
         <div class="form-group row">
@@ -66,3 +65,12 @@
         </div>
     <% end %>
 </div>
+
+<script>
+  $('#new_user').submit(function() {
+    if ($('#log').val() == '') {
+      return false;
+    }
+    return true;
+  });
+</script>
