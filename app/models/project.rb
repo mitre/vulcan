@@ -6,7 +6,6 @@ class Project < ApplicationRecord
   resourcify
   before_destroy :destroy_project_controls
   
-  validates_presence_of :name, :title
 
   has_many  :project_controls
   has_many  :project_histories
