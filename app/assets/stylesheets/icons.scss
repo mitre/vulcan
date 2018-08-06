@@ -13,8 +13,8 @@ File: Icons
  * -------------------------- */
 @font-face {
   font-family: 'FontAwesome';
-  src: url("fontawesome-webfont.eot?v=4.7.0");
-  src: url("fontawesome-webfont.eot?#iefix&v=4.7.0") format("embedded-opentype"), url("fontawesome-webfont.woff2?v=4.7.0") format("woff2"), url("fontawesome-webfont.woff?v=4.7.0") format("woff"), url("fontawesome-webfont.ttf?v=4.7.0") format("truetype"), url("fontawesome-webfont.svg?v=4.7.0#fontawesomeregular") format("svg");
+  src: font-url("fontawesome-webfont.eot?v=4.7.0");
+  src: font-url("fontawesome-webfont.eot?#iefix&v=4.7.0") format("embedded-opentype"), font-url("fontawesome-webfont.woff2?v=4.7.0") format("woff2"), font-url("fontawesome-webfont.woff?v=4.7.0") format("woff"), font-url("fontawesome-webfont.ttf?v=4.7.0") format("truetype"), font-url("fontawesome-webfont.svg?v=4.7.0#fontawesomeregular") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -3056,8 +3056,8 @@ File: Icons
 /* MaterialDesignIcons.com */
 @font-face {
   font-family: "Material Design Icons";
-  src: url("materialdesignicons-webfont.eot?v=2.0.46");
-  src: url("materialdesignicons-webfont.eot?#iefix&v=2.0.46") format("embedded-opentype"), url("materialdesignicons-webfont.woff2?v=2.0.46") format("woff2"), url("materialdesignicons-webfont.woff?v=2.0.46") format("woff"), url("materialdesignicons-webfont.ttf?v=2.0.46") format("truetype"), url("materialdesignicons-webfont.svg?v=2.0.46#materialdesigniconsregular") format("svg");
+  src: font-url("materialdesignicons-webfont.eot?v=2.0.46");
+  src: font-url("materialdesignicons-webfont.eot?#iefix&v=2.0.46") format("embedded-opentype"), font-url("materialdesignicons-webfont.woff2?v=2.0.46") format("woff2"), font-url("materialdesignicons-webfont.woff?v=2.0.46") format("woff"), font-url("materialdesignicons-webfont.ttf?v=2.0.46") format("truetype"), font-url("materialdesignicons-webfont.svg?v=2.0.46#materialdesigniconsregular") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -11518,8 +11518,8 @@ File: Icons
 */
 @font-face {
   font-family: "Ionicons";
-  src: url("ionicons.eot?v=1.5.0");
-  src: url("ionicons.eot?v=1.5.0#iefix") format("embedded-opentype"), url("ionicons.ttf?v=1.5.0") format("truetype"), url("ionicons.woff?v=1.5.0") format("woff"), url("ionicons.svg?v=1.5.0#Ionicons") format("svg");
+  src: font-url("ionicons.eot?v=1.5.0");
+  src: font-url("ionicons.eot?v=1.5.0#iefix") format("embedded-opentype"), font-url("ionicons.ttf?v=1.5.0") format("truetype"), font-url("ionicons.woff?v=1.5.0") format("woff"), font-url("ionicons.svg?v=1.5.0#Ionicons") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -14615,8 +14615,8 @@ File: Icons
 
 @font-face {
   font-family: 'themify';
-  src: url("themify.eot?-fvbane");
-  src: url("themify.eot?#iefix-fvbane") format("embedded-opentype"), url("themify.woff?-fvbane") format("woff"), url("themify.ttf?-fvbane") format("truetype"), url("themify.svg?-fvbane#themify") format("svg");
+  src: font-url("themify.eot?-fvbane");
+  src: font-url("themify.eot?#iefix-fvbane") format("embedded-opentype"), font-url("themify.woff?-fvbane") format("woff"), font-url("themify.ttf?-fvbane") format("truetype"), font-url("themify.svg?-fvbane#themify") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16065,8 +16065,8 @@ File: Icons
  */
 @font-face {
   font-family: "weathericons";
-  src: url("weathericons-regular-webfont.eot");
-  src: url("weathericons-regular-webfont.eot?#iefix") format("embedded-opentype"), url("weathericons-regular-webfont.woff2") format("woff2"), url("weathericons-regular-webfont.woff") format("woff"), url("weathericons-regular-webfont.ttf") format("truetype"), url("weathericons-regular-webfont.svg#weather_iconsregular") format("svg");
+  src: font-url("weathericons-regular-webfont.eot");
+  src: font-url("weathericons-regular-webfont.eot?#iefix") format("embedded-opentype"), font-url("weathericons-regular-webfont.woff2") format("woff2"), font-url("weathericons-regular-webfont.woff") format("woff"), font-url("weathericons-regular-webfont.ttf") format("truetype"), font-url("weathericons-regular-webfont.svg#weather_iconsregular") format("svg");
   font-weight: normal;
   font-style: normal;
 }
