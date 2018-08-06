@@ -74,8 +74,8 @@ module Util
     
     # untars the given IO into the specified
     # directory
-    def untar(io, destination)
-      Gem::Package::TarReader.new io do |tar|
+    def untar(path, destination)
+      Gem::Package::TarReader.new( Zlib::GzipReader.open path ) do |tar|
         tar.each do |tarfile|
           destination_file = File.join destination, tarfile.full_name
           

@@ -65,6 +65,7 @@ class Project < ApplicationRecord
   def compress_profile
     Dir.chdir "tmp/#{@random}"
     system("zip -r #{Rails.root}/tmp/#{@random}/#{@name}.zip #{@name}")
+    stdout, stderr, status = Open3.capture3("zip -r #{Rails.root}/tmp/#{@random}/#{@name}.zip #{@name}")
     Dir.chdir "#{Rails.root}"
   end
   
@@ -98,14 +99,14 @@ class Project < ApplicationRecord
   def create_skeleton
     Dir.mkdir("#{Rails.root}/tmp/#{@random}")
     Dir.chdir "tmp/#{@random}"
-    system("inspec init profile #{@name}")
-    system("rm #{Rails.root}/tmp/#{@random}/#{@name}/controls/example.rb")
+    stdout, stderr, status = Open3.capture3("inspec init profile #{@name}")
+    stdout, stderr, status = Open3.capture3("rm #{Rails.root}/tmp/#{@random}/#{@name}/controls/example.rb")
     Dir.chdir "#{Rails.root}"
   end
 
   def create_json
     Dir.chdir "#{Rails.root}/tmp/#{@random}"
-    system("inspec json #{@name} | jq . | tee #{@name}-overview.json")
+    stdout, stderr, status = Open3.capture3("inspec json #{@name} | jq . | tee #{@name}-overview.json")
     Dir.chdir "#{Rails.root}"
   end
   
