@@ -5,25 +5,28 @@
 require 'json'
 require 'ripper'
 require 'tempfile'
-require 'stringio'
-require 'util/tar'
+require 'zlib'
+require 'open3'
 
 class UploadService
   include ActiveModel::Validations
-  include Util::Tar
+
   ###
   #  Creates a project from a InSpec profile in a tarball
   ###
   def upload_project_inspec_tarball(file, current_user)
-    puts tar(file.path)
-    # cli = Inspec::InspecCLI.new.json(file.path)
+    untargz(file.path, "#{Rails.root}/tmp/profile")
+    stdout, stderr, status = Open3.capture3("inspec json #{Rails.root}/tmp/profile")
+    file = Tempfile.new('profile')
+    File.open(file.path, 'w') { |file| file.write(stdout) }
+    return upload_project_inspec_json(file, current_user)
   end
   
   ###
   #  Creates a project from repository url containing an InSpec profile
   ###
   def upload_project_url(url)
-    
+    # stdout, stderr, status = Open3.capture3("inspec exe #{Rails.root}/tmp/profile")
   end
   
   ###
@@ -58,11 +61,31 @@ class UploadService
   ###
   #  Creates a project out of an STIG XCCDF
   ###
-  def self.upload_project_stig_xccdf(file)
-    
+  def upload_project_stig_xccdf(file)
+    InspecTo.xccdf2inspec(file.path, 'data/U_CCI_List.xml')
   end
   
   private
+  
+  # untars the given IO into the specified
+  # directory
+  def untargz(path, destination)
+    Gem::Package::TarReader.new( Zlib::GzipReader.open path ) do |tar|
+      tar.each do |tarfile|
+        destination_file = File.join destination, tarfile.full_name
+        
+        if tarfile.directory?
+          FileUtils.mkdir_p destination_file
+        else
+          destination_directory = File.dirname(destination_file)
+          FileUtils.mkdir_p destination_directory unless File.directory?(destination_directory)
+          File.open destination_file, "wb" do |f|
+            f.print tarfile.read
+          end
+        end
+      end
+    end
+  end
   
   def project_attributes_inspec_json(json)
     attributes = {
@@ -88,6 +111,7 @@ class UploadService
       checktext: json_control['tags']['audit'],
       fixtext: json_control['tags']['fix'],
       srg_title_id: json_control['title'],
+      applicability: 'Applicable - Configurable',
       status: 'Not Started',
     }
   end

@@ -131,8 +131,8 @@ user.updated_at = Date.new
 user.save
 user.add_role "admin"
 
-if true
-  puts "DEVELOPMENT"
+case Rails.env
+when 'development'
   vendor = Vendor.new
   vendor.vendor_name = 'vendor'
   vendor.save

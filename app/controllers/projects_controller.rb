@@ -157,7 +157,7 @@ class ProjectsController < ApplicationController
   
   # Upload an xlsx or json file and create a project
   def upload
-    begin
+    # begin
       if current_user.has_role?(current_user.roles.first.name, @project)
         @project = upload_file(params)
         respond_to do |format|
@@ -175,20 +175,18 @@ class ProjectsController < ApplicationController
           format.json { render json: @project.errors, status: :unprocessable_entity }
         end
       end
-    rescue StandardError => e
-      puts e
-      respond_to do |format|
-        format.html { redirect_to projects_path, notice: 'Failed to upload project' }
-        format.json { render json: @project.errors, status: :unprocessable_entity }
-      end
-    end
+    # rescue StandardError => e
+    #   puts e
+    #   respond_to do |format|
+    #     format.html { redirect_to projects_path, notice: 'Failed to upload project' }
+    #     format.json { render json: @project.errors, status: :unprocessable_entity }
+    #   end
+    # end
   end
   
   def approve_project
     @project.update_attribute(:status, 'approved')
-    puts "project"
     get_project_controls(@project.srgs).each do |control|
-      puts "control"
       project_control = @project.project_controls.create(control[:control_params])
       project_control.nist_controls << control[:nist_params]
       assign_control_to_users(project_control)
@@ -218,7 +216,7 @@ class ProjectsController < ApplicationController
       when 'excel'
         return upload_service.upload_project_excel(params[:file])
       when 'xml'
-        return upload_service.upload_project_stig_xml(params[:file])
+        return upload_service.upload_project_stig_xccdf(params[:file])
       when 'url'
         return upload_service.upload_project_url(params[:url])
       else
@@ -233,7 +231,7 @@ class ProjectsController < ApplicationController
       
       return 'excel' if params[:file].content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       
-      return 'xml' if params[:file].content_type == "application/xml"
+      return 'xml' if params[:file].content_type == "text/xml"
       
       return 'url' if params[:url]
     end
