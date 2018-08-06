@@ -16,7 +16,7 @@ services:
       - "-b"
       - '0.0.0.0'
     volumes:
-      - sqlite-data:/var/www/vulcan/db
+      - sqlite-data:/var/www/vulcan/db-data
     #   - .:/var/www/vulcan
     environment:
       RAILS_LOG_TO_STDOUT: "true"
