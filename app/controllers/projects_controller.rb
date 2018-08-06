@@ -92,15 +92,15 @@ class ProjectsController < ApplicationController
         project_params[:srg_ids] = project_params[:srg_ids].drop(1) unless project_params[:srg_ids].nil?
         project_params[:users] = project_params[:users].select {|user| user != "0"} unless project_params[:users].nil?
         @project = Project.new(get_project_json(project_params))
-        @project.srgs << Srg.where(title: project_params[:srg_ids]) unless project_params[:users].nil?
+        @project.srgs << Srg.where(title: project_params[:srg_ids])
         @project.vendor = Vendor.find(params[:project][:vendor_id])
         @project.sponsor_agency = SponsorAgency.find(params[:project][:sponsor_agency_id])
         
         @project.users << @project.vendor.users
         @project.users << @project.sponsor_agency.users
         respond_to do |format|
-          puts format
-          if @project.save
+          if @project.save!
+            puts "here"
             assign_project_to_users
             format.html { redirect_to projects_path, notice: 'Project was successfully created.' }
             format.json { render :show, status: :created, location: @project }
@@ -111,6 +111,7 @@ class ProjectsController < ApplicationController
           end
         end
       rescue ActiveRecord::RecordNotFound
+        puts @project.errors
         respond_to do |format|
           format.html { redirect_to projects_path, error: 'Profile was not successfully created.' }
           format.json { render json: @project.errors, status: :unprocessable_entity }
@@ -185,7 +186,9 @@ class ProjectsController < ApplicationController
   
   def approve_project
     @project.update_attribute(:status, 'approved')
+    puts "project"
     get_project_controls(@project.srgs).each do |control|
+      puts "control"
       project_control = @project.project_controls.create(control[:control_params])
       project_control.nist_controls << control[:nist_params]
       assign_control_to_users(project_control)
