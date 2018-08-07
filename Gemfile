@@ -93,5 +93,5 @@ gem 'faker'
 
 # gem 'inspec_to', :git => "https://github.com/aaronlippold/inspec-tools.git"
 
-gem 'inspec_to', :path => "../inspec-tools/"
+gem 'inspec_tools', :path => "../inspec-tools/"
 

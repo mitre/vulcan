@@ -62,7 +62,7 @@ class UploadService
   #  Creates a project out of an STIG XCCDF
   ###
   def upload_project_stig_xccdf(file)
-    InspecTo.xccdf2inspec(file.path, 'data/U_CCI_List.xml')
+    InspecTo.xccdf2inspec(file.path, "#{Rails.root}/data/U_CCI_List.xml")
   end
   
   private
