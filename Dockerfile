@@ -19,7 +19,8 @@ ENV RAILS_SERVE_STATIC_FILES=true
 
 COPY . .
 
-RUN bash -c "RAILS_ENV=$RAILS_ENV RAILS_RELATIVE_URL_ROOT=$RAILS_RELATIVE_URL_ROOT bundle exec rake assets:precompile"
+# Use a random key base
+RUN bash -c "SECRET_KEY_BASE=$(openssl rand -hex 64) RAILS_ENV=$RAILS_ENV RAILS_RELATIVE_URL_ROOT=$RAILS_RELATIVE_URL_ROOT bundle exec rake assets:precompile"
 
 EXPOSE 3000
 
