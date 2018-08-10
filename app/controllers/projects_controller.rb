@@ -1,10 +1,12 @@
 require 'json'
 require 'ripper'
+require 'inspec'
 
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test, :review_project, :approve_project]
   respond_to :html, :json
+  
   # GET /projects
   # GET /projects.json
   def index

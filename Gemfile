@@ -5,6 +5,8 @@ git_source(:github) do |repo_name|
   "https://github.com/#{repo_name}.git"
 end
 
+gem "inspec", '~> 2.2', '>= 2.2.61'
+gem 'roo'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.1.6'
@@ -67,10 +69,10 @@ gem 'jquery-ui-rails'
 gem "flot-rails"
 gem 'jquery-datatables-rails', '~> 3.4.0'
 gem "font-awesome-rails"
+
 # gem 'webpacker', '~> 3.3'
-gem 'inspec'
 gem 'word_wrap'
-gem "roo"
+
 gem 'nokogiri-happymapper', :require => 'happymapper'
 # gem 'axlsx', '2.1.0.pre'
 # gem 'axlsx_rails'
@@ -91,7 +93,4 @@ gem "devise_ldap_authenticatable"
 
 gem 'faker'
 
-# gem 'inspec_to', :git => "https://github.com/aaronlippold/inspec-tools.git"
-
-gem 'inspec_tools', :path => "../inspec-tools/"
-
+gem 'inspec_tools'
