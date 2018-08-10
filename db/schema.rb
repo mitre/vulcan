@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180626153503) do
+ActiveRecord::Schema.define(version: 20180810164306) do
 
   create_table "ccis", force: :cascade do |t|
     t.string "cci"
@@ -21,6 +21,14 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.integer "cci_id"
     t.index ["cci_id"], name: "index_ccis_nist_controls_on_cci_id"
     t.index ["nist_control_id"], name: "index_ccis_nist_controls_on_nist_control_id"
+  end
+
+  create_table "control_change_statuses", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "status"
+    t.integer "project_control_history_id"
+    t.index ["project_control_history_id"], name: "index_control_change_status_on_project_control_history_id"
   end
 
   create_table "host_configs", force: :cascade do |t|
@@ -86,6 +94,14 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "project_change_statuses", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "status"
+    t.integer "project_history_id"
+    t.index ["project_history_id"], name: "index_project_change_status_on_project_history_id"
+  end
+
   create_table "project_control_histories", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -97,35 +113,6 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.integer "is_reply_to", default: 0
     t.index ["project_control_id"], name: "index_project_control_histories_on_project_control_id"
     t.index ["user_id"], name: "index_project_control_histories_on_user_id"
-  end
-  
-  create_table "control_change_statuses", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "status"
-    t.integer "project_control_history_id"
-    t.index ["project_control_history_id"], name: "index_control_change_status_on_project_control_history_id"
-  end
-  
-  create_table "project_histories", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "project_attr"
-    t.string "text"
-    t.string "history_type"
-    t.integer "project_id"
-    t.integer "user_id"
-    t.integer "is_reply_to", default: 0
-    t.index ["project_id"], name: "index_project_histories_on_project_id"
-    t.index ["user_id"], name: "index_project_histories_on_user_id"
-  end
-  
-  create_table "project_change_statuses", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "status"
-    t.integer "project_history_id"
-    t.index ["project_history_id"], name: "index_project_change_status_on_project_history_id"
   end
 
   create_table "project_controls", force: :cascade do |t|
@@ -154,8 +141,22 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.text "tag"
     t.text "srg_title_id"
     t.integer "project_id"
-    t.integer "parent_id", index: true
+    t.integer "parent_id"
+    t.index ["parent_id"], name: "index_project_controls_on_parent_id"
     t.index ["project_id"], name: "index_project_controls_on_project_id"
+  end
+
+  create_table "project_histories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "project_attr"
+    t.string "text"
+    t.string "history_type"
+    t.integer "project_id"
+    t.integer "user_id"
+    t.integer "is_reply_to", default: 0
+    t.index ["project_id"], name: "index_project_histories_on_project_id"
+    t.index ["user_id"], name: "index_project_histories_on_user_id"
   end
 
   create_table "projects", force: :cascade do |t|
@@ -179,8 +180,8 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.string "encrypted_status_iv"
     t.integer "sponsor_agency_id"
     t.integer "vendor_id"
-    t.index ["vendor_id"], name: "index_projects_on_vendor_id"
     t.index ["sponsor_agency_id"], name: "index_projects_on_sponsor_agency_id"
+    t.index ["vendor_id"], name: "index_projects_on_vendor_id"
   end
 
   create_table "projects_srgs", force: :cascade do |t|
@@ -277,12 +278,8 @@ ActiveRecord::Schema.define(version: 20180626153503) do
     t.string "provider"
     t.string "uid"
     t.string "profile_pic_name"
-    # t.integer "sponsor_agency_id"
-    # t.integer "vendor_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
-    # t.index ["vendor_id"], name: "index_users_on_vendor_id"
-    # t.index ["sponsor_agency_id"], name: "index_users_on_sponsor_agency_id"
   end
 
   create_table "users_roles", id: false, force: :cascade do |t|
