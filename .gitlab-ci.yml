@@ -1,3 +1,4 @@
+# For the CI/CD Pipeline of Vulcan, secrets are managed through gitlab runner secrets
 sync-repo:
   stage: build
   image: alpine:latest
@@ -26,7 +27,7 @@ sync-repo:
     - git config --global user.email 'deployer@mitre.org' # Normally this is associated with the $GITLAB_PUSH_KEY
     - git config --global user.name 'inspec-dev Deployer' # Normally this is associated with the $GITLAB_PUSH_KEY
 
-    # add gitlab.mitre.org to known_hosts to avoid "host key verification failed" error
+    # add gitlab to known_hosts to avoid "host key verification failed" error
     - touch ~/.ssh/known_hosts
     - echo $GITLAB_KEYSCAN >> ~/.ssh/known_hosts
 
@@ -35,3 +36,32 @@ sync-repo:
     - cd vulcan
     - git remote add github git@gitlab.mitre.org:inspec/vulcan.git
     - ssh-agent sh -c 'ssh-add ~/push_key; git push --tags github master' # REMOTE NAME from previous line
+    
+build:
+  stage: build
+  image: docker:latest
+
+  before_script:
+    # add the MITRE certificates to the docker image
+    - apk update && apk add git openssh-client ca-certificates py-pip bash
+    - wget -O /usr/local/share/ca-certificates/MITRE_BA_Root.crt $CRT_R
+    - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-1.crt $CRT_1
+    - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-3.crt $CRT_3
+    - update-ca-certificates
+  
+  script:
+    # Configuration modification purely for inspec-dev
+    # For service behind the Firewall connecting to gitlab
+    - echo "$SED_PROXY" > sed-script-file
+    - grep BA_Root dockerfiles/heimdall/Dockerfile || sed -f sed-script-file -i"" dockerfiles/heimdall/Dockerfile
+    - sed -i"" -e "s#3030#3031#g" docker-compose.yml # Run on port 3031
+    # - cp config/ldap.example.yml config/ldap.yml
+    # - sed -i"" -e "s#host.yourdomain.com#ldap-user.mitre.org#g" config/ldap.yml
+    # - sed -i"" -e "s#yourdomain.com#mitre.org#g" config/ldap.yml
+    # # The next line implies anonymous ldap authentication
+    # - sed -i"" -e "/admin_/d" config/ldap.yml
+    - pip install docker-compose
+    # If you had a rake keys task, it would go here
+    - docker-compose build
+    - docker-compose run web rake db:setup || docker-compose run web rake db:migrate
+    - docker-compose up -d
