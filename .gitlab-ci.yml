@@ -53,7 +53,7 @@ build:
     # Configuration modification purely for inspec-dev
     # For service behind the Firewall connecting to gitlab
     - echo "$SED_PROXY" > sed-script-file
-    - grep BA_Root Dockerfile || sed -f sed-script-file -i"" dockerfiles/heimdall/Dockerfile
+    - grep BA_Root Dockerfile || sed -f sed-script-file -i"" Dockerfile
     - sed -i"" -e "s#3030#3031#g" docker-compose.yml # Run on port 3031
     # - cp config/ldap.example.yml config/ldap.yml
     # - sed -i"" -e "s#host.yourdomain.com#ldap-user.mitre.org#g" config/ldap.yml
