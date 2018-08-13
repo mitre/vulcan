@@ -207,26 +207,30 @@ class ProjectsController < ApplicationController
     
     def upload_file(params)
       puts params
-      puts "HERE"
       upload_type = determine_upload_type(params)
       upload_service = UploadService.new
+
       case upload_type
       when 'json'
         return upload_service.upload_project_inspec_json(params[:file], current_user)
       when 'tarball'
         return upload_service.upload_project_inspec_tarball(params[:file], current_user)
       when 'excel'
-        return upload_service.upload_project_excel(params[:file])
+        tags = {}
+        params[:tags].split(',').each {|tag| tags[tag.split(':')[0]] = tag.split(':')[1].to_i } 
+        return upload_service.upload_project_excel(params[:file], current_user, { skip_csv_header: params[:skip_header], width: params[:width].to_i, 'control.id' => params[:id_index].to_i, 'control.title' => params[:title_index].to_i, 'control.tags' => tags })
       when 'xml'
-        return upload_service.upload_project_stig_xccdf(params[:file])
+        return upload_service.upload_project_stig_xccdf(params[:file], current_user)
       when 'url'
-        return upload_service.upload_project_url(params[:url])
+        return upload_service.upload_project_url(params[:url], current_user)
       else
         raise "ERROR: File format cannot be determined"
       end
     end
     
     def determine_upload_type(params)
+      return 'url' if params[:url]
+      
       return 'json' if params[:file].content_type == "application/json"
       
       return 'tarball' if params[:file].content_type == "application/x-gzip"
@@ -234,8 +238,6 @@ class ProjectsController < ApplicationController
       return 'excel' if params[:file].content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       
       return 'xml' if params[:file].content_type == "text/xml"
-      
-      return 'url' if params[:url]
     end
   
     ###

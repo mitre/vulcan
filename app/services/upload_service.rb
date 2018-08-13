@@ -7,6 +7,8 @@ require 'ripper'
 require 'tempfile'
 require 'zlib'
 require 'open3'
+require 'roo'
+require 'yaml'
 
 class UploadService
   include ActiveModel::Validations
@@ -15,41 +17,68 @@ class UploadService
   #  Creates a project from a InSpec profile in a tarball
   ###
   def upload_project_inspec_tarball(file, current_user)
-    untargz(file.path, "#{Rails.root}/tmp/profile")
-    stdout, stderr, status = Open3.capture3("inspec json #{Rails.root}/tmp/profile")
-    file = Tempfile.new('profile')
-    File.open(file.path, 'w') { |file| file.write(stdout) }
-    return upload_project_inspec_json(file, current_user)
+    # untargz(file.path, "#{Rails.root}/tmp/profile")
+    stdout, stderr, status = Open3.capture3("mv #{file.path} #{file.path.split('.')[0]}.tar.gz")
+    stdout_json, stderr_json, status_json = Open3.capture3("inspec json #{file.path.split('.')[0]}.tar.gz")
+    json = stdout_json.split("\n", 2)[1]
+    return upload_project_inspec_json(JSON.parse(json), current_user)
   end
   
   ###
   #  Creates a project from repository url containing an InSpec profile
   ###
-  def upload_project_url(url)
-    # stdout, stderr, status = Open3.capture3("inspec exe #{Rails.root}/tmp/profile")
+  def upload_project_url(url, current_user)
+    stdout, stderr, status = Open3.capture3("inspec json #{url}")
+    json = stdout.split("\n", 2)[1]
+    return upload_project_inspec_json(JSON.parse(json), current_user)
   end
   
   ###
   #  Creates a project from a STIG in an excel file
   ###
-  def self.upload_project_excel(file)
-    # project_xlsx = Roo::Excelx.new(file.path)
-    # project_info = project_xlsx.sheet('Profile').row(2)
-    return 1
+  def upload_project_excel(file, current_user, opts)
+    File.open("tmp/mapping.yml", "w") { |file| file.write(opts.to_yaml) }
+    xlsx = Roo::Spreadsheet.open(file.path)
+    name = file.original_filename.split('.')[0..-2].join('.')
+    mapping = YAML.load_file("tmp/mapping.yml")
+    csv_tool = InspecTools::CSVTool.new(CSV.parse(xlsx.sheet(0).to_csv, encoding: 'ISO8859-1'), mapping, false, name)
+    inspec_json = csv_tool.to_inspec
+    return upload_project_inspec_json(inspec_json, current_user)
   end
   
   ###
   #  Creates a project out of an InSpec profile JSON
   ###
-  def upload_project_inspec_json(file, current_user)
-    puts current_user
+  def upload_project_inspec_json_file(file, current_user)
     project_json = JSON.parse(File.read(file.path))
-    attributes = project_attributes_inspec_json(project_json)
+    return upload_project_inspec_json(project_json, current_user)
+  end
+  
+  ###
+  #  Creates a project out of an STIG XCCDF
+  ###
+  def upload_project_stig_xccdf(file, current_user)
+    xccdf = File.read(file.path)
+    xccdf_tool = InspecTools::XCCDF.new(xccdf)
+    project_json = xccdf_tool.to_inspec
+    return upload_project_inspec_json(project_json, current_user)
+  end
+  
+  private
+  
+  ###
+  # This method takes in an inspec json file and creates a vulcan project out of it
+  ###
+  def upload_project_inspec_json(inspec_json, current_user)
+    attributes = project_attributes_inspec_json(inspec_json)
     @project = Project.create!(attributes)
-    @project.vendor = Vendor.find(current_user.vendors[0].id)
-    @project.users << @project.vendor.users
+    @project.vendor = Vendor.find(current_user.vendors[0].id) unless current_user.vendors.empty?
+    @project.sponsor_agency = SponsorAgency.find(current_user.sponsor_agencies[0].id) unless current_user.sponsor_agencies.empty?
+
+    @project.users << @project.vendor.users if @project.vendor
+    @project.users << @project.sponsor_agency.users if @project.sponsor_agency
     @project.save
-    project_json['controls'].each do |json_control|
+    inspec_json['controls'].each do |json_control|
       project_control = @project.project_controls.create(project_control_attr_inspec_json(json_control))
       json_control['tags']['nist'].each do |json_nist| 
         project_control.nist_controls << NistControl.where(family: json_nist.split('-')[0], index: json_nist.split('-')[1])
@@ -57,15 +86,6 @@ class UploadService
     end
     return @project
   end
-  
-  ###
-  #  Creates a project out of an STIG XCCDF
-  ###
-  def upload_project_stig_xccdf(file)
-    InspecTo.xccdf2inspec(file.path, "#{Rails.root}/data/U_CCI_List.xml")
-  end
-  
-  private
   
   # untars the given IO into the specified
   # directory
