@@ -27,6 +27,7 @@
 //= require ace-rails-ap
 //= require bootstrap.min
 //= require_tree ./morris/
+//= require_tree ./bootstrap-tagsinput
 //= require_tree ./counterup
 //= require_tree ./footable
 //= require_tree ./jquery-steps

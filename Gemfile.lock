@@ -47,13 +47,13 @@ GEM
       encryptor (~> 3.0.0)
     autoprefixer-rails (9.1.0)
       execjs
-    aws-sdk (2.11.101)
-      aws-sdk-resources (= 2.11.101)
-    aws-sdk-core (2.11.101)
+    aws-sdk (2.11.105)
+      aws-sdk-resources (= 2.11.105)
+    aws-sdk-core (2.11.105)
       aws-sigv4 (~> 1.0)
       jmespath (~> 1.0)
-    aws-sdk-resources (2.11.101)
-      aws-sdk-core (= 2.11.101)
+    aws-sdk-resources (2.11.105)
+      aws-sdk-core (= 2.11.105)
     aws-sigv4 (1.0.3)
     azure_mgmt_resources (0.17.0)
       ms_rest_azure (~> 0.11.0)
@@ -138,11 +138,7 @@ GEM
       mime-types (~> 3.0)
       representable (~> 3.0)
       retriable (>= 2.0, < 4.0)
-<<<<<<< HEAD
     googleauth (0.6.4)
-=======
-    googleauth (0.6.3)
->>>>>>> f9809aac7b3b5e8ec2a043a59d8e37519cc982bf
       faraday (~> 0.12)
       jwt (>= 1.4, < 3.0)
       memoist (~> 0.12)
@@ -161,11 +157,7 @@ GEM
     i18n (1.1.0)
       concurrent-ruby (~> 1.0)
     inifile (3.0.0)
-<<<<<<< HEAD
     inspec (2.2.61)
-=======
-    inspec (2.2.55)
->>>>>>> f9809aac7b3b5e8ec2a043a59d8e37519cc982bf
       addressable (~> 2.4)
       faraday (>= 0.9.0)
       faraday_middleware (~> 0.12.2)
@@ -185,21 +177,17 @@ GEM
       thor (~> 0.20)
       tomlrb (~> 1.2)
       train (~> 1.4, >= 1.4.15)
-<<<<<<< HEAD
     inspec_tools (1.0.1)
       OptionParser (~> 0)
       colorize (~> 0)
       docsplit (= 0.7.6)
       inspec (~> 2.2)
-      json (>= 1.8, < 3.0)
       nokogiri (~> 1.8)
       nokogiri-happymapper (= 0.6.0)
       pdftotext (= 0.2.1)
       roo (~> 2.7)
       thor (~> 0.19)
       word_wrap (~> 0)
-=======
->>>>>>> f9809aac7b3b5e8ec2a043a59d8e37519cc982bf
     jbuilder (2.7.0)
       activesupport (>= 4.2.0)
       multi_json (>= 1.2)
@@ -472,7 +460,7 @@ DEPENDENCIES
   faker
   flot-rails
   font-awesome-rails
-  inspec (~> 2.2, >= 2.2.61)
+  inspec
   inspec_tools
   jbuilder (~> 2.5)
   jquery-datatables-rails (~> 3.4.0)
@@ -501,4 +489,4 @@ DEPENDENCIES
   word_wrap
 
 BUNDLED WITH
-   1.16.1
+   1.16.3

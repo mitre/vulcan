@@ -5,7 +5,7 @@ git_source(:github) do |repo_name|
   "https://github.com/#{repo_name}.git"
 end
 
-gem "inspec", '~> 2.2', '>= 2.2.61'
+gem "inspec"
 gem 'roo'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
