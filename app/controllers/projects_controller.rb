@@ -229,7 +229,7 @@ class ProjectsController < ApplicationController
     end
     
     def determine_upload_type(params)
-      return 'url' if params[:url]
+      return 'url' unless params[:url].empty?
       
       return 'json' if params[:file].content_type == "application/json"
       
