@@ -1,5 +1,5 @@
 <!-- Page-Title -->
-<div class="row">
+<div class="row" style='padding: 8px;'>
     <div class="col-sm-12">
         <div class="page-title-box">
             <h4 class="page-title">Profile</h4>
@@ -8,7 +8,7 @@
 </div>
 <!-- end page title end breadcrumb -->
 
-<div class="row">
+<div class="row" style='padding: 8px;'>
     <div class="col-xl-3 col-lg-4">
         <div class="text-center card-box">
             <div class="member-card">
@@ -43,21 +43,21 @@
         <div class="">
             <div class="card-box">
                 <ul class="nav nav-tabs tabs-bordered">
-                    <li class="nav-item">
-                        <a href="#home" data-toggle="tab" aria-expanded="false" class="nav-link">
+                    <!-- <li class="nav-item">
+                        <a href="#home" data-toggle="tab" aria-expanded="true" class="nav-link">
                             ABOUT ME
                         </a>
-                    </li>
+                    </li> -->
                     <% if @user == current_user %>
                       <li class="nav-item">
-                          <a href="#settings" data-toggle="tab" aria-expanded="false" class="nav-link">
+                          <a href="#settings" data-toggle="tab" aria-expanded="true" class="nav-link">
                               SETTINGS
                           </a>
                       </li>
                     <% end %>
                 </ul>
                 <div class="tab-content">
-                    <div class="tab-pane" id="home">
+                    <div class="tab-pane active" id="settings">
                         <p class="m-b-5"></p>
 
                         <div class="m-t-30">
@@ -81,13 +81,12 @@
                                     scrambled it to make a type specimen book.
                                 </p>
                             </div> -->
-                        </div>
+                        </div><% if @user == current_user %>
+                          <div class="tab-pane" id="settings">
+                              <%= render "users/registrations/edit" %>
+                          </div>
+                        <% end %>
                     </div>
-                    <% if @user == current_user %>
-                      <div class="tab-pane" id="settings">
-                          <%= render "users/registrations/edit" %>
-                      </div>
-                    <% end %>
                 </div>
             </div>
         </div>
