@@ -17,10 +17,9 @@ class UploadService
   #  Creates a project from a InSpec profile in a tarball
   ###
   def upload_project_inspec_tarball(file, current_user)
-    # untargz(file.path, "#{Rails.root}/tmp/profile")
     stdout, stderr, status = Open3.capture3("mv #{file.path} #{file.path.split('.')[0]}.tar.gz")
     stdout_json, stderr_json, status_json = Open3.capture3("inspec json #{file.path.split('.')[0]}.tar.gz")
-    json = stdout_json.split("\n", 2)[1]
+    json = stdout_json.split("\n", 2)[1] == '' ? stdout_json : stdout_json.split("\n", 2)[1]
     return upload_project_inspec_json(JSON.parse(json), current_user)
   end
   
