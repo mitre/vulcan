@@ -1,3 +1,19 @@
+GIT
+  remote: https://github.com/aaronlippold/inspec-tools.git
+  revision: a5864374553817b23f80f4d3fbaa3758d0264d65
+  specs:
+    inspec_tools (1.0.1)
+      OptionParser (~> 0)
+      colorize (~> 0)
+      docsplit (= 0.7.6)
+      inspec (~> 2.2)
+      nokogiri (~> 1.8)
+      nokogiri-happymapper (= 0.6.0)
+      pdftotext (= 0.2.1)
+      roo (~> 2.7)
+      thor (~> 0.19)
+      word_wrap (~> 0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -177,17 +193,6 @@ GEM
       thor (~> 0.20)
       tomlrb (~> 1.2)
       train (~> 1.4, >= 1.4.15)
-    inspec_tools (1.0.1)
-      OptionParser (~> 0)
-      colorize (~> 0)
-      docsplit (= 0.7.6)
-      inspec (~> 2.2)
-      nokogiri (~> 1.8)
-      nokogiri-happymapper (= 0.6.0)
-      pdftotext (= 0.2.1)
-      roo (~> 2.7)
-      thor (~> 0.19)
-      word_wrap (~> 0)
     jbuilder (2.7.0)
       activesupport (>= 4.2.0)
       multi_json (>= 1.2)
@@ -461,7 +466,7 @@ DEPENDENCIES
   flot-rails
   font-awesome-rails
   inspec
-  inspec_tools
+  inspec_tools!
   jbuilder (~> 2.5)
   jquery-datatables-rails (~> 3.4.0)
   jquery-rails
