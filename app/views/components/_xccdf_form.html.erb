@@ -1,0 +1,63 @@
+<div class="card">
+  <div class="card-body">
+    <%= form_tag(project_path(project, {format: :xccdf}), method: :get) do  %>
+      <div class='row'>
+        <div class='col-lg-6'>
+          <div class="form-group clearfix">
+              <label class="control-label"> Benchmark ID *</label>
+              <div class="">
+                <%= text_field_tag :benchmark_id, nil, class: "form-control" %>
+              </div>
+          </div>
+          
+          <div class="form-group clearfix">
+              <label class="control-label"> Benchmark Status *</label>
+              <div class="">
+                <%= text_field_tag :benchmark_status, nil, class: "form-control" %>
+              </div>
+          </div>
+          
+          <div class="form-group clearfix">
+              <label class="control-label"> Benchmark Notice *</label>
+              <div class="">
+                <%= text_field_tag :benchmark_notice, nil, class: "form-control" %>
+              </div>
+          </div>
+        </div>
+      
+        <div class='col-lg-6'>
+          <div class="form-group clearfix">
+              <label class="control-label"> Benchmark Plaintext *</label>
+              <div class="">
+                <%= text_field_tag :benchmark_plaintext, nil, class: "form-control" %>
+              </div>
+          </div>
+          
+          <div class="form-group clearfix">
+              <label class="control-label"> Benchmark Plaintext ID *</label>
+              <div class="">
+                <%= text_field_tag :benchmark_plaintext_id, nil, class: "form-control" %>
+              </div>
+          </div>
+          
+          <div class="form-group clearfix">
+              <label class="control-label"> Reference HREF *</label>
+              <div class="">
+                <%= text_field_tag :reference_href, nil, class: "form-control" %>
+              </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group clearfix">
+          <label class="control-label"> Reference DC Source *</label>
+          <div class="">
+            <%= text_field_tag :reference_dc_source, nil, class: "form-control" %>
+          </div>
+      </div>
+
+      <div class="actions">
+        <%= submit_tag "Download XCCDF", {:class => "btn btn-primary"} %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -28,6 +28,8 @@ class ProjectsController < ApplicationController
         # format.json { send_data create_project_json(Project.find(params[:id])), :filename => Project.find(params[:id]).name + '-overview.json' }
         format.csv  { send_data Project.find(params[:id]).to_csv, :filename => Project.find(params[:id]).name + '-overview.csv' }
         format.json { send_data Project.find(params[:id]).to_prof, :filename => Project.find(params[:id]).name + '-overview.zip' }
+        format.xccdf { send_data Project.find(params[:id]).to_xccdf(xccdf_params), :filename => Project.find(params[:id]).name + '-overview-xccdf.xml' }
+
         format.xlsx
       end
     end
@@ -378,5 +380,10 @@ class ProjectsController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_params
       params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[], users:[])
+    end
+    
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def xccdf_params
+      params.permit(:benchmark_id, :benchmark_title, :benchmark_notice, :benchmark_plaintext, :benchmark_plaintext_id, :reference_href, :reference_dc_source, :benchmark_status, :commit, :id, :format)
     end
 end
