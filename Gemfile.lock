@@ -1,11 +1,12 @@
 GIT
   remote: https://github.com/aaronlippold/inspec-tools.git
-  revision: a5864374553817b23f80f4d3fbaa3758d0264d65
+  revision: 8b157dd7367fbd42781b5b7536d785069970dbfb
+  branch: cleanup
   specs:
     inspec_tools (1.0.1)
       OptionParser (~> 0)
       colorize (~> 0)
-      docsplit (= 0.7.6)
+      docsplit (~> 0.7.6)
       inspec (~> 2.2)
       nokogiri (~> 1.8)
       nokogiri-happymapper (= 0.6.0)
