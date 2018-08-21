@@ -65,6 +65,6 @@ build:
     - pip install docker-compose
     # If you had a rake keys task, it would go here
     - docker-compose build
-    - docker-compose run web rake db:setup >/dev/null 2>/dev/null  
+    - docker-compose run web rake db:setup >/dev/null 2>/dev/null || docker-compose run web rake db:seed || true
     - docker-compose run web rake db:migrate
     - docker-compose up -d
