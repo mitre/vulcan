@@ -28,24 +28,40 @@
                   <div class="btn-group">
                       <button type="button" class="btn btn-secondary dropdown-toggle waves-effect" data-toggle="dropdown" aria-expanded="false"> Actions <span class="caret"></span> </button>
                       <div class="dropdown-menu">
-                          <%= link_to 'Show Controls', project, class: 'dropdown-item btn btn-success' %>
-                          <%= link_to 'Edit Controls', project_edit_controls_path(project), class: 'dropdown-item btn btn-info' if current_user.has_role?(:vendor) %>
-                          <%= link_to 'Test Controls', test_path(project), class: 'dropdown-item btn btn-primary' %>
-                          <%= link_to 'Edit Profile', edit_project_path(project), class: 'dropdown-item btn btn-warning' %>
-                          <%= link_to 'Delete', project, method: :delete, data: { confirm: 'Are you sure?' }, class: 'dropdown-item btn btn-danger' %>
+                          <%= link_to 'Show Controls', project, class: 'dropdown-item btn btn-default' %>
+                          <%= link_to 'Edit Controls', project_edit_controls_path(project), class: 'dropdown-item btn btn-default' if current_user.has_role?(:vendor) %>
+                          <%= link_to 'Test Controls', test_path(project), class: 'dropdown-item btn btn-default' %>
+                          <%= link_to 'Edit Profile', edit_project_path(project), class: 'dropdown-item btn btn-default' %>
+                          <%= link_to 'Delete', project, method: :delete, data: { confirm: 'Are you sure?' }, class: 'dropdown-item btn-block btn-danger' %>
                       </div>
                   </div>
                 </td>
                 <td>
                   <div class="btn-group">
-                      <button type="button" class="btn btn-secondary dropdown-toggle waves-effect" data-toggle="dropdown" aria-expanded="false"> Export As <span class="caret"></span> </button>
+                      <button type="button" class="btn btn-info dropdown-toggle waves-effect" data-toggle="dropdown" aria-expanded="false"> Export As <span class="caret"></span> </button>
                       <div class="dropdown-menu">
-                          <%= link_to 'Excel', project_path(project, format: :xlsx), class: 'dropdown-item btn btn-primary'%>
-                          <%= link_to 'InSpec Profile', project_path(project, format: :json), class: 'dropdown-item btn btn-warning'%>
+                          <%= link_to 'InSpec Profile', project_path(project, format: :json), class: 'dropdown-item btn btn-default'%>
+                          <%= link_to 'CSV', project_path(project, format: :csv), class: 'dropdown-item btn btn-default'%>
+                          <%= link_to 'XCCDF', "#xccdf-form-modal", :class => "dropdown-item btn btn-default", "data-toggle" => "modal" %>
                       </div>
                   </div>
                 </td>
               </tr>
+              <div class="modal fade" id="xccdf-form-modal" tabindex="-1" role="dialog" aria-labelledby="xccdf-form-modal" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="reviewControlModalLabel">XCCDF Content</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div id="xccdf-form">
+                      <%= render 'components/xccdf_form', project: project %>
+                    </div>
+                  </div>
+                </div>
+              </div>
             <% end %>
           </tbody>
           <tfoot>
@@ -108,14 +124,57 @@
         
         
         <br>
-        <h3>Upload A Project</h3>
-        <%= form_tag(upload_project_path, multipart: true, :html => {class: 'form-control'}) do %>
-          <div class="input-group">
-            <%= file_field_tag :file, :class => "menu-text" %>
+        <div class='row'>
+          <h3>Upload A Project</h3>
+          <i class="mdi mdi-information-outline" style='padding: 8px;' data-toggle="popover" data-content="You can upload a STIG from an XCCDF or CSV file. Or you can upload an InSpec profile from a Tarball, JSON, or a repository link." id="upload_pop"></i>
+        </div>
+        <%= form_tag(upload_project_path, multipart: true, id: :upload_form) do %>
+          <div class='row'>
+            <div class='col-lg-2'>
+              <label>Upload Profile</label>
+              <div class="fileupload btn btn-secondary waves-effect">
+                  <span><i class="ion-upload m-r-5"></i>Upload</span>
+                  <%= file_field_tag :file, :class => "upload", accept: 'application/x-gzip,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/xml' %>
+              </div>
+            </div>
+            <div class='col-lg-3'>
+              <label>Upload From Repository Link</label>
+              <%= text_field_tag :url, nil,class: "form-control" %>
+            </div>
+          </div>
+          <div id='mapping_attributes' style='display: none;'>
+            <div class='row' style='padding: 8px;'>
+              <div class='col-lg-2'>
+                <label>Skip Header?: </label>
+                <%= select_tag(:skip_header, options_for_select([['True', true], ['False', false]]), {class: "form-control", id: 'skip_header'}) %>
+
+              </div>
+              <div class='col-lg-3'>
+                <label>Width?: </label><label id="invalid_width_label" style='margin:10px; display: none;'>Please give a width as a number</label>
+                <%= text_field_tag :width, nil,class: "form-control" %> 
+              </div>
+              <div class='col-lg-3'>
+                <label>ID Index?: </label><label id="invalid_id_index_label" style='margin:10px; display: none;'>Please give an index for the id as a number</label>
+                <%= text_field_tag :id_index, nil,class: "form-control" %>
+              </div>
+              <div class='col-lg-3'>
+                <label>Title Index?: </label><label id="invalid_title_index_label" style='margin:10px; display: none;'>Please give an index for the title as a number</label>
+                <%= text_field_tag :title_index, nil,class: "form-control" %>
+              </div>
+              <!-- <label>Skip Header?: </label><%= text_field_tag :skip_header, nil,class: "form-control" %> -->
+            </div>
+            <div class='row'>
+              <div class='col-lg-12'>
+                <div class="tags-default" style='padding: 8px;'>
+                  <label>Add Tags and their index according to the excel file (e.g fix : 3)</label>
+                  <%= text_field_tag :tags, "fix:3,check:6", {'data-role' => 'tagsinput', 'placeholder' => 'add tags'} %>
+                </div>
+              </div>
+            </div>
           </div>
           <br>
           <div class="actions">
-            <%= submit_tag 'Upload', :class => "btn btn-primary" %>
+            <%= submit_tag 'Submit', :class => "btn btn-primary" %>
           </div>
         <% end %>
       </div>
@@ -138,6 +197,15 @@
 </div>
 
 <script>
+  $('#file').on('change', function(e) {
+    if((e.target.value.indexOf('.xlsx') != -1) || (e.target.value.indexOf('.csv') != -1)) {
+      $('#mapping_attributes').show();
+    } else {
+      $('#mapping_attributes').hide();
+    }
+  });
+
+  $('#upload_pop').popover();
   // Add event listener for opening and closing details
   function review_project(project_id) {
     hsh = "#review_modal_card";
@@ -161,5 +229,60 @@
       });
     }
   }
+  
+  $('#upload_form').submit(function(e){
+    console.log(e)
+    status = true;
+    if ($('#file')[0].value == '') {
+      if ($('#url')[0].value == '') {
+        status = false;
+      }
+    } else if (($('#file')[0].value.indexOf('.xlsx') != -1) || ($('#file')[0].value.indexOf('.csv') != -1)) {
+      console.log(isNaN(parseInt($('#width')[0].value)))
+      if (($('#width')[0].value == '') || (isNaN(parseInt($('#width')[0].value)))) {
+        $('[name="width"').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+        $('#invalid_width_label').show();
+        status = false;
+      } else { 
+        $('#invalid_width_label').hide(); 
+        $('[name="width"').attr('style', "border:#cfcfcf 1px solid;");
+      }
+      if (($('#id_index')[0].value == '') || (isNaN(parseInt($('#id_index')[0].value)))) {
+        $('[name="id_index"').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+        $('#invalid_id_index_label').show();
+        status = false;
+      } else { 
+        $('#invalid_id_index_label').hide(); 
+        $('[name="id_index"').attr('style', "border:#cfcfcf 1px solid;");
+
+      }
+      if (($('#title_index')[0].value == '') || (isNaN(parseInt($('#title_index')[0].value)))) {
+        $('[name="title_index"').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+        $('#invalid_title_index_label').show();
+        status = false;
+      } else { 
+        $('#invalid_title_index_label').hide(); 
+        $('[name="title_index"').attr('style', "border:#cfcfcf 1px solid;");
+      }
+      if (($('#tags')[0].value != '')) {
+        var tags = $('#tags')[0].value.split(',');
+        for (var i = 0; i < tags.length; i++) {
+          if (!tags[i].match(/\w*\s*:\s*\d{1,2}/g)) { 
+            status = false;
+            $('.bootstrap-tagsinput').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+          };
+        }
+      } else { status == false }
+    }
+    console.log(status)
+    if (status == true) {return 1;} else { return 0; }
+
+    // if ((currentIndex == 0) && ($('[name="project_control[applicability]"]').val() == '')) {
+    //   $('[name="project_control[applicability]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
+    //   $('#invalid_applicability_label').show();
+    // } 
+  });
+  
+  
 </script>
 

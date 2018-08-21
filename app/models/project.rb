@@ -1,4 +1,5 @@
 require 'inspec/objects'
+require 'date'
 ###
 # TODO: FORM VALIDATION
 ###
@@ -48,6 +49,23 @@ class Project < ApplicationRecord
   #   end
   # end
   
+  def to_xccdf(params)
+    inspec_profile = to_inspec_profile
+    InspecTools::Inspec.new(inspec_profile.to_json).to_xccdf(benchmark_attributes(params))
+  end
+  
+  def to_csv
+    inspec_profile = to_inspec_profile
+    InspecTools::Inspec.new(inspec_profile.to_json).to_csv
+  end
+  
+  def to_inspec_profile
+    inspec_json = {}
+    inspec_json = insert_profile_data(inspec_json)
+    inspec_json['controls'] = insert_controls
+    inspec_json
+  end
+  
   def to_prof
     @controls = []
     @random = rand(1000..100000)
@@ -62,9 +80,58 @@ class Project < ApplicationRecord
   
   private
   
+  def benchmark_attributes(params)
+    attributes = {}
+    attributes["benchmark.id"] = params["benchmark_id"]
+    attributes["benchmark.title"] = self.title
+    attributes["benchmark.description"] = self.summary
+    attributes["benchmark.version"] = self.version
+    attributes["benchmark.status"] = params["benchmark_status"]
+    attributes["benchmark.status.date"] = Date.today.to_s
+    attributes["benchmark.notice"] = params["benchmark_notice"]
+    attributes["benchmark.plaintext"] = params["benchmark_plaintext"]
+    attributes["benchmark.plaintext.id"] = params["benchmark_plaintext_id"]
+    attributes["reference.href"] = params["reference_href"]
+    attributes["reference.dc.source"] = params["reference_dc_source"]
+    attributes
+  end
+  
+  def insert_profile_data(inspec_json)
+    inspec_json['name'] = self.name
+    inspec_json['title'] = self.title
+    inspec_json['maintainer'] = self.maintainer
+    inspec_json['copyright'] = self.copyright
+    inspec_json['copyright_email'] = self.copyright_email
+    inspec_json['license'] = self.license
+    inspec_json['summary'] = self.summary
+    inspec_json['version'] = self.version
+    inspec_json
+  end
+  
+  def insert_controls
+    controls = []
+    self.project_controls.each do |project_control|
+      control = {}
+      control['tags'] = {}
+      control['id'] = project_control.control_id
+      control['title'] = project_control.title
+      control['desc'] = project_control.description
+      control['impact'] = project_control.impact
+      control['tags']['check'] = project_control.checktext
+      control['tags']['fix'] = project_control.fixtext
+      control['tags']['nist'] = project_control.nist_controls.collect {|nist| nist.family + '-' + nist.index }.push('Rev_4')
+      control['tags']['gtitle'] = project_control.srg_title_id
+      control['tags']['gid'] = project_control.control_id
+      control['code'] = project_control.code    
+      controls << control  
+    end
+    controls
+  end
+  
   def compress_profile
     Dir.chdir "tmp/#{@random}"
     system("zip -r #{Rails.root}/tmp/#{@random}/#{@name}.zip #{@name}")
+    stdout, stderr, status = Open3.capture3("zip -r #{Rails.root}/tmp/#{@random}/#{@name}.zip #{@name}")
     Dir.chdir "#{Rails.root}"
   end
   
@@ -98,14 +165,14 @@ class Project < ApplicationRecord
   def create_skeleton
     Dir.mkdir("#{Rails.root}/tmp/#{@random}")
     Dir.chdir "tmp/#{@random}"
-    system("inspec init profile #{@name}")
-    system("rm #{Rails.root}/tmp/#{@random}/#{@name}/controls/example.rb")
+    stdout, stderr, status = Open3.capture3("inspec init profile #{@name}")
+    stdout, stderr, status = Open3.capture3("rm #{Rails.root}/tmp/#{@random}/#{@name}/controls/example.rb")
     Dir.chdir "#{Rails.root}"
   end
 
   def create_json
     Dir.chdir "#{Rails.root}/tmp/#{@random}"
-    system("inspec json #{@name} | jq . | tee #{@name}-overview.json")
+    stdout, stderr, status = Open3.capture3("inspec json #{@name} | jq . | tee #{@name}-overview.json")
     Dir.chdir "#{Rails.root}"
   end
   

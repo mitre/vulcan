@@ -1,13 +1,15 @@
 require 'json'
 require 'ripper'
+require 'inspec'
+
 class ProjectsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_project, only: [:show, :edit, :update, :destroy, :edit_project_controls, :test, :review_project, :approve_project]
   respond_to :html, :json
+  
   # GET /projects
   # GET /projects.json
-  def index  
-    
+  def index
     @projects = current_user.projects.select {|project| project.status != 'pending'}
     @pending_projects = current_user.projects.select {|project| project.status == 'pending'}
     respond_to do |format|
@@ -26,6 +28,8 @@ class ProjectsController < ApplicationController
         # format.json { send_data create_project_json(Project.find(params[:id])), :filename => Project.find(params[:id]).name + '-overview.json' }
         format.csv  { send_data Project.find(params[:id]).to_csv, :filename => Project.find(params[:id]).name + '-overview.csv' }
         format.json { send_data Project.find(params[:id]).to_prof, :filename => Project.find(params[:id]).name + '-overview.zip' }
+        format.xccdf { send_data Project.find(params[:id]).to_xccdf(xccdf_params), :filename => Project.find(params[:id]).name + '-overview-xccdf.xml' }
+
         format.xlsx
       end
     end
@@ -157,37 +161,36 @@ class ProjectsController < ApplicationController
   
   # Upload an xlsx or json file and create a project
   def upload
-    if params[:file].content_type == "application/json"
-      begin
-        project_json = JSON.parse(File.read(params[:file].path))
-        @project = Project.create(project_json["project_data"].except('id'))
-        project_json["controls"].each do |control|
-          project_control = @project.project_controls.create(control.except("nist_controls"))
-          control["nist_controls"].each do |nist_control|
-            project_control.nist_controls << NistControl.find(nist_control["id"])
+    # begin
+      if current_user.has_role?(current_user.roles.first.name, @project)
+        @project = upload_file(params)
+        respond_to do |format|
+          if @project.save
+            format.html { redirect_to project_path(@project), notice: 'Project was successfully updated.' }
+            format.json { render :show, status: :ok, location: @project }
+          else
+            format.html { redirect_to edit_project_path(@project), notice: 'Project was not successfully updated.' }
+            format.json { render json: @project.errors, status: :unprocessable_entity }
           end
         end
-      rescue StandardError => e
-      end
-    elsif params[:file].content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      begin
-        project_xlsx = Roo::Excelx.new(params[:file].path)
-        project_info = project_xlsx.sheet('Profile').row(2)
-        if detect_upload_project_doesnt_exist(project_info[0])
-          
+      else
+        respond_to do |format|
+          format.html { redirect_to projects_path, notice: 'You do not have permission to upload a file' }
+          format.json { render json: @project.errors, status: :unprocessable_entity }
         end
-      rescue StandardError => e
-        
       end
-    end
-    redirect_to projects_path, notice: 'Project uploaded.'
+    # rescue StandardError => e
+    #   puts e
+    #   respond_to do |format|
+    #     format.html { redirect_to projects_path, notice: 'Failed to upload project' }
+    #     format.json { render json: @project.errors, status: :unprocessable_entity }
+    #   end
+    # end
   end
   
   def approve_project
     @project.update_attribute(:status, 'approved')
-    puts "project"
     get_project_controls(@project.srgs).each do |control|
-      puts "control"
       project_control = @project.project_controls.create(control[:control_params])
       project_control.nist_controls << control[:nist_params]
       assign_control_to_users(project_control)
@@ -203,7 +206,41 @@ class ProjectsController < ApplicationController
     def assign_project_to_users
       @project.users.each {|user| user.add_role(user.roles.first.name, @project) }
     end
-  
+    
+    def upload_file(params)
+      puts params
+      upload_type = determine_upload_type(params)
+      upload_service = UploadService.new
+
+      case upload_type
+      when 'json'
+        return upload_service.upload_project_inspec_json(params[:file], current_user)
+      when 'tarball'
+        return upload_service.upload_project_inspec_tarball(params[:file], current_user)
+      when 'excel'
+        tags = {}
+        params[:tags].split(',').each {|tag| tags[tag.split(':')[0]] = tag.split(':')[1].to_i } 
+        return upload_service.upload_project_excel(params[:file], current_user, { skip_csv_header: params[:skip_header], width: params[:width].to_i, 'control.id' => params[:id_index].to_i, 'control.title' => params[:title_index].to_i, 'control.tags' => tags })
+      when 'xml'
+        return upload_service.upload_project_stig_xccdf(params[:file], current_user)
+      when 'url'
+        return upload_service.upload_project_url(params[:url], current_user)
+      else
+        raise "ERROR: File format cannot be determined"
+      end
+    end
+    
+    def determine_upload_type(params)
+      return 'url' unless params[:url].empty?
+      
+      return 'json' if params[:file].content_type == "application/json"
+      
+      return 'tarball' if params[:file].content_type == "application/x-gzip"
+      
+      return 'excel' if params[:file].content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      
+      return 'xml' if params[:file].content_type == "text/xml"
+    end
   
     ###
     # TODO: Add functionality for sudo options.
@@ -343,5 +380,10 @@ class ProjectsController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def project_params
       params.require(:project).permit(:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version, :sha256, srg_ids:[], users:[])
+    end
+    
+    # Never trust parameters from the scary internet, only allow the white list through.
+    def xccdf_params
+      params.permit(:benchmark_id, :benchmark_title, :benchmark_notice, :benchmark_plaintext, :benchmark_plaintext_id, :reference_href, :reference_dc_source, :benchmark_status, :commit, :id, :format)
     end
 end

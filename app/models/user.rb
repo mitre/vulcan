@@ -19,6 +19,10 @@ class User < ApplicationRecord
   def ldap_before_save
     self.email = Devise::LDAP::Adapter.get_ldap_param(self.email,"mail").first
   end
+  
+  def current_user
+    return current_user
+  end
 
   def self.from_omniauth(auth)  
     where(provider: auth.provider, uid: auth.uid).first_or_create do |user|
