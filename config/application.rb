@@ -6,7 +6,9 @@ require 'rails/all'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-Spring.watch "app/services/**"
+if ENV['RAILS_ENV'] != "production"
+  Spring.watch "app/services/**"
+end
 module VulcanNew
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
