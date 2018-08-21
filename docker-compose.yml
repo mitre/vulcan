@@ -22,6 +22,7 @@ services:
       RAILS_ENV: production
       RAILS_LOG_TO_STDOUT: "true"
       RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_RELATIVE_URL_ROOT: /vulcan
       SECRET_KEY_BASE: ${VULCAN_SECRET_KEY_BASE}
       SECRET_DB_PW: ${VULCAN_SECRET_DB_PW}
     ports:
