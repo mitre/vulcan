@@ -56,7 +56,6 @@ build:
     - grep BA_Root Dockerfile || sed -f sed-script-file -i"" Dockerfile
     - git clone https://aaronlippold:$(echo $GITHUB_ACCESS_TOKEN)@github.com/aaronlippold/inspec-tools 2>/dev/null
     - sed -i 's/gem .inspec_tools.*$/gem \"inspec_tools\", :path => \"\.\/inspec-tools\"/' Gemfile
-    - sed -i"" -e "s#3030#3031#g" docker-compose.yml # Run on port 3031
     # - cp config/ldap.example.yml config/ldap.yml
     # - sed -i"" -e "s#host.yourdomain.com#ldap-user.mitre.org#g" config/ldap.yml
     # - sed -i"" -e "s#yourdomain.com#mitre.org#g" config/ldap.yml
