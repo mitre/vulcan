@@ -54,7 +54,7 @@ build:
     # For service behind the Firewall connecting to gitlab
     - echo "$SED_PROXY" > sed-script-file
     - grep BA_Root Dockerfile || sed -f sed-script-file -i"" Dockerfile
-    - git clone https://aaronlippold:$(echo $GITHUB_ACCESS_TOKEN)@github.com/aaronlippold/inspec_tools.git 2>/dev/null
+    - git clone https://aaronlippold:$(echo $GITHUB_ACCESS_TOKEN)@github.com/aaronlippold/inspec_tools.git inspec-tools 2>/dev/null
     - sed -i 's/gem .inspec_tools.*$/gem \"inspec_tools\", :path => \"\.\/inspec-tools\"/' Gemfile
 
     # - cp config/ldap.example.yml config/ldap.yml
