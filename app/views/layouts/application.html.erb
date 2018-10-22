@@ -22,7 +22,9 @@
         <p class="alert"><%= alert %></p>
         <div class="wrapper">
           <%= render :partial => 'layouts/header' %>
-          <%= yield %>
+          <div class="container-fluid">
+            <%= yield %>
+          </div>
         </div>
 
         <script type="text/javascript">
