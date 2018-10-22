@@ -36,7 +36,7 @@ sync-repo:
     - cd vulcan
     - git remote add github git@gitlab.mitre.org:inspec/vulcan.git
     - ssh-agent sh -c 'ssh-add ~/push_key; git push --tags github master' # REMOTE NAME from previous line
-    
+
 build:
   stage: build
   image: docker:latest
@@ -48,13 +48,13 @@ build:
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-1.crt $CRT_1
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-3.crt $CRT_3
     - update-ca-certificates
-  
+
   script:
     # Configuration modification purely for inspec-dev
     # For service behind the Firewall connecting to gitlab
     - echo "$SED_PROXY" > sed-script-file
     - grep BA_Root Dockerfile || sed -f sed-script-file -i"" Dockerfile
-    - git clone https://aaronlippold:$(echo $GITHUB_ACCESS_TOKEN)@github.com/aaronlippold/inspec_tools.git inspec-tools 2>/dev/null
+    - git clone https://aaronlippold:${GITHUB_ACCESS_TOKEN}@github.com/aaronlippold/inspec_tools.git inspec-tools 2>/dev/null
     - sed -i 's/gem .inspec_tools.*$/gem \"inspec_tools\", :path => \"\.\/inspec-tools\"/' Gemfile
 
     # - cp config/ldap.example.yml config/ldap.yml
@@ -65,8 +65,8 @@ build:
     - pip install docker-compose
     # If you had a rake keys task, it would go here
     - docker-compose build
-    
-    # This is really a bunch of deploy tasks and could occur in 
+
+    # This is really a bunch of deploy tasks and could occur in
     # a seperate stage with no modifications but a new stage
     - docker-compose run web rake db:setup >/dev/null 2>/dev/null  || true
     - docker-compose run web rake db:seed  >/dev/null 2>/dev/null  || true
