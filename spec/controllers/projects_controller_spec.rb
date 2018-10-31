@@ -31,7 +31,7 @@ RSpec.describe ProjectsController, type: :controller do
   let(:valid_attributes) {
     FactoryBot.attributes_for(:project)
   }
-  
+
   let(:project_srg_valid_attributes) {
     FactoryBot.attributes_for(:project_srg)
   }
@@ -51,7 +51,7 @@ RSpec.describe ProjectsController, type: :controller do
     before do
       sign_in vendor
     end
-    
+
     describe 'GET #index' do
       it 'returns a success response' do
         create :project, users: [vendor, sponsor]
@@ -83,7 +83,7 @@ RSpec.describe ProjectsController, type: :controller do
             post :create, params: { project: valid_attributes, users: [vendor] }, session: valid_session
           }.to change(Project, :count).by(1)
         end
-        
+
         it 'creates a new Project with srgs' do
           project = create :project_srg, users: [vendor, sponsor]
           get :show, params: { id: project.to_param }, session: valid_session

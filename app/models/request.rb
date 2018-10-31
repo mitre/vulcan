@@ -1,7 +1,7 @@
 class Request < ApplicationRecord
   resourcify
-  belongs_to :user, :inverse_of => :requests
-  
+  belongs_to :user, inverse_of: :requests
+
   attribute :status
   attribute :role
 

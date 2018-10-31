@@ -21,10 +21,10 @@
       <section id="app_sect">
         <div class="field">
           <%= form.label :project_control_applicability %> <label id="invalid_applicability_label" style='margin:10px; display: none;'>Please Pick an Applicability *</label>
-          <%= form.select(:applicability, options_for_select([['Applicable - Configurable', 'Applicable - Configurable'], ['Applicable - Does Not Meet', 'Applicable - Does Not Meet'], ['Applicable - Inherently Meets', 'Applicable - Inherently Meets'], ['Not Applicable', 'Not Applicable']], @project_control.applicability), {:include_blank => 'Select Applicability'}, {class: "form-control", id: 'applicability_select'}) %>
+          <%= form.select(:applicability, options_for_select(Project.options, @project_control.applicability), {:include_blank => 'Select Applicability'}, {class: "form-control", id: 'applicability_select'}) %>
         </div>
       </section>
-      
+
       <h3>Details</h3>
       <section id="det_sect">
         <div id='main_control_fields'>
@@ -37,7 +37,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="row">
             <div class="col-lg-12">
               <div class="field">
@@ -47,7 +47,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="row">
             <div class="col-lg-4">
               <div class="field">
@@ -58,7 +58,7 @@
             </div>
           </div>
         </div>
-        
+
         <div id='disabled_fields' style='display:none'>
           <div class="row">
             <div class="col-lg-12">
@@ -69,7 +69,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="row">
             <div class="col-lg-12">
               <div class="field">
@@ -79,7 +79,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="row">
             <div class="col-lg-12">
               <div class="field">
@@ -90,7 +90,7 @@
           </div>
         </div>
       </section>
-      
+
       <h3>Check and Fix Text</h3>
       <section id="ch_fx_sect">
         <div id='checktext_fields'>
@@ -104,7 +104,7 @@
             </div>
           </div>
         </div>
-        
+
         <div id='fixtext_fields'>
           <div class="row">
             <div class="col-lg-12">
@@ -116,12 +116,12 @@
             </div>
           </div>
         </div>
-        
+
         <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_checkfix_field'>
           <h3 id="nothing_to_fill_checkfix_label"></h3>
         </div>
       </section>
-      
+
       <h3>InSpec Code</h3>
       <section id="code_sect">
         <div class="field" style="<%='display:none' if @project_control.applicability == nil %>", id='nothing_to_fill_code_field'>
@@ -136,7 +136,7 @@
           </div>
         </div>
       </section>
-      
+
       <div class="modal fade" id="linkControlModal" tabindex="-1" role="dialog" aria-labelledby="linkControlModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content">
@@ -171,13 +171,11 @@
       </div>
     </div>
   <% end %>
-  
   <style>
     .select2-search { background-color: #f2f2f2; }
     .select2-search input { background-color: #f2f2f2; }
     .select2-results { background-color: #f2f2f2; }
   </style>
-  
   <script>
     function get_link_modal() {
       $(".select2").select2({ dropdownParent: $('#linkControlModal') });
@@ -194,7 +192,7 @@
       });
       $('#linkControlModal').modal();
     }
-    
+
     function append_text_to_link(project_id) {
       $.ajax({
         url: '/project_controls/' + project_id + '.json',
@@ -208,10 +206,10 @@
         },
         error: function() {
           console.log("Error occured");
-        }   
+        }
       });
     }
-    
+
     function add_fields() {
       if ($('[name="project_control[applicability]"]').val() == 'Applicable - Configurable') {
         $('#disabled_fields').hide();
@@ -226,7 +224,7 @@
         $('.wizard').steps('remove', Number(2));
       }
     }
-    
+
     function validate_step(e, currentIndex, newIndex) {
       status = 1;
       if ((currentIndex == 0) && ($('[name="project_control[applicability]"]').val() == '')) {
@@ -265,7 +263,7 @@
       }
       return 1;
     }
-    
+
     // function on_finish() {
     //   if ($('#link_list').val() == '') {
     //     $('#link_button').attr('style', "border-radius: 5px; border:#FF0000 1px solid;");
@@ -273,11 +271,11 @@
     //   }
     //   return true;
     // }
-    
+
     load_wizard("#edit_project_control_id", validate_step);
     $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
     $('#srg_ck_pop').popover(); $('#srg_fx_pop').popover();
-    
+
     $('#applicability_select').change(function () {
       if ($('[name="project_control[applicability]"]').val() == 'Applicable - Configurable') {
         try {
@@ -289,18 +287,16 @@
         add_fields();
       }
     });
-    
-    
-      
+
     ace_editor = ace.edit("code");
     ace_editor.session.setMode('ace/mode/ruby');
     ace_editor.session.setValue('<%=j @project_control.code.html_safe unless @project_control.code.nil? %>');
-    
+
     $('#edit_project_control_id').submit(function(e){
       $('#project_control_code').val(ace_editor.getValue());
     });
-    
+
     if ($('[name="project_control[applicability]"]').val() != 'Applicable - Configurable') { add_fields(); }
-     
+
   </script>
 </div>

@@ -1,1 +1,1 @@
-json.partial! "srgs/srg", srg: @srg
+json.partial! 'srgs/srg', srg: @srg

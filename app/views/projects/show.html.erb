@@ -7,28 +7,28 @@
             <p class="text-muted mb-0">Not Started</p>
         </div> -->
         <div class="widget-simple text-center card-box">
-            <h3 class="text-inverse counter font-bold mt-0"><%= get_not_started_count %></h3>
+            <h3 class="text-inverse counter font-bold mt-0"><%= not_started_count %></h3>
             <p class="text-muted mb-0">Not Started</p>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="widget-simple text-center card-box">
-            <h3 class="text-primary counter font-bold mt-0"><%= get_awaiting_review_count %></h3>
+            <h3 class="text-primary counter font-bold mt-0"><%= awaiting_review_count %></h3>
             <p class="text-muted mb-0">Awaiting Review</p>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="widget-simple text-center card-box">
-            <h3 class="text-danger font-bold mt-0"><span class="counter"><%= get_need_changes_count %></span></h3>
+            <h3 class="text-danger font-bold mt-0"><span class="counter"><%= need_changes_count %></span></h3>
             <p class="text-muted mb-0">Need Changes</p>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="widget-simple text-center card-box">
-            <h3 class="text-success counter font-bold mt-0"><%= get_approved_count %></h3>
+            <h3 class="text-success counter font-bold mt-0"><%= approved_count %></h3>
             <p class="text-muted mb-0">Approved</p>
         </div>
     </div>
@@ -117,10 +117,9 @@
                       <label class="control-label m-r-5">Applicability</label>
                       <select id="project-controls-filter-applicability" class="form-control input-sm">
                           <option value="Not Yet Set">Not Yet Set</option>
-                          <option value="Applicable - Configurable">Applicable - Configurable</option>
-                          <option value="Applicable - Does Not Meet">Applicable - Does Not Meet</option>
-                          <option value="Applicable - Inherently Meets">Applicable - Inherently Meets</option>
-                          <option value="Not Applicable">Not Applicable</option>
+                          <% Project.labels.each do |label| %>
+                            <option value="<%= label %>"><%= label %></option>
+                          <% end %>
                       </select>
                       <input id="project-controls-search" type="text" placeholder="Search" class="form-control" autocomplete="on">
                   </div>
@@ -252,13 +251,13 @@
     </div>
   </div>
 </div>
-            
+
 <script>
-createMorrisChart('morris-donut-example', '<%=j get_applicability_count.html_safe %>');
+createMorrisChart('morris-donut-example', '<%=j applicability_count.html_safe %>');
 
 // Add event listener for opening and closing details
 $('#project-controls-datatable td').on('click', function () {
-  
+
   control_id = $(this).closest('tr').attr('value');
   hsh = "#review_modal_card";
   url = '/project_controls/' + control_id + '/review_control';
@@ -277,14 +276,14 @@ $('#project-controls-datatable td').on('click', function () {
       },
       error: function() {
         console.log("Error occured");
-      }   
+      }
     });
   }
 });
 
 // Add event listener for opening and closing details
 $('#awaiting-approval-datatable td').on('click', function () {
-  
+
   control_id = $(this).closest('tr').attr('value');
   hsh = "#review_modal_card";
   url = '/project_controls/' + control_id + '/review_control';
@@ -303,14 +302,14 @@ $('#awaiting-approval-datatable td').on('click', function () {
       },
       error: function() {
         console.log("Error occured");
-      }   
+      }
     });
   }
 });
 
 // Add event listener for opening and closing details
 $('#requested-changes-datatable td').on('click', function () {
-  
+
   control_id = $(this).closest('tr').attr('value');
   hsh = "#review_modal_card";
   url = '/project_controls/' + control_id + '/review_control';
@@ -329,7 +328,7 @@ $('#requested-changes-datatable td').on('click', function () {
       },
       error: function() {
         console.log("Error occured");
-      }   
+      }
     });
   }
 });

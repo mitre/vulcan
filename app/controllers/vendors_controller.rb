@@ -6,7 +6,7 @@ class VendorsController < ApplicationController
       @vendor = Vendor.new(vendor_params)
       respond_to do |format|
         if @vendor.save
-          format.html { redirect_to "/", notice: 'vendor was successfully created.' }
+          format.html { redirect_to '/', notice: 'vendor was successfully created.' }
           format.json { render :show, status: :created, location: @vendor }
         else
           format.html { render :new }
@@ -15,9 +15,9 @@ class VendorsController < ApplicationController
       end
     end
   end
-  
+
   private
-  
+
   # Never trust parameters from the scary internet, only allow the white list through.
   def vendor_params
     params.require(:vendor).permit(:vendor_name, :point_of_contact, :poc_email, :poc_phone_number)

@@ -1,7 +1,7 @@
 class Vendor < ApplicationRecord
   resourcify
   has_and_belongs_to_many :users
-  
+
   attribute :vendor_name
   attribute :point_of_contact
   attribute :poc_phone_number
