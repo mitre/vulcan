@@ -121,8 +121,7 @@
             </tr>
           </tfoot>
         </table>
-        
-        
+
         <br>
         <div class='row'>
           <h3>Upload A Project</h3>
@@ -151,7 +150,7 @@
               </div>
               <div class='col-lg-3'>
                 <label>Width?: </label><label id="invalid_width_label" style='margin:10px; display: none;'>Please give a width as a number</label>
-                <%= text_field_tag :width, nil,class: "form-control" %> 
+                <%= text_field_tag :width, nil,class: "form-control" %>
               </div>
               <div class='col-lg-3'>
                 <label>ID Index?: </label><label id="invalid_id_index_label" style='margin:10px; display: none;'>Please give an index for the id as a number</label>
@@ -225,11 +224,11 @@
         },
         error: function() {
           console.log("Error occured");
-        }   
+        }
       });
     }
   }
-  
+
   $('#upload_form').submit(function(e){
     console.log(e)
     status = true;
@@ -243,16 +242,16 @@
         $('[name="width"').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
         $('#invalid_width_label').show();
         status = false;
-      } else { 
-        $('#invalid_width_label').hide(); 
+      } else {
+        $('#invalid_width_label').hide();
         $('[name="width"').attr('style', "border:#cfcfcf 1px solid;");
       }
       if (($('#id_index')[0].value == '') || (isNaN(parseInt($('#id_index')[0].value)))) {
         $('[name="id_index"').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
         $('#invalid_id_index_label').show();
         status = false;
-      } else { 
-        $('#invalid_id_index_label').hide(); 
+      } else {
+        $('#invalid_id_index_label').hide();
         $('[name="id_index"').attr('style', "border:#cfcfcf 1px solid;");
 
       }
@@ -260,14 +259,14 @@
         $('[name="title_index"').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
         $('#invalid_title_index_label').show();
         status = false;
-      } else { 
-        $('#invalid_title_index_label').hide(); 
+      } else {
+        $('#invalid_title_index_label').hide();
         $('[name="title_index"').attr('style', "border:#cfcfcf 1px solid;");
       }
       if (($('#tags')[0].value != '')) {
         var tags = $('#tags')[0].value.split(',');
         for (var i = 0; i < tags.length; i++) {
-          if (!tags[i].match(/\w*\s*:\s*\d{1,2}/g)) { 
+          if (!tags[i].match(/\w*\s*:\s*\d{1,2}/g)) {
             status = false;
             $('.bootstrap-tagsinput').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
           };
@@ -280,9 +279,8 @@
     // if ((currentIndex == 0) && ($('[name="project_control[applicability]"]').val() == '')) {
     //   $('[name="project_control[applicability]"]').attr('style', "border-radius: 5px; border:#FF0000 5px solid;");
     //   $('#invalid_applicability_label').show();
-    // } 
+    // }
   });
-  
-  
-</script>
 
+
+</script>

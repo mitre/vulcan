@@ -17,7 +17,7 @@ FactoryBot.define do
       sequence(:email) { |n| "vendor_#{n}@example.com" }
       after(:create) { |user| user.add_role(:vendor) }
     end
-    
+
     factory :sponsor do
       first_name { Faker::Name.name.split(' ')[0] }
       last_name { Faker::Name.name.split(' ')[1] }
@@ -50,7 +50,7 @@ end
 #     sign_in_count 0
 #     after(:create) { |user| user.add_role(:vendor) }
 #   end
-# 
+#
 #   factory :sponsor, class: User do
 #     id 2
 #     password 'foobar'
@@ -62,7 +62,7 @@ end
 #     sequence(:email) { |n| "sponsor@example.com" }
 #     after(:create) { |user| user.add_role(:sponsor) }
 #   end
-# 
+#
 #   factory :admin, class: User do
 #     id 3
 #     password 'foobar'
@@ -74,8 +74,8 @@ end
 #     sequence(:email) { |n| "admin@example.com" }
 #     after(:create) { |user| user.add_role(:admin) }
 #   end
-# 
-# 
+#
+#
 #   factory :user do
 #     id 4
 #     password 'foobar'

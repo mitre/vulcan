@@ -26,7 +26,7 @@ FactoryBot.define do
     sponsor_agency_id { FactoryBot.create(:sponsor_agency_2).id }
     vendor_id { FactoryBot.create(:vendor_2).id }
   end
-  
+
   factory :project_srg, class: Project do
     name 'Project Name'
     title 'Project Title'
@@ -56,7 +56,7 @@ FactoryBot.define do
     vendor_id { FactoryBot.create(:vendor_1).id }
   end
 end
-# 
+#
 # FactoryBot.define do
 #   factory :profile, class: Profile do
 #     name 'MyString'
@@ -69,7 +69,7 @@ end
 #     version 'MyString'
 #     sha256 'MyString'
 #   end
-# 
+#
 #   factory :profile2, class: Profile do
 #     name 'MyString2'
 #     title 'MyString2'
@@ -81,7 +81,7 @@ end
 #     version 'MyString2'
 #     sha256 'MyString2'
 #   end
-# 
+#
 #   factory :invalid_profile, class: Profile do
 #     name nil
 #     title nil
@@ -93,5 +93,5 @@ end
 #     version 'MyString'
 #     sha256 nil
 #   end
-# 
+#
 # end

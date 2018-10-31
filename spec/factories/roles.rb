@@ -12,7 +12,7 @@ FactoryBot.define do
     created_at { Faker::Date.between(2.days.ago, Date.today) }
     updated_at { Faker::Date.between(2.days.ago, Date.today) }
   end
-  
+
   factory :sponsor_role, class: Role do
     name 'sponsor'
     resource_type 'something'

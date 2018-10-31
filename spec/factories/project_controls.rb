@@ -13,7 +13,7 @@ FactoryBot.define do
     sl_ref 'profiles/disa_stig-rhel7-baseline/controls/V-71849.rb'
     sl_line 23
   end
-  
+
   factory :control_applicable_awaiting_review, class: ProjectControl do
     title "The file permissions, ownership, and group membership of system files and\ncommands must match the vendor values."
     desc "Discretionary access control is weakened if a user or group has access\npermissions to system files and directories greater than the default.\n\n    Satisfies: SRG-OS-000257-GPOS-00098, SRG-OS-000278-GPOS-0010."
@@ -28,7 +28,7 @@ FactoryBot.define do
     sl_ref 'profiles/disa_stig-rhel7-baseline/controls/V-71849.rb'
     sl_line 23
   end
-  
+
   factory :control_applicable_needs_changes, class: ProjectControl do
     title "The file permissions, ownership, and group membership of system files and\ncommands must match the vendor values."
     desc "Discretionary access control is weakened if a user or group has access\npermissions to system files and directories greater than the default.\n\n    Satisfies: SRG-OS-000257-GPOS-00098, SRG-OS-000278-GPOS-0010."
@@ -43,7 +43,7 @@ FactoryBot.define do
     sl_ref 'profiles/disa_stig-rhel7-baseline/controls/V-71849.rb'
     sl_line 23
   end
-  
+
   factory :control_applicable_approved, class: ProjectControl do
     title "The file permissions, ownership, and group membership of system files and\ncommands must match the vendor values."
     desc "Discretionary access control is weakened if a user or group has access\npermissions to system files and directories greater than the default.\n\n    Satisfies: SRG-OS-000257-GPOS-00098, SRG-OS-000278-GPOS-0010."
@@ -72,7 +72,7 @@ FactoryBot.define do
     sl_ref 'profiles/disa_stig-rhel7-baseline/controls/V-71849.rb'
     sl_line 23
   end
-  
+
   factory :control_inherently_meets, class: ProjectControl do
     title 'The file permissions, ownership, and group membership of system files and commands must match the vendor values.'
     description 'Discretionary access control is weakened if a user or group has access permissions to system files and directories greater than the default.    Satisfies: SRG-OS-000257-GPOS-00098, SRG-OS-000278-GPOS-0010.'
@@ -86,7 +86,7 @@ FactoryBot.define do
     sl_ref 'profiles/disa_stig-rhel7-baseline/controls/V-71849.rb'
     sl_line 23
   end
-  
+
   factory :control_does_not_meet, class: ProjectControl do
     title 'The file permissions, ownership, and group membership of system files and commands must match the vendor values.'
     description 'Discretionary access control is weakened if a user or group has access permissions to system files and directories greater than the default.    Satisfies: SRG-OS-000257-GPOS-00098, SRG-OS-000278-GPOS-0010.'

@@ -20,7 +20,7 @@
                 </div>
             </div>
           </div>
-          
+
           <div class="col-lg-2">
               <h6>2. Select Control</h6>
               <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;" id="controls_container">
@@ -33,17 +33,17 @@
                   </div>
               </div>
           </div>
-          
+
           <div class="col-lg-4">
               <div class="row">
                   <h6>3. InSpec Code</h6>
-                  <div class="col-lg-12">                      
+                  <div class="col-lg-12">
                     <div class="card" id="code_text" style="position: relative; overflow-y: scroll; height: 450px;"></div>
                     <button class="btn btn-warning" onclick="update_project_control_code()">Save Code</button>
                   </div>
               </div>
           </div>
-          
+
           <div class="col-lg-4">
               <div class="row">
                   <h6>4. Code Result</h6>
@@ -79,9 +79,9 @@
     editor.setSession(sessions[control_id])
     editor.session.setMode('ace/mode/ruby');
   }
-  
+
   function update_project_control_code() {
-    
+
     var id = $('#control_id').val();
     var code = editor.session.getValue();
     $.ajax({
@@ -89,14 +89,14 @@
       type: "post",
       data: {id, code},
       success: function(data) {
-        
+
       },
       error: function() {
         console.log("Error occured");
-      }   
+      }
     });
   }
-  
+
   $('#transport_method').on('change', function() {
     var selected = $('#transport_method option:selected').text();
     switch(selected) {
@@ -122,7 +122,7 @@
         break;
     }
   });
-  
+
   $('#host_configs').on('change', function() {
     var parts = $('#host_configs option:selected').text().split(' - ');
     console.log(parts);
@@ -134,7 +134,7 @@
   });
 
   ch_fx_sect = '';
-  
+
   function add_host_config(user_id, host, user, password, port, transport_method) {
     $.ajax({
       url: "/add_host_config",
@@ -149,10 +149,10 @@
       },
       error: function() {
         console.log("Error occured");
-      }   
+      }
     });
   }
-  
+
   function delete_host_config() {
     var selected_id = $('#host_configs option:selected').val();
     $.ajax({
@@ -164,7 +164,7 @@
       },
       error: function() {
         console.log("Error occured");
-      }   
+      }
     });
   }
 </script>

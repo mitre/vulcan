@@ -6,7 +6,7 @@ class SponsorAgenciesController < ApplicationController
       @sponsor = SponsorAgency.new(sponsor_agency_params)
       respond_to do |format|
         if @sponsor.save
-          format.html { redirect_to "/", notice: 'sponsor was successfully created.' }
+          format.html { redirect_to '/', notice: 'sponsor was successfully created.' }
           format.json { render :show, status: :created, location: @sponsor }
         else
           format.html { render :new }
@@ -15,7 +15,9 @@ class SponsorAgenciesController < ApplicationController
       end
     end
   end
+
   private
+
   # Never trust parameters from the scary internet, only allow the white list through.
   def sponsor_agency_params
     params.require(:sponsor_agency).permit(:sponsor_name, :organization, :email, :phone_number)

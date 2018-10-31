@@ -24,10 +24,9 @@
                 </div>
             </div>
           </div>
-          
+
           <div class="col-lg-2">
               <h6>2. Select Control</h6>
-              
               <div class="controls_list" style="position: relative; overflow-y: scroll; height: 500px;" id="controls_container">
                 <div class="custom-dd-empty dd" id="satisfy_control_nestable_list">
                   <%= content_tag(:ol, class: "dd-list", id: :control_list, name: 'project[nestable_list]') do %>
@@ -56,7 +55,7 @@
                 </div>
               </div>
           </div>
-          
+
           <div class="col-lg-8">
               <div class="row">
                   <h6>3. Build Control</h6>
@@ -71,10 +70,10 @@
 </div>
 
 <script>
-    
+
   var ace_editor;
   ch_fx_sect = '';
-  
+
   $('#satisfy_control_nestable_list').nestable({
     maxDepth: 2,
     threshold: 20,
@@ -88,7 +87,7 @@
            this.placeEl.parent().parent().attr('id').split('_')[1] == e.attr('id').split('_')[2])  {
         return false;
       }
-      
+
       control_id = e.attr('id').split('_')[1]
       control_v_number = $.trim(e[0].outerText).split(' - ')[0]
       parent_id = this.placeEl.offsetParent().parent().attr('id').split('_')[1]
@@ -105,32 +104,32 @@
       if (!response) {
         return false;
       }
-      
-      
-      
+
+
+
       $.ajax({
         url: '/link_control',
         type: "post",
         data: {control_id, parent_id, link},
         datatype: 'json',
         success: function(data) {
-          
+
         },
         error: function() {
           console.log("Error occured");
         }
       });
       return true;
-    }, 
+    },
     callback: function(l,e, p) {
       location.reload();
     }
   });
-  
+
   function setParent(control_id, parent_id) {
-    
+
   }
-  
+
   function filter_controls_on_nist(nist_family, project_controls) {
     var liContents = [];
     $('ol li .dd3-content').each(function() {
@@ -142,7 +141,7 @@
       }
     });
   }
-  
+
   $('.dd3-content').on('click', function(e) {
     var control_id = $(this).attr('value');
     hsh = "#form_card";

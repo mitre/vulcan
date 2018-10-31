@@ -17,31 +17,31 @@
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'applicability', title: 'Applicability' %>
       </div>
-      
+
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'title', title: 'Title' %>
       </div>
-      
+
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'description', title: 'Description' %>
       </div>
-      
+
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'impact', title: 'Impact' %>
       </div>
-      
+
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'justification', title: 'Justification' %>
       </div>
-      
+
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'checktext', title: 'Check Text' %>
       </div>
-      
+
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'fixtext', title: 'Fix Text' %>
       </div>
-      
+
       <div class="field">
         <%= render 'components/project_control_review_sect', form: form, attribute: 'code', title: 'InSpec Code' %>
       </div>
@@ -52,7 +52,6 @@
     </div>
   <% end %>
   <script>
-    
     function add_history(project_control_id, project_control_attr, text, history_type, is_reply_to, user_id) {
       console.log(text);
       project_control_id = parseInt(project_control_id)
@@ -75,15 +74,15 @@
             },
             error: function() {
               console.log("Error occured");
-            }   
+            }
           });
         },
         error: function() {
           console.log("Error occured");
-        }   
+        }
       });
     }
-  
+
     $('#srg_title_pop').popover(); $('#srg_desc_pop').popover(); $('#srg_sev_pop').popover();
     $('#srg_ck_pop').popover(); $('#srg_fx_pop').popover();
   </script>
