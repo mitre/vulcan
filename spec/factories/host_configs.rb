@@ -3,7 +3,7 @@ FactoryBot.define do
     host 'localhost'
     transport_method 'local'
   end
-  
+
   factory :host_config_aws, class: HostConfig do
     host 'awshost'
     transport_method 'aws'

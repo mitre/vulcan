@@ -1,10 +1,10 @@
 Rails.application.routes.draw do
-  devise_for :users, controllers: { 
+  devise_for :users, controllers: {
     registrations: 'users/registrations',
-    sessions: 'users/sessions' ,
+    sessions: 'users/sessions',
     omniauth_callbacks: 'callbacks'
   }
-  
+
   devise_scope :user do
     get 'show_user', to: 'users/sessions#show'
     post 'set_role' => 'users/registrations#set_role', :as => :set_role, :via => :post
@@ -12,9 +12,9 @@ Rails.application.routes.draw do
     # put 'users' => 'users/registrations#update', :as => 'edit_user_profile'
     # match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
   end
-  
-  # devise_for :user                                      
-  #   put 'users' => 'users/registrations#update', :as => 'user_registration'            
+
+  # devise_for :user
+  #   put 'users' => 'users/registrations#update', :as => 'user_registration'
   # end
 
   resources :project_controls
@@ -43,9 +43,8 @@ Rails.application.routes.draw do
   match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
   match 'create_request' => 'resuests#create_request', :as => :create_request, :via => :post
   match 'project/:id/approve_project' => 'projects#approve_project', :as => :approve_project, :via => :post
-  
-  match 'link_control' => 'project_controls#link_control', :as => :link_control, :via => :post
 
+  match 'link_control' => 'project_controls#link_control', :as => :link_control, :via => :post
 
   root 'dashboard#index', as: :home
 end

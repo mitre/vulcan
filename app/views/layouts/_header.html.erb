@@ -2,7 +2,6 @@
 <header id="topnav">
     <div class="topbar-main">
         <div class="container-fluid">
-
             <!-- Logo container-->
             <div class="logo">
                 <!-- Text Logo -->
@@ -12,8 +11,6 @@
                 </a>
             </div>
             <!-- End Logo container-->
-
-
             <div class="menu-extras topbar-custom">
 
                 <ul class="list-inline float-right mb-0">
@@ -60,7 +57,7 @@
 
                         </div>
                     </li> -->
-                    
+
                     <% if current_user %>
                     <!-- User Account Menu -->
                     <li class="list-inline-item dropdown notification-list clearfix">
@@ -76,7 +73,7 @@
                         <div class="dropdown-item noti-title" style="white-space: normal;">
                             <h5 class="text-overflow"><small class="text-white">Welcome, <%= current_user.email.split('@')[0] %></small> </h5>
                         </div>
-                      
+
                         <div class="dropdown-item notify-item">
                           <i class="mdi mdi-account"></i><%= link_to "Profile", show_user_path(current_user.id), :class => "btn btn-default btn-flat" %>
                         </div>
@@ -86,7 +83,7 @@
                         <!-- Menu Body -->
                       </div>
                     </li>
-                    
+
                     <% else %>
                       <li class="list-item"><%= link_to "Login", new_user_session_path %></li>
                     <% end %>
@@ -111,7 +108,7 @@
                       <li>
                           <a href="<%= srgs_path %>" id="srg_link_id"><i class="fa fa-folder"></i> SRGs</a>
                       </li>
-                      
+
                       <li>
                           <a href="<%= new_srg_path %>"><i class="fa fa-file-archive-o"></i> Upload SRG</a>
                       </li>

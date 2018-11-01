@@ -6,11 +6,11 @@ RSpec.describe User, type: :model do
   #   let(:vendor) { FactoryBot.create(:vendor) }
   #   let(:project) { FactoryBot.build(:project) }
   # end
-  
-  it "has a valid factory" do
+
+  it 'has a valid factory' do
     expect(user).to be_valid
   end
-  
+
   describe User do
     it { is_expected.to validate_presence_of(:email) }
     it { is_expected.to validate_presence_of(:password) }
