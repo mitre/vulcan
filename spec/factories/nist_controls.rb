@@ -4,7 +4,7 @@ FactoryBot.define do
     index '1'
     version 'Rev. 4'
   end
-  
+
   factory :nist_control2, class: NistControl do
     family 'AC'
     index '2'

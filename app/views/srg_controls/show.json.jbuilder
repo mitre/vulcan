@@ -1,1 +1,1 @@
-json.partial! "srg_controls/srg_control", srg_control: @srg_control
+json.partial! 'srg_controls/srg_control', srg_control: @srg_control

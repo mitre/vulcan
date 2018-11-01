@@ -5,14 +5,14 @@
       <strong>Project Control:</strong>
       <%= @project_control.control_id %>
     </p>
-    
+
     <% if !@project_control.parent.nil? %>
       <p>
         <strong>Project Control Linked Control:</strong>
         <%= link_to @project_control.parent.control_id, project_control_path(@project_control.parent), class:'btn btn-success' %>
       </p>
     <% end %>
-    
+
     <p>
       <strong>Title:</strong>
       <%= @project_control.title %>
@@ -22,7 +22,7 @@
       <strong>Description:</strong>
       <%= @project_control.description %>
     </p>
-    
+
     <p>
       <strong>Applicability:</strong>
       <%= @project_control.applicability %>
@@ -32,7 +32,7 @@
       <strong>Impact:</strong>
       <%= @project_control.impact %>
     </p>
-    
+
     <p>
       <strong>Check Text:</strong>
       <%= @project_control.checktext %>
@@ -42,7 +42,7 @@
       <strong>Fix Text:</strong>
       <%= @project_control.fixtext %>
     </p>
-    
+
     <p>
       <strong>Justification:</strong>
       <%= @project_control.justification %>

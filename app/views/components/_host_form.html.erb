@@ -2,7 +2,6 @@
   <% if @project.errors.any? %>
     <div id="error_explanation">
       <h2><%= pluralize(control.errors.count, "error") %> prohibited this control from being saved:</h2>
-        
       <ul>
       <% control.errors.full_messages.each do |message| %>
         <li><%= message %></li>
@@ -102,7 +101,7 @@
             <%= text_field_tag :sudo_options, nil,  class: "form-control" %>
         </div>
       </div>
-      
+
       <div class="row" id="aws_row" style="display:none;">
         <div class="col-lg-4 text-center text-right">
             <label class="control-label">AWS Region</label>
@@ -127,7 +126,7 @@
   elems.forEach(function(html) {
   var switchery = new Switchery(html);
   });
-  
+
   $('#run_test').submit(function(e){
     e.preventDefault();
     if ($('#code_text').html() == '') {
