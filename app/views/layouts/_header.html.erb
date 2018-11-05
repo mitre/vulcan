@@ -75,10 +75,10 @@
                         </div>
 
                         <div class="dropdown-item notify-item">
-                          <i class="mdi mdi-account"></i><%= link_to "Profile", show_user_path(current_user.id), :class => "btn btn-default btn-flat" %>
+                          <i class="mdi mdi-account"></i><%= link_to "Profile", user_path(current_user), :class => "btn btn-default btn-flat" %>
                         </div>
                         <div class="dropdown-item notify-item">
-                          <i class="mdi mdi-logout"></i><%= link_to "Logout", destroy_user_session_path, :method => :delete, :class => "btn btn-default btn-flat" %>
+                          <i class="mdi mdi-logout"></i><%= link_to "Logout", destroy_user_session_path(current_user), :method => :delete, :class => "btn btn-default btn-flat" %>
                         </div>
                         <!-- Menu Body -->
                       </div>
