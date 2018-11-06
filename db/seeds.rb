@@ -101,13 +101,13 @@ cci_items.each do |cci_item|
   end
 end
 
-user = User.new
-user.email = 'admin@admin.com'
-user.password = 'admin1'
-user.created_at = Date.new
-user.updated_at = Date.new
-user.save
-user.add_role 'admin'
+#user = User.new
+#user.email = 'admin@admin.com'
+#user.password = 'admin1'
+#user.created_at = Date.new
+#user.updated_at = Date.new
+#user.save
+#user.add_role 'admin'
 
 case Rails.env
 when 'development'
