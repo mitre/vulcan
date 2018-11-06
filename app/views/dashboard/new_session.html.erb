@@ -1,0 +1,101 @@
+<div class="container">
+
+    <div class="text-center">
+        <a href="index.html" class="logo-lg"><i class="mdi mdi-radar"></i> <span>Vulcan</span> </a>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <!-- Horizontal Form -->
+
+        <div class="box box-info">
+          <div class="box-header with-border">
+            <h3 class="box-title">Email/Password Login</h3>
+          </div>
+          <!-- /.box-header -->
+          <!-- form start -->
+          <%= form_for(@db_user, url: session_path(@db_user), :html => {class: 'form-horizontal'} ) do |f| %>
+            <div class="box-body">
+              <div class="form-group  has-feedback">
+                <label for="inputEmail3" class="col-sm-2 control-label">Email</label>
+                <div class="col-sm-10">
+                  <%= f.email_field :email, autofocus: true, :id =>"inputEmail3", :class => "form-control", :placeholder => "Email" %>
+                  <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
+                </div>
+              </div>
+              <div class="form-group has-feedback">
+                <label for="inputPassword3" class="col-sm-2 control-label">Password</label>
+                <div class="col-sm-10">
+                  <%= f.password_field :password, autocomplete: "off", :id =>"inputPassword3", :class => "form-control" %>
+                  <span class="glyphicon glyphicon-lock form-control-feedback"></span>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <% if Devise.mappings[:db_user].rememberable? -%>
+                    <div class="checkbox">
+                      <label>
+                        <%= f.check_box :remember_me %> Remember Me
+                      </label>
+                    </div>
+                  <% end -%>
+                </div>
+              </div>
+            </div>
+            <!-- /.box-body -->
+            <div class="box-footer">
+              <%= f.submit "Log in", :class => "btn btn-primary btn-block btn-flat" %>
+            </div>
+            <!-- /.box-footer -->
+          <% end %>
+          <div class="box-body">
+            <div class="form-group">
+              <%= render "db_users/shared/links" %>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <!-- Horizontal Form -->
+        <div class="box box-info">
+          <div class="box-header with-border">
+            <h3 class="box-title">Ldap Login</h3>
+            <%= form_for(@ldap_user, url: session_path(@ldap_user), :html => {class: 'form-horizontal'} ) do |f| %>
+              <div class="box-body">
+                <div class="form-group  has-feedback">
+                  <label for="inputEmail4" class="col-sm-2 control-label">Email</label>
+                  <div class="col-sm-10">
+                    <%= f.email_field :email, autofocus: true, :id =>"inputEmail4", :class => "form-control", :placeholder => "Email" %>
+                    <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
+                  </div>
+                </div>
+                <div class="form-group has-feedback">
+                  <label for="inputPassword4" class="col-sm-2 control-label">Password</label>
+                  <div class="col-sm-10">
+                    <%= f.password_field :password, autocomplete: "off", :id =>"inputPassword4", :class => "form-control" %>
+                    <span class="glyphicon glyphicon-lock form-control-feedback"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <% if Devise.mappings[:ldap_user].rememberable? -%>
+                    <div class="field">
+                      <%= f.check_box :remember_me %>
+                      <%= f.label :remember_me %>
+                    </div>
+                  <% end -%>
+                </div>
+              </div>
+              <div class="actions">
+                <%= f.submit "Log in", :class => "btn btn-primary btn-block btn-flat"  %>
+              </div>
+            <% end %>
+            <div class="box-body">
+              <div class="form-group">
+                <%= render "ldap_users/shared/links" %>
+              </div>
+            </div>
+         </div>
+        </div>
+      </div>
+    </div>

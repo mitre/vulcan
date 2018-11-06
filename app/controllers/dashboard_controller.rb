@@ -1,6 +1,12 @@
 class DashboardController < ApplicationController
-  before_action :authenticate_user!
+
 
   def index
   end
+
+  def new_session
+    @db_user = DbUser.new
+    @ldap_user = LdapUser.new
+  end
+
 end
