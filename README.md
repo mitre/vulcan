@@ -6,6 +6,19 @@ Vulcan is a tool to help streamline the process of creating STIGs and InSpec sec
 the process of aligning security controls from SRG items into actual STIG security controls.  Vulcan also gives the option while aligning the security controls to
 insert inspec code and test across any type of system supported by InSpec.  
 
+## Versioning and State of Development
+This project uses the [Semantic Versioning Policy](https://semver.org/). 
+
+### Branches
+The master branch contains the latest version of the software leading up to a new release. 
+
+Other branches contain feature-specific updates. 
+
+### Tags
+Tags indicate official release of the project.
+
+Please note 0.x releases are works in progress (WIP) and may change at any time.   
+
 ## Features
 
 * Model the STIG creation process between the creator(vendor) and the approver(sponsor)
