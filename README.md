@@ -15,7 +15,7 @@ The master branch contains the latest version of the software leading up to a ne
 Other branches contain feature-specific updates. 
 
 ### Tags
-Tags indicate official release of the project.
+Tags indicate official releases of the project.
 
 Please note 0.x releases are works in progress (WIP) and may change at any time.   
 
