@@ -15,6 +15,7 @@ class DbUsers::RegistrationsController < Devise::RegistrationsController
     if session['warden.user.db_user.key']
       session['db_user_id'] = session['warden.user.db_user.key'].first.try(:first)
     end
+    check_for_admin
   end
 
   # GET /resource/edit
@@ -65,6 +66,15 @@ class DbUsers::RegistrationsController < Devise::RegistrationsController
 
 
   private
+
+  #make first user an admin
+  def check_for_admin
+    if DbUser.find(session['db_user_id']) == DbUser.first
+      unless DbUser.find(session['db_user_id']).has_role? :admin
+        DbUser.find(session['db_user_id']).add_role :admin
+      end
+    end
+  end
 
   def set_api_key
     params[:db_user][:api_key] = SecureRandom.urlsafe_base64

@@ -19,15 +19,6 @@ class ApplicationController < ActionController::Base
 
   protected
 
-  #make first user an admin
-  def check_for_admin
-    if current_user && User.first == User.last
-      unless current_user.has_role? :admin
-        current_user.add_role :admin
-      end
-    end
-  end
-
   def configure_permitted_parameters
     devise_parameter_sanitizer.permit(:account_update, keys: [:first_name, :last_name, :vendor, :sponsor_agency])
   end
