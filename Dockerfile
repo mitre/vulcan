@@ -1,5 +1,6 @@
 FROM ruby:2.4.4
 
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs sqlite
 
 ENV RAILS_ROOT /var/www/vulcan
