@@ -12,7 +12,7 @@ sync-repo:
     # add the MITRE certificates to the docker image
     - apk update && apk add git openssh-client ca-certificates curl libressl
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_Root.crt http://pki.mitre.org/MITRE%20BA%20Root.crt
-    - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-1.crt http://pki.mitre.org/MITRE%20BA%20NPE%20CA-1.crt
+    - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-1.crt http://pki.mitre.org/deprecated/MITRE%20BA%20NPE%20CA-1.crt
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-3.crt http://pki.mitre.org/MITRE%20BA%20NPE%20CA-3.crt
     - update-ca-certificates
 
@@ -54,8 +54,8 @@ build:
     # For service behind the Firewall connecting to gitlab
     - echo "$SED_PROXY" > sed-script-file
     - grep BA_Root Dockerfile || sed -f sed-script-file -i"" Dockerfile
-    - git clone https://aaronlippold:${GITHUB_ACCESS_TOKEN}@github.com/aaronlippold/inspec_tools.git inspec-tools 2>/dev/null
-    - sed -i 's/gem .inspec_tools.*$/gem \"inspec_tools\", :path => \"\.\/inspec-tools\"/' Gemfile
+    # - git clone https://aaronlippold:${GITHUB_ACCESS_TOKEN}@github.com/aaronlippold/inspec_tools.git inspec-tools 2>/dev/null
+    # - sed -i 's/gem .inspec_tools.*$/gem \"inspec_tools\", :path => \"\.\/inspec-tools\"/' Gemfile
 
     # - cp config/ldap.example.yml config/ldap.yml
     # - sed -i"" -e "s#host.yourdomain.com#ldap-user.mitre.org#g" config/ldap.yml
