@@ -8,9 +8,9 @@ RUN mkdir -p $RAILS_ROOT/tmp/pids
 
 WORKDIR $RAILS_ROOT
 
-COPY inspec-tools inspec-tools
+# COPY inspec-tools inspec-tools
 COPY Gemfile Gemfile
-COPY Gemfile.lock Gemfile.lock
+# COPY Gemfile.lock Gemfile.lock
 
 RUN gem install bundler && bundle install --jobs 20 --retry 5
 
