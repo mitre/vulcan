@@ -12,7 +12,7 @@ sync-repo:
     # add the MITRE certificates to the docker image
     - apk update && apk add git openssh-client ca-certificates curl libressl
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_Root.crt http://pki.mitre.org/MITRE%20BA%20Root.crt
-    - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-1.crt http://pki.mitre.org/MITRE%20BA%20NPE%20CA-1.crt
+    - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-1.crt http://pki.mitre.org/deprecated/MITRE%20BA%20NPE%20CA-1.crt
     - wget -O /usr/local/share/ca-certificates/MITRE_BA_NPE_CA-3.crt http://pki.mitre.org/MITRE%20BA%20NPE%20CA-3.crt
     - update-ca-certificates
 
