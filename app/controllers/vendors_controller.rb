@@ -1,6 +1,7 @@
 class VendorsController < ApplicationController
   # POST /vendors
   # POST /vendors.json
+  load_and_authorize_resource
   def create
     if current_user.has_role? :admin
       @vendor = Vendor.new(vendor_params)

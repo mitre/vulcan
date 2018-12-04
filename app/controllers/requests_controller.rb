@@ -1,5 +1,5 @@
 class RequestsController < ApplicationController
-  before_action :authenticate_user!
+  load_and_authorize_resource
   before_action :set_request, only: [:edit]
   def edit
     if current_user.has_role? :admin

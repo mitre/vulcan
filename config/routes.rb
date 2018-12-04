@@ -57,6 +57,7 @@ Rails.application.routes.draw do
   match 'users/:id/add_role/:user_id/' => 'users#add_role', as: :user_add_role, :via => :post
   match 'users/:id/remove_role/:user_id/:role' => 'users#remove_role', as: :user_remove_role, :via => :delete
   match 'link_control' => 'project_controls#link_control', :as => :link_control, :via => :post
+  match 'set_role' => 'users#set_role', :as => :set_role, :via => :post
 
-  root 'dashboard#index', as: :home
+  root to: 'dashboard#index'
 end

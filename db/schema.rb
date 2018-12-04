@@ -14,11 +14,17 @@ ActiveRecord::Schema.define(version: 20181101174651) do
 
   create_table "ccis", force: :cascade do |t|
     t.string "cci"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "ccis_nist_controls", id: false, force: :cascade do |t|
     t.integer "nist_control_id"
     t.integer "cci_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["cci_id"], name: "index_ccis_nist_controls_on_cci_id"
     t.index ["nist_control_id"], name: "index_ccis_nist_controls_on_nist_control_id"
   end
@@ -28,6 +34,8 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.datetime "updated_at", null: false
     t.string "status"
     t.integer "project_control_history_id"
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["project_control_history_id"], name: "index_control_change_status_on_project_control_history_id"
   end
 
@@ -75,6 +83,8 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["user_id"], name: "index_users_host_configs_on_user_id"
   end
 
@@ -100,6 +110,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "index"
     t.string "version"
     t.integer "nist_families_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["nist_families_id"], name: "index_nist_controls_on_nist_families_id"
   end
 
@@ -122,6 +136,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "version"
     t.string "short_title"
     t.string "long_title"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
   end
 
   create_table "permissions", force: :cascade do |t|
@@ -140,6 +158,8 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.datetime "updated_at", null: false
     t.string "status"
     t.integer "project_history_id"
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["project_history_id"], name: "index_project_change_status_on_project_history_id"
   end
 
@@ -152,6 +172,8 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "project_control_id"
     t.integer "user_id"
     t.integer "is_reply_to", default: 0
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["project_control_id"], name: "index_project_control_histories_on_project_control_id"
     t.index ["user_id"], name: "index_project_control_histories_on_user_id"
   end
@@ -183,6 +205,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.text "srg_title_id"
     t.integer "project_id"
     t.integer "parent_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["parent_id"], name: "index_project_controls_on_parent_id"
     t.index ["project_id"], name: "index_project_controls_on_project_id"
   end
@@ -196,6 +222,8 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.integer "project_id"
     t.integer "user_id"
     t.integer "is_reply_to", default: 0
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["project_id"], name: "index_project_histories_on_project_id"
     t.index ["user_id"], name: "index_project_histories_on_user_id"
   end
@@ -221,6 +249,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "encrypted_status_iv"
     t.integer "sponsor_agency_id"
     t.integer "vendor_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["sponsor_agency_id"], name: "index_projects_on_sponsor_agency_id"
     t.index ["vendor_id"], name: "index_projects_on_vendor_id"
   end
@@ -245,6 +277,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "encrypted_role"
     t.string "encrypted_role_iv"
     t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["user_id"], name: "index_requests_on_user_id"
   end
 
@@ -254,6 +290,8 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.integer "resource_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["name", "resource_type", "resource_id"], name: "index_roles_on_name_and_resource_type_and_resource_id"
     t.index ["name"], name: "index_roles_on_name"
     t.index ["resource_type", "resource_id"], name: "index_roles_on_resource_type_and_resource_id"
@@ -268,6 +306,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "encrypted_email_iv"
     t.string "encrypted_organization"
     t.string "encrypted_organization_iv"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
   end
 
   create_table "sponsor_agencies_users", id: false, force: :cascade do |t|
@@ -290,6 +332,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "checktext"
     t.text "srg_title_id"
     t.integer "srg_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["srg_id"], name: "index_srg_controls_on_srg_id"
   end
 
@@ -298,6 +344,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "description"
     t.string "publisher"
     t.string "published"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
   end
 
   create_table "users", force: :cascade do |t|
@@ -319,6 +369,8 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "provider"
     t.string "uid"
     t.string "profile_pic_name"
+    t.integer "created_by"
+    t.integer "updated_by"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
@@ -347,6 +399,10 @@ ActiveRecord::Schema.define(version: 20181101174651) do
     t.string "encrypted_poc_email_iv"
     t.string "encrypted_poc_phone_number"
     t.string "encrypted_poc_phone_number_iv"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "created_by"
+    t.integer "updated_by"
   end
 
 end
