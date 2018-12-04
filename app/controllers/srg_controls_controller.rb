@@ -1,5 +1,6 @@
 class SrgControlsController < ApplicationController
-  before_action :authenticate_user!
+  #before_action :authenticate_user!
+  load_and_authorize_resource
   before_action :set_srg_control, only: [:show, :edit, :update, :destroy, :review_srg_control]
 
   # GET /srg_controls

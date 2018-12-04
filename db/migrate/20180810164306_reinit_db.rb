@@ -2,6 +2,7 @@ class ReinitDb < ActiveRecord::Migration[5.1]
   def change
     create_table 'ccis', force: :cascade do |t|
       t.string 'cci'
+      t.timestamps
     end
 
     create_table 'ccis_nist_controls', id: false, force: :cascade do |t|
@@ -9,6 +10,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.integer 'cci_id'
       t.index ['cci_id'], name: 'index_ccis_nist_controls_on_cci_id'
       t.index ['nist_control_id'], name: 'index_ccis_nist_controls_on_nist_control_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'host_configs', force: :cascade do |t|
@@ -32,6 +35,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.datetime 'created_at', null: false
       t.datetime 'updated_at', null: false
       t.index ['user_id'], name: 'index_users_host_configs_on_user_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'nist_controls', force: :cascade do |t|
@@ -40,6 +45,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'version'
       t.integer 'nist_families_id'
       t.index ['nist_families_id'], name: 'index_nist_controls_on_nist_families_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'nist_controls_project_controls', id: false, force: :cascade do |t|
@@ -61,6 +68,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'version'
       t.string 'short_title'
       t.string 'long_title'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'permissions', force: :cascade do |t|
@@ -85,6 +94,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.integer 'is_reply_to', default: 0
       t.index ['project_control_id'], name: 'index_project_control_histories_on_project_control_id'
       t.index ['user_id'], name: 'index_project_control_histories_on_user_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'control_change_statuses', force: :cascade do |t|
@@ -93,6 +104,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'status'
       t.integer 'project_control_history_id'
       t.index ['project_control_history_id'], name: 'index_control_change_status_on_project_control_history_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'project_histories', force: :cascade do |t|
@@ -106,6 +119,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.integer 'is_reply_to', default: 0
       t.index ['project_id'], name: 'index_project_histories_on_project_id'
       t.index ['user_id'], name: 'index_project_histories_on_user_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'project_change_statuses', force: :cascade do |t|
@@ -114,6 +129,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'status'
       t.integer 'project_history_id'
       t.index ['project_history_id'], name: 'index_project_change_status_on_project_history_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'project_controls', force: :cascade do |t|
@@ -144,6 +161,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.integer 'project_id'
       t.integer 'parent_id', index: true
       t.index ['project_id'], name: 'index_project_controls_on_project_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'projects', force: :cascade do |t|
@@ -169,6 +188,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.integer 'vendor_id'
       t.index ['vendor_id'], name: 'index_projects_on_vendor_id'
       t.index ['sponsor_agency_id'], name: 'index_projects_on_sponsor_agency_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'projects_srgs', force: :cascade do |t|
@@ -192,6 +213,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'encrypted_role_iv'
       t.integer 'user_id'
       t.index ['user_id'], name: 'index_requests_on_user_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'roles', force: :cascade do |t|
@@ -203,6 +226,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.index %w{name resource_type resource_id}, name: 'index_roles_on_name_and_resource_type_and_resource_id'
       t.index ['name'], name: 'index_roles_on_name'
       t.index %w{resource_type resource_id}, name: 'index_roles_on_resource_type_and_resource_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'sponsor_agencies', force: :cascade do |t|
@@ -214,6 +239,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'encrypted_email_iv'
       t.string 'encrypted_organization'
       t.string 'encrypted_organization_iv'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'sponsor_agencies_users', id: false, force: :cascade do |t|
@@ -237,6 +264,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.text 'srg_title_id'
       t.integer 'srg_id'
       t.index ['srg_id'], name: 'index_srg_controls_on_srg_id'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'srgs', force: :cascade do |t|
@@ -244,6 +273,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'description'
       t.string 'publisher'
       t.string 'published'
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'users', force: :cascade do |t|
@@ -271,6 +302,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.index ['reset_password_token'], name: 'index_users_on_reset_password_token', unique: true
       # t.index ["vendor_id"], name: "index_users_on_vendor_id"
       # t.index ["sponsor_agency_id"], name: "index_users_on_sponsor_agency_id"
+      t.timestamps
+      t.userstamps
     end
 
     create_table 'users_roles', id: false, force: :cascade do |t|
@@ -297,6 +330,8 @@ class ReinitDb < ActiveRecord::Migration[5.1]
       t.string 'encrypted_poc_email_iv'
       t.string 'encrypted_poc_phone_number'
       t.string 'encrypted_poc_phone_number_iv'
+      t.timestamps
+      t.userstamps
     end
   end
 end
