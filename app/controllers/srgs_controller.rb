@@ -3,8 +3,9 @@ require 'CCIAttributes'
 require 'StigAttributes'
 
 class SrgsController < ApplicationController
-  before_action :authenticate_user!
-  before_action :set_srg, only: [:show, :edit, :update, :destroy]
+  #before_action :authenticate_user!
+  #before_action :set_srg, only: [:show, :edit, :update, :destroy]
+  load_and_authorize_resource
 
   # GET /srgs
   # GET /srgs.json
@@ -20,6 +21,7 @@ class SrgsController < ApplicationController
   # GET /srgs/new
   def new
     @srg = Srg.new
+    #@user = User.find_by(params[:user_id])
   end
 
   # GET /srgs/1/edit
@@ -30,7 +32,6 @@ class SrgsController < ApplicationController
   # POST /srgs.json
   def create
     @srg = Srg.new(srg_params)
-
     respond_to do |format|
       if @srg.save
         format.html { redirect_to @srg, notice: 'Srg was successfully created.' }
@@ -45,6 +46,7 @@ class SrgsController < ApplicationController
   # PATCH/PUT /srgs/1
   # PATCH/PUT /srgs/1.json
   def update
+    authorize! :manage, @user
     respond_to do |format|
       if @srg.update(srg_params)
         format.html { redirect_to @srg, notice: 'Srg was successfully updated.' }

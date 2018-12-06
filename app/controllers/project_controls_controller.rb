@@ -1,7 +1,7 @@
 require 'inspec/objects'
 
 class ProjectControlsController < ApplicationController
-  before_action :authenticate_user!
+  load_and_authorize_resource
   before_action :set_project_control, only: [:show, :edit, :update, :destroy, :review_control, :run_test, :update_code]
   respond_to :html, :json
 

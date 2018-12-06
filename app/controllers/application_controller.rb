@@ -2,7 +2,11 @@ class ApplicationController < ActionController::Base
   rescue_from DeviseLdapAuthenticatable::LdapException do |exception|
     render text: exception, status: 500
   end
+  rescue_from CanCan::AccessDenied do |exception|
+    redirect_to root_url, alert: exception.message
+  end
   protect_from_forgery with: :exception
+  before_action :set_userstamp
   # before_action :configure_permitted_parameters, if: :devise_controller?
   helper_method :current_user
 
@@ -15,6 +19,11 @@ class ApplicationController < ActionController::Base
       session[:user_] = nil
       @current_user = nil
     end
+  end
+
+  def set_userstamp
+    current_user
+    User.current_user = @current_user
   end
 
   protected

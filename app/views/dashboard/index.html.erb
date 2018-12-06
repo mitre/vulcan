@@ -27,7 +27,7 @@
             </div>
             <% User.all.each do |user| %>
               <% if !user.has_role?(:vendor) && !user.has_role?(:sponsor) && !user.has_role?(:admin) %>
-              <%= form_tag(set_role_url, method: "post", id: 'set_role_org', remote: true) do %>
+              <%= form_tag(set_role_path, method: "post", id: 'set_role_org', remote: true) do %>
                 <div class="row">
                   <div class="col-md-4">
                     <%= hidden_field_tag 'user_id', user.id, id: 'user_id' %>

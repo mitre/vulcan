@@ -15,6 +15,8 @@ class User < ApplicationRecord
   has_and_belongs_to_many :vendors
   # accepts_nested_attributes_for :vendor
   has_and_belongs_to_many :sponsor_agencies
+
+  cattr_accessor :current_user
   # accepts_nested_attributes_for :sponsor_agency
 
   #def ldap_before_save

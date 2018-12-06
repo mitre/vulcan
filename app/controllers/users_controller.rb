@@ -98,6 +98,19 @@ class UsersController < ApplicationController
     end
   end
 
+  def set_role
+    if current_user.has_role? :admin
+      user = User.find(params['user_id'])
+      if !user.roles.blank?
+        user.remove_role user.roles.first.name
+      end
+      user.add_role params['org'].split('-')[1]
+      user.vendors << Vendor.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'vendor'
+      user.sponsor_agencies << SponsorAgency.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'sponsor'
+      redirect_to "/"
+    end
+  end
+
   private
 
   def must_be_admin
