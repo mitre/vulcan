@@ -1,5 +1,5 @@
 class ProjectHistoriesController < ApplicationController
-  before_action :authenticate_user!
+  load_and_authorize_resource
   skip_before_action :verify_authenticity_token
 
   def add_project_history

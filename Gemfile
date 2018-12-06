@@ -97,4 +97,8 @@ gem "devise_ldap_authenticatable"
 
 gem 'faker'
 
+gem 'cancancan', '~> 2.0'
+
+gem 'blamer'
+
 gem 'inspec_tools', :git => 'https://github.com/mitre/inspec_tools.git'
