@@ -29,10 +29,12 @@ authorizations: &AUTHORIZATIONS
 
 development:
   host: host.yourdomain.com
-  port: 389
+  port: 636
   attribute: mail
   base: ou=People,o=yourdomain.com
-  ssl: false
+  admin_user: cn=admin,dc=test,dc=com
+  admin_password: credentials
+  ssl: true
   # <<: *AUTHORIZATIONS
 
 test:
@@ -41,7 +43,7 @@ test:
   attribute: cn
   base: ou=people,dc=test,dc=com
   admin_user: cn=admin,dc=test,dc=com
-  admin_password: admin_password
+  admin_password: credentials
   ssl: simple_tls
   # <<: *AUTHORIZATIONS
 
@@ -51,6 +53,6 @@ production:
   attribute: mail
   base: ou=People,o=yourdomain.com
   admin_user: cn=admin,dc=test,dc=com
-  admin_password: admin_password
+  admin_password: credentials
   ssl: true
   # <<: *AUTHORIZATIONS

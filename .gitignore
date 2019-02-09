@@ -38,3 +38,7 @@ Gemfile.lock
 
 # Ignore ldap.yml
 /config/ldap.yml
+
+# Ignore db-data
+
+/db-data/**

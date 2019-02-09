@@ -1,5 +1,5 @@
 FactoryBot.define do
-  factory :cci, class: Cci do
+  factory :cci1, class: Cci do
     cci 'cci_number'
   end
 
