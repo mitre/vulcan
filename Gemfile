@@ -5,13 +5,13 @@ git_source(:github) do |repo_name|
   "https://github.com/#{repo_name}.git"
 end
 
-gem "inspec"
+gem "inspec", '~> 3.0'
 gem 'roo'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.1.6'
 # Use sqlite3 as the database for Active Record
-gem 'sqlite3'
+gem 'sqlite3', '~> 1.3', '~> 1.3.6'
 # Use Puma as the app server
 gem 'puma', '~> 3.7'
 # Use SCSS for stylesheets
@@ -101,4 +101,4 @@ gem 'cancancan', '~> 2.0'
 
 gem 'blamer'
 
-gem 'inspec_tools', :git => 'https://github.com/mitre/inspec_tools.git'
+gem 'inspec_tools' #, :git => 'https://github.com/mitre/inspec_tools.git'
