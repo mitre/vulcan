@@ -28,31 +28,29 @@ authorizations: &AUTHORIZATIONS
 ## Environment
 
 development:
-  host: ldap-user.mitre.org
-  port: 636
+  host: host.yourdomain.com
+  port: 389
   attribute: mail
-  base: ou=People,o=mitre.org
-  # admin_user: cn="Dromazos, Matthew J.",dc=test,dc=com
-  # admin_password: admin_password
-  ssl: true
+  base: ou=People,o=yourdomain.com
+  ssl: false
   # <<: *AUTHORIZATIONS
 
 test:
-  host: ldap-user.mitre.org
-  port: 636
-  attribute: mail
-  base: ou=People,o=mitre.org
-  # admin_user: cn="Dromazos, Matthew J.",dc=test,dc=com
-  # admin_password: admin_password
-  ssl: true
+  host: localhost
+  port: 3389
+  attribute: cn
+  base: ou=people,dc=test,dc=com
+  admin_user: cn=admin,dc=test,dc=com
+  admin_password: admin_password
+  ssl: simple_tls
   # <<: *AUTHORIZATIONS
 
 production:
-  host: ldap-user.mitre.org
+  host: host.yourdomain.com
   port: 636
   attribute: mail
-  base: ou=People,o=mitre.org
-  # admin_user: cn="Dromazos, Matthew J.",dc=test,dc=com
-  # admin_password: admin_password
+  base: ou=People,o=yourdomain.com
+  admin_user: cn=admin,dc=test,dc=com
+  admin_password: admin_password
   ssl: true
   # <<: *AUTHORIZATIONS
