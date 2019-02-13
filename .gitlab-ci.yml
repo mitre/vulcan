@@ -57,11 +57,13 @@ build:
     # - git clone https://aaronlippold:${GITHUB_ACCESS_TOKEN}@github.com/aaronlippold/inspec_tools.git inspec-tools 2>/dev/null
     # - sed -i 's/gem .inspec_tools.*$/gem \"inspec_tools\", :path => \"\.\/inspec-tools\"/' Gemfile
 
-    # - cp config/ldap.example.yml config/ldap.yml
-    # - sed -i"" -e "s#host.yourdomain.com#ldap-user.mitre.org#g" config/ldap.yml
-    # - sed -i"" -e "s#yourdomain.com#mitre.org#g" config/ldap.yml
-    # # The next line implies anonymous ldap authentication
-    # - sed -i"" -e "/admin_/d" config/ldap.yml
+    - cp config/ldap.example.yml config/ldap.yml
+    - sed -i"" -e "s#host.yourdomain.com#uds.mitre.org#g" config/ldap.yml
+    - sed -i"" -e "s#ou=People,o=yourdomain.com#ou=people,dc=mitre,dc=org#g" config/ldap.yml
+    - sed -i"" -e "s#cn=admin,dc=test,dc=com#CN=$LDAP_ADMIN_USER,OU=IDM_MANAGED,OU=Application Accounts,dc=mitre,dc=org#g" config/ldap.yml
+    - sed -i"" -e "s#credentials#$LDAP_ADMIN_PASSWORD#g" config/ldap.yml
+
+
     - pip install docker-compose
     # If you had a rake keys task, it would go here
     - docker-compose build
