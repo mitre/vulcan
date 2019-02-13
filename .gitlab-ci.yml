@@ -32,10 +32,10 @@ sync-repo:
     - echo $GITLAB_KEYSCAN >> ~/.ssh/known_hosts
 
   script:
-    - git clone https://aaronlippold:$(echo $GITHUB_ACCESS_TOKEN)@github.com/aaronlippold/vulcan vulcan 2>/dev/null
+    - git clone https://github.com/mitre/vulcan.git vulcan >/dev/null 2>/dev/null
     - cd vulcan
     - git remote add github git@gitlab.mitre.org:inspec/vulcan.git
-    - ssh-agent sh -c 'ssh-add ~/push_key; git push --force --tags github master' # REMOTE NAME from previous line
+    - ssh-agent sh -c 'ssh-add ~/push_key; git push github master --tags --force || true' # REMOTE NAME from previous line
 
 build:
   stage: build
