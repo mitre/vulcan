@@ -34,7 +34,7 @@ Gemfile.lock
 .sass-cache*
 
 # Ignore Mac DS_Store files
-**/.DS_Store
+.DS_Store
 
 # Ignore ldap.yml
 /config/ldap.yml
