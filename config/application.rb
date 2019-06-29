@@ -13,7 +13,7 @@ module VulcanNew
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     # !!! skip Factory BOT tests for now until we can fix it !!!
-    config.factory_bot.definition_file_paths = []
+    # config.factory_bot.definition_file_paths = []
     config.load_defaults 5.1
     config.assets.paths << Rails.root.join('app', 'assets', 'fonts')
     config.autoload_paths += Dir["#{Rails.root}/lib"]
