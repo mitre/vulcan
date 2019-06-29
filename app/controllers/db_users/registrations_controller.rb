@@ -64,10 +64,9 @@ class DbUsers::RegistrationsController < Devise::RegistrationsController
     super(resource)
   end
 
-
   private
 
-  #make first user an admin
+  # make first user an admin
   def check_for_admin
     if DbUser.find(session['db_user_id']) == DbUser.first
       unless DbUser.find(session['db_user_id']).has_role? :admin
