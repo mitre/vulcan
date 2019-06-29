@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  #authorize_resource only: [:index, :show, :edit, :destroy, :upload, :image]
+  # authorize_resource only: [:index, :show, :edit, :destroy, :upload, :image]
   before_action :set_user, only: [:show, :edit, :update, :destroy, :add_role, :remove_role]
   before_action :rotate, only: :update
   before_action :must_be_admin, only: [:index, :add_role, :remove_role]
@@ -107,7 +107,7 @@ class UsersController < ApplicationController
       user.add_role params['org'].split('-')[1]
       user.vendors << Vendor.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'vendor'
       user.sponsor_agencies << SponsorAgency.find(params['org'].split('-')[0]) if params['org'].split('-')[1] == 'sponsor'
-      redirect_to "/"
+      redirect_to '/'
     end
   end
 

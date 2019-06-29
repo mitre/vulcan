@@ -1,10 +1,10 @@
 Rails.application.routes.draw do
   resources :users
-  #devise_for :users, controllers: {
+  # devise_for :users, controllers: {
   #  registrations: 'users/registrations',
   #  sessions: 'users/sessions',
-    #omniauth_callbacks: 'callbacks'
-  #}
+  # omniauth_callbacks: 'callbacks'
+  # }
   devise_for :db_users, controllers: {
     sessions: 'db_users/sessions',
     registrations: 'db_users/registrations',
@@ -15,13 +15,13 @@ Rails.application.routes.draw do
     registrations: 'ldap_users/registrations',
     passwords: 'ldap_users/passwords'
   }
-  #devise_scope :user do
-    #get 'show_user', to: 'users/sessions#show'
-    #post 'set_role' => 'users/registrations#set_role', :as => :set_role, :via => :post
+  # devise_scope :user do
+  # get 'show_user', to: 'users/sessions#show'
+  # post 'set_role' => 'users/registrations#set_role', :as => :set_role, :via => :post
 
-    # put 'users' => 'users/registrations#update', :as => 'edit_user_profile'
-    # match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
-  #end
+  # put 'users' => 'users/registrations#update', :as => 'edit_user_profile'
+  # match 'update_code' => 'project_controls#update_code', :as => :update_code, :via => :post
+  # end
 
   # devise_for :user
   #   put 'users' => 'users/registrations#update', :as => 'user_registration'

@@ -48,6 +48,7 @@ RSpec.describe ProjectsController, type: :controller do
   context 'User is logged in' do
     let(:vendor) { FactoryBot.create(:vendor) }
     let(:sponsor) { FactoryBot.create(:sponsor) }
+
     before do
       sign_in vendor
     end
@@ -87,7 +88,7 @@ RSpec.describe ProjectsController, type: :controller do
         it 'creates a new Project with srgs' do
           project = create :project_srg, users: [vendor, sponsor]
           get :show, params: { id: project.to_param }, session: valid_session
-          expect(project.srgs).to_not be_empty
+          expect(project.srgs).not_to be_empty
         end
 
         it 'redirects to the created project' do
@@ -99,7 +100,7 @@ RSpec.describe ProjectsController, type: :controller do
       context 'with invalid params' do
         it "returns a success response (i.e. to display the 'new' template)" do
           post :create, params: { project: invalid_attributes }, session: valid_session
-          expect(response).to_not be_success
+          expect(response).not_to be_success
           expect(response).to redirect_to(projects_path)
         end
       end
@@ -116,7 +117,7 @@ RSpec.describe ProjectsController, type: :controller do
           title = project.title
           put :update, params: { id: project.to_param, project: new_attributes }, session: valid_session
           project.reload
-          expect(project.title).to_not eq(title)
+          expect(project.title).not_to eq(title)
         end
 
         it 'redirects to the project' do
@@ -154,6 +155,7 @@ RSpec.describe ProjectsController, type: :controller do
 
   context 'admin is logged in' do
     let(:admin) { FactoryBot.create(:admin) }
+
     before do
       sign_in admin
     end
@@ -169,7 +171,7 @@ RSpec.describe ProjectsController, type: :controller do
           title = project.title
           put :update, params: { id: project.to_param, project: new_attributes }, session: valid_session
           project.reload
-          expect(project.title).to_not eq(title)
+          expect(project.title).not_to eq(title)
         end
 
         it 'redirects to the project' do

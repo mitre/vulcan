@@ -1,6 +1,4 @@
 class DashboardController < ApplicationController
-
-
   def index
   end
 
@@ -8,5 +6,4 @@ class DashboardController < ApplicationController
     @db_user = DbUser.new
     @ldap_user = LdapUser.new
   end
-
 end

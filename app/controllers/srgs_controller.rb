@@ -3,8 +3,8 @@ require 'CCIAttributes'
 require 'StigAttributes'
 
 class SrgsController < ApplicationController
-  #before_action :authenticate_user!
-  #before_action :set_srg, only: [:show, :edit, :update, :destroy]
+  # before_action :authenticate_user!
+  # before_action :set_srg, only: [:show, :edit, :update, :destroy]
   load_and_authorize_resource
 
   # GET /srgs
@@ -21,7 +21,7 @@ class SrgsController < ApplicationController
   # GET /srgs/new
   def new
     @srg = Srg.new
-    #@user = User.find_by(params[:user_id])
+    # @user = User.find_by(params[:user_id])
   end
 
   # GET /srgs/1/edit

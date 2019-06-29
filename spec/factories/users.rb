@@ -6,8 +6,8 @@ FactoryBot.define do
     created_at { Faker::Date.between(2.days.ago, Date.today) }
     updated_at { Faker::Date.between(2.days.ago, Date.today) }
     sequence(:email) { |n| "user_#{n}@example.com" }
-    password 'foobar'
-    password_confirmation 'foobar'
+    password { 'foobar' }
+    password_confirmation { 'foobar' }
 
     factory :vendor do
       first_name { Faker::Name.name.split(' ')[0] }
