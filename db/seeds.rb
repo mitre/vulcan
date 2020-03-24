@@ -8,7 +8,6 @@
 require 'csv'
 require 'CCIAttributes'
 require 'StigAttributes'
-require 'pry'
 require 'inspec_tools'
 
 DATA_NOT_FOUND_MESSAGE = 'N/A'.freeze
