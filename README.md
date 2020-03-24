@@ -4,20 +4,20 @@
 
 Vulcan is a tool to help streamline the process of creating STIGs and InSpec security compliance profiles. It models the STIG intent form and
 the process of aligning security controls from SRG items into actual STIG security controls.  Vulcan also gives the option while aligning the security controls to
-insert inspec code and test across any type of system supported by InSpec.  
+insert inspec code and test across any type of system supported by InSpec.
 
 ## Versioning and State of Development
-This project uses the [Semantic Versioning Policy](https://semver.org/). 
+This project uses the [Semantic Versioning Policy](https://semver.org/).
 
 ### Branches
-The master branch contains the latest version of the software leading up to a new release. 
+The master branch contains the latest version of the software leading up to a new release.
 
-Other branches contain feature-specific updates. 
+Other branches contain feature-specific updates.
 
 ### Tags
 Tags indicate official releases of the project.
 
-Please note 0.x releases are works in progress (WIP) and may change at any time.   
+Please note 0.x releases are works in progress (WIP) and may change at any time.
 
 ## Features
 
@@ -46,22 +46,22 @@ For Ruby (on Ubuntu):
 ## Run with Ruby
 
   1. Install dependencies
-  2. `bundle install`
-  3. `bundle exec rake db:create`
-  4. `bundle exec rake db:migrate`
-  5. `bundle exec rails server`
-  6. Navigate to `localhost:3030`
+  1. `bundle install`
+  1. `bundle exec rake db:create db:schema:load db:migrate db:seed`
+  1. `bundle exec rails server`
+  1. Navigate to `localhost:3030`
 
 ## Run with Docker
 
 ### Building Docker Containers
 
-_These steps need to be performed the first time you build the docker containers,
-and whenever you edit the code base._
+_These steps need to be performed the first time you build the docker containers.
+You will need to run `docker-compose run web rake db:migrate` anytime changes are made
+to the database._
 
   1. Install dependencies
   2. `docker-compose build`
-  3. `docker-compose run web rake db:migrate`
+  3. `docker-compose run web rake db:create db:schema:load db:migrate db:seed`
   4. Generate keys
 
 ### Running Docker Containers
@@ -103,19 +103,19 @@ Edit RAILS\_ENV in `docker-compose.yml`
 - Rob Thew
 - Aaron Lippold
 
-### NOTICE 
+### NOTICE
 
-© 2018 The MITRE Corporation.  
+© 2018 The MITRE Corporation.
 
-Approved for Public Release; Distribution Unlimited. Case Number 18-3678.  
+Approved for Public Release; Distribution Unlimited. Case Number 18-3678.
 
 ### NOTICE
 MITRE hereby grants express written permission to use, reproduce, distribute, modify, and otherwise leverage this software to the extent permitted by the licensed terms provided in the LICENSE.md file included with this project.
 
-### NOTICE  
+### NOTICE
 
-This software was produced for the U. S. Government under Contract Number HHSM-500-2012-00008I, and is subject to Federal Acquisition Regulation Clause 52.227-14, Rights in Data-General.  
+This software was produced for the U. S. Government under Contract Number HHSM-500-2012-00008I, and is subject to Federal Acquisition Regulation Clause 52.227-14, Rights in Data-General.
 
-No other use other than that granted to the U. S. Government, or to those acting on behalf of the U. S. Government under that Clause is authorized without the express written permission of The MITRE Corporation. 
+No other use other than that granted to the U. S. Government, or to those acting on behalf of the U. S. Government under that Clause is authorized without the express written permission of The MITRE Corporation.
 
-For further information, please contact The MITRE Corporation, Contracts Management Office, 7515 Colshire Drive, McLean, VA  22102-7539, (703) 983-6000.   
+For further information, please contact The MITRE Corporation, Contracts Management Office, 7515 Colshire Drive, McLean, VA  22102-7539, (703) 983-6000.

@@ -116,16 +116,11 @@ class SrgsController < ApplicationController
   end
 
   def parse_xccdf(srg_path)
-    srg_hash = {}
-    xccdf_xml = File.read(srg_path)
-    cci_xml = File.read('data/U_CCI_List.xml')
-    cci_items = Services::CciList.parse(cci_xml)
-    xccdf = Services::Benchmark.parse(xccdf_xml)
+    cci_items = Services::CciList.parse(File.read('data/U_CCI_List.xml'))
+    xccdf = Services::Benchmark.parse(File.read(srg_path))
     controls = xccdf.group.map { |group| parse_control(group, cci_items) }
-    srg_hash[:title] = xccdf.title
-    srg_hash[:description] = xccdf.description
-    srg_hash[:publisher] = xccdf.reference.publisher
-    srg_hash[:published] = xccdf.release_date.release_date
+    srg_hash = xccdf.as_json(only: ['title', 'description', 'publisher', 'published', 'version', 'release'])
+
     [controls, srg_hash]
   end
 
