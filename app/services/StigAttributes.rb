@@ -44,15 +44,6 @@ module Services
     has_one :rule, Rule, tag: 'Rule'
   end
 
-  class ReferenceInfo
-    include HappyMapper
-    tag 'reference'
-
-    attribute :href, String, tag: 'href'
-    element :publisher, String, tag: 'publisher', namespace: 'dc'
-    element :source, String, tag: 'source', namespace: 'dc'
-  end
-
   class Benchmark
     include HappyMapper
     tag 'Benchmark'
