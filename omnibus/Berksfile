@@ -1,0 +1,4 @@
+source 'https://supermarket.chef.io'
+
+cookbook 'vulcan-builder',
+         path: File.expand_path("cookbooks/vulcan-builder", File.dirname(__FILE__))

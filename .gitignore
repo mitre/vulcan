@@ -7,6 +7,9 @@
 # Ignore bundler config.
 /.bundle
 
+# Ignore Kitchen local folder
+/.kitchen
+
 /vendor/bundle/**
 
 # Ignore the default SQLite database.

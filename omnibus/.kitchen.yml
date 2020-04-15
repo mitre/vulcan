@@ -1,0 +1,44 @@
+driver:
+  name: vagrant
+  forward_agent: yes
+  customize:
+    cpus: 8
+    memory: 8192
+  synced_folders:
+    - ['..', '/home/vagrant/vulcan']
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  product_version: 15
+  install_strategy: always # Otherwise we don't get an updated chef version for some reason
+  attributes:
+    omnibus:
+      # build_user: vagrant
+      # build_user_home: /home/vagrant
+      build_dir: /home/vagrant/vulcan/omnibus
+
+
+platforms:
+  # for Ubuntu, only need earliest supported version for build
+  # testing occurs on earliest supported and later in a different kitchen
+  - name: ubuntu-18.04
+  - name: centos-7
+  - name: windows-2016
+    provisioner:
+      attributes:
+        omnibus:
+          build_dir: C:/vagrant/code/vulcan/omnibus
+    driver:
+      box: mwrock/Windows2016
+      synced_folders:
+      # We have to mount this repos enclosing folder as the Omnibus build
+      # gets cranky if the mounted Chef Workstation source folder is a symlink. This
+      # mounts at `C:\vagrant\code` and the Chef Workstation source folder is available
+      # at `C:\vagrant\code\chef-workstation`
+      - ['../..', '/vagrant/code']
+
+suites:
+  - name: default
+    run_list:
+      - vulcan-builder::default

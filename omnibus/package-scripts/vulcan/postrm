@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# Perform necessary vulcan removal steps
+# after package is uninstalled.
+#
+
+echo "vulcan has been uninstalled!"
+
+exit 0
