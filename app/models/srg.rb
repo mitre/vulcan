@@ -4,6 +4,10 @@ class Srg < ApplicationRecord
 
   has_many :srg_controls
 
+  def full_title
+    "#{title} #{version} #{release}"
+  end
+
   private
 
   def destroy_srg_controls

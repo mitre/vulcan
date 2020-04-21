@@ -3,6 +3,7 @@ require 'fileutils'
 require 'date'
 require 'pathname'
 require 'shellwords'
+require 'open3'
 
 ###
 # TODO: FORM VALIDATION
@@ -80,6 +81,7 @@ class Project < ApplicationRecord
   end
 
   def applicable_counts
+    controls = project_controls.group_by {|control| control.applicability }
     counts_ary = Project.labels.map { |label| JSON.parse({ label: label, value: controls[label].nil? ? 0 : controls[label].count }.to_json) }
     counts_ary << JSON.parse({ label: 'Not Yet Set', value: controls[nil].nil? ? 0 : controls[nil].count }.to_json)
     { 'results' => counts_ary }.to_json
@@ -93,12 +95,15 @@ class Project < ApplicationRecord
     labels.map { |label| [label, label] }
   end
 
+  # TODO: This can all be done a much more Rails'y way, this whole
+  # method does not need to exist. Can pass all this data as a hash to
+  # Project.new without doing any lookups, since we already have the IDs.
   def self.build(project_json, srg_ids, vendor_id, sponsor_agency_id)
     return nil if srg_ids.nil?
 
     begin
       project = Project.new(project_json)
-      project.srgs << Srg.where(title: srg_ids.reject { |srg_id| srg_id == '0' }.drop(1))
+      project.srg_ids = srg_ids.reject(&:empty?).map(&:to_i)
       project.vendor = Vendor.find(vendor_id)
       project.sponsor_agency = SponsorAgency.find(sponsor_agency_id)
       project.users << project.vendor.users
@@ -131,15 +136,9 @@ class Project < ApplicationRecord
   end
 
   def insert_profile_data(inspec_json)
-    inspec_json['name'] = name
-    inspec_json['title'] = title
-    inspec_json['maintainer'] = maintainer
-    inspec_json['copyright'] = copyright
-    inspec_json['copyright_email'] = copyright_email
-    inspec_json['license'] = license
-    inspec_json['summary'] = summary
-    inspec_json['version'] = version
-    inspec_json
+    inspec_json.merge(
+      as_json(only: [:name, :title, :maintainer, :copyright, :copyright_email, :license, :summary, :version])
+    )
   end
 
   def insert_controls
@@ -163,12 +162,12 @@ class Project < ApplicationRecord
   end
 
   def compress_profile
-    Dir.chdir "tmp/#{@random}"
-    filename = Pathname.new("#{Rails.root}/tmp/#{@random}/#{@name}.zip")
+    Dir.chdir Rails.root.join("tmp/#{@random}")
+    filename = Rails.root.join("tmp/#{@random}/#{@name}.zip")
     system('zip', '-r', filename.to_s, @name)
     cmd = "zip -r #{filename} #{@name.shellescape}"
     logger.debug "cmd #{cmd}"
-    Open3.capture3(%w{cmd})
+    Open3.capture3(cmd)
     Dir.chdir Rails.root.to_s
   end
 
@@ -182,18 +181,18 @@ class Project < ApplicationRecord
   end
 
   def inspec_tag(control, name, value)
-    control.add_tag(Inspec::Tag.new(name, value)) unless value.nil?
+    control.add_tag(Inspec::Object::Tag.new(name, value)) unless value.nil?
   end
 
   # converts passed in data into InSpec format
   def generate_controls
     project_controls.select { |control| control.applicability == 'Applicable - Configurable' }.each do |contr|
-      control = Inspec::Control.new
+      control = Inspec::Object::Control.new
       control.id = contr.control_id
       control.title = contr.title
-      control.desc = contr.description
+      control.descriptions[:default] = contr.description
       control.impact = control.impact
-      control.add_tag(Inspec::Tag.new('nist', contr.nist_controls.collect { |nist| nist.family + '-' + nist.index })) unless contr.nist_controls.nil? # tag nist: [AC-3, 4]  ##4 is the version
+      control.add_tag(Inspec::Object::Tag.new('nist', contr.nist_controls.collect { |nist| nist.family + '-' + nist.index })) unless contr.nist_controls.nil? # tag nist: [AC-3, 4]  ##4 is the version
       inspec_tag(control, 'audit text', contr.checktext)
       inspec_tag(control, 'fix', contr.fixtext)
       inspec_tag(control, 'Related SRG', contr.srg_title_id)
@@ -203,21 +202,20 @@ class Project < ApplicationRecord
 
   def create_skeleton
     Dir.mkdir("#{Rails.root}/tmp/#{@random}")
-    Dir.chdir "tmp/#{@random}"
-    Open3.capture3('inspec', 'init', 'profile', @name)
+    Dir.chdir Rails.root.join("tmp/#{@random}")
+    Open3.capture3('inspec', 'init', '--chef-license=accept-no-persist', 'profile', @name)
     filename = "#{Rails.root}/tmp/#{@random}/#{@name}/controls/example.rb"
     FileUtils.rm(filename)
-    # Open3.capture3('rm', filename)
     Dir.chdir Rails.root.to_s
   end
 
   def create_json
-    Dir.chdir "#{Rails.root}/tmp/#{@random}"
-    cmd = "inspec json #{@name.shellescape} | jq . | tee #{@name.shellescape}-overview.json"
+    Dir.chdir Rails.root.join("tmp/#{@random}")
+    cmd = "inspec json --chef-license accept-no-persist #{@name.shellescape} | jq . | tee #{@name.shellescape}-overview.json"
     logger.debug "cmd #{cmd}"
     # Open3.capture3('inspec', 'json', @name.shellescape, '|', 'jq', '.', '|', 'tee', "#{@name.shellescape}-overview.json")
-    Open3.capture3(%w{cmd})
-    Dir.chdir Rails.root.to_s
+    Open3.capture3(cmd)
+    Dir.chdir Rails.root
   end
 
   # Writes InSpec controls to file
