@@ -44,32 +44,17 @@ module Services
     has_one :rule, Rule, tag: 'Rule'
   end
 
-  class ReferenceInfo
-    include HappyMapper
-    tag 'reference'
-
-    attribute :href, String, tag: 'href'
-    element :publisher, String, tag: 'publisher', namespace: 'dc'
-    element :source, String, tag: 'source', namespace: 'dc'
-  end
-
-  class ReleaseDate
-    include HappyMapper
-    tag 'status'
-
-    attribute :release_date, String, tag: 'date'
-  end
-
   class Benchmark
     include HappyMapper
     tag 'Benchmark'
 
-    has_one :release_date, ReleaseDate, tag: 'status'
+    has_one :published, String, xpath: 'xmlns:status/@date'
     element :status, String, tag: 'status'
     element :title, String, tag: 'title'
     element :description, String, tag: 'description'
     element :version, String, tag: 'version'
-    has_one :reference, ReferenceInfo, tag: 'reference'
+    has_one :publisher, String, xpath: 'xmlns:reference/dc:publisher'
+    has_one :release, String, xpath: 'xmlns:plain-text[@id="release-info"]'
     has_many :group, Group, tag: 'Group'
   end
 end

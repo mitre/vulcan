@@ -112,7 +112,7 @@
                       <li>
                           <a href="<%= new_srg_path %>"><i class="fa fa-file-archive-o"></i> Upload SRG</a>
                       </li>
-                      <% if current_user.has_role?(:vendor) %>
+                      <% if [:admin, :vendor].map { |role| current_user.has_role?(role) }.any?(true) %>
                         <li>
                             <a href="<%= new_project_path %>" id="new_project_link_id"><i class="fa fa-hourglass-start"></i> Start New Project</a>
                         </li>
