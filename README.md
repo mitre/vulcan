@@ -51,34 +51,52 @@ For Ruby (on Ubuntu):
   1. `bundle exec rails server`
   1. Navigate to `localhost:3030`
 
-## Run with Docker
+### Run With Docker
 
-### Building Docker Containers
+Given that Vulcan requires at least a database service, we use Docker Compose.
 
-_These steps need to be performed the first time you build the docker containers.
-You will need to run `docker-compose run web rake db:migrate` anytime changes are made
-to the database._
+#### Setup Docker Container (Clean Install)
 
-  1. Install dependencies
-  2. `docker-compose build`
-  3. `docker-compose run web rake db:create db:schema:load db:migrate db:seed`
-  4. Generate keys
+1. Install Docker
+2. Download vulcan by running `git clone https://github.com/mitre/vulcan.git`.
+3. Navigate to the base folder where `docker-compose.yml` is located
+4. Run the following commands in a terminal window from the vulcan source directory:
+   1. `./setup-docker-secrets.sh`
+   2. `docker-compose up -d`
+   3. `docker-compose run --rm web rake db:create db:schema:load db:migrate`
+   4. `docker-compose run --rm web rake db:create_admin`
+5. Navigate to `http://127.0.0.1:3000`
 
-### Running Docker Containers
+#### Managing Docker Container
 
-  1. `docker-compose up`
-  2. Navigate to `localhost:3030`
+The following commands are useful for managing the data in your docker container:
 
-### Container Troubleshooting
+- `docker-compose run --rm web rake db:reset` **This destroys and rebuilds the db**
+- `docker-compose run --rm web rake db:migrate` **This updates the db**
 
-If migrating the db doesn't work (#2 in _Building Docker Containers_), then run:
-  * `docker run -itv vulcan_sqlite-data:/srv/dat busybox /bin/sh`
-  * `docker container ls -a    # Note the most recent container ID`
-  * `docker cp db/* container_id:/var/www/vulcan/db/`
+#### Running Docker Container
 
-### Stopping the Containers
+Make sure you have run the setup steps at least once before following these steps!
 
-`docker-compose down`
+1. Run the following command in a terminal window:
+   - `docker-compose up -d`
+2. Go to `127.0.0.1:3000` in a web browser
+
+##### Updating Docker Container
+
+A new version of the docker container can be retrieved by running:
+
+```
+docker-compose pull
+docker-compose up -d
+docker-compose run web rake db:migrate
+```
+
+This will fetch the latest version of the container, redeploy if a newer version exists, and then apply any database migrations if applicable. No data should be lost by this operation.
+
+##### Stopping the Container
+
+`docker-compose down` # From the source directory you started from
 
 ## Usage
 
@@ -87,14 +105,6 @@ A demo instance can be accessed at inspec-dev.mitre.org
 ## Configuration
 
 See `docker-compose.yml` for all container configuration options.
-
-##### Host Container on Relative URL
-
-Edit RAILS\_RELATIVE\_URL\_ROOT in `docker-compose.yml`
-
-##### Host Container in Development/Production Mode
-
-Edit RAILS\_ENV in `docker-compose.yml`
 
 ## Licensing and Authors
 
