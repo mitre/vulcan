@@ -6,21 +6,15 @@ require 'rails/all'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-# if ENV['RAILS_ENV'] != "production"
-#  Spring.watch "app/services/**"
-# end
 module VulcanNew
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    # !!! skip Factory BOT tests for now until we can fix it !!!
-    # config.factory_bot.definition_file_paths = []
     config.load_defaults 5.1
-    config.assets.paths << Rails.root.join('app', 'assets', 'fonts')
-    config.autoload_paths += Dir["#{Rails.root}/lib"]
-    config.autoload_paths += %W(#{config.root}/app/services)
+    # config.autoload_paths += %W(#{config.root}/app/services)
 
     # Settings in config/environments/* take precedence over those specified here.
-    # Application configuration should go into files in config/initializers
-    # -- all .rb files in that directory are automatically loaded.
+    # Application configuration can go into files in config/initializers
+    # -- all .rb files in that directory are automatically loaded after loading
+    # the framework and any gems in your application.
   end
 end
