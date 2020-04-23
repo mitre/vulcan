@@ -9,6 +9,10 @@
 
 /vendor/bundle/**
 
+# Ignore docker environment information
+.env
+.env-prod
+
 # Ignore the default SQLite database.
 /db/*.sqlite3
 /db/*.sqlite3-journal
