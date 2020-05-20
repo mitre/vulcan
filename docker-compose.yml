@@ -1,0 +1,27 @@
+version: '3.5'
+
+services:
+  db:
+    image: postgres:12
+    restart: unless-stopped
+    volumes:
+      - vulcan_dbdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    expose:
+      - "5432"
+  web:
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db/vulcan_postgres_production
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_ENV: production
+    env_file: .env-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - "db"
+
+volumes:
+  vulcan_dbdata:

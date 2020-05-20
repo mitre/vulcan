@@ -1,0 +1,57 @@
+name: Run Test Suite on PR or push to master
+
+on:
+  push:
+    branches: [ master, vulcan-next ]
+  pull_request:
+    branches: [ master, vulcan-next ]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgres:12
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+        - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+
+      - name: Cache ruby gems
+        uses: actions/cache@v1
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+      - name: Build and run tests
+        env:
+          DATABASE_URL: postgres://postgres:@localhost:5432/test
+          RAILS_ENV: test
+        run: |
+          sudo apt-get -yqq install libpq-dev
+          echo "gem: --no-document" > ~/.gemrc
+          gem install bundler
+          bundle config path vendor/bundle
+          bundle install --retry 3
+          bundle exec rails db:create
+          bundle exec rails spec
+      - name: Upload coverage results
+        uses: actions/upload-artifact@master
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage

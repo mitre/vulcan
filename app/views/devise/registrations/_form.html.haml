@@ -1,0 +1,24 @@
+= form_for(resource, as: resource_name, id: 'new_user_registration', url: registration_path(resource_name)) do |f|
+  = render "devise/shared/error_messages", resource: resource
+  .form-group
+    = f.label :your_name
+    %br/
+    = f.text_field :name, autofocus: true, class: "form-control", title: "This field is required.", autocomplete: "name", required: "true"
+  .form-group
+    = f.label :email
+    %br/
+    = f.email_field :email, autofocus: true, class: "form-control", title: "This field is required.", autocomplete: "email", required: "true"
+  .form-group
+    = f.label :password
+    - if @minimum_password_length
+      %em
+        (#{@minimum_password_length} characters minimum)
+    %br/
+    = f.password_field :password, class: "form-control", title: "This field is required.", autocomplete: "new-password", required: "true"
+  .form-group
+    = f.label :password_confirmation
+    %br/
+    = f.password_field :password_confirmation, class: "form-control", title: "This field is required.", autocomplete: "new-password", required: "true"
+    = hidden_field_tag :active_tab, 'registration'
+  .actions
+    = f.submit "Sign Up", class: 'btn btn-success btn-block'
