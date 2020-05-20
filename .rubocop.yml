@@ -1,0 +1,13 @@
+require: rubocop-rails
+
+AllCops:
+  NewCops: enable
+  Exclude:
+    - bin/*
+    - db/schema.rb
+    - db/migrate/*
+    # - config/initializers/*
+    - node_modules/**/*
+    - 'vendor/**/*'
+Layout/LineLength:
+  Max: 120

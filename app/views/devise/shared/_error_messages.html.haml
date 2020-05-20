@@ -1,0 +1,9 @@
+- if resource.errors.any?
+  #error_explanation
+    .alert.alert-danger.alert-dismissable
+      %p
+        %strong
+          This form contains #{pluralize(resource.errors.count, 'error')}.
+      %ul
+        - resource.errors.full_messages.each do |msg|
+          %li= msg
