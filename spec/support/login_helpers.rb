@@ -21,4 +21,15 @@ module LoginHelpers
       uid: FFaker::Random.rand(0...1_000_000)
     }.to_json, object_class: OpenStruct)
   end
+
+  def vulcan_sign_in_with(username, password, login_field = 'Local Login')
+    visit new_user_session_path
+
+    click_link login_field
+
+    fill_in 'username', with: username
+    fill_in 'password', with: password
+
+    click_button 'Sign in'
+  end
 end

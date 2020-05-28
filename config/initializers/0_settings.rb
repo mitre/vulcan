@@ -7,6 +7,11 @@ require_relative '../settings'
 
 Settings['ldap'] ||= Settingslogic.new({})
 Settings.ldap['enabled'] = false if Settings.ldap['enabled'].nil?
+
 Settings['local_login'] ||= Settingslogic.new({})
 Settings.local_login['enabled'] = false if Settings.local_login['enabled'].nil?
+
+Settings['smtp'] ||= Settingslogic.new({})
+Settings.smtp['enabled'] = false if Settings.smtp['enabled'].nil?
+
 Settings['providers'] ||= Settingslogic.new({})
