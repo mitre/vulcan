@@ -17,7 +17,7 @@
               %b-card-text
                 = render 'devise/sessions/ldap'
           - if Settings.local_login.enabled
-            %b-tab{:active => params[:active_tab].eql?('local') ? true : false, :title => "Login"}
+            %b-tab{:active => params[:active_tab].eql?('local') ? true : false, :title => "Local Login"}
               %b-card-text
                 = render 'devise/sessions/local'
             %b-tab{:active => params[:active_tab].eql?('registration') ? true : false, :title => "Register"}

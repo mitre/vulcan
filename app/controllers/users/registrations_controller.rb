@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Users
+module Users
   # This controller exists so that we can block user registration if local user
   # login is disabled.
   class RegistrationsController < Devise::RegistrationsController
@@ -8,7 +8,7 @@ class Users
       if Settings.local_login.enabled
         super
       else
-        redirect :back, alert: 'New user registration is not currently enabled.'
+        redirect_back(fallback_location: new_user_session_path, alert: I18n.t('devise.registrations.disabled'))
       end
     end
   end
