@@ -11,7 +11,7 @@ RSpec.describe User, type: :model do
 
       it 'creates the user and sets the user attributes' do
         auth = mock_omniauth_response(user1)
-        expect { described_class.from_omniauth(auth) }.to change { described_class.count }.by 1
+        expect { described_class.from_omniauth(auth) }.to change(described_class, :count).by 1
 
         created_user = described_class.find_by(email: user1.email)
 

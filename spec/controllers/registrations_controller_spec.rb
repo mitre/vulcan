@@ -40,7 +40,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
             password_confirmation: u.password_confirmation
           }
         }
-      end.to change { User.count }.by 1
+      end.to change(User, :count).by 1
 
       expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up_but_unconfirmed')
     end
