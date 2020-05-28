@@ -11,3 +11,9 @@ AllCops:
     - 'vendor/**/*'
 Layout/LineLength:
   Max: 120
+Metrics/BlockLength:
+  Exclude:
+    - spec/**/*
+Metrics/MethodLength:
+  Exclude:
+    - spec/**/*
