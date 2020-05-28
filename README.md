@@ -23,7 +23,7 @@ For Docker:
   * docker-compose
 
 For Ruby (on Ubuntu):
-  * Ruby 2.4.4
+  * Ruby 
   * `build-essentials`
   * Bundler
   * `libq-dev`
@@ -37,15 +37,20 @@ For Ruby (on Ubuntu):
 2. Install postgres and rbenv
 3. gem install foreman
 4. rbenv install
-5. yarn config set "strict-ssl" false -g
 
 #### Running with Ruby
 
-1. brew services start postgres
+Make sure you have run the setup steps at least once before following these steps!
+
+1. ensure postgres is running
 2. bin/setup
 3. foreman start -f Procfile.dev
 4. Navigate to `http://127.0.0.1:3000`
 
+#### Stopping Vulcan
+
+1. Stop Vulcan by doing `ctrl + c`
+2. Stop the postgres server
 
 ### Run With Docker
 
