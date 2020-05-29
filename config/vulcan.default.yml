@@ -8,23 +8,24 @@
 # Any changes to this file will requre a restart of the Vulcan service.
 
 defaults: &defaults
-  external_url: <%= ENV['VULCAN_EXTERNAL_URL'] || 'localhost' %>
   welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || nil %>
-  smtp_settings:
-    address: <%= ENV['MAILER_ADDRESS'] %>
-    port: <%= ENV['MAILER_PORT'] %>
-    domain: <%= ENV['MAILER_DOMAIN'] %>
-    authentication: <%= ENV['MAILER_AUTHENTICATION']&.to_sym %>
-    tls: <%= ActiveModel::Type::Boolean.new.cast(ENV['MAILER_TLS']) %>
-    openssl_verify_mode: <%= ENV['MAILER_OPENSSL_VERIFY_MODE'] %>
-    enable_starttls_auto: <%= ActiveModel::Type::Boolean.new.cast(ENV['MAILER_ENABLE_STARTTLS_AUTO']) %>
-    user_name: <%= ENV['MAILER_SMTP_SERVER_USERNAME'] %>
-    password: <%= ENV['MAILER_SMTP_SERVER_PASSWORD'] %>
+  smtp:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['ENABLE_SMTP']) %>
+    settings:
+      address: <%= ENV['MAILER_ADDRESS'] %>
+      port: <%= ENV['MAILER_PORT'] %>
+      domain: <%= ENV['MAILER_DOMAIN'] %>
+      authentication: <%= ENV['MAILER_AUTHENTICATION']&.to_sym %>
+      tls: <%= ActiveModel::Type::Boolean.new.cast(ENV['MAILER_TLS']) %>
+      openssl_verify_mode: <%= ENV['MAILER_OPENSSL_VERIFY_MODE'] %>
+      enable_starttls_auto: <%= ActiveModel::Type::Boolean.new.cast(ENV['MAILER_ENABLE_STARTTLS_AUTO']) %>
+      user_name: <%= ENV['MAILER_SMTP_SERVER_USERNAME'] %>
+      password: <%= ENV['MAILER_SMTP_SERVER_PASSWORD'] %>
   local_login:
-    enabled: true
+    enabled: <%= ENV['ENABLE_LOCAL_LOGIN'] || true %>
     email_confirmation: true # TODO: NOT YET IMPLEMENTED, this should turn on and off devise confirmable
   ldap:
-    enabled: <%= ENV['LDAP_ENABLED'] || false %>
+    enabled: <%= ENV['ENABLE_LDAP'] || false %>
     servers:
       main:
         host: <%= ENV['LDAP_HOST'] || 'localhost' %>
