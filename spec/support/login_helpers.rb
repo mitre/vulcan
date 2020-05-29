@@ -22,13 +22,14 @@ module LoginHelpers
     }.to_json, object_class: OpenStruct)
   end
 
-  def vulcan_sign_in_with(username, password, login_field = 'Local Login')
+  def vulcan_sign_in_with(login_type, login_fields = {})
     visit new_user_session_path
 
-    click_link login_field
+    click_link login_type
 
-    fill_in 'username', with: username
-    fill_in 'password', with: password
+    login_fields.each do |key, value|
+      fill_in key, with: value
+    end
 
     click_button 'Sign in'
   end
