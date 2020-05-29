@@ -37,7 +37,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
             name: u.name,
             email: u.email,
             password: u.password,
-            password_confirmation: u.password_confirmation
+            password_confirmation: u.password
           }
         }
       end.to change(User, :count).by 1
