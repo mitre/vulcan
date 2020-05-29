@@ -32,4 +32,15 @@ module LoginHelpers
 
     click_button 'Sign in'
   end
+
+  def vulcan_sign_in(hash={}, login_field = 'Local Login')
+    visit new_user_session_path
+
+    click_link login_field
+    
+    fill_in 'user_email', with: hash.fetch('email')
+    fill_in 'user_password', with: hash.fetch('password')
+
+    click_button 'Sign in'
+  end
 end
