@@ -37,15 +37,15 @@ For Ruby (on Ubuntu):
 2. Install postgres and rbenv
 3. gem install foreman
 4. rbenv install
+5. bin/setup
 
 #### Running with Ruby
 
 Make sure you have run the setup steps at least once before following these steps!
 
 1. ensure postgres is running
-2. bin/setup
-3. foreman start -f Procfile.dev
-4. Navigate to `http://127.0.0.1:3000`
+2. foreman start -f Procfile.dev
+3. Navigate to `http://127.0.0.1:3000`
 
 #### Stopping Vulcan
 
