@@ -23,7 +23,7 @@ defaults: &defaults
       password: <%= ENV['MAILER_SMTP_SERVER_PASSWORD'] %>
   local_login:
     enabled: <%= ENV['ENABLE_LOCAL_LOGIN'] || true %>
-    email_confirmation: true # TODO: NOT YET IMPLEMENTED, this should turn on and off devise confirmable
+    email_confirmation: true
   ldap:
     enabled: <%= ENV['ENABLE_LDAP'] || false %>
     servers:
