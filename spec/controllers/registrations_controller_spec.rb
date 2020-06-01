@@ -78,7 +78,6 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       u = build(:user)
 
       expect do
-        #binding.pry
         post :create, params: {
           user: {
             name: u.name,
