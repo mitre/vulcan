@@ -10,7 +10,7 @@ class User < ApplicationRecord
   validates :email, uniqueness: true, presence: true
   validates :name, :password, presence: true
 
-  before_create :skip_confirmation! unless Settings.local_login.email_confirmation
+  before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
 
   def self.from_omniauth(auth)
     find_or_create_by(email: auth.info.email) do |user|

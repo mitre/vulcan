@@ -45,4 +45,52 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up_but_unconfirmed')
     end
   end
+
+  context 'email confirmation enabled' do
+    before do
+      stub_local_login_setting(email_confirmation: true)
+    end
+
+    it 'allows users to register' do
+      u = build(:user)
+
+      expect do
+        post :create, params: {
+          user: {
+            name: u.name,
+            email: u.email,
+            password: u.password,
+            password_confirmation: u.password
+          }
+        }
+      end.to change(User, :count).by 1
+
+      expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up_but_unconfirmed')
+    end
+  end
+
+  context 'email confirmation disabled' do
+    before do
+      stub_local_login_setting(email_confirmation: false)
+    end
+
+    it 'allows users to register without confirming email' do
+      u = build(:user)
+
+      expect do
+        #binding.pry
+        post :create, params: {
+          user: {
+            name: u.name,
+            email: u.email,
+            password: u.password,
+            password_confirmation: u.password
+          }
+        }
+      end.to change(User, :count).by 1
+
+      expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up')
+    end
+  end
+
 end
