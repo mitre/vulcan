@@ -91,5 +91,4 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up')
     end
   end
-
 end
