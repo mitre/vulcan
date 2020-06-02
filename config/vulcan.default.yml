@@ -9,6 +9,7 @@
 
 defaults: &defaults
   welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || nil %>
+  contact_email: <%= ENV['EMAIL'] || 'do_not_reply@vulcan' %>
   smtp:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['ENABLE_SMTP']) %>
     settings:
