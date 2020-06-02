@@ -15,15 +15,17 @@ RSpec.describe 'Login with LDAP', type: :feature, skip: !Settings.ldap.enabled d
 
   context 'when ldap login is enabled' do
     it 'successfully logs an ldap user in with correct credentials' do
-      expect { vulcan_sign_in_with('zoidberg@planetexpress.com', 'zoidberg', 'LDAP') }
-        .to change(User, :count).from(0).to(1)
+      expect do
+        vulcan_sign_in_with('LDAP', { username: 'zoidberg@planetexpress.com', password: 'zoidberg' })
+      end.to change(User, :count).from(0).to(1)
 
       expect(page).to have_selector('.alert-success', text: I18n.t('devise.sessions.signed_in'))
     end
 
     it 'does not log an ldap user in with incorrect credentials' do
-      expect { vulcan_sign_in_with('zoidberg@planetexpress.com', '!zoidberg', 'LDAP') }
-        .not_to change(User, :count)
+      expect do
+        vulcan_sign_in_with('LDAP', { username: 'zoidberg@planetexpress.com', password: '!zoidberg' })
+      end.not_to change(User, :count)
 
       expect(page)
         .to have_selector('.alert-danger', text: 'Could not authenticate you from LDAP because "Invalid credentials".')
