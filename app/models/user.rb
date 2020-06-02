@@ -7,7 +7,6 @@ class User < ApplicationRecord
 
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
 
-  validates :email, uniqueness: true, presence: true
   validates :name, :password, presence: true
 
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
