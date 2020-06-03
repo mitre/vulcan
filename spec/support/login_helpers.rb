@@ -9,6 +9,10 @@ module LoginHelpers
     allow(Settings.local_login).to receive_messages(to_settings(messages))
   end
 
+  def stub_base_settings(messages)
+    allow(Settings).to receive_messages(to_settings(messages))
+  end
+
   def mock_omniauth_response(user)
     # This sets up an object that is similar to what LDAP and GitHub return to
     # the User.from_omniauth method
