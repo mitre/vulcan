@@ -12,6 +12,7 @@ module SimpleCovEnv
     configure_profile
 
     SimpleCov.start
+    SimpleCov.minimum_coverage 100
   end
 
   def configure_profile
