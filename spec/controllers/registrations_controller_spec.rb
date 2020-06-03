@@ -41,6 +41,10 @@ RSpec.describe Users::RegistrationsController, type: :controller do
         }
       end.to change(User, :count).by 1
 
+      ActionMailer::Base.deliveries.last.tap do |mail|
+        expect(mail.from).to eq(['do_not_reply@vulcan'])
+      end
+
       expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up_but_unconfirmed')
     end
   end
@@ -87,28 +91,9 @@ RSpec.describe Users::RegistrationsController, type: :controller do
     end
   end
 
-  context 'default email:' do
-    it 'checks if contact email is default' do
-      expect do
-        post :create, params: {
-          user: {
-            name: user1.name,
-            email: user1.email,
-            password: user1.password,
-            password_confirmation: user1.password
-          }
-        }
-      end.to change(User, :count).by 1
-
-      ActionMailer::Base.deliveries.last.tap do |mail|
-        expect(mail.from).to eq(['do_not_reply@vulcan'])
-      end
-    end
-  end
-
   context 'empty email:' do
     before do
-      stub_contact_email(contact_email: 'contact_email@test.com')
+      stub_base_settings(contact_email: 'contact_email@test.com')
     end
     it 'checks if contact email is empty' do
       expect do
