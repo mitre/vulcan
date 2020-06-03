@@ -124,7 +124,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
 
       ActionMailer::Base.deliveries.last.tap do |mail|
         expect(mail.from).to eq(['contact_email@test.com'])
-      end    
+      end
     end
   end
 
