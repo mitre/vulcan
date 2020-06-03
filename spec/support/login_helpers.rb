@@ -9,7 +9,7 @@ module LoginHelpers
     allow(Settings.local_login).to receive_messages(to_settings(messages))
   end
 
-  def stub_contact_email(messages)
+  def stub_base_settings(messages)
     allow(Settings).to receive_messages(to_settings(messages))
   end
 
