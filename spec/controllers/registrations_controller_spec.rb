@@ -86,4 +86,46 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up')
     end
   end
+
+  context 'default email:' do
+    it 'checks if contact email is default' do
+      expect do
+        post :create, params: {
+          user: {
+            name: user1.name,
+            email: user1.email,
+            password: user1.password,
+            password_confirmation: user1.password
+          }
+        }
+      end.to change(User, :count).by 1
+
+      ActionMailer::Base.deliveries.last.tap do |mail|
+        expect(mail.from).to eq(["do_not_reply@vulcan"])
+      end
+    end
+  end
+
+  context 'empty email:' do
+    before do
+      stub_contact_email(contact_email: 'contact_email@test.com')
+    end
+    it 'checks if contact email is empty' do
+      expect do
+        post :create, params: {
+          user: {
+            name: user1.name,
+            email: user1.email,
+            password: user1.password,
+            password_confirmation: user1.password
+          }
+        }
+      end.to change(User, :count).by 1
+
+      ActionMailer::Base.deliveries.last.tap do |mail|
+        expect(mail.from).to eq(['contact_email@test.com'])
+      end    
+    end
+  end
+
 end
