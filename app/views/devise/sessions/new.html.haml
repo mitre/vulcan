@@ -10,25 +10,27 @@
     = render 'devise/shared/what_is_vulcan'
   .col-md.offset-md-0.offset-lg-1.order-1.order-md-2
     #login
-      %b-card{"no-body" => ""}
-        %b-tabs{:card => "", :fill => "", :pills => ""}
-          - if Devise.omniauth_providers.include?(:ldap)
-            %b-tab{:title => Settings.ldap.servers.values.first['title']}
-              %b-card-text
-                = render 'devise/sessions/ldap'
-          - if Settings.local_login.enabled
-            %b-tab{:active => params[:active_tab].eql?('local') ? true : false, :title => "Local Login"}
-              %b-card-text
-                = render 'devise/sessions/local'
-            %b-tab{:active => params[:active_tab].eql?('registration') ? true : false, :title => "Register"}
-              %b-card-text
-                = render 'devise/registrations/form'
+      - if any_form_providers_enabled?
+        %b-card{"no-body" => ""}
+          %b-tabs{:card => "", :fill => "", :pills => ""}
+            - if ldap_enabled?
+              %b-tab{:title => Settings.ldap.servers.values.first['title']}
+                %b-card-text
+                  = render 'devise/sessions/ldap'
+            - if local_login_enabled?
+              %b-tab{:active => params[:active_tab].eql?('local') ? true : false, :title => "Local Login"}
+                %b-card-text
+                  = render 'devise/sessions/local'
+              %b-tab{:active => params[:active_tab].eql?('registration') ? true : false, :title => "Register"}
+                %b-card-text
+                  = render 'devise/registrations/form'
 
-    - if devise_mapping.omniauthable? && resource_class.omniauth_providers.reject {|p| p.eql?(:ldap)}.count > 0
-      %hr/
+    - if any_oauth_providers_enabled?
+      - if any_form_providers_enabled?
+        %hr/
       .border.rounded
         .p-3
-          - resource_class.omniauth_providers.reject {|p| p.eql?(:ldap)}.each do |provider|
+          - non_ldap_oauth_providers.each do |provider|
             = button_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-light border btn-#{provider}" do
               %i.mdi{class: "mdi-#{provider}","aria-hidden" => "true"}
               Sign in with GitHub
