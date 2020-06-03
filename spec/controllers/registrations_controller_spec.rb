@@ -101,7 +101,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       end.to change(User, :count).by 1
 
       ActionMailer::Base.deliveries.last.tap do |mail|
-        expect(mail.from).to eq(["do_not_reply@vulcan"])
+        expect(mail.from).to eq(['do_not_reply@vulcan'])
       end
     end
   end
@@ -127,5 +127,4 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       end
     end
   end
-
 end
