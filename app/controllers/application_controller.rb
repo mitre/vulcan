@@ -15,10 +15,6 @@ class ApplicationController < ActionController::Base
     @navigation += helpers.base_navigation if current_user
   end
 
-  def setup_user
-    @user_info = []
-  end
-
   protected
 
   def configure_permitted_parameters
