@@ -12,34 +12,34 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 * [Configure and Enable Providers:](#configure-and-enable-providers)
 
 #### Configure and Enable SMTP:
-* enabled:
+* enabled: `(ENV: ENABLE_SMTP)`
 * settings:
-    * address:
-    * port:
-    * domain:
-    * authentication:
-    * tls:
-    * openssl_verify_mode:
-    * enable_starttls_auto:
-    * user_name:
-    * password:
+    * address: `(ENV: MAILER_ADDRESS)`
+    * port: `(ENV: MAILER_PORT)`
+    * domain: `(ENV: MAILER_DOMAIN)`
+    * authentication: `(ENV: MAILER_AUTHENTICATION)`
+    * tls: `(ENV: MAILER_TLS)`
+    * openssl_verify_mode: `(ENV: MAILER_OPENSSL_VERIFY_MODE)`
+    * enable_starttls_auto: `(ENV: MAILER_ENABLE_STARTTLS_AUTO)`
+    * user_name: `(ENV: MAILER_SMTP_SERVER_USERNAME)`
+    * password: `(ENV: MAILER_SMTP_SERVER_PASSWORD)`
 
 #### Configure and Enable Local login:
-* enabled:
-* email_confirmation:
+* enabled: Allows for users to be able to log in as a local user instead of using ldap. `(ENV: ENABEL_LOCAL_LOGIN)(default: true)`
+* email_confirmation: Turns on email confirmation for local registration. `(default: true)`
 
 #### Configure and Enable LDAP:
-* enabled:
+* enabled: `(ENV: ENABLE_LDAP)(default: false)` 
 * servers:
-* main:
-    * host:
-    * port:
-    * title:
-    * uid:
-    * encryption:
-    * bind_dn:
-    * password:
-    * base:
+    * main:
+        * host: `(ENV: LDAP_HOST)(default: localhost)`
+        * port: `(ENV: LDAP_POST)(default: 389)`
+        * title: `(ENV: LDAP_TITLE)(default: LDAP)`
+        * uid: `(ENV: LDAP_ATTRIBUTE)(default: uid)`
+        * encryption: `(ENV: LDAP_ENCRYPTION)(default`
+        * bind_dn: `(ENV: LDAP_BIND_DN)`
+        * password: `(ENV: LDAP_ADMIN_PASS)`
+        * base: `(ENV: LDAP_BASE)`
 
 #### Configure and Enable Providers
 
