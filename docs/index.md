@@ -6,12 +6,10 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 
 * welcome_text: 
 * contact_email: Is the default email for ApplicationMailer to use.
-* smtp: Sets up the smtp mailing server
-* local_login: Enables user to log in as well as turn email confirmation on and off
-* ldap: 
-* [Configure and Enable SMTP:]()
-* providers:
-* [Configure and Enable Providers:](#configureandenableproviders:)
+* [Configure and Enable SMTP:](#configure-and-enable-smtp) Sets up the smtp mailing server
+* [Configure and Enable Local Login:](#configure-and-enable-local-login) Enables user to log in as well as turn email confirmation on and off 
+* [Configure and Enable LDAP:](#configure-and-enable-ldap)
+* [Configure and Enable Providers:](#configure-and-enable-providers)
 
 #### Configure and Enable SMTP:
 * enabled:
@@ -43,5 +41,5 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
     * password:
     * base:
 
-#### Configure and Enable Providers: {:#configure-and-enable-providers:}
+#### Configure and Enable Providers
 
