@@ -41,11 +41,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
         }
       end.to change(User, :count).by 1
 
-      ActionMailer::Base.deliveries.last.tap do |mail|
-        expect(mail.from).to eq(['do_not_reply@vulcan'])
-      end
-
-      expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up_but_unconfirmed')
+      expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up')
     end
   end
 
@@ -65,6 +61,10 @@ RSpec.describe Users::RegistrationsController, type: :controller do
           }
         }
       end.to change(User, :count).by 1
+
+      ActionMailer::Base.deliveries.last.tap do |mail|
+        expect(mail.from).to eq(['do_not_reply@vulcan'])
+      end
 
       expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up_but_unconfirmed')
     end
@@ -91,9 +91,10 @@ RSpec.describe Users::RegistrationsController, type: :controller do
     end
   end
 
-  context 'empty email:' do
+  context 'empty email' do
     before do
       stub_base_settings(contact_email: 'contact_email@test.com')
+      stub_local_login_setting(email_confirmation: true)
     end
     it 'checks if contact email is empty' do
       expect do
