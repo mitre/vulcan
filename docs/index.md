@@ -5,11 +5,9 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 [**Installation**](index.md) | [**Configuration**](config.md)
 
 ## Index
-* [Configure and Setup Welcome Text and Contact Email:](#configure-and-setup-welcome-text-and-contact-email:)
-* [Configure and Enable SMTP:](#configure-and-enable-smtp) Sets up the smtp mailing server
-* [Configure and Enable Local Login:](#configure-and-enable-local-login) Enables user to log in as well as turn email confirmation on and off 
-* [Configure and Enable LDAP:](#configure-and-enable-ldap)
-* [Configure and Enable Providers:](#configure-and-enable-providers)
+* [Dependencies](#dependencies)
+* [Run with Ruby](#run-with-ruby)
+* [Run with Docker](#run-with-docker)
 
 ## Installation
 
