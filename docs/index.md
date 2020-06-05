@@ -29,7 +29,7 @@ Allows for users to to register and login not using external services.
 ## Configure and Enable LDAP:
 
 ### LDAP Configuration:
-[Configuration](#config.md)
+[Configuration](config.md)
 
 ### LDAP Setup:
 To enable LDAP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. 
