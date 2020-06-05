@@ -17,19 +17,19 @@ the process of aligning security controls from SRG items into actual STIG securi
 ## Configuration Breakdown
 [Configuration](docs/config.md)
 
-## Configure and Enable SMTP:
+## Enable SMTP:
 ### SMTP Setup:
 To enable SMTP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. When SMTP is set up you should enable `local_login: email_confirmation` so users must confirm their email to continue.
 
-## Configure and Enable Local login:
+## Enable Local login:
 ### Local Login Setup:
 Allows for users to to register and login not using external services.
 
-## Configure and Enable LDAP:
+## Enable LDAP:
 ### LDAP Setup:
 To enable LDAP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. 
 
-## Configure and Enable Providers
+## Enable Providers
 
 ## Usage
 
