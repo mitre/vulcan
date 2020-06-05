@@ -18,30 +18,30 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 * **contact_email:** Contact email is the reply email shown to users on confirmation and notification emails. By default this will revert to `do_not_reply@vulcan` if no email is specified. Is the default email for ApplicationMailer to use. `(ENV: VULCAN_CONTACT_EMAIL)(default: do_not_reply@vulcan)`
 
 ## Configure and Enable SMTP:
+### SMTP Setup:
+To enable SMTP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. When SMTP is set up you should enable `local_login: email_confirmation` so users must confirm their email to continue.
 
 ### SMTP Configuration
 [Configuration](config.md#configure-smtp)
 
-### SMTP Setup:
-To enable SMTP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. When SMTP is set up you should enable `local_login: email_confirmation` so users must confirm their email to continue.
 
 
 ## Configure and Enable Local login:
+### Local Login Setup:
+Allows for users to to register and login not using external services.
 
 ### Local Login Configuration
 [Configuration](config.md#configure-local-login)
 
-### Local Login Setup:
-Allows for users to to register and login not using external services.
 
 
 ## Configure and Enable LDAP:
+### LDAP Setup:
+To enable LDAP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. 
 
 ### LDAP Configuration:
 [Configuration](config.md#configure-ldap)
 
-### LDAP Setup:
-To enable LDAP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. 
 
 
 ## Configure and Enable Providers
