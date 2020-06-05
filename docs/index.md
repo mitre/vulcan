@@ -25,7 +25,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
     * password: For mail server authentication `(ENV: VULCAN_SMTP_SERVER_PASSWORD)`
 
 ### SMTP Setup:
-The SMTP server used for sending confirmation emails. When SMTP is set up enable `local_login: email_confirmation`.
+To enable SMTP you will need to add your configuration file to `_____` or pass in the specifications as environment variables. When SMTP is set up you should enable `local_login: email_confirmation` so users must confirm their email to continue.
 
 
 ## Configure and Enable Local login:
@@ -43,14 +43,14 @@ Allows for users to to register and login not using external services.
         * host: `(ENV: VULCAN_LDAP_HOST)(default: localhost)`
         * port: Port which the LDAP server communicates through `(ENV: VULCAN_LDAP_POST)(default: 389)`
         * title: `(ENV: VULCAN_LDAP_TITLE)(default: LDAP)`
-        * uid: `(ENV: VULCAN_LDAP_ATTRIBUTE)(default: uid)`
+        * uid: Attribute for the username `(ENV: VULCAN_LDAP_ATTRIBUTE)(default: uid)`
         * encryption: `(ENV: VULCAN_LDAP_ENCRYPTION)(default: plain)`
-        * bind_dn: `(ENV: VULCAN_LDAP_BIND_DN)`
-        * password: Passworrd to loginto the LDAP server `(ENV: VULCAN_LDAP_ADMIN_PASS)`
-        * base: `(ENV: VULCAN_LDAP_BASE)`
+        * bind_dn: The DN of the user you will bind with `(ENV: VULCAN_LDAP_BIND_DN)`
+        * password: Password to log into the LDAP server `(ENV: VULCAN_LDAP_ADMIN_PASS)`
+        * base: The point where a server will search for users `(ENV: VULCAN_LDAP_BASE)`
 
 ### LDAP Setup:
-Configuration for access to the active directory.
+To enable LDAP you will need to add your configuration file to `______` or pass in the specifications as environment variables. 
 
 
 ## Configure and Enable Providers
