@@ -5,7 +5,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 [**Installation**](index.md) | [**Configuration**](config.md)
 
 ## Index
-* [Configure Welcome Text and Contact Email](#contact-email)
+* [Configure Welcome Text and Contact Email](#configure-welcome-text-and-contact-email)
 * [Configure SMTP:](#configure-smtp) Sets up the smtp mailing server
 * [Configure Local Login:](#configure-local-login) Enables user to log in as well as turn email confirmation on and off 
 * [Configure LDAP:](#configure-ldap)
