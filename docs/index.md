@@ -14,15 +14,15 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 ## Configure and Enable SMTP:
 * enabled: `(ENV: VULCAN_ENABLE_SMTP)`
 * settings:
-    * address: `(ENV: VULCAN_SMTP_ADDRESS)`
-    * port: `(ENV: VULCAN_SMTP_PORT)`
-    * domain: `(ENV: VULCAN_SMTP_DOMAIN)`
-    * authentication: `(ENV: VULCAN_SMTP_AUTHENTICATION)`
-    * tls: `(ENV: VULCAN_SMTP_TLS)`
-    * openssl_verify_mode: `(ENV: VULCAN_SMTP_OPENSSL_VERIFY_MODE)`
-    * enable_starttls_auto: `(ENV: VULCAN_SMTP_ENABLE_STARTTLS_AUTO)`
-    * user_name: `(ENV: VULCAN_SMTP_SERVER_USERNAME)`
-    * password: `(ENV: VULCAN_SMTP_SERVER_PASSWORD)`
+    * address: Allows for a remote mail server `(ENV: VULCAN_SMTP_ADDRESS)`
+    * port: Port for your mail server to run off of `(ENV: VULCAN_SMTP_PORT)`
+    * domain: For specification of a HELO domain `(ENV: VULCAN_SMTP_DOMAIN)`
+    * authentication: For specification of authentication type if the mail server requires it `(ENV: VULCAN_SMTP_AUTHENTICATION)`
+    * tls: Enables SMTP to connect with SMTP/TLS `(ENV: VULCAN_SMTP_TLS)`
+    * openssl_verify_mode: For specifying how OpenSSL checks certificates `(ENV: VULCAN_SMTP_OPENSSL_VERIFY_MODE)`
+    * enable_starttls_auto: Checks if SMTP has STARTTLS enabled and starts to use it `(ENV: VULCAN_SMTP_ENABLE_STARTTLS_AUTO)`
+    * user_name: For mail server authentication `(ENV: VULCAN_SMTP_SERVER_USERNAME)`
+    * password: For mail server authentication `(ENV: VULCAN_SMTP_SERVER_PASSWORD)`
 
 ### SMTP Setup:
 The SMTP server used for sending confirmation emails. When SMTP is set up enable `local_login: email_confirmation`.
