@@ -35,3 +35,49 @@
         * **bind_dn:** The DN of the user you will bind with `(ENV: VULCAN_LDAP_BIND_DN)`
         * **password:** Password to log into the LDAP server `(ENV: VULCAN_LDAP_ADMIN_PASS)`
         * **base:** The point where a server will search for users `(ENV: VULCAN_LDAP_BASE)`
+
+## Example Vulcan.yml
+```
+defaults: &defaults
+  welcome_text:
+  contact_email:
+  smtp:
+    enabled:
+    settings:
+      address:
+      port:
+      domain:
+      authentication:
+      tls:
+      openssl_verify_mode:
+      enable_starttls_auto:
+      user_name:
+      password:
+  local_login:
+    enabled:
+    email_confirmation:
+  ldap:
+    enabled:
+    servers:
+      main:
+        host:
+        port: 
+        title:
+        uid:
+        encryption:
+        bind_dn:
+        password:
+        base:
+  providers:
+    # - { name: 'github',
+    #     app_id: '<APP_ID>',
+    #     app_secret: '<APP_SECRET>',
+    #     args: { scope: 'user:email' } }
+
+development:
+  <<: *defaults
+test:
+  <<: *defaults
+production:
+  <<: *defaults
+ ```
