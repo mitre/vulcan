@@ -1,10 +1,17 @@
 # Vulcan Configuration
 
+[**Installation**](index.md) | [**Configuration**](config.md)
+
 ## Index
+* [Configure Welcome Text and Contact Email](#contact-email)
 * [Configure SMTP:](#configure-smtp) Sets up the smtp mailing server
 * [Configure Local Login:](#configure-local-login) Enables user to log in as well as turn email confirmation on and off 
 * [Configure LDAP:](#configure-ldap)
 * [Configure Providers:](#configure-providers)
+
+## Configure Welcome Text and Contact Email:
+* **welcome_text:** Welcome text is the text shown on the homepage below the "What is Vulcan" blurb on the homepage. It can be configured by the administrator to provide users with any information that may be relevant to their access and usage of the Vulcan application. `(ENV: VULCAN_WELCOME_TEXT)(default: nil)`
+* **contact_email:** Contact email is the reply email shown to users on confirmation and notification emails. By default this will revert to `do_not_reply@vulcan` if no email is specified. Is the default email for ApplicationMailer to use. `(ENV: VULCAN_CONTACT_EMAIL)(default: do_not_reply@vulcan)`
 
 ## Configure SMTP:
 * **enabled:** `(ENV: VULCAN_ENABLE_SMTP)`
