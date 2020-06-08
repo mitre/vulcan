@@ -30,7 +30,7 @@ defaults: &defaults
     servers:
       main:
         host: <%= ENV['VULCAN_LDAP_HOST'] || 'localhost' %>
-        port: <%= ENV['VULCAN_LDAP_POST'] || 389 %>
+        port: <%= ENV['VULCAN_LDAP_PORT'] || 389 %>
         title: <%= ENV['VULCAN_LDAP_TITLE'] || 'LDAP' %>
         uid: <%= ENV['VULCAN_LDAP_ATTRIBUTE'] || 'uid' %>
         encryption: <%= ENV['VULCAN_LDAP_ENCRYPTION'] || 'plain' %> # "start_tls" or "simple_tls" or "plain"
