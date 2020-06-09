@@ -17,6 +17,38 @@ the process of aligning security controls from SRG items into actual STIG securi
 ## Configuration Breakdown
 [Configuration](docs/config.md)
 
+## Dependencies:
+For Ruby (on Ubuntu):
+  * Ruby 
+  * `build-essentials`
+  * Bundler
+  * `libq-dev`
+  * nodejs
+
+### Run With Ruby
+
+#### Setup Ruby
+
+1. Install the version of Ruby specified in `.ruby-version`
+2. Install postgres and rbenv
+3. gem install foreman
+4. rbenv install
+5. bin/setup
+
+#### Running with Ruby
+
+Make sure you have run the setup steps at least once before following these steps!
+
+1. ensure postgres is running
+2. foreman start -f Procfile.dev
+3. Navigate to `http://127.0.0.1:3000`
+
+#### Stopping Vulcan
+
+1. Stop Vulcan by doing `ctrl + c`
+2. Stop the postgres server
+
+
 ## Enable SMTP:
 ### SMTP Setup:
 To enable SMTP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. When SMTP is set up you should enable `local_login: email_confirmation` so users must confirm their email to continue.

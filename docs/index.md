@@ -6,7 +6,6 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 
 ## Index
 * [Dependencies](#dependencies)
-* [Run with Ruby](#run-with-ruby)
 * [Run with Docker](#run-with-docker)
 
 ## Installation
@@ -16,36 +15,6 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 For Docker:
   * Docker
   * docker-compose
-
-For Ruby (on Ubuntu):
-  * Ruby 
-  * `build-essentials`
-  * Bundler
-  * `libq-dev`
-  * nodejs
-
-### Run With Ruby
-
-#### Setup Ruby
-
-1. Install the version of Ruby specified in `.ruby-version`
-2. Install postgres and rbenv
-3. gem install foreman
-4. rbenv install
-5. bin/setup
-
-#### Running with Ruby
-
-Make sure you have run the setup steps at least once before following these steps!
-
-1. ensure postgres is running
-2. foreman start -f Procfile.dev
-3. Navigate to `http://127.0.0.1:3000`
-
-#### Stopping Vulcan
-
-1. Stop Vulcan by doing `ctrl + c`
-2. Stop the postgres server
 
 ### Run With Docker
 
