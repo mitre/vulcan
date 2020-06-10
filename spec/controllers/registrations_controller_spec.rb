@@ -4,6 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Users::RegistrationsController, type: :controller do
   include LoginHelpers
+  include Users
 
   before(:each) do
     @request.env['devise.mapping'] = Devise.mappings[:user]
@@ -111,6 +112,67 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       ActionMailer::Base.deliveries.last.tap do |mail|
         expect(mail.from).to eq(['contact_email@test.com'])
       end
+    end
+  end
+
+  context 'update user info' do
+    let(:user2) {create(:user)}
+    let(:user3) {build(:user)}
+    before do 
+      sign_in user2
+    end
+    it 'checks if user is updated' do
+      post :update, params: {
+          user: {
+          name: user3.name,
+          email: user3.email,
+          password: user3.password,
+          password_confirmation: user3.password,
+          current_password: user2.password
+        }
+      }
+      expect(flash[:notice]).to eq I18n.t('devise.registrations.update_needs_confirmation')
+      expect(user2.reload.name).to eq(user3.name)
+      user2.reload
+      user2.confirm
+      expect(user2.email).to eq(user3.email)
+      expect(user2.reload.password).to eq(user3.password)
+    end
+  end
+
+  context 'update user info without password' do
+    let(:user2) {create(:user)}
+    let(:user3) {build(:user)}
+    before do
+      sign_in user2
+    end
+    it 'makes sure can not update without password' do
+      post :update, params: {
+        user: {
+        name: user3.name,
+        email: user2.email,
+        password: user2.password,
+        password_confirmation: user2.password,
+        current_password: ''
+        }
+      }
+      expect(user2.name).should_not eq(user3.name)
+    end
+  end
+
+  context 'update ldap user info' do
+    let(:user4) {create(:ldap_user)}
+    before do
+      sign_in user4
+    end
+    it 'user updates without password' do
+      #auth = mock_omniauth_response(user2)
+      post :update, params: {
+        user: {
+          name: user1.name
+        }
+      }
+      expect(user4.reload.name).to eq(user1.name)
     end
   end
 end
