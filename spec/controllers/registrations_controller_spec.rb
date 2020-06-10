@@ -116,14 +116,14 @@ RSpec.describe Users::RegistrationsController, type: :controller do
   end
 
   context 'update user info' do
-    let(:user2) {create(:user)}
-    let(:user3) {build(:user)}
-    before do 
+    let(:user2) { create(:user) }
+    let(:user3) { build(:user) }
+    before do
       sign_in user2
     end
     it 'checks if user is updated' do
       post :update, params: {
-          user: {
+        user: {
           name: user3.name,
           email: user3.email,
           password: user3.password,
@@ -141,19 +141,19 @@ RSpec.describe Users::RegistrationsController, type: :controller do
   end
 
   context 'update user info without password' do
-    let(:user2) {create(:user)}
-    let(:user3) {build(:user)}
+    let(:user2) { create(:user) }
+    let(:user3) { build(:user) }
     before do
       sign_in user2
     end
     it 'makes sure can not update without password' do
       post :update, params: {
         user: {
-        name: user3.name,
-        email: user2.email,
-        password: user2.password,
-        password_confirmation: user2.password,
-        current_password: ''
+          name: user3.name,
+          email: user2.email,
+          password: user2.password,
+          password_confirmation: user2.password,
+          current_password: ''
         }
       }
       expect(user2.name).should_not eq(user3.name)
@@ -161,12 +161,12 @@ RSpec.describe Users::RegistrationsController, type: :controller do
   end
 
   context 'update ldap user info' do
-    let(:user4) {create(:ldap_user)}
+    let(:user4) { create(:ldap_user) }
     before do
       sign_in user4
     end
     it 'user updates without password' do
-      #auth = mock_omniauth_response(user2)
+      # auth = mock_omniauth_response(user2)
       post :update, params: {
         user: {
           name: user1.name
