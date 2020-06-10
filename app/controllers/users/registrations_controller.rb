@@ -4,7 +4,6 @@ module Users
   # This controller exists so that we can block user registration if local user
   # login is disabled.
   class RegistrationsController < Devise::RegistrationsController
-
     before_action :configure_permitted_parameters
     def create
       if Settings.local_login.enabled
