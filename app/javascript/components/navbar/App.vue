@@ -12,11 +12,34 @@
         <div class="d-flex w-100 justify-content-lg-center text-lg-center">
         <b-navbar-nav>
           <div v-bind:key="item.name" v-for="item in navigation">
-            <NavbarItem v-bind:icon="item.icon" v-bind:link="item.link" v-bind:name="item.name" />
+            <NavbarItem v-bind:icon="item.icon" v-bind:link="item.link" v-bind:name="item.name" :href="item.link" />
           </div>
         </b-navbar-nav>
         </div>
         <!-- Right aligned nav items -->
+        <b-navbar-nav class="ml-auto">
+          <b-nav-item-dropdown v-if="signed_in" right>
+            <!-- if there is a notification change symbol -->
+            <template v-slot:button-content v-if="signed_in">
+              <i class="mdi mdi-bell" aria-hidden="true"></i>
+            </template>
+            <template v-slot:button-content v-else>
+              <i class="mdi mdi-bell-ring" aria-hidden="true"></i>
+            </template>
+            <!-- 
+            <div v-bind:key="project.name" v-for="project in projects">
+              <b-dropdown-item :href="profile_path">project.comment</b-dropdown-item>
+            </div> 
+
+            - foreach($items as $items)
+                %li
+                  = items->title
+                  
+            -->
+            <b-dropdown-item :href="profile_path">notification</b-dropdown-item>
+          </b-nav-item-dropdown>
+        </b-navbar-nav>
+
         <b-navbar-nav class="ml-auto">
           <b-nav-item-dropdown v-if="signed_in" right>
             <template v-slot:button-content>
