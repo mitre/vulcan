@@ -22,4 +22,8 @@ class User < ApplicationRecord
       user.skip_confirmation!
     end
   end
+
+  def username
+    return email.split('@')[0].capitalize
+  end
 end

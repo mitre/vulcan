@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  post 'messages', to: 'messages#create'
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
     registrations: 'users/registrations'
@@ -8,7 +9,10 @@ Rails.application.routes.draw do
 
   root to: 'hello#index'
   get 'hello/index'
-  get 'hello/projects', as: 'projects'
+  # get 'hello/projects', as: 'projects'
+  get 'pages/home', as: 'home'
+
+  # get 'pages/home'
 
   # Furture
   # get 'hello/new_projects', as: 'new_projects'

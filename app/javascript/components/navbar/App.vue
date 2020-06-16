@@ -34,9 +34,8 @@
             - foreach($items as $items)
                 %li
                   = items->title
-                  
             -->
-            <b-dropdown-item :href="profile_path">notification</b-dropdown-item>
+            <b-dropdown-item v-bind:href = "profile_path">notification</b-dropdown-item>
           </b-nav-item-dropdown>
         </b-navbar-nav>
 
