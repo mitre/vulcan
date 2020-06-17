@@ -131,9 +131,9 @@ RSpec.describe Users::RegistrationsController, type: :controller do
           current_password: user2.password
         }
       }
-      expect(flash[:notice]).to eq I18n.t('devise.registrations.update_needs_confirmation')
-      expect(user2.reload.name).to eq(user3.name)
       user2.reload
+      expect(flash[:notice]).to eq I18n.t('devise.registrations.update_needs_confirmation')
+      expect(user2.name).to eq(user3.name)
       user2.confirm
       expect(user2.email).to eq(user3.email)
       expect(user2.reload.password).to eq(user3.password)
@@ -166,7 +166,6 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       sign_in user4
     end
     it 'user updates without password' do
-      # auth = mock_omniauth_response(user2)
       post :update, params: {
         user: {
           name: user1.name
