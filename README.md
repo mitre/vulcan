@@ -14,12 +14,12 @@ the process of aligning security controls from SRG items into actual STIG securi
 * Confidential data in the database is encrypted using symmetric encryption
 * Authenticate via the local server, through github, and through configuring an LDAP server.
 
-## Configuration Breakdown
+## Deploy Vulcan
 [Configuration](docs/config.md)
 
-## Dependencies:
+## Deployment Dependencies:
 For Ruby (on Ubuntu):
-  * Ruby 
+  * Ruby
   * `build-essentials`
   * Bundler
   * `libq-dev`
@@ -59,7 +59,7 @@ Allows for users to to register and login not using external services.
 
 ## Enable LDAP:
 ### LDAP Setup:
-To enable LDAP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. 
+To enable LDAP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables.
 
 ## Enable Providers
 ### Providers Setup
@@ -71,4 +71,3 @@ A demo instance can be accessed at inspec-dev.mitre.org
 ## Configuration
 
 See `docker-compose.yml` for all container configuration options.
-
