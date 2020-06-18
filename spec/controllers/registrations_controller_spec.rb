@@ -4,6 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Users::RegistrationsController, type: :controller do
   include LoginHelpers
+  include Users
 
   before(:each) do
     @request.env['devise.mapping'] = Devise.mappings[:user]
@@ -111,6 +112,71 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       ActionMailer::Base.deliveries.last.tap do |mail|
         expect(mail.from).to eq(['contact_email@test.com'])
       end
+    end
+  end
+
+  context 'update user info' do
+    let(:user2) { create(:user) }
+    let(:user3) { build(:user) }
+    before do
+      sign_in user2
+    end
+    it 'checks if user is updated' do
+      post :update, params: {
+        user: {
+          name: user3.name,
+          email: user3.email,
+          password: user3.password,
+          password_confirmation: user3.password,
+          current_password: user2.password
+        }
+      }
+
+      expect(flash[:notice]).to eq I18n.t('devise.registrations.update_needs_confirmation')
+
+      user2.reload.confirm
+
+      expect(user2.name).to eq(user3.name)
+      expect(user2.email).to eq(user3.email)
+      # The password field does not update on a factory when a user changes their password
+      # only the encrypted password in the database. We have to use the devise valid_password?
+      # method to verify that the password actually changed
+      expect(user2.valid_password?(user3.password)).to be true
+    end
+  end
+
+  context 'update user info without password' do
+    let(:user2) { create(:user) }
+    let(:user3) { build(:user) }
+    before do
+      sign_in user2
+    end
+    it 'makes sure can not update without password' do
+      post :update, params: {
+        user: {
+          name: user3.name,
+          email: user2.email,
+          password: user2.password,
+          password_confirmation: user2.password,
+          current_password: ''
+        }
+      }
+      expect(user2.reload.name).to_not eq(user3.name)
+    end
+  end
+
+  context 'update ldap user info' do
+    let(:user4) { create(:ldap_user) }
+    before do
+      sign_in user4
+    end
+    it 'user updates without password' do
+      post :update, params: {
+        user: {
+          name: user1.name
+        }
+      }
+      expect(user4.reload.name).to eq(user1.name)
     end
   end
 end
