@@ -131,12 +131,12 @@ RSpec.describe Users::RegistrationsController, type: :controller do
           current_password: user2.password
         }
       }
-      user2.reload
+      user2.reload.confirm
       expect(flash[:notice]).to eq I18n.t('devise.registrations.update_needs_confirmation')
       expect(user2.name).to eq(user3.name)
-      user2.confirm
+      # user2.confirm
       expect(user2.email).to eq(user3.email)
-      expect(user2.reload.password).to eq(user3.password)
+      expect(user2.password).to eq(user3.password)
     end
   end
 
