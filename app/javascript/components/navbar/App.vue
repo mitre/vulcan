@@ -20,22 +20,15 @@
         <b-navbar-nav class="ml-auto">
           <b-nav-item-dropdown v-if="signed_in" right>
             <!-- if there is a notification change symbol -->
-            <template v-slot:button-content v-if="signed_in">
+            <template v-slot:button-content v-if="num_unread_messages == 0">
               <i class="mdi mdi-bell" aria-hidden="true"></i>
             </template>
             <template v-slot:button-content v-else>
               <i class="mdi mdi-bell-ring" aria-hidden="true"></i>
             </template>
-            <!-- 
-            <div v-bind:key="project.name" v-for="project in projects">
-              <b-dropdown-item :href="profile_path">project.comment</b-dropdown-item>
-            </div> 
-
-            - foreach($items as $items)
-                %li
-                  = items->title
-            -->
-            <b-dropdown-item v-bind:href = "profile_path">notification</b-dropdown-item>
+            <div>
+              <b-dropdown-item v-bind:key="message" v-bind:href = "profile_path" v-for="message in unread_messages">{{ message }}</b-dropdown-item>
+            </div>
           </b-nav-item-dropdown>
         </b-navbar-nav>
 
@@ -71,6 +64,15 @@ export default {
     },
     sign_out_path: {
       type: String,
+      required: false
+    },
+    num_unread_messages: {
+      type: Number,
+      required: false,
+      default: 0
+    },
+    unread_messages: {
+      type: Array,
       required: false
     }
   }
