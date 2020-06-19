@@ -28,7 +28,27 @@ module ApplicationHelper
     @devise_mapping ||= Devise.mappings[:user]
   end
 
-  def unread_messages(num_unread)
-    num_unread unless num_unread&.eql? 0
+  def num_unread_messages
+    num = 0
+    unless @messages.nil?
+      @messages.each do |message|
+        if current_user.last_sign_in_at < message.created_at
+          num += 1
+        end
+      end
+    end
+    return num
+  end
+
+  def unread_messages
+    mess = []
+    unless @messages.nil?
+      @messages.each do |message|
+        if current_user.last_sign_in_at < message.created_at
+          mess.push(message.body)
+        end
+      end
+    end
+    return mess
   end
 end
