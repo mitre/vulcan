@@ -15,7 +15,7 @@ the process of aligning security controls from SRG items into actual STIG securi
 * Authenticate via the local server, through github, and through configuring an LDAP server.
 
 ## Deploy Vulcan
-[Configuration](docs/config.md)
+[Deploying Vulcan in Production](https://vulcan.mitre.org/docs/)
 
 ## Deployment Dependencies:
 For Ruby (on Ubuntu):
@@ -49,25 +49,8 @@ Make sure you have run the setup steps at least once before following these step
 2. Stop the postgres server
 
 
-## Enable SMTP:
-### SMTP Setup:
-To enable SMTP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables. When SMTP is set up you should enable `local_login: email_confirmation` so users must confirm their email to continue.
-
-## Enable Local login:
-### Local Login Setup:
-Allows for users to to register and login not using external services.
-
-## Enable LDAP:
-### LDAP Setup:
-To enable LDAP you will need to add your configuration file to `config/vulcan.yml` or pass in the specifications as environment variables.
-
-## Enable Providers
-### Providers Setup
-
-## Usage
-
-A demo instance can be accessed at inspec-dev.mitre.org
-
 ## Configuration
 
-See `docker-compose.yml` for all container configuration options.
+See `docker-compose.yml` for container configuration options.
+
+Documentation on how to configure additional Vulcan settings such as SMTP, LDAP, etc, are available on the [Vulcan website](https://vulcan.mitre.org/docs/config.html).
