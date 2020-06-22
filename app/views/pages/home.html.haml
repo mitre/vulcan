@@ -6,25 +6,8 @@
   %ul
   - @messages.each do |message|
     = render partial: 'messages/message', locals: { message: message }
-    -# = render :partial => 'messages/message', :locals => { :message => message }
 = form_with model: @message do |f|
   #inputbar.input-group.mb-3
     = f.text_field :body, placeholder: "comment", class: 'form-control'
     .input-group-append
       = f.submit "Send", class: "btn btn-secondary"
-
-
--# #commentbox.well{:style => "height:250px; border: solid 1px #222222; overflow-y: scroll"}
--#
--# <% @messages.each do |message|%>
--#   <%= render 'messages/message', message: message %>
--# <% end %>
--#
--# <%= form_with model: @message do |f| %>
--# <div class="input-group mb-3">
--#   <%= f.text_field :body, placeholder: "comment", class: 'form-control' %>
--#   <div class="input-group-append">
--#     <%= f.submit "Send", class: "btn btn-secondary" %>
--#   </div>
--# </div>
--# <% end %>

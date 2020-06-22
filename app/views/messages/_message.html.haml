@@ -1,9 +1,3 @@
 .well
-  -# - message.each do |message|
-    -# - binding.pry
   - val = message.created_at.strftime("%I:%M %p"), message.user.name, message.body
-  %p= val
--# <div class="well">
--#   [<%= message.created_at.strftime("%I:%M %p") %>] <%= %message.user.username%>:
--#   <%= message.body %>
--# </div>
+  %p= val.join(': ')

@@ -27,7 +27,9 @@
               <i class="mdi mdi-bell-ring" aria-hidden="true"></i>
             </template>
             <div>
-              <b-dropdown-item v-bind:key="message" v-bind:href = "profile_path" v-for="message in unread_messages">{{ message }}</b-dropdown-item>
+              <b-dropdown-item v-bind:key="m.id" v-for="m in unread_messages" :href="navigation[0].link">
+                {{ m.created_at + ' ' + m.user_id + ': ' + m.body }}
+              </b-dropdown-item>
             </div>
           </b-nav-item-dropdown>
         </b-navbar-nav>
