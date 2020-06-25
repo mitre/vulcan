@@ -11,6 +11,7 @@
     = javascript_pack_tag 'navbar'
     / If using inline styles in the vue pack, loading the stylesheet_pack_tag as well becomes necessary
     = stylesheet_pack_tag 'navbar'
+    -# = javascript_pack_tag 'notifications_channel'
     = yield :assets
   %body
     #navbar
@@ -22,6 +23,12 @@
         'v-bind:num_unread_messages': @m.count,                     |
         'v-bind:unread_messages': @m.to_json                        |
       }                                                             |
+
+    #notifications
+      -# %notifications{                                               |
+      -#   'v-bind:messages': @messages                                |
+      -# }                                                             |
+
     - if notice
       %p.alert.alert-success.alert-dismissable= notice
     - if alert

@@ -45,6 +45,7 @@
         </b-navbar-nav>
       </b-collapse>
     </b-navbar>
+    <!-- <Notification v-bind:messages="messages"/> -->
   </div>
 </template>
 
@@ -78,6 +79,13 @@ export default {
       required: false
     }
   }
+  // name: 'Notification',
+  // props: {
+  //   messages: {
+  //     type: Array,
+  //     required: false
+  //   }
+  // }
 }
 </script>
 
