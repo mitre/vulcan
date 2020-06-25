@@ -21,24 +21,50 @@ import consumer from "./consumer"
 // });
 
 import Vue from 'vue';
+import ActionCableVue from 'actioncable-vue';
 
-consumer.subscriptions.create("NotificationsChannel", () => {
-  new Vue({
-    channels: {
-      ChatChannel: {
-        connected() {
-          console.log("Connected to notification channel");
-        },
-        received(data) {
-          var messages = $('#inputbar');
-          messages.append(data['message']);
-          messages.scrollTop(messages[0].scrollHeight);
-          // alert($('#commentbar'))
-        },
-        disconnected() {
-          console.log("Disconnected from notification channel");
-        }
-      }
-    }
-  })
+Vue.use(ActionCableVue, {
+  debug: true,
+  debugLevel: 'error',
+  connectImmediately: true,
 });
+
+document.addEventListener('turbolinks:load', () => {
+  // App.chat = App.cable.subscriptions.create("NotificationsChannel", () =>{
+    new Vue({
+      channels: {
+        NotificationsChannel: {
+          data() {
+            return {
+              message: 'Hello world'
+            };
+          },
+          connected() {
+            console.log("Connected to notification channel");
+          },
+          received(data) {
+          },
+          disconnected() {
+            console.log("Disconnected from notification channel");
+          }
+        }
+      },
+      methods: {
+        sendMessage: function() {
+          this.$cable.perform({
+            channel: 'NotificationsChannel',
+            action: 'send_message',
+            data: {
+              content: this.message
+            }
+          });
+        }
+      },
+      mounted() {
+        this.$cable.subscribe({
+          channel: 'NotificationsChannel'
+        });
+      },
+    }).$mount('#notifications')
+  // })
+})

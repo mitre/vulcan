@@ -2,7 +2,7 @@
 -#   = javascript_pack_tag 'icon'
 
 %h1{ :style => "text-align:center" } Comment
-#commentbox.well{:style => "height:250px; border: solid 1px #222222; overflow-y: scroll"}
+#commentbox.well{:style => "height:500px; border: solid 1px #222222; overflow-y: scroll"}
   %ul
   - @messages.each do |message|
     = render partial: 'messages/message', locals: { message: message }
@@ -10,4 +10,10 @@
   #inputbar.input-group.mb-3
     = f.text_field :body, placeholder: "comment", class: 'form-control'
     .input-group-append
-      = f.submit "Send", class: "btn btn-secondary"
+      = f.submit "Send", class: "btn btn-secondary", on_click: 'sendMessage'
+  -# .form-group
+  -#   = f.label :comments
+  -#   %input{:ref => "comment"}
+  -#   -# = f.text_field :body, placeholder: "comment", class: 'form-control'
+  -# .actions
+  -#   = f.submit "Comment", class: 'btn btn-success btn-block', on_click: 'sendMessage'
