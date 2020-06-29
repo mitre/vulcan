@@ -11,7 +11,6 @@
     = javascript_pack_tag 'navbar'
     / If using inline styles in the vue pack, loading the stylesheet_pack_tag as well becomes necessary
     = stylesheet_pack_tag 'navbar'
-    -# = javascript_pack_tag 'notifications_channel'
     = yield :assets
   %body
     #navbar
@@ -21,13 +20,25 @@
         'v-bind:profile_path': edit_user_registration_path.to_json, |
         'v-bind:sign_out_path': destroy_user_session_path.to_json,  |
         'v-bind:num_unread_messages': @m.count,                     |
-        'v-bind:unread_messages': @m.to_json                        |
+        'v-bind:unread_messages': @m.to_json,                       |
+        'v-bind:messages': @messages.to_json                        |
       }                                                             |
 
-    #notifications
-      -# %notifications{                                               |
-      -#   'v-bind:messages': @messages                                |
-      -# }                                                             |
+    -# #notifications
+    -#   %notifications{                                               |
+    -#     'v-bing:notifications': @messages.to_json                   |
+    -#   }                                                             |
+
+    -# #base
+    -#   %base{                                                        |
+    -#     'v-bind:navigation': @navigation.to_json,                   |
+    -#     'v-bind:signed_in': user_signed_in?.to_s,                   |
+    -#     'v-bind:profile_path': edit_user_registration_path.to_json, |
+    -#     'v-bind:sign_out_path': destroy_user_session_path.to_json,  |
+    -#     'v-bind:num_unread_messages': @m.count,                     |
+    -#     'v-bind:unread_messages': @m.to_json,                       |
+    -#     'v-bind:messages': @messages.to_json                        |
+    -#   }                                                             |
 
     - if notice
       %p.alert.alert-success.alert-dismissable= notice
