@@ -8,8 +8,8 @@ class NotificationsChannel < ApplicationCable::Channel
   end
 
   def receive(data)
-    # ActionCable.server.broadcast data
-    alert(data)
+    ActionCable.server.broadcast data
+    # alert(data)
   end
 
   def unsubscribed

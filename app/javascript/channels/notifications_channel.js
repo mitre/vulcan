@@ -23,6 +23,26 @@ import consumer from "./consumer"
 import Vue from 'vue';
 import ActionCableVue from 'actioncable-vue';
 
+// Vue.component('Notification', {
+//   template:
+//     <div>
+//       <h1 style="text-align:center">Comment</h1>
+//       <div class="well" id="commentbox" style="height:500px; border: solid 1px #222222; overflow-y: scroll">
+//           <p v-bind:key="m" v-for="m in messages"> {{ m.created_at + ' ' + m.user_id.name + ': ' + m.body }} </p>
+//       </div>
+//       // <!-- %= form_with model: @message do |f| % -->
+//       <div class="input-group mb-3" id="inputbar">
+//           {/* <!-- <text_field :body, placeholder: "comment", class: 'form-control' /> --> */}
+//           <div class="input-group-append">
+//               <input type="text" id="comment" placeholder="Comment"></input>
+//               <input type="submit" value="submit" on_click="sendMessage"></input>
+//           {/* <!-- %= f.submit "Send", class: "btn btn-secondary", on_click: 'sendMessage' % --> */}
+//           </div>
+//       </div>
+//       // <!-- % end % -->
+//     </div>
+// })
+
 Vue.use(ActionCableVue, {
   debug: true,
   debugLevel: 'error',
@@ -32,6 +52,15 @@ Vue.use(ActionCableVue, {
 document.addEventListener('turbolinks:load', () => {
   // App.chat = App.cable.subscriptions.create("NotificationsChannel", () =>{
     new Vue({
+      // template:
+      //   <div>
+      //     <h1 style="text-align:center">Comment</h1>
+      //   </div>,
+      // props: {
+      //   messages:{
+      //     type: Array,
+      //     required: false}
+      // },
       channels: {
         NotificationsChannel: {
           data() {
@@ -43,6 +72,7 @@ document.addEventListener('turbolinks:load', () => {
             console.log("Connected to notification channel");
           },
           received(data) {
+            alert(this.message)
           },
           disconnected() {
             console.log("Disconnected from notification channel");
