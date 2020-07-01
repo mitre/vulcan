@@ -2,9 +2,9 @@ name: Run Test Suite on PR or push to master
 
 on:
   push:
-    branches: [ master, vulcan-next ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, vulcan-next ]
+    branches: [ master ]
 
 jobs:
   test:
