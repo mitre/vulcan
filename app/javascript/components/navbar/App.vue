@@ -7,13 +7,12 @@
       :profile_path="profile_path"
       :num_unread_messages="num_unread_messages"
       :unread_messages="unread_messages"/>
-    <notifications :messages="messages"/>
   </div>
 </template>
 
 <script>
 
-import Notifications from './Notifications_channel.vue'
+import NotificationBox from './NotificationBox.vue'
 import Navbar from './Navbar.vue'
 
 export default {
@@ -49,9 +48,9 @@ export default {
       required: false
     }
   },
-  name: 'Notifcations',
+  name: 'NotifcationBox',
   components: {
-    Notifications,
+    NotificationBox,
     Navbar
   }
 }

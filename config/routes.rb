@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  mount ActionCable.server => '/cable'
   post 'messages', to: 'messages#create'
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',

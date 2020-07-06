@@ -2,9 +2,9 @@ class MessageBroadcastJob < ApplicationJob
   queue_as :default
 
   def perform(message)
-    # Do something later
-    ActionCable.server.broadcast "notifications", {
-    	message: render_message(message)
+    # ActionCable.server.broadcast 'room_channel', message: render_message(message)
+    ActionCable.server.broadcast "notifications_channel", {
+    	message: message.to_json
     }
   end
 

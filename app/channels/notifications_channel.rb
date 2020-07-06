@@ -1,15 +1,11 @@
 class NotificationsChannel < ApplicationCable::Channel
   def subscribed
-    # stream_from "some_channel"
-    stream_from "notifications"
-    # stop_all_streams
-    # stream_from "notifications"
-    # ApplicationJob.perform_later("This is a background job")
+    stream_from "notifications_channel"
   end
 
   def receive(data)
     ActionCable.server.broadcast data
-    # alert(data)
+    alert(data['message'])
   end
 
   def unsubscribed
@@ -17,6 +13,10 @@ class NotificationsChannel < ApplicationCable::Channel
   end
 
   def send_message(data)
+    alert("speak")
     current_user.messages.create!(field: data['message'], chat_id: data['chat_id'])
+    # message = Message.create(body: data['message'])
+    # socket = { message: message.body }
+    # NotificationsChannel.broadcast_to('notifications_channel', socket)
   end
 end
