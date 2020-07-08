@@ -2,21 +2,13 @@
   <div>
     <h1 style="text-align:center">Comment</h1>
     <div class="well" id="commentbox" style="height:500px; border: solid 1px #222222; overflow-y: scroll">
-        <p v-bind:key="m.id" v-for="m in allmessages">{{ m.created_at + ' ' + m.user_id + ': ' + m.body }}</p>
+        <p v-bind:key="m.id" v-for="m in allmessages">
+          {{ m.created_at + ' ' + m.user_id + ': ' + m.body }}
+        </p>
     </div>
     <div>
-      <!-- <FormulateForm>
-          <FormulateInput
-            placeholder="Comment"
-            validation="required"
-          />
-          <FormulateInput
-            type="submit"
-            label="Submit"
-          />
-      </FormulateForm> -->
       <b-form>
-        <b-form-input id="input-1" placeholder="Comment" v-model="comment" trim></b-form-input>
+        <b-form-input id="comment" placeholder="Comment" v-model="comment" trim></b-form-input>
         <b-button type="submit" variant="secondary" @click="sendMessage">Submit</b-button>
       </b-form>
     </div>
@@ -31,12 +23,33 @@ export default {
     messages: {
       type: Array,
       required: false
+    },
+    users: {
+      type: Array,
+      required: false
     }
   },
   data() {
     return {
       allmessages: this.messages,
-      comment: null
+      comment: null,
+      dateFormatConfig: {
+        dayOfWeekNames: [
+          'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+          'Friday', 'Saturday'
+        ],
+        dayOfWeekNamesShort: [
+          'Su', 'Mo', 'Tu', 'We', 'Tr', 'Fr', 'Sa'
+        ],
+        monthNames: [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ],
+        monthNamesShort: [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        ]
+      }
     };
   },
   channels: {
@@ -46,7 +59,13 @@ export default {
       },
       received(data) {
         this.allmessages = [...this.allmessages, JSON.parse(data["message"])]
-        // window.location.reload()
+        if (Notification.permission === 'granted'){
+          var title = 'Notification'
+          var body = JSON.parse(data["message"])
+          var temp = body.created_at + ' ' + body.user_id + ': ' + body.body
+          var options = {body: temp}
+          new Notification(title, options)
+        }
       },
       disconnected() {
         console.log("Disconnected from notification channel");

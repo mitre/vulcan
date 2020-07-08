@@ -5,7 +5,6 @@ class NotificationsChannel < ApplicationCable::Channel
 
   def receive(data)
     ActionCable.server.broadcast data
-    alert(data['message'])
   end
 
   def unsubscribed
@@ -13,10 +12,6 @@ class NotificationsChannel < ApplicationCable::Channel
   end
 
   def send_message(data)
-    alert("speak")
-    current_user.messages.create!(field: data['message'], chat_id: data['chat_id'])
-    # message = Message.create(body: data['message'])
-    # socket = { message: message.body }
-    # NotificationsChannel.broadcast_to('notifications_channel', socket)
+    Message.create(body: data['content'], user: current_user)
   end
 end

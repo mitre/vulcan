@@ -1,13 +1,10 @@
 -# - content_for :assets do
 -#   = javascript_pack_tag 'icon'
 
+-# -binding.pry
 #notifications
   %notificationbox{                                             |
-    'v-bind:messages': @messages.to_json                        |
+    'v-bind:messages': @messages.to_json,                       |
+    'v-bind:users': @users.to_json                              |
   }                                                             |
 
-= form_with model: @message do |f|
-  #inputbar.input-group.mb-3
-    = f.text_field :body, placeholder: "Comment", class: 'form-control'
-    .input-group-append
-      = f.submit "Send", class: "btn btn-secondary"
