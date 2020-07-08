@@ -1,8 +1,7 @@
 FactoryBot.define do
   factory :message do
     body { "test" }
-    user { nil }
-    user_id { nil }
+    user_id { 1 }
     created_at { Time.zone.now }
   end
 end

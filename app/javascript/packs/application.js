@@ -21,3 +21,5 @@ import '../application'
 //* require bootstrap
 //* require popper
 //* require jquery_ujs
+
+Notification.requestPermission().then(function(result) {})
