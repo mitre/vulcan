@@ -3,7 +3,7 @@
     <h1 style="text-align:center">Comment</h1>
     <div class="well" id="commentbox" style="height:500px; border: solid 1px #222222; overflow-y: scroll">
         <p v-bind:key="m.id" v-for="m in allmessages">
-          {{ m.created_at + ' ' + m.user_id + ': ' + m.body }}
+          {{ m }}
         </p>
     </div>
     <div>
