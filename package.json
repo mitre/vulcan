@@ -10,6 +10,7 @@
     "actioncable-vue": "^2.2.2",
     "bootstrap": "^4.4.1",
     "bootstrap-vue": "^2.13.0",
+    "moment": "^2.27.0",
     "turbolinks": "^5.2.0",
     "vue": "^2.6.11",
     "vue-loader": "^15.9.2",

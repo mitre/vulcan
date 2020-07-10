@@ -20,7 +20,7 @@
         'v-bind:profile_path': edit_user_registration_path.to_json, |
         'v-bind:sign_out_path': destroy_user_session_path.to_json,  |
         'v-bind:num_unread_messages': @m.count,                     |
-        'v-bind:unread_messages': @m.to_json,                       |
+        'v-bind:unread_messages': @m.to_json(:include => :user),    |
         'v-bind:messages': @messages.to_json                        |
       }                                                             |
 

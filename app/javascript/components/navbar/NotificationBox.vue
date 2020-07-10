@@ -3,7 +3,8 @@
     <h1 style="text-align:center">Comment</h1>
     <div class="well" id="commentbox" style="height:500px; border: solid 1px #222222; overflow-y: scroll">
         <p v-bind:key="m.id" v-for="m in allmessages">
-          {{ m }}
+          {{ m.created_at | formatDate }}
+          {{ " " + m.user["name"] + ": " + m.body }}
         </p>
     </div>
     <div>
@@ -32,24 +33,7 @@ export default {
   data() {
     return {
       allmessages: this.messages,
-      comment: null,
-      dateFormatConfig: {
-        dayOfWeekNames: [
-          'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-          'Friday', 'Saturday'
-        ],
-        dayOfWeekNamesShort: [
-          'Su', 'Mo', 'Tu', 'We', 'Tr', 'Fr', 'Sa'
-        ],
-        monthNames: [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
-        ],
-        monthNamesShort: [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-        ]
-      }
+      comment: null
     };
   },
   channels: {
@@ -62,7 +46,8 @@ export default {
         if (Notification.permission === 'granted'){
           var title = 'Notification'
           var body = JSON.parse(data["message"])
-          var temp = body.created_at + ' ' + body.user_id + ': ' + body.body
+          // var time = ()
+          var temp = body.user["name"] + ": " + body.body
           var options = {body: temp}
           new Notification(title, options)
         }
