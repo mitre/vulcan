@@ -27,7 +27,8 @@
             </template>
             <div>
               <b-dropdown-item v-bind:key="m.id" v-for="m in unread_messages" :href="navigation[0].link">
-                {{ m.created_at + ' ' + m.user_id + ': ' + m.body }}
+                {{ m.created_at | formatDate }}
+                {{ " " + m.user["name"] + ": " + m.body }}
               </b-dropdown-item>
             </div>
           </b-nav-item-dropdown>
