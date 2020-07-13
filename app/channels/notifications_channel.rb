@@ -7,10 +7,6 @@ class NotificationsChannel < ApplicationCable::Channel
     ActionCable.server.broadcast data
   end
 
-  def unsubscribed
-    # Any cleanup needed when channel is unsubscribed
-  end
-
   def send_message(data)
     Message.create(body: data['content'], user: current_user)
   end

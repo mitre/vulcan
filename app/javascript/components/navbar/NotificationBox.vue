@@ -39,21 +39,18 @@ export default {
   channels: {
     NotificationsChannel: {
       connected() {
-        console.log("Connected");
       },
       received(data) {
         this.allmessages = [...this.allmessages, JSON.parse(data["message"])]
         if (Notification.permission === 'granted'){
-          var title = 'Notification'
+          var title = 'Notification Channel Alert'
           var body = JSON.parse(data["message"])
-          // var time = ()
-          var temp = body.user["name"] + ": " + body.body
-          var options = {body: temp}
+          var msg = body.user["name"] + ": " + body.body
+          var options = {body: msg}
           new Notification(title, options)
         }
       },
       disconnected() {
-        console.log("Disconnected from notification channel");
       }
     }
   },
