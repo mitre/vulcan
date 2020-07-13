@@ -23,4 +23,5 @@ RSpec.describe NotificationsChannel, type: :channel do
     end
     it 'receive message' do
     end
+  end
 end
