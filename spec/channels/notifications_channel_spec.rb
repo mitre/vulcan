@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe NotificationsChannel, type: :channel do
 
-  context 'When user connects to channel' do\
+  context 'When user connects to channel' do
     it "subscribes without streams when no room id" do
       subscribe
 
@@ -17,4 +17,10 @@ RSpec.describe NotificationsChannel, type: :channel do
     #   expect(subscription).to be_rejected
     # end
   end
+
+  context 'Data transfer' do
+    it 'send message out' do
+    end
+    it 'receive message' do
+    end
 end

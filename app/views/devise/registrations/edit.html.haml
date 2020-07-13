@@ -14,23 +14,23 @@
     = f.label :email
     %br/
     = f.email_field :email, autocomplete: "email", class: "form-control", disabled: !resource.provider.nil?
-  
+
   - if resource.provider.nil?
     - if devise_mapping.confirmable? && resource.pending_reconfirmation?
       %div
         Currently waiting confirmation for: #{resource.unconfirmed_email}
     .form-group
-      
+
       = f.label :password
       %i (leave blank if you don't want to change it)
-      
+
       = f.password_field :password, autocomplete: "new-password", class: "form-control", disabled: !resource.provider.nil?
-      - if @minimum_password_length 
+      - if @minimum_password_length
         %small#passwordHelp.form-text.text-muted
           = @minimum_password_length
           characters minimum
-      
-      
+
+
     .form-group
       = f.label :password_confirmation
       %br/

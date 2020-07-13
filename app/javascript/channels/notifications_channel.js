@@ -30,11 +30,6 @@ document.addEventListener('turbolinks:load', () => {
         type: Array,
         required: false
       }
-    },
-    methods: {
-      send(){
-        alert("message")
-      }
     }
   }).$mount('#notifications')
 })
