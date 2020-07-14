@@ -1,6 +1,4 @@
 require 'rails_helper'
-require 'warden'
-require 'devise'
 
 RSpec.describe ApplicationCable::Connection, type: :channel do
 
@@ -20,7 +18,6 @@ RSpec.describe ApplicationCable::Connection, type: :channel do
             connect "/cable", headers: { "X-USER-ID" => 325 }
             expect(connect.current_user.id).to eq 325
          end
-
     end
 
     context 'without a verified user' do

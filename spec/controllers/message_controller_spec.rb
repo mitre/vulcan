@@ -7,16 +7,14 @@ RSpec.describe MessagesController  do
 
     before do
         allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user1)
+        # allow_any_instance_of(ApplicationController).to receive(:msg).and_return(msg)
     end
 
     context 'Creates message' do
         it 'adds message to database' do
-            # params: { message: { body: @message.text, user_id: @message.user_id } }
             expect {
-                @message = Message.new( { body: msg.body, user_id: msg.user_id } )
-                @message.user = user1
-                @message.save
-            }.not_to change(msg, :user_id)
+               MessagesController.create
+            }.to change(msg, :user_id)
         end
     end
 end
