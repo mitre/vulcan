@@ -3,7 +3,7 @@
     <h1 style="text-align:center">Comment</h1>
     <div class="well" id="commentbox" style="height:500px; border: solid 1px #222222; overflow-y: scroll">
         <p v-bind:key="m.id" v-for="m in allmessages">
-          {{ m.created_at | formatDate }}
+          {{ formattedDate(m.created_at) }}
           {{ " " + m.user["name"] + ": " + m.body }}
         </p>
     </div>
@@ -22,10 +22,6 @@ export default {
   name: 'NotificationBox',
   props: {
     messages: {
-      type: Array,
-      required: false
-    },
-    users: {
       type: Array,
       required: false
     }
@@ -63,6 +59,21 @@ export default {
           content: this.comment
         }
       });
+    },
+    formattedDate: function(d){
+      let arr = d.split(/[\D]/);
+      let date = new Date(Date.UTC(arr[0], arr[1]-1, arr[2], arr[3], arr[4], arr[5]));
+      let min = date.getUTCMinutes()
+      let hour = date.getUTCHours()
+      let ampm = "am"
+      if (min < 10) {
+        min = "0" + min
+      }
+      if (hour > 12){
+        hour = hour - 12
+        ampm = "pm"
+      }
+      return (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear() + " " + hour + ":" + min + " " + ampm
     }
   },
   mounted() {
