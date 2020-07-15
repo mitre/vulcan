@@ -1,8 +1,9 @@
 require 'rails_helper'
+require 'message_broadcast_job'
 
 RSpec.describe MessageBroadcastJob, type: :job do
 
-  let(:msg) { build(:messages) }
+  let(:msg) { build(:message) }
   let(:user1) { build(:user) }
 
   context "Broadcast message" do
