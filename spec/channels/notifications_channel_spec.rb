@@ -26,6 +26,7 @@ RSpec.describe NotificationsChannel, type: :channel do
     let(:message) { Message.create(body: msg['body'], user: user) }
     it 'send message out' do
       expect(message.body).to eq(msg.body)
+      expect(NotificationsChannel.send_message(msg.body)).to change(Message, :count).by 1
     end
     it 'receive message' do
       # expect {

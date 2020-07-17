@@ -52,14 +52,16 @@ export default {
   },
   methods: {
     sendMessage: function() {
-      this.$cable.perform({
-        channel: 'NotificationsChannel',
-        action: 'send_message',
-        data: {
-          content: this.comment
-        }
-      });
-      this.comment = null
+      if (this.comment != null){
+        this.$cable.perform({
+          channel: 'NotificationsChannel',
+          action: 'send_message',
+          data: {
+            content: this.comment
+          }
+        });
+        this.comment = null
+      }
     }
   },
   mounted() {

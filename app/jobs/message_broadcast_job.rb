@@ -6,15 +6,4 @@ class MessageBroadcastJob < ApplicationJob
       message: message.to_json(:include => :user)
     }
   end
-
-  private
-
-  # def render_message(message)
-  # 	MessagesController.render(
-  # 		partial: 'message',
-  # 		locals: {
-  # 			message: message
-  # 		}
-  # 	)
-  # end
 end
