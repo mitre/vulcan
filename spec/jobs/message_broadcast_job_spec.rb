@@ -1,10 +1,9 @@
 require 'rails_helper'
-require 'message_broadcast_job'
 
-RSpec.describe MessageBroadcastJob, type: :job do
+RSpec.describe MessageBroadcastJob do
 
+  let(:user1) { create(:user) }
   let(:msg) { build(:message) }
-  let(:user1) { build(:user) }
 
   context "Broadcast message" do
     it "passing message to channel" do
@@ -15,13 +14,14 @@ RSpec.describe MessageBroadcastJob, type: :job do
       }.to have_broadcasted_to("notifications_channel")
     end
     it "Perform job" do
-      expect {
-        ActionCable.server.broadcast(
-          "notifications_channel", text: 'Hello!'
-        ) {
-          msg.to_json(:include => :user1)
-        }
-      }.to have_broadcasted_to("notifications_channel")
+      ActiveJob::Base.queue_adapter = :test
+      # expect {
+      #   create(:message)
+      # }.to have_broadcasted_to("notifications_channel")
+      # is_expected.to have_broadcasted_to("notifications_channel").after(:create)
+      expect{
+        MessageBroadcastJob.perform_later
+      }.to have_enqueued_job(MessageBroadcastJob)
     end
     it "Render_message job" do
     end
