@@ -14,16 +14,9 @@ RSpec.describe MessageBroadcastJob do
       }.to have_broadcasted_to("notifications_channel")
     end
     it "Perform job" do
-      ActiveJob::Base.queue_adapter = :test
-      # expect {
-      #   create(:message)
-      # }.to have_broadcasted_to("notifications_channel")
-      # is_expected.to have_broadcasted_to("notifications_channel").after(:create)
       expect{
-        MessageBroadcastJob.perform_later
-      }.to have_enqueued_job(MessageBroadcastJob)
-    end
-    it "Render_message job" do
+        MessageBroadcastJob.perform_now(msg)
+      }.to have_broadcasted_to("notifications_channel")
     end
   end
 end
