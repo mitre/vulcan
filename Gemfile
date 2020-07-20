@@ -68,6 +68,8 @@ group :test do
   gem 'rubocop', require: false
   gem 'rubocop-rails'
   gem 'simplecov', require: false
+
+  gem 'rails-controller-testing'
 end
 
 group :development, :test do
