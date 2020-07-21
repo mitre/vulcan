@@ -1,30 +1,31 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe MessageBroadcastJob do
-
   let(:user1) { create(:user) }
   let(:msg) { build(:message) }
 
-  context "Broadcast message" do
-    it "passing message to channel" do
-      expect {
+  context 'Broadcast message' do
+    it 'passing message to channel' do
+      expect do
         ActionCable.server.broadcast(
-          "notifications_channel", text: 'Hello!'
+          'notifications_channel', text: 'Hello!'
         )
-      }.to have_broadcasted_to("notifications_channel")
+      end.to have_broadcasted_to('notifications_channel')
     end
-    it "Perform job" do
-      expect{
+    it 'Perform job' do
+      expect do
         MessageBroadcastJob.perform_now(msg)
-      }.to have_broadcasted_to("notifications_channel")
+      end.to have_broadcasted_to('notifications_channel')
     end
-    it "fails when too many messages broadcast" do
-      expect {
-        expect {
+    it 'fails when too many messages broadcast' do
+      expect do
+        expect do
           ActionCable.server.broadcast('notifications_channel', 'one')
           ActionCable.server.broadcast('notifications_channel', 'two')
-        }.to have_broadcasted_to('notifications_channel').exactly(1)
-      }.to raise_error('expected to broadcast exactly 1 messages to notifications_channel, but broadcast 2')
+        end.to have_broadcasted_to('notifications_channel').exactly(1)
+      end.to raise_error('expected to broadcast exactly 1 messages to notifications_channel, but broadcast 2')
     end
   end
 end
