@@ -177,6 +177,9 @@ GEM
     pry (0.13.1)
       coderay (~> 1.1)
       method_source (~> 1.0)
+    pry-remote (0.1.8)
+      pry (~> 0.9)
+      slop (~> 3.0)
     public_suffix (4.0.4)
     puma (4.3.5)
       nio4r (~> 2.0)
@@ -271,6 +274,7 @@ GEM
       docile (~> 1.1)
       simplecov-html (~> 0.11)
     simplecov-html (0.12.2)
+    slop (3.6.0)
     spring (2.1.0)
     spring-watcher-listen (2.0.1)
       listen (>= 2.7, < 4.0)
@@ -334,6 +338,7 @@ DEPENDENCIES
   omniauth-rails_csrf_protection (~> 0.1)
   pg (>= 0.18, < 2.0)
   pry
+  pry-remote
   puma (~> 4.3)
   rails (~> 6.0.2, >= 6.0.2.2)
   rails-controller-testing
