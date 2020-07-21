@@ -18,5 +18,13 @@ RSpec.describe MessageBroadcastJob do
         MessageBroadcastJob.perform_now(msg)
       }.to have_broadcasted_to("notifications_channel")
     end
+    it "fails when too many messages broadcast" do
+      expect {
+        expect {
+          ActionCable.server.broadcast('notifications_channel', 'one')
+          ActionCable.server.broadcast('notifications_channel', 'two')
+        }.to have_broadcasted_to('notifications_channel').exactly(1)
+      }.to raise_error('expected to broadcast exactly 1 messages to notifications_channel, but broadcast 2')
+    end
   end
 end
