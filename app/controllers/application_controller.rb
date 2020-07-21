@@ -22,9 +22,5 @@ class ApplicationController < ActionController::Base
     @msg = Message.where(
       'messages.created_at > :last_sign_in', last_sign_in: current_user.last_sign_in_at
     ).where.not(user: current_user)
-    # Message.where(
-    #   'messages.created_at > :last_sign_in AND messages.user_id != :id',
-    #   last_sign_in: current_user.last_sign_in_at, id: current_user.id
-    # )
   end
 end
