@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 require 'notifications_channel'
 
@@ -7,7 +9,7 @@ RSpec.describe NotificationsChannel, type: :channel do
   let(:user) { build(:user) }
   let(:msg) { build(:message) }
   let(:message) do
-    {"content" => "message"}.to_json
+    { 'content' => 'message' }.to_json
   end
 
   before do
@@ -16,36 +18,25 @@ RSpec.describe NotificationsChannel, type: :channel do
   end
 
   context 'When user connects to channel' do
-    it "subscribes without streams when no room id" do
+    it 'subscribes without streams when no room id' do
       subscribe
 
       expect(subscription).to be_confirmed
-      expect(subscription).to have_stream_from("notifications_channel")
+      expect(subscription).to have_stream_from('notifications_channel')
     end
-
-    # Test for when there are multiple rooms
-    # it "rejects when room id is invalid" do
-    #   subscribe(room_id: -1)
-
-    #   expect(subscription).to be_rejected
-    # end
   end
 
   context 'Data transfer' do
     subject { perform :send_message, message: JSON.parse(message) }
     it 'send message out' do
-      expect {
-        subject
-      }.to change(Message, :count).by 1
+      expect { subject }.to change(Message, :count).by 1
     end
   end
 
-  context 'receive' do
-    subject {perform :receive, message: JSON.parse(message)}
+  context 'Broadcast to channel' do
+    subject { perform :receive, message: JSON.parse(message) }
     it 'receive message' do
-      expect {
-        subject
-      }.to have_broadcasted_to("notifications_channel")
+      expect { subject }.to have_broadcasted_to('notifications_channel')
     end
   end
 end

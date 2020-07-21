@@ -16,8 +16,12 @@ class ApplicationController < ActionController::Base
 
   def load_messages
     @msg = []
-    unless current_user.nil?
-      @msg = Message.where('messages.created_at > :last_sign_in AND messages.user_id != :id', last_sign_in: current_user.last_sign_in_at, id: current_user.id)
-    end
+
+    return if current_user.nil?
+
+    @msg = Message.where(
+      'messages.created_at > :last_sign_in AND messages.user_id != :id',
+      last_sign_in: current_user.last_sign_in_at, id: current_user.id
+    )
   end
 end

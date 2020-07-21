@@ -1,4 +1,7 @@
+# frozen_string_literal: true
+
 module ApplicationCable
+  # This allows for current user to to connect if the user is verified
   class Connection < ActionCable::Connection::Base
     identified_by :current_user
 
@@ -7,6 +10,7 @@ module ApplicationCable
     end
 
     protected
+
     def find_verified_user
       if (verified_user = env['warden'].user)
         verified_user
