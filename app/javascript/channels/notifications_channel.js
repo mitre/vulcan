@@ -10,7 +10,7 @@ Vue.use(TurbolinksAdapter)
 Vue.component('notificationbox', NotificationBox)
 
 Vue.use(ActionCableVue, {
-  debug: true,
+  debug: false,
   debugLevel: 'error',
   connectImmediately: true
 });

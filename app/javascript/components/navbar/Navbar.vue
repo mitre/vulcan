@@ -30,7 +30,8 @@
             </div>
             <div v-else>
               <b-dropdown-item v-bind:key="m.id" v-for="m in unread_messages" :href="navigation[0].link">
-                {{ formattedDate(m.created_at) + " " + m.user["name"] + ": " + m.body }}
+                {{ m.created_at | formatDate }}
+                {{ " " + m.user["name"] + ": " + m.body }}
               </b-dropdown-item>
             </div>
           </b-nav-item-dropdown>
@@ -77,23 +78,6 @@ export default {
     unread_messages: {
       type: Array,
       required: false
-    }
-  },
-  methods: {
-    formattedDate: function(d){
-      let arr = d.split(/[\D]/);
-      let date = new Date(Date.UTC(arr[0], arr[1]-1, arr[2], arr[3], arr[4], arr[5]));
-      let min = date.getUTCMinutes()
-      let hour = date.getUTCHours()
-      let ampm = "am"
-      if (min < 10) {
-        min = "0" + min
-      }
-      if (hour > 12){
-        hour = hour - 12
-        ampm = "pm"
-      }
-      return (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear() + " " + hour + ":" + min + " " + ampm
     }
   }
 }
