@@ -17,7 +17,5 @@ import '../application'
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
-//* require popper
-//* require jquery_ujs
 
 Notification.requestPermission().then(function(result) {})

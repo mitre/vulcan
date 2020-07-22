@@ -11,8 +11,8 @@ RSpec.describe PagesController do
     sign_in user1
   end
 
-  context 'page controll' do
-    it 'message pass' do
+  context 'When users go to Projects page' do
+    it 'renders the home template' do
       get :home
       expect(response).to render_template('home')
     end

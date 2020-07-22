@@ -10,7 +10,7 @@
     <div>
       <b-form>
         <b-form-input id="comment" placeholder="Comment" v-model="comment" trim></b-form-input>
-        <b-button type="button" variant="secondary" @click="sendMessage">Submit</b-button>
+        <b-button type="button" variant="secondary" @click="sendMessage" >Submit</b-button>
       </b-form>
     </div>
   </div>
@@ -39,7 +39,7 @@ export default {
       received(data) {
         this.allmessages = [...this.allmessages, JSON.parse(data["message"])]
         if (Notification.permission === 'granted'){
-          var title = 'Notification Channel Alert'
+          var title = 'New Vulcan Message'
           var body = JSON.parse(data["message"])
           var msg = body.user["name"] + ": " + body.body
           var options = {body: msg}
