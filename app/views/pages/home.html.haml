@@ -3,6 +3,6 @@
 
 #notifications
   %notificationbox{                                             |
-    'v-bind:messages': @messages.to_json(:include => :user)     |
+    'v-bind:messages': @messages.to_json(:include => :user),    |
+    'v-bind:user': current_user.to_json                         |
   }                                                             |
-

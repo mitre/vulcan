@@ -22,4 +22,8 @@ class User < ApplicationRecord
       user.skip_confirmation!
     end
   end
+
+  def update_messages_stamp
+    update(messages_stamp: Time.now.utc)
+  end
 end

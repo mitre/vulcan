@@ -8,9 +8,9 @@
         </p>
     </div>
     <div>
-      <b-form>
-        <b-form-input id="comment" placeholder="Comment" v-model="comment" trim></b-form-input>
-        <b-button type="button" variant="secondary" @click="sendMessage" >Submit</b-button>
+      <b-form >
+        <b-form-input id="comment" placeholder="Comment" v-model="comment" v-on:keydown.enter="sendMessage()"></b-form-input>
+        <b-button type="button" variant="secondary" @click="sendMessage">Submit</b-button>
       </b-form>
     </div>
   </div>
@@ -24,6 +24,10 @@ export default {
     messages: {
       type: Array,
       required: false
+    },
+    user: {
+      type: Object,
+      required: true
     }
   },
   data() {
@@ -38,7 +42,7 @@ export default {
       },
       received(data) {
         this.allmessages = [...this.allmessages, JSON.parse(data["message"])]
-        if (Notification.permission === 'granted'){
+        if (Notification.permission === 'granted' && JSON.parse(data["message"])["user_id"] != this.user.id){
           var title = 'New Vulcan Message'
           var body = JSON.parse(data["message"])
           var msg = body.user["name"] + ": " + body.body

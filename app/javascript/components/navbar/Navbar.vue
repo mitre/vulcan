@@ -19,20 +19,22 @@
         <b-navbar-nav class="ml-auto">
           <b-nav-item-dropdown v-if="signed_in" right>
             <!-- if there is a notification change symbol -->
-            <template v-slot:button-content v-if="num_unread_messages == 0">
+            <template v-slot:button-content v-if="message_notifications == 0">
               <i class="mdi mdi-bell" aria-hidden="true"></i>
             </template>
             <template v-slot:button-content v-else>
               <i class="mdi mdi-bell-ring" aria-hidden="true"></i>
             </template>
-            <div v-if="num_unread_messages == 0">
+            <div v-if="message_notifications == 0">
               <p> No New Notifications </p>
             </div>
-            <div v-else>
-              <b-dropdown-item v-bind:key="m.id" v-for="m in unread_messages" :href="navigation[0].link">
+            <div v-else style="text-align:center">
+              <b-dropdown-item v-bind:key="m.id" v-for="m in messages" :href="navigation[0].link" >
                 {{ m.created_at | formatDate }}
                 {{ " " + m.user["name"] + ": " + m.body }}
+                <b-dropdown-divider></b-dropdown-divider>
               </b-dropdown-item>
+              <b-button pill type="button" variant="secondary" size="sm" align-v="center" @click="updateTime">Mark All as Read</b-button>
             </div>
           </b-nav-item-dropdown>
         </b-navbar-nav>
@@ -78,7 +80,49 @@ export default {
     unread_messages: {
       type: Array,
       required: false
+    },
+    user: {
+      type: Object,
+      required: true
     }
+  },
+  data() {
+    return {
+      messages: this.unread_messages,
+      message_notifications: this.num_unread_messages
+    }
+  },
+  channels: {
+    NotificationsChannel: {
+      connected() {
+      },
+      received(data) {
+        if(JSON.parse(data["message"])["user_id"] != this.user.id){
+          this.messages.push(JSON.parse(data["message"]))
+          this.message_notifications += 1
+        }
+      },
+      disconnected() {
+      }
+    }
+  },
+  methods: {
+    markAll: function() {
+      this.message_notifications = 0
+    },
+    updateTime: function() {
+      this.$cable.perform({
+        channel: 'NotificationsChannel',
+        action: 'update_time'
+      });
+      this.messages = []
+      this.message_notifications = 0
+    }
+  },
+  mounted() {
+    this.$cable.subscribe({
+      channel: 'NotificationsChannel'
+    });
   }
 }
 </script>

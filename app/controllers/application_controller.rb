@@ -20,7 +20,7 @@ class ApplicationController < ActionController::Base
     return if current_user.nil?
 
     @msg = Message.where(
-      'messages.created_at > :last_sign_in', last_sign_in: current_user.last_sign_in_at
+      'messages.created_at > :last_veiwed_at', last_veiwed_at: current_user.messages_stamp
     ).where.not(user: current_user)
   end
 end

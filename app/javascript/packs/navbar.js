@@ -4,10 +4,18 @@ import {NavbarPlugin, ButtonPlugin} from 'bootstrap-vue'
 import Navbar from '../components/navbar/App.vue'
 import NavbarItem from '../components/navbar/NavbarItem.vue'
 import moment from 'moment'
+import ActionCableVue from 'actioncable-vue';
 
 Vue.use(TurbolinksAdapter)
 Vue.use(NavbarPlugin)
 Vue.use(ButtonPlugin)
+
+
+Vue.use(ActionCableVue, {
+    debug: false,
+    debugLevel: 'error',
+    connectImmediately: true
+});
 
 Vue.filter('formatDate', function(value) {
     if (value) {
