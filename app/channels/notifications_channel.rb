@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# This allows for users to subscribe to the Notifications Channel
-# As well as it creates and broadcasts messages
+  # This allows for users to subscribe to the Notifications Channel
+  # As well as it creates and broadcasts messages
 class NotificationsChannel < ApplicationCable::Channel
   def subscribed
     stream_from 'notifications_channel'
@@ -13,5 +13,10 @@ class NotificationsChannel < ApplicationCable::Channel
 
   def send_message(data)
     Message.create(body: data['content'], user: current_user)
+  end
+
+  def update_time(data)
+    # current_user.messages_stamp = DateTime.now()
+    current_user.update_attribute(:messages_stamp, DateTime.now)
   end
 end

@@ -21,7 +21,7 @@
         'v-bind:sign_out_path': destroy_user_session_path.to_json,  |
         'v-bind:num_unread_messages': @msg.count,                   |
         'v-bind:unread_messages': @msg.to_json(:include => :user),  |
-        'v-bind:messages': @messages.to_json                        |
+        'v-bind:user': current_user.to_json                         |
       }                                                             |
 
     - if notice

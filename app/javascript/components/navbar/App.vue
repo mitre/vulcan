@@ -6,7 +6,9 @@
       :signed_in="signed_in"
       :profile_path="profile_path"
       :num_unread_messages="num_unread_messages"
-      :unread_messages="unread_messages"/>
+      :unread_messages="unread_messages"
+      :user="user"
+      />
   </div>
 </template>
 
@@ -43,9 +45,9 @@ export default {
       type: Array,
       required: false
     },
-    messages: {
-      type: Array,
-      required: false
+    user: {
+      type: Object,
+      required: true
     }
   },
   name: 'NotifcationBox',
