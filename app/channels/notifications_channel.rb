@@ -16,6 +16,6 @@ class NotificationsChannel < ApplicationCable::Channel
   end
 
   def update_time
-    current_user.update(:messages_stamp => DateTime.now)
+    current_user.update(messages_stamp: DateTime.now)
   end
 end
