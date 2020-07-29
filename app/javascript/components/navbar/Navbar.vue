@@ -37,7 +37,7 @@
                 {{ " " + m.user["name"] + ": " + m.body }}
                 <b-dropdown-divider></b-dropdown-divider>
               </b-dropdown-item>
-              <b-button pill type="button" variant="info" size="sm" align-v="center" @click="updateTime">Mark All as Read</b-button>
+              <b-button pill type="button" variant="secondary" size="sm" align-v="center" @click="updateTime">Mark All as Read</b-button>
             </div>
           </b-nav-item-dropdown>
         </b-navbar-nav>
