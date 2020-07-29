@@ -23,7 +23,11 @@
               <i class="mdi mdi-bell" aria-hidden="true"></i>
             </template>
             <template v-slot:button-content v-else>
-              <i class="mdi mdi-bell-ring" aria-hidden="true"></i>
+              <div id="icon-wrapper">
+                <i class="mdi mdi-bell" aria-hidden="true"></i>
+                <span id="badge"> {{ message_notifications }} </span>
+              </div>
+                <!-- <b-badge variant="info" class="badge-circle badge-md">{{ message_notifications }}</b-badge> -->
             </template>
             <div v-if="message_notifications == 0">
               <p> No New Notifications </p>
@@ -53,6 +57,9 @@
 </template>
 
 <script>
+
+import NotificationBell from 'vue-notification-bell'
+
 export default {
   name: 'Navbar',
   props: {
@@ -119,6 +126,9 @@ export default {
       this.message_notifications = 0
     }
   },
+  components: {
+    NotificationBell
+  },
   mounted() {
     this.$cable.subscribe({
       channel: 'NotificationsChannel'
@@ -126,3 +136,30 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+#badge{
+    background: #004cff;
+    width: auto;
+    height: auto;
+    margin: 0;
+    border-radius: 100%;
+    position:absolute;
+    top:-8px;
+    right:-5px;
+    padding:2px;
+    font-size: 12px;
+    color: white;
+}
+
+#icon-wrapper{
+    position:relative;
+    float:left;
+}
+
+i {
+    width:100px;
+    text-align:center;
+}
+
+</style>

@@ -15,8 +15,7 @@ class NotificationsChannel < ApplicationCable::Channel
     Message.create(body: data['content'], user: current_user)
   end
 
-  def update_time(data)
-    # current_user.messages_stamp = DateTime.now()
+  def update_time(void)
     current_user.update_attribute(:messages_stamp, DateTime.now)
   end
 end
