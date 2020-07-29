@@ -37,7 +37,7 @@
                 {{ " " + m.user["name"] + ": " + m.body }}
                 <b-dropdown-divider></b-dropdown-divider>
               </b-dropdown-item>
-              <b-button pill type="button" variant="secondary" size="sm" align-v="center" @click="updateTime">Mark All as Read</b-button>
+              <b-button pill type="button" variant="info" size="sm" align-v="center" @click="updateTime">Mark All as Read</b-button>
             </div>
           </b-nav-item-dropdown>
         </b-navbar-nav>
@@ -138,15 +138,14 @@ export default {
 
 <style scoped>
 #badge{
-    background: #004cff;
-    width: auto;
+    background: #138596;
     height: auto;
-    margin: 0;
-    border-radius: 100%;
+    padding-left: 25%;
+    padding-right: 25%;
+    border-radius: 30%;
     position:absolute;
-    top:-8px;
+    top:-5px;
     right:-5px;
-    padding:2px;
     font-size: 10px;
     color: white;
 }
