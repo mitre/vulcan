@@ -5,6 +5,7 @@ require 'notifications_channel'
 
 RSpec.describe NotificationsChannel, type: :channel do
   include ActiveJob::TestHelper
+  include Users
 
   let(:user) { build(:user) }
   let(:msg) { build(:message) }
@@ -37,6 +38,14 @@ RSpec.describe NotificationsChannel, type: :channel do
     subject { perform :receive, message: JSON.parse(message) }
     it 'receive message' do
       expect { subject }.to have_broadcasted_to('notifications_channel')
+    end
+  end
+
+  context 'updating Message Stamp' do
+    subject { perform :update_time }
+    it 'after read all message button' do
+      subject
+      expect( user.messages_stamp ).to be_within(1).of(Time.now)
     end
   end
 end
