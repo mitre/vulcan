@@ -45,7 +45,7 @@ RSpec.describe NotificationsChannel, type: :channel do
     subject { perform :update_time }
     it 'after read all message button' do
       subject
-      expect( user.messages_stamp ).to be_within(1).of(Time.now)
+      expect(user.messages_stamp).to be_within(1).of(Time.zone.now)
     end
   end
 end

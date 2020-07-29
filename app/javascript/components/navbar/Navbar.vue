@@ -27,7 +27,6 @@
                 <i class="mdi mdi-bell" aria-hidden="true"></i>
                 <span id="badge"> {{ message_notifications }} </span>
               </div>
-                <!-- <b-badge variant="info" class="badge-circle badge-md">{{ message_notifications }}</b-badge> -->
             </template>
             <div v-if="message_notifications == 0">
               <p> No New Notifications </p>
@@ -148,7 +147,7 @@ export default {
     top:-8px;
     right:-5px;
     padding:2px;
-    font-size: 12px;
+    font-size: 10px;
     color: white;
 }
 
