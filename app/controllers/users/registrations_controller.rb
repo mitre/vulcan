@@ -5,10 +5,7 @@ module Users
   # login is disabled.
   class RegistrationsController < Devise::RegistrationsController
     before_action :configure_permitted_parameters
-<<<<<<< HEAD
-=======
-
->>>>>>> fixed rubocop errors
+    
     def create
       if Settings.local_login.enabled
         super
