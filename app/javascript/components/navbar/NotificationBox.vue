@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 style="text-align:center">Comment</h1>
-    <div class="well" id="commentbox" style="height:500px; border: solid 1px #222222; overflow-y: scroll">
+    <div class="well" ref="commentbox" style="height:500px; border: solid 1px #222222; overflow-y: scroll">
         <p v-bind:key="m.id" v-for="m in allmessages">
           {{ m.created_at | formatDate }}
           {{ " " + m.user["name"] + ": " + m.body }}
@@ -56,7 +56,7 @@ export default {
   },
   methods: {
     sendMessage: function() {
-      if (this.comment != null){
+      if (this.comment != null && this.comment != ''){
         this.$cable.perform({
           channel: 'NotificationsChannel',
           action: 'send_message',
@@ -66,12 +66,17 @@ export default {
         });
         this.comment = null
       }
+    },
+    scrollDown: function() {
+      var comments = this.$refs.commentbox;
+      comments.scrollTop = comments.scrollHeight;
     }
   },
   mounted() {
     this.$cable.subscribe({
       channel: 'NotificationsChannel'
     });
+    this.scrollDown()
   }
 }
 

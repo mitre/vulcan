@@ -56,9 +56,6 @@
 </template>
 
 <script>
-
-import NotificationBell from 'vue-notification-bell'
-
 export default {
   name: 'Navbar',
   props: {
@@ -124,9 +121,6 @@ export default {
       this.messages = []
       this.message_notifications = 0
     }
-  },
-  components: {
-    NotificationBell
   },
   mounted() {
     this.$cable.subscribe({
