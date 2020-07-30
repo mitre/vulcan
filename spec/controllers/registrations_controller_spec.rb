@@ -131,12 +131,17 @@ RSpec.describe Users::RegistrationsController, type: :controller do
           current_password: user2.password
         }
       }
+
       expect(flash[:notice]).to eq I18n.t('devise.registrations.update_needs_confirmation')
-      expect(user2.reload.name).to eq(user3.name)
-      user2.reload
-      user2.confirm
+
+      user2.reload.confirm
+
+      expect(user2.name).to eq(user3.name)
       expect(user2.email).to eq(user3.email)
-      expect(user2.reload.password).to eq(user3.password)
+      # The password field does not update on a factory when a user changes their password
+      # only the encrypted password in the database. We have to use the devise valid_password?
+      # method to verify that the password actually changed
+      expect(user2.valid_password?(user3.password)).to be true
     end
   end
 
@@ -156,7 +161,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
           current_password: ''
         }
       }
-      expect(user2.name).should_not eq(user3.name)
+      expect(user2.reload.name).to_not eq(user3.name)
     end
   end
 
@@ -166,7 +171,6 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       sign_in user4
     end
     it 'user updates without password' do
-      # auth = mock_omniauth_response(user2)
       post :update, params: {
         user: {
           name: user1.name
