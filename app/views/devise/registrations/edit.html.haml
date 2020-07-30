@@ -1,6 +1,6 @@
 %h2
   Edit #{resource_name.to_s.humanize}
-- if !resource.provider.nil?
+- unless resource.provider.nil?
   #providerHelp.form-text.text-muted="Some settings are managed by #{resource.provider} and cannot be changed here."
   %br/
 
