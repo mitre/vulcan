@@ -1,6 +1,6 @@
 import TurbolinksAdapter from 'vue-turbolinks'
 import Vue from 'vue'
-import {NavbarPlugin, ButtonPlugin, BadgePlugin} from 'bootstrap-vue'
+import {NavbarPlugin, ButtonPlugin} from 'bootstrap-vue'
 import Navbar from '../components/navbar/App.vue'
 import NavbarItem from '../components/navbar/NavbarItem.vue'
 import moment from 'moment'
@@ -9,7 +9,6 @@ import ActionCableVue from 'actioncable-vue';
 Vue.use(TurbolinksAdapter)
 Vue.use(NavbarPlugin)
 Vue.use(ButtonPlugin)
-Vue.use(BadgePlugin)
 
 
 Vue.use(ActionCableVue, {
