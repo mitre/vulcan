@@ -12,22 +12,22 @@ Vue.use(ButtonPlugin)
 
 
 Vue.use(ActionCableVue, {
-    debug: false,
-    debugLevel: 'error',
-    connectImmediately: true
+  debug: false,
+  debugLevel: 'error',
+  connectImmediately: true
 });
 
 Vue.filter('formatDate', function(value) {
-    if (value) {
-        return moment(String(value)).format('MM/DD/YYYY hh:mm a')
-    }
+  if (value) {
+    return moment(String(value)).format('MM/DD/YYYY hh:mm a')
+  }
 });
 
 Vue.component('navbar', Navbar)
 Vue.component('NavbarItem', NavbarItem)
 
 document.addEventListener('turbolinks:load', () => {
-    new Vue({
-        el: '#navbar',
-    })
+  new Vue({
+    el: '#navbar',
+  })
 })
