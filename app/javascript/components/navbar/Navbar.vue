@@ -110,9 +110,6 @@ export default {
     }
   },
   methods: {
-    markAll: function() {
-      this.message_notifications = 0
-    },
     updateTime: function() {
       this.$cable.perform({
         channel: 'NotificationsChannel',
@@ -132,26 +129,26 @@ export default {
 
 <style scoped>
 #badge{
-    background: #138596;
-    height: auto;
-    padding-left: 25%;
-    padding-right: 25%;
-    border-radius: 30%;
-    position:absolute;
-    top:-5px;
-    right:-5px;
-    font-size: 10px;
-    color: white;
+  background: #138596;
+  height: auto;
+  padding-left: 25%;
+  padding-right: 25%;
+  border-radius: 30%;
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  font-size: 10px;
+  color: white;
 }
 
 #icon-wrapper{
-    position:relative;
-    float:left;
+  position:relative;
+  float:left;
 }
 
 i {
-    width:100px;
-    text-align:center;
+  width:100px;
+  text-align:center;
 }
 
 </style>
