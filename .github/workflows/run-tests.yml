@@ -27,7 +27,7 @@ jobs:
       ldap:
         image: rroemhild/test-openldap
         ports:
-          - 389:389
+          - 389:10389
 
     steps:
       - uses: actions/checkout@v2
