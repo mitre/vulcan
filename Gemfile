@@ -43,6 +43,8 @@ gem 'settingslogic', '~> 2.0.9'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
+gem 'inspec_tools', '~> 2.0.3'
+
 group :development, :test do
   # Call 'pry' anywhere in the code to stop execution and get a debugger console
   gem 'pry'
