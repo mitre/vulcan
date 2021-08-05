@@ -13,9 +13,21 @@ AllCops:
     - 'vendor/**/*'
 Layout/LineLength:
   Max: 120
-Metrics/BlockLength:
+Metrics/PerceivedComplexity:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/MethodLength:
+  Max: 120
   Exclude:
     - spec/**/*
-Metrics/MethodLength:
+Metrics/AbcSize:
+  Enabled: false
+Metrics/ClassLength:
+  Max: 750
+Metrics/ParameterLists:
+  Max: 8
+Metrics/BlockLength:
+  Enabled: false
   Exclude:
     - spec/**/*
