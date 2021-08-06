@@ -63,6 +63,8 @@ GEM
     addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
     ast (2.4.2)
+    audited (5.0.1)
+      activerecord (>= 5.0, < 6.2)
     bcrypt (3.1.16)
     bindex (0.8.1)
     bootsnap (1.7.7)
@@ -339,6 +341,7 @@ PLATFORMS
   x86_64-darwin-20
 
 DEPENDENCIES
+  audited (~> 5.0.1)
   bootsnap (>= 1.4.2)
   brakeman
   byebug

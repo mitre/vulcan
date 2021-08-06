@@ -3,6 +3,7 @@
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < ApplicationRecord
+  audited except: %i[created_at updated_at locked], max_audits: 1000
   before_validation :error_if_locked, on: :update
   before_destroy :error_if_locked
 
