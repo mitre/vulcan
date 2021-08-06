@@ -5,7 +5,8 @@ class Rule < ApplicationRecord
 
   # Allow an authorized user to unlock a rule
   def self.unlock(rule, user)
-    raise(RuleLockedError, "Control #{rule.id} is locked and cannot be changed.") unless user.can_unlock?(rule)
+    raise(RuleLockedError, rule.id) unless user.can_unlock?(rule)
+
     rule.locked = false
     rule.save(validate: false)
   end
@@ -19,6 +20,6 @@ class Rule < ApplicationRecord
     return unless locked_was
 
     # If the previous state was locked, error
-    raise(RuleLockedError, "Control #{id} is locked and cannot be changed.") if locked_was
+    raise(RuleLockedError, id) if locked_was
   end
 end

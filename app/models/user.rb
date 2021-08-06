@@ -24,6 +24,6 @@ class User < ApplicationRecord
   end
 
   def can_unlock?(_rule)
-    return admin
+    admin
   end
 end
