@@ -22,4 +22,8 @@ class User < ApplicationRecord
       user.skip_confirmation!
     end
   end
+
+  def can_unlock?(_rule)
+    return admin
+  end
 end
