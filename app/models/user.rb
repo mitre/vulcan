@@ -22,4 +22,8 @@ class User < ApplicationRecord
       user.skip_confirmation!
     end
   end
+
+  def can_manage_rule_lock?(_rule)
+    admin
+  end
 end
