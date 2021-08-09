@@ -2,6 +2,7 @@
 
 class Rule < ApplicationRecord
   before_validation :error_if_locked, on: :update
+  before_destroy :error_if_locked
 
   # Allow an authorized user to unlock a rule
   def self.unlock(rule, user)
