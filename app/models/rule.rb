@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
+# Benchmark XCCDF.
 class Rule < ApplicationRecord
   before_validation :error_if_locked, on: :update
   before_destroy :error_if_locked
