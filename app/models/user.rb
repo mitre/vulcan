@@ -11,6 +11,8 @@ class User < ApplicationRecord
 
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
 
+  has_many :comments, dependent: :nullify
+
   def self.from_omniauth(auth)
     find_or_create_by(email: auth.info.email) do |user|
       user.email = auth.info.email
