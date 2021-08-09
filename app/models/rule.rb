@@ -7,11 +7,10 @@ class Rule < ApplicationRecord
   before_destroy :error_if_locked
 
   # Allow an authorized user to unlock a rule
-  def self.unlock(rule, user)
-    raise(RuleLockedError, rule.id) unless user.can_unlock?(rule)
-
-    rule.locked = false
-    rule.save(validate: false)
+  def self.unlock(user, rule)
+    raise(RuleLockedError, rule.id) unless user.can_manage_rule_lock?(rule)
+    # update_attribute bypasses validations
+    rule.update_attribute(:locked, false)
   end
 
   private

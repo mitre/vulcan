@@ -23,7 +23,7 @@ class User < ApplicationRecord
     end
   end
 
-  def can_unlock?(_rule)
+  def can_manage_rule_lock?(_rule)
     admin
   end
 end
