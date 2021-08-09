@@ -12,6 +12,8 @@ class User < ApplicationRecord
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
 
   has_many :comments, dependent: :nullify
+  has_many :project_members, dependent: :destroy
+  has_many :projects, through: :project_members
 
   def self.from_omniauth(auth)
     find_or_create_by(email: auth.info.email) do |user|
@@ -25,7 +27,7 @@ class User < ApplicationRecord
     end
   end
 
-  def can_manage_rule_lock?(_rule)
-    admin
+  def can_manage_rule_lock?(project)
+    admin || project.project_members.where(user_id: id, role: 'admin').any?
   end
 end
