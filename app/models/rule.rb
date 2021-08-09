@@ -9,8 +9,11 @@ class Rule < ApplicationRecord
   # Allow an authorized user to unlock a rule
   def self.unlock(user, rule)
     raise(RuleLockedError, rule.id) unless user.can_manage_rule_lock?(rule)
-    # update_attribute bypasses validations
+
+    # update_attribute bypasses validations on purpose to unlock the rule
+    # rubocop:disable Rails/SkipsModelValidations
     rule.update_attribute(:locked, false)
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   private
