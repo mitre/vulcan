@@ -6,6 +6,14 @@ Rails.application.routes.draw do
     registrations: 'users/registrations'
   }
 
+  resources :projects do
+    resources :controls, shallow: true, as: :rules do
+      resources :comments, only: %i[index], shallow: true
+    end
+  end
+
+  resources :comments, except: %i[index new]
+
   root to: 'hello#index'
   get 'hello/index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
