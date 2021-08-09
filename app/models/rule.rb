@@ -7,6 +7,8 @@ class Rule < ApplicationRecord
   before_validation :error_if_locked, on: :update
   before_destroy :error_if_locked
 
+  has_many :comments, dependent: :destroy
+
   # Allow an authorized user to unlock a rule
   def self.unlock(user, rule)
     raise(RuleLockedError, rule.id) unless user.can_manage_rule_lock?(rule)
