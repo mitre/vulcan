@@ -8,10 +8,12 @@ class Rule < ApplicationRecord
   before_destroy :error_if_locked
 
   has_many :comments, dependent: :destroy
+  belongs_to :project
 
   # Allow an authorized user to unlock a rule
-  def self.unlock(user, rule)
-    raise(RuleLockedError, rule.id) unless user.can_manage_rule_lock?(rule)
+  def self.unlock(user)
+    # Can a user manage the project this rule is part of?
+    raise(RuleLockedError, rule.id) unless user.can_admin_project?(project)
 
     # update_attribute bypasses validations on purpose to unlock the rule
     # rubocop:disable Rails/SkipsModelValidations
