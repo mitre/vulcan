@@ -6,7 +6,10 @@ Rails.application.routes.draw do
     registrations: 'users/registrations'
   }
 
+  resources :users, only: %i[index create update destroy]
+
   resources :projects do
+    resources :users, as: :project_members, only: %i[index create update destroy]
     resources :controls, shallow: true, as: :rules do
       resources :comments, only: %i[index], shallow: true
     end
