@@ -12,7 +12,8 @@ class Rule < ApplicationRecord
 
   # Allow an authorized user to unlock a rule
   def self.unlock(user)
-    raise(RuleLockedError, rule.id) unless user.can_manage_rule_lock?(project)
+    # Can a user manage the project this rule is part of?
+    raise(RuleLockedError, rule.id) unless user.can_admin_project?(project)
 
     # update_attribute bypasses validations on purpose to unlock the rule
     # rubocop:disable Rails/SkipsModelValidations

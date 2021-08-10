@@ -3,6 +3,8 @@
 # This is our main user model, local, LDAP, and omniauth users are all stored here.
 # We store provider and UID from the Omniauth provider that is logging a user in.
 class User < ApplicationRecord
+  include ProjectMemberConstants
+
   devise :database_authenticatable, :registerable, :rememberable, :recoverable, :confirmable, :trackable, :validatable
 
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
@@ -27,7 +29,14 @@ class User < ApplicationRecord
     end
   end
 
-  def can_manage_rule_lock?(project)
-    admin || project.project_members.where(user_id: id, role: 'admin').any?
+  def can_edit_project?(project)
+    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_EDITORS).any?
+
+  def can_review_project(project)
+    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_REVIEWERS).any?
+  end
+
+  def can_admin_project?(project)
+    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_ADMINS).any?
   end
 end
