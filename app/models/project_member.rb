@@ -11,6 +11,8 @@ class ProjectMember < ApplicationRecord
   delegate :name, to: :user
   delegate :email, to: :user
 
+  scope :alphabetical, -> { joins(:user).order('users.name ASC') }
+
   validates :role, inclusion: {
     in: PROJECT_MEMBER_ROLES,
     message: "is not an acceptable value. Acceptable values are: #{PROJECT_MEMBER_ROLES.join(', ')}"

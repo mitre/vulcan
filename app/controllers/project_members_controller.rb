@@ -42,7 +42,7 @@ class ProjectMembersController < ApplicationController
 
   def set_project
     @project = Project.find(params[:project_id])
-    @project_members = @project.project_members
+    @project_members = @project.project_members.alphabetical
   end
 
   def set_project_member
