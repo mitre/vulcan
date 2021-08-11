@@ -19,6 +19,10 @@ class User < ApplicationRecord
 
   scope :alphabetical, -> { order(:name) }
 
+  def available_projects
+    admin ? Project.all : projects
+  end
+
   def self.from_omniauth(auth)
     find_or_create_by(email: auth.info.email) do |user|
       user.email = auth.info.email
@@ -35,7 +39,7 @@ class User < ApplicationRecord
     admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_EDITORS).any?
   end
 
-  def can_review_project(project)
+  def can_review_project?(project)
     admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_REVIEWERS).any?
   end
 

@@ -6,6 +6,8 @@ class Project < ApplicationRecord
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
 
+  scope :alphabetical, -> { order(:name) }
+
   ##
   # Get a list of Users that are not yet members of this project
   #
