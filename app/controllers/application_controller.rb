@@ -9,6 +9,24 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
+  def authorize_admin_project
+    return if current_user&.can_admin_project?(@project)
+
+    raise(NotAuthorizedError, 'You are not authorized to perform administrator actions on this project')
+  end
+
+  def authorize_edit_project
+    return if current_user&.can_edit_project?(@project)
+
+    raise(NotAuthorizedError, 'You are not authorized to perform editor actions on this project')
+  end
+
+  def authorize_review_project
+    return if current_user&.can_review_project?(@project)
+
+    raise(NotAuthorizedError, 'You are not authorized to perform reviewer actions on this project')
+  end
+
   private
 
   def not_authorized(exception)

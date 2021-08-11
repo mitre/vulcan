@@ -6,7 +6,7 @@
 class ProjectMembersController < ApplicationController
   before_action :set_project
   before_action :set_project_member, only: %i[update destroy]
-  before_action :authorize
+  before_action :authorize_admin_project
 
   def index; end
 
@@ -47,12 +47,6 @@ class ProjectMembersController < ApplicationController
 
   def set_project_member
     @project_member = ProjectMember.where(project: @project).find(params[:id])
-  end
-
-  def authorize
-    return if current_user.can_admin_project?(@project)
-
-    raise(NotAuthorizedError, 'You are not authorized to manage this project.')
   end
 
   def project_member_create_params
