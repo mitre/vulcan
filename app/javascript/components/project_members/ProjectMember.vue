@@ -13,7 +13,6 @@
         <input type="hidden" name="_method" value="put" />
         <input type="hidden" name="authenticity_token" v-bind:value="authenticityToken" />
         <select class="form-control" name="project_member[role]" @change="roleChanged($event)" v-model="project_member.role">
-          <option/>
           <option v-bind:key="available_role" v-for="available_role in available_roles">{{available_role}}</option>
         </select>
       </form>
