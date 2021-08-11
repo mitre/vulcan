@@ -4,8 +4,8 @@
 # Controller for managing members of a specific project.
 #
 class UsersController < ApplicationController
+  before_action :authorize_admin
   before_action :set_user, only: %i[update destroy]
-  before_action :authorize
 
   def index
     @users = User.alphabetical
@@ -33,12 +33,6 @@ class UsersController < ApplicationController
 
   def set_user
     @user = User.find(params[:id])
-  end
-
-  def authorize
-    return if current_user.admin
-
-    raise(NotAuthorizedError, 'You are not authorized to manage application users.')
   end
 
   def user_update_params
