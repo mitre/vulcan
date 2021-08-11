@@ -60,10 +60,8 @@ ActiveRecord::Schema.define(version: 2021_08_10_183322) do
 
   create_table "projects", force: :cascade do |t|
     t.string "name", null: false
-    t.bigint "rule_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["rule_id"], name: "index_projects_on_rule_id"
   end
 
   create_table "rules", force: :cascade do |t|
@@ -103,6 +101,5 @@ ActiveRecord::Schema.define(version: 2021_08_10_183322) do
 
   add_foreign_key "project_members", "projects"
   add_foreign_key "project_members", "users"
-  add_foreign_key "projects", "rules"
   add_foreign_key "rules", "projects"
 end
