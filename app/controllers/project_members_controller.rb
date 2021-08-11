@@ -5,8 +5,8 @@
 #
 class ProjectMembersController < ApplicationController
   before_action :set_project
-  before_action :set_project_member, only: %i[update destroy]
   before_action :authorize_admin_project
+  before_action :set_project_member, only: %i[update destroy]
 
   def index; end
 

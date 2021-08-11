@@ -9,6 +9,12 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
+  def authorize_admin
+    return if current_user.admin
+
+    raise(NotAuthorizedError, 'You are not authorized to perform administrator actions.')
+  end
+
   def authorize_admin_project
     return if current_user&.can_admin_project?(@project)
 
