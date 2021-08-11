@@ -7,7 +7,14 @@ class ApplicationController < ActionController::Base
 
   before_action :setup_navigation, :authenticate_user!
 
+  rescue_from NotAuthorizedError, with: :not_authorized
+
   private
+
+  def not_authorized(exception)
+    flash.alert = exception.message # 'You are not authorized to perform this action.'
+    redirect_to '/'
+  end
 
   def setup_navigation
     @navigation = []

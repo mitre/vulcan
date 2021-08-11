@@ -8,6 +8,9 @@ class ProjectMember < ApplicationRecord
   belongs_to :project
   belongs_to :user
 
+  delegate :name, to: :user
+  delegate :email, to: :user
+
   validates :role, inclusion: {
     in: PROJECT_MEMBER_ROLES,
     message: "is not an acceptable value. Acceptable values are: #{PROJECT_MEMBER_ROLES.join(', ')}"
@@ -17,4 +20,12 @@ class ProjectMember < ApplicationRecord
     scope: :project,
     message: 'is already a member of this project.'
   }
+
+  ##
+  # Override `as_json` to include additional attributes about the associated user.
+  # This is useful for the ProjectMember.vue component.
+  #
+  def as_json(options = {})
+    super options.merge(methods: %i[name email])
+  end
 end
