@@ -17,6 +17,8 @@ class User < ApplicationRecord
   has_many :project_members, dependent: :destroy
   has_many :projects, through: :project_members
 
+  scope :alphabetical, lambda { order(:name) }
+
   def self.from_omniauth(auth)
     find_or_create_by(email: auth.info.email) do |user|
       user.email = auth.info.email

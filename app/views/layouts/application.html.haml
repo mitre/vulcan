@@ -13,15 +13,18 @@
 
     = javascript_pack_tag 'project_members'
     = stylesheet_pack_tag 'project_members'
+    = javascript_pack_tag 'users'
+    = stylesheet_pack_tag 'users'
     = yield :assets
   %body
     #navbar
-      %navbar{                                                      |
-        'v-bind:navigation': @navigation.to_json,                   |
-        'v-bind:signed_in': user_signed_in?.to_s,                   |
-        'v-bind:profile_path': edit_user_registration_path.to_json,     |
-        'v-bind:sign_out_path': destroy_user_session_path.to_json   |
-      }                                                             |
+      %navbar{                                                               |
+        'v-bind:navigation': @navigation.to_json,                            |
+        'v-bind:signed_in': user_signed_in?.to_s,                            |
+        'v-bind:users_path': current_user&.admin ? users_path.to_json : nil, |
+        'v-bind:profile_path': edit_user_registration_path.to_json,          |
+        'v-bind:sign_out_path': destroy_user_session_path.to_json            |
+      }                                                                      |
     - if notice
       %p.alert.alert-success.alert-dismissable= notice
     - if alert
