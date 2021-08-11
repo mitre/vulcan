@@ -23,6 +23,7 @@
               <i class="mdi mdi-account-circle" aria-hidden="true"></i>
             </template>
             <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
+            <b-dropdown-item :href="users_path" v-if="users_path">Manage Users</b-dropdown-item>
             <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
           </b-nav-item-dropdown>
         </b-navbar-nav>
@@ -42,6 +43,10 @@ export default {
     signed_in: {
       type: Boolean,
       required: true
+    },
+    users_path: {
+      type: String,
+      required: false
     },
     profile_path: {
       type: String,
