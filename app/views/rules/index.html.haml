@@ -1,0 +1,9 @@
+- content_for :assets do
+  = javascript_pack_tag 'rules'
+  = stylesheet_pack_tag 'rules'
+
+#Rules
+  %Rules{                                                |
+    'v-bind:project': @project.to_json,                  |
+    'v-bind:rules': @rules.to_json,                      |
+  }  

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 ##
-# Controller for project rules/controls.
+# Controller for project rules.
 #
-class ControlsController < ApplicationController
+class RulesController < ApplicationController
   before_action :set_project, only: %i[index]
   before_action :authorize_review_project
 
   def index
-    @controls = @project.rules
+    @rules = @project.rules
   end
 
   private

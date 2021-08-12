@@ -3,7 +3,7 @@
     <h2>Comments</h2>
 
     <!-- All comments -->
-    <div :key="comment.id" v-for="comment in control.comments">
+    <div :key="comment.id" v-for="comment in rule.comments">
       <p class="commentHeader"><strong>{{comment.name}}</strong></p>
       <p class="commentTimestamp"><small>{{friendlyDateTime(comment.created_at)}}</small></p>
       <p class="commentBody">{{comment.body}}</p>
@@ -28,7 +28,7 @@
 export default {
   name: 'ControlComments',
   props: {
-    control: {
+    rule: {
       type: Object,
       required: true,
     }

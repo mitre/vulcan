@@ -1,26 +1,26 @@
 <template>
   <div class="row">
     <div class="col-2 leftEditorColumn">
-      <ControlNavigator @controlSelected="handleControlSelected($event)" :controls="controls" :selectedControl="selectedControl" />
+      <RuleNavigator @ruleSelected="handleRuleSelected($event)" :rules="rules" :selectedRule="selectedRule" />
     </div>
 
-    <template v-if="selectedControl != null">
+    <template v-if="selectedRule != null">
       <!-- Main editor column -->
       <div class="col-6">
-        <p>selected control: {{selectedControl.id}}</p>
+        <p>selected control: {{selectedRule.id}}</p>
       </div>
 
       <!-- Additional info column -->
       <div class="col-4">
-        <ControlComments :control="selectedControl"/>
+        <RuleComments :rule="selectedRule"/>
         <br/>
-        <ControlHistories :control="selectedControl"/>
+        <RuleHistories :rule="selectedRule"/>
       </div>
     </template>
 
     <template v-else>
       <div class="col-10">
-        <p>Select a control on the left to edit.</p>
+        <p>Select a rule on the left to edit.</p>
       </div>
     </template>
     
@@ -29,25 +29,25 @@
 
 <script>
 export default {
-  name: 'ControlsCodeEditorView',
+  name: 'RulesCodeEditorView',
   props: {
     project: {
       type: Object,
       required: true,
     },
-    controls: {
+    rules: {
       type: Array,
       required: true,
     }
   },
   data: function () {
     return {
-      selectedControl: null
+      selectedRule: null
     }
   },
   methods: {
-    handleControlSelected: function(event) {
-      this.selectedControl = event;
+    handleRuleSelected: function(event) {
+      this.selectedRule = event;
     }
   }
 }
