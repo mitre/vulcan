@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ##
-# Controller for managing members of a specific project.
+# Controller for application projects.
 #
 class ProjectsController < ApplicationController
   before_action :set_project, only: %i[destroy]

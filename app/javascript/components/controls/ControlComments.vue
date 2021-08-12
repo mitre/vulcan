@@ -1,16 +1,15 @@
 <template>
   <div>
-    <h1>Manage Vulcan Users</h1>
-    <UsersTable :users="users" />
+    <h2>Comments</h2>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'Users',
+  name: 'ControlComments',
   props: {
-    users: {
-      type: Array,
+    control: {
+      type: Object,
       required: true,
     }
   }
@@ -18,4 +17,5 @@ export default {
 </script>
 
 <style scoped>
+
 </style>

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ##
-# Controller for managing members of a specific project.
+# Controller for application users.
 #
 class UsersController < ApplicationController
   before_action :authorize_admin
