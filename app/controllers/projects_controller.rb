@@ -9,7 +9,7 @@ class ProjectsController < ApplicationController
   before_action :authorize_logged_in, only: %i[index]
 
   def index
-    @projects = current_user.available_projects.alphabetical
+    @projects = current_user.available_projects.alphabetical.select(:id, :name, :updated_at)
   end
 
   def destroy
