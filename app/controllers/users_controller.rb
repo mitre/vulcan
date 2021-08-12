@@ -8,7 +8,7 @@ class UsersController < ApplicationController
   before_action :set_user, only: %i[update destroy]
 
   def index
-    @users = User.alphabetical
+    @users = User.alphabetical.select(:id, :name, :email, :provider, :admin)
   end
 
   def update
