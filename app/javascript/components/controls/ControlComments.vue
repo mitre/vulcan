@@ -5,7 +5,7 @@
     <!-- All comments -->
     <div :key="comment.id" v-for="comment in control.comments">
       <p class="commentHeader"><strong>{{comment.name}}</strong></p>
-      <p class="commentTimestamp"><small>{{new Date(comment.created_at).toDateString()}}</small></p>
+      <p class="commentTimestamp"><small>{{friendlyDateTime(comment.created_at)}}</small></p>
       <p class="commentBody">{{comment.body}}</p>
     </div>
 
@@ -43,6 +43,14 @@ export default {
       event.preventDefault();
       alert("Would have POST to create comment: " + JSON.stringify(this.newCommentBody));
       this.newCommentBody = "";
+    },
+    friendlyDateTime(dateTimeString) {
+      const date = new Date(dateTimeString);
+      const hours = date.getHours();
+      const amOrPm = hours < 12 ? ' AM' : ' PM';
+      const minutes = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
+      const timeString = (hours > 12 ? hours - 12 : hours) + ":" + minutes + amOrPm;
+      return date.toDateString() + " @ " + timeString;
     }
   }
 }

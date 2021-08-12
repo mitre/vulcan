@@ -11,10 +11,10 @@ class Rule < ApplicationRecord
   belongs_to :project
 
   ##
-  # Override `as_json` to include dependent records (e.g. comments)
+  # Override `as_json` to include dependent records (e.g. comments, histories)
   #
   def as_json(options = {})
-    super.merge({ comments: comments.as_json })
+    super.merge({ comments: comments.as_json, histories: history })
   end
 
   ##
@@ -28,8 +28,8 @@ class Rule < ApplicationRecord
       # is the current state of the rule.
       {
         id: audit.id,
-        name: audit.user&.name || 'Unknown',
-        created_at: audit.created_at.to_i,
+        name: audit.user&.name || 'Unknown User',
+        created_at: audit.created_at,
         audited_changes: audit.audited_changes.map do |audited_field, audited_value|
           # On creation, the `audited_value` will be a single value (i.e. not an Array)
           # After an edit, the `audited_value` will be an Array where `[0]` is prev and `[1]` is new
@@ -71,7 +71,7 @@ class Rule < ApplicationRecord
   end
 
   # Allow an authorized user to unlock a rule
-  def self.unlock(user)
+  def self.unlock(user, rule)
     # Can a user manage the project this rule is part of?
     raise(RuleLockedError, rule.id) unless user.can_admin_project?(project)
 
