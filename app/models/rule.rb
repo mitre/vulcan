@@ -11,6 +11,13 @@ class Rule < ApplicationRecord
   belongs_to :project
 
   ##
+  # Override `as_json` to include dependent records (e.g. comments)
+  #
+  def as_json(options = {})
+    super.merge({ comments: comments.as_json })
+  end
+
+  ##
   # Build a structure that minimally describes the editing history of a rule
   # and describes what can be reverted for that rule.
   #
