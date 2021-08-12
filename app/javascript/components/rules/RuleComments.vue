@@ -17,6 +17,7 @@
           name="comment[body]"
           placeholder="Enter a comment..."
           rows="3"
+          required
         ></b-form-textarea>
       </b-form-group>
       <b-button type="submit" variant="primary">Comment</b-button>
@@ -25,6 +26,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   name: 'ControlComments',
   props: {
@@ -38,19 +40,42 @@ export default {
       newCommentBody: "",
     }
   },
-  methods: {
-    commentFormSubmitted(event) {
-      event.preventDefault();
-      alert("Would have POST to create comment: " + JSON.stringify(this.newCommentBody));
-      this.newCommentBody = "";
+  computed: {
+    // Authenticity Token for forms
+    authenticityToken: function() {
+      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
     },
-    friendlyDateTime(dateTimeString) {
+  },
+  methods: {
+    commentFormSubmitted: function(event) {
+      event.preventDefault();
+      // guard against invalid comment body
+      if (! this.newCommentBody.trim()) {
+        return;
+      }
+
+      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
+      axios.post(`/rules/${this.rule.id}/comments`, {
+        body: this.newCommentBody.trim()
+      })
+      .then(this.commentPostSuccess)
+      .catch(this.commentPostError);
+    },
+    // Upon success, emit an event to the parent that indicates that this rule should be re-fetched.
+    commentPostSuccess: function(response) {
+      this.newCommentBody = "";
+      this.$emit('ruleUpdated', this.rule.id);
+    },
+    commentPostError: function(response) {
+      alert('failed to comment!')
+    },
+    friendlyDateTime: function(dateTimeString) {
       const date = new Date(dateTimeString);
       const hours = date.getHours();
       const amOrPm = hours < 12 ? ' AM' : ' PM';
       const minutes = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
       const timeString = (hours > 12 ? hours - 12 : hours) + ":" + minutes + amOrPm;
-      return date.toDateString() + " @ " + timeString;
+      return `${date.toDateString()} @ ${timeString}`;
     }
   }
 }

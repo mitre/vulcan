@@ -23,6 +23,12 @@ export default {
       required: true,
     }
   },
+  computed: {
+    // Authenticity Token for forms
+    authenticityToken: function() {
+      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
+    },
+  },
   methods: {
     revertHistory: function(history) {
       alert("Would have tried to revert history: " + history);
