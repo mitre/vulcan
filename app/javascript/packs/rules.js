@@ -1,6 +1,6 @@
 import TurbolinksAdapter from 'vue-turbolinks'
 import Vue from 'vue'
-import {ButtonPlugin, BreadcrumbPlugin, FormPlugin, FormGroupPlugin, FormTextareaPlugin} from 'bootstrap-vue'
+import {ButtonPlugin, BreadcrumbPlugin, FormPlugin, FormGroupPlugin, FormTextareaPlugin, BadgePlugin, CollapsePlugin} from 'bootstrap-vue'
 import Rules from '../components/rules/Rules.vue'
 import RulesCodeEditorView from '../components/rules/RulesCodeEditorView.vue'
 import RuleComments from '../components/rules/RuleComments.vue'
@@ -13,6 +13,8 @@ Vue.use(BreadcrumbPlugin)
 Vue.use(FormPlugin)
 Vue.use(FormGroupPlugin)
 Vue.use(FormTextareaPlugin)
+Vue.use(BadgePlugin)
+Vue.use(CollapsePlugin)
 
 Vue.component('Rules', Rules)
 Vue.component('RulesCodeEditorView', RulesCodeEditorView)

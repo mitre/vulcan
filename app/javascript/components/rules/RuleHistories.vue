@@ -1,16 +1,25 @@
 <template>
   <div>
-    <h2>Histories</h2>
+
+    <div @click="showHistories = !showHistories">
+      <h2 class="historiesHeading">Histories</h2>
+      <b-badge pill class="superVerticalAlign">{{rule.histories.length}}</b-badge>
+
+      <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showHistories"></i>
+      <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showHistories"></i>
+    </div>
 
     <!-- All histories -->
-    <div :key="history.id" v-for="history in rule.histories">
-      <p class="historyHeader"><strong>{{history.name}}</strong></p>
-      <p class="historyTimestamp"><small>{{friendlyDateTime(history.created_at)}}</small></p>
-      <div class="historyBody" :key="audited_change.field" v-for="audited_change in history.audited_changes">
-        <p class="historyDescription">{{formattedHistoryBody(audited_change)}}</p>
-        <b-button v-if="rule.locked == false" class="revertButton" variant="warning" @click="revertHistory(history)">Revert</b-button>
+    <b-collapse id="collapse-histories" v-model="showHistories">
+      <div :key="history.id" v-for="history in rule.histories">
+        <p class="historyHeader"><strong>{{history.name}}</strong></p>
+        <p class="historyTimestamp"><small>{{friendlyDateTime(history.created_at)}}</small></p>
+        <div class="historyBody" :key="audited_change.field" v-for="audited_change in history.audited_changes">
+          <p class="historyDescription">{{formattedHistoryBody(audited_change)}}</p>
+          <b-button v-if="rule.locked == false" class="revertButton" variant="warning" @click="revertHistory(history)">Revert</b-button>
+        </div>
       </div>
-    </div>
+    </b-collapse>
   </div>
 </template>
 
@@ -21,6 +30,11 @@ export default {
     rule: {
       type: Object,
       required: true,
+    }
+  },
+  data: function() {
+    return {
+      showHistories: false
     }
   },
   computed: {
@@ -71,5 +85,18 @@ export default {
 
 .historyDescription {
  margin: 0;
+}
+
+.superVerticalAlign {
+  vertical-align: super;
+}
+
+.historiesHeading {
+  display: inline-block;
+  margin: 0;
+}
+
+.collapsableArrow {
+  font-size: 1.5em;
 }
 </style>
