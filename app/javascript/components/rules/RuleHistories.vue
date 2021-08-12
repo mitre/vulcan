@@ -1,6 +1,6 @@
 <template>
   <div>
-
+    <!-- Collapsable header -->
     <div @click="showHistories = !showHistories">
       <h2 class="historiesHeading">Histories</h2>
       <b-badge pill class="superVerticalAlign">{{rule.histories.length}}</b-badge>
@@ -15,8 +15,14 @@
         <p class="historyHeader"><strong>{{history.name}}</strong></p>
         <p class="historyTimestamp"><small>{{friendlyDateTime(history.created_at)}}</small></p>
         <div class="historyBody" :key="audited_change.field" v-for="audited_change in history.audited_changes">
-          <p class="historyDescription">{{formattedHistoryBody(audited_change)}}</p>
-          <b-button v-if="rule.locked == false" class="revertButton" variant="warning" @click="revertHistory(history)">Revert</b-button>
+          <p class="historyDescription">
+            {{audited_change.field}}
+            was changed from
+            <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
+            to
+            <span class="historyChangeText">{{audited_change.new_value}}</span>
+          </p>
+          <b-button v-if="rule.locked == false" class="revertButton" variant="warning" @click="revertHistory(audited_change)">Revert</b-button>
         </div>
       </div>
     </b-collapse>
@@ -24,6 +30,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   name: 'RuleHistories',
   props: {
@@ -44,15 +51,21 @@ export default {
     },
   },
   methods: {
-    revertHistory: function(history) {
-      alert("Would have tried to revert history: " + history);
+    revertHistory: function(audited_change) {
+      console.log("revert history: " + JSON.stringify(audited_change));
+
+      let payload = {};
+      payload[audited_change.field] = audited_change.prev_value
+      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
+      axios.put(`/rules/${this.rule.id}`, payload)
+      .then(this.revertSuccess)
+      .catch(this.revertFailure);
     },
-    formattedHistoryBody: function(audited_change) {
-      if (audited_change.prev_value == null) {
-        return audited_change.field + " was changed to '" + audited_change.new_value + "'"
-      } else { // Assume type is String
-        return audited_change.field + " was changed from '" + audited_change.old_value + "' to '" + audited_change.new_value + "'"
-      }
+    revertSuccess: function(response) {
+      this.$emit('ruleUpdated', this.rule.id);
+    },
+    revertFailure: function(response) {
+      alert('failed to revert!')
     },
     friendlyDateTime(dateTimeString) {
       const date = new Date(dateTimeString);
@@ -84,7 +97,7 @@ export default {
 }
 
 .historyDescription {
- margin: 0;
+ margin: 0 0 0.5em 0;
 }
 
 .superVerticalAlign {
@@ -98,5 +111,12 @@ export default {
 
 .collapsableArrow {
   font-size: 1.5em;
+}
+
+.historyChangeText {
+  background: rgb(0, 0, 0, 0.1);
+  border: 1px solid rgb(0, 0, 0, 0);
+  border-radius: 0.25em;
+  padding: 0.1em 0.25em 0.1em 0.25em;
 }
 </style>

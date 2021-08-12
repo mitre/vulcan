@@ -22,7 +22,6 @@ Vue.component('RuleComments', RuleComments)
 Vue.component('RuleNavigator', RuleNavigator)
 Vue.component('RuleHistories', RuleHistories)
 
-
 document.addEventListener('turbolinks:load', () => {
     new Vue({
         el: '#Rules',

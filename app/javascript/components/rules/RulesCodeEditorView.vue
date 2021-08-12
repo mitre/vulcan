@@ -8,13 +8,14 @@
       <!-- Main editor column -->
       <div class="col-6">
         <p>selected control: {{selectedRuleId}}</p>
+        <p>description: {{selectedRule.description}}</p>
       </div>
 
       <!-- Additional info column -->
       <div class="col-4">
         <RuleComments @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule"/>
         <br/>
-        <RuleHistories :rule="selectedRule"/>
+        <RuleHistories @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule"/>
       </div>
     </template>
 
