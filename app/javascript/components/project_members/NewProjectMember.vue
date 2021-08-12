@@ -29,7 +29,7 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary">Add User to Project</button>
+      <b-button type="submit" variant="primary">Add User to Project</b-button>
     </form>
   </div>
 </template>
