@@ -1,9 +1,0 @@
-- content_for :assets do
-  = javascript_pack_tag 'controls'
-  = stylesheet_pack_tag 'controls'
-
-#Controls
-  %Controls{                                                   |
-    'v-bind:project': @project.to_json,                        |
-    'v-bind:controls': @controls.to_json,                      |
-  }  

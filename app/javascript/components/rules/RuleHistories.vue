@@ -3,12 +3,12 @@
     <h2>Histories</h2>
 
     <!-- All histories -->
-    <div :key="history.id" v-for="history in control.histories">
+    <div :key="history.id" v-for="history in rule.histories">
       <p class="historyHeader"><strong>{{history.name}}</strong></p>
       <p class="historyTimestamp"><small>{{friendlyDateTime(history.created_at)}}</small></p>
       <div class="historyBody" :key="audited_change.field" v-for="audited_change in history.audited_changes">
         <p class="historyDescription">{{formattedHistoryBody(audited_change)}}</p>
-        <b-button v-if="control.locked == false" class="revertButton" variant="warning" @click="revertHistory(history)">Revert</b-button>
+        <b-button v-if="rule.locked == false" class="revertButton" variant="warning" @click="revertHistory(history)">Revert</b-button>
       </div>
     </div>
   </div>
@@ -16,9 +16,9 @@
 
 <script>
 export default {
-  name: 'ControlHistories',
+  name: 'RuleHistories',
   props: {
-    control: {
+    rule: {
       type: Object,
       required: true,
     }

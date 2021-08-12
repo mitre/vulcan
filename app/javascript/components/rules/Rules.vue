@@ -4,19 +4,19 @@
     
     <h1>{{project.name}} - Controls</h1>
 
-    <ControlsCodeEditorView :project="project" :controls="controls" />
+    <RulesCodeEditorView :project="project" :rules="rules" />
   </div>
 </template>
 
 <script>
 export default {
-  name: 'Controls',
+  name: 'Rules',
   props: {
     project: {
       type: Object,
       required: true,
     },
-    controls: {
+    rules: {
       type: Array,
       required: true,
     }
