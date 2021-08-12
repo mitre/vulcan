@@ -1,27 +1,35 @@
 <template>
   <div>
-    <h2>Comments</h2>
+    <div @click="showComments = !showComments">
+      <h2 class="commentsHeading">Comments</h2>
+      <b-badge pill class="superVerticalAlign">{{rule.comments.length}}</b-badge>
 
-    <!-- All comments -->
-    <div :key="comment.id" v-for="comment in rule.comments">
-      <p class="commentHeader"><strong>{{comment.name}}</strong></p>
-      <p class="commentTimestamp"><small>{{friendlyDateTime(comment.created_at)}}</small></p>
-      <p class="commentBody">{{comment.body}}</p>
+      <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showComments"></i>
+      <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showComments"></i>
     </div>
 
-    <!-- Create a new comment -->
-    <b-form class="newCommentForm" @submit="commentFormSubmitted">
-      <b-form-group>
-        <b-form-textarea
-          v-model="newCommentBody"
-          name="comment[body]"
-          placeholder="Enter a comment..."
-          rows="3"
-          required
-        ></b-form-textarea>
-      </b-form-group>
-      <b-button type="submit" variant="primary">Comment</b-button>
-    </b-form>
+    <b-collapse id="collapse-comments" v-model="showComments">
+      <!-- All comments -->
+      <div :key="comment.id" v-for="comment in rule.comments">
+        <p class="commentHeader"><strong>{{comment.name}}</strong></p>
+        <p class="commentTimestamp"><small>{{friendlyDateTime(comment.created_at)}}</small></p>
+        <p class="commentBody">{{comment.body}}</p>
+      </div>
+
+      <!-- Create a new comment -->
+      <b-form class="newCommentForm" @submit="commentFormSubmitted">
+        <b-form-group>
+          <b-form-textarea
+            v-model="newCommentBody"
+            name="comment[body]"
+            placeholder="Enter a comment..."
+            rows="3"
+            required
+          ></b-form-textarea>
+        </b-form-group>
+        <b-button type="submit" variant="primary">Comment</b-button>
+      </b-form>
+    </b-collapse>
   </div>
 </template>
 
@@ -38,6 +46,7 @@ export default {
   data: function() {
     return {
       newCommentBody: "",
+      showComments: false
     }
   },
   computed: {
@@ -87,7 +96,7 @@ export default {
 }
 
 .commentTimestamp {
-    margin: 0em 0em 0em 1em;
+  margin: 0em 0em 0em 1em;
 }
 
 .commentBody {
@@ -96,5 +105,18 @@ export default {
 
 .newCommentForm {
   margin: 1em 0em 0em 1em;
+}
+
+.superVerticalAlign {
+  vertical-align: super;
+}
+
+.commentsHeading {
+  display: inline-block;
+  margin: 0;
+}
+
+.collapsableArrow {
+  font-size: 1.5em;
 }
 </style>
