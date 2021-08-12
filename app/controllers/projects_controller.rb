@@ -6,7 +6,7 @@
 class ProjectsController < ApplicationController
   before_action :set_project, only: %i[destroy]
   before_action :authorize_admin_project, only: %i[destroy]
-  before_action :authorize_review_project, only: %i[index]
+  before_action :authorize_logged_in, only: %i[index]
 
   def index
     @projects = current_user.available_projects.alphabetical

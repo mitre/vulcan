@@ -41,7 +41,7 @@
       <template #cell(role)="data">
         <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
           <input type="hidden" name="_method" value="put" />
-          <input type="hidden" name="authenticity_token" v-bind:value="authenticityToken" />
+          <input type="hidden" name="authenticity_token" :value="authenticityToken" />
           <select class="form-control" name="user[admin]" @change="adminStatusChanged($event, data.item)" v-model="data.item.admin">
             <option value="false">user</option>
             <option value="true">admin</option>
@@ -55,7 +55,7 @@
                   variant="danger"
                   data-confirm="Are you sure you want to permanently remove this user?" 
                   data-method="delete" 
-                  v-bind:href="formAction(data.item)"
+                  :href="formAction(data.item)"
                   rel="nofollow">
           <i class="mdi mdi-trash-can" aria-hidden="true"></i>
           Remove

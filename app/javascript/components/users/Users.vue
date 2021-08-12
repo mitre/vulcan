@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>Manage Vulcan Users</h1>
-    <UsersTable v-bind:users="users" />
+    <UsersTable :users="users" />
   </div>
 </template>
 

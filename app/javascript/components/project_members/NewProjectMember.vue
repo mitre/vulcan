@@ -2,16 +2,16 @@
   <div id="NewProjectMemberCard" class="card">
     <h2>Add Project Member</h2>
 
-    <form v-bind:action="formAction" method="post">
+    <form :action="formAction" method="post">
       <div class="row">
-        <input type="hidden" id="NewProjectMemberAuthenticityToken" name="authenticity_token" v-bind:value="authenticityToken" />
+        <input type="hidden" id="NewProjectMemberAuthenticityToken" name="authenticity_token" :value="authenticityToken" />
 
         <!-- User dropdown -->
         <div class="form-group col-md-6">
           <label for="NewProjectMemberUser">User</label>
           <select class="form-control" id="NewProjectMemberUser" name="project_member[user_id]" v-model="selectedUser" required>
             <option/>
-            <option v-bind:key="available_member.email" v-for="available_member in available_members" v-bind:value="available_member.id">
+            <option :key="available_member.email" v-for="available_member in available_members" :value="available_member.id">
               {{available_member.email}}
             </option>
           </select>
@@ -23,7 +23,7 @@
           <label for="NewProjectMemberRole">Role</label>
           <select class="form-control" id="NewProjectMemberRole" name="project_member[role]" v-model="selectedRole" required>
             <option/>
-            <option v-bind:key="available_role" v-for="available_role in available_roles">{{available_role}}</option>
+            <option :key="available_role" v-for="available_role in available_roles">{{available_role}}</option>
           </select>
           <small id="NewProjectMemberRoleHelp" class="form-text text-muted">User will be assigned this role only for this project.</small>
         </div>

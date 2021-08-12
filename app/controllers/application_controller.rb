@@ -9,6 +9,12 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
+  def authorize_logged_in
+    return unless current_user.nil?
+
+    raise(NotAuthorizedError)
+  end
+
   def authorize_admin
     return if current_user.admin
 

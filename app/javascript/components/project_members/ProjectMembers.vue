@@ -1,12 +1,12 @@
 <template>
   <div>
     <h1>{{project.name}} - Manage Project Members</h1>
-    <NewProjectMember v-bind:project="project"
-                      v-bind:available_members="available_members"
-                      v-bind:available_roles="available_roles" />
-    <ProjectMembersTable v-bind:project="project"
-                         v-bind:project_members="project_members"
-                         v-bind:available_roles="available_roles" />
+    <NewProjectMember :project="project"
+                      :available_members="available_members"
+                      :available_roles="available_roles" />
+    <ProjectMembersTable :project="project"
+                         :project_members="project_members"
+                         :available_roles="available_roles" />
   </div>
 </template>
 
