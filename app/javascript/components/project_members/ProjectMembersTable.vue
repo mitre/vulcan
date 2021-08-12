@@ -36,11 +36,11 @@
 
       <!-- Column template for Role -->
       <template #cell(role)="data">
-        <form v-bind:id="formId(data.item)" v-bind:action="formAction(data.item)" method="post">
+        <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
           <input type="hidden" name="_method" value="put" />
-          <input type="hidden" name="authenticity_token" v-bind:value="authenticityToken" />
+          <input type="hidden" name="authenticity_token" :value="authenticityToken" />
           <select class="form-control" name="project_member[role]" @change="roleChanged($event, data.item)" v-model="data.item.role">
-            <option v-bind:key="available_role" v-for="available_role in available_roles">{{available_role}}</option>
+            <option :key="available_role" v-for="available_role in available_roles">{{available_role}}</option>
           </select>
         </form>
       </template>
@@ -51,7 +51,7 @@
                   variant="danger"
                   data-confirm="Are you sure you want to remove this user from the project?" 
                   data-method="delete" 
-                  v-bind:href="formAction(data.item)"
+                  :href="formAction(data.item)"
                   rel="nofollow">
           <i class="mdi mdi-trash-can" aria-hidden="true"></i>
           Remove
