@@ -24,10 +24,10 @@
          data-method="delete" 
          v-bind:href="formAction"
          rel="nofollow">
-        <button type="button" class="btn btn-danger">
+        <b-button variant="danger" type="button">
           <i class="mdi mdi-trash-can" aria-hidden="true"></i>
           Remove
-        </button>
+        </b-button>
       </a>
     </td>
   </tr>

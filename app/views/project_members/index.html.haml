@@ -1,3 +1,7 @@
+- content_for :assets do
+  = javascript_pack_tag 'project_members'
+  = stylesheet_pack_tag 'project_members'
+
 #ProjectMembers
   %ProjectMembers{                                                                  |
     'v-bind:project_members': @project_members.to_json,                             |
