@@ -51,15 +51,15 @@
 
       <!-- Column template for Actions -->
       <template #cell(actions)="data">
-        <a data-confirm="Are you sure you want to permanently remove this user?" 
-         data-method="delete" 
-         v-bind:href="formAction(data.item)"
-         rel="nofollow">
-          <b-button variant="danger" type="button">
-            <i class="mdi mdi-trash-can" aria-hidden="true"></i>
-            Remove
-          </b-button>
-        </a>
+        <b-button class="userDeleteButton"
+                  variant="danger"
+                  data-confirm="Are you sure you want to permanently remove this user?" 
+                  data-method="delete" 
+                  v-bind:href="formAction(data.item)"
+                  rel="nofollow">
+          <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+          Remove
+        </b-button>
       </template>
     </b-table>
 
@@ -88,11 +88,11 @@ export default {
       perPage: 10,
       currentPage: 1,
       fields: [
-          { key: 'name', label: 'User' },
-          { key: 'provider', label: 'Type' },
-          'role',
-          { key: 'actions', label: '' }
-        ]
+        { key: 'name', label: 'User' },
+        { key: 'provider', label: 'Type' },
+        'role',
+        { key: 'actions', label: '' }
+      ]
     }
   },
   computed: {
@@ -136,5 +136,7 @@ export default {
 </script>
 
 <style scoped>
-
+.userDeleteButton {
+  float: right;
+}
 </style>
