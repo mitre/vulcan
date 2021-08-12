@@ -9,7 +9,9 @@ class CommentsController < ApplicationController
 
   def create
     comment = Comment.new(comment_params.merge({ user: current_user, rule: @rule }))
-    comment.save
+    return if comment.save
+
+    render json: { alert: "Could not create comment. #{comment.errors.full_messages}" }
   end
 
   private

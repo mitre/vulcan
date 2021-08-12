@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- Collapsable header -->
     <div @click="showComments = !showComments">
       <h2 class="commentsHeading">Comments</h2>
       <b-badge pill class="superVerticalAlign">{{rule.comments.length}}</b-badge>
