@@ -13,6 +13,8 @@
       <!-- Additional info column -->
       <div class="col-4">
         <ControlComments :control="selectedControl"/>
+        <br/>
+        <ControlHistories :control="selectedControl"/>
       </div>
     </template>
 

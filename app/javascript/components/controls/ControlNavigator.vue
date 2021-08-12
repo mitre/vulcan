@@ -49,7 +49,7 @@ export default {
   },
   computed: {
     filteredControls: function() {
-      return this.filterControls(this.controls);
+      return this.filterControls(this.controls).sort(this.sortById);
     },
     filteredOpenControls: function() {
       return this.filterControls(this.openControls);
