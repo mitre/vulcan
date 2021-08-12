@@ -1,18 +1,18 @@
 <template>
   <div class="row">
     <div class="col-2 leftEditorColumn">
-      <RuleNavigator @ruleSelected="handleRuleSelected($event)" :rules="rules" :selectedRule="selectedRule" />
+      <RuleNavigator @ruleSelected="handleRuleSelected($event)" :rules="rules" :selectedRuleId="selectedRuleId" />
     </div>
 
-    <template v-if="selectedRule != null">
+    <template v-if="selectedRuleId != null">
       <!-- Main editor column -->
       <div class="col-6">
-        <p>selected control: {{selectedRule.id}}</p>
+        <p>selected control: {{selectedRuleId}}</p>
       </div>
 
       <!-- Additional info column -->
       <div class="col-4">
-        <RuleComments :rule="selectedRule"/>
+        <RuleComments @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule"/>
         <br/>
         <RuleHistories :rule="selectedRule"/>
       </div>
@@ -42,14 +42,19 @@ export default {
   },
   data: function () {
     return {
-      selectedRule: null
+      selectedRuleId: null, // Integer for rule id
+    }
+  },
+  computed: {
+    selectedRule: function() {
+      return this.rules.find(rule => rule.id == this.selectedRuleId);
     }
   },
   methods: {
     handleRuleSelected: function(event) {
-      this.selectedRule = event;
+      this.selectedRuleId = event;
     }
-  }
+  },
 }
 </script>
 

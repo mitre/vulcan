@@ -6,13 +6,13 @@
     </div>
 
     <p class="ruleNavigatorSection"><strong>Open Controls</strong></p>
-    <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="'open-' + rule.id" v-for="rule in filteredOpenRules">
-      <i @click.stop="removeOpenRule(rule)" class="mdi mdi-close closeRuleButton" aria-hidden="true"></i>
+    <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`open-${rule.id}`" v-for="rule in filteredOpenRules">
+      <i @click.stop="removeOpenRule(rule.id)" class="mdi mdi-close closeRuleButton" aria-hidden="true"></i>
       {{rule.id}}
     </div>
 
     <p class="ruleNavigatorSection"><strong>All Controls</strong></p>
-    <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="'rule-' + rule.id" v-for="rule in filteredRules">
+    <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`rule-${rule.id}`" v-for="rule in filteredRules">
       {{rule.id}}
     </div>
   </div>
@@ -20,7 +20,6 @@
 
 
 <script>
-
 //
 // Expect component to emit `ruleSelected` event when
 // a rule is selected from the list. This event means that
@@ -36,53 +35,54 @@ export default {
       type: Array,
       required: true,
     },
-    selectedRule: {
-      type: Object,
+    selectedRuleId: {
+      type: Number,
       required: false,
     }
   },
   data: function() {
     return {
-      openRules: [],
+      // Tried using a `new Set()` for `openRuleIds`, but Vue would not react to changes.
+      openRuleIds: [],
       search: ""
     }
   },
   computed: {
+    // Filters down to all rules that apply to search & applied filters
     filteredRules: function() {
       return this.filterRules(this.rules).sort(this.sortById);
     },
+    // Filters down to open rules that also apply to search & applied filters
     filteredOpenRules: function() {
-      return this.filterRules(this.openRules);
-    },
+      const openRules = this.rules.filter((rule) => this.openRuleIds.includes(rule.id)).sort(this.sortById);
+      return this.filterRules(openRules)
+    }
   },
   methods: {
     // Event handler for when a rule is selected
     ruleSelected: function(rule) {
-      this.addOpenRule(rule);
-      this.$emit('ruleSelected', rule);
+      this.addOpenRule(rule.id);
+      this.$emit('ruleSelected', rule.id);
     },
     // Adds a rule to the `openRules` array
-    addOpenRule: function(rule) {
-      // Guard against duplicate
-      for (let i = 0; i < this.openRules.length; i++) {
-        if (this.openRules[i].id == rule.id) {
-          return;
-        }
+    addOpenRule: function(ruleId) {
+      if (this.openRuleIds.includes(ruleId)) {
+        return;
       }
-      // Push to array and re-sort
-      this.openRules.push(rule);
-      this.openRules.sort(this.sortById);
+      this.openRuleIds.push(ruleId);
     },
     // Removes a rule from the `openRules` array
-    removeOpenRule: function(rule) {
-      const found = this.openRules.findIndex(c => c.id == rule.id);
-      if (found != -1) {
-        this.openRules.splice(found, 1);
+    removeOpenRule: function(ruleId) {
+      const ruleIndex = this.openRuleIds.findIndex((id) => id == ruleId);
+      // Guard from rule not found
+      if (ruleIndex == -1) {
+        return;
+      }
+      this.openRuleIds.splice(ruleIndex, 1)
 
-        // Handle the case where the close rule was the selected rule
-        if (rule.id == this.selectedRule?.id) {
-          this.$emit('ruleSelected', null);
-        }
+      // Handle edge case where closed rule is the currently selected rule
+      if (ruleId == this.selectedRuleId) {
+        this.$emit('ruleSelected', null);
       }
     },
     // Helper to sort rules by ID
@@ -99,7 +99,7 @@ export default {
     ruleRowClass: function(rule) {
       return {
         ruleRow: true,
-        selectedRuleRow: this.selectedRule?.id == rule.id
+        selectedRuleRow: this.selectedRuleId == rule.id
       }
     },
     // Helper to filter & search a group of rules

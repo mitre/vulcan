@@ -10,12 +10,12 @@ Rails.application.routes.draw do
 
   resources :projects do
     resources :project_members, only: %i[index create update destroy]
-    resources :controls, shallow: true, as: :rules do
-      resources :comments, only: %i[index], shallow: true
+    resources :rules, shallow: true do
+      resources :comments, only: %i[create]
     end
   end
-
-  resources :comments, except: %i[index new]
+  # Alias rules#index to controls for convenience
+  get '/projects/:project_id/controls', to: 'rules#index'
 
   root to: 'hello#index'
   get 'hello/index'

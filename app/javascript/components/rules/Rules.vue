@@ -4,11 +4,12 @@
     
     <h1>{{project.name}} - Controls</h1>
 
-    <RulesCodeEditorView :project="project" :rules="rules" />
+    <RulesCodeEditorView @ruleUpdated="ruleUpdated" :project="project" :rules="reactiveRules" />
   </div>
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   name: 'Rules',
   props: {
@@ -19,6 +20,11 @@ export default {
     rules: {
       type: Array,
       required: true,
+    }
+  },
+  data: function () {
+    return {
+      reactiveRules: this.rules
     }
   },
   computed: {
@@ -37,8 +43,28 @@ export default {
           active: true
         }
       ]
+    },
+    // Authenticity Token for forms
+    authenticityToken: function() {
+      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
+    },
+  },
+  methods: {
+    ruleUpdated: function(id) {
+      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
+      axios.get(`/rules/${id}`)
+      .then(this.ruleFetchSuccess)
+      .catch(this.ruleFetchError);
+    },
+    ruleFetchSuccess: function(response) {
+      const ruleIndex = this.reactiveRules.findIndex((rule) => { return rule.id == response.data.id });
+      this.reactiveRules.splice(ruleIndex, 1, response.data)
+    },  
+    ruleFetchError: function(error) {
+      console.log(error);
+      alert('Could not fetch control!')
     }
-  }
+  },
 }
 </script>
 
