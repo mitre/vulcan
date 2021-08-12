@@ -30,8 +30,13 @@
       <template #cell(actions)="data">
         <div class="projectActionsDropdown">
           <b-dropdown text="Actions" class="m-md-2" right>
+            <!-- View controls dropdown item -->
+            <b-dropdown-item :href="projectControlssAction(data.item)">
+              <i class="mdi mdi-file-document" aria-hidden="true"></i>
+              View Controls
+            </b-dropdown-item>
             <!-- Manage projects dropdown item -->
-            <b-dropdown-item :href="manageProjectsAction(data.item)">
+            <b-dropdown-item :href="manageProjectMembersAction(data.item)">
               <i class="mdi mdi-account-circle" aria-hidden="true"></i>
               Manage Project Members
             </b-dropdown-item>
@@ -100,8 +105,12 @@ export default {
       return "/projects/" + project.id;
     },
     // Path to the manage project members page
-    manageProjectsAction: function(project) {
+    manageProjectMembersAction: function(project) {
       return "/projects/" + project.id + "/project_members";
+    },
+    // Path to the project controls page
+    projectControlssAction: function(project) {
+      return "/projects/" + project.id + "/controls";
     }
   }
 }

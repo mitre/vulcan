@@ -1,15 +1,18 @@
 <template>
   <div>
     <p class="controlNavigatorSection"><strong>Filter &amp; Search</strong></p>
+    <div class="input-group">
+      <input type="text" class="form-control" id="controlSearch" placeholder="Search controls..." v-model="search">
+    </div>
 
     <p class="controlNavigatorSection"><strong>Open Controls</strong></p>
-    <div :class="controlRowClass(control)" @click="controlSelected(control)" :key="'open-' + control.id" v-for="control in openControls">
+    <div :class="controlRowClass(control)" @click="controlSelected(control)" :key="'open-' + control.id" v-for="control in filteredOpenControls">
       <i @click.stop="removeOpenControl(control)" class="mdi mdi-close closeControlButton" aria-hidden="true"></i>
       {{control.id}}
     </div>
 
     <p class="controlNavigatorSection"><strong>All Controls</strong></p>
-    <div :class="controlRowClass(control)" @click="controlSelected(control)" :key="'control-' + control.id" v-for="control in controls">
+    <div :class="controlRowClass(control)" @click="controlSelected(control)" :key="'control-' + control.id" v-for="control in filteredControls">
       {{control.id}}
     </div>
   </div>
@@ -40,8 +43,17 @@ export default {
   },
   data: function() {
     return {
-      openControls: []
+      openControls: [],
+      search: ""
     }
+  },
+  computed: {
+    filteredControls: function() {
+      return this.filterControls(this.controls);
+    },
+    filteredOpenControls: function() {
+      return this.filterControls(this.openControls);
+    },
   },
   methods: {
     // Event handler for when a control is selected
@@ -89,6 +101,12 @@ export default {
         controlRow: true,
         selectedControlRow: this.selectedControl?.id == control.id
       }
+    },
+    // Helper to filter & search a group of controls
+    // PLACEHOLDER! searching by id - should be changed to title/name once implemented
+    filterControls(controls) {
+      let downcaseSearch = this.search.toLowerCase()
+      return controls.filter(user => user.id.toString().toLowerCase().includes(downcaseSearch));
     }
    }
 }
