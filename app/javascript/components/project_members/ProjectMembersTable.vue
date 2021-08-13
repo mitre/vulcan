@@ -21,7 +21,7 @@
 
     <!-- Project Members table -->
     <b-table
-      id="users-table"
+      id="project-members-table"
       :items="searchedProjectMembers"
       :fields="fields"
       :per-page="perPage"
@@ -64,7 +64,7 @@
       v-model="currentPage"
       :total-rows="rows"
       :per-page="perPage"
-      aria-controls="users-table"
+      aria-controls="project-members-table"
     ></b-pagination>
   </div>
 </template>
@@ -128,7 +128,7 @@ export default {
     },
     // Path to POST/DELETE to when updating/deleting a user
     formAction: function(project_member) {
-      return "/users/" + project_member.id;
+      return `/projects/${this.project.id}/project_members/${project_member.id}`
     },
   }
 }
