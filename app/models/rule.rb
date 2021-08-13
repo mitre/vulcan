@@ -48,33 +48,6 @@ class Rule < ApplicationRecord
     end[0...-1]
   end
 
-  ##
-  # Revert a specific field on a rule from an audit
-  #
-  # Parameters:
-  #    audit (Audited::Audit) - A specific audited record
-  #    field (string) - A specific field to revert from the audit record
-  #
-  def self.revert(user, audit, field)
-    # nil check for audit
-    raise(RuleRevertError('unknown', field)) if audit.nil?
-
-    # `audit.auditable` refers to the rule itself
-    rule = audit.auditable
-
-    # Ensure `auditable` is indeed a rule
-    raise(RuleRevertError('unknown', field)) unless rule.is_a?(Rule)
-
-    # Permissions check for revert
-    raise(RuleRevertError(rule, field)) unless user.can_edit_project?(rule.project)
-
-    # Check that desired field exists in the audit
-    raise(RuleRevertError(rule, field)) unless audit.audited_changes.include?(field)
-
-    rule[field] = audit.audited_changes[field]
-    rule.save
-  end
-
   private
 
   def error_if_locked
