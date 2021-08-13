@@ -14,14 +14,19 @@ class Rule < ApplicationRecord
   # Override `as_json` to include dependent records (e.g. comments, histories)
   #
   def as_json(options = {})
-    super.merge({ comments: comments.as_json, histories: history })
+    super.merge(
+      {
+        comments: comments.as_json.map { |c| c.except('id', 'user_id', 'rule_id', 'updated_at') },
+        histories: histories
+      }
+    )
   end
 
   ##
   # Build a structure that minimally describes the editing history of a rule
   # and describes what can be reverted for that rule.
   #
-  def history
+  def histories
     audits.order(:created_at).map do |audit|
       # Each audit can encompass multiple changes on the model (see audited_changes)
       # `[0...-1]` removes the last audit from the list because the last element
