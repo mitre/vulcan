@@ -1,8 +1,8 @@
 <template>
   <div>
     <!-- Collapsable header -->
-    <div @click="showComments = !showComments">
-      <h2 class="commentsHeading">Comments</h2>
+    <div @click="showComments = !showComments" class="clickable">
+      <h2 class="m-0 d-inline-block">Comments</h2>
       <b-badge pill class="superVerticalAlign">{{rule.comments.length}}</b-badge>
 
       <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showComments"></i>
@@ -12,13 +12,13 @@
     <b-collapse id="collapse-comments" v-model="showComments">
       <!-- All comments -->
       <div :key="comment.id" v-for="comment in rule.comments">
-        <p class="commentHeader"><strong>{{comment.name}}</strong></p>
-        <p class="commentTimestamp"><small>{{friendlyDateTime(comment.created_at)}}</small></p>
-        <p class="commentBody">{{comment.body}}</p>
+        <p class="ml-2 mb-0 mt-2"><strong>{{comment.name}}</strong></p>
+        <p class="ml-2 mb-0"><small>{{friendlyDateTime(comment.created_at)}}</small></p>
+        <p class="ml-3 mb-3">{{comment.body}}</p>
       </div>
 
       <!-- Create a new comment -->
-      <b-form class="newCommentForm" @submit="commentFormSubmitted">
+      <b-form class="ml-2 mb-0 mt-2" @submit="commentFormSubmitted">
         <b-form-group>
           <b-form-textarea
             v-model="newCommentBody"
@@ -93,32 +93,4 @@ export default {
 </script>
 
 <style scoped>
-.commentHeader {
-  margin: 1em 0em 0em 1em;
-}
-
-.commentTimestamp {
-  margin: 0em 0em 0em 1em;
-}
-
-.commentBody {
-  margin: 0em 0em 0em 2em;
-}
-
-.newCommentForm {
-  margin: 1em 0em 0em 1em;
-}
-
-.superVerticalAlign {
-  vertical-align: super;
-}
-
-.commentsHeading {
-  display: inline-block;
-  margin: 0;
-}
-
-.collapsableArrow {
-  font-size: 1.5em;
-}
 </style>

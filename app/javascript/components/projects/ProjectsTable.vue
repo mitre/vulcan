@@ -28,7 +28,7 @@
       <!-- Column template for Actions -->
       <!-- TODO - control actions available here based on user's admin status and/or project membership roles -->
       <template #cell(actions)="data">
-        <div class="projectActionsDropdown">
+        <div class="float-right">
           <b-dropdown text="Actions" class="m-md-2" right>
             <!-- View controls dropdown item -->
             <b-dropdown-item :href="projectControlssAction(data.item)">
@@ -117,7 +117,4 @@ export default {
 </script>
 
 <style scoped>
-.projectActionsDropdown {
-  float: right;
-}
 </style>

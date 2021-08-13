@@ -1,17 +1,17 @@
 <template>
   <div>
-    <p class="ruleNavigatorSection"><strong>Filter &amp; Search</strong></p>
+    <p class="mt-3 mb-0"><strong>Filter &amp; Search</strong></p>
     <div class="input-group">
       <input type="text" class="form-rule" id="ruleSearch" placeholder="Search controls..." v-model="search">
     </div>
 
-    <p class="ruleNavigatorSection"><strong>Open Controls</strong></p>
+    <p class="mt-3 mb-0"><strong>Open Controls</strong></p>
     <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`open-${rule.id}`" v-for="rule in filteredOpenRules">
       <i @click.stop="removeOpenRule(rule.id)" class="mdi mdi-close closeRuleButton" aria-hidden="true"></i>
       {{rule.id}}
     </div>
 
-    <p class="ruleNavigatorSection"><strong>All Controls</strong></p>
+    <p class="mt-3 mb-0"><strong>All Controls</strong></p>
     <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`rule-${rule.id}`" v-for="rule in filteredRules">
       {{rule.id}}
     </div>
@@ -99,6 +99,7 @@ export default {
     ruleRowClass: function(rule) {
       return {
         ruleRow: true,
+        clickable: true,
         selectedRuleRow: this.selectedRuleId == rule.id
       }
     },
@@ -114,24 +115,24 @@ export default {
 
 <style scoped>
 .ruleRow {
-  cursor: pointer;
   padding: 0.25em;
 }
-.selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
-}
+
 .ruleRow:hover {
   background: rgb(0, 0, 0, 0.12);
 }
-.ruleNavigatorSection {
-  margin: 1em 0em 0em 0em;
+
+.selectedRuleRow {
+  background: rgba(66, 50, 50, 0.09);
 }
+
 .closeRuleButton {
   color: red;
   padding: 0.1em;
   border: 1px solid rgb(0, 0, 0, 0);
   box-sizing: border-box
 }
+
 .closeRuleButton:hover {
   border: 1px solid red;
   border-radius: 0.2em;
