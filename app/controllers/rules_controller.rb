@@ -4,10 +4,10 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update]
-  before_action :set_project, only: %i[index]
-  before_action :authorize_edit_project, only: %i[update]
-  before_action :authorize_review_project, only: %i[index show]
+  before_action :set_rule, only: %i[show update manage_lock]
+  before_action :set_project, only: %i[index show update manage_lock]
+  before_action :authorize_edit_project, only: %i[index update show]
+  before_action :authorize_review_project, only: %i[manage_lock]
 
   def index
     @rules = @project.rules
@@ -25,10 +25,23 @@ class RulesController < ApplicationController
     end
   end
 
+  def manage_lock
+    return if @rule.locked == manage_lock_params[:locked]
+
+    # rubocop:disable Rails/SkipsModelValidations
+    @rule.update_attribute(:locked, manage_lock_params[:locked])
+    # rubocop:enable Rails/SkipsModelValidations
+    render json: { notice: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} rule." }
+  end
+
   private
 
   def rule_update_params
     params.require(:rule).permit(:description)
+  end
+
+  def manage_lock_params
+    params.require(:rule).permit(:locked)
   end
 
   def set_rule

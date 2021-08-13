@@ -6,23 +6,8 @@
 
     <template v-if="selectedRuleId != null">
       <div class="col-10">
-        <!-- Rule Details column -->
-        <div class="row">
-          <div class="col-12">
-            <h2>{{selectedRule.id}}</h2>
-
-            <!-- Rule info -->
-            <!-- <p>Based on ...</p> -->
-            <p v-if="selectedRule.histories.length> 0">Last updated on {{friendlyDateTime(selectedRule.updated_at)}} by {{lastEditor}}</p>
-            <p v-else>Created on {{friendlyDateTime(selectedRule.created_at)}}</p>
-
-            <!-- Action Buttons -->
-            <b-button variant="success">Save Control</b-button>
-            <b-button variant="danger">Delete Control</b-button>
-            <b-button variant="warning">Lock Control</b-button>
-            <!-- <b-button>Duplicate Control</b-button> -->
-          </div>
-        </div>
+        <RuleEditorHeader @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule" />
+        
         <hr/>
 
         <div class="row">
@@ -51,10 +36,8 @@
 </template>
 
 <script>
-import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
 export default {
   name: 'RulesCodeEditorView',
-  mixins: [DateFormatMixinVue],
   props: {
     project: {
       type: Object,
