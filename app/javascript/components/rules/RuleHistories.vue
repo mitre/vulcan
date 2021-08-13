@@ -67,6 +67,7 @@ export default {
     revertFailure: function(response) {
       alert('failed to revert!')
     },
+    // This needs to be an external helper
     friendlyDateTime(dateTimeString) {
       const date = new Date(dateTimeString);
       const hours = date.getHours();

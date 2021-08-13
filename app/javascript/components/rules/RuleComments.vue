@@ -79,6 +79,7 @@ export default {
     commentPostError: function(response) {
       alert('failed to comment!')
     },
+    // This needs to be an external helper
     friendlyDateTime: function(dateTimeString) {
       const date = new Date(dateTimeString);
       const hours = date.getHours();
