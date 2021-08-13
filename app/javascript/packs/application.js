@@ -17,3 +17,16 @@ import '../application'
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
+
+
+// const alerts = $('.alerts');
+// setTimeout(function() {element.remove()}, 5000);
+
+document.addEventListener('turbolinks:load', () => {
+  const alerts = document.querySelectorAll(".alert");
+  console.log("alerts: " + alerts.length);
+  for (const alert of alerts) {
+    console.log(alert);
+    setTimeout(function() {alert.remove()}, 5000);
+  }
+})

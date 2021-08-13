@@ -10,8 +10,10 @@
 
 <script>
 import axios from 'axios';
+import AlertMixinVue from '../../mixins/AlertMixin.vue';
 export default {
   name: 'Rules',
+  mixins: [AlertMixinVue],
   props: {
     project: {
       type: Object,

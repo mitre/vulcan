@@ -36,8 +36,11 @@
 
 <script>
 import axios from 'axios';
+import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
+import AlertMixinVue from '../../mixins/AlertMixin.vue';
 export default {
   name: 'ControlComments',
+  mixins: [DateFormatMixinVue, AlertMixinVue],
   props: {
     rule: {
       type: Object,
