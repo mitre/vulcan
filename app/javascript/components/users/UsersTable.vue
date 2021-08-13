@@ -121,7 +121,7 @@ export default {
     },
     // The text that should appear in the 'Type' column
     ldapColumn: function(user) {
-      return user.provider === null ? 'Vulcan User' : 'LDAP User'
+      return user.provider === null ? 'Local User' : 'LDAP User'
     },
     // Generator for a unique form id for the user role dropdown
     formId: function(user) {
