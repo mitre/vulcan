@@ -51,8 +51,10 @@
 </template>
 
 <script>
+import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
 export default {
   name: 'RulesCodeEditorView',
+  mixins: [DateFormatMixinVue],
   props: {
     project: {
       type: Object,
