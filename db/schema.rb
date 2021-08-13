@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_10_183322) do
+ActiveRecord::Schema.define(version: 2021_08_10_212018) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -37,6 +37,17 @@ ActiveRecord::Schema.define(version: 2021_08_10_183322) do
     t.index ["user_id", "user_type"], name: "user_index"
   end
 
+  create_table "checks", force: :cascade do |t|
+    t.bigint "rule_id"
+    t.string "system"
+    t.string "content_ref_name"
+    t.string "content_ref_href"
+    t.text "content"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["rule_id"], name: "index_checks_on_rule_id"
+  end
+
   create_table "comments", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "rule_id"
@@ -45,6 +56,24 @@ ActiveRecord::Schema.define(version: 2021_08_10_183322) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["rule_id"], name: "index_comments_on_rule_id"
     t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
+  create_table "disa_rule_descriptions", force: :cascade do |t|
+    t.bigint "rule_id"
+    t.text "vuln_discussion"
+    t.text "false_positives"
+    t.text "false_negatives"
+    t.boolean "documentable"
+    t.text "mitigations"
+    t.text "severity_override_guidance"
+    t.text "potential_impacts"
+    t.text "third_party_tools"
+    t.text "mitigation_control"
+    t.text "responsibility"
+    t.text "ia_controls"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["rule_id"], name: "index_disa_rule_descriptions_on_rule_id"
   end
 
   create_table "project_members", force: :cascade do |t|
@@ -64,12 +93,53 @@ ActiveRecord::Schema.define(version: 2021_08_10_183322) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
+  create_table "references", force: :cascade do |t|
+    t.string "contributor"
+    t.string "coverage"
+    t.string "creator"
+    t.string "date"
+    t.string "description"
+    t.string "format"
+    t.string "identifier"
+    t.string "language"
+    t.string "publisher"
+    t.string "relation"
+    t.string "rights"
+    t.string "source"
+    t.string "subject"
+    t.string "title"
+    t.string "type"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "rule_descriptions", force: :cascade do |t|
+    t.bigint "rule_id"
+    t.text "description"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["rule_id"], name: "index_rule_descriptions_on_rule_id"
+  end
+
   create_table "rules", force: :cascade do |t|
     t.boolean "locked", default: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "project_id"
-    t.text "description", default: ""
+    t.string "status"
+    t.text "status_justification"
+    t.text "artifact_description"
+    t.text "vendor_comments"
+    t.string "rule_id", null: false
+    t.string "rule_severity"
+    t.string "rule_weight"
+    t.string "version"
+    t.string "title"
+    t.string "ident"
+    t.string "ident_system", default: "http://iase.disa.mil/cci"
+    t.text "fixtext"
+    t.string "fixtext_fixref"
+    t.string "fix_id"
     t.index ["project_id"], name: "index_rules_on_project_id"
   end
 
