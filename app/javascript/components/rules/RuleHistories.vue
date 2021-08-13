@@ -59,23 +59,12 @@ export default {
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
       axios.put(`/rules/${this.rule.id}`, payload)
       .then(this.revertSuccess)
-      .catch(this.revertFailure);
+      .catch(this.alertOrNotifyResponse);
     },
     revertSuccess: function(response) {
+      this.alertOrNotifyResponse(response);
       this.$emit('ruleUpdated', this.rule.id);
     },
-    revertFailure: function(response) {
-      alert('failed to revert!')
-    },
-    // This needs to be an external helper
-    friendlyDateTime(dateTimeString) {
-      const date = new Date(dateTimeString);
-      const hours = date.getHours();
-      const amOrPm = hours < 12 ? ' AM' : ' PM';
-      const minutes = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
-      const timeString = (hours > 12 ? hours - 12 : hours) + ":" + minutes + amOrPm;
-      return date.toDateString() + " @ " + timeString;
-    }
   }
 }
 </script>

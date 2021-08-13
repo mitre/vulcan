@@ -22,6 +22,41 @@ Vue.component('RuleComments', RuleComments)
 Vue.component('RuleNavigator', RuleNavigator)
 Vue.component('RuleHistories', RuleHistories)
 
+// Based on what the server response is, account for
+// generating an alert or notice on the user's screen
+Vue.prototype.alertOrNotifyResponse = function(response) {
+  let classes = 'alert alert-dismissable fade show ';
+  let textContent = '';
+  if (response['data'] && response['data']['notice']) {
+    classes += ' alert-success';
+    textContent = response['data']['notice'];
+  }
+  else if (response['data'] && response['data']['alert']) {
+    classes += 'alert-danger';
+    textContent = response['data']['alert'];
+  } else {
+    // The response did not contain data we can use for an alert or notice.
+    return;
+  }
+
+  let element = document.createElement('p');
+  element.className = classes;
+  element.textContent = textContent;
+  element.setAttribute('role', 'alert');
+  navbar?.insertAdjacentElement('afterend', element);
+}
+
+// Format a date time string like '2021-08-10T19:43:24.950Z'
+// into a more readable format.
+Vue.prototype.friendlyDateTime = function(dateTimeString) {
+  const date = new Date(dateTimeString);
+  const hours = date.getHours();
+  const amOrPm = hours < 12 ? ' AM' : ' PM';
+  const minutes = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
+  const timeString = (hours > 12 ? hours - 12 : hours) + ":" + minutes + amOrPm;
+  return `${date.toDateString()} @ ${timeString}`;
+}
+
 document.addEventListener('turbolinks:load', () => {
     new Vue({
         el: '#Rules',
