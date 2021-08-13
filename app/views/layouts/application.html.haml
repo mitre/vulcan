@@ -10,15 +10,17 @@
     = javascript_pack_tag 'navbar'
     / If using inline styles in the vue pack, loading the stylesheet_pack_tag as well becomes necessary
     = stylesheet_pack_tag 'navbar'
+
     = yield :assets
   %body
     #navbar
-      %navbar{                                                      |
-        'v-bind:navigation': @navigation.to_json,                   |
-        'v-bind:signed_in': user_signed_in?.to_s,                   |
-        'v-bind:profile_path': edit_user_registration_path.to_json,     |
-        'v-bind:sign_out_path': destroy_user_session_path.to_json   |
-      }                                                             |
+      %navbar{                                                               |
+        'v-bind:navigation': @navigation.to_json,                            |
+        'v-bind:signed_in': user_signed_in?.to_s,                            |
+        'v-bind:users_path': current_user&.admin ? users_path.to_json : nil, |
+        'v-bind:profile_path': edit_user_registration_path.to_json,          |
+        'v-bind:sign_out_path': destroy_user_session_path.to_json            |
+      }                                                                      |
     - if notice
       %p.alert.alert-success.alert-dismissable= notice
     - if alert

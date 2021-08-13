@@ -1,0 +1,8 @@
+- content_for :assets do
+  = javascript_pack_tag 'users'
+  = stylesheet_pack_tag 'users'
+
+#users
+  %Users{                           |
+    'v-bind:users': @users.to_json, |
+  }  
