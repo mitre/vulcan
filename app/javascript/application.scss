@@ -3,4 +3,17 @@
 
 // The default font path is '../fonts', which fails with Webpacker.
 $mdi-font-path: '~@mdi/font/fonts/';
-@import "~@mdi/font/scss/materialdesignicons"
+@import "~@mdi/font/scss/materialdesignicons";
+
+
+.clickable {
+  cursor: pointer;
+}
+
+.superVerticalAlign {
+  vertical-align: super;
+}
+
+.collapsableArrow {
+  font-size: 1.5rem;
+}

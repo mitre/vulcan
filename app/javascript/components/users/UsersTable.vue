@@ -51,7 +51,7 @@
 
       <!-- Column template for Actions -->
       <template #cell(actions)="data">
-        <b-button class="userDeleteButton"
+        <b-button class="float-right"
                   variant="danger"
                   data-confirm="Are you sure you want to permanently remove this user?" 
                   data-method="delete" 
@@ -136,7 +136,4 @@ export default {
 </script>
 
 <style scoped>
-.userDeleteButton {
-  float: right;
-}
 </style>
