@@ -6,6 +6,7 @@ import RulesCodeEditorView from '../components/rules/RulesCodeEditorView.vue'
 import RuleComments from '../components/rules/RuleComments.vue'
 import RuleHistories from '../components/rules/RuleHistories.vue'
 import RuleNavigator from '../components/rules/RuleNavigator.vue'
+import moment from 'moment'
 
 Vue.use(TurbolinksAdapter)
 Vue.use(ButtonPlugin)
@@ -44,17 +45,13 @@ Vue.prototype.alertOrNotifyResponse = function(response) {
   element.textContent = textContent;
   element.setAttribute('role', 'alert');
   navbar?.insertAdjacentElement('afterend', element);
+  setTimeout(function() {element.remove()}, 5000);
 }
 
 // Format a date time string like '2021-08-10T19:43:24.950Z'
 // into a more readable format.
 Vue.prototype.friendlyDateTime = function(dateTimeString) {
-  const date = new Date(dateTimeString);
-  const hours = date.getHours();
-  const amOrPm = hours < 12 ? ' AM' : ' PM';
-  const minutes = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
-  const timeString = (hours > 12 ? hours - 12 : hours) + ":" + minutes + amOrPm;
-  return `${date.toDateString()} @ ${timeString}`;
+  return moment(dateTimeString).format('lll');
 }
 
 document.addEventListener('turbolinks:load', () => {
