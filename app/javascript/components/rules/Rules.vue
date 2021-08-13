@@ -54,16 +54,12 @@ export default {
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
       axios.get(`/rules/${id}`)
       .then(this.ruleFetchSuccess)
-      .catch(this.ruleFetchError);
+      .catch(this.alertOrNotifyResponse);
     },
     ruleFetchSuccess: function(response) {
       const ruleIndex = this.reactiveRules.findIndex((rule) => { return rule.id == response.data.id });
       this.reactiveRules.splice(ruleIndex, 1, response.data)
-    },  
-    ruleFetchError: function(error) {
-      console.log(error);
-      alert('Could not fetch control!')
-    }
+    },
   },
 }
 </script>

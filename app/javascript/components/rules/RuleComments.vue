@@ -69,25 +69,13 @@ export default {
         body: this.newCommentBody.trim()
       })
       .then(this.commentPostSuccess)
-      .catch(this.commentPostError);
+      .catch(this.alertOrNotifyResponse);
     },
     // Upon success, emit an event to the parent that indicates that this rule should be re-fetched.
     commentPostSuccess: function(response) {
       this.newCommentBody = "";
       this.$emit('ruleUpdated', this.rule.id);
     },
-    commentPostError: function(response) {
-      alert('failed to comment!')
-    },
-    // This needs to be an external helper
-    friendlyDateTime: function(dateTimeString) {
-      const date = new Date(dateTimeString);
-      const hours = date.getHours();
-      const amOrPm = hours < 12 ? ' AM' : ' PM';
-      const minutes = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
-      const timeString = (hours > 12 ? hours - 12 : hours) + ":" + minutes + amOrPm;
-      return `${date.toDateString()} @ ${timeString}`;
-    }
   }
 }
 </script>
