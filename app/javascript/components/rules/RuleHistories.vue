@@ -55,8 +55,6 @@ export default {
   },
   methods: {
     revertHistory: function(audited_change) {
-      console.log("revert history: " + JSON.stringify(audited_change));
-
       let payload = {};
       payload[audited_change.field] = audited_change.prev_value
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
