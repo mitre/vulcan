@@ -59,8 +59,7 @@ jobs:
           echo "gem: --no-document" > ~/.gemrc
           gem install bundler --conservative
           bundle config path vendor/bundle
-          bin/rails db:create
-          bin/rails db:schema:load
+          bin/setup
           bundle exec rails spec
       - name: Run Rubocop
         run: bundle exec rubocop
