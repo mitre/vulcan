@@ -45,6 +45,8 @@ gem 'bootsnap', '>= 1.4.2', require: false
 
 gem 'audited', '~> 5.0.1'
 
+gem 'activerecord-import'
+
 group :development do
   gem 'listen', '~> 3.1.5'
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
