@@ -42,8 +42,15 @@ class ApplicationController < ActionController::Base
   private
 
   def not_authorized(exception)
-    flash.alert = exception.message # 'You are not authorized to perform this action.'
-    redirect_to '/'
+    # Based on the accepted response type, either send a JSON response with the
+    # alert message, or redirect to home and display the alert.
+    respond_to do |format|
+      format.html do
+        flash.alert = exception.message
+        redirect_to '/'
+      end
+      format.json { render json: { alert: exception.message } }
+    end
   end
 
   def setup_navigation

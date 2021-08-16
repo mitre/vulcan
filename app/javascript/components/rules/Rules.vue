@@ -54,6 +54,7 @@ export default {
   methods: {
     ruleUpdated: function(id) {
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
+      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.get(`/rules/${id}`)
       .then(this.ruleFetchSuccess)
       .catch(this.alertOrNotifyResponse);

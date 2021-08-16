@@ -2,18 +2,20 @@
   <div>
     <p class="mt-3 mb-0"><strong>Filter &amp; Search</strong></p>
     <div class="input-group">
-      <input type="text" class="form-rule" id="ruleSearch" placeholder="Search controls..." v-model="search">
+      <input type="text" class="form-control" id="ruleSearch" placeholder="Search controls..." v-model="search">
     </div>
 
     <p class="mt-3 mb-0"><strong>Open Controls</strong></p>
     <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`open-${rule.id}`" v-for="rule in filteredOpenRules">
       <i @click.stop="removeOpenRule(rule.id)" class="mdi mdi-close closeRuleButton" aria-hidden="true"></i>
       {{rule.id}}
+      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true"></i>
     </div>
 
     <p class="mt-3 mb-0"><strong>All Controls</strong></p>
     <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`rule-${rule.id}`" v-for="rule in filteredRules">
       {{rule.id}}
+      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true"></i>
     </div>
   </div>
 </template>
@@ -23,7 +25,7 @@
 //
 // Expect component to emit `ruleSelected` event when
 // a rule is selected from the list. This event means that
-// the user wants to edit that specific rule. 
+// the user wants to edit that specific rule.
 // this.$emit('ruleSelected', rule)
 //
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
