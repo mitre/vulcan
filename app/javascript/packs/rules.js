@@ -6,6 +6,7 @@ import RulesCodeEditorView from '../components/rules/RulesCodeEditorView.vue'
 import RuleComments from '../components/rules/RuleComments.vue'
 import RuleHistories from '../components/rules/RuleHistories.vue'
 import RuleNavigator from '../components/rules/RuleNavigator.vue'
+import RuleEditorHeader from '../components/rules/RuleEditorHeader.vue'
 
 Vue.use(TurbolinksAdapter)
 Vue.use(ButtonPlugin)
@@ -21,6 +22,7 @@ Vue.component('RulesCodeEditorView', RulesCodeEditorView)
 Vue.component('RuleComments', RuleComments)
 Vue.component('RuleNavigator', RuleNavigator)
 Vue.component('RuleHistories', RuleHistories)
+Vue.component('RuleEditorHeader', RuleEditorHeader)
 
 document.addEventListener('turbolinks:load', () => {
     new Vue({

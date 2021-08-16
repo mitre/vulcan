@@ -55,11 +55,10 @@ export default {
   },
   methods: {
     revertHistory: function(audited_change) {
-      console.log("revert history: " + JSON.stringify(audited_change));
-
       let payload = {};
       payload[audited_change.field] = audited_change.prev_value
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
+      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.put(`/rules/${this.rule.id}`, payload)
       .then(this.revertSuccess)
       .catch(this.alertOrNotifyResponse);
