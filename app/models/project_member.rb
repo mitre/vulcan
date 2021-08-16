@@ -5,7 +5,7 @@
 class ProjectMember < ApplicationRecord
   include ProjectMemberConstants
 
-  belongs_to :project
+  belongs_to :project, counter_cache: true
   belongs_to :user
 
   delegate :name, to: :user
