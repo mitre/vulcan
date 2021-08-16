@@ -2,7 +2,7 @@
   <div>
     <p class="mt-3 mb-0"><strong>Filter &amp; Search</strong></p>
     <div class="input-group">
-      <input type="text" class="form-rule" id="ruleSearch" placeholder="Search controls..." v-model="search">
+      <input type="text" class="form-control" id="ruleSearch" placeholder="Search controls..." v-model="search">
     </div>
 
     <p class="mt-3 mb-0"><strong>Open Controls</strong></p>
@@ -25,7 +25,7 @@
 //
 // Expect component to emit `ruleSelected` event when
 // a rule is selected from the list. This event means that
-// the user wants to edit that specific rule. 
+// the user wants to edit that specific rule.
 // this.$emit('ruleSelected', rule)
 //
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
