@@ -11,7 +11,7 @@ puts "Populating database for demo use:\n\n"
 puts 'Creating Users...'
 User.create(name: FFaker::Name.name, email: 'admin@example.com', password: '1234567ab!', admin: true)
 users = []
-10.times do |i|
+10.times do
   name = FFaker::Name.name
   users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: '1234567ab!')
 end
