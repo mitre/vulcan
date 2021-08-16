@@ -4,7 +4,7 @@
     
     <h1>{{project.name}} - Controls</h1>
 
-    <RulesCodeEditorView @ruleUpdated="ruleUpdated" :project="project" :rules="reactiveRules" />
+    <RulesCodeEditorView @ruleUpdated="ruleUpdated" :project="project" :rules="reactiveRules" :statuses="statuses" :severities="severities" />
   </div>
 </template>
 
@@ -20,6 +20,14 @@ export default {
       required: true,
     },
     rules: {
+      type: Array,
+      required: true,
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
       type: Array,
       required: true,
     }
@@ -52,16 +60,39 @@ export default {
     },
   },
   methods: {
-    ruleUpdated: function(id) {
+    /**
+     * Indicates to this component that a rule has updated and should be re-fetched.
+     * 
+     * id: The rule ID
+     * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
+     */
+    ruleUpdated: function(id, updated = 'all') {
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
       axios.defaults.headers.common['Accept'] = 'application/json'
       axios.get(`/rules/${id}`)
-      .then(this.ruleFetchSuccess)
+      .then((response) => this.ruleFetchSuccess(response, updated))
       .catch(this.alertOrNotifyResponse);
     },
-    ruleFetchSuccess: function(response) {
+    /**
+     * Update data with a fetched rule.
+     * 
+     * response: The response from the server
+     * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
+     * 
+     * Changing behavior based on `updated` is necessary because we do not want to wipe away control
+     * changes just beause a user has commented.
+     */
+    ruleFetchSuccess: function(response, updated) {
       const ruleIndex = this.reactiveRules.findIndex((rule) => { return rule.id == response.data.id });
-      this.reactiveRules.splice(ruleIndex, 1, response.data)
+
+      if (updated == 'all') {
+        this.reactiveRules.splice(ruleIndex, 1, response.data);
+      }
+      else if (updated == 'comments') {
+        console.log('comments!');
+        console.log(response.data.comments);
+        this.reactiveRules[ruleIndex].comments.push(... response.data.comments);
+      }
     },
   },
 }

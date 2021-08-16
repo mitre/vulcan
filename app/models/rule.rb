@@ -3,12 +3,28 @@
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < ApplicationRecord
+  include RuleConstants
+
   audited except: %i[project_id created_at updated_at locked], max_audits: 1000
   before_validation :error_if_locked, on: :update
   before_destroy :error_if_locked
 
+  has_associated_audits
   has_many :comments, dependent: :destroy
+  has_many :rule_descriptions, dependent: :destroy
+  has_many :disa_rule_descriptions, dependent: :destroy
+  has_many :checks, dependent: :destroy
   belongs_to :project
+
+  validates :status, inclusion: {
+    in: STATUSES,
+    message: "is not an acceptable value, acceptable values are: '#{STATUSES.reject(&:blank?).join("', '")}'"
+  }
+
+  validates :severity, inclusion: {
+    in: SEVERITIES,
+    message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.reject(&:blank?).join("', '")}'"
+  }
 
   ##
   # Override `as_json` to include dependent records (e.g. comments, histories)
@@ -17,7 +33,10 @@ class Rule < ApplicationRecord
     super.merge(
       {
         comments: comments.as_json.map { |c| c.except('id', 'user_id', 'rule_id', 'updated_at') },
-        histories: histories
+        histories: histories,
+        rule_descriptions: rule_descriptions.as_json,
+        disa_rule_descriptions: disa_rule_descriptions.as_json,
+        checks: checks.as_json
       }
     )
   end

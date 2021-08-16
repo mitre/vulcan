@@ -13,12 +13,13 @@
         <div class="row">
           <!-- Main editor column -->
           <div class="col-7">
-            <p>description: {{selectedRule.description}}</p>
+            <RuleViewer v-if="selectedRule.locked" :rule="selectedRule" />
+            <RuleEditor v-else :rule="selectedRule" :statuses="statuses" :severities="severities" />
           </div>
 
           <!-- Additional info column -->
           <div class="col-5">
-            <RuleComments @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule"/>
+            <RuleComments @ruleUpdated="(id, updated) => $emit('ruleUpdated', id, updated)" :rule="selectedRule"/>
             <br/>
             <RuleHistories @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule"/>
           </div>
@@ -44,6 +45,14 @@ export default {
       required: true,
     },
     rules: {
+      type: Array,
+      required: true,
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
       type: Array,
       required: true,
     }
