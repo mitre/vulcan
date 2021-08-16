@@ -68,6 +68,7 @@ export default {
       }
 
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
+      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.post(`/rules/${this.rule.id}/comments`, {
         body: this.newCommentBody.trim()
       })

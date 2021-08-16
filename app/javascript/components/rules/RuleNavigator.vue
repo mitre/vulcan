@@ -9,11 +9,13 @@
     <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`open-${rule.id}`" v-for="rule in filteredOpenRules">
       <i @click.stop="removeOpenRule(rule.id)" class="mdi mdi-close closeRuleButton" aria-hidden="true"></i>
       {{rule.id}}
+      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true"></i>
     </div>
 
     <p class="mt-3 mb-0"><strong>All Controls</strong></p>
     <div :class="ruleRowClass(rule)" @click="ruleSelected(rule)" :key="`rule-${rule.id}`" v-for="rule in filteredRules">
       {{rule.id}}
+      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true"></i>
     </div>
   </div>
 </template>
