@@ -7,6 +7,7 @@ class Project < ApplicationRecord
   has_many :project_members, dependent: :destroy
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
+  has_one :project_metadata, dependent: :destroy
 
   scope :alphabetical, -> { order(:name) }
 
