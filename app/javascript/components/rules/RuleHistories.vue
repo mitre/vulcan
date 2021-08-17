@@ -14,16 +14,64 @@
       <div :key="history.id" v-for="history in rule.histories">
         <p class="ml-2 mb-0 mt-2"><strong>{{history.name}}</strong></p>
         <p class="ml-2 mb-0"><small>{{friendlyDateTime(history.created_at)}}</small></p>
-        <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
-          <p class="mb-1">
-            {{audited_change.field}}
-            was changed from
-            <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
-            to
-            <span class="historyChangeText">{{audited_change.new_value}}</span>
-          </p>
-          <b-button v-if="rule.locked == false" class="px-2 py-0" variant="warning" @click="revertHistory(audited_change)">Revert</b-button>
-        </div>
+        <!-- Edit on the Rule itself -->
+        <template v-if="history.auditable_type == 'Rule'">
+          <!-- Edit on the rule itself -->
+          <template v-if="history.action == 'update'">
+            <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
+              <p class="mb-1">
+                {{audited_change.field}}
+                was changed from
+                <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
+                to
+                <span class="historyChangeText">{{audited_change.new_value}}</span>
+              </p>
+              <b-button v-if="rule.locked == false" class="px-2 py-0" variant="warning" @click="revertHistory(history, audited_change.field)">Revert</b-button>
+            </div>
+          </template>
+
+          <!-- Create on the rule itself -->
+          <template v-if="history.action == 'create'">
+            <p class="ml-3 mb-3">Rule was created.</p>
+          </template>
+        </template>
+
+        <!-- Edit or Deletion on one of the Rule's associated records-->
+        <template v-else>
+           <!-- Create on the rule itself -->
+          <template v-if="history.action == 'create'">
+            <p class="ml-3 mb-3">{{history.auditable_type}} with ID {{history.auditable_id}} was created.</p>
+          </template>
+
+          <!-- Edit on the associated record -->
+          <template v-if="history.action == 'update'">
+            <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
+              <p class="mb-1">{{history.auditable_type}} with ID {{history.auditable_id}} was updated.</p>
+              <p class="mb-1">
+                {{audited_change.field}}
+                was changed from
+                <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
+                to
+                <span class="historyChangeText">{{audited_change.new_value}}</span>
+              </p>
+              <b-button v-if="rule.locked == false" class="px-2 py-0" variant="warning" @click="revertHistory(history, audited_change.field)">Revert</b-button>
+            </div>
+          </template>
+
+          <!-- Deletion on the associated record -->
+          <template v-if="history.action == 'destroy'">
+            <p class="ml-3 mb-1">{{history.auditable_type}} with ID {{history.auditable_id}} was deleted.</p>
+            <div class="ml-3 mb-1" :key="audited_change.field" v-for="audited_change in history.audited_changes">
+              <p class="mb-1">
+                {{audited_change.field}}:
+                <span class="historyChangeText">{{audited_change.new_value}}</span>
+              </p>
+            </div>
+            <b-button v-if="rule.locked == false" class="px-2 py-0 ml-3 mb-3" variant="warning" @click="revertHistory(history, null)">Revert</b-button>
+          </template>
+        </template>
+
+        
       </div>
     </b-collapse>
   </div>
@@ -54,18 +102,20 @@ export default {
     },
   },
   methods: {
-    revertHistory: function(audited_change) {
-      let payload = {};
-      payload[audited_change.field] = audited_change.prev_value
+    revertHistory: function(history, field) {
+      let payload = {
+        audit_id: history.id,
+        field: field
+      };
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
       axios.defaults.headers.common['Accept'] = 'application/json'
-      axios.put(`/rules/${this.rule.id}`, payload)
+      axios.post(`/rules/${this.rule.id}/revert`, payload)
       .then(this.revertSuccess)
       .catch(this.alertOrNotifyResponse);
     },
     revertSuccess: function(response) {
       this.alertOrNotifyResponse(response);
-      this.$emit('ruleUpdated', this.rule.id);
+      this.$emit('ruleUpdated', this.rule.id, 'all');
     },
   }
 }

@@ -4,9 +4,9 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update manage_lock]
-  before_action :set_project, only: %i[index show update manage_lock]
-  before_action :authorize_edit_project, only: %i[index update show]
+  before_action :set_rule, only: %i[show update manage_lock revert]
+  before_action :set_project, only: %i[index show update manage_lock revert]
+  before_action :authorize_edit_project, only: %i[index update show revert]
   before_action :authorize_review_project, only: %i[manage_lock]
 
   def index
@@ -34,6 +34,13 @@ class RulesController < ApplicationController
     render json: { notice: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} rule." }
   end
 
+  def revert
+    Rule.revert(@rule, params[:audit_id], params[:field])
+    render json: { notice: 'Successfully reverted history for rule.' }
+  rescue RuleRevertError => e
+    render json: { alert: e.message }
+  end
+
   private
 
   def rule_update_params
@@ -52,6 +59,10 @@ class RulesController < ApplicationController
 
   def manage_lock_params
     params.require(:rule).permit(:locked)
+  end
+
+  def revert_params
+    params.permit(:audit_id, :field)
   end
 
   def set_rule

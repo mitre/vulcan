@@ -198,33 +198,35 @@
       </b-form-group>
 
       <!-- rule_descriptions -->
-      <h2>Descriptions</h2>
-      <div :key="index" v-for="(rule_description, index) in rule.rule_descriptions_attributes">
-        <b-form-group
-          v-if="rule_description._destroy != true"
-          :id="'ruleEditor-rule_description-group-' + index"
-          label="Rule Description"
-          :label-for="'ruleEditor-rule_description' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-rule_description-' + index"
-            v-model="rule_description.description"
-            placeholder=""
-          ></b-form-textarea>
-
+      <h2>Rule Descriptions</h2>
+      <div :key="'rule_description_' + index" v-for="(rule_description, index) in rule.rule_descriptions_attributes">
+        <div v-if="rule_description._destroy != true" class="card relationCard">
+          <p><strong>{{dependentRecordCardHeader('Rule Description', rule_description)}}</strong></p>
+          <b-form-group
+            :id="'ruleEditor-rule_description-group-' + index"
+            label="Rule Description"
+            :label-for="'ruleEditor-rule_description' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-rule_description-' + index"
+              v-model="rule_description.description"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
           <a @click="removeRuleDescription(index)" class="clickable removeLink">
             <i class="mdi mdi-trash-can" aria-hidden="true"></i>
             Remove Description
           </a>
-        </b-form-group>
+        </div>
       </div>
       <b-button class="mb-2" @click="addRuleDescription"><i class="mdi mdi-plus"></i>Add Description</b-button>
 
       <!-- disa_rule_description -->
       <h2>DISA Rule Descriptions</h2>
-      <div :key="index" v-for="(rule_description, index) in rule.disa_rule_descriptions_attributes">
+      <div :key="'disa_rule_description_' + index" v-for="(rule_description, index) in rule.disa_rule_descriptions_attributes">
         <div v-if="rule_description._destroy != true" class="card relationCard">
+          <p><strong>{{dependentRecordCardHeader('DISA Rule Description', rule_description)}}</strong></p>
           <!-- documentable -->
           <b-form-group description="">
             <b-form-checkbox v-model="rule_description.documentable">Documentable</b-form-checkbox>
@@ -368,20 +370,20 @@
               v-model="rule_description.ia_controls"
               placeholder=""
             ></b-form-textarea>
-
-            <a @click="removeDisaRuleDescription(index)" class="clickable removeLink">
-              <i class="mdi mdi-trash-can" aria-hidden="true"></i>
-              Remove DISA Description
-            </a>
           </b-form-group>
+          <a @click="removeDisaRuleDescription(index)" class="clickable removeLink">
+            <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+            Remove DISA Description
+          </a>
         </div>
       </div>
       <b-button class="mb-2" @click="addDisaRuleDescription"><i class="mdi mdi-plus"></i>Add DISA Description</b-button>
 
       <!-- checks -->
       <h2>Checks</h2>
-      <div :key="index" v-for="(check, index) in rule.checks_attributes">
+      <div :key="'checks_' + index" v-for="(check, index) in rule.checks_attributes">
         <div v-if="check._destroy != true"  class="card relationCard">
+          <p><strong>{{dependentRecordCardHeader('Check', check)}}</strong></p>
           <b-form-group
             :id="'ruleEditor-check-group-' + index"
             label="System"
@@ -432,12 +434,11 @@
               v-model="check.content"
               placeholder=""
             ></b-form-textarea>
-
-            <a @click="removeCheck(index)" class="clickable removeLink">
-              <i class="mdi mdi-trash-can" aria-hidden="true"></i>
-              Remove Check
-            </a>
           </b-form-group>
+          <a @click="removeCheck(index)" class="clickable removeLink">
+            <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+            Remove Check
+          </a>
         </div>
       </div>
       <b-button class="mb-2" @click="addCheck"><i class="mdi mdi-plus"></i>Add Check</b-button>
@@ -481,6 +482,12 @@ export default {
     removeDisaRuleDescription: function(index) {
       this.rule.disa_rule_descriptions_attributes[index]._destroy = true
     },
+    dependentRecordCardHeader(name, record) {
+      if (record.id) {
+        return `${name} (ID: ${record.id})`
+      }
+      return `New ${name}`
+    }
   }
 }
 </script>
