@@ -199,8 +199,9 @@
 
       <!-- rule_descriptions -->
       <h2>Descriptions</h2>
-      <div :key="index" v-for="(rule_description, index) in rule.rule_descriptions">
+      <div :key="index" v-for="(rule_description, index) in rule.rule_descriptions_attributes">
         <b-form-group
+          v-if="rule_description._destroy != true"
           :id="'ruleEditor-rule_description-group-' + index"
           label="Rule Description"
           :label-for="'ruleEditor-rule_description' + index"
@@ -208,7 +209,7 @@
         >
           <b-form-textarea
             :id="'ruleEditor-rule_description-' + index"
-            v-model="rule.rule_descriptions[index].description"
+            v-model="rule_description.description"
             placeholder=""
           ></b-form-textarea>
 
@@ -222,218 +223,222 @@
 
       <!-- disa_rule_description -->
       <h2>DISA Rule Descriptions</h2>
-      <div :key="index" v-for="(rule_description, index) in rule.disa_rule_descriptions"  class="card relationCard">
-        <!-- documentable -->
-        <b-form-group description="">
-          <b-form-checkbox v-model="rule.disa_rule_descriptions[index].documentable">Documentable</b-form-checkbox>
-        </b-form-group>
+      <div :key="index" v-for="(rule_description, index) in rule.disa_rule_descriptions_attributes">
+        <div v-if="rule_description._destroy != true" class="card relationCard">
+          <!-- documentable -->
+          <b-form-group description="">
+            <b-form-checkbox v-model="rule_description.documentable">Documentable</b-form-checkbox>
+          </b-form-group>
 
-        <!-- vuln_discussion -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-vuln_discussion-group-' + index"
-          label="Vulnerability Discussion"
-          :label-for="'ruleEditor-disa_rule_description-vuln_discussion-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-vuln_discussion-' + index"
-            v-model="rule.disa_rule_descriptions[index].vuln_discussion"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- vuln_discussion -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-vuln_discussion-group-' + index"
+            label="Vulnerability Discussion"
+            :label-for="'ruleEditor-disa_rule_description-vuln_discussion-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-vuln_discussion-' + index"
+              v-model="rule_description.vuln_discussion"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- false_positives -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-false_positives-group-' + index"
-          label="False Positives"
-          :label-for="'ruleEditor-disa_rule_description-false_positives-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-false_positives-' + index"
-            v-model="rule.disa_rule_descriptions[index].false_positives"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- false_positives -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-false_positives-group-' + index"
+            label="False Positives"
+            :label-for="'ruleEditor-disa_rule_description-false_positives-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-false_positives-' + index"
+              v-model="rule_description.false_positives"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- false_negatives -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-false_negatives-group-' + index"
-          label="False Negatives"
-          :label-for="'ruleEditor-disa_rule_description-false_negatives-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-false_negatives-' + index"
-            v-model="rule.disa_rule_descriptions[index].false_negatives"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- false_negatives -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-false_negatives-group-' + index"
+            label="False Negatives"
+            :label-for="'ruleEditor-disa_rule_description-false_negatives-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-false_negatives-' + index"
+              v-model="rule_description.false_negatives"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- mitigations -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-mitigations-group-' + index"
-          label="Mitigations"
-          :label-for="'ruleEditor-disa_rule_description-mitigations-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-mitigations-' + index"
-            v-model="rule.disa_rule_descriptions[index].mitigations"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- mitigations -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-mitigations-group-' + index"
+            label="Mitigations"
+            :label-for="'ruleEditor-disa_rule_description-mitigations-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-mitigations-' + index"
+              v-model="rule_description.mitigations"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- severity_override_guidance -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-severity_override_guidance-group-' + index"
-          label="Security Override Guidance"
-          :label-for="'ruleEditor-disa_rule_description-severity_override_guidance-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-severity_override_guidance-' + index"
-            v-model="rule.disa_rule_descriptions[index].severity_override_guidance"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
-        
-        <!-- potential_impacts -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-potential_impacts-group-' + index"
-          label="Potential Impacts"
-          :label-for="'ruleEditor-disa_rule_description-potential_impacts-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-potential_impacts-' + index"
-            v-model="rule.disa_rule_descriptions[index].potential_impacts"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- severity_override_guidance -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-severity_override_guidance-group-' + index"
+            label="Security Override Guidance"
+            :label-for="'ruleEditor-disa_rule_description-severity_override_guidance-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-severity_override_guidance-' + index"
+              v-model="rule_description.severity_override_guidance"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
+          
+          <!-- potential_impacts -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-potential_impacts-group-' + index"
+            label="Potential Impacts"
+            :label-for="'ruleEditor-disa_rule_description-potential_impacts-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-potential_impacts-' + index"
+              v-model="rule_description.potential_impacts"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- third_party_tools -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-third_party_tools-group-' + index"
-          label="Third Party Tools"
-          :label-for="'ruleEditor-disa_rule_description-third_party_tools-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-third_party_tools-' + index"
-            v-model="rule.disa_rule_descriptions[index].third_party_tools"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- third_party_tools -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-third_party_tools-group-' + index"
+            label="Third Party Tools"
+            :label-for="'ruleEditor-disa_rule_description-third_party_tools-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-third_party_tools-' + index"
+              v-model="rule_description.third_party_tools"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- mitigation_control -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-mitigation_control-group-' + index"
-          label="Mitigation Control"
-          :label-for="'ruleEditor-disa_rule_description-mitigation_control-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-mitigation_control-' + index"
-            v-model="rule.disa_rule_descriptions[index].mitigation_control"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- mitigation_control -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-mitigation_control-group-' + index"
+            label="Mitigation Control"
+            :label-for="'ruleEditor-disa_rule_description-mitigation_control-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-mitigation_control-' + index"
+              v-model="rule_description.mitigation_control"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- responsibility -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-responsibility-group-' + index"
-          label="Responsibility"
-          :label-for="'ruleEditor-disa_rule_description-responsibility-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-responsibility-' + index"
-            v-model="rule.disa_rule_descriptions[index].responsibility"
-            placeholder=""
-          ></b-form-textarea>
-        </b-form-group>
+          <!-- responsibility -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-responsibility-group-' + index"
+            label="Responsibility"
+            :label-for="'ruleEditor-disa_rule_description-responsibility-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-responsibility-' + index"
+              v-model="rule_description.responsibility"
+              placeholder=""
+            ></b-form-textarea>
+          </b-form-group>
 
-        <!-- ia_controls -->
-        <b-form-group
-          :id="'ruleEditor-disa_rule_description-ia_controls-group-' + index"
-          label="IA Controls"
-          :label-for="'ruleEditor-disa_rule_description-ia_controls-' + index"
-          description=""
-        >
-          <b-form-textarea
-            :id="'ruleEditor-disa_rule_description-ia_controls-' + index"
-            v-model="rule.disa_rule_descriptions[index].ia_controls"
-            placeholder=""
-          ></b-form-textarea>
+          <!-- ia_controls -->
+          <b-form-group
+            :id="'ruleEditor-disa_rule_description-ia_controls-group-' + index"
+            label="IA Controls"
+            :label-for="'ruleEditor-disa_rule_description-ia_controls-' + index"
+            description=""
+          >
+            <b-form-textarea
+              :id="'ruleEditor-disa_rule_description-ia_controls-' + index"
+              v-model="rule_description.ia_controls"
+              placeholder=""
+            ></b-form-textarea>
 
-          <a @click="removeDisaRuleDescription(index)" class="clickable removeLink">
-            <i class="mdi mdi-trash-can" aria-hidden="true"></i>
-            Remove DISA Description
-          </a>
-        </b-form-group>
+            <a @click="removeDisaRuleDescription(index)" class="clickable removeLink">
+              <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+              Remove DISA Description
+            </a>
+          </b-form-group>
+        </div>
       </div>
       <b-button class="mb-2" @click="addDisaRuleDescription"><i class="mdi mdi-plus"></i>Add DISA Description</b-button>
 
       <!-- checks -->
       <h2>Checks</h2>
-      <div :key="index" v-for="(check, index) in rule.checks" class="card relationCard">
-        <b-form-group
-          :id="'ruleEditor-check-group-' + index"
-          label="System"
-          :label-for="'ruleEditor-check-system-' + index"
-          description=""
-        > 
-          <b-form-input
-            :id="'ruleEditor-check-system-' + index"
-            v-model="rule.checks[index].system"
-            placeholder=""
-          ></b-form-input>
-        </b-form-group>
+      <div :key="index" v-for="(check, index) in rule.checks_attributes">
+        <div v-if="check._destroy != true"  class="card relationCard">
+          <b-form-group
+            :id="'ruleEditor-check-group-' + index"
+            label="System"
+            :label-for="'ruleEditor-check-system-' + index"
+            description=""
+          > 
+            <b-form-input
+              :id="'ruleEditor-check-system-' + index"
+              v-model="check.system"
+              placeholder=""
+            ></b-form-input>
+          </b-form-group>
 
-        <b-form-group
-          :id="'ruleEditor-check-group-' + index"
-          label="Reference Name"
-          :label-for="'ruleEditor-check-content_ref_name-' + index"
-          description=""
-        > 
-          <b-form-input
-            :id="'ruleEditor-check-content_ref_name-' + index"
-            v-model="rule.checks[index].content_ref_name"
-            placeholder=""
-          ></b-form-input>
-        </b-form-group>
+          <b-form-group
+            :id="'ruleEditor-check-group-' + index"
+            label="Reference Name"
+            :label-for="'ruleEditor-check-content_ref_name-' + index"
+            description=""
+          > 
+            <b-form-input
+              :id="'ruleEditor-check-content_ref_name-' + index"
+              v-model="check.content_ref_name"
+              placeholder=""
+            ></b-form-input>
+          </b-form-group>
 
-        <b-form-group
-          :id="'ruleEditor-check-group-' + index"
-          label="Reference Link"
-          :label-for="'ruleEditor-check-content_ref_href-' + index"
-          description=""
-        > 
-          <b-form-input
-            :id="'ruleEditor-check-content_ref_href-' + index"
-            v-model="rule.checks[index].content_ref_href"
-            placeholder=""
-          ></b-form-input>
-        </b-form-group>
+          <b-form-group
+            :id="'ruleEditor-check-group-' + index"
+            label="Reference Link"
+            :label-for="'ruleEditor-check-content_ref_href-' + index"
+            description=""
+          > 
+            <b-form-input
+              :id="'ruleEditor-check-content_ref_href-' + index"
+              v-model="check.content_ref_href"
+              placeholder=""
+            ></b-form-input>
+          </b-form-group>
 
-        <b-form-group
-          :id="'ruleEditor-check-group-' + index"
-          label="Check"
-          :label-for="'ruleEditor-check-content-' + index"
-          description=""
-        > 
-          <b-form-textarea
-            :id="'ruleEditor-check-content-' + index"
-            v-model="rule.checks[index].content"
-            placeholder=""
-          ></b-form-textarea>
+          <b-form-group
+            :id="'ruleEditor-check-group-' + index"
+            label="Check"
+            :label-for="'ruleEditor-check-content-' + index"
+            description=""
+          > 
+            <b-form-textarea
+              :id="'ruleEditor-check-content-' + index"
+              v-model="check.content"
+              placeholder=""
+            ></b-form-textarea>
 
-          <a @click="removeCheck(index)" class="clickable removeLink">
-            <i class="mdi mdi-trash-can" aria-hidden="true"></i>
-            Remove Check
-          </a>
-        </b-form-group>
+            <a @click="removeCheck(index)" class="clickable removeLink">
+              <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+              Remove Check
+            </a>
+          </b-form-group>
+        </div>
       </div>
       <b-button class="mb-2" @click="addCheck"><i class="mdi mdi-plus"></i>Add Check</b-button>
     </b-form>
@@ -459,22 +464,22 @@ export default {
   },
   methods: {
     addRuleDescription: function() {
-      this.rule.rule_descriptions.push({ description: '', rule_id: this.rule.id });
+      this.rule.rule_descriptions_attributes.push({ description: '', rule_id: this.rule.id, _destroy: false });
     },
     removeRuleDescription: function(index) {
-      this.rule.rule_descriptions.splice(index, 1);
+      this.rule.rule_descriptions_attributes[index]._destroy = true
     },
     addCheck: function() {
-      this.rule.checks.push({ system: '', content_ref_name: '', content_ref_href: '', content: '', rule_id: this.rule.id });
+      this.rule.checks_attributes.push({ system: '', content_ref_name: '', content_ref_href: '', content: '', rule_id: this.rule.id, _destroy: false });
     },
     removeCheck: function(index) {
-      this.rule.checks.splice(index, 1);
+      this.rule.checks_attributes[index]._destroy = true
     },
     addDisaRuleDescription: function() {
-      this.rule.disa_rule_descriptions.push({ description: '', rule_id: this.rule.id });
+      this.rule.disa_rule_descriptions_attributes.push({ description: '', rule_id: this.rule.id, _destroy: false });
     },
     removeDisaRuleDescription: function(index) {
-      this.rule.disa_rule_descriptions.splice(index, 1);
+      this.rule.disa_rule_descriptions_attributes[index]._destroy = true
     },
   }
 }

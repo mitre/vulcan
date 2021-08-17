@@ -16,12 +16,14 @@ class Rule < ApplicationRecord
   has_many :checks, dependent: :destroy
   belongs_to :project
 
+  accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, allow_destroy: true
+
   validates :status, inclusion: {
     in: STATUSES,
     message: "is not an acceptable value, acceptable values are: '#{STATUSES.reject(&:blank?).join("', '")}'"
   }
 
-  validates :severity, inclusion: {
+  validates :rule_severity, inclusion: {
     in: SEVERITIES,
     message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.reject(&:blank?).join("', '")}'"
   }
@@ -34,9 +36,9 @@ class Rule < ApplicationRecord
       {
         comments: comments.as_json.map { |c| c.except('id', 'user_id', 'rule_id', 'updated_at') },
         histories: histories,
-        rule_descriptions: rule_descriptions.as_json,
-        disa_rule_descriptions: disa_rule_descriptions.as_json,
-        checks: checks.as_json
+        rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
+        disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
+        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
       }
     )
   end

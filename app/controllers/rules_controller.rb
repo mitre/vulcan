@@ -37,7 +37,17 @@ class RulesController < ApplicationController
   private
 
   def rule_update_params
-    params.require(:rule).permit(:description)
+    params.require(:rule).permit(
+      :status, :status_justification, :artifact_description, :vendor_comments, :rule_id, :rule_severity,
+      :rule_weight, :version, :title, :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
+      checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
+      rule_descriptions_attributes: %i[id description _destroy],
+      disa_rule_descriptions_attributes: %i[
+        id vuln_discussion false_positives false_negatives documentable mitigations
+        severity_override_guidance potential_impacts third_party_tools mitigation_control
+        responsibility ia_controls _destroy
+      ]
+    )
   end
 
   def manage_lock_params
