@@ -45,6 +45,10 @@ gem 'bootsnap', '>= 1.4.2', require: false
 
 gem 'audited', '~> 5.0.1'
 
+gem 'activerecord-import'
+
+gem 'ffaker', '~> 2.10'
+
 group :development do
   gem 'listen', '~> 3.1.5'
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
@@ -72,7 +76,6 @@ group :development, :test do
   gem 'brakeman'
   gem 'byebug'
   gem 'factory_bot_rails', '~> 5.2.0'
-  gem 'ffaker', '~> 2.10'
   gem 'rspec-mocks'
   gem 'rspec-rails', '~> 4.0.0'
 end

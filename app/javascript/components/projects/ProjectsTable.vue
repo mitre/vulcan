@@ -16,7 +16,7 @@
     </div>
 
     <br/>
-    
+
     <!-- Projects table -->
     <b-table
       id="projects-table"
@@ -25,13 +25,23 @@
       :per-page="perPage"
       :current-page="currentPage"
     >
+
+     <template #cell(name)="data">
+        <b-link :href="getProjectAction(data.item)">
+          {{ data.item.name }}
+        </b-link>
+      </template>
+
+      <template #cell(updated_at)="data">
+        {{ friendlyDateTime(data.item.updated_at) }}
+      </template>
+
       <!-- Column template for Actions -->
       <!-- TODO - control actions available here based on user's admin status and/or project membership roles -->
       <template #cell(actions)="data">
-        <div class="float-right">
           <b-dropdown text="Actions" class="m-md-2" right>
             <!-- View controls dropdown item -->
-            <b-dropdown-item :href="projectControlssAction(data.item)">
+            <b-dropdown-item :href="projectControlsAction(data.item)">
               <i class="mdi mdi-file-document" aria-hidden="true"></i>
               View Controls
             </b-dropdown-item>
@@ -41,15 +51,14 @@
               Manage Project Members
             </b-dropdown-item>
             <!-- Delete project dropdown item -->
-            <b-dropdown-item data-confirm="Are you sure you want to permanently delete this project?" 
-                             data-method="delete" 
+            <b-dropdown-item data-confirm="Are you sure you want to permanently delete this project?"
+                             data-method="delete"
                              :href="formAction(data.item)"
                              rel="nofollow">
               <i class="mdi mdi-trash-can" aria-hidden="true"></i>
               Delete Project
             </b-dropdown-item>
           </b-dropdown>
-        </div>
       </template>
     </b-table>
 
@@ -64,8 +73,10 @@
 </template>
 
 <script>
+import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
 export default {
   name: 'ProjectsTable',
+  mixins: [DateFormatMixinVue],
   props: {
     projects: {
       type: Array,
@@ -79,8 +90,9 @@ export default {
       currentPage: 1,
       fields: [
         'name',
+        { key: 'project_members_count', label: 'Members' },
         { key: 'updated_at', label: 'Last Updated' },
-        { key: 'actions', label: '' }
+        { key: 'actions', label: 'Actions', thClass: 'text-right', tdClass: 'p-0 text-right' }
       ]
     }
   },
@@ -109,8 +121,11 @@ export default {
       return "/projects/" + project.id + "/project_members";
     },
     // Path to the project controls page
-    projectControlssAction: function(project) {
+    projectControlsAction: function(project) {
       return "/projects/" + project.id + "/controls";
+    },
+    getProjectAction: function(project) {
+      return "/projects/" + project.id;
     }
   }
 }

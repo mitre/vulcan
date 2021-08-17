@@ -47,6 +47,8 @@ GEM
     activerecord (6.1.4)
       activemodel (= 6.1.4)
       activesupport (= 6.1.4)
+    activerecord-import (1.2.0)
+      activerecord (>= 3.2)
     activestorage (6.1.4)
       actionpack (= 6.1.4)
       activejob (= 6.1.4)
@@ -170,6 +172,8 @@ GEM
     net-ldap (0.17.0)
     nio4r (2.5.8)
     nokogiri (1.12.2-x86_64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.12.2-x86_64-linux)
       racc (~> 1.4)
     oauth2 (1.4.7)
       faraday (>= 0.8, < 2.0)
@@ -340,8 +344,10 @@ GEM
 PLATFORMS
   x86_64-darwin-19
   x86_64-darwin-20
+  x86_64-linux
 
 DEPENDENCIES
+  activerecord-import
   audited (~> 5.0.1)
   bootsnap (>= 1.4.2)
   brakeman

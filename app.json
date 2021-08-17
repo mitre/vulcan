@@ -1,0 +1,17 @@
+{
+  "env": {
+    "SECRET_KEY_BASE": {
+      "description": "A secret key for verifying the integrity of signed cookies.",
+      "generator": "secret"
+    }
+  },
+  "scripts": {
+    "postdeploy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=true bundle exec rails db:seed",
+    "pr-predestroy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=true bundle exec rails db:drop"
+  },
+  "environments": {
+    "review": {
+      "addons": ["heroku-postgresql:hobby-dev"]
+    }
+  }
+}
