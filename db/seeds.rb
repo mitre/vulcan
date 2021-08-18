@@ -36,4 +36,7 @@ User.all.each do |user|
 end
 ProjectMember.import(project_members)
 puts 'Project Members added'
+
+# Counter cache update
+Project.all.each { |p| Project.reset_counters(p.id, :project_members) }
 # rubocop:enable Rails/Output
