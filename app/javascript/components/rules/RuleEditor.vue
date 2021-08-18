@@ -37,6 +37,70 @@
       <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
       <p v-if="rule.status != 'Applicable - Configurable'"><small>Some fields are hidden due to the control's status.</small></p>
       <template v-if="rule.status == 'Applicable - Configurable'">
+        <!-- title -->
+        <b-form-group
+          id="ruleEditor-title-group"
+          label="Title"
+          label-for="ruleEditor-"
+          description=""
+        >
+          <b-form-input
+            id="ruleEditor-title"
+            v-model="rule.title"
+            placeholder=""
+            :disabled="rule.locked"
+          ></b-form-input>
+        </b-form-group>
+
+        <!-- version -->
+        <b-form-group
+          id="ruleEditor--->-group"
+          label="Version"
+          label-for="ruleEditor--->"
+          description=""
+        >
+          <b-form-input
+            id="ruleEditor-version"
+            v-model="rule.version"
+            placeholder=""
+            :disabled="rule.locked"
+          ></b-form-input>
+        </b-form-group>
+
+        <div class="row">
+          <!-- rule_severity -->
+          <b-form-group
+            id="ruleEditor-rule_severity-group"
+            class="col-6"
+            label="Rule Severity"
+            label-for="ruleEditor-rule_severity"
+            description=""
+          >
+            <b-form-select
+              id="ruleEditor-rule_severity"
+              :options="severities"
+              v-model="rule.rule_severity"
+              :disabled="rule.locked"
+            ></b-form-select>
+          </b-form-group>
+          
+          <!-- rule_weight -->
+          <b-form-group
+            id="ruleEditor-rule_weight-group"
+            class="col-6"
+            label="Rule Weight"
+            label-for="ruleEditor-rule_weight"
+            description=""
+          >
+            <b-form-input
+              id="ruleEditor-rule_weight"
+              v-model="rule.rule_weight"
+              placeholder=""
+              :disabled="rule.locked"
+            ></b-form-input>
+          </b-form-group>
+        </div>
+
         <!-- artifact_description -->
         <b-form-group
           id="ruleEditor-artifact_description-group"
@@ -127,51 +191,6 @@
           ></b-form-input>
         </b-form-group>
 
-        <!-- rule_severity -->
-        <b-form-group
-          id="ruleEditor-rule_severity-group"
-          label="Rule Severity"
-          label-for="ruleEditor-rule_severity"
-          description=""
-        >
-          <b-form-select
-            id="ruleEditor-rule_severity"
-            :options="severities"
-            v-model="rule.rule_severity"
-            :disabled="rule.locked"
-          ></b-form-select>
-        </b-form-group>
-        
-        <!-- rule_weight -->
-        <b-form-group
-          id="ruleEditor-rule_weight-group"
-          label="Rule Weight"
-          label-for="ruleEditor-rule_weight"
-          description=""
-        >
-          <b-form-input
-            id="ruleEditor-rule_weight"
-            v-model="rule.rule_weight"
-            placeholder=""
-            :disabled="rule.locked"
-          ></b-form-input>
-        </b-form-group>
-
-        <!-- title -->
-        <b-form-group
-          id="ruleEditor-title-group"
-          label="Title"
-          label-for="ruleEditor-"
-          description=""
-        >
-          <b-form-input
-            id="ruleEditor-title"
-            v-model="rule.title"
-            placeholder=""
-            :disabled="rule.locked"
-          ></b-form-input>
-        </b-form-group>
-
         <!-- vendor_comments -->
         <b-form-group
           id="ruleEditor-vendor_comments-group"
@@ -186,24 +205,10 @@
             :disabled="rule.locked"
           ></b-form-textarea>
         </b-form-group>
-        
-        <!-- version -->
-        <b-form-group
-          id="ruleEditor--->-group"
-          label="Version"
-          label-for="ruleEditor--->"
-          description=""
-        >
-          <b-form-input
-            id="ruleEditor-version"
-            v-model="rule.version"
-            placeholder=""
-            :disabled="rule.locked"
-          ></b-form-input>
-        </b-form-group>
 
         <!-- rule_descriptions -->
-        <h2>Rule Descriptions</h2>
+        <!-- This is currently commented out to avoid confusion with DISA description schema -->
+        <!-- <h2>Rule Descriptions</h2>
         <div :key="'rule_description_' + index" v-for="(rule_description, index) in rule.rule_descriptions_attributes">
           <div v-if="rule_description._destroy != true" class="card relationCard">
             <p><strong>{{dependentRecordCardHeader('Rule Description', rule_description)}}</strong></p>
@@ -226,13 +231,13 @@
             </a>
           </div>
         </div>
-        <b-button class="mb-2" @click="addRuleDescription" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add Description</b-button>
+        <b-button class="mb-2" @click="addRuleDescription" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add Description</b-button> -->
 
         <!-- disa_rule_description -->
-        <h2>DISA Rule Descriptions</h2>
+        <h2>Rule Description</h2>
         <div :key="'disa_rule_description_' + index" v-for="(rule_description, index) in rule.disa_rule_descriptions_attributes">
           <div v-if="rule_description._destroy != true" class="card relationCard">
-            <p><strong>{{dependentRecordCardHeader('DISA Rule Description', rule_description)}}</strong></p>
+            <p><strong>{{dependentRecordCardHeader('Rule Description', rule_description)}}</strong></p>
             <!-- documentable -->
             <b-form-group description="">
               <b-form-checkbox v-model="rule_description.documentable" :disabled="rule.locked">Documentable</b-form-checkbox>
@@ -387,13 +392,15 @@
                 :disabled="rule.locked"
               ></b-form-textarea>
             </b-form-group>
-            <a @click="removeDisaRuleDescription(index)" class="clickable text-dark" v-if="rule.locked == false">
+            <!-- This is commented out because there is currently the assumption that users will only need one description -->
+            <!-- <a @click="removeDisaRuleDescription(index)" class="clickable text-dark" v-if="rule.locked == false">
               <i class="mdi mdi-trash-can" aria-hidden="true"></i>
               Remove DISA Description
-            </a>
+            </a> -->
           </div>
         </div>
-        <b-button class="mb-2" @click="addDisaRuleDescription" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add DISA Description</b-button>
+        <!-- This is commented out because there is currently the assumption that users will only need one description -->
+        <!-- <b-button class="mb-2" @click="addDisaRuleDescription" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
 
         <!-- checks -->
         <h2>Checks</h2>
@@ -505,9 +512,9 @@ export default {
     },
     dependentRecordCardHeader(name, record) {
       if (record.id) {
-        return `${name} (ID: ${record.id})`
+        return name;
       }
-      return `New ${name}`
+      return `New ${name}`;
     }
   }
 }
