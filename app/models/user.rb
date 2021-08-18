@@ -35,8 +35,8 @@ class User < ApplicationRecord
     end
   end
 
-  def can_edit_project?(project)
-    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_EDITORS).any?
+  def can_author_project?(project)
+    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_AUTHORS).any?
   end
 
   def can_review_project?(project)
