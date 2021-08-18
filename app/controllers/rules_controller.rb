@@ -23,6 +23,8 @@ class RulesController < ApplicationController
     else
       render json: { alert: "Could not update rule. #{@rule.errors.full_messages}" }
     end
+  rescue RuleLockedError => e
+    render json: { alert: e.message }
   end
 
   def manage_lock
@@ -45,7 +47,7 @@ class RulesController < ApplicationController
 
   def rule_update_params
     params.require(:rule).permit(
-      :status, :status_justification, :artifact_description, :vendor_comments, :rule_id, :rule_severity,
+      :status, :status_justification, :artifact_description, :vendor_comments, :rule_severity,
       :rule_weight, :version, :title, :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
       checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
       rule_descriptions_attributes: %i[id description _destroy],

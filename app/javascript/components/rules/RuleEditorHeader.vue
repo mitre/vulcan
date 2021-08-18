@@ -2,7 +2,7 @@
   <!-- Rule Details column -->
   <div class="row">
     <div class="col-12">
-      <h2>{{rule.id}}</h2>
+      <h2>{{rule.rule_id}}</h2>
 
       <!-- Rule info -->
       <!-- <p>Based on ...</p> -->
@@ -10,11 +10,22 @@
       <p v-else>Created on {{friendlyDateTime(rule.created_at)}}</p>
 
       <!-- Action Buttons -->
-      <b-button @click="saveRule()" variant="success">Save Control</b-button>
-      <b-button variant="danger">Delete Control</b-button>
+      <!-- Disable and enable save & delete buttons based on locked state of rule -->
+      <template v-if="rule.locked">
+        <span class="d-inline-block" v-b-tooltip.hover title="Control is locked.">
+          <b-button variant="success" disabled>Save Control</b-button>
+        </span>
+        <span class="d-inline-block"  v-b-tooltip.hover title="Control is locked.">
+          <b-button variant="danger" disabled>Delete Control</b-button>
+        </span>
+      </template>
+      <template v-else>
+        <b-button @click="saveRule()" variant="success">Save Control</b-button>
+        <b-button variant="danger">Delete Control</b-button>
+        <!-- <b-button>Duplicate Control</b-button> -->
+      </template>
       <b-button @click="manageLock(false)" v-if="rule.locked" variant="warning">Unlock Control</b-button>
       <b-button @click="manageLock(true)" v-else variant="warning">Lock Control</b-button>
-      <!-- <b-button>Duplicate Control</b-button> -->
     </div>
   </div>
 </template>

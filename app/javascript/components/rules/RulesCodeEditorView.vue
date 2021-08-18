@@ -13,8 +13,7 @@
         <div class="row">
           <!-- Main editor column -->
           <div class="col-7">
-            <RuleViewer v-if="selectedRule.locked" :rule="selectedRule" />
-            <RuleEditor v-else :rule="selectedRule" :statuses="statuses" :severities="severities" />
+            <RuleEditor :rule="selectedRule" :statuses="statuses" :severities="severities" />
           </div>
 
           <!-- Additional info column -->
