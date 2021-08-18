@@ -1,6 +1,6 @@
 import TurbolinksAdapter from 'vue-turbolinks'
 import Vue from 'vue'
-import {ButtonPlugin, PaginationPlugin, TablePlugin} from 'bootstrap-vue'
+import {ButtonPlugin, PaginationPlugin, TablePlugin, TooltipPlugin} from 'bootstrap-vue'
 import ProjectMembers from '../components/project_members/ProjectMembers.vue'
 import ProjectMembersTable from '../components/project_members/ProjectMembersTable.vue'
 import NewProjectMember from '../components/project_members/NewProjectMember.vue'
@@ -9,6 +9,7 @@ Vue.use(TurbolinksAdapter)
 Vue.use(ButtonPlugin)
 Vue.use(PaginationPlugin)
 Vue.use(TablePlugin)
+Vue.use(TooltipPlugin)
 
 Vue.component('projectmembers', ProjectMembers)
 Vue.component('ProjectMembersTable', ProjectMembersTable)

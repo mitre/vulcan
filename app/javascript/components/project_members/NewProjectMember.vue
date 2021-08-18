@@ -7,7 +7,7 @@
         <input type="hidden" id="NewProjectMemberAuthenticityToken" name="authenticity_token" :value="authenticityToken" />
 
         <!-- User dropdown -->
-        <div class="form-group col-md-6">
+        <div class="form-group col-6">
           <label for="NewProjectMemberUser">User</label>
           <select class="form-control" id="NewProjectMemberUser" name="project_member[user_id]" v-model="selectedUser" required>
             <option/>
@@ -19,9 +19,15 @@
         </div>
 
         <!-- Role dropdown -->
-        <div class="form-group col-sm-12 col-md-6">
+        <div class="form-group col-6">
           <label for="NewProjectMemberRole">Role</label>
-          <select class="form-control" id="NewProjectMemberRole" name="project_member[role]" v-model="selectedRole" required>
+          <select id="NewProjectMemberRole"
+                  class="form-control" 
+                  name="project_member[role]" 
+                  v-model="selectedRole" 
+                  v-b-tooltip.hover.html
+                  title="admin - <br/> reviewer - <br/>author -" 
+                  required>
             <option/>
             <option :key="available_role" v-for="available_role in available_roles">{{available_role}}</option>
           </select>

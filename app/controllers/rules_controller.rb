@@ -6,7 +6,7 @@
 class RulesController < ApplicationController
   before_action :set_rule, only: %i[show update manage_lock]
   before_action :set_project, only: %i[index show update manage_lock]
-  before_action :authorize_edit_project, only: %i[index update show]
+  before_action :authorize_author_project, only: %i[index update show]
   before_action :authorize_review_project, only: %i[manage_lock]
 
   def index
