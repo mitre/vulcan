@@ -216,7 +216,7 @@
           </b-form-group>
           <a @click="removeRuleDescription(index)" class="clickable removeLink">
             <i class="mdi mdi-trash-can" aria-hidden="true"></i>
-            Remove Description
+            Remove Rule Description
           </a>
         </div>
       </div>
