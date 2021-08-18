@@ -8,4 +8,5 @@
     'v-bind:project': @project.to_json,                                             |
     'v-bind:available_members': @project.available_members.to_json,                 |
     'v-bind:available_roles': ProjectMemberConstants::PROJECT_MEMBER_ROLES.to_json, |
-  }  
+    'v-bind:project_members_count': @project.project_members_count.to_json, |
+  }
