@@ -26,7 +26,7 @@
                 to
                 <span class="historyChangeText">{{audited_change.new_value}}</span>
               </p>
-              <b-button v-if="rule.locked == false" class="px-2 py-0" variant="warning" @click="revertHistory(history, audited_change.field)">Revert</b-button>
+              <RuleRevertModal @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="rule" :history="history" :audited_change="audited_change" />
             </div>
           </template>
 
@@ -54,7 +54,7 @@
                 to
                 <span class="historyChangeText">{{audited_change.new_value}}</span>
               </p>
-              <b-button v-if="rule.locked == false" class="px-2 py-0" variant="warning" @click="revertHistory(history, audited_change.field)">Revert</b-button>
+              <RuleRevertModal @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="rule" :history="history" :audited_change="audited_change" />
             </div>
           </template>
 
@@ -67,7 +67,7 @@
                 <span class="historyChangeText">{{audited_change.new_value}}</span>
               </p>
             </div>
-            <b-button v-if="rule.locked == false" class="px-2 py-0 ml-3 mb-3" variant="warning" @click="revertHistory(history, null)">Revert</b-button>
+            <RuleRevertModal @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="rule" :history="history" :audited_change="null" />
           </template>
         </template>
 
@@ -78,7 +78,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
 import AlertMixinVue from '../../mixins/AlertMixin.vue';
 export default {
@@ -95,29 +94,6 @@ export default {
       showHistories: false
     }
   },
-  computed: {
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
-  },
-  methods: {
-    revertHistory: function(history, field) {
-      let payload = {
-        audit_id: history.id,
-        field: field
-      };
-      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
-      axios.defaults.headers.common['Accept'] = 'application/json'
-      axios.post(`/rules/${this.rule.id}/revert`, payload)
-      .then(this.revertSuccess)
-      .catch(this.alertOrNotifyResponse);
-    },
-    revertSuccess: function(response) {
-      this.alertOrNotifyResponse(response);
-      this.$emit('ruleUpdated', this.rule.id, 'all');
-    },
-  }
 }
 </script>
 
