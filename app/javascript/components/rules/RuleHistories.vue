@@ -18,78 +18,85 @@
         <template v-if="history.auditable_type == 'Rule'">
           <!-- Edit on the rule itself -->
           <template v-if="history.action == 'update'">
-            <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
-              <p class="mb-1">
-                {{audited_change.field}}
-                was changed from
-                <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
-                to
-                <span class="historyChangeText">{{audited_change.new_value}}</span>
-              </p>
-              <RuleRevertModal 
-                @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
-                :rule="rule" :history="history" 
-                :audited_change="audited_change"
-                :statuses="statuses"
-                :severities="severities"
-              />
-            </div>
+            <a class="ml-3 text-info clickable" v-b-toggle="`history-collapse-${history.id}`">{{friendlyAuditableType(history.auditable_type)}} Updated...</a>
+            <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
+              <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
+                <p class="mb-1">
+                  {{audited_change.field}}
+                  was changed from
+                  <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
+                  to
+                  <span class="historyChangeText">{{audited_change.new_value}}</span>
+                </p>
+                <RuleRevertModal 
+                  @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
+                  :rule="rule" :history="history" 
+                  :audited_change="audited_change"
+                  :statuses="statuses"
+                  :severities="severities"
+                />
+              </div>
+            </b-collapse>
           </template>
 
           <!-- Create on the rule itself -->
           <template v-if="history.action == 'create'">
-            <p class="ml-3 mb-3">Rule was created.</p>
+            <p class="ml-3 mb-0 text-success">{{friendlyAuditableType(history.auditable_type)}} was created</p>
           </template>
         </template>
 
         <!-- Edit or Deletion on one of the Rule's associated records-->
         <template v-else>
-           <!-- Create on the rule itself -->
+           <!-- Create on the rule associated record -->
           <template v-if="history.action == 'create'">
-            <p class="ml-3 mb-3">{{history.auditable_type}} with ID {{history.auditable_id}} was created.</p>
+            <p class="ml-3 mb-0 text-success">{{friendlyAuditableType(history.auditable_type)}} was created</p>
           </template>
 
           <!-- Edit on the associated record -->
           <template v-if="history.action == 'update'">
-            <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
-              <p class="mb-1">{{history.auditable_type}} with ID {{history.auditable_id}} was updated.</p>
-              <p class="mb-1">
-                {{audited_change.field}}
-                was changed from
-                <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
-                to
-                <span class="historyChangeText">{{audited_change.new_value}}</span>
-              </p>
-              <RuleRevertModal 
-                @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
-                :rule="rule" :history="history" 
-                :audited_change="audited_change"
-                :statuses="statuses"
-                :severities="severities"
-              />
-            </div>
+            <a class="ml-3 text-info clickable" v-b-toggle="`history-collapse-${history.id}`">{{friendlyAuditableType(history.auditable_type)}} Updated...</a>
+            <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
+              <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
+                <p class="mb-1">
+                  {{audited_change.field}}
+                  was changed from
+                  <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
+                  to
+                  <span class="historyChangeText">{{audited_change.new_value}}</span>
+                </p>
+                <RuleRevertModal
+                  @ruleUpdated="(id) => $emit('ruleUpdated', id)"
+                  :rule="rule" :history="history"
+                  :audited_change="audited_change"
+                  :statuses="statuses"
+                  :severities="severities"
+                />
+              </div>
+            </b-collapse>
           </template>
 
           <!-- Deletion on the associated record -->
           <template v-if="history.action == 'destroy'">
-            <p class="ml-3 mb-1">{{history.auditable_type}} with ID {{history.auditable_id}} was deleted.</p>
-            <div class="ml-3 mb-1" :key="audited_change.field" v-for="audited_change in history.audited_changes">
-              <p class="mb-1">
-                {{audited_change.field}}:
-                <span class="historyChangeText">{{audited_change.new_value}}</span>
-              </p>
-            </div>
-            <RuleRevertModal 
-                @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
-                :rule="rule" :history="history" 
-                :audited_change="null"
-                :statuses="statuses"
-                :severities="severities"
-              />
+            <a class="ml-3 text-danger clickable" v-b-toggle="`history-collapse-${history.id}`">{{friendlyAuditableType(history.auditable_type)}} Deleted...</a>
+            <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
+              <div class="ml-3 mb-1" :key="audited_change.field" v-for="audited_change in history.audited_changes">
+                <p class="mb-1">
+                  {{audited_change.field}}:
+                  <span class="historyChangeText">{{audited_change.new_value}}</span>
+                </p>
+              </div>
+              <div class="ml-3 mb-1">
+                <RuleRevertModal 
+                  @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
+                  :rule="rule" :history="history" 
+                  :audited_change="null"
+                  :statuses="statuses"
+                  :severities="severities"
+                />
+              </div>
+            </b-collapse>
           </template>
         </template>
-
-        
       </div>
     </b-collapse>
   </div>
@@ -120,6 +127,17 @@ export default {
       showHistories: false
     }
   },
+  methods: {
+    friendlyAuditableType: function(type) {
+      if (type == 'RuleDescription') {
+        return 'Rule Description';
+      } else if (type == 'DisaRuleDescription') {
+        return 'Rule Description';
+      }
+
+      return type;
+    }
+  }
 }
 </script>
 

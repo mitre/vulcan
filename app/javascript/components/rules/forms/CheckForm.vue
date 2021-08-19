@@ -4,7 +4,7 @@
 
     <!-- system -->
     <b-form-group
-      :id="'ruleEditor-check-group-' + index"
+      :id="'ruleEditor-check-system-group-' + index"
       label="System"
       :label-for="'ruleEditor-check-system-' + index"
       description=""
@@ -26,7 +26,7 @@
 
     <!-- content_ref_name -->
     <b-form-group
-      :id="'ruleEditor-check-group-' + index"
+      :id="'ruleEditor-check-content_ref_name-group-' + index"
       label="Reference Name"
       :label-for="'ruleEditor-check-content_ref_name-' + index"
       description=""
@@ -48,7 +48,7 @@
 
     <!-- content_ref_href -->
     <b-form-group
-      :id="'ruleEditor-check-group-' + index"
+      :id="'ruleEditor-check-content_ref_href-group-' + index"
       label="Reference Link"
       :label-for="'ruleEditor-check-content_ref_href-' + index"
       description=""
@@ -70,7 +70,7 @@
 
     <!-- content -->
     <b-form-group
-      :id="'ruleEditor-check-group-' + index"
+      :id="'ruleEditor-check-content-group-' + index"
       label="Check"
       :label-for="'ruleEditor-check-content-' + index"
       description=""
@@ -116,7 +116,7 @@ export default {
       type: Number,
       required: false,
       default: Math.floor(Math.random() * 1000)
-    }
+    },
   },
 }
 </script>

@@ -199,7 +199,7 @@ export default {
     revertHistory: function() {
       let payload = {
         audit_id: this.history.id,
-        field: this.audited_change.field
+        field: this.audited_change ? this.audited_change.field : null
       };
       axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
       axios.defaults.headers.common['Accept'] = 'application/json'
