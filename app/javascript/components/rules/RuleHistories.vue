@@ -22,11 +22,11 @@
             <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
               <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
                 <p class="mb-1">
-                  {{audited_change.field}}
-                  was changed from
-                  <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
-                  to
-                  <span class="historyChangeText">{{audited_change.new_value}}</span>
+                  <strong>{{audited_change.field}}</strong> was changed from
+                  <br/>
+                  <span class="historyChangeText">{{audited_change.prev_value ? audited_change.prev_value : '*no value*'}}</span>
+                  <br/>to<br/>
+                  <span class="historyChangeText">{{audited_change.new_value ? audited_change.new_value : '*no value*'}}</span>
                 </p>
                 <RuleRevertModal 
                   @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
@@ -58,11 +58,11 @@
             <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
               <div class="ml-3 mb-3" :key="audited_change.field" v-for="audited_change in history.audited_changes">
                 <p class="mb-1">
-                  {{audited_change.field}}
-                  was changed from
-                  <span class="historyChangeText">{{audited_change.prev_value == null ? 'no value' : audited_change.prev_value}}</span>
-                  to
-                  <span class="historyChangeText">{{audited_change.new_value}}</span>
+                  <strong>{{audited_change.field}}</strong> was changed from
+                  <br/>
+                  <span class="historyChangeText">{{audited_change.prev_value ? audited_change.prev_value : '*no value*'}}</span>
+                  <br/>to<br/>
+                  <span class="historyChangeText">{{audited_change.new_value ? audited_change.new_value : '*no value*'}}</span>
                 </p>
                 <RuleRevertModal
                   @ruleUpdated="(id) => $emit('ruleUpdated', id)"
@@ -81,8 +81,8 @@
             <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
               <div class="ml-3 mb-1" :key="audited_change.field" v-for="audited_change in history.audited_changes">
                 <p class="mb-1">
-                  {{audited_change.field}}:
-                  <span class="historyChangeText">{{audited_change.new_value}}</span>
+                  <strong>{{audited_change.field}}</strong>:
+                  <span class="historyChangeText">{{audited_change.new_value ? audited_change.new_value : '*no value*'}}</span>
                 </p>
               </div>
               <div class="ml-3 mb-1">

@@ -239,49 +239,55 @@
         </b-form-invalid-feedback>
       </b-form-group>
 
-      <!-- ident -->
-      <b-form-group
-        id="ruleEditor-ident-group"
-        label="Identity"
-        label-for="ruleEditor-ident"
-        description=""
-      >
-        <b-form-input
-          id="ruleEditor-ident"
-          :class="inputClass('ident')"
-          v-model="rule.ident"
-          placeholder=""
-          :disabled="disabled"
-        ></b-form-input>
-        <b-form-valid-feedback v-if="hasValidFeedback('ident')">
-          {{this.validFeedback['ident']}}
-        </b-form-valid-feedback>
-        <b-form-invalid-feedback v-if="hasInvalidFeedback('ident')">
-          {{this.invalidFeedback['ident']}}
-        </b-form-invalid-feedback>
-      </b-form-group>
+      <div class="row">
+        <div class="col-4">
+          <!-- ident -->
+          <b-form-group
+            id="ruleEditor-ident-group"
+            label="Identity"
+            label-for="ruleEditor-ident"
+            description=""
+          >
+            <b-form-input
+              id="ruleEditor-ident"
+              :class="inputClass('ident')"
+              v-model="rule.ident"
+              placeholder=""
+              :disabled="disabled"
+            ></b-form-input>
+            <b-form-valid-feedback v-if="hasValidFeedback('ident')">
+              {{this.validFeedback['ident']}}
+            </b-form-valid-feedback>
+            <b-form-invalid-feedback v-if="hasInvalidFeedback('ident')">
+              {{this.invalidFeedback['ident']}}
+            </b-form-invalid-feedback>
+          </b-form-group>
+        </div>
 
-      <!-- ident_system -->
-      <b-form-group
-        id="ruleEditor-ident_system-group"
-        label="Identity System"
-        label-for="ruleEditor-ident_system"
-        description=""
-      >
-        <b-form-input
-          id="ruleEditor-ident_system"
-          :class="inputClass('ident_system')"
-          v-model="rule.ident_system"
-          placeholder=""
-          :disabled="disabled"
-        ></b-form-input>
-        <b-form-valid-feedback v-if="hasValidFeedback('ident_system')">
-          {{this.validFeedback['ident_system']}}
-        </b-form-valid-feedback>
-        <b-form-invalid-feedback v-if="hasInvalidFeedback('ident_system')">
-          {{this.invalidFeedback['ident_system']}}
-        </b-form-invalid-feedback>
-      </b-form-group>
+        <div class="col-8">
+          <!-- ident_system -->
+          <b-form-group
+            id="ruleEditor-ident_system-group"
+            label="Identity System"
+            label-for="ruleEditor-ident_system"
+            description=""
+          >
+            <b-form-input
+              id="ruleEditor-ident_system"
+              :class="inputClass('ident_system')"
+              v-model="rule.ident_system"
+              placeholder=""
+              :disabled="disabled"
+            ></b-form-input>
+            <b-form-valid-feedback v-if="hasValidFeedback('ident_system')">
+              {{this.validFeedback['ident_system']}}
+            </b-form-valid-feedback>
+            <b-form-invalid-feedback v-if="hasInvalidFeedback('ident_system')">
+              {{this.invalidFeedback['ident_system']}}
+            </b-form-invalid-feedback>
+          </b-form-group>
+        </div>
+      </div>
 
       <!-- vendor_comments -->
       <b-form-group
