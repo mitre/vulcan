@@ -27,7 +27,7 @@ export default {
       element.className = classes;
       element.textContent = textContent;
       element.setAttribute('role', 'alert');
-      navbar?.insertAdjacentElement('afterend', element);
+      document.getElementById('alerts')?.appendChild(element);
       setTimeout(function() {element.remove()}, 5000);
     }
   }
