@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="description._destroy != true" class="card relationCard">
+    <div v-if="description._destroy != true" class="card p-3 mb-3">
       <p><strong>{{description.id == null ? 'New ' : ''}}Rule Description</strong></p>
       <b-form-group
         :id="'ruleEditor-rule_description-group-' + index"
@@ -15,7 +15,7 @@
           :disabled="disabled"
         ></b-form-textarea>
       </b-form-group>
-      <a @click="$emit('removeRuleDescription', index)" class="clickable text-dark" v-if="rule.locked == false">
+      <a @click="$emit('removeRuleDescription', index)" class="clickable text-dark" v-if="!disabled">
         <i class="mdi mdi-trash-can" aria-hidden="true"></i>
         Remove Rule Description
       </a>

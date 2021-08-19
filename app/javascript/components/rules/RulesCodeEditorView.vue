@@ -20,7 +20,7 @@
           <div class="col-5">
             <RuleComments @ruleUpdated="(id, updated) => $emit('ruleUpdated', id, updated)" :rule="selectedRule"/>
             <br/>
-            <RuleHistories @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule"/>
+            <RuleHistories @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule" :statuses="statuses" :severities="severities" />
           </div>
         </div>
       </div>

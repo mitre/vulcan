@@ -1,5 +1,5 @@
 <template>
-  <div v-if="check._destroy != true"  class="card relationCard">
+  <div v-if="check._destroy != true"  class="card p-3 mb-3">
     <p><strong>{{check.id == null ? 'New ' : ''}}Check</strong></p>
     <b-form-group
       :id="'ruleEditor-check-group-' + index"

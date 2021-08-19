@@ -26,7 +26,13 @@
                 to
                 <span class="historyChangeText">{{audited_change.new_value}}</span>
               </p>
-              <RuleRevertModal @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="rule" :history="history" :audited_change="audited_change" />
+              <RuleRevertModal 
+                @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
+                :rule="rule" :history="history" 
+                :audited_change="audited_change"
+                :statuses="statuses"
+                :severities="severities"
+              />
             </div>
           </template>
 
@@ -54,7 +60,13 @@
                 to
                 <span class="historyChangeText">{{audited_change.new_value}}</span>
               </p>
-              <RuleRevertModal @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="rule" :history="history" :audited_change="audited_change" />
+              <RuleRevertModal 
+                @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
+                :rule="rule" :history="history" 
+                :audited_change="audited_change"
+                :statuses="statuses"
+                :severities="severities"
+              />
             </div>
           </template>
 
@@ -67,7 +79,13 @@
                 <span class="historyChangeText">{{audited_change.new_value}}</span>
               </p>
             </div>
-            <RuleRevertModal @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="rule" :history="history" :audited_change="null" />
+            <RuleRevertModal 
+                @ruleUpdated="(id) => $emit('ruleUpdated', id)" 
+                :rule="rule" :history="history" 
+                :audited_change="null"
+                :statuses="statuses"
+                :severities="severities"
+              />
           </template>
         </template>
 
@@ -87,7 +105,15 @@ export default {
     rule: {
       type: Object,
       required: true,
-    }
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
+      type: Array,
+      required: true,
+    },
   },
   data: function() {
     return {

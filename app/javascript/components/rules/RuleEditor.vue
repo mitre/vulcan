@@ -94,8 +94,4 @@ export default {
 </script>
 
 <style scoped>
-.relationCard {
-  padding: 1em;
-  margin-bottom: 1em;
-}
 </style>

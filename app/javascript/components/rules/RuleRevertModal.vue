@@ -1,32 +1,95 @@
 <template>
   <div>
-    <b-button @click="showModal()" v-if="rule.locked == false" class="px-2 py-0" variant="warning">Revert</b-button>
+    <b-button 
+      @click="showModal()"
+      v-if="rule.locked == false && afterState && !isEmpty(afterState)"
+      class="px-2 py-0"
+      variant="warning"
+    >
+      Revert
+    </b-button>
 
     <b-modal ref="revertModal" title="Revert Rule History" size="xl" ok-title="Revert" @ok="revertHistory()">
       <div class="row">
         <!-- CURRENT STATE -->
         <div class='col-6'>
           <p class="h3">Current State</p>
-          <p v-if="currentState == null">N/A</p>
-          <template v-if="currentState != null">
-            <div :key="key" v-for="(value, key) in currentState">
-              <p class="mb-0"><strong>{{key}}</strong></p>
-              <p>{{value || '*NO VALUE*'}}</p>
-            </div>
+          
+          <template v-if="history.action == 'destroy'">
+            <p>Deleted</p>
+          </template>
+
+          <template v-else-if="history.auditable_type == 'Rule'">
+            <RuleForm
+              :rule="rule"
+              :statuses="statuses"
+              :severities="severities"
+              :disabled="true"
+            />
+          </template>
+
+          <template v-else-if="history.auditable_type == 'RuleDescription'">
+            <RuleDescriptionForm
+              v-if="!isEmpty(currentState)"
+              :description="currentState"
+              :disabled="true"
+            />
+            <p v-else>Description does not exist.</p>
+          </template>
+
+          <template v-else-if="history.auditable_type == 'DisaRuleDescription'">
+            <DisaRuleDescriptionForm
+              v-if="!isEmpty(currentState)"
+              :description="currentState"
+              :disabled="true"
+            />
+            <p v-else>Description does not exist.</p>
+          </template>
+
+          <template v-else-if="history.auditable_type == 'Check'">
+            <CheckForm
+              v-if="!isEmpty(currentState)"
+              :check="currentState"
+              :disabled="true"
+            />
+            <p v-else>Check does not exist.</p>
           </template>
         </div>
 
         <!-- STATE AFTER REVERT -->
         <div class='col-6'>
           <p class="h3">State After Revert</p>
-          <template v-if="afterState != null">
-            <div :key="key" v-for="(value, key) in afterState">
-              <p class="mb-0"><strong>{{key}}</strong></p>
-              <p :class="changedFieldClass(key)">{{value || '*NO VALUE*'}}</p>
-            </div>
-          </template>
+
+          <p v-if="!afterState || isEmpty(afterState)">Could not determine resulting state.</p>
+          
+          <RuleForm
+            v-else-if="history.auditable_type == 'Rule'"
+            :rule="afterState"
+            :statuses="statuses"
+            :severities="severities"
+            :disabled="true"
+          />
+
+          <RuleDescriptionForm
+            v-else-if="history.auditable_type == 'RuleDescription'"
+            :description="afterState"
+            :disabled="true"
+          />
+
+          <DisaRuleDescriptionForm
+            v-else-if="history.auditable_type == 'DisaRuleDescription'"
+            :description="afterState"
+            :disabled="true"
+          />
+
+          <CheckForm
+            v-else-if="history.auditable_type == 'Check'"
+            :check="afterState"
+            :disabled="true"
+          />
+
+          <p v-else>Could not determine resulting state.</p>
         </div>
-        Changed Fields: {{changedFields}}
       </div>
     </b-modal>
   </div>
@@ -50,7 +113,15 @@ export default {
     audited_change: {
       type: Object,
       required: false,
-    }
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
+      type: Array,
+      required: true,
+    },
   },
   computed: {
     modalId: function() {
@@ -60,58 +131,44 @@ export default {
       return document.querySelector("meta[name='csrf-token']").getAttribute("content");
     },
     currentState: function() {
-      // Would expect this to be null for a deletion record
-      if (this.audited_change == null) {
-        return null;
-      }
-      console.log('1')
-
-      let curState = {};
-
-      // Check if the change was on the record itself
-      // If so, we really only need to show the specific field that changed
+      let dependentRecord = {}
       if (this.history.auditable_type == 'Rule') {
-        console.log('1.1')
-        curState[this.audited_change.field] = this.rule[this.audited_change.field]
-        return curState;
-      }
-      console.log('1.2')
-
-      // The change was on a dependent record & the change needs to be
-      // contextualized for that specific record
-      let contextualizedRecord = null;
-      if (this.history.auditable_type == 'RuleDescription') {
-        console.log('2.1')
-        contextualizedRecord = this.rule.rule_descriptions_attributes.find(e => e.id == this.history.auditable_id)
+        dependentRecord = this.rule
+      } else if (this.history.auditable_type == 'RuleDescription') {
+        dependentRecord = this.rule.rule_descriptions_attributes.find(e => e.id == this.history.auditable_id)
       } else if (this.history.auditable_type == 'DisaRuleDescription') {
-        console.log('2.2')
-        contextualizedRecord = this.rule.disa_rule_descriptions_attributes.find(e => e.id == this.history.auditable_id)
+        dependentRecord = this.rule.disa_rule_descriptions_attributes.find(e => e.id == this.history.auditable_id)
       } else if (this.history.auditable_type == 'Check') {
-        console.log('2.3')
-        contextualizedRecord = this.rule.checks_attributes.find(e => e.id == this.history.auditable_id)
-      } else {
-        console.log('2.4')
-        // Guard if the record was not found (e.g. record was deleted post-edit)
-        return null;
+        dependentRecord = this.rule.checks_attributes.find(e => e.id == this.history.auditable_id)
       }
-      console.log('3')
-      let clonedRecord = Object.assign({}, contextualizedRecord)
-      delete clonedRecord.id
-      delete clonedRecord.rule_id
-      delete clonedRecord._destroy
-      delete clonedRecord.updated_at
-      delete clonedRecord.created_at
-      console.log('4')
 
-      return clonedRecord;      
+      let curState = Object.assign({}, dependentRecord);
+      if (this.isEmpty(curState)) {
+        return {};
+      }
+
+      delete curState._destroy
+      return curState;   
     },
     afterState: function() {
-      // Would expect this to be null for a deletion record
-      if (this.audited_change == null) {
-        return 'todo';
+      // Get `currentState` and duplicate for modification
+      let afterState = Object.assign({}, this.currentState);
+
+      // Could not find the before state because the record was either
+      // deleted or something went wrong and `{}` was returned by `currentState`
+      if (this.isEmpty(afterState)) {
+        // `this.audited_change == null` implies that action was a deletion
+        // This means that `afterState` needs to be populated with the entirety of `history.audited_changes`
+        if (this.audited_change == null) {
+          for (let i = 0; i < this.history.audited_changes.length; i++) {
+            afterState[this.history.audited_changes[i].field] = this.history.audited_changes[i].new_value;
+          }
+          return afterState;
+        }
+        return {};
       }
 
-      let afterState = this.currentState;
+      // For and edit, just update the single `audited_change` from `currentState`
       afterState[this.audited_change.field] = this.audited_change.prev_value;
       return afterState;
     },
@@ -141,11 +198,13 @@ export default {
       this.alertOrNotifyResponse(response);
       this.$emit('ruleUpdated', this.rule.id, 'all');
     },
-    changedFieldClass: function(key) {
-      if (this.changedFields.includes(key)) {
-        return 'text-success';
+    // Check if an object is empty
+    isEmpty(o) {
+      // Guard for the case where the object is null or undefined
+      if (!o) {
+        return true;
       }
-      return '';
+      return Object.keys(o).length === 0;
     }
   }
 }

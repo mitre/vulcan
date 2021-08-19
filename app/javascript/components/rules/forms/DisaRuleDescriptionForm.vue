@@ -1,5 +1,5 @@
 <template>
-  <div v-if="description._destroy != true" class="card relationCard">
+  <div v-if="description._destroy != true" class="card p-3 mb-3">
     <p><strong>{{description.id == null ? 'New ' : ''}}Rule Description</strong></p>
     <!-- documentable -->
     <b-form-group description="">
