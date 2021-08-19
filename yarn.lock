@@ -7479,6 +7479,11 @@ vue-loader@^15.9.2:
     vue-hot-reload-api "^2.3.0"
     vue-style-loader "^4.1.0"
 
+vue-simple-suggest@^1.11.1:
+  version "1.11.1"
+  resolved "https://registry.yarnpkg.com/vue-simple-suggest/-/vue-simple-suggest-1.11.1.tgz#4f4e177e91c5e6a49b9b4387d6727293c3a2b982"
+  integrity sha512-VxVhReUfJ889oBQ42mje5RkDhFVtabZW1xDpx8nbNkyN+65zuzLEv0oNhHVG150+2/x8deO6Pff8tCDX2ZR5MA==
+
 vue-style-loader@^4.1.0:
   version "4.1.3"
   resolved "https://registry.yarnpkg.com/vue-style-loader/-/vue-style-loader-4.1.3.tgz#6d55863a51fa757ab24e89d9371465072aa7bc35"
