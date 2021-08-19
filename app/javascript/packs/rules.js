@@ -3,7 +3,7 @@ import Vue from 'vue'
 import {
     ButtonPlugin, BreadcrumbPlugin, FormPlugin, FormGroupPlugin, FormInputPlugin,
     FormTextareaPlugin, BadgePlugin, CollapsePlugin, FormSelectPlugin, FormCheckboxPlugin,
-    TooltipPlugin, ModalPlugin
+    TooltipPlugin, ModalPlugin, BFormValidFeedback, BFormInvalidFeedback
 } from 'bootstrap-vue'
 import Rules from '../components/rules/Rules.vue'
 import RulesCodeEditorView from '../components/rules/RulesCodeEditorView.vue'
@@ -31,6 +31,8 @@ Vue.use(FormSelectPlugin)
 Vue.use(FormCheckboxPlugin)
 Vue.use(TooltipPlugin)
 Vue.use(ModalPlugin)
+Vue.component('BFormValidFeedback', BFormValidFeedback)
+Vue.component('BFormInvalidFeedback', BFormInvalidFeedback)
 
 Vue.component('Rules', Rules)
 Vue.component('RulesCodeEditorView', RulesCodeEditorView)

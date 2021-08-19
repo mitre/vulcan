@@ -15,7 +15,7 @@
         <span class="d-inline-block" v-b-tooltip.hover title="Control is locked.">
           <b-button variant="success" disabled>Save Control</b-button>
         </span>
-        <span class="d-inline-block"  v-b-tooltip.hover title="Control is locked.">
+        <span class="d-inline-block" v-b-tooltip.hover title="Control is locked.">
           <b-button variant="danger" disabled>Delete Control</b-button>
         </span>
       </template>

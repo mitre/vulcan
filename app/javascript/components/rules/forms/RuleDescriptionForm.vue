@@ -2,6 +2,8 @@
   <div>
     <div v-if="description._destroy != true" class="card p-3 mb-3">
       <p><strong>{{description.id == null ? 'New ' : ''}}Rule Description</strong></p>
+
+      <!-- description -->
       <b-form-group
         :id="'ruleEditor-rule_description-group-' + index"
         label="Rule Description"
@@ -10,11 +12,20 @@
       >
         <b-form-textarea
           :id="'ruleEditor-rule_description-' + index"
+          :class="inputClass('description')"
           v-model="description.description"
           placeholder=""
           :disabled="disabled"
         ></b-form-textarea>
+        <b-form-valid-feedback v-if="hasValidFeedback('description')">
+          {{this.validFeedback['description']}}
+        </b-form-valid-feedback>
+        <b-form-invalid-feedback v-if="hasInvalidFeedback('description')">
+          {{this.invalidFeedback['description']}}
+        </b-form-invalid-feedback>
       </b-form-group>
+
+      <!-- Remove link -->
       <a @click="$emit('removeRuleDescription', index)" class="clickable text-dark" v-if="!disabled">
         <i class="mdi mdi-trash-can" aria-hidden="true"></i>
         Remove Rule Description
@@ -24,8 +35,10 @@
 </template>
 
 <script>
+import FormFeedbackMixinVue from '../../../mixins/FormFeedbackMixin.vue';
 export default {
   name: 'RuleDescriptionForm',
+  mixins: [FormFeedbackMixinVue],
   props: {
     description: {
       type: Object,

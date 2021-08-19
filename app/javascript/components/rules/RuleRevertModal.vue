@@ -13,10 +13,10 @@
       <div class="row">
         <!-- CURRENT STATE -->
         <div class='col-6'>
-          <p class="h3">Current State</p>
+          <p class="h3">State Before Revert</p>
           
           <template v-if="history.action == 'destroy'">
-            <p>Deleted</p>
+            <p>No Current State - Deleted</p>
           </template>
 
           <template v-else-if="history.auditable_type == 'Rule'">
@@ -68,24 +68,28 @@
             :statuses="statuses"
             :severities="severities"
             :disabled="true"
+            :validFeedback="validFeedback"
           />
 
           <RuleDescriptionForm
             v-else-if="history.auditable_type == 'RuleDescription'"
             :description="afterState"
             :disabled="true"
+            :validFeedback="validFeedback"
           />
 
           <DisaRuleDescriptionForm
             v-else-if="history.auditable_type == 'DisaRuleDescription'"
             :description="afterState"
             :disabled="true"
+            :validFeedback="validFeedback"
           />
 
           <CheckForm
             v-else-if="history.auditable_type == 'Check'"
             :check="afterState"
             :disabled="true"
+            :validFeedback="validFeedback"
           />
 
           <p v-else>Could not determine resulting state.</p>
@@ -98,9 +102,10 @@
 <script>
 import axios from 'axios';
 import AlertMixinVue from '../../mixins/AlertMixin.vue';
+import EmptyObjectMixinVue from '../../mixins/EmptyObjectMixin.vue';
 export default {
   name: 'RuleRevertModal',
-  mixins: [AlertMixinVue],
+  mixins: [AlertMixinVue, EmptyObjectMixinVue],
   props: {
     rule: {
       type: Object,
@@ -172,11 +177,19 @@ export default {
       afterState[this.audited_change.field] = this.audited_change.prev_value;
       return afterState;
     },
-    changedFields: function() {
+    // Generate `validFeedback` to be fed to resulting forms to
+    // visually display which fields will be changed by a revert.
+    validFeedback: function() {
+      let validFeedback = {};
       if (this.audited_change == null) {
-        return [];
+        for (let i = 0; i < this.history.audited_changes.length; i++) {
+          validFeedback[this.history.audited_changes[i].field] = '';
+        }
+        return validFeedback;
       }
-      return [this.audited_change.field];
+
+      validFeedback[this.audited_change.field] = '';
+      return validFeedback;
     }
   },
   methods: {
@@ -198,14 +211,6 @@ export default {
       this.alertOrNotifyResponse(response);
       this.$emit('ruleUpdated', this.rule.id, 'all');
     },
-    // Check if an object is empty
-    isEmpty(o) {
-      // Guard for the case where the object is null or undefined
-      if (!o) {
-        return true;
-      }
-      return Object.keys(o).length === 0;
-    }
   }
 }
 </script>
