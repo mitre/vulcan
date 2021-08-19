@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="mb-5">
     <b-breadcrumb :items="breadcrumbs"></b-breadcrumb>
     
     <h1>{{project.name}} - Controls</h1>

@@ -19,6 +19,8 @@
         v-model="description.vuln_discussion"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('vuln_discussion')">
         {{this.validFeedback['vuln_discussion']}}
@@ -41,6 +43,8 @@
         v-model="description.false_positives"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('false_positives')">
         {{this.validFeedback['false_positives']}}
@@ -63,6 +67,8 @@
         v-model="description.false_negatives"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('false_negatives')">
         {{this.validFeedback['false_negatives']}}
@@ -85,6 +91,8 @@
         v-model="description.mitigations"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('mitigations')">
         {{this.validFeedback['mitigations']}}
@@ -107,6 +115,8 @@
         v-model="description.severity_override_guidance"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('severity_override_guidance')">
         {{this.validFeedback['severity_override_guidance']}}
@@ -129,6 +139,8 @@
         v-model="description.potential_impacts"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('potential_impacts')">
         {{this.validFeedback['potential_impacts']}}
@@ -151,6 +163,8 @@
         v-model="description.third_party_tools"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('third_party_tools')">
         {{this.validFeedback['third_party_tools']}}
@@ -173,6 +187,8 @@
         v-model="description.mitigation_control"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('mitigation_control')">
         {{this.validFeedback['mitigation_control']}}
@@ -195,6 +211,8 @@
         v-model="description.responsibility"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('responsibility')">
         {{this.validFeedback['responsibility']}}
@@ -217,6 +235,8 @@
         v-model="description.ia_controls"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('ia_controls')">
         {{this.validFeedback['ia_controls']}}

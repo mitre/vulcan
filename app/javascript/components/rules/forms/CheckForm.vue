@@ -81,6 +81,8 @@
         v-model="check.content"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('content')">
         {{this.validFeedback['content']}}

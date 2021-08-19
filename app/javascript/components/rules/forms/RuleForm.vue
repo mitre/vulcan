@@ -35,6 +35,8 @@
         v-model="rule.status_justification"
         placeholder=""
         :disabled="disabled"
+        rows="1"
+        max-rows="99"
       ></b-form-textarea>
       <b-form-valid-feedback v-if="hasValidFeedback('status_justification')">
         {{this.validFeedback['status_justification']}}
@@ -152,6 +154,8 @@
           v-model="rule.artifact_description"
           placeholder=""
           :disabled="disabled"
+          rows="1"
+          max-rows="99"
         ></b-form-textarea>
         <b-form-valid-feedback v-if="hasValidFeedback('artifact_description')">
           {{this.validFeedback['artifact_description']}}
@@ -224,6 +228,8 @@
           v-model="rule.fixtext"
           placeholder=""
           :disabled="disabled"
+          rows="1"
+          max-rows="99"
         ></b-form-textarea>
         <b-form-valid-feedback v-if="hasValidFeedback('fixtext')">
           {{this.validFeedback['fixtext']}}
@@ -290,6 +296,8 @@
           v-model="rule.vendor_comments"
           placeholder=""
           :disabled="disabled"
+          rows="1"
+          max-rows="99"
         ></b-form-textarea>
         <b-form-valid-feedback v-if="hasValidFeedback('vendor_comments')">
           {{this.validFeedback['vendor_comments']}}
