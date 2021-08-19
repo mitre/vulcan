@@ -9,6 +9,7 @@ class Rule < ApplicationRecord
   has_associated_audits
 
   before_validation :error_if_locked, on: :update
+  before_create :ensure_disa_description_exists
   before_destroy :error_if_locked
 
   has_many :comments, dependent: :destroy
@@ -127,5 +128,11 @@ class Rule < ApplicationRecord
 
     # If the previous state was locked, error
     raise(RuleLockedError, id) if locked_was
+  end
+
+  def ensure_disa_description_exists
+    return unless disa_rule_descriptions.size.zero?
+
+    disa_rule_descriptions << DisaRuleDescription.new(rule: self)
   end
 end
