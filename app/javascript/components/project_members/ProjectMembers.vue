@@ -6,7 +6,8 @@
                       :available_roles="available_roles" />
     <ProjectMembersTable :project="project"
                          :project_members="project_members"
-                         :available_roles="available_roles" />
+                         :available_roles="available_roles"
+                         :project_members_count="project_members_count"/>
   </div>
 </template>
 
@@ -29,6 +30,10 @@ export default {
     available_roles: {
       type: Array,
       required: true,
+    },
+    project_members_count: {
+      type: Number,
+      required: true
     }
   }
 }

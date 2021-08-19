@@ -1,9 +1,6 @@
 <template>
   <div>
-    <h2>Project Members</h2>
-
-    <!-- Table information -->
-    <p><b>Project Member Count:</b> <span>{{projectMemberCount}}</span></p>
+    <h2>{{ this.project_members_count }} Members</h2>
 
     <!-- User search -->
     <div class="row">
@@ -47,10 +44,10 @@
 
       <!-- Column template for Actions -->
       <template #cell(actions)="data">
-        <b-button class="projectMemberDeleteButton" 
+        <b-button class="projectMemberDeleteButton"
                   variant="danger"
-                  data-confirm="Are you sure you want to remove this user from the project?" 
-                  data-method="delete" 
+                  data-confirm="Are you sure you want to remove this user from the project?"
+                  data-method="delete"
                   :href="formAction(data.item)"
                   rel="nofollow">
           <i class="mdi mdi-trash-can" aria-hidden="true"></i>
@@ -84,6 +81,10 @@ export default {
     available_roles: {
       type: Array,
       required: true,
+    },
+    project_members_count: {
+      type: Number,
+      required: true
     }
   },
   data: function () {
@@ -111,10 +112,6 @@ export default {
     // Authenticity Token for forms
     authenticityToken: function() {
       return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
-    // Total number of users in the system
-    projectMemberCount: function() {
-      return this.project_members.length;
     }
   },
   methods: {
