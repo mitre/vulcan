@@ -10,10 +10,12 @@
     "axios": "^0.21.1",
     "bootstrap": "^4.4.1",
     "bootstrap-vue": "^2.13.0",
+    "lodash": "^4.17.21",
     "moment": "^2.29.1",
     "turbolinks": "^5.2.0",
     "vue": "^2.6.11",
     "vue-loader": "^15.9.2",
+    "vue-simple-suggest": "^1.11.1",
     "vue-template-compiler": "^2.6.11",
     "vue-turbolinks": "^2.1.0"
   },

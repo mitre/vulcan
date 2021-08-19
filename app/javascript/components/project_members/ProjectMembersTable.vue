@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>{{ this.project_members_count }} Members</h2>
+    <h2>{{ project_members_count }} Members</h2>
 
     <!-- User search -->
     <div class="row">
@@ -11,6 +11,22 @@
           </div>
           <input type="text" class="form-control" id="userSearch" placeholder="Search users by name or email..." v-model="search">
         </div>
+      </div>
+      <div class="col-6 float-right">
+        <b-button variant="primary"
+                  size="large"
+                  class="float-right"
+                  v-b-modal.new-project-member
+        >
+          New Member
+        </b-button>
+
+        <b-modal id="new-project-member" size="md" title="Add New Project Member" centered :hide-footer="true">
+          <NewProjectMember :project="project"
+                            :available_members="available_members"
+                            :available_roles="available_roles"
+          />
+        </b-modal>
       </div>
     </div>
 
@@ -82,6 +98,10 @@ export default {
       type: Array,
       required: true,
     },
+    available_members: {
+      type: Array,
+      required: true
+    },
     project_members_count: {
       type: Number,
       required: true
@@ -116,7 +136,7 @@ export default {
   },
   methods: {
     // Automatically submit the form when a user selects a form option
-    roleChanged: function(event, project_member) {
+    roleChanged: function(_event, project_member) {
       document.getElementById(this.formId(project_member)).submit();
     },
     // Generator for a unique form id for the user role dropdown
