@@ -161,27 +161,55 @@
         </b-form-invalid-feedback>
       </b-form-group>
 
-      <!-- fix_id -->
-      <b-form-group
-        id="ruleEditor-fix_id-group"
-        label="Fix ID"
-        label-for="ruleEditor-fix_id"
-        description=""
-      >
-        <b-form-input
-          id="ruleEditor-fix_id"
-          :class="inputClass('fix_id')"
-          v-model="rule.fix_id"
-          placeholder=""
-          :disabled="disabled"
-        ></b-form-input>
-        <b-form-valid-feedback v-if="hasValidFeedback('fix_id')">
-          {{this.validFeedback['fix_id']}}
-        </b-form-valid-feedback>
-        <b-form-invalid-feedback v-if="hasInvalidFeedback('fix_id')">
-          {{this.invalidFeedback['fix_id']}}
-        </b-form-invalid-feedback>
-      </b-form-group>
+      <div class="row">
+        <div class="col-6">
+          <!-- fix_id -->
+          <b-form-group
+            id="ruleEditor-fix_id-group"
+            label="Fix ID"
+            label-for="ruleEditor-fix_id"
+            description=""
+          >
+            <b-form-input
+              id="ruleEditor-fix_id"
+              :class="inputClass('fix_id')"
+              v-model="rule.fix_id"
+              placeholder=""
+              :disabled="disabled"
+            ></b-form-input>
+            <b-form-valid-feedback v-if="hasValidFeedback('fix_id')">
+              {{this.validFeedback['fix_id']}}
+            </b-form-valid-feedback>
+            <b-form-invalid-feedback v-if="hasInvalidFeedback('fix_id')">
+              {{this.invalidFeedback['fix_id']}}
+            </b-form-invalid-feedback>
+          </b-form-group>
+        </div>
+
+        <div class="col-6">
+          <!-- fixtext_fixref -->
+          <b-form-group
+            id="ruleEditor-fixtext_fixref-group"
+            label="Fix Text Reference"
+            label-for="ruleEditor-fixtext_fixref"
+            description=""
+          >
+            <b-form-input
+              id="ruleEditor-fixtext_fixref"
+              :class="inputClass('fixtext_fixref')"
+              v-model="rule.fixtext_fixref"
+              placeholder=""
+              :disabled="disabled"
+            ></b-form-input>
+            <b-form-valid-feedback v-if="hasValidFeedback('fixtext_fixref')">
+              {{this.validFeedback['fixtext_fixref']}}
+            </b-form-valid-feedback>
+            <b-form-invalid-feedback v-if="hasInvalidFeedback('fixtext_fixref')">
+              {{this.invalidFeedback['fixtext_fixref']}}
+            </b-form-invalid-feedback>
+          </b-form-group>
+        </div>
+      </div>
 
       <!-- fixtext -->
       <b-form-group
@@ -202,28 +230,6 @@
         </b-form-valid-feedback>
         <b-form-invalid-feedback v-if="hasInvalidFeedback('fixtext')">
           {{this.invalidFeedback['fixtext']}}
-        </b-form-invalid-feedback>
-      </b-form-group>
-
-      <!-- fixtext_fixref -->
-      <b-form-group
-        id="ruleEditor-fixtext_fixref-group"
-        label="Fix Test Reference"
-        label-for="ruleEditor-fixtext_fixref"
-        description=""
-      >
-        <b-form-input
-          id="ruleEditor-fixtext_fixref"
-          :class="inputClass('fixtext_fixref')"
-          v-model="rule.fixtext_fixref"
-          placeholder=""
-          :disabled="disabled"
-        ></b-form-input>
-        <b-form-valid-feedback v-if="hasValidFeedback('fixtext_fixref')">
-          {{this.validFeedback['fixtext_fixref']}}
-        </b-form-valid-feedback>
-        <b-form-invalid-feedback v-if="hasInvalidFeedback('fixtext_fixref')">
-          {{this.invalidFeedback['fixtext_fixref']}}
         </b-form-invalid-feedback>
       </b-form-group>
 
