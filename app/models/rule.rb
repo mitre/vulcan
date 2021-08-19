@@ -49,8 +49,10 @@ class Rule < ApplicationRecord
   # Build a structure that minimally describes the editing history of a rule
   # and describes what can be reverted for that rule.
   #
-  def histories
-    own_and_associated_audits.order(:created_at).map do |audit|
+  # If `limit` is `nil`, then no limit will be applied on the number of histories returned
+  #
+  def histories(limit = 20)
+    own_and_associated_audits.order(:created_at).limit(limit).map do |audit|
       # Each audit can encompass multiple changes on the model (see audited_changes)
       {
         id: audit.id,
