@@ -87,6 +87,14 @@ ActiveRecord::Schema.define(version: 2021_08_18_143114) do
     t.index ["user_id"], name: "index_project_members_on_user_id"
   end
 
+  create_table "project_metadata", force: :cascade do |t|
+    t.json "data", null: false
+    t.bigint "project_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["project_id"], name: "by_project_id", unique: true
+  end
+
   create_table "projects", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", precision: 6, null: false
