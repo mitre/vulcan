@@ -17,3 +17,11 @@ $mdi-font-path: '~@mdi/font/fonts/';
 .collapsableArrow {
   font-size: 1.5rem;
 }
+
+#alerts {
+  position: sticky;
+  width: 80%;
+  top: 0;
+  height: 0;
+  z-index: 999999999;
+}
