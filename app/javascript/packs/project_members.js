@@ -9,7 +9,8 @@ import {
   FormInputPlugin,
   LayoutPlugin,
   InputGroupPlugin,
-  FormRadioPlugin
+  FormRadioPlugin,
+  BreadcrumbPlugin
 } from 'bootstrap-vue'
 import ProjectMembers from '../components/project_members/ProjectMembers.vue'
 import ProjectMembersTable from '../components/project_members/ProjectMembersTable.vue'
@@ -25,6 +26,7 @@ Vue.use(FormInputPlugin)
 Vue.use(LayoutPlugin)
 Vue.use(InputGroupPlugin)
 Vue.use(FormRadioPlugin)
+Vue.use(BreadcrumbPlugin)
 
 Vue.component('projectmembers', ProjectMembers)
 Vue.component('ProjectMembersTable', ProjectMembersTable)

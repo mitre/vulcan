@@ -1,5 +1,7 @@
 <template>
   <div>
+    <b-breadcrumb :items="breadcrumbs"></b-breadcrumb>
+
     <h1>{{ project.name }} - Manage Project Members</h1>
     <ProjectMembersTable :project="project"
                          :project_members="project_members"
@@ -33,6 +35,24 @@ export default {
       type: Number,
       required: true
     }
+  },
+  computed: {
+    breadcrumbs: function() {
+      return [
+        {
+          text: 'Projects',
+          href: '/projects'
+        },
+        {
+          text: this.project.name,
+          href: '/projects/' + this.project.id
+        },
+        {
+          text: 'Controls',
+          active: true
+        }
+      ]
+    },
   }
 }
 </script>
