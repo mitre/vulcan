@@ -10,6 +10,7 @@
             v-model="search"
             :list="available_members"
             :filter-by-query="true"
+            :filter="memberSearchFilter"
             display-attribute="email"
             placeholder="Search for a user by email..."
             @select="setSelectedUser"
@@ -115,15 +116,18 @@ export default {
     authenticityToken: function() {
       return document.querySelector("meta[name='csrf-token']").getAttribute("content");
     },
-    searchedAvailableMembers: function() {
-      let downcaseSearch = this.search.toLowerCase()
-      return this.available_members.filter(pm => pm.email.toLowerCase().includes(downcaseSearch));
-    },
     isSubmitDisabled: function() {
       return !((this.selectedUser !== null) && (this.selectedRole !== null))
     }
   },
   methods: {
+    memberSearchFilter: function(user, search) {
+      if (user && search) {
+        let downcaseSearch = search.toLowerCase()
+        return user.email.toLowerCase().includes(downcaseSearch) || user.name.toLowerCase().includes(downcaseSearch)
+      }
+      return false
+    },
     capitalizeRole: function(roleString) {
       return capitalize(roleString);
     },

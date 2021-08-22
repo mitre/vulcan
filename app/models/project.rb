@@ -16,6 +16,6 @@ class Project < ApplicationRecord
   # Get a list of Users that are not yet members of this project
   #
   def available_members
-    (User.all.select(:id, :email) - users.select(:id, :email))
+    (User.all.select(:id, :name, :email) - users.select(:id, :name, :email))
   end
 end
