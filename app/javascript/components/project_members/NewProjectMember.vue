@@ -1,5 +1,5 @@
 <template>
-  <div id="NewProjectMemberCard">
+  <div class="m-3 p-3">
     <b-row>
       <b-col>
         <b-input-group>
@@ -24,15 +24,15 @@
       <b-row>
         <b-col>
           Choose a role
-          <hr id="RoleDivider"/>
+          <hr class="mt-1"/>
         </b-col>
       </b-row>
       <b-row :key="role" v-for="(role, index) in available_roles">
         <b-col>
           <!-- <b-form-radio :key="role" v-for="role in available_roles"  name="role" :value="role">{{ role }}</b-form-radio> -->
-          <div class="role-row">
+          <div class="mb-3">
             <span>
-              <input class="form-check-input role-input"
+              <input class="form-check-input role-input ml-0 mt-0 mr-3"
                      type="radio"
                      name="roles"
                      :value="role"
@@ -40,7 +40,7 @@
               >
             </span>
             <div>
-              <h5 class="d-flex flex-items-center role-label">{{ capitalizeRole(role) }}</h5>
+              <h5 class="d-flex flex-items-center role-label mb-0">{{ capitalizeRole(role) }}</h5>
               <span><small class="muted role-description">{{ roleDescriptions[index] }}</small></span>
             </div>
           </div>
@@ -141,28 +141,11 @@ export default {
 </script>
 
 <style scoped>
-#NewProjectMemberCard {
-  padding: 1em;
-  margin: 1em;
-}
-
-#RoleDivider {
-  margin-top: 0.25rem;
-}
-
-.role-row {
-  margin-bottom: 1rem;
-}
-
 .role-input {
-  margin-left: 0rem;
-  margin-right: 1rem;
-  margin-top: 0rem;
   position: inherit;
 }
 
 .role-label {
-  margin-bottom: 0;
   line-height: 1;
   font-size: 14px;
   font-weight: 700;
