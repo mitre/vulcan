@@ -113,8 +113,8 @@ export default {
       perPage: 10,
       currentPage: 1,
       fields: [
-        { key: 'name', label: 'User' },
-        'role',
+        { key: 'name', label: 'User', sortable: true },
+        { key: 'role', sortable: true },
         { key: 'actions', label: '' }
       ]
     }
