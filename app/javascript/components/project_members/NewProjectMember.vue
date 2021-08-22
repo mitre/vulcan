@@ -1,7 +1,7 @@
 <template>
   <div id="NewProjectMemberCard">
     <b-row>
-      <b-col class="d-flex">
+      <b-col>
         <b-input-group>
           <b-input-group-prepend>
             <b-input-group-text><i class="mdi mdi-magnify" aria-hidden="true"></i></b-input-group-text>
@@ -14,6 +14,7 @@
             placeholder="Search for a user by email..."
             @select="setSelectedUser"
             ref="userSearch"
+            :styles="userSearchStyles"
           />
         </b-input-group>
       </b-col>
@@ -29,7 +30,7 @@
       <b-row :key="role" v-for="(role, index) in available_roles">
         <b-col>
           <!-- <b-form-radio :key="role" v-for="role in available_roles"  name="role" :value="role">{{ role }}</b-form-radio> -->
-          <div class="d-flex role-row">
+          <div class="role-row">
             <span>
               <input class="form-check-input role-input"
                      type="radio"
@@ -51,13 +52,12 @@
       <b-col>
         <form :action="formAction()" method="post">
           <input type="hidden" id="NewProjectMemberAuthenticityToken" name="authenticity_token" :value="authenticityToken"/>
-          <input type="hidden" id="NewProjectMemberEmail" name="user_id" v-model="selectedRole"/>
-          <input type="hidden" id="NewProjectMemberRole" name="role" v-model="selectedUser"/>
+          <input type="hidden" id="NewProjectMemberEmail" name="project_member[user_id]" v-model="selectedUser"/>
+          <input type="hidden" id="NewProjectMemberRole" name="project_member[role]" v-model="selectedRole"/>
           <b-button block
                     type="submit"
                     variant="primary"
                     :disabled="isSubmitDisabled"
-                    :href="formAction()"
                     rel="nofollow"
           >
                     Add User to Project
@@ -98,10 +98,17 @@ export default {
       selectedUser: null,
       selectedRole: null,
       roleDescriptions: [
-        'Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.',
+        'Full control of a Project. Lock Controls, revert controls, and manage project members.',
         'Author and approve changes to a Control.',
-        'Full control of a Project. Lock Controls, revert controls, and manage project members.'
-      ]
+        'Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.',
+      ],
+      userSearchStyles : {
+        vueSimpleSuggest: "userSearchVueSimpleSuggest",
+        inputWrapper: "",
+        defaultInput : "",
+        suggestions: "",
+        suggestItem: ""
+      }
     }
   },
   computed: {
@@ -124,7 +131,7 @@ export default {
       this.selectedRole = role;
     },
     setSelectedUser: function() {
-      this.selectedUser = this.$refs.userSearch.selected
+      this.selectedUser = this.$refs.userSearch.selected?.id
     },
     formAction: function() {
       return `/projects/${this.project.id}/project_members`
@@ -163,5 +170,9 @@ export default {
 
 .role-description {
   line-height: 1;
+}
+
+.userSearchVueSimpleSuggest {
+  flex: 1;
 }
 </style>

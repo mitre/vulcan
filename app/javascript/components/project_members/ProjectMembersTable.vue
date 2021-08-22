@@ -21,7 +21,7 @@
           New Member
         </b-button>
 
-        <b-modal id="new-project-member" size="md" title="Add New Project Member" centered :hide-footer="true">
+        <b-modal id="new-project-member" size="lg" title="Add New Project Member" centered :hide-footer="true">
           <NewProjectMember :project="project"
                             :available_members="available_members"
                             :available_roles="available_roles"
