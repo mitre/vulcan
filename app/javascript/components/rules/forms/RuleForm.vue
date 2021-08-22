@@ -1,12 +1,11 @@
 <template>
   <b-form>
     <!-- status -->
-    <b-form-group
-      id="ruleEditor-status-group"
-      label="Status"
-      label-for="ruleEditor-status"
-      description=""
-    >
+    <b-form-group id="ruleEditor-status-group">
+      <label label-for="ruleEditor-status">
+        Status
+        <i v-if="tooltips['status']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['status']"></i>
+      </label>
       <b-form-select
         id="ruleEditor-status"
         :class="inputClass('status')"
@@ -23,12 +22,11 @@
     </b-form-group>
 
     <!-- status_justification -->
-    <b-form-group
-      id="ruleEditor-status_justification-group"
-      label="Status Justification"
-      label-for="ruleEditor-status_justification"
-      description=""
-    >
+    <b-form-group id="ruleEditor-status_justification-group">
+      <label label-for="ruleEditor-status_justification">
+        Status Justification
+        <i v-if="tooltips['status_justification']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['status_justification']"></i>
+      </label>
       <b-form-textarea
         id="ruleEditor-status_justification"
         :class="inputClass('status_justification')"
@@ -50,12 +48,11 @@
     <p v-if="rule.status != 'Applicable - Configurable'"><small>Some fields are hidden due to the control's status.</small></p>
     <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- title -->
-      <b-form-group
-        id="ruleEditor-title-group"
-        label="Title"
-        label-for="ruleEditor-"
-        description=""
-      >
+      <b-form-group id="ruleEditor-title-group">
+        <label for="ruleEditor-title">
+          Title
+          <i v-if="tooltips['title']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['title']"></i>
+        </label>
         <b-form-input
           id="ruleEditor-title"
           :class="inputClass('title')"
@@ -72,12 +69,11 @@
       </b-form-group>
 
       <!-- version -->
-      <b-form-group
-        id="ruleEditor--->-group"
-        label="Version"
-        label-for="ruleEditor--->"
-        description=""
-      >
+      <b-form-group id="ruleEditor-version-group">
+        <label for="ruleEditor-version">
+          Version
+          <i v-if="tooltips['version']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['version']"></i>
+        </label>
         <b-form-input
           id="ruleEditor-version"
           :class="inputClass('version')"
@@ -95,13 +91,11 @@
 
       <div class="row">
         <!-- rule_severity -->
-        <b-form-group
-          id="ruleEditor-rule_severity-group"
-          class="col-6"
-          label="Rule Severity"
-          label-for="ruleEditor-rule_severity"
-          description=""
-        >
+        <b-form-group id="ruleEditor-rule_severity-group" class="col-6">
+          <label for="ruleEditor-rule_severity">
+            Rule Severity
+            <i v-if="tooltips['rule_severity']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['rule_severity']"></i>
+          </label>
           <b-form-select
             id="ruleEditor-rule_severity"
             :class="inputClass('rule_severity')"
@@ -118,13 +112,11 @@
         </b-form-group>
         
         <!-- rule_weight -->
-        <b-form-group
-          id="ruleEditor-rule_weight-group"
-          class="col-6"
-          label="Rule Weight"
-          label-for="ruleEditor-rule_weight"
-          description=""
-        >
+        <b-form-group id="ruleEditor-rule_weight-group" class="col-6">
+          <label for="ruleEditor-rule_weight">
+            Rule Weight
+            <i v-if="tooltips['rule_weight']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['rule_weight']"></i>
+          </label>
           <b-form-input
             id="ruleEditor-rule_weight"
             :class="inputClass('rule_weight')"
@@ -142,12 +134,11 @@
       </div>
 
       <!-- artifact_description -->
-      <b-form-group
-        id="ruleEditor-artifact_description-group"
-        label="Artifact Description"
-        label-for="ruleEditor-artifact_description"
-        description=""
-      >
+      <b-form-group id="ruleEditor-artifact_description-group">
+        <label for="ruleEditor-artifact_description">
+          Artifact Description
+          <i v-if="tooltips['artifact_description']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['artifact_description']"></i>
+        </label>
         <b-form-textarea
           id="ruleEditor-artifact_description"
           :class="inputClass('artifact_description')"
@@ -166,62 +157,55 @@
       </b-form-group>
 
       <div class="row">
-        <div class="col-6">
-          <!-- fix_id -->
-          <b-form-group
-            id="ruleEditor-fix_id-group"
-            label="Fix ID"
-            label-for="ruleEditor-fix_id"
-            description=""
-          >
-            <b-form-input
-              id="ruleEditor-fix_id"
-              :class="inputClass('fix_id')"
-              v-model="rule.fix_id"
-              placeholder=""
-              :disabled="disabled"
-            ></b-form-input>
-            <b-form-valid-feedback v-if="hasValidFeedback('fix_id')">
-              {{this.validFeedback['fix_id']}}
-            </b-form-valid-feedback>
-            <b-form-invalid-feedback v-if="hasInvalidFeedback('fix_id')">
-              {{this.invalidFeedback['fix_id']}}
-            </b-form-invalid-feedback>
-          </b-form-group>
-        </div>
+        <!-- fix_id -->
+        <b-form-group id="ruleEditor-fix_id-group" class="col-6">
+          <label for="ruleEditor-fix_id">
+            Fix ID
+            <i v-if="tooltips['fix_id']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['fix_id']"></i>
+          </label>
+          <b-form-input
+            id="ruleEditor-fix_id"
+            :class="inputClass('fix_id')"
+            v-model="rule.fix_id"
+            placeholder=""
+            :disabled="disabled"
+          ></b-form-input>
+          <b-form-valid-feedback v-if="hasValidFeedback('fix_id')">
+            {{this.validFeedback['fix_id']}}
+          </b-form-valid-feedback>
+          <b-form-invalid-feedback v-if="hasInvalidFeedback('fix_id')">
+            {{this.invalidFeedback['fix_id']}}
+          </b-form-invalid-feedback>
+        </b-form-group>
 
-        <div class="col-6">
-          <!-- fixtext_fixref -->
-          <b-form-group
-            id="ruleEditor-fixtext_fixref-group"
-            label="Fix Text Reference"
-            label-for="ruleEditor-fixtext_fixref"
-            description=""
-          >
-            <b-form-input
-              id="ruleEditor-fixtext_fixref"
-              :class="inputClass('fixtext_fixref')"
-              v-model="rule.fixtext_fixref"
-              placeholder=""
-              :disabled="disabled"
-            ></b-form-input>
-            <b-form-valid-feedback v-if="hasValidFeedback('fixtext_fixref')">
-              {{this.validFeedback['fixtext_fixref']}}
-            </b-form-valid-feedback>
-            <b-form-invalid-feedback v-if="hasInvalidFeedback('fixtext_fixref')">
-              {{this.invalidFeedback['fixtext_fixref']}}
-            </b-form-invalid-feedback>
-          </b-form-group>
-        </div>
+        <!-- fixtext_fixref -->
+        <b-form-group id="ruleEditor-fixtext_fixref-group" class="col-6">
+          <label for="ruleEditor-fixtext_fixref">
+            Fix Text Reference
+            <i v-if="tooltips['fixtext_fixref']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['fixtext_fixref']"></i>
+          </label>
+          <b-form-input
+            id="ruleEditor-fixtext_fixref"
+            :class="inputClass('fixtext_fixref')"
+            v-model="rule.fixtext_fixref"
+            placeholder=""
+            :disabled="disabled"
+          ></b-form-input>
+          <b-form-valid-feedback v-if="hasValidFeedback('fixtext_fixref')">
+            {{this.validFeedback['fixtext_fixref']}}
+          </b-form-valid-feedback>
+          <b-form-invalid-feedback v-if="hasInvalidFeedback('fixtext_fixref')">
+            {{this.invalidFeedback['fixtext_fixref']}}
+          </b-form-invalid-feedback>
+        </b-form-group>
       </div>
 
       <!-- fixtext -->
-      <b-form-group
-        id="ruleEditor-fixtext-group"
-        label="Fix Text"
-        label-for="ruleEditor-fixtext"
-        description=""
-      >
+      <b-form-group id="ruleEditor-fixtext-group">
+        <label for="ruleEditor-fixtext">
+          Fix Text
+          <i v-if="tooltips['fixtext']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['fixtext']"></i>
+        </label>
         <b-form-textarea
           id="ruleEditor-fixtext"
           :class="inputClass('fixtext')"
@@ -240,62 +224,55 @@
       </b-form-group>
 
       <div class="row">
-        <div class="col-4">
-          <!-- ident -->
-          <b-form-group
-            id="ruleEditor-ident-group"
-            label="Identity"
-            label-for="ruleEditor-ident"
-            description=""
-          >
-            <b-form-input
-              id="ruleEditor-ident"
-              :class="inputClass('ident')"
-              v-model="rule.ident"
-              placeholder=""
-              :disabled="disabled"
-            ></b-form-input>
-            <b-form-valid-feedback v-if="hasValidFeedback('ident')">
-              {{this.validFeedback['ident']}}
-            </b-form-valid-feedback>
-            <b-form-invalid-feedback v-if="hasInvalidFeedback('ident')">
-              {{this.invalidFeedback['ident']}}
-            </b-form-invalid-feedback>
-          </b-form-group>
-        </div>
+        <!-- ident -->
+        <b-form-group id="ruleEditor-ident-group" class="col-4">
+          <label for="ruleEditor-ident">
+            Identity
+            <i v-if="tooltips['ident']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['ident']"></i>
+          </label>
+          <b-form-input
+            id="ruleEditor-ident"
+            :class="inputClass('ident')"
+            v-model="rule.ident"
+            placeholder=""
+            :disabled="disabled"
+          ></b-form-input>
+          <b-form-valid-feedback v-if="hasValidFeedback('ident')">
+            {{this.validFeedback['ident']}}
+          </b-form-valid-feedback>
+          <b-form-invalid-feedback v-if="hasInvalidFeedback('ident')">
+            {{this.invalidFeedback['ident']}}
+          </b-form-invalid-feedback>
+        </b-form-group>
 
-        <div class="col-8">
-          <!-- ident_system -->
-          <b-form-group
-            id="ruleEditor-ident_system-group"
-            label="Identity System"
-            label-for="ruleEditor-ident_system"
-            description=""
-          >
-            <b-form-input
-              id="ruleEditor-ident_system"
-              :class="inputClass('ident_system')"
-              v-model="rule.ident_system"
-              placeholder=""
-              :disabled="disabled"
-            ></b-form-input>
-            <b-form-valid-feedback v-if="hasValidFeedback('ident_system')">
-              {{this.validFeedback['ident_system']}}
-            </b-form-valid-feedback>
-            <b-form-invalid-feedback v-if="hasInvalidFeedback('ident_system')">
-              {{this.invalidFeedback['ident_system']}}
-            </b-form-invalid-feedback>
-          </b-form-group>
-        </div>
+        <!-- ident_system -->
+        <b-form-group id="ruleEditor-ident_system-group" class="col-8">
+          <label for="ruleEditor-ident_system">
+            Identity System
+            <i v-if="tooltips['ident_system']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['ident_system']"></i>
+          </label>
+          <b-form-input
+            id="ruleEditor-ident_system"
+            :class="inputClass('ident_system')"
+            v-model="rule.ident_system"
+            placeholder=""
+            :disabled="disabled"
+          ></b-form-input>
+          <b-form-valid-feedback v-if="hasValidFeedback('ident_system')">
+            {{this.validFeedback['ident_system']}}
+          </b-form-valid-feedback>
+          <b-form-invalid-feedback v-if="hasInvalidFeedback('ident_system')">
+            {{this.invalidFeedback['ident_system']}}
+          </b-form-invalid-feedback>
+        </b-form-group>
       </div>
 
       <!-- vendor_comments -->
-      <b-form-group
-        id="ruleEditor-vendor_comments-group"
-        label="Vendor Comments"
-        label-for="ruleEditor-vendor_comments"
-        description=""
-      >
+      <b-form-group id="ruleEditor-vendor_comments-group">
+        <label for="ruleEditor-vendor_comments">
+          Vendor Comments
+          <i v-if="tooltips['vendor_comments']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['vendor_comments']"></i>
+        </label>
         <b-form-textarea
           id="ruleEditor-vendor_comments"
           :class="inputClass('vendor_comments')"
@@ -338,7 +315,25 @@ export default {
       type: Boolean,
       required: true,
     },
-    
+  },
+  data: function () {
+    return {
+      tooltips: {
+        status: null,
+        status_justification: null,
+        title: null,
+        version: null,
+        rule_severity: null,
+        rule_weight: null,
+        artifact_description: null,
+        fix_id: null,
+        fixtext_fixref: null,
+        fixtext: null,
+        ident: null,
+        ident_system: null,
+        vendor_comments: null,
+      }
+    }
   },
 }
 </script>

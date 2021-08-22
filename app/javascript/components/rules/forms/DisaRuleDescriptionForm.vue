@@ -2,17 +2,19 @@
   <div v-if="description._destroy != true" class="card p-3 mb-3">
     <p><strong>{{description.id == null ? 'New ' : ''}}Rule Description</strong></p>
     <!-- documentable -->
-    <b-form-group description="">
-      <b-form-checkbox v-model="description.documentable" :disabled="disabled">Documentable</b-form-checkbox>
+    <b-form-group>
+      <b-form-checkbox v-model="description.documentable" :disabled="disabled">
+        Documentable
+        <i v-if="tooltips['documentable']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['documentable']"></i>
+      </b-form-checkbox>
     </b-form-group>
 
     <!-- vuln_discussion -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-vuln_discussion-group-' + index"
-      label="Vulnerability Discussion"
-      :label-for="'ruleEditor-disa_rule_description-vuln_discussion-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-vuln_discussion-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-vuln_discussion-' + index">
+        Vulnerability Discussion
+        <i v-if="tooltips['vuln_discussion']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['vuln_discussion']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-vuln_discussion-' + index"
         :class="inputClass('vuln_discussion')"
@@ -31,12 +33,11 @@
     </b-form-group>
 
     <!-- false_positives -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-false_positives-group-' + index"
-      label="False Positives"
-      :label-for="'ruleEditor-disa_rule_description-false_positives-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-false_positives-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-false_positives-' + index">
+        False Positives
+        <i v-if="tooltips['false_positives']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['false_positives']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-false_positives-' + index"
         :class="inputClass('false_positives')"
@@ -55,12 +56,11 @@
     </b-form-group>
 
     <!-- false_negatives -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-false_negatives-group-' + index"
-      label="False Negatives"
-      :label-for="'ruleEditor-disa_rule_description-false_negatives-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-false_negatives-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-false_negatives-' + index">
+        False Negatives
+        <i v-if="tooltips['false_negatives']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['false_negatives']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-false_negatives-' + index"
         :class="inputClass('false_negatives')"
@@ -79,12 +79,11 @@
     </b-form-group>
 
     <!-- mitigations -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-mitigations-group-' + index"
-      label="Mitigations"
-      :label-for="'ruleEditor-disa_rule_description-mitigations-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-mitigations-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-mitigations-' + index">
+        Mitigations
+        <i v-if="tooltips['mitigations']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['mitigations']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-mitigations-' + index"
         :class="inputClass('mitigations')"
@@ -103,12 +102,11 @@
     </b-form-group>
 
     <!-- severity_override_guidance -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-severity_override_guidance-group-' + index"
-      label="Security Override Guidance"
-      :label-for="'ruleEditor-disa_rule_description-severity_override_guidance-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-severity_override_guidance-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-severity_override_guidance-' + index">
+        Security Override Guidance
+        <i v-if="tooltips['severity_override_guidance']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['severity_override_guidance']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-severity_override_guidance-' + index"
         :class="inputClass('severity_override_guidance')"
@@ -127,12 +125,11 @@
     </b-form-group>
     
     <!-- potential_impacts -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-potential_impacts-group-' + index"
-      label="Potential Impacts"
-      :label-for="'ruleEditor-disa_rule_description-potential_impacts-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-potential_impacts-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-potential_impacts-' + index">
+        Potential Impacts
+        <i v-if="tooltips['potential_impacts']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['potential_impacts']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-potential_impacts-' + index"
         :class="inputClass('potential_impacts')"
@@ -151,12 +148,11 @@
     </b-form-group>
 
     <!-- third_party_tools -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-third_party_tools-group-' + index"
-      label="Third Party Tools"
-      :label-for="'ruleEditor-disa_rule_description-third_party_tools-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-third_party_tools-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-third_party_tools-' + index">
+        Third Party Tools
+        <i v-if="tooltips['third_party_tools']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['third_party_tools']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-third_party_tools-' + index"
         :class="inputClass('third_party_tools')"
@@ -175,12 +171,11 @@
     </b-form-group>
 
     <!-- mitigation_control -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-mitigation_control-group-' + index"
-      label="Mitigation Control"
-      :label-for="'ruleEditor-disa_rule_description-mitigation_control-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-mitigation_control-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-mitigation_control-' + index">
+        Mitigation Control
+        <i v-if="tooltips['mitigation_control']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['mitigation_control']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-mitigation_control-' + index"
         :class="inputClass('mitigation_control')"
@@ -199,12 +194,11 @@
     </b-form-group>
 
     <!-- responsibility -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-responsibility-group-' + index"
-      label="Responsibility"
-      :label-for="'ruleEditor-disa_rule_description-responsibility-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-responsibility-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-responsibility-' + index">
+        Responsibility
+        <i v-if="tooltips['responsibility']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['responsibility']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-responsibility-' + index"
         :class="inputClass('responsibility')"
@@ -223,12 +217,11 @@
     </b-form-group>
 
     <!-- ia_controls -->
-    <b-form-group
-      :id="'ruleEditor-disa_rule_description-ia_controls-group-' + index"
-      label="IA Controls"
-      :label-for="'ruleEditor-disa_rule_description-ia_controls-' + index"
-      description=""
-    >
+    <b-form-group :id="'ruleEditor-disa_rule_description-ia_controls-group-' + index">
+      <label :for="'ruleEditor-disa_rule_description-ia_controls-' + index">
+        IA Controls
+        <i v-if="tooltips['ia_controls']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['ia_controls']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-disa_rule_description-ia_controls-' + index"
         :class="inputClass('ia_controls')"
@@ -271,6 +264,23 @@ export default {
       type: Number,
       required: false,
       default: Math.floor(Math.random() * 1000)
+    }
+  },
+  data: function () {
+    return {
+      tooltips: {
+        documentable: null,
+        vuln_discussion: null,
+        false_positives: null,
+        false_negatives: null,
+        mitigations: null,
+        severity_override_guidance: null,
+        potential_impacts: null,
+        third_party_tools: null,
+        mitigation_control: null,
+        responsibility: null,
+        ia_controls: null,
+      }
     }
   },
 }

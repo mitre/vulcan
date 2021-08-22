@@ -3,12 +3,11 @@
     <p><strong>{{check.id == null ? 'New ' : ''}}Check</strong></p>
 
     <!-- system -->
-    <b-form-group
-      :id="'ruleEditor-check-system-group-' + index"
-      label="System"
-      :label-for="'ruleEditor-check-system-' + index"
-      description=""
-    > 
+    <b-form-group :id="'ruleEditor-check-system-group-' + index"> 
+      <label :for="'ruleEditor-check-system-' + index">
+        System
+        <i v-if="tooltips['system']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['system']"></i>
+      </label>
       <b-form-input
         :id="'ruleEditor-check-system-' + index"
         :class="inputClass('system')"
@@ -25,12 +24,11 @@
     </b-form-group>
 
     <!-- content_ref_name -->
-    <b-form-group
-      :id="'ruleEditor-check-content_ref_name-group-' + index"
-      label="Reference Name"
-      :label-for="'ruleEditor-check-content_ref_name-' + index"
-      description=""
-    > 
+    <b-form-group :id="'ruleEditor-check-content_ref_name-group-' + index"> 
+      <label :for="'ruleEditor-check-content_ref_name-' + index">
+        Reference Name
+        <i v-if="tooltips['content_ref_name']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['content_ref_name']"></i>
+      </label>
       <b-form-input
         :id="'ruleEditor-check-content_ref_name-' + index"
         :class="inputClass('content_ref_name')"
@@ -47,12 +45,11 @@
     </b-form-group>
 
     <!-- content_ref_href -->
-    <b-form-group
-      :id="'ruleEditor-check-content_ref_href-group-' + index"
-      label="Reference Link"
-      :label-for="'ruleEditor-check-content_ref_href-' + index"
-      description=""
-    > 
+    <b-form-group :id="'ruleEditor-check-content_ref_href-group-' + index"> 
+      <label :for="'ruleEditor-check-content_ref_href-' + index">
+        Reference Link
+        <i v-if="tooltips['content_ref_href']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['content_ref_href']"></i>
+      </label>
       <b-form-input
         :id="'ruleEditor-check-content_ref_href-' + index"
         :class="inputClass('content_ref_href')"
@@ -69,12 +66,11 @@
     </b-form-group>
 
     <!-- content -->
-    <b-form-group
-      :id="'ruleEditor-check-content-group-' + index"
-      label="Check"
-      :label-for="'ruleEditor-check-content-' + index"
-      description=""
-    > 
+    <b-form-group :id="'ruleEditor-check-content-group-' + index">
+      <label :for="'ruleEditor-check-content-' + index">
+        Check
+        <i v-if="tooltips['content']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['content']"></i>
+      </label>
       <b-form-textarea
         :id="'ruleEditor-check-content-' + index"
         :class="inputClass('content')"
@@ -119,6 +115,16 @@ export default {
       required: false,
       default: Math.floor(Math.random() * 1000)
     },
+  },
+  data: function () {
+    return {
+      tooltips: {
+        system: null,
+        content_ref_name: null,
+        content_ref_href: null,
+        content: null,
+      }
+    }
   },
 }
 </script>

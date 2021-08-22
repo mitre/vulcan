@@ -4,12 +4,11 @@
       <p><strong>{{description.id == null ? 'New ' : ''}}Rule Description</strong></p>
 
       <!-- description -->
-      <b-form-group
-        :id="'ruleEditor-rule_description-group-' + index"
-        label="Rule Description"
-        :label-for="'ruleEditor-rule_description' + index"
-        description=""
-      >
+      <b-form-group :id="'ruleEditor-rule_description-group-' + index">
+        <label :label-for="'ruleEditor-rule_description' + index">
+          Rule Description
+          <i v-if="tooltips['rule_description']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['rule_description']"></i>
+        </label>
         <b-form-textarea
           :id="'ruleEditor-rule_description-' + index"
           :class="inputClass('description')"
@@ -54,6 +53,13 @@ export default {
       type: Number,
       required: false,
       default: Math.floor(Math.random() * 1000)
+    }
+  },
+  data: function () {
+    return {
+      tooltips: {
+        rule_description: null,
+      }
     }
   },
 }
