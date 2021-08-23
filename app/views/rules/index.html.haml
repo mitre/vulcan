@@ -6,4 +6,6 @@
   %Rules{                                                |
     'v-bind:project': @project.to_json,                  |
     'v-bind:rules': @rules.to_json,                      |
+    'v-bind:statuses': RuleConstants::STATUSES,          |
+    'v-bind:severities': RuleConstants::SEVERITIES       |
   }  

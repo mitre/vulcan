@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     resources :project_members, only: %i[index create update destroy]
     resources :rules, shallow: true do
       post 'manage_lock', on: :member
+      post 'revert', on: :member
       resources :comments, only: %i[create]
     end
   end
