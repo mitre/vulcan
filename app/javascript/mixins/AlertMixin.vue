@@ -28,7 +28,7 @@ export default {
       element.textContent = textContent;
       element.setAttribute('role', 'alert');
       document.getElementById('alerts')?.appendChild(element);
-      setTimeout(function() {element.remove()}, 5000);
+      setTimeout(function() { element.remove() }, 5000);
     }
   }
 }
