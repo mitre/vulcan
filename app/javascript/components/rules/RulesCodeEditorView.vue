@@ -7,7 +7,7 @@
     <template v-if="selectedRuleId != null">
       <div class="col-10">
         <RuleEditorHeader @ruleUpdated="(id) => $emit('ruleUpdated', id)" :rule="selectedRule" />
-        
+
         <hr/>
 
         <div class="row">
@@ -31,13 +31,19 @@
         <p class="text-center">No control currently selected. Select a control on the left to view or edit.</p>
       </div>
     </template>
-    
   </div>
 </template>
 
 <script>
+import RuleComments from './RuleComments.vue'
+import RuleEditorHeader from './RuleEditorHeader.vue'
+import RuleEditor from './RuleEditor.vue'
+import RuleNavigator from './RuleNavigator.vue'
+import RuleHistories from './RuleHistories.vue'
+
 export default {
   name: 'RulesCodeEditorView',
+  components: { RuleComments, RuleNavigator, RuleEditor, RuleEditorHeader, RuleHistories },
   props: {
     project: {
       type: Object,

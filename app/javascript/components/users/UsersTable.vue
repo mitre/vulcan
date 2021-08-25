@@ -16,7 +16,7 @@
     </div>
 
     <br/>
-    
+
     <!-- User table -->
     <b-table
       id="users-table"
@@ -31,7 +31,7 @@
         <br/>
         <small>{{data.item.email}}</small>
       </template>
-      
+
       <!-- Column template for Type -->
       <template #cell(provider)="data">
         {{ ldapColumn(data.item) }}
@@ -53,8 +53,8 @@
       <template #cell(actions)="data">
         <b-button class="float-right"
                   variant="danger"
-                  data-confirm="Are you sure you want to permanently remove this user?" 
-                  data-method="delete" 
+                  data-confirm="Are you sure you want to permanently remove this user?"
+                  data-method="delete"
                   :href="formAction(data.item)"
                   rel="nofollow">
           <i class="mdi mdi-trash-can" aria-hidden="true"></i>
@@ -74,8 +74,10 @@
 </template>
 
 <script>
+import FormMixinVue from '../../mixins/FormMixin.vue';
 export default {
   name: 'UsersTable',
+  mixins: [FormMixinVue],
   props: {
     users: {
       type: Array,
@@ -104,10 +106,6 @@ export default {
     // Used by b-pagination to know how many total rows there are
     rows: function() {
       return this.searchedUsers.length;
-    },
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
     },
     // Total number of users in the system
     userCount: function() {

@@ -1,7 +1,7 @@
 <template>
   <div class="mb-5">
     <b-breadcrumb :items="breadcrumbs"></b-breadcrumb>
-    
+
     <h1>{{project.name}} - Controls</h1>
 
     <RulesCodeEditorView @ruleUpdated="ruleUpdated" :project="project" :rules="reactiveRules" :statuses="statuses" :severities="severities" />
@@ -11,9 +11,13 @@
 <script>
 import axios from 'axios';
 import AlertMixinVue from '../../mixins/AlertMixin.vue';
+import RulesCodeEditorView from './RulesCodeEditorView.vue'
+import FormMixinVue from '../../mixins/FormMixin.vue';
+
 export default {
   name: 'Rules',
-  mixins: [AlertMixinVue],
+  mixins: [AlertMixinVue, FormMixinVue],
+  components: { RulesCodeEditorView },
   props: {
     project: {
       type: Object,
@@ -53,32 +57,26 @@ export default {
           active: true
         }
       ]
-    },
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
+    }
   },
   methods: {
     /**
      * Indicates to this component that a rule has updated and should be re-fetched.
-     * 
+     *
      * id: The rule ID
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
      */
     ruleUpdated: function(id, updated = 'all') {
-      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
-      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.get(`/rules/${id}`)
       .then((response) => this.ruleFetchSuccess(response, updated))
       .catch(this.alertOrNotifyResponse);
     },
     /**
      * Update data with a fetched rule.
-     * 
+     *
      * response: The response from the server
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
-     * 
+     *
      * Changing behavior based on `updated` is necessary because we do not want to wipe away control
      * changes just beause a user has commented.
      */

@@ -32,7 +32,7 @@
       </template>
 
       <!-- Column template for Role -->
-      <template #cell(role)="data">
+      <template #cell(role)="data" v-if="editable">
         <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
           <input type="hidden" name="_method" value="put" />
           <input type="hidden" name="authenticity_token" :value="authenticityToken" />
@@ -42,15 +42,19 @@
         </form>
       </template>
 
+      <template #cell(role)="data" v-else>
+        {{data.item.role}}
+      </template>
+
       <!-- Column template for Actions -->
-      <template #cell(actions)="data">
+      <template #cell(actions)="data" v-if="editable">
         <b-button class="projectMemberDeleteButton"
                   variant="danger"
                   data-confirm="Are you sure you want to remove this user from the project?"
                   data-method="delete"
                   :href="formAction(data.item)"
                   rel="nofollow">
-          <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+          <i class="mdi mdi-trash-can" aria-hidden="true" />
           Remove
         </b-button>
       </template>
@@ -67,8 +71,11 @@
 </template>
 
 <script>
+import FormMixinVue from '../../mixins/FormMixin.vue';
+
 export default {
   name: 'ProjectMembersTable',
+  mixins: [FormMixinVue],
   props: {
     project_members: {
       type: Array,
@@ -78,9 +85,13 @@ export default {
       type: Object,
       required: true
     },
+    editable: {
+      type: Boolean,
+      default: false
+    },
     available_roles: {
       type: Array,
-      required: true,
+      required: false,
     },
     project_members_count: {
       type: Number,
@@ -108,10 +119,6 @@ export default {
     // Used by b-pagination to know how many total rows there are
     rows: function() {
       return this.searchedProjectMembers.length;
-    },
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
     }
   },
   methods: {

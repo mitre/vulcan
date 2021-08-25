@@ -35,8 +35,11 @@
 </template>
 
 <script>
+import FormMixinVue from '../../mixins/FormMixin.vue';
+
 export default {
   name: 'NewProjectMember',
+  mixins: [FormMixinVue],
   props: {
     project: {
       type: Object,
@@ -60,9 +63,6 @@ export default {
   computed: {
     formAction: function () {
       return "/projects/" + this.project.id + "/project_members";
-    },
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
     }
   }
 }

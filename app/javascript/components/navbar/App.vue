@@ -33,8 +33,11 @@
 </template>
 
 <script>
+import NavbarItem from './NavbarItem.vue'
+
 export default {
   name: 'Navbar',
+  components: { NavbarItem },
   props: {
     navigation: {
       type: Array,
