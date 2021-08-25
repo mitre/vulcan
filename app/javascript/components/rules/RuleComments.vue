@@ -38,9 +38,11 @@
 import axios from 'axios';
 import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
 import AlertMixinVue from '../../mixins/AlertMixin.vue';
+import FormMixinVue from '../../mixins/FormMixin.vue';
+
 export default {
   name: 'ControlComments',
-  mixins: [DateFormatMixinVue, AlertMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     rule: {
       type: Object,
@@ -53,12 +55,6 @@ export default {
       showComments: false
     }
   },
-  computed: {
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
-  },
   methods: {
     commentFormSubmitted: function(event) {
       event.preventDefault();
@@ -67,8 +63,6 @@ export default {
         return;
       }
 
-      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
-      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.post(`/rules/${this.rule.id}/comments`, {
         body: this.newCommentBody.trim()
       })

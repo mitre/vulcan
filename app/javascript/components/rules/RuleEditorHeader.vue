@@ -34,9 +34,11 @@
 import axios from 'axios';
 import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
 import AlertMixinVue from '../../mixins/AlertMixin.vue';
+import FormMixinVue from '../../mixins/FormMixin.vue';
+
 export default {
   name: 'RuleEditorHeader',
-  mixins: [DateFormatMixinVue, AlertMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     rule: {
       type: Object,
@@ -44,10 +46,6 @@ export default {
     }
   },
   computed: {
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
     lastEditor: function() {
       const histories = this.rule.histories;
       if (histories.length > 0) {
@@ -58,8 +56,6 @@ export default {
   },
   methods: {
     manageLock: function(desiredLockState) {
-      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
-      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.post(`/rules/${this.rule.id}/manage_lock`, {
         locked: desiredLockState
       })
@@ -71,8 +67,6 @@ export default {
       this.$emit('ruleUpdated', this.rule.id, 'all');
     },
     saveRule() {
-      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
-      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.put(`/rules/${this.rule.id}`, this.rule)
       .then(this.saveRuleSuccess)
       .catch(this.alertOrNotifyResponse);

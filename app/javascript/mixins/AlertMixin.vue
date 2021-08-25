@@ -3,11 +3,11 @@
 // This mixin is for generating bootstrap alerts
 export default {
   methods: {
-    // Take in a `response` directly from an AJAX call and see if it 
+    // Take in a `response` directly from an AJAX call and see if it
     // contains data that we can make into either an alert or notice.
-    // 
-    // `response['data']['notice']` and `response['data']['alert']` are 
-    // valid for generating alers.
+    //
+    // `response['data']['notice']` and `response['data']['alert']` are
+    // valid for generating alerts.
     alertOrNotifyResponse: function(response) {
       let classes = 'alert alert-dismissable fade show ';
       let textContent = '';

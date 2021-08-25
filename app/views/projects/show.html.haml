@@ -1,0 +1,7 @@
+- content_for :assets do
+  = javascript_pack_tag 'project'
+
+#Project
+  %Project{                                           |
+    'v-bind:initial-project-state': @project.to_json, |
+  }

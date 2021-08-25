@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-button 
+    <b-button
       @click="showModal()"
       v-if="rule.locked == false && afterState && !isEmpty(afterState)"
       class="px-2 py-0"
@@ -14,7 +14,7 @@
         <!-- CURRENT STATE -->
         <div class='col-6'>
           <p class="h3">State Before Revert</p>
-          
+
           <template v-if="history.action == 'destroy'">
             <p>No Current State - Deleted</p>
           </template>
@@ -61,7 +61,7 @@
           <p class="h3">State After Revert</p>
 
           <p v-if="!afterState || isEmpty(afterState)">Could not determine resulting state.</p>
-          
+
           <RuleForm
             v-else-if="history.auditable_type == 'Rule'"
             :rule="afterState"
@@ -103,9 +103,10 @@
 import axios from 'axios';
 import AlertMixinVue from '../../mixins/AlertMixin.vue';
 import EmptyObjectMixinVue from '../../mixins/EmptyObjectMixin.vue';
+import FormMixinVue from '../../mixins/FormMixin.vue';
 export default {
   name: 'RuleRevertModal',
-  mixins: [AlertMixinVue, EmptyObjectMixinVue],
+  mixins: [AlertMixinVue, EmptyObjectMixinVue, FormMixinVue],
   props: {
     rule: {
       type: Object,
@@ -132,9 +133,6 @@ export default {
     modalId: function() {
       return `revert-modal-${this.history.id}-${this.audited_change["field"] || 'unknown'}`;
     },
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
     currentState: function() {
       let dependentRecord = {}
       if (this.history.auditable_type == 'Rule') {
@@ -153,7 +151,7 @@ export default {
       }
 
       delete curState._destroy
-      return curState;   
+      return curState;
     },
     afterState: function() {
       // Get `currentState` and duplicate for modification
@@ -201,8 +199,6 @@ export default {
         audit_id: this.history.id,
         field: this.audited_change ? this.audited_change.field : null
       };
-      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
-      axios.defaults.headers.common['Accept'] = 'application/json'
       axios.post(`/rules/${this.rule.id}/revert`, payload)
       .then(this.revertSuccess)
       .catch(this.alertOrNotifyResponse);

@@ -1,15 +1,11 @@
 import TurbolinksAdapter from 'vue-turbolinks'
 import Vue from 'vue'
-import {ButtonPlugin, DropdownPlugin, PaginationPlugin, TablePlugin, LinkPlugin} from 'bootstrap-vue'
+import BootstrapVue from 'bootstrap-vue'
 import Projects from '../components/projects/Projects.vue'
 import ProjectsTable from '../components/projects/ProjectsTable.vue'
 
 Vue.use(TurbolinksAdapter)
-Vue.use(ButtonPlugin)
-Vue.use(DropdownPlugin)
-Vue.use(PaginationPlugin)
-Vue.use(TablePlugin)
-Vue.use(LinkPlugin)
+Vue.use(BootstrapVue)
 
 Vue.component('Projects', Projects)
 Vue.component('ProjectsTable', ProjectsTable)
