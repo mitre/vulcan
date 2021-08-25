@@ -51,7 +51,7 @@ import AlertMixinVue from '../../mixins/AlertMixin.vue';
 
 function initialState(project) {
   return {
-    metadata: Object.entries(project.metadata).map(
+    metadata: Object.entries(project.metadata || {}).map(
         ([key, value]) => { return { key: key, value: value }; }
       )
   };
