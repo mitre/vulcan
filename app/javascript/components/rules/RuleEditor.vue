@@ -5,7 +5,7 @@
     </p>
     <b-form>
       <RuleForm
-        :rule="rule" 
+        :rule="rule"
         :statuses="statuses"
         :severities="severities"
         :disabled="rule.locked"
@@ -22,11 +22,11 @@
           <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showRuleDescriptions"></i>
         </div>
         <b-collapse v-model="showRuleDescriptions">
-          <RuleDescriptionForm 
-            :key="'rule_description_' + index" 
+          <RuleDescriptionForm
+            :key="'rule_description_' + index"
             v-for="(description, index) in rule.rule_descriptions_attributes"
             :description="description"
-            :disabled="rule.locked" 
+            :disabled="rule.locked"
             :index="index"
             @removeRuleDescription="(index) => removeRuleDescription(index)"
           />
@@ -48,7 +48,7 @@
             :key="'disa_rule_description_' + index"
             v-for="(description, index) in rule.disa_rule_descriptions_attributes"
             :description="description"
-            :disabled="rule.locked" 
+            :disabled="rule.locked"
             :index="index"
             @removeDisaRuleDescription="(index) => removeDisaRuleDescription(index)"
           />
@@ -71,7 +71,7 @@
             :key="'checks_' + index"
             v-for="(check, index) in rule.checks_attributes"
             :check="check"
-            :disabled="rule.locked" 
+            :disabled="rule.locked"
             :index="index"
             @removeCheck="(index) => removeCheck(index)"
           />
@@ -83,8 +83,11 @@
 </template>
 
 <script>
+import RuleForm from './forms/RuleForm.vue'
+
 export default {
   name: 'RuleEditor',
+  components: { RuleForm },
   props: {
     rule: {
       type: Object,

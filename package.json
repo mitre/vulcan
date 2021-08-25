@@ -13,6 +13,7 @@
     "moment": "^2.29.1",
     "turbolinks": "^5.2.0",
     "vue": "^2.6.11",
+    "vue-linkify": "^1.0.1",
     "vue-loader": "^15.9.2",
     "vue-template-compiler": "^2.6.11",
     "vue-turbolinks": "^2.1.0"
