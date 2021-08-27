@@ -20,7 +20,7 @@
           />
         </div>
       </div>
-      <div class="col-6 float-right">
+      <div v-if="editable && available_members && available_roles" class="col-6 float-right">
         <b-button v-b-modal.new-project-member variant="primary" size="large" class="float-right">
           New Member
         </b-button>
@@ -112,7 +112,6 @@ import NewProjectMember from "./NewProjectMember.vue";
 
 export default {
   name: "ProjectMembersTable",
-  components: { NewProjectMember },
   components: { NewProjectMember },
   mixins: [FormMixinVue],
   props: {
