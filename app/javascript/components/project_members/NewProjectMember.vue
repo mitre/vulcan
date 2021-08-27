@@ -1,5 +1,5 @@
 <template>
-  <div id="NewProjectMemberCard">
+  <div>
     <b-row>
       <b-col class="d-flex">
         <template v-if="!selectedUser">
@@ -28,8 +28,8 @@
             class="w-100 mb-0"
             @dismissed="setSelectedUser(null)"
           >
-            <b>{{ selectedUser.name }}</b>
-            {{ selectedUser.email }}
+            <p class="mb-0"><b>{{ selectedUser.name }}</b></p>
+            <p class="mb-0">{{ selectedUser.email }}</p>
           </b-alert>
         </template>
       </b-col>
@@ -39,16 +39,16 @@
       <b-row>
         <b-col>
           Choose a role
-          <hr id="RoleDivider" />
+          <hr class="mt-1" />
         </b-col>
       </b-row>
       <b-row v-for="(role, index) in available_roles" :key="role">
         <b-col>
           <!-- <b-form-radio :key="role" v-for="role in available_roles"  name="role" :value="role">{{ role }}</b-form-radio> -->
-          <div class="d-flex role-row">
+          <div class="d-flex mb-3">
             <span>
               <input
-                class="form-check-input role-input"
+                class="form-check-input role-input mt-0 ml-0 mr-3"
                 type="radio"
                 name="roles"
                 :value="role"
@@ -56,7 +56,7 @@
               />
             </span>
             <div>
-              <h5 class="d-flex flex-items-center role-label">{{ capitalizeRole(role) }}</h5>
+              <h5 class="d-flex flex-items-center mb-0 role-label">{{ capitalizeRole(role) }}</h5>
               <span
                 ><small class="muted role-description">{{ roleDescriptions[index] }}</small></span
               >
@@ -188,28 +188,6 @@ export default {
 
 .userSearchVueSimpleSuggest {
   flex: 1;
-}
-
-#RoleDivider {
-  margin-top: 0.25rem;
-}
-
-.role-row {
-  margin-bottom: 1rem;
-}
-
-.role-input {
-  margin-left: 0rem;
-  margin-right: 1rem;
-  margin-top: 0rem;
-  position: inherit;
-}
-
-.role-label {
-  margin-bottom: 0;
-  line-height: 1;
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .role-description {
