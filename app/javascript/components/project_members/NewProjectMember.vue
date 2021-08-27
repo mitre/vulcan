@@ -51,17 +51,18 @@
     <br />
     <b-row>
       <b-col>
-        <form :action="formAction()" method="post">
+        <form :action="formAction" method="post">
           <input type="hidden" id="NewProjectMemberAuthenticityToken" name="authenticity_token" :value="authenticityToken"/>
           <input type="hidden" id="NewProjectMemberEmail" name="project_member[user_id]" v-model="selectedUser"/>
           <input type="hidden" id="NewProjectMemberRole" name="project_member[role]" v-model="selectedRole"/>
-          <b-button block
-                    type="submit"
-                    variant="primary"
-                    :disabled="isSubmitDisabled"
-                    rel="nofollow"
+          <b-button 
+            block
+            type="submit"
+            variant="primary"
+            :disabled="isSubmitDisabled"
+            rel="nofollow"
           >
-                    Add User to Project
+            Add User to Project
           </b-button>
         </form>
       </b-col>
@@ -138,9 +139,6 @@ export default {
     },
     setSelectedUser: function() {
       this.selectedUser = this.$refs.userSearch.selected?.id
-    },
-    formAction: function() {
-      return `/projects/${this.project.id}/project_members`
     }
   }
 }
