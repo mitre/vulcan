@@ -17,11 +17,3 @@ import '../application'
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
-
-document.addEventListener('turbolinks:load', () => {
-  const alerts = document.querySelectorAll(".alert");
-  for (const alert of alerts) {
-    console.log(alert);
-    setTimeout(function() { alert.remove() }, 5000);
-  }
-})
