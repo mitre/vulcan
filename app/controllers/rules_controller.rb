@@ -4,9 +4,9 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update manage_lock]
-  before_action :set_project, only: %i[index show update manage_lock]
-  before_action :authorize_author_project, only: %i[index update show]
+  before_action :set_rule, only: %i[show update manage_lock revert]
+  before_action :set_project, only: %i[index show update manage_lock revert]
+  before_action :authorize_author_project, only: %i[index update show revert]
   before_action :authorize_review_project, only: %i[manage_lock]
 
   def index
@@ -23,6 +23,8 @@ class RulesController < ApplicationController
     else
       render json: { alert: "Could not update rule. #{@rule.errors.full_messages}" }
     end
+  rescue RuleLockedError => e
+    render json: { alert: e.message }
   end
 
   def manage_lock
@@ -34,14 +36,35 @@ class RulesController < ApplicationController
     render json: { notice: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} rule." }
   end
 
+  def revert
+    Rule.revert(@rule, params[:audit_id], params[:field])
+    render json: { notice: 'Successfully reverted history for rule.' }
+  rescue RuleRevertError => e
+    render json: { alert: e.message }
+  end
+
   private
 
   def rule_update_params
-    params.require(:rule).permit(:description)
+    params.require(:rule).permit(
+      :status, :status_justification, :artifact_description, :vendor_comments, :rule_severity,
+      :rule_weight, :version, :title, :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
+      checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
+      rule_descriptions_attributes: %i[id description _destroy],
+      disa_rule_descriptions_attributes: %i[
+        id vuln_discussion false_positives false_negatives documentable mitigations
+        severity_override_guidance potential_impacts third_party_tools mitigation_control
+        responsibility ia_controls _destroy
+      ]
+    )
   end
 
   def manage_lock_params
     params.require(:rule).permit(:locked)
+  end
+
+  def revert_params
+    params.permit(:audit_id, :field)
   end
 
   def set_rule
