@@ -13,6 +13,20 @@ class Project < ApplicationRecord
   scope :alphabetical, -> { order(:name) }
 
   ##
+  # Override `as_json` to include dependent records
+  #
+  def as_json(options = {})
+    super.merge(
+      {
+        histories: histories,
+        admins: users.where(project_members: { role: :admin }),
+        metadata: project_metadata&.data,
+        project_members: project_members.includes(:user).alphabetical
+      }
+    )
+  end
+
+  ##
   # Get a list of Users that are not yet members of this project
   #
   def available_members

@@ -63,6 +63,8 @@ jobs:
           bundle exec rails spec
       - name: Run Rubocop
         run: bundle exec rubocop
+      - name: Run eslint
+        run: yarn lint:ci
       - name: Upload coverage results
         uses: actions/upload-artifact@master
         if: always()

@@ -1,22 +1,32 @@
 <template>
   <div>
     <!-- Table information -->
-    <p><b>User Count:</b> <span>{{userCount}}</span></p>
+    <p>
+      <b>User Count:</b> <span>{{ userCount }}</span>
+    </p>
 
     <!-- User search -->
     <div class="row">
       <div class="col-6">
         <div class="input-group">
           <div class="input-group-prepend">
-            <div class="input-group-text"><i class="mdi mdi-magnify" aria-hidden="true"></i></div>
+            <div class="input-group-text">
+              <i class="mdi mdi-magnify" aria-hidden="true" />
+            </div>
           </div>
-          <input type="text" class="form-control" id="userSearch" placeholder="Search users by name or email..." v-model="search">
+          <input
+            id="userSearch"
+            v-model="search"
+            type="text"
+            class="form-control"
+            placeholder="Search users by name or email..."
+          />
         </div>
       </div>
     </div>
 
-    <br/>
-    
+    <br />
+
     <!-- User table -->
     <b-table
       id="users-table"
@@ -27,11 +37,11 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        {{data.item.name}}
-        <br/>
-        <small>{{data.item.email}}</small>
+        {{ data.item.name }}
+        <br />
+        <small>{{ data.item.email }}</small>
       </template>
-      
+
       <!-- Column template for Type -->
       <template #cell(provider)="data">
         {{ ldapColumn(data.item) }}
@@ -42,7 +52,12 @@
         <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
           <input type="hidden" name="_method" value="put" />
           <input type="hidden" name="authenticity_token" :value="authenticityToken" />
-          <select class="form-control" name="user[admin]" @change="adminStatusChanged($event, data.item)" v-model="data.item.admin">
+          <select
+            v-model="data.item.admin"
+            class="form-control"
+            name="user[admin]"
+            @change="adminStatusChanged($event, data.item)"
+          >
             <option value="false">user</option>
             <option value="true">admin</option>
           </select>
@@ -51,13 +66,15 @@
 
       <!-- Column template for Actions -->
       <template #cell(actions)="data">
-        <b-button class="float-right"
-                  variant="danger"
-                  data-confirm="Are you sure you want to permanently remove this user?" 
-                  data-method="delete" 
-                  :href="formAction(data.item)"
-                  rel="nofollow">
-          <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+        <b-button
+          class="float-right"
+          variant="danger"
+          data-confirm="Are you sure you want to permanently remove this user?"
+          data-method="delete"
+          :href="formAction(data.item)"
+          rel="nofollow"
+        >
+          <i class="mdi mdi-trash-can" aria-hidden="true" />
           Remove
         </b-button>
       </template>
@@ -69,18 +86,20 @@
       :total-rows="rows"
       :per-page="perPage"
       aria-controls="users-table"
-    ></b-pagination>
+    />
   </div>
 </template>
 
 <script>
+import FormMixinVue from "../../mixins/FormMixin.vue";
 export default {
-  name: 'UsersTable',
+  name: "UsersTable",
+  mixins: [FormMixinVue],
   props: {
     users: {
       type: Array,
       required: true,
-    }
+    },
   },
   data: function () {
     return {
@@ -88,52 +107,51 @@ export default {
       perPage: 10,
       currentPage: 1,
       fields: [
-        { key: 'name', label: 'User' },
-        { key: 'provider', label: 'Type' },
-        'role',
-        { key: 'actions', label: '' }
-      ]
-    }
+        { key: "name", label: "User" },
+        { key: "provider", label: "Type" },
+        "role",
+        { key: "actions", label: "" },
+      ],
+    };
   },
   computed: {
     // Search users based on name and email
     searchedUsers: function () {
-      let downcaseSearch = this.search.toLowerCase()
-      return this.users.filter(user => user.email.toLowerCase().includes(downcaseSearch) || user.name.toLowerCase().includes(downcaseSearch));
+      let downcaseSearch = this.search.toLowerCase();
+      return this.users.filter(
+        (user) =>
+          user.email.toLowerCase().includes(downcaseSearch) ||
+          user.name.toLowerCase().includes(downcaseSearch)
+      );
     },
     // Used by b-pagination to know how many total rows there are
-    rows: function() {
+    rows: function () {
       return this.searchedUsers.length;
     },
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
     // Total number of users in the system
-    userCount: function() {
+    userCount: function () {
       return this.users.length;
-    }
+    },
   },
   methods: {
     // Automatically submit the form when a user selects a form option
-    adminStatusChanged: function(event, user) {
+    adminStatusChanged: function (event, user) {
       document.getElementById(this.formId(user)).submit();
     },
     // The text that should appear in the 'Type' column
-    ldapColumn: function(user) {
-      return user.provider === null ? 'Local User' : 'LDAP User'
+    ldapColumn: function (user) {
+      return user.provider === null ? "Local User" : "LDAP User";
     },
     // Generator for a unique form id for the user role dropdown
-    formId: function(user) {
+    formId: function (user) {
       return "User-" + user.id;
     },
     // Path to POST/DELETE to when updating/deleting a user
-    formAction: function(user) {
+    formAction: function (user) {
       return "/users/" + user.id;
     },
-  }
-}
+  },
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

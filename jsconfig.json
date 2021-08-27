@@ -1,0 +1,6 @@
+{
+  "include": [
+    "./app/javascript/**/*"
+  ],
+  "exclude": ["node_modules"]
+}

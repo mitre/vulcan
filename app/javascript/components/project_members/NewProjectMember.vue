@@ -70,19 +70,21 @@
 </template>
 
 <script>
+import FormMixinVue from "../../mixins/FormMixin.vue";
 import VueSimpleSuggest from 'vue-simple-suggest';
 import 'vue-simple-suggest/dist/styles.css';
 import capitalize from 'lodash/capitalize';
 
 export default {
-  name: 'NewProjectMember',
+  name: "NewProjectMember",
   components: {
     VueSimpleSuggest
   },
+  mixins: [FormMixinVue],
   props: {
     project: {
       type: Object,
-      required: true
+      required: true,
     },
     available_members: {
       type: Array,
@@ -91,7 +93,7 @@ export default {
     available_roles: {
       type: Array,
       required: true,
-    }
+    },
   },
   data: function () {
     return {
@@ -113,11 +115,11 @@ export default {
     }
   },
   computed: {
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
     isSubmitDisabled: function() {
       return !((this.selectedUser !== null) && (this.selectedRole !== null))
+    },
+    formAction: function () {
+      return "/projects/" + this.project.id + "/project_members";
     }
   },
   methods: {

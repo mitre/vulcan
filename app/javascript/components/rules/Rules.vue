@@ -1,19 +1,29 @@
 <template>
-  <div>
-    <b-breadcrumb :items="breadcrumbs"></b-breadcrumb>
-    
-    <h1>{{project.name}} - Controls</h1>
+  <div class="mb-5">
+    <b-breadcrumb :items="breadcrumbs" />
 
-    <RulesCodeEditorView @ruleUpdated="ruleUpdated" :project="project" :rules="reactiveRules" />
+    <h1>{{ project.name }} - Controls</h1>
+
+    <RulesCodeEditorView
+      :project="project"
+      :rules="reactiveRules"
+      :statuses="statuses"
+      :severities="severities"
+      @ruleUpdated="ruleUpdated"
+    />
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-import AlertMixinVue from '../../mixins/AlertMixin.vue';
+import axios from "axios";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import RulesCodeEditorView from "./RulesCodeEditorView.vue";
+import FormMixinVue from "../../mixins/FormMixin.vue";
+
 export default {
-  name: 'Rules',
-  mixins: [AlertMixinVue],
+  name: "Rules",
+  components: { RulesCodeEditorView },
+  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     project: {
       type: Object,
@@ -22,50 +32,74 @@ export default {
     rules: {
       type: Array,
       required: true,
-    }
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
+      type: Array,
+      required: true,
+    },
   },
   data: function () {
     return {
-      reactiveRules: this.rules
-    }
+      reactiveRules: this.rules,
+    };
   },
   computed: {
-    breadcrumbs: function() {
+    breadcrumbs: function () {
       return [
         {
-          text: 'Projects',
-          href: '/projects'
+          text: "Projects",
+          href: "/projects",
         },
         {
           text: this.project.name,
-          href: '/projects/' + this.project.id
+          href: "/projects/" + this.project.id,
         },
         {
-          text: 'Controls',
-          active: true
-        }
-      ]
-    },
-    // Authenticity Token for forms
-    authenticityToken: function() {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
+          text: "Controls",
+          active: true,
+        },
+      ];
     },
   },
   methods: {
-    ruleUpdated: function(id) {
-      axios.defaults.headers.common['X-CSRF-Token'] = this.authenticityToken;
-      axios.defaults.headers.common['Accept'] = 'application/json'
-      axios.get(`/rules/${id}`)
-      .then(this.ruleFetchSuccess)
-      .catch(this.alertOrNotifyResponse);
+    /**
+     * Indicates to this component that a rule has updated and should be re-fetched.
+     *
+     * id: The rule ID
+     * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
+     */
+    ruleUpdated: function (id, updated = "all") {
+      axios
+        .get(`/rules/${id}`)
+        .then((response) => this.ruleFetchSuccess(response, updated))
+        .catch(this.alertOrNotifyResponse);
     },
-    ruleFetchSuccess: function(response) {
-      const ruleIndex = this.reactiveRules.findIndex((rule) => { return rule.id == response.data.id });
-      this.reactiveRules.splice(ruleIndex, 1, response.data)
+    /**
+     * Update data with a fetched rule.
+     *
+     * response: The response from the server
+     * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
+     *
+     * Changing behavior based on `updated` is necessary because we do not want to wipe away control
+     * changes just beause a user has commented.
+     */
+    ruleFetchSuccess: function (response, updated) {
+      const ruleIndex = this.reactiveRules.findIndex((rule) => {
+        return rule.id == response.data.id;
+      });
+
+      if (updated == "all") {
+        this.reactiveRules.splice(ruleIndex, 1, response.data);
+      } else if (updated == "comments") {
+        this.reactiveRules[ruleIndex].comments.push(...response.data.comments);
+      }
     },
   },
-}
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

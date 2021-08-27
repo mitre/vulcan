@@ -2,7 +2,7 @@
 
 # Raised when a Rule cannot be successfully rolled back to a previous state
 class RuleRevertError < StandardError
-  def initialize(id, field)
-    super "Cannot rollback the #{field} field for Control #{id}"
+  def initialize(message = 'Could not revert history for rule.')
+    super message
   end
 end

@@ -1,19 +1,15 @@
-import TurbolinksAdapter from 'vue-turbolinks'
-import Vue from 'vue'
-import {ButtonPlugin, PaginationPlugin, TablePlugin} from 'bootstrap-vue'
-import Users from '../components/users/Users.vue'
-import UsersTable from '../components/users/UsersTable.vue'
+import TurbolinksAdapter from "vue-turbolinks";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import Users from "../components/users/Users.vue";
 
-Vue.use(TurbolinksAdapter)
-Vue.use(ButtonPlugin)
-Vue.use(PaginationPlugin)
-Vue.use(TablePlugin)
+Vue.use(TurbolinksAdapter);
+Vue.use(BootstrapVue);
 
-Vue.component('users', Users)
-Vue.component('UsersTable', UsersTable)
+Vue.component("Users", Users);
 
-document.addEventListener('turbolinks:load', () => {
-    new Vue({
-        el: '#users',
-    })
-})
+document.addEventListener("turbolinks:load", () => {
+  new Vue({
+    el: "#users",
+  });
+});
