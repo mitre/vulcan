@@ -18,7 +18,7 @@ RSpec.describe 'Local Login', type: :feature do
         .not_to change(user1, :sign_in_count)
 
       expect(page)
-        .to have_selector('.alert-danger', text: 'Invalid Email or password.')
+        .to have_selector('.b-toast-danger', text: 'Invalid Email or password.')
 
       # Expect the Local Login tab to be active on page reload
       expect(page.find('a', text: 'Local Login')[:class]).to include('active')

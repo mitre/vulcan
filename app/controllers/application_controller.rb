@@ -27,10 +27,10 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform administrator actions on this project')
   end
 
-  def authorize_edit_project
-    return if current_user&.can_edit_project?(@project)
+  def authorize_author_project
+    return if current_user&.can_author_project?(@project)
 
-    raise(NotAuthorizedError, 'You are not authorized to perform editor actions on this project')
+    raise(NotAuthorizedError, 'You are not authorized to perform author actions on this project')
   end
 
   def authorize_review_project
