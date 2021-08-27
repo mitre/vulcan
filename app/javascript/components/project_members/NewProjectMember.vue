@@ -2,7 +2,7 @@
   <div id="NewProjectMemberCard">
     <b-row>
       <b-col class="d-flex">
-        <div v-if="!selectedUser">
+        <template v-if="!selectedUser">
           <b-input-group>
             <b-input-group-prepend>
               <b-input-group-text><i class="mdi mdi-magnify" aria-hidden="true"></i></b-input-group-text>
@@ -13,15 +13,21 @@
               :filter-by-query="true"
               display-attribute="email"
               placeholder="Search for a user by email..."
-              @select="setSelectedUser"
+              @select="setSelectedUser($refs.userSearch.selected)"
               ref="userSearch"
             />
           </b-input-group>
-        </div>
-        <div v-else>
-          <b-alert show variant="info" dismissible>
+        </template>
+        <template v-else>
+          <b-alert show
+                   variant="info"
+                   dismissible
+                   class="w-100 mb-0"
+                   @dismissed="setSelectedUser(null)">
+            <b>{{ selectedUser.name }}</b>
+            {{ selectedUser.email }}
           </b-alert>
-        </div>
+        </template>
       </b-col>
     </b-row>
     <div v-if="selectedUser">
@@ -57,8 +63,8 @@
       <b-col>
         <form :action="formAction()" method="post">
           <input type="hidden" id="NewProjectMemberAuthenticityToken" name="authenticity_token" :value="authenticityToken"/>
-          <input type="hidden" id="NewProjectMemberEmail" name="project_member[user_id]" v-model="selectedUser"/>
-          <input type="hidden" id="NewProjectMemberRole" name="project_member[role]" v-model="selectedRole"/>
+          <input type="hidden" id="NewProjectMemberEmail" name="project_member[user_id]" :value="selectedUserId"/>
+          <input type="hidden" id="NewProjectMemberRole" name="project_member[role]" :value="selectedRole"/>
           <b-button block
                     type="submit"
                     variant="primary"
@@ -119,6 +125,9 @@ export default {
     },
     isSubmitDisabled: function() {
       return !((this.selectedUser !== null) && (this.selectedRole !== null))
+    },
+    selectedUserId: function() {
+      return this.selectedUser?.id
     }
   },
   methods: {
@@ -128,8 +137,9 @@ export default {
     setSelectedRole: function(role) {
       this.selectedRole = role;
     },
-    setSelectedUser: function() {
-      this.selectedUser = this.$refs.userSearch.selected.id
+    setSelectedUser: function(user) {
+      this.selectedUser = user
+      this.search = ""
     },
     formAction: function() {
       return `/projects/${this.project.id}/project_members`
