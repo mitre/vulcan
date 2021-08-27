@@ -104,8 +104,14 @@ import axios from 'axios';
 import AlertMixinVue from '../../mixins/AlertMixin.vue';
 import EmptyObjectMixinVue from '../../mixins/EmptyObjectMixin.vue';
 import FormMixinVue from '../../mixins/FormMixin.vue';
+import RuleForm from './forms/RuleForm';
+import RuleDescriptionForm from './forms/RuleDescriptionForm';
+import DisaRuleDescriptionForm from './forms/DisaRuleDescriptionForm';
+import CheckForm from './forms/CheckForm';
+
 export default {
   name: 'RuleRevertModal',
+  components: { RuleForm, RuleDescriptionForm, DisaRuleDescriptionForm, CheckForm },
   mixins: [AlertMixinVue, EmptyObjectMixinVue, FormMixinVue],
   props: {
     rule: {

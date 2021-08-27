@@ -5,6 +5,7 @@ module.exports = {
   },
   extends: ["plugin:vue/recommended", 'plugin:prettier/recommended', 'prettier' ],
   rules: {
+    'max-len': [2, {"code": 120}],
     'no-console': 'warn',
     'no-return-await': 'warn',
     'no-throw-literal': 'warn',
