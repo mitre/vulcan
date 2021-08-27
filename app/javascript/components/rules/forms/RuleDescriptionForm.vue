@@ -1,34 +1,46 @@
 <template>
   <div>
     <div v-if="description._destroy != true" class="card p-3 mb-3">
-      <p><strong>{{description.id == null ? 'New ' : ''}}Rule Description</strong></p>
+      <p>
+        <strong>{{ description.id == null ? "New " : "" }}Rule Description</strong>
+      </p>
 
       <!-- description -->
-      <b-form-group :id="'ruleEditor-rule_description-group-' + index">
-        <label :label-for="'ruleEditor-rule_description' + index">
+      <b-form-group :id="`ruleEditor-rule_description-group-${mod}`">
+        <label :for="`ruleEditor-rule_description-${mod}`">
           Rule Description
-          <i v-if="tooltips['rule_description']" class="mdi mdi-information" aria-hidden="true" v-b-tooltip.hover.html :title="tooltips['rule_description']"></i>
+          <i
+            v-if="tooltips['rule_description']"
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            :title="tooltips['rule_description']"
+          />
         </label>
         <b-form-textarea
-          :id="'ruleEditor-rule_description-' + index"
-          :class="inputClass('description')"
+          :id="`ruleEditor-rule_description-${mod}`"
           v-model="description.description"
+          :class="inputClass('description')"
           placeholder=""
           :disabled="disabled"
           rows="1"
           max-rows="99"
-        ></b-form-textarea>
+        />
         <b-form-valid-feedback v-if="hasValidFeedback('description')">
-          {{this.validFeedback['description']}}
+          {{ validFeedback["description"] }}
         </b-form-valid-feedback>
         <b-form-invalid-feedback v-if="hasInvalidFeedback('description')">
-          {{this.invalidFeedback['description']}}
+          {{ invalidFeedback["description"] }}
         </b-form-invalid-feedback>
       </b-form-group>
 
       <!-- Remove link -->
-      <a @click="$emit('removeRuleDescription', index)" class="clickable text-dark" v-if="!disabled">
-        <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+      <a
+        v-if="!disabled"
+        class="clickable text-dark"
+        @click="$emit('removeRuleDescription')"
+      >
+        <i class="mdi mdi-trash-can" aria-hidden="true" />
         Remove Rule Description
       </a>
     </div>
@@ -36,9 +48,9 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from '../../../mixins/FormFeedbackMixin.vue';
+import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
 export default {
-  name: 'RuleDescriptionForm',
+  name: "RuleDescriptionForm",
   mixins: [FormFeedbackMixinVue],
   props: {
     description: {
@@ -49,21 +61,16 @@ export default {
       type: Boolean,
       required: true,
     },
-    index: {
-      type: Number,
-      required: false,
-      default: Math.floor(Math.random() * 1000)
-    }
   },
   data: function () {
     return {
+      mod: Math.floor(Math.random() * 1000),
       tooltips: {
         rule_description: null,
-      }
-    }
+      },
+    };
   },
-}
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

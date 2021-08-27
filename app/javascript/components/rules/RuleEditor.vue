@@ -1,7 +1,8 @@
 <template>
   <div>
-    <p class="text-danger" v-if="rule.locked">
-      This control is locked and must first be unlocked if changes or deletion are required.
+    <p v-if="rule.locked" class="text-danger">
+      This control is locked and must first be unlocked if changes or deletion
+      are required.
     </p>
     <b-form>
       <RuleForm
@@ -27,8 +28,7 @@
             v-for="(description, index) in rule.rule_descriptions_attributes"
             :description="description"
             :disabled="rule.locked"
-            :index="index"
-            @removeRuleDescription="(index) => removeRuleDescription(index)"
+            @removeRuleDescription="() => removeRuleDescription(index)"
           />
           <b-button class="mb-2" @click="addRuleDescription" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add Description</b-button>
         </b-collapse>
@@ -36,21 +36,31 @@
 
       <!-- disa_rule_description -->
       <template v-if="rule.status == 'Applicable - Configurable'">
-        <div @click="showDisaRuleDescriptions = !showDisaRuleDescriptions" class="clickable mb-2">
+        <div
+          class="clickable mb-2"
+          @click="showDisaRuleDescriptions = !showDisaRuleDescriptions"
+        >
           <h2 class="m-0 d-inline-block">Rule Description</h2>
           <!-- <b-badge pill class="superVerticalAlign">{{rule.disa_rule_descriptions_attributes.length}}</b-badge> -->
 
-          <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showDisaRuleDescriptions"></i>
-          <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showDisaRuleDescriptions"></i>
+          <i
+            v-if="showDisaRuleDescriptions"
+            class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+          />
+          <i
+            v-if="!showDisaRuleDescriptions"
+            class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+          />
         </div>
         <b-collapse v-model="showDisaRuleDescriptions">
           <DisaRuleDescriptionForm
+            v-for="(
+              description, index
+            ) in rule.disa_rule_descriptions_attributes"
             :key="'disa_rule_description_' + index"
-            v-for="(description, index) in rule.disa_rule_descriptions_attributes"
             :description="description"
             :disabled="rule.locked"
-            :index="index"
-            @removeDisaRuleDescription="(index) => removeDisaRuleDescription(index)"
+            @removeDisaRuleDescription="() => removeDisaRuleDescription(index)"
           />
           <!-- This is commented out because there is currently the assumption that users will only need one description -->
           <!-- <b-button class="mb-2" @click="addDisaRuleDescription" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
@@ -59,23 +69,33 @@
 
       <!-- checks -->
       <template v-if="rule.status == 'Applicable - Configurable'">
-        <div @click="showChecks = !showChecks" class="clickable mb-2">
+        <div class="clickable mb-2" @click="showChecks = !showChecks">
           <h2 class="m-0 d-inline-block">Checks</h2>
-          <b-badge pill class="superVerticalAlign">{{rule.checks_attributes.length}}</b-badge>
+          <b-badge pill class="superVerticalAlign">{{
+            rule.checks_attributes.length
+          }}</b-badge>
 
-          <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showChecks"></i>
-          <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showChecks"></i>
+          <i
+            v-if="showChecks"
+            class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+          />
+          <i
+            v-if="!showChecks"
+            class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+          />
         </div>
         <b-collapse v-model="showChecks">
           <CheckForm
-            :key="'checks_' + index"
             v-for="(check, index) in rule.checks_attributes"
+            :key="'checks_' + index"
             :check="check"
             :disabled="rule.locked"
             :index="index"
-            @removeCheck="(index) => removeCheck(index)"
+            @removeCheck="() => removeCheck(index)"
           />
-          <b-button class="mb-2" @click="addCheck" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add Check</b-button>
+          <b-button v-if="rule.locked == false" class="mb-2" @click="addCheck"
+            ><i class="mdi mdi-plus" />Add Check</b-button
+          >
         </b-collapse>
       </template>
     </b-form>
@@ -83,11 +103,14 @@
 </template>
 
 <script>
-import RuleForm from './forms/RuleForm.vue'
+import RuleForm from "./forms/RuleForm.vue";
+import CheckForm from "./forms/CheckForm.vue";
+import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm.vue";
+// import RuleDescriptionForm from "./forms/RuleDescriptionForm.vue";
 
 export default {
-  name: 'RuleEditor',
-  components: { RuleForm },
+  name: "RuleEditor",
+  components: { RuleForm, CheckForm, DisaRuleDescriptionForm },
   props: {
     rule: {
       type: Object,
@@ -100,37 +123,51 @@ export default {
     severities: {
       type: Array,
       required: true,
-    }
+    },
   },
-  data: function() {
+  data: function () {
     return {
       showChecks: false,
       showDisaRuleDescriptions: false,
-      showRuleDescriptions: false
-    }
+      showRuleDescriptions: false,
+    };
   },
   methods: {
-    addRuleDescription: function() {
-      this.rule.rule_descriptions_attributes.push({ description: '', rule_id: this.rule.id, _destroy: false });
+    addRuleDescription: function () {
+      this.rule.rule_descriptions_attributes.push({
+        description: "",
+        rule_id: this.rule.id,
+        _destroy: false,
+      });
     },
-    removeRuleDescription: function(index) {
-      this.rule.rule_descriptions_attributes[index]._destroy = true
+    removeRuleDescription: function (index) {
+      this.rule.rule_descriptions_attributes[index]._destroy = true;
     },
-    addCheck: function() {
-      this.rule.checks_attributes.push({ system: '', content_ref_name: '', content_ref_href: '', content: '', rule_id: this.rule.id, _destroy: false });
+    addCheck: function () {
+      this.rule.checks_attributes.push({
+        system: "",
+        content_ref_name: "",
+        content_ref_href: "",
+        content: "",
+        rule_id: this.rule.id,
+        _destroy: false,
+      });
     },
-    removeCheck: function(index) {
-      this.rule.checks_attributes[index]._destroy = true
+    removeCheck: function (index) {
+      this.rule.checks_attributes[index]._destroy = true;
     },
-    addDisaRuleDescription: function() {
-      this.rule.disa_rule_descriptions_attributes.push({ description: '', rule_id: this.rule.id, _destroy: false });
+    addDisaRuleDescription: function () {
+      this.rule.disa_rule_descriptions_attributes.push({
+        description: "",
+        rule_id: this.rule.id,
+        _destroy: false,
+      });
     },
-    removeDisaRuleDescription: function(index) {
-      this.rule.disa_rule_descriptions_attributes[index]._destroy = true
+    removeDisaRuleDescription: function (index) {
+      this.rule.disa_rule_descriptions_attributes[index]._destroy = true;
     },
-  }
-}
+  },
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
