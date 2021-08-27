@@ -28,7 +28,9 @@
             class="w-100 mb-0"
             @dismissed="setSelectedUser(null)"
           >
-            <p class="mb-0"><b>{{ selectedUser.name }}</b></p>
+            <p class="mb-0">
+              <b>{{ selectedUser.name }}</b>
+            </p>
             <p class="mb-0">{{ selectedUser.email }}</p>
           </b-alert>
         </template>
