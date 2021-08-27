@@ -10,6 +10,7 @@
     = javascript_pack_tag 'navbar'
     / If using inline styles in the vue pack, loading the stylesheet_pack_tag as well becomes necessary
     = stylesheet_pack_tag 'navbar'
+    = javascript_pack_tag 'toaster'
 
     = yield :assets
   %body
@@ -20,11 +21,11 @@
         'v-bind:users_path': current_user&.admin ? users_path.to_json : nil, |
         'v-bind:profile_path': edit_user_registration_path.to_json,          |
         'v-bind:sign_out_path': destroy_user_session_path.to_json            |
-      }                                                                      |
-    .pt-3.mx-3
-      - if notice
-        %p.alert.alert-success.alert-dismissable= notice
-      - if alert
-        %p.alert.alert-danger.alert-dismissable= alert
+      }
+    #Toaster
+      %toaster{                          |
+        'v-bind:notice': notice.to_json, |
+        'v-bind:alert': alert.to_json    |
+      }
     .pt-2.container-fluid{"data-behavior" => "vue"}
       = yield
