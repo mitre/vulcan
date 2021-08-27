@@ -105,10 +105,12 @@
 
 <script>
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import NewProjectMember from "./NewProjectMember.vue";
 
 export default {
   name: "ProjectMembersTable",
   mixins: [FormMixinVue],
+  components: {NewProjectMember},
   props: {
     project_members: {
       type: Array,

@@ -1,16 +1,12 @@
 <template>
   <div>
     <h1>{{ project.name }} - Manage Project Members</h1>
-    <NewProjectMember
-      :project="project"
-      :available_members="available_members"
-      :available_roles="available_roles"
-    />
     <ProjectMembersTable
       :editable="true"
       :project="project"
       :project_members="project_members"
       :available_roles="available_roles"
+      :available_members="available_members"
       :project_members_count="project_members_count"
     />
   </div>
