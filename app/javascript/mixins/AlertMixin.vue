@@ -1,6 +1,6 @@
 
 <script>
-// This mixin is for generating bootstrap alerts
+// This mixin is for generating bootstrap toasts
 export default {
   methods: {
     // Take in a `response` directly from an AJAX call and see if it
@@ -9,26 +9,23 @@ export default {
     // `response['data']['notice']` and `response['data']['alert']` are
     // valid for generating alerts.
     alertOrNotifyResponse: function(response) {
-      let classes = 'alert alert-dismissable fade show ';
-      let textContent = '';
       if (response['data'] && response['data']['notice']) {
-        classes += ' alert-success';
-        textContent = response['data']['notice'];
+        this.$bvToast.toast(response['data']['notice'], {
+          title: `Success`,
+          variant: 'success',
+          solid: true
+        })
       }
       else if (response['data'] && response['data']['alert']) {
-        classes += 'alert-danger';
-        textContent = response['data']['alert'];
+        this.$bvToast.toast(response['data']['alert'], {
+          title: `Error`,
+          variant: 'danger',
+          solid: true
+        })
       } else {
         // The response did not contain data we can use for an alert or notice.
         return;
       }
-
-      let element = document.createElement('p');
-      element.className = classes;
-      element.textContent = textContent;
-      element.setAttribute('role', 'alert');
-      document.getElementById('alerts')?.appendChild(element);
-      setTimeout(function() { element.remove() }, 5000);
     }
   }
 }
