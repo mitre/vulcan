@@ -116,9 +116,7 @@ export default {
     // Search projects based on name
     searchedProjects: function () {
       let downcaseSearch = this.search.toLowerCase();
-      return this.projects.filter((project) =>
-        project.name.toLowerCase().includes(downcaseSearch)
-      );
+      return this.projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
     },
     // Used by b-pagination to know how many total rows there are
     rows: function () {

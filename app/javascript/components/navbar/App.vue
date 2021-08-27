@@ -12,11 +12,7 @@
         <div class="d-flex w-100 justify-content-lg-center text-lg-center">
           <b-navbar-nav>
             <div v-for="item in navigation" :key="item.name">
-              <NavbarItem
-                :icon="item.icon"
-                :link="item.link"
-                :name="item.name"
-              />
+              <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
             </div>
           </b-navbar-nav>
         </div>
@@ -27,9 +23,7 @@
               <i class="mdi mdi-account-circle" aria-hidden="true" />
             </template>
             <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
-            <b-dropdown-item v-if="users_path" :href="users_path"
-              >Manage Users</b-dropdown-item
-            >
+            <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
             <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
           </b-nav-item-dropdown>
         </b-navbar-nav>

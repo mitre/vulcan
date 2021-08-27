@@ -115,11 +115,7 @@
     </b-form-group>
 
     <!-- Remove link -->
-    <a
-      v-if="!disabled"
-      class="clickable text-dark"
-      @click="$emit('removeCheck')"
-    >
+    <a v-if="!disabled" class="clickable text-dark" @click="$emit('removeCheck')">
       <i class="mdi mdi-trash-can" aria-hidden="true" />
       Remove Check
     </a>

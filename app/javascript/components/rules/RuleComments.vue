@@ -3,18 +3,10 @@
     <!-- Collapsable header -->
     <div class="clickable" @click="showComments = !showComments">
       <h2 class="m-0 d-inline-block">Comments</h2>
-      <b-badge pill class="superVerticalAlign">{{
-        rule.comments.length
-      }}</b-badge>
+      <b-badge pill class="superVerticalAlign">{{ rule.comments.length }}</b-badge>
 
-      <i
-        v-if="showComments"
-        class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-      />
-      <i
-        v-if="!showComments"
-        class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-      />
+      <i v-if="showComments" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
+      <i v-if="!showComments" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
     </div>
 
     <b-collapse id="collapse-comments" v-model="showComments">

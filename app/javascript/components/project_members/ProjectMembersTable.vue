@@ -41,27 +41,16 @@
 
       <!-- Column template for Role -->
       <template v-if="editable" #cell(role)="data">
-        <form
-          :id="formId(data.item)"
-          :action="formAction(data.item)"
-          method="post"
-        >
+        <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
           <input type="hidden" name="_method" value="put" />
-          <input
-            type="hidden"
-            name="authenticity_token"
-            :value="authenticityToken"
-          />
+          <input type="hidden" name="authenticity_token" :value="authenticityToken" />
           <select
             v-model="data.item.role"
             class="form-control"
             name="project_member[role]"
             @change="roleChanged($event, data.item)"
           >
-            <option
-              v-for="available_role in available_roles"
-              :key="available_role"
-            >
+            <option v-for="available_role in available_roles" :key="available_role">
               {{ available_role }}
             </option>
           </select>
@@ -131,11 +120,7 @@ export default {
       search: "",
       perPage: 10,
       currentPage: 1,
-      fields: [
-        { key: "name", label: "User" },
-        "role",
-        { key: "actions", label: "" },
-      ],
+      fields: [{ key: "name", label: "User" }, "role", { key: "actions", label: "" }],
     };
   },
   computed: {
