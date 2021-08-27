@@ -1,4 +1,3 @@
-
 <script>
 // This mixin is for generating bootstrap toasts
 export default {
@@ -8,25 +7,24 @@ export default {
     //
     // `response['data']['notice']` and `response['data']['alert']` are
     // valid for generating alerts.
-    alertOrNotifyResponse: function(response) {
-      if (response['data'] && response['data']['notice']) {
-        this.$bvToast.toast(response['data']['notice'], {
+    alertOrNotifyResponse: function (response) {
+      if (response["data"] && response["data"]["notice"]) {
+        this.$bvToast.toast(response["data"]["notice"], {
           title: `Success`,
-          variant: 'success',
-          solid: true
-        })
-      }
-      else if (response['data'] && response['data']['alert']) {
-        this.$bvToast.toast(response['data']['alert'], {
+          variant: "success",
+          solid: true,
+        });
+      } else if (response["data"] && response["data"]["alert"]) {
+        this.$bvToast.toast(response["data"]["alert"], {
           title: `Error`,
-          variant: 'danger',
-          solid: true
-        })
+          variant: "danger",
+          solid: true,
+        });
       } else {
         // The response did not contain data we can use for an alert or notice.
         return;
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>

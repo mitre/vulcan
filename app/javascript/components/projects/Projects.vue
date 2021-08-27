@@ -7,15 +7,14 @@
 
 <script>
 export default {
-  name: 'Projects',
+  name: "Projects",
   props: {
     projects: {
       type: Array,
       required: true,
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

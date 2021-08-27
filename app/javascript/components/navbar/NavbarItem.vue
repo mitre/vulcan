@@ -1,16 +1,15 @@
 <template>
   <div>
     <b-nav-item :href="link" class="mx-3">
-      <i class="mdi" :class="icon" aria-hidden="true"></i>
-      <div class="d-sm-inline-block d-lg-block">{{name}}</div>
+      <i class="mdi" :class="icon" aria-hidden="true" />
+      <div class="d-sm-inline-block d-lg-block">{{ name }}</div>
     </b-nav-item>
   </div>
 </template>
 
 <script>
-
 export default {
-  name: 'NavbarItem',
+  name: "NavbarItem",
   props: {
     icon: {
       type: String,
@@ -24,6 +23,6 @@ export default {
       type: String,
       required: true,
     },
-  }
-}
+  },
+};
 </script>
