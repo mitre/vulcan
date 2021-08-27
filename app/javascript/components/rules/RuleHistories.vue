@@ -1,12 +1,20 @@
 <template>
   <div>
     <!-- Collapsable header -->
-    <div @click="showHistories = !showHistories" class="clickable">
+    <div class="clickable" @click="showHistories = !showHistories">
       <h2 class="m-0 d-inline-block">Histories</h2>
-      <b-badge pill class="superVerticalAlign">{{rule.histories.length}}</b-badge>
+      <b-badge pill class="superVerticalAlign">{{
+        rule.histories.length
+      }}</b-badge>
 
-      <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showHistories"></i>
-      <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showHistories"></i>
+      <i
+        v-if="showHistories"
+        class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+      />
+      <i
+        v-if="!showHistories"
+        class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+      />
     </div>
 
     <!-- All histories -->
@@ -23,14 +31,14 @@
 </template>
 
 <script>
-import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
-import AlertMixinVue from '../../mixins/AlertMixin.vue';
-import History from '../shared/History.vue'
+import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import History from "../shared/History.vue";
 
 export default {
-  name: 'RuleHistories',
-  mixins: [DateFormatMixinVue, AlertMixinVue],
+  name: "RuleHistories",
   components: { History },
+  mixins: [DateFormatMixinVue, AlertMixinVue],
   props: {
     rule: {
       type: Object,
@@ -43,14 +51,14 @@ export default {
     severities: {
       type: Array,
       required: true,
-    }
+    },
   },
-  data: function() {
+  data: function () {
     return {
-      showHistories: false
-    }
-  }
-}
+      showHistories: false,
+    };
+  },
+};
 </script>
 
 <style scoped>

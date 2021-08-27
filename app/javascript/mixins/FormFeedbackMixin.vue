@@ -3,36 +3,40 @@
 // feedback for a form.
 //
 // When added as a mixin, the Vue component will have object props for
-// `validFeedback` and `invalidFeedback` where keys are the property and 
+// `validFeedback` and `invalidFeedback` where keys are the property and
 // values are strings representing the feedback.
 export default {
   props: {
     validFeedback: {
       type: Object,
       required: false,
-      default() { return {}; }
+      default() {
+        return {};
+      },
     },
     invalidFeedback: {
       type: Object,
       required: false,
-      default() { return {}; }
-    }
+      default() {
+        return {};
+      },
+    },
   },
   methods: {
-    inputClass: function(field) {
+    inputClass: function (field) {
       if (this.hasInvalidFeedback(field)) {
-        return 'is-invalid';
+        return "is-invalid";
       } else if (this.hasValidFeedback(field)) {
-        return 'is-valid';
+        return "is-valid";
       }
-      return '';
+      return "";
     },
-    hasValidFeedback: function(field) {
+    hasValidFeedback: function (field) {
       return this.validFeedback.hasOwnProperty(field);
     },
-    hasInvalidFeedback: function(field) {
+    hasInvalidFeedback: function (field) {
       return this.invalidFeedback.hasOwnProperty(field);
-    }, 
-  }
-}
+    },
+  },
+};
 </script>

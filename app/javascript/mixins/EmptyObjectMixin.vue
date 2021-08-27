@@ -9,7 +9,7 @@ export default {
         return true;
       }
       return Object.keys(o).length === 0;
-    }
-  }
-}
+    },
+  },
+};
 </script>

@@ -119,7 +119,10 @@
 
       <div class="row">
         <!-- rule_severity -->
-        <b-form-group :id="`ruleEditor-rule_severity-group-${mod}`" class="col-6">
+        <b-form-group
+          :id="`ruleEditor-rule_severity-group-${mod}`"
+          class="col-6"
+        >
           <label :for="`ruleEditor-rule_severity-${mod}`">
             Rule Severity
             <i
@@ -233,7 +236,10 @@
         </b-form-group>
 
         <!-- fixtext_fixref -->
-        <b-form-group :id="`ruleEditor-fixtext_fixref-group-${mod}`" class="col-6">
+        <b-form-group
+          :id="`ruleEditor-fixtext_fixref-group-${mod}`"
+          class="col-6"
+        >
           <label :for="`ruleEditor-fixtext_fixref-${mod}`">
             Fix Text Reference
             <i
@@ -318,7 +324,10 @@
         </b-form-group>
 
         <!-- ident_system -->
-        <b-form-group :id="`ruleEditor-ident_system-group-${mod}`" class="col-8">
+        <b-form-group
+          :id="`ruleEditor-ident_system-group-${mod}`"
+          class="col-8"
+        >
           <label :for="`ruleEditor-ident_system-${mod}`">
             Identity System
             <i

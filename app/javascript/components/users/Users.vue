@@ -7,15 +7,14 @@
 
 <script>
 export default {
-  name: 'Users',
+  name: "Users",
   props: {
     users: {
       type: Array,
       required: true,
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
