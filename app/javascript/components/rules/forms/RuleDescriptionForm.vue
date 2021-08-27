@@ -2,9 +2,7 @@
   <div>
     <div v-if="description._destroy != true" class="card p-3 mb-3">
       <p>
-        <strong
-          >{{ description.id == null ? "New " : "" }}Rule Description</strong
-        >
+        <strong>{{ description.id == null ? "New " : "" }}Rule Description</strong>
       </p>
 
       <!-- description -->
@@ -37,11 +35,7 @@
       </b-form-group>
 
       <!-- Remove link -->
-      <a
-        v-if="!disabled"
-        class="clickable text-dark"
-        @click="$emit('removeRuleDescription')"
-      >
+      <a v-if="!disabled" class="clickable text-dark" @click="$emit('removeRuleDescription')">
         <i class="mdi mdi-trash-can" aria-hidden="true" />
         Remove Rule Description
       </a>

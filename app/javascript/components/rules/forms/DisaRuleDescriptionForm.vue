@@ -1,9 +1,7 @@
 <template>
   <div v-if="description._destroy != true" class="card p-3 mb-3">
     <p>
-      <strong
-        >{{ description.id == null ? "New " : "" }}Rule Description</strong
-      >
+      <strong>{{ description.id == null ? "New " : "" }}Rule Description</strong>
     </p>
     <!-- documentable -->
     <b-form-group>
@@ -20,9 +18,7 @@
     </b-form-group>
 
     <!-- vuln_discussion -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-vuln_discussion-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-vuln_discussion-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-vuln_discussion-${mod}`">
         Vulnerability Discussion
         <i
@@ -51,9 +47,7 @@
     </b-form-group>
 
     <!-- false_positives -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-false_positives-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-false_positives-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-false_positives-${mod}`">
         False Positives
         <i
@@ -82,9 +76,7 @@
     </b-form-group>
 
     <!-- false_negatives -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-false_negatives-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-false_negatives-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-false_negatives-${mod}`">
         False Negatives
         <i
@@ -113,9 +105,7 @@
     </b-form-group>
 
     <!-- mitigations -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-mitigations-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-mitigations-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-mitigations-${mod}`">
         Mitigations
         <i
@@ -144,12 +134,8 @@
     </b-form-group>
 
     <!-- severity_override_guidance -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-severity_override_guidance-group-${mod}`"
-    >
-      <label
-        :for="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`"
-      >
+    <b-form-group :id="`ruleEditor-disa_rule_description-severity_override_guidance-group-${mod}`">
+      <label :for="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`">
         Security Override Guidance
         <i
           v-if="tooltips['severity_override_guidance']"
@@ -168,22 +154,16 @@
         rows="1"
         max-rows="99"
       />
-      <b-form-valid-feedback
-        v-if="hasValidFeedback('severity_override_guidance')"
-      >
+      <b-form-valid-feedback v-if="hasValidFeedback('severity_override_guidance')">
         {{ validFeedback["severity_override_guidance"] }}
       </b-form-valid-feedback>
-      <b-form-invalid-feedback
-        v-if="hasInvalidFeedback('severity_override_guidance')"
-      >
+      <b-form-invalid-feedback v-if="hasInvalidFeedback('severity_override_guidance')">
         {{ invalidFeedback["severity_override_guidance"] }}
       </b-form-invalid-feedback>
     </b-form-group>
 
     <!-- potential_impacts -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-potential_impacts-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-potential_impacts-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-potential_impacts-${mod}`">
         Potential Impacts
         <i
@@ -212,9 +192,7 @@
     </b-form-group>
 
     <!-- third_party_tools -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-third_party_tools-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-third_party_tools-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-third_party_tools-${mod}`">
         Third Party Tools
         <i
@@ -243,12 +221,8 @@
     </b-form-group>
 
     <!-- mitigation_control -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-mitigation_control-group-${mod}`"
-    >
-      <label
-        :for="`ruleEditor-disa_rule_description-mitigation_control-${mod}`"
-      >
+    <b-form-group :id="`ruleEditor-disa_rule_description-mitigation_control-group-${mod}`">
+      <label :for="`ruleEditor-disa_rule_description-mitigation_control-${mod}`">
         Mitigation Control
         <i
           v-if="tooltips['mitigation_control']"
@@ -276,9 +250,7 @@
     </b-form-group>
 
     <!-- responsibility -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-responsibility-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-responsibility-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-responsibility-${mod}`">
         Responsibility
         <i
@@ -307,9 +279,7 @@
     </b-form-group>
 
     <!-- ia_controls -->
-    <b-form-group
-      :id="`ruleEditor-disa_rule_description-ia_controls-group-${mod}`"
-    >
+    <b-form-group :id="`ruleEditor-disa_rule_description-ia_controls-group-${mod}`">
       <label :for="`ruleEditor-disa_rule_description-ia_controls-${mod}`">
         IA Controls
         <i

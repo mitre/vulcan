@@ -5,9 +5,7 @@ export default {
   computed: {
     // Authenticity Token for forms
     authenticityToken: function () {
-      return document
-        .querySelector("meta[name='csrf-token']")
-        .getAttribute("content");
+      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
     },
   },
   mounted: function () {

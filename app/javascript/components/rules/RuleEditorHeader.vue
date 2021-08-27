@@ -15,18 +15,10 @@
       <!-- Action Buttons -->
       <!-- Disable and enable save & delete buttons based on locked state of rule -->
       <template v-if="rule.locked">
-        <span
-          v-b-tooltip.hover
-          class="d-inline-block"
-          title="Control is locked."
-        >
+        <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
           <b-button variant="success" disabled>Save Control</b-button>
         </span>
-        <span
-          v-b-tooltip.hover
-          class="d-inline-block"
-          title="Control is locked."
-        >
+        <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
           <b-button variant="danger" disabled>Delete Control</b-button>
         </span>
       </template>
@@ -38,9 +30,7 @@
       <b-button v-if="rule.locked" variant="warning" @click="manageLock(false)"
         >Unlock Control</b-button
       >
-      <b-button v-else variant="warning" @click="manageLock(true)"
-        >Lock Control</b-button
-      >
+      <b-button v-else variant="warning" @click="manageLock(true)">Lock Control</b-button>
     </div>
   </div>
 </template>

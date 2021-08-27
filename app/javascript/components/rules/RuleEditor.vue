@@ -1,8 +1,7 @@
 <template>
   <div>
     <p v-if="rule.locked" class="text-danger">
-      This control is locked and must first be unlocked if changes or deletion
-      are required.
+      This control is locked and must first be unlocked if changes or deletion are required.
     </p>
     <b-form>
       <RuleForm
@@ -36,10 +35,7 @@
 
       <!-- disa_rule_description -->
       <template v-if="rule.status == 'Applicable - Configurable'">
-        <div
-          class="clickable mb-2"
-          @click="showDisaRuleDescriptions = !showDisaRuleDescriptions"
-        >
+        <div class="clickable mb-2" @click="showDisaRuleDescriptions = !showDisaRuleDescriptions">
           <h2 class="m-0 d-inline-block">Rule Description</h2>
           <!-- <b-badge pill class="superVerticalAlign">{{rule.disa_rule_descriptions_attributes.length}}</b-badge> -->
 
@@ -54,9 +50,7 @@
         </div>
         <b-collapse v-model="showDisaRuleDescriptions">
           <DisaRuleDescriptionForm
-            v-for="(
-              description, index
-            ) in rule.disa_rule_descriptions_attributes"
+            v-for="(description, index) in rule.disa_rule_descriptions_attributes"
             :key="'disa_rule_description_' + index"
             :description="description"
             :disabled="rule.locked"
@@ -71,18 +65,10 @@
       <template v-if="rule.status == 'Applicable - Configurable'">
         <div class="clickable mb-2" @click="showChecks = !showChecks">
           <h2 class="m-0 d-inline-block">Checks</h2>
-          <b-badge pill class="superVerticalAlign">{{
-            rule.checks_attributes.length
-          }}</b-badge>
+          <b-badge pill class="superVerticalAlign">{{ rule.checks_attributes.length }}</b-badge>
 
-          <i
-            v-if="showChecks"
-            class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-          />
-          <i
-            v-if="!showChecks"
-            class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-          />
+          <i v-if="showChecks" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
+          <i v-if="!showChecks" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
         </div>
         <b-collapse v-model="showChecks">
           <CheckForm
@@ -106,7 +92,6 @@
 import RuleForm from "./forms/RuleForm.vue";
 import CheckForm from "./forms/CheckForm.vue";
 import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm.vue";
-// import RuleDescriptionForm from "./forms/RuleDescriptionForm.vue";
 
 export default {
   name: "RuleEditor",

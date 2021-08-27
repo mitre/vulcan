@@ -1,8 +1,6 @@
 <template>
   <div>
-    <b-button class="px-2 m-2" variant="success" @click="showModal()">
-      Update Metadata
-    </b-button>
+    <b-button class="px-2 m-2" variant="success" @click="showModal()"> Update Metadata </b-button>
     <b-modal
       ref="updateMetadataModal"
       title="Update Project Metadata"
@@ -17,12 +15,7 @@
             <b-form-input v-model="data.key" placeholder="Key" required />
             <b-form-input v-model="data.value" placeholder="Value" required />
             <!-- Add button for removing metadata entry -->
-            <b-button
-              variant="danger"
-              size="sm"
-              class="ml-2"
-              @click="removeMetadata(index)"
-            >
+            <b-button variant="danger" size="sm" class="ml-2" @click="removeMetadata(index)">
               X
             </b-button>
           </b-input-group>

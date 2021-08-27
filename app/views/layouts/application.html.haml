@@ -21,12 +21,10 @@
         'v-bind:profile_path': edit_user_registration_path.to_json,          |
         'v-bind:sign_out_path': destroy_user_session_path.to_json            |
       }                                                                      |
-    .row
-      .col
-        .pt-3.mx-3
-          - if notice
-            %p.alert.alert-success.alert-dismissable= notice
-          - if alert
-            %p.alert.alert-danger.alert-dismissable= alert
+    .pt-3.mx-3
+      - if notice
+        %p.alert.alert-success.alert-dismissable= notice
+      - if alert
+        %p.alert.alert-danger.alert-dismissable= alert
     .pt-2.container-fluid{"data-behavior" => "vue"}
       = yield

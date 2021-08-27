@@ -51,9 +51,7 @@
       <b-form-valid-feedback v-if="hasValidFeedback('status_justification')">
         {{ validFeedback["status_justification"] }}
       </b-form-valid-feedback>
-      <b-form-invalid-feedback
-        v-if="hasInvalidFeedback('status_justification')"
-      >
+      <b-form-invalid-feedback v-if="hasInvalidFeedback('status_justification')">
         {{ invalidFeedback["status_justification"] }}
       </b-form-invalid-feedback>
     </b-form-group>
@@ -119,10 +117,7 @@
 
       <div class="row">
         <!-- rule_severity -->
-        <b-form-group
-          :id="`ruleEditor-rule_severity-group-${mod}`"
-          class="col-6"
-        >
+        <b-form-group :id="`ruleEditor-rule_severity-group-${mod}`" class="col-6">
           <label :for="`ruleEditor-rule_severity-${mod}`">
             Rule Severity
             <i
@@ -200,9 +195,7 @@
         <b-form-valid-feedback v-if="hasValidFeedback('artifact_description')">
           {{ validFeedback["artifact_description"] }}
         </b-form-valid-feedback>
-        <b-form-invalid-feedback
-          v-if="hasInvalidFeedback('artifact_description')"
-        >
+        <b-form-invalid-feedback v-if="hasInvalidFeedback('artifact_description')">
           {{ invalidFeedback["artifact_description"] }}
         </b-form-invalid-feedback>
       </b-form-group>
@@ -236,10 +229,7 @@
         </b-form-group>
 
         <!-- fixtext_fixref -->
-        <b-form-group
-          :id="`ruleEditor-fixtext_fixref-group-${mod}`"
-          class="col-6"
-        >
+        <b-form-group :id="`ruleEditor-fixtext_fixref-group-${mod}`" class="col-6">
           <label :for="`ruleEditor-fixtext_fixref-${mod}`">
             Fix Text Reference
             <i
@@ -324,10 +314,7 @@
         </b-form-group>
 
         <!-- ident_system -->
-        <b-form-group
-          :id="`ruleEditor-ident_system-group-${mod}`"
-          class="col-8"
-        >
+        <b-form-group :id="`ruleEditor-ident_system-group-${mod}`" class="col-8">
           <label :for="`ruleEditor-ident_system-${mod}`">
             Identity System
             <i
