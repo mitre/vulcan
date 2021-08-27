@@ -21,18 +21,21 @@
         </div>
       </div>
       <div class="col-6 float-right">
-        <b-button variant="primary"
-                  size="large"
-                  class="float-right"
-                  v-b-modal.new-project-member
-        >
+        <b-button v-b-modal.new-project-member variant="primary" size="large" class="float-right">
           New Member
         </b-button>
 
-        <b-modal id="new-project-member" size="md" title="Add New Project Member" centered :hide-footer="true">
-          <NewProjectMember :project="project"
-                            :available_members="available_members"
-                            :available_roles="available_roles"
+        <b-modal
+          id="new-project-member"
+          size="md"
+          title="Add New Project Member"
+          centered
+          :hide-footer="true"
+        >
+          <NewProjectMember
+            :project="project"
+            :available_members="available_members"
+            :available_roles="available_roles"
           />
         </b-modal>
       </div>
@@ -109,8 +112,9 @@ import NewProjectMember from "./NewProjectMember.vue";
 
 export default {
   name: "ProjectMembersTable",
+  components: { NewProjectMember },
+  components: { NewProjectMember },
   mixins: [FormMixinVue],
-  components: {NewProjectMember},
   props: {
     project_members: {
       type: Array,
@@ -130,7 +134,7 @@ export default {
     },
     available_members: {
       type: Array,
-      required: true
+      required: true,
     },
     project_members_count: {
       type: Number,
@@ -142,7 +146,11 @@ export default {
       search: "",
       perPage: 10,
       currentPage: 1,
-      fields: [{ key: "name", label: "User" }, "role", { key: "actions", label: "" }],
+      fields: [
+        { key: "name", label: "User", sortable: true },
+        { key: "role", sortable: true },
+        { key: "actions", label: "" },
+      ],
     };
   },
   computed: {
@@ -162,7 +170,7 @@ export default {
   },
   methods: {
     // Automatically submit the form when a user selects a form option
-    roleChanged: function(_event, project_member) {
+    roleChanged: function (_event, project_member) {
       document.getElementById(this.formId(project_member)).submit();
     },
     // Generator for a unique form id for the user role dropdown
