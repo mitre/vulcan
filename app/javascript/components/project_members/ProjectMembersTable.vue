@@ -20,7 +20,7 @@
           />
         </div>
       </div>
-      <div class="col-6 float-right">
+      <div v-if="editable && available_members && available_roles" class="col-6 float-right">
         <b-button variant="primary"
                   size="large"
                   class="float-right"
@@ -29,7 +29,12 @@
           New Member
         </b-button>
 
-        <b-modal id="new-project-member" size="lg" title="Add New Project Member" centered :hide-footer="true">
+        <b-modal
+          id="new-project-member"
+          size="lg"
+          title="Add New Project Member"
+          centered :hide-footer="true"
+        >
           <NewProjectMember :project="project"
                             :available_members="available_members"
                             :available_roles="available_roles"
@@ -105,9 +110,11 @@
 
 <script>
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import NewProjectMember from "./NewProjectMember.vue";
 
 export default {
   name: "ProjectMembersTable",
+  components: {NewProjectMember},
   mixins: [FormMixinVue],
   props: {
     project_members: {
@@ -128,7 +135,7 @@ export default {
     },
     available_members: {
       type: Array,
-      required: true
+      required: false
     },
     project_members_count: {
       type: Number,
