@@ -27,7 +27,7 @@
 
         <b-modal
           id="new-project-member"
-          size="lg"
+          size="md"
           title="Add New Project Member"
           centered
           :hide-footer="true"
@@ -133,7 +133,7 @@ export default {
     },
     available_members: {
       type: Array,
-      required: false,
+      required: true,
     },
     project_members_count: {
       type: Number,
@@ -169,7 +169,7 @@ export default {
   },
   methods: {
     // Automatically submit the form when a user selects a form option
-    roleChanged: function (event, project_member) {
+    roleChanged: function (_event, project_member) {
       document.getElementById(this.formId(project_member)).submit();
     },
     // Generator for a unique form id for the user role dropdown
