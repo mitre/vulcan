@@ -10,6 +10,7 @@
       :statuses="statuses"
       :severities="severities"
       @ruleUpdated="ruleUpdated"
+      @update:rule="ruleUpdate($event)"
     />
   </div>
 </template>
@@ -65,7 +66,131 @@ export default {
       ];
     },
   },
+  mounted() {
+    this.$root.$on("update:rule", this.ruleUpdate);
+    this.$root.$on("update:check", this.checkUpdate);
+    this.$root.$on("update:description", this.descriptionUpdate);
+    this.$root.$on("update:disaDescription", this.disaDescriptionUpdate);
+    this.$root.$on("add:check", this.checkUpdate);
+    this.$root.$on("add:description", this.descriptionUpdate);
+    this.$root.$on("add:disaDescription", this.disaDescriptionUpdate);
+  },
   methods: {
+    /**
+     * Event handler for @add:description
+     */
+    addRuleDescription: function (rule) {
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      // Guard if rule is not found
+      if (ruleIndex == -1) {
+        return;
+      }
+
+      this.reactiveRules[ruleIndex].rule_descriptions_attributes.push({
+        description: "",
+        rule_id: this.rule.id,
+        _destroy: false,
+      });
+    },
+    /**
+     * Event handler for @add:check
+     */
+    addCheck: function (rule) {
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      // Guard if rule is not found
+      if (ruleIndex == -1) {
+        return;
+      }
+
+      this.reactiveRules[ruleIndex].checks_attributes.push({
+        system: "",
+        content_ref_name: "",
+        content_ref_href: "",
+        content: "",
+        rule_id: this.rule.id,
+        _destroy: false,
+      });
+    },
+    /**
+     * Event handler for @add:disaDescription
+     */
+    addDisaRuleDescription: function (rule) {
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      // Guard if rule is not found
+      if (ruleIndex == -1) {
+        return;
+      }
+
+      this.reactiveRules[ruleIndex].disa_rule_descriptions_attributes.push({
+        description: "",
+        rule_id: this.rule.id,
+        _destroy: false,
+      });
+    },
+    /**
+     * Event handler for @update:rule.
+     * Splices the updated version of the rule where the previous rule was.
+     */
+    ruleUpdate: function (rule) {
+      const index = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      // Guard if rule is not found.
+      if (index == -1) {
+        return;
+      }
+
+      this.reactiveRules.splice(index, 1, rule);
+    },
+    /**
+     * Event handler for @update:check
+     * Splices the updated version of the check at the specified index.
+     *
+     * If -1 is passed as the index, then no action will be taken.
+     */
+    checkUpdate: function (rule, check, index) {
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      // Guard if rule is not found
+      // OR
+      // check index == -1  because -1 is the default if no index is passed to CheckForm.
+      if (ruleIndex == -1 || index == -1) {
+        return;
+      }
+
+      this.reactiveRules[ruleIndex].checks_attributes.splice(index, 1, check);
+    },
+    /**
+     * Event handler for @update:disaDescription
+     * Splices the updated version of the DISA description at the specified index.
+     *
+     * If -1 is passed as the index, then no action will be taken.
+     */
+    disaDescriptionUpdate: function (rule, description, index) {
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      // Guard if rule is not found
+      // OR
+      // check index == -1  because -1 is the default if no index is passed to DisaRuleDescriptionForm.
+      if (ruleIndex == -1 || index == -1) {
+        return;
+      }
+
+      this.reactiveRules[ruleIndex].disa_rule_descriptions_attributes.splice(index, 1, description);
+    },
+    /**
+     * Event handler for @update:description
+     * Splices the updated version of the description at the specified index.
+     *
+     * If -1 is passed as the index, then no action will be taken.
+     */
+    descriptionUpdate: function (rule, description, index) {
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      // Guard if rule is not found
+      // OR
+      // check index == -1  because -1 is the default if no index is passed to RuleDescriptionForm.
+      if (ruleIndex == -1 || index == -1) {
+        return;
+      }
+
+      this.reactiveRules[ruleIndex].rule_descriptions_attributes.splice(index, 1, description);
+    },
     /**
      * Indicates to this component that a rule has updated and should be re-fetched.
      *

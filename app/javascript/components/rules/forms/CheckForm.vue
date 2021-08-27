@@ -18,10 +18,11 @@
       </label>
       <b-form-input
         :id="`ruleEditor-check-system-${mod}`"
-        v-model="check.system"
+        v-model="checkCopy.system"
         :class="inputClass('system')"
         placeholder=""
         :disabled="disabled"
+        @input="$root.$emit('update:check', rule, checkCopy, index)"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('system')">
         {{ validFeedback["system"] }}
@@ -45,10 +46,11 @@
       </label>
       <b-form-input
         :id="`ruleEditor-check-content_ref_name-${mod}`"
-        v-model="check.content_ref_name"
+        v-model="checkCopy.content_ref_name"
         :class="inputClass('content_ref_name')"
         placeholder=""
         :disabled="disabled"
+        @input="$root.$emit('update:check', rule, checkCopy, index)"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('content_ref_name')">
         {{ validFeedback["content_ref_name"] }}
@@ -72,10 +74,11 @@
       </label>
       <b-form-input
         :id="`ruleEditor-check-content_ref_href-${mod}`"
-        v-model="check.content_ref_href"
+        v-model="checkCopy.content_ref_href"
         :class="inputClass('content_ref_href')"
         placeholder=""
         :disabled="disabled"
+        @input="$root.$emit('update:check', rule, checkCopy, index)"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('content_ref_href')">
         {{ validFeedback["content_ref_href"] }}
@@ -99,12 +102,13 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-check-content-${mod}`"
-        v-model="check.content"
+        v-model="checkCopy.content"
         :class="inputClass('content')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
+        @input="$root.$emit('update:check', rule, checkCopy, index)"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('content')">
         {{ validFeedback["content"] }}
@@ -115,7 +119,7 @@
     </b-form-group>
 
     <!-- Remove link -->
-    <a v-if="!disabled" class="clickable text-dark" @click="$emit('removeCheck')">
+    <a v-if="!disabled" class="clickable text-dark" @click="removeCheck()">
       <i class="mdi mdi-trash-can" aria-hidden="true" />
       Remove Check
     </a>
@@ -124,13 +128,23 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import _ from "lodash";
+
 export default {
   name: "CheckForm",
   mixins: [FormFeedbackMixinVue],
+  // `rule` and `index` are necessary if edits are to be made
   props: {
     check: {
       type: Object,
       required: true,
+    },
+    rule: {
+      type: Object,
+    },
+    index: {
+      type: Number,
+      default: -1,
     },
     disabled: {
       type: Boolean,
@@ -140,6 +154,7 @@ export default {
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
+      checkCopy: _.cloneDeep(this.check),
       tooltips: {
         system: null,
         content_ref_name: null,
@@ -147,6 +162,12 @@ export default {
         content: null,
       },
     };
+  },
+  methods: {
+    removeCheck: function () {
+      this.checkCopy._destroy = true;
+      this.$root.$emit("update:check", this.rule, this.checkCopy, this.index);
+    },
   },
 };
 </script>
