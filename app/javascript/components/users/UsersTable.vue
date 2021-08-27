@@ -49,17 +49,9 @@
 
       <!-- Column template for Role -->
       <template #cell(role)="data">
-        <form
-          :id="formId(data.item)"
-          :action="formAction(data.item)"
-          method="post"
-        >
+        <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
           <input type="hidden" name="_method" value="put" />
-          <input
-            type="hidden"
-            name="authenticity_token"
-            :value="authenticityToken"
-          />
+          <input type="hidden" name="authenticity_token" :value="authenticityToken" />
           <select
             v-model="data.item.admin"
             class="form-control"

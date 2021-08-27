@@ -10,21 +10,14 @@
 
     <template v-if="selectedRuleId != null">
       <div class="col-10">
-        <RuleEditorHeader
-          :rule="selectedRule"
-          @ruleUpdated="(id) => $emit('ruleUpdated', id)"
-        />
+        <RuleEditorHeader :rule="selectedRule" @ruleUpdated="(id) => $emit('ruleUpdated', id)" />
 
         <hr />
 
         <div class="row">
           <!-- Main editor column -->
           <div class="col-7">
-            <RuleEditor
-              :rule="selectedRule"
-              :statuses="statuses"
-              :severities="severities"
-            />
+            <RuleEditor :rule="selectedRule" :statuses="statuses" :severities="severities" />
           </div>
 
           <!-- Additional info column -->
@@ -48,8 +41,7 @@
     <template v-else>
       <div class="col-10">
         <p class="text-center">
-          No control currently selected. Select a control on the left to view or
-          edit.
+          No control currently selected. Select a control on the left to view or edit.
         </p>
       </div>
     </template>

@@ -44,10 +44,7 @@
             required
           >
             <option />
-            <option
-              v-for="available_role in available_roles"
-              :key="available_role"
-            >
+            <option v-for="available_role in available_roles" :key="available_role">
               {{ available_role }}
             </option>
           </select>

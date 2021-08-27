@@ -26,12 +26,7 @@
           </template>
 
           <template v-else-if="history.auditable_type == 'Rule'">
-            <RuleForm
-              :rule="rule"
-              :statuses="statuses"
-              :severities="severities"
-              :disabled="true"
-            />
+            <RuleForm :rule="rule" :statuses="statuses" :severities="severities" :disabled="true" />
           </template>
 
           <template v-else-if="history.auditable_type == 'RuleDescription'">
@@ -53,11 +48,7 @@
           </template>
 
           <template v-else-if="history.auditable_type == 'Check'">
-            <CheckForm
-              v-if="!isEmpty(currentState)"
-              :check="currentState"
-              :disabled="true"
-            />
+            <CheckForm v-if="!isEmpty(currentState)" :check="currentState" :disabled="true" />
             <p v-else>Check does not exist.</p>
           </template>
         </div>
@@ -66,9 +57,7 @@
         <div class="col-6">
           <p class="h3">State After Revert</p>
 
-          <p v-if="!afterState || isEmpty(afterState)">
-            Could not determine resulting state.
-          </p>
+          <p v-if="!afterState || isEmpty(afterState)">Could not determine resulting state.</p>
 
           <RuleForm
             v-else-if="history.auditable_type == 'Rule'"
@@ -150,9 +139,7 @@ export default {
   },
   computed: {
     modalId: function () {
-      return `revert-modal-${this.history.id}-${
-        this.audited_change["field"] || "unknown"
-      }`;
+      return `revert-modal-${this.history.id}-${this.audited_change["field"] || "unknown"}`;
     },
     currentState: function () {
       let dependentRecord = {};

@@ -24,11 +24,7 @@
         @click.stop="removeOpenRule(rule.id)"
       />
       {{ rule.rule_id }}
-      <i
-        v-if="rule.locked"
-        class="mdi mdi-lock float-right"
-        aria-hidden="true"
-      />
+      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
 
     <p class="mt-3 mb-0"><strong>All Controls</strong></p>
@@ -39,11 +35,7 @@
       @click="ruleSelected(rule)"
     >
       {{ rule.rule_id }}
-      <i
-        v-if="rule.locked"
-        class="mdi mdi-lock float-right"
-        aria-hidden="true"
-      />
+      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
   </div>
 </template>
@@ -138,9 +130,7 @@ export default {
     // PLACEHOLDER! searching by id - should be changed to title/name once implemented
     filterRules(rules) {
       let downcaseSearch = this.search.toLowerCase();
-      return rules.filter((rule) =>
-        rule.rule_id.toString().toLowerCase().includes(downcaseSearch)
-      );
+      return rules.filter((rule) => rule.rule_id.toString().toLowerCase().includes(downcaseSearch));
     },
   },
 };

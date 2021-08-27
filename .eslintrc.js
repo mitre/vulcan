@@ -3,9 +3,9 @@ module.exports = {
     browser: true,
     es6: true
   },
-  extends: ["plugin:vue/recommended", 'plugin:prettier/recommended', 'prettier' ],
+  extends: ["plugin:vue/recommended", 'prettier', 'plugin:prettier/recommended' ],
   rules: {
-    'max-len': [2, {"code": 120}],
+    'max-len': 'off',
     'no-console': 'warn',
     'no-return-await': 'warn',
     'no-throw-literal': 'warn',

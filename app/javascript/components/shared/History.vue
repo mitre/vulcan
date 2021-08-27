@@ -11,9 +11,7 @@
       <template v-if="history.auditable_type == 'Rule'">
         <!-- Edit on the rule itself -->
         <template v-if="history.action == 'update'">
-          <a
-            v-b-toggle="`history-collapse-${history.id}`"
-            class="ml-3 text-info clickable"
+          <a v-b-toggle="`history-collapse-${history.id}`" class="ml-3 text-info clickable"
             >{{ friendlyAuditableType(history.auditable_type) }} Updated...</a
           >
           <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
@@ -26,15 +24,11 @@
                 <strong>{{ audited_change.field }}</strong> was changed from
                 <br />
                 <span class="historyChangeText">{{
-                  audited_change.prev_value
-                    ? audited_change.prev_value
-                    : "*no value*"
+                  audited_change.prev_value ? audited_change.prev_value : "*no value*"
                 }}</span>
                 <br />to<br />
                 <span class="historyChangeText">{{
-                  audited_change.new_value
-                    ? audited_change.new_value
-                    : "*no value*"
+                  audited_change.new_value ? audited_change.new_value : "*no value*"
                 }}</span>
               </p>
               <RuleRevertModal
@@ -69,9 +63,7 @@
 
         <!-- Edit on the associated record -->
         <template v-if="history.action == 'update'">
-          <a
-            v-b-toggle="`history-collapse-${history.id}`"
-            class="ml-3 text-info clickable"
+          <a v-b-toggle="`history-collapse-${history.id}`" class="ml-3 text-info clickable"
             >{{ friendlyAuditableType(history.auditable_type) }} Updated...</a
           >
           <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
@@ -84,15 +76,11 @@
                 <strong>{{ audited_change.field }}</strong> was changed from
                 <br />
                 <span class="historyChangeText">{{
-                  audited_change.prev_value
-                    ? audited_change.prev_value
-                    : "*no value*"
+                  audited_change.prev_value ? audited_change.prev_value : "*no value*"
                 }}</span>
                 <br />to<br />
                 <span class="historyChangeText">{{
-                  audited_change.new_value
-                    ? audited_change.new_value
-                    : "*no value*"
+                  audited_change.new_value ? audited_change.new_value : "*no value*"
                 }}</span>
               </p>
               <RuleRevertModal
@@ -110,9 +98,7 @@
 
         <!-- Deletion on the associated record -->
         <template v-if="history.action == 'destroy'">
-          <a
-            v-b-toggle="`history-collapse-${history.id}`"
-            class="ml-3 text-danger clickable"
+          <a v-b-toggle="`history-collapse-${history.id}`" class="ml-3 text-danger clickable"
             >{{ friendlyAuditableType(history.auditable_type) }} Deleted...</a
           >
           <b-collapse :id="`history-collapse-${history.id}`" class="mt-2">
@@ -125,9 +111,7 @@
                 <strong>{{ audited_change.field }}</strong
                 >:
                 <span class="historyChangeText">{{
-                  audited_change.new_value
-                    ? audited_change.new_value
-                    : "*no value*"
+                  audited_change.new_value ? audited_change.new_value : "*no value*"
                 }}</span>
               </p>
             </div>
