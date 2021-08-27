@@ -1,23 +1,29 @@
 <template>
   <div class="mb-5">
-    <b-breadcrumb :items="breadcrumbs"></b-breadcrumb>
+    <b-breadcrumb :items="breadcrumbs" />
 
-    <h1>{{project.name}} - Controls</h1>
+    <h1>{{ project.name }} - Controls</h1>
 
-    <RulesCodeEditorView @ruleUpdated="ruleUpdated" :project="project" :rules="reactiveRules" :statuses="statuses" :severities="severities" />
+    <RulesCodeEditorView
+      :project="project"
+      :rules="reactiveRules"
+      :statuses="statuses"
+      :severities="severities"
+      @ruleUpdated="ruleUpdated"
+    />
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-import AlertMixinVue from '../../mixins/AlertMixin.vue';
-import RulesCodeEditorView from './RulesCodeEditorView.vue'
-import FormMixinVue from '../../mixins/FormMixin.vue';
+import axios from "axios";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import RulesCodeEditorView from "./RulesCodeEditorView.vue";
+import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
-  name: 'Rules',
-  mixins: [AlertMixinVue, FormMixinVue],
+  name: "Rules",
   components: { RulesCodeEditorView },
+  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     project: {
       type: Object,
@@ -34,30 +40,30 @@ export default {
     severities: {
       type: Array,
       required: true,
-    }
+    },
   },
   data: function () {
     return {
-      reactiveRules: this.rules
-    }
+      reactiveRules: this.rules,
+    };
   },
   computed: {
-    breadcrumbs: function() {
+    breadcrumbs: function () {
       return [
         {
-          text: 'Projects',
-          href: '/projects'
+          text: "Projects",
+          href: "/projects",
         },
         {
           text: this.project.name,
-          href: '/projects/' + this.project.id
+          href: "/projects/" + this.project.id,
         },
         {
-          text: 'Controls',
-          active: true
-        }
-      ]
-    }
+          text: "Controls",
+          active: true,
+        },
+      ];
+    },
   },
   methods: {
     /**
@@ -66,10 +72,11 @@ export default {
      * id: The rule ID
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
      */
-    ruleUpdated: function(id, updated = 'all') {
-      axios.get(`/rules/${id}`)
-      .then((response) => this.ruleFetchSuccess(response, updated))
-      .catch(this.alertOrNotifyResponse);
+    ruleUpdated: function (id, updated = "all") {
+      axios
+        .get(`/rules/${id}`)
+        .then((response) => this.ruleFetchSuccess(response, updated))
+        .catch(this.alertOrNotifyResponse);
     },
     /**
      * Update data with a fetched rule.
@@ -80,21 +87,19 @@ export default {
      * Changing behavior based on `updated` is necessary because we do not want to wipe away control
      * changes just beause a user has commented.
      */
-    ruleFetchSuccess: function(response, updated) {
-      const ruleIndex = this.reactiveRules.findIndex((rule) => { return rule.id == response.data.id });
+    ruleFetchSuccess: function (response, updated) {
+      const ruleIndex = this.reactiveRules.findIndex((rule) => {
+        return rule.id == response.data.id;
+      });
 
-      if (updated == 'all') {
+      if (updated == "all") {
         this.reactiveRules.splice(ruleIndex, 1, response.data);
-      }
-      else if (updated == 'comments') {
-        console.log('comments!');
-        console.log(response.data.comments);
-        this.reactiveRules[ruleIndex].comments.push(... response.data.comments);
+      } else if (updated == "comments") {
+        this.reactiveRules[ruleIndex].comments.push(...response.data.comments);
       }
     },
   },
-}
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
