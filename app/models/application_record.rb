@@ -12,6 +12,8 @@ class ApplicationRecord < ActiveRecord::Base
   # If `limit` is `nil`, then no limit will be applied on the number of histories returned
   #
   def histories(limit = 20)
+    return unless defined?(own_and_associated_audits)
+
     own_and_associated_audits.order(:created_at).limit(limit).map do |audit|
       # Each audit can encompass multiple changes on the model (see audited_changes)
       {
