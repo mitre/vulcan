@@ -4,18 +4,20 @@
       <b-col>
         <b-input-group>
           <b-input-group-prepend>
-            <b-input-group-text><i class="mdi mdi-magnify" aria-hidden="true"></i></b-input-group-text>
+            <b-input-group-text
+              ><i class="mdi mdi-magnify" aria-hidden="true"
+            /></b-input-group-text>
           </b-input-group-prepend>
           <vue-simple-suggest
+            ref="userSearch"
             v-model="search"
             :list="available_members"
             :filter-by-query="true"
             :filter="memberSearchFilter"
             display-attribute="email"
             placeholder="Search for a user by email..."
-            @select="setSelectedUser"
-            ref="userSearch"
             :styles="userSearchStyles"
+            @select="setSelectedUser"
           />
         </b-input-group>
       </b-col>
@@ -25,24 +27,27 @@
       <b-row>
         <b-col>
           Choose a role
-          <hr class="mt-1"/>
+          <hr class="mt-1" />
         </b-col>
       </b-row>
-      <b-row :key="role" v-for="(role, index) in available_roles">
+      <b-row v-for="(role, index) in available_roles" :key="role">
         <b-col>
           <!-- <b-form-radio :key="role" v-for="role in available_roles"  name="role" :value="role">{{ role }}</b-form-radio> -->
           <div class="mb-3">
             <span>
-              <input class="form-check-input role-input ml-0 mt-0 mr-3"
-                     type="radio"
-                     name="roles"
-                     :value="role"
-                     @click="setSelectedRole(role)"
-              >
+              <input
+                class="form-check-input role-input ml-0 mt-0 mr-3"
+                type="radio"
+                name="roles"
+                :value="role"
+                @click="setSelectedRole(role)"
+              />
             </span>
             <div>
               <h5 class="d-flex flex-items-center role-label mb-0">{{ capitalizeRole(role) }}</h5>
-              <span><small class="muted role-description">{{ roleDescriptions[index] }}</small></span>
+              <span
+                ><small class="muted role-description">{{ roleDescriptions[index] }}</small></span
+              >
             </div>
           </div>
         </b-col>
@@ -52,10 +57,25 @@
     <b-row>
       <b-col>
         <form :action="formAction" method="post">
-          <input type="hidden" id="NewProjectMemberAuthenticityToken" name="authenticity_token" :value="authenticityToken"/>
-          <input type="hidden" id="NewProjectMemberEmail" name="project_member[user_id]" v-model="selectedUser"/>
-          <input type="hidden" id="NewProjectMemberRole" name="project_member[role]" v-model="selectedRole"/>
-          <b-button 
+          <input
+            id="NewProjectMemberAuthenticityToken"
+            type="hidden"
+            name="authenticity_token"
+            :value="authenticityToken"
+          />
+          <input
+            id="NewProjectMemberEmail"
+            v-model="selectedUser"
+            type="hidden"
+            name="project_member[user_id]"
+          />
+          <input
+            id="NewProjectMemberRole"
+            v-model="selectedRole"
+            type="hidden"
+            name="project_member[role]"
+          />
+          <b-button
             block
             type="submit"
             variant="primary"
@@ -72,14 +92,14 @@
 
 <script>
 import FormMixinVue from "../../mixins/FormMixin.vue";
-import VueSimpleSuggest from 'vue-simple-suggest';
-import 'vue-simple-suggest/dist/styles.css';
-import capitalize from 'lodash/capitalize';
+import VueSimpleSuggest from "vue-simple-suggest";
+import "vue-simple-suggest/dist/styles.css";
+import capitalize from "lodash/capitalize";
 
 export default {
   name: "NewProjectMember",
   components: {
-    VueSimpleSuggest
+    VueSimpleSuggest,
   },
   mixins: [FormMixinVue],
   props: {
@@ -102,46 +122,49 @@ export default {
       selectedUser: null,
       selectedRole: null,
       roleDescriptions: [
-        'Full control of a Project. Lock Controls, revert controls, and manage project members.',
-        'Author and approve changes to a Control.',
-        'Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.',
+        "Full control of a Project. Lock Controls, revert controls, and manage project members.",
+        "Author and approve changes to a Control.",
+        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
       ],
-      userSearchStyles : {
+      userSearchStyles: {
         vueSimpleSuggest: "userSearchVueSimpleSuggest",
         inputWrapper: "",
-        defaultInput : "",
+        defaultInput: "",
         suggestions: "",
-        suggestItem: ""
-      }
-    }
+        suggestItem: "",
+      },
+    };
   },
   computed: {
-    isSubmitDisabled: function() {
-      return !((this.selectedUser !== null) && (this.selectedRole !== null))
+    isSubmitDisabled: function () {
+      return !(this.selectedUser !== null && this.selectedRole !== null);
     },
     formAction: function () {
       return "/projects/" + this.project.id + "/project_members";
-    }
+    },
   },
   methods: {
-    memberSearchFilter: function(user, search) {
+    memberSearchFilter: function (user, search) {
       if (user && search) {
-        let downcaseSearch = search.toLowerCase()
-        return user.email.toLowerCase().includes(downcaseSearch) || user.name.toLowerCase().includes(downcaseSearch)
+        let downcaseSearch = search.toLowerCase();
+        return (
+          user.email.toLowerCase().includes(downcaseSearch) ||
+          user.name.toLowerCase().includes(downcaseSearch)
+        );
       }
-      return false
+      return false;
     },
-    capitalizeRole: function(roleString) {
+    capitalizeRole: function (roleString) {
       return capitalize(roleString);
     },
-    setSelectedRole: function(role) {
+    setSelectedRole: function (role) {
       this.selectedRole = role;
     },
-    setSelectedUser: function() {
-      this.selectedUser = this.$refs.userSearch.selected?.id
-    }
-  }
-}
+    setSelectedUser: function () {
+      this.selectedUser = this.$refs.userSearch.selected?.id;
+    },
+  },
+};
 </script>
 
 <style scoped>
