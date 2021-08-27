@@ -21,11 +21,7 @@
         </div>
       </div>
       <div v-if="editable && available_members && available_roles" class="col-6 float-right">
-        <b-button variant="primary"
-                  size="large"
-                  class="float-right"
-                  v-b-modal.new-project-member
-        >
+        <b-button v-b-modal.new-project-member variant="primary" size="large" class="float-right">
           New Member
         </b-button>
 
@@ -33,11 +29,13 @@
           id="new-project-member"
           size="lg"
           title="Add New Project Member"
-          centered :hide-footer="true"
+          centered
+          :hide-footer="true"
         >
-          <NewProjectMember :project="project"
-                            :available_members="available_members"
-                            :available_roles="available_roles"
+          <NewProjectMember
+            :project="project"
+            :available_members="available_members"
+            :available_roles="available_roles"
           />
         </b-modal>
       </div>
@@ -114,7 +112,7 @@ import NewProjectMember from "./NewProjectMember.vue";
 
 export default {
   name: "ProjectMembersTable",
-  components: {NewProjectMember},
+  components: { NewProjectMember },
   mixins: [FormMixinVue],
   props: {
     project_members: {
@@ -135,7 +133,7 @@ export default {
     },
     available_members: {
       type: Array,
-      required: false
+      required: false,
     },
     project_members_count: {
       type: Number,
@@ -149,8 +147,8 @@ export default {
       currentPage: 1,
       fields: [
         { key: "name", label: "User", sortable: true },
-        { key: 'role', sortable: true },
-        { key: "actions", label: "" }
+        { key: "role", sortable: true },
+        { key: "actions", label: "" },
       ],
     };
   },
