@@ -1,18 +1,24 @@
 <template>
   <div>
     <b-button
-      @click="showModal()"
       v-if="rule.locked == false && afterState && !isEmpty(afterState)"
       class="px-2 py-0"
       variant="warning"
+      @click="showModal()"
     >
       Revert
     </b-button>
 
-    <b-modal ref="revertModal" title="Revert Rule History" size="xl" ok-title="Revert" @ok="revertHistory()">
+    <b-modal
+      ref="revertModal"
+      title="Revert Rule History"
+      size="xl"
+      ok-title="Revert"
+      @ok="revertHistory()"
+    >
       <div class="row">
         <!-- CURRENT STATE -->
-        <div class='col-6'>
+        <div class="col-6">
           <p class="h3">State Before Revert</p>
 
           <template v-if="history.action == 'destroy'">
@@ -57,10 +63,12 @@
         </div>
 
         <!-- STATE AFTER REVERT -->
-        <div class='col-6'>
+        <div class="col-6">
           <p class="h3">State After Revert</p>
 
-          <p v-if="!afterState || isEmpty(afterState)">Could not determine resulting state.</p>
+          <p v-if="!afterState || isEmpty(afterState)">
+            Could not determine resulting state.
+          </p>
 
           <RuleForm
             v-else-if="history.auditable_type == 'Rule'"
@@ -68,28 +76,28 @@
             :statuses="statuses"
             :severities="severities"
             :disabled="true"
-            :validFeedback="validFeedback"
+            :valid-feedback="validFeedback"
           />
 
           <RuleDescriptionForm
             v-else-if="history.auditable_type == 'RuleDescription'"
             :description="afterState"
             :disabled="true"
-            :validFeedback="validFeedback"
+            :valid-feedback="validFeedback"
           />
 
           <DisaRuleDescriptionForm
             v-else-if="history.auditable_type == 'DisaRuleDescription'"
             :description="afterState"
             :disabled="true"
-            :validFeedback="validFeedback"
+            :valid-feedback="validFeedback"
           />
 
           <CheckForm
             v-else-if="history.auditable_type == 'Check'"
             :check="afterState"
             :disabled="true"
-            :validFeedback="validFeedback"
+            :valid-feedback="validFeedback"
           />
 
           <p v-else>Could not determine resulting state.</p>
@@ -100,18 +108,23 @@
 </template>
 
 <script>
-import axios from 'axios';
-import AlertMixinVue from '../../mixins/AlertMixin.vue';
-import EmptyObjectMixinVue from '../../mixins/EmptyObjectMixin.vue';
-import FormMixinVue from '../../mixins/FormMixin.vue';
-import RuleForm from './forms/RuleForm';
-import RuleDescriptionForm from './forms/RuleDescriptionForm';
-import DisaRuleDescriptionForm from './forms/DisaRuleDescriptionForm';
-import CheckForm from './forms/CheckForm';
+import axios from "axios";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import EmptyObjectMixinVue from "../../mixins/EmptyObjectMixin.vue";
+import FormMixinVue from "../../mixins/FormMixin.vue";
+import RuleForm from "./forms/RuleForm";
+import RuleDescriptionForm from "./forms/RuleDescriptionForm";
+import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm";
+import CheckForm from "./forms/CheckForm";
 
 export default {
-  name: 'RuleRevertModal',
-  components: { RuleForm, RuleDescriptionForm, DisaRuleDescriptionForm, CheckForm },
+  name: "RuleRevertModal",
+  components: {
+    RuleForm,
+    RuleDescriptionForm,
+    DisaRuleDescriptionForm,
+    CheckForm,
+  },
   mixins: [AlertMixinVue, EmptyObjectMixinVue, FormMixinVue],
   props: {
     rule: {
@@ -136,19 +149,27 @@ export default {
     },
   },
   computed: {
-    modalId: function() {
-      return `revert-modal-${this.history.id}-${this.audited_change["field"] || 'unknown'}`;
+    modalId: function () {
+      return `revert-modal-${this.history.id}-${
+        this.audited_change["field"] || "unknown"
+      }`;
     },
-    currentState: function() {
-      let dependentRecord = {}
-      if (this.history.auditable_type == 'Rule') {
-        dependentRecord = this.rule
-      } else if (this.history.auditable_type == 'RuleDescription') {
-        dependentRecord = this.rule.rule_descriptions_attributes.find(e => e.id == this.history.auditable_id)
-      } else if (this.history.auditable_type == 'DisaRuleDescription') {
-        dependentRecord = this.rule.disa_rule_descriptions_attributes.find(e => e.id == this.history.auditable_id)
-      } else if (this.history.auditable_type == 'Check') {
-        dependentRecord = this.rule.checks_attributes.find(e => e.id == this.history.auditable_id)
+    currentState: function () {
+      let dependentRecord = {};
+      if (this.history.auditable_type == "Rule") {
+        dependentRecord = this.rule;
+      } else if (this.history.auditable_type == "RuleDescription") {
+        dependentRecord = this.rule.rule_descriptions_attributes.find(
+          (e) => e.id == this.history.auditable_id
+        );
+      } else if (this.history.auditable_type == "DisaRuleDescription") {
+        dependentRecord = this.rule.disa_rule_descriptions_attributes.find(
+          (e) => e.id == this.history.auditable_id
+        );
+      } else if (this.history.auditable_type == "Check") {
+        dependentRecord = this.rule.checks_attributes.find(
+          (e) => e.id == this.history.auditable_id
+        );
       }
 
       let curState = Object.assign({}, dependentRecord);
@@ -156,10 +177,10 @@ export default {
         return {};
       }
 
-      delete curState._destroy
+      delete curState._destroy;
       return curState;
     },
-    afterState: function() {
+    afterState: function () {
       // Get `currentState` and duplicate for modification
       let afterState = Object.assign({}, this.currentState);
 
@@ -170,7 +191,8 @@ export default {
         // This means that `afterState` needs to be populated with the entirety of `history.audited_changes`
         if (this.audited_change == null) {
           for (let i = 0; i < this.history.audited_changes.length; i++) {
-            afterState[this.history.audited_changes[i].field] = this.history.audited_changes[i].new_value;
+            afterState[this.history.audited_changes[i].field] =
+              this.history.audited_changes[i].new_value;
           }
           return afterState;
         }
@@ -183,39 +205,39 @@ export default {
     },
     // Generate `validFeedback` to be fed to resulting forms to
     // visually display which fields will be changed by a revert.
-    validFeedback: function() {
+    validFeedback: function () {
       let validFeedback = {};
       if (this.audited_change == null) {
         for (let i = 0; i < this.history.audited_changes.length; i++) {
-          validFeedback[this.history.audited_changes[i].field] = '';
+          validFeedback[this.history.audited_changes[i].field] = "";
         }
         return validFeedback;
       }
 
-      validFeedback[this.audited_change.field] = '';
+      validFeedback[this.audited_change.field] = "";
       return validFeedback;
-    }
+    },
   },
   methods: {
-    showModal: function() {
-      this.$refs['revertModal'].show()
+    showModal: function () {
+      this.$refs["revertModal"].show();
     },
-    revertHistory: function() {
+    revertHistory: function () {
       let payload = {
         audit_id: this.history.id,
-        field: this.audited_change ? this.audited_change.field : null
+        field: this.audited_change ? this.audited_change.field : null,
       };
-      axios.post(`/rules/${this.rule.id}/revert`, payload)
-      .then(this.revertSuccess)
-      .catch(this.alertOrNotifyResponse);
+      axios
+        .post(`/rules/${this.rule.id}/revert`, payload)
+        .then(this.revertSuccess)
+        .catch(this.alertOrNotifyResponse);
     },
-    revertSuccess: function(response) {
+    revertSuccess: function (response) {
       this.alertOrNotifyResponse(response);
-      this.$emit('ruleUpdated', this.rule.id, 'all');
+      this.$emit("ruleUpdated", this.rule.id, "all");
     },
-  }
-}
+  },
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

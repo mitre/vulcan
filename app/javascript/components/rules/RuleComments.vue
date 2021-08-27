@@ -1,20 +1,32 @@
 <template>
   <div>
     <!-- Collapsable header -->
-    <div @click="showComments = !showComments" class="clickable">
+    <div class="clickable" @click="showComments = !showComments">
       <h2 class="m-0 d-inline-block">Comments</h2>
-      <b-badge pill class="superVerticalAlign">{{rule.comments.length}}</b-badge>
+      <b-badge pill class="superVerticalAlign">{{
+        rule.comments.length
+      }}</b-badge>
 
-      <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showComments"></i>
-      <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showComments"></i>
+      <i
+        v-if="showComments"
+        class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+      />
+      <i
+        v-if="!showComments"
+        class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+      />
     </div>
 
     <b-collapse id="collapse-comments" v-model="showComments">
       <!-- All comments -->
-      <div :key="comment.id" v-for="comment in rule.comments">
-        <p class="ml-2 mb-0 mt-2"><strong>{{comment.name}}</strong></p>
-        <p class="ml-2 mb-0"><small>{{friendlyDateTime(comment.created_at)}}</small></p>
-        <p class="ml-3 mb-3">{{comment.body}}</p>
+      <div v-for="comment in rule.comments" :key="comment.id">
+        <p class="ml-2 mb-0 mt-2">
+          <strong>{{ comment.name }}</strong>
+        </p>
+        <p class="ml-2 mb-0">
+          <small>{{ friendlyDateTime(comment.created_at) }}</small>
+        </p>
+        <p class="ml-3 mb-3">{{ comment.body }}</p>
       </div>
 
       <!-- Create a new comment -->
@@ -26,7 +38,7 @@
             placeholder="Enter a comment..."
             rows="3"
             required
-          ></b-form-textarea>
+          />
         </b-form-group>
         <b-button type="submit" variant="primary">Comment</b-button>
       </b-form>
@@ -35,48 +47,48 @@
 </template>
 
 <script>
-import axios from 'axios';
-import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue';
-import AlertMixinVue from '../../mixins/AlertMixin.vue';
-import FormMixinVue from '../../mixins/FormMixin.vue';
+import axios from "axios";
+import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
-  name: 'ControlComments',
+  name: "ControlComments",
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     rule: {
       type: Object,
       required: true,
-    }
+    },
   },
-  data: function() {
+  data: function () {
     return {
       newCommentBody: "",
-      showComments: false
-    }
+      showComments: false,
+    };
   },
   methods: {
-    commentFormSubmitted: function(event) {
+    commentFormSubmitted: function (event) {
       event.preventDefault();
       // guard against invalid comment body
-      if (! this.newCommentBody.trim()) {
+      if (!this.newCommentBody.trim()) {
         return;
       }
 
-      axios.post(`/rules/${this.rule.id}/comments`, {
-        body: this.newCommentBody.trim()
-      })
-      .then(this.commentPostSuccess)
-      .catch(this.alertOrNotifyResponse);
+      axios
+        .post(`/rules/${this.rule.id}/comments`, {
+          body: this.newCommentBody.trim(),
+        })
+        .then(this.commentPostSuccess)
+        .catch(this.alertOrNotifyResponse);
     },
     // Upon success, emit an event to the parent that indicates that this rule should be re-fetched.
-    commentPostSuccess: function(response) {
+    commentPostSuccess: function (response) {
       this.newCommentBody = "";
-      this.$emit('ruleUpdated', this.rule.id, 'comments');
+      this.$emit("ruleUpdated", this.rule.id, "comments");
     },
-  }
-}
+  },
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

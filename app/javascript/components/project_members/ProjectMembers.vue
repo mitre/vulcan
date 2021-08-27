@@ -1,24 +1,28 @@
 <template>
   <div>
-    <h1>{{project.name}} - Manage Project Members</h1>
-    <NewProjectMember :project="project"
-                      :available_members="available_members"
-                      :available_roles="available_roles" />
-    <ProjectMembersTable :editable="true"
-                         :project="project"
-                         :project_members="project_members"
-                         :available_roles="available_roles"
-                         :project_members_count="project_members_count"/>
+    <h1>{{ project.name }} - Manage Project Members</h1>
+    <NewProjectMember
+      :project="project"
+      :available_members="available_members"
+      :available_roles="available_roles"
+    />
+    <ProjectMembersTable
+      :editable="true"
+      :project="project"
+      :project_members="project_members"
+      :available_roles="available_roles"
+      :project_members_count="project_members_count"
+    />
   </div>
 </template>
 
 <script>
-import NewProjectMember from './NewProjectMember.vue'
-import ProjectMembersTable from './ProjectMembersTable.vue'
+import NewProjectMember from "./NewProjectMember.vue";
+import ProjectMembersTable from "./ProjectMembersTable.vue";
 
 export default {
+  name: "ProjectMembers",
   components: { NewProjectMember, ProjectMembersTable },
-  name: 'ProjectMembers',
   props: {
     project_members: {
       type: Array,
@@ -26,7 +30,7 @@ export default {
     },
     project: {
       type: Object,
-      required: true
+      required: true,
     },
     available_members: {
       type: Array,
@@ -38,12 +42,10 @@ export default {
     },
     project_members_count: {
       type: Number,
-      required: true
-    }
-  }
-}
+      required: true,
+    },
+  },
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
