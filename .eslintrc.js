@@ -5,7 +5,6 @@ module.exports = {
   },
   extends: ["plugin:vue/recommended", 'prettier', 'plugin:prettier/recommended' ],
   rules: {
-    'vue/no-mutating-props': 'off', // THIS IS TEMPORARY UNTIL RULE PROP MUTATIONS ARE FIXED
     'max-len': 'off',
     'no-console': 'warn',
     'no-return-await': 'warn',
