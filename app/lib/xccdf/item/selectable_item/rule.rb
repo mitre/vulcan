@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the Rule element that represents a
   # specific benchmark test.

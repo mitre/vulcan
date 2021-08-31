@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Type element type imposes constraints shared by all
   # Groups, Rules and Values.  The itemType is abstract, so

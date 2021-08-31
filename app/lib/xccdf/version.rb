@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Type for a version number, with a timestamp attribute
   # for when the version was made.

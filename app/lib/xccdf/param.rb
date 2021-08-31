@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Type for a scoring model parameter: a name and a
   # string value.

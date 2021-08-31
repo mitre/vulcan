@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Type for an instance element in a fix element. The
   # instance element inside a fix element designates a

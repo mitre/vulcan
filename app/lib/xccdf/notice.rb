@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for legal notice element that has text
   # content and a unique id attribute.

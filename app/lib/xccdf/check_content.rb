@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the check-content element, which holds
   # the actual code of an enveloped check in some other

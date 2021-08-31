@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # This abstract item type represents the basic data shared by all
   # Groups and Rules.

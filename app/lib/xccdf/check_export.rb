@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the check-export element, which specifies
   # a mapping between an XCCDF internal Value id and a

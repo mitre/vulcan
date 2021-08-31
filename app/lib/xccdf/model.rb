@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # A suggested scoring model for a Benchmark, also
   # encapsulating any parameters needed by the model.

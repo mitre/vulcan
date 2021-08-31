@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the check-import element, which specifies a
   # value that the benchmark author wishes to retrieve from the

@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 module Xccdf
-    # Type for a string with embedded Value and instance
+  # Type for a string with embedded Value and instance
   # substitutions and an optional platform id ref attribute, but
   # no embedded XHTML markup.
   # The platform attribute should refer to a platform-definition

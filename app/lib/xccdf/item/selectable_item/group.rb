@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the Group element that represents a grouping of
   # Groups, Rules and Values.
@@ -7,7 +9,6 @@ module Xccdf
         include HappyMapper
 
         tag 'Group'
-
 
         has_many :value, Value, tag: 'Value'
         has_many :rule, Rule, tag: 'Rule'

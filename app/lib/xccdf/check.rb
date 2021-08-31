@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the check element, a checking system
   # specification URI, and XML content.  The content of the

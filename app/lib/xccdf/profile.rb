@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the Profile element, which holds a
   # specific tailoring of the Benchmark.  The main part

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Type for the refine-rule element in a Profile; all it has
   # are four attributes, no content.  The main attribute is

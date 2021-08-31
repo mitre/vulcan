@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for a reference citation, an href URL attribute
   # (optional), with content of text or simple Dublin Core

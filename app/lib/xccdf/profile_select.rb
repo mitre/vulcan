@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Type for the select element in a Profile; all it has are two
   # attributes, no content.  The two attributes are idref which

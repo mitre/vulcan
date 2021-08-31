@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Type for the set-value element in a Profile; it
   # has one required attribute and string content.  The

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for the fixText element that represents
   # a rich text string, with substitutions allowed, and

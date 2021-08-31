@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # The type for an element that can contains a boolean
   # expression based on checks.  This element can have only

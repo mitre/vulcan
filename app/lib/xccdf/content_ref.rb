@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Class ContentRef maps from the 'check-content-ref' from Benchmark XML file using HappyMapper
   class ContentRef

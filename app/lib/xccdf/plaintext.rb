@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for a reusable text block, with an
   # unique id attribute.

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # The choice element specifies a list of legal or suggested
   # choices for a Value object.  It holds one or more choice

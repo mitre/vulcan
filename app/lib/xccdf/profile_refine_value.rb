@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 
 module Xccdf
   # Type for the refine-value element in a Profile; all it has

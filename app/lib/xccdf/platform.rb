@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Xccdf
   # Data type for elements that have no content,
   # just a mandatory URI as an id.  (This is mainly for the
