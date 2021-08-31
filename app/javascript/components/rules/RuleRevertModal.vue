@@ -26,7 +26,13 @@
           </template>
 
           <template v-else-if="history.auditable_type == 'Rule'">
-            <RuleForm :rule="rule" :statuses="statuses" :severities="severities" :disabled="true" />
+            <RuleForm
+              :rule="rule"
+              :statuses="statuses"
+              :severities="severities"
+              :disabled="true"
+              :invalid-feedback="formFeedback"
+            />
           </template>
 
           <template v-else-if="history.auditable_type == 'RuleDescription'">
@@ -34,6 +40,7 @@
               v-if="!isEmpty(currentState)"
               :description="currentState"
               :disabled="true"
+              :invalid-feedback="formFeedback"
             />
             <p v-else>Description does not exist.</p>
           </template>
@@ -43,12 +50,18 @@
               v-if="!isEmpty(currentState)"
               :description="currentState"
               :disabled="true"
+              :invalid-feedback="formFeedback"
             />
             <p v-else>Description does not exist.</p>
           </template>
 
           <template v-else-if="history.auditable_type == 'Check'">
-            <CheckForm v-if="!isEmpty(currentState)" :check="currentState" :disabled="true" />
+            <CheckForm
+              v-if="!isEmpty(currentState)"
+              :check="currentState"
+              :disabled="true"
+              :invalid-feedback="formFeedback"
+            />
             <p v-else>Check does not exist.</p>
           </template>
         </div>
@@ -65,28 +78,28 @@
             :statuses="statuses"
             :severities="severities"
             :disabled="true"
-            :valid-feedback="validFeedback"
+            :valid-feedback="formFeedback"
           />
 
           <RuleDescriptionForm
             v-else-if="history.auditable_type == 'RuleDescription'"
             :description="afterState"
             :disabled="true"
-            :valid-feedback="validFeedback"
+            :valid-feedback="formFeedback"
           />
 
           <DisaRuleDescriptionForm
             v-else-if="history.auditable_type == 'DisaRuleDescription'"
             :description="afterState"
             :disabled="true"
-            :valid-feedback="validFeedback"
+            :valid-feedback="formFeedback"
           />
 
           <CheckForm
             v-else-if="history.auditable_type == 'Check'"
             :check="afterState"
             :disabled="true"
-            :valid-feedback="validFeedback"
+            :valid-feedback="formFeedback"
           />
 
           <p v-else>Could not determine resulting state.</p>
@@ -190,19 +203,19 @@ export default {
       afterState[this.audited_change.field] = this.audited_change.prev_value;
       return afterState;
     },
-    // Generate `validFeedback` to be fed to resulting forms to
+    // Generate `formFeedback` to be fed to resulting forms to
     // visually display which fields will be changed by a revert.
-    validFeedback: function () {
-      let validFeedback = {};
+    formFeedback: function () {
+      let formFeedback = {};
       if (this.audited_change == null) {
         for (let i = 0; i < this.history.audited_changes.length; i++) {
-          validFeedback[this.history.audited_changes[i].field] = "";
+          formFeedback[this.history.audited_changes[i].field] = "";
         }
-        return validFeedback;
+        return formFeedback;
       }
 
-      validFeedback[this.audited_change.field] = "";
-      return validFeedback;
+      formFeedback[this.audited_change.field] = "";
+      return formFeedback;
     },
   },
   methods: {
