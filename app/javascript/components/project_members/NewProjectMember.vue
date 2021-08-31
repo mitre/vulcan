@@ -16,6 +16,7 @@
               :filter-by-query="true"
               display-attribute="email"
               placeholder="Search for a user by email..."
+              :styles="userSearchStyles"
               @select="setSelectedUser($refs.userSearch.selected)"
             />
           </b-input-group>
@@ -134,10 +135,17 @@ export default {
       selectedUser: null,
       selectedRole: null,
       roleDescriptions: [
-        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
-        "Author and approve changes to a Control.",
         "Full control of a Project. Lock Controls, revert controls, and manage project members.",
+        "Author and approve changes to a Control.",
+        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
       ],
+      userSearchStyles: {
+        vueSimpleSuggest: "userSearchVueSimpleSuggest",
+        inputWrapper: "",
+        defaultInput: "",
+        suggestions: "",
+        suggestItem: "",
+      },
     };
   },
   computed: {
