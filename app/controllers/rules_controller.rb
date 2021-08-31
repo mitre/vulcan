@@ -6,6 +6,7 @@
 class RulesController < ApplicationController
   before_action :set_rule, only: %i[show update manage_lock revert]
   before_action :set_project, only: %i[index show update manage_lock revert]
+  before_action :set_project_permissions, only: %i[index]
   before_action :authorize_author_project, only: %i[index update show revert]
   before_action :authorize_review_project, only: %i[manage_lock]
 
@@ -77,5 +78,9 @@ class RulesController < ApplicationController
                else
                  Project.find(params[:project_id])
                end
+  end
+
+  def set_project_permissions
+    @project_permissions = current_user&.project_permissions(@project)
   end
 end

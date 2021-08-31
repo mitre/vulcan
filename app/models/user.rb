@@ -46,4 +46,17 @@ class User < ApplicationRecord
   def can_admin_project?(project)
     admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_ADMINS).any?
   end
+
+  ##
+  # Get the effective permissions on a specific project for the user
+  #
+  def project_permissions(project)
+    return nil if project.nil?
+
+    return 'admin' if admin
+
+    # Use the project ID to find ProjectMember permissions
+    project = project.id if project.is_a? Project
+    ProjectMember.where(project_id: project).find_by(user_id: id)&.role
+  end
 end
