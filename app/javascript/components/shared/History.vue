@@ -38,7 +38,6 @@
                 :audited_change="audited_change"
                 :statuses="statuses"
                 :severities="severities"
-                @ruleUpdated="(id) => $emit('ruleUpdated', id)"
               />
             </div>
           </b-collapse>
@@ -90,7 +89,6 @@
                 :audited_change="audited_change"
                 :statuses="statuses"
                 :severities="severities"
-                @ruleUpdated="(id) => $emit('ruleUpdated', id)"
               />
             </div>
           </b-collapse>
@@ -123,7 +121,6 @@
                 :audited_change="null"
                 :statuses="statuses"
                 :severities="severities"
-                @ruleUpdated="(id) => $emit('ruleUpdated', id)"
               />
             </div>
           </b-collapse>

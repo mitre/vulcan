@@ -70,7 +70,7 @@ export default {
     },
     manageLockSuccess: function (response) {
       this.alertOrNotifyResponse(response);
-      this.$emit("ruleUpdated", this.rule.id, "all");
+      this.$root.$emit("refresh:rule", this.rule.id);
     },
     saveRule() {
       axios
@@ -80,7 +80,7 @@ export default {
     },
     saveRuleSuccess: function (response) {
       this.alertOrNotifyResponse(response);
-      this.$emit("ruleUpdated", this.rule.id, "all");
+      this.$root.$emit("refresh:rule", this.rule.id);
     },
   },
 };
