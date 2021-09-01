@@ -77,7 +77,7 @@ export default {
     // Upon success, emit an event to the parent that indicates that this rule should be re-fetched.
     commentPostSuccess: function (response) {
       this.newCommentBody = "";
-      this.$emit("ruleUpdated", this.rule.id, "comments");
+      this.$root.$emit("refresh:rule", this.rule.id, "comments");
     },
   },
 };

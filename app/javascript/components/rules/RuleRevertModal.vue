@@ -234,7 +234,7 @@ export default {
     },
     revertSuccess: function (response) {
       this.alertOrNotifyResponse(response);
-      this.$emit("ruleUpdated", this.rule.id, "all");
+      this.$root.$emit("refresh:rule", this.rule.id, "all");
     },
   },
 };

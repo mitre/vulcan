@@ -10,7 +10,7 @@
 
     <template v-if="selectedRuleId != null">
       <div class="col-10">
-        <RuleEditorHeader :rule="selectedRule" @ruleUpdated="(id) => $emit('ruleUpdated', id)" />
+        <RuleEditorHeader :rule="selectedRule" />
 
         <hr />
 
@@ -22,17 +22,9 @@
 
           <!-- Additional info column -->
           <div class="col-5">
-            <RuleComments
-              :rule="selectedRule"
-              @ruleUpdated="(id, updated) => $emit('ruleUpdated', id, updated)"
-            />
+            <RuleComments :rule="selectedRule" />
             <br />
-            <RuleHistories
-              :rule="selectedRule"
-              :statuses="statuses"
-              :severities="severities"
-              @ruleUpdated="(id) => $emit('ruleUpdated', id)"
-            />
+            <RuleHistories :rule="selectedRule" :statuses="statuses" :severities="severities" />
           </div>
         </div>
       </div>
