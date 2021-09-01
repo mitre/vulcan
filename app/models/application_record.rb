@@ -22,6 +22,7 @@ class ApplicationRecord < ActiveRecord::Base
         auditable_type: audit.auditable_type,
         auditable_id: audit.auditable_id,
         name: audit.user&.name || 'Unknown User',
+        comment: audit.comment,
         created_at: audit.created_at,
         audited_changes: audit.audited_changes.map do |audited_field, audited_value|
           # On creation, the `audited_value` will be a single value (i.e. not an Array)

@@ -9,6 +9,7 @@ class Rule < ApplicationRecord
   has_associated_audits
 
   before_validation :error_if_locked, on: :update
+  before_save :apply_audit_comment
   before_create :ensure_disa_description_exists
   before_destroy :error_if_locked
 
@@ -53,7 +54,7 @@ class Rule < ApplicationRecord
   #    audit_id (integer) - A specific ID for an audited record
   #    field (string) - A specific field to revert from the audit record
   #
-  def self.revert(rule, audit_id, field)
+  def self.revert(rule, audit_id, field, audit_comment)
     audit = rule.own_and_associated_audits.find(audit_id)
 
     # nil check for audit
@@ -68,6 +69,7 @@ class Rule < ApplicationRecord
 
       record[field] =
         audit.audited_changes[field].is_a?(Array) ? audit.audited_changes[field][0] : audit.audited_changes[field]
+      record.audit_comment = audit_comment
       record.save
       return
     end
@@ -85,7 +87,7 @@ class Rule < ApplicationRecord
                        raise(RuleRevertError, 'Cannot revert this history type.')
                      end
     begin
-      auditable_type.create!(audit.audited_changes.merge({ rule_id: rule.id }))
+      auditable_type.create!(audit.audited_changes.merge({ rule_id: rule.id, audit_comment: audit_comment }))
     rescue ActiveRecord::RecordInvalid => e
       raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
     end
@@ -107,5 +109,25 @@ class Rule < ApplicationRecord
     return unless disa_rule_descriptions.size.zero?
 
     disa_rule_descriptions << DisaRuleDescription.new(rule: self)
+  end
+
+  ##
+  # This before_save callback method exists because if there are no changes on a record, but a audit_comment
+  # is provided, then an Audited::Audit record will be created with no audited_changes. This makes histories
+  # unnecessarily confusing.
+  #
+  # This method addresses that issue by checking the record and its dependent records to see if they are
+  # new records, changed, or marked for deletion. If any of those criteria are true, then the audited_comment
+  # will be applied ONLY to the correct places.
+  #
+  def apply_audit_comment
+    comment = audit_comment
+    return if comment.nil?
+
+    self.audit_comment = nil unless new_record? || changed?
+
+    (rule_descriptions + disa_rule_descriptions + checks).each do |record|
+      record.audit_comment = comment if record.new_record? || record.changed? || record._destroy
+    end
   end
 end

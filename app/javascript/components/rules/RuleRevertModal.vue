@@ -1,20 +1,13 @@
 <template>
   <div>
-    <b-button
-      v-if="rule.locked == false && afterState && !isEmpty(afterState)"
-      class="px-2 py-0"
-      variant="warning"
-      @click="showModal()"
-    >
-      Revert
-    </b-button>
-
-    <b-modal
-      ref="revertModal"
+    <CommentModal
       title="Revert Rule History"
+      message="Provide a reason for reverting this change."
+      :require-non-empty="true"
+      button-text="Revert"
       size="xl"
-      ok-title="Revert"
-      @ok="revertHistory()"
+      button-variant="warning"
+      @comment="revertHistory($event)"
     >
       <div class="row">
         <!-- CURRENT STATE -->
@@ -105,7 +98,8 @@
           <p v-else>Could not determine resulting state.</p>
         </div>
       </div>
-    </b-modal>
+      <hr />
+    </CommentModal>
   </div>
 </template>
 
@@ -118,6 +112,7 @@ import RuleForm from "./forms/RuleForm";
 import RuleDescriptionForm from "./forms/RuleDescriptionForm";
 import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm";
 import CheckForm from "./forms/CheckForm";
+import CommentModal from "../shared/CommentModal.vue";
 
 export default {
   name: "RuleRevertModal",
@@ -126,6 +121,7 @@ export default {
     RuleDescriptionForm,
     DisaRuleDescriptionForm,
     CheckForm,
+    CommentModal,
   },
   mixins: [AlertMixinVue, EmptyObjectMixinVue, FormMixinVue],
   props: {
@@ -222,10 +218,11 @@ export default {
     showModal: function () {
       this.$refs["revertModal"].show();
     },
-    revertHistory: function () {
+    revertHistory: function (comment) {
       let payload = {
         audit_id: this.history.id,
         field: this.audited_change ? this.audited_change.field : null,
+        audit_comment: comment,
       };
       axios
         .post(`/rules/${this.rule.id}/revert`, payload)
