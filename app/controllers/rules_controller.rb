@@ -20,9 +20,9 @@ class RulesController < ApplicationController
 
   def update
     if @rule.update(rule_update_params)
-      render json: { notice: 'Successfully updated rule.' }
+      render json: { notice: 'Successfully updated control.' }
     else
-      render json: { alert: "Could not update rule. #{@rule.errors.full_messages}" }
+      render json: { alert: "Could not update control. #{@rule.errors.full_messages}" }
     end
   rescue RuleLockedError => e
     render json: { alert: e.message }
@@ -34,12 +34,12 @@ class RulesController < ApplicationController
     # rubocop:disable Rails/SkipsModelValidations
     @rule.update_attribute(:locked, manage_lock_params[:locked])
     # rubocop:enable Rails/SkipsModelValidations
-    render json: { notice: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} rule." }
+    render json: { notice: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} control." }
   end
 
   def revert
     Rule.revert(@rule, params[:audit_id], params[:field], params[:audit_comment])
-    render json: { notice: 'Successfully reverted history for rule.' }
+    render json: { notice: 'Successfully reverted history for control.' }
   rescue RuleRevertError => e
     render json: { alert: e.message }
   end
