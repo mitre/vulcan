@@ -29,6 +29,10 @@ export default {
       type: Object,
       required: true,
     },
+    project_permissions: {
+      type: String,
+      required: true,
+    },
     rules: {
       type: Array,
       required: true,
