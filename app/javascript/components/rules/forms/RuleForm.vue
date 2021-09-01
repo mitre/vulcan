@@ -14,11 +14,11 @@
       </label>
       <b-form-select
         :id="`ruleEditor-status-${mod}`"
-        v-model="ruleCopy.status"
+        :value="rule.status"
         :class="inputClass('status')"
         :options="statuses"
         :disabled="disabled"
-        @input="$root.$emit('update:rule', ruleCopy)"
+        @input="$root.$emit('update:rule', { ...rule, status: $event })"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('status')">
         {{ validFeedback["status"] }}
@@ -42,13 +42,13 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-status_justification-${mod}`"
-        v-model="ruleCopy.status_justification"
+        :value="rule.status_justification"
         :class="inputClass('status_justification')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:rule', ruleCopy)"
+        @input="$root.$emit('update:rule', { ...rule, status_justification: $event })"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('status_justification')">
         {{ validFeedback["status_justification"] }}
@@ -59,10 +59,10 @@
     </b-form-group>
 
     <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
-    <p v-if="ruleCopy.status != 'Applicable - Configurable'">
+    <p v-if="rule.status != 'Applicable - Configurable'">
       <small>Some fields are hidden due to the control's status.</small>
     </p>
-    <template v-if="ruleCopy.status == 'Applicable - Configurable'">
+    <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- title -->
       <b-form-group :id="`ruleEditor-title-group-${mod}`">
         <label :for="`ruleEditor-title-${mod}`">
@@ -77,11 +77,11 @@
         </label>
         <b-form-input
           :id="`ruleEditor-title-${mod}`"
-          v-model="ruleCopy.title"
+          :value="rule.title"
           :class="inputClass('title')"
           placeholder=""
           :disabled="disabled"
-          @input="$root.$emit('update:rule', ruleCopy)"
+          @input="$root.$emit('update:rule', { ...rule, title: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('title')">
           {{ validFeedback["title"] }}
@@ -105,11 +105,11 @@
         </label>
         <b-form-input
           :id="`ruleEditor-version-${mod}`"
-          v-model="ruleCopy.version"
+          :value="rule.version"
           :class="inputClass('version')"
           placeholder=""
           :disabled="disabled"
-          @input="$root.$emit('update:rule', ruleCopy)"
+          @input="$root.$emit('update:rule', { ...rule, version: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('version')">
           {{ validFeedback["version"] }}
@@ -134,11 +134,11 @@
           </label>
           <b-form-select
             :id="`ruleEditor-rule_severity-${mod}`"
-            v-model="ruleCopy.rule_severity"
+            :value="rule.rule_severity"
             :class="inputClass('rule_severity')"
             :options="severities"
             :disabled="disabled"
-            @input="$root.$emit('update:rule', ruleCopy)"
+            @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
             {{ validFeedback["rule_severity"] }}
@@ -162,11 +162,11 @@
           </label>
           <b-form-input
             :id="`ruleEditor-rule_weight-${mod}`"
-            v-model="ruleCopy.rule_weight"
+            :value="rule.rule_weight"
             :class="inputClass('rule_weight')"
             placeholder=""
             :disabled="disabled"
-            @input="$root.$emit('update:rule', ruleCopy)"
+            @input="$root.$emit('update:rule', { ...rule, rule_weight: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('rule_weight')">
             {{ validFeedback["rule_weight"] }}
@@ -191,13 +191,13 @@
         </label>
         <b-form-textarea
           :id="`ruleEditor-artifact_description-${mod}`"
-          v-model="ruleCopy.artifact_description"
+          :value="rule.artifact_description"
           :class="inputClass('artifact_description')"
           placeholder=""
           :disabled="disabled"
           rows="1"
           max-rows="99"
-          @input="$root.$emit('update:rule', ruleCopy)"
+          @input="$root.$emit('update:rule', { ...rule, artifact_description: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('artifact_description')">
           {{ validFeedback["artifact_description"] }}
@@ -222,11 +222,11 @@
           </label>
           <b-form-input
             :id="`ruleEditor-fix_id-${mod}`"
-            v-model="ruleCopy.fix_id"
+            :value="rule.fix_id"
             :class="inputClass('fix_id')"
             placeholder=""
             :disabled="disabled"
-            @input="$root.$emit('update:rule', ruleCopy)"
+            @input="$root.$emit('update:rule', { ...rule, fix_id: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('fix_id')">
             {{ validFeedback["fix_id"] }}
@@ -250,11 +250,11 @@
           </label>
           <b-form-input
             :id="`ruleEditor-fixtext_fixref-${mod}`"
-            v-model="ruleCopy.fixtext_fixref"
+            :value="rule.fixtext_fixref"
             :class="inputClass('fixtext_fixref')"
             placeholder=""
             :disabled="disabled"
-            @input="$root.$emit('update:rule', ruleCopy)"
+            @input="$root.$emit('update:rule', { ...rule, fixtext_fixref: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('fixtext_fixref')">
             {{ validFeedback["fixtext_fixref"] }}
@@ -279,13 +279,13 @@
         </label>
         <b-form-textarea
           :id="`ruleEditor-fixtext-${mod}`"
-          v-model="ruleCopy.fixtext"
+          :value="rule.fixtext"
           :class="inputClass('fixtext')"
           placeholder=""
           :disabled="disabled"
           rows="1"
           max-rows="99"
-          @input="$root.$emit('update:rule', ruleCopy)"
+          @input="$root.$emit('update:rule', { ...rule, fixtext: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('fixtext')">
           {{ validFeedback["fixtext"] }}
@@ -310,11 +310,11 @@
           </label>
           <b-form-input
             :id="`ruleEditor-ident-${mod}`"
-            v-model="ruleCopy.ident"
+            :value="rule.ident"
             :class="inputClass('ident')"
             placeholder=""
             :disabled="disabled"
-            @input="$root.$emit('update:rule', ruleCopy)"
+            @input="$root.$emit('update:rule', { ...rule, ident: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('ident')">
             {{ validFeedback["ident"] }}
@@ -338,11 +338,11 @@
           </label>
           <b-form-input
             :id="`ruleEditor-ident_system-${mod}`"
-            v-model="ruleCopy.ident_system"
+            :value="rule.ident_system"
             :class="inputClass('ident_system')"
             placeholder=""
             :disabled="disabled"
-            @input="$root.$emit('update:rule', ruleCopy)"
+            @input="$root.$emit('update:rule', { ...rule, ident_system: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('ident_system')">
             {{ validFeedback["ident_system"] }}
@@ -367,12 +367,13 @@
         </label>
         <b-form-textarea
           :id="`ruleEditor-vendor_comments-${mod}`"
-          v-model="ruleCopy.vendor_comments"
+          :value="rule.vendor_comments"
           :class="inputClass('vendor_comments')"
           placeholder=""
           :disabled="disabled"
           rows="1"
           max-rows="99"
+          @input="$root.$emit('update:rule', { ...rule, vendor_comments: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('vendor_comments')">
           {{ validFeedback["vendor_comments"] }}
@@ -387,7 +388,6 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import _ from "lodash";
 
 export default {
   name: "RuleForm",
@@ -413,7 +413,6 @@ export default {
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
-      ruleCopy: _.cloneDeep(this.rule),
       tooltips: {
         status: null,
         status_justification: null,
@@ -430,11 +429,6 @@ export default {
         vendor_comments: null,
       },
     };
-  },
-  watch: {
-    rule: function (_oldVal, _newVal) {
-      this.ruleCopy = this.rule;
-    },
   },
 };
 </script>

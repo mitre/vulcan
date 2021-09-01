@@ -75,16 +75,16 @@ export default {
     this.$root.$on("update:check", this.checkUpdate);
     this.$root.$on("update:description", this.descriptionUpdate);
     this.$root.$on("update:disaDescription", this.disaDescriptionUpdate);
-    this.$root.$on("add:check", this.checkUpdate);
-    this.$root.$on("add:description", this.descriptionUpdate);
-    this.$root.$on("add:disaDescription", this.disaDescriptionUpdate);
+    this.$root.$on("add:check", this.addCheck);
+    this.$root.$on("add:description", this.addRuleDescription);
+    this.$root.$on("add:disaDescription", this.addDisaRuleDescription);
   },
   methods: {
     /**
      * Event handler for @add:description
      */
     addRuleDescription: function (rule) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
       // Guard if rule is not found
       if (ruleIndex == -1) {
         return;
@@ -92,7 +92,7 @@ export default {
 
       this.reactiveRules[ruleIndex].rule_descriptions_attributes.push({
         description: "",
-        rule_id: this.rule.id,
+        rule_id: this.reactiveRules[ruleIndex].id,
         _destroy: false,
       });
     },
@@ -100,7 +100,7 @@ export default {
      * Event handler for @add:check
      */
     addCheck: function (rule) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
       // Guard if rule is not found
       if (ruleIndex == -1) {
         return;
@@ -111,7 +111,7 @@ export default {
         content_ref_name: "",
         content_ref_href: "",
         content: "",
-        rule_id: this.rule.id,
+        rule_id: this.reactiveRules[ruleIndex].id,
         _destroy: false,
       });
     },
@@ -119,7 +119,7 @@ export default {
      * Event handler for @add:disaDescription
      */
     addDisaRuleDescription: function (rule) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
       // Guard if rule is not found
       if (ruleIndex == -1) {
         return;
@@ -127,7 +127,7 @@ export default {
 
       this.reactiveRules[ruleIndex].disa_rule_descriptions_attributes.push({
         description: "",
-        rule_id: this.rule.id,
+        rule_id: this.reactiveRules[ruleIndex].id,
         _destroy: false,
       });
     },
@@ -136,7 +136,7 @@ export default {
      * Splices the updated version of the rule where the previous rule was.
      */
     ruleUpdate: function (rule) {
-      const index = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      const index = this.reactiveRules.findIndex((r) => r.id == rule?.id);
       // Guard if rule is not found.
       if (index == -1) {
         return;
@@ -151,7 +151,7 @@ export default {
      * If -1 is passed as the index, then no action will be taken.
      */
     checkUpdate: function (rule, check, index) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
       // Guard if rule is not found
       // OR
       // check index == -1  because -1 is the default if no index is passed to CheckForm.
@@ -168,7 +168,7 @@ export default {
      * If -1 is passed as the index, then no action will be taken.
      */
     disaDescriptionUpdate: function (rule, description, index) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
       // Guard if rule is not found
       // OR
       // check index == -1  because -1 is the default if no index is passed to DisaRuleDescriptionForm.
@@ -185,7 +185,7 @@ export default {
      * If -1 is passed as the index, then no action will be taken.
      */
     descriptionUpdate: function (rule, description, index) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule.id);
+      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
       // Guard if rule is not found
       // OR
       // check index == -1  because -1 is the default if no index is passed to RuleDescriptionForm.

@@ -6,9 +6,16 @@
     <!-- documentable -->
     <b-form-group>
       <b-form-checkbox
-        v-model="descriptionCopy.documentable"
+        :checked="description.documentable"
         :disabled="disabled"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, documentable: $event },
+            index
+          )
+        "
       >
         Documentable
         <i
@@ -35,13 +42,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-vuln_discussion-${mod}`"
-        v-model="descriptionCopy.vuln_discussion"
+        :value="description.vuln_discussion"
         :class="inputClass('vuln_discussion')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, vuln_discussion: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('vuln_discussion')">
         {{ validFeedback["vuln_discussion"] }}
@@ -65,13 +79,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-false_positives-${mod}`"
-        v-model="descriptionCopy.false_positives"
+        :value="description.false_positives"
         :class="inputClass('false_positives')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, false_positives: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('false_positives')">
         {{ validFeedback["false_positives"] }}
@@ -95,13 +116,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-false_negatives-${mod}`"
-        v-model="descriptionCopy.false_negatives"
+        :value="description.false_negatives"
         :class="inputClass('false_negatives')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, false_negatives: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('false_negatives')">
         {{ validFeedback["false_negatives"] }}
@@ -125,13 +153,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-mitigations-${mod}`"
-        v-model="descriptionCopy.mitigations"
+        :value="description.mitigations"
         :class="inputClass('mitigations')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, mitigations: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('mitigations')">
         {{ validFeedback["mitigations"] }}
@@ -155,13 +190,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`"
-        v-model="descriptionCopy.severity_override_guidance"
+        :value="description.severity_override_guidance"
         :class="inputClass('severity_override_guidance')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, severity_override_guidance: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('severity_override_guidance')">
         {{ validFeedback["severity_override_guidance"] }}
@@ -185,13 +227,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-potential_impacts-${mod}`"
-        v-model="descriptionCopy.potential_impacts"
+        :value="description.potential_impacts"
         :class="inputClass('potential_impacts')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, potential_impacts: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('potential_impacts')">
         {{ validFeedback["potential_impacts"] }}
@@ -215,13 +264,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-third_party_tools-${mod}`"
-        v-model="descriptionCopy.third_party_tools"
+        :value="description.third_party_tools"
         :class="inputClass('third_party_tools')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, third_party_tools: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('third_party_tools')">
         {{ validFeedback["third_party_tools"] }}
@@ -245,13 +301,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-mitigation_control-${mod}`"
-        v-model="descriptionCopy.mitigation_control"
+        :value="description.mitigation_control"
         :class="inputClass('mitigation_control')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, mitigation_control: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('mitigation_control')">
         {{ validFeedback["mitigation_control"] }}
@@ -275,13 +338,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-responsibility-${mod}`"
-        v-model="descriptionCopy.responsibility"
+        :value="description.responsibility"
         :class="inputClass('responsibility')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, responsibility: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('responsibility')">
         {{ validFeedback["responsibility"] }}
@@ -305,13 +375,20 @@
       </label>
       <b-form-textarea
         :id="`ruleEditor-disa_rule_description-ia_controls-${mod}`"
-        v-model="descriptionCopy.ia_controls"
+        :value="description.ia_controls"
         :class="inputClass('ia_controls')"
         placeholder=""
         :disabled="disabled"
         rows="1"
         max-rows="99"
-        @input="$root.$emit('update:disaDescription', rule, descriptionCopy, index)"
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, ia_controls: $event },
+            index
+          )
+        "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('ia_controls')">
         {{ validFeedback["ia_controls"] }}
@@ -321,7 +398,13 @@
       </b-form-invalid-feedback>
     </b-form-group>
     <!-- This is commented out because there is currently the assumption that users will only need one description -->
-    <!-- <a @click="removeDescription()" class="clickable text-dark" v-if="!disabled">
+    <!-- <a
+      v-if="!disabled"
+      class="clickable text-dark"
+      @click="
+        $root.$emit('update:disaDescription', rule, { ...description, _destroy: true }, index)
+      "
+    >
       <i class="mdi mdi-trash-can" aria-hidden="true"></i>
       Remove DISA Description
     </a> -->
@@ -354,7 +437,6 @@ export default {
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
-      descriptionCopy: _.cloneDeep(this.description),
       tooltips: {
         documentable: null,
         vuln_discussion: null,
@@ -369,17 +451,6 @@ export default {
         ia_controls: null,
       },
     };
-  },
-  watch: {
-    description: function (_oldVal, _newVal) {
-      this.descriptionCopy = this.description;
-    },
-  },
-  methods: {
-    removeDescription: function () {
-      this.descriptionCopy._destroy = true;
-      this.$root.$emit("update:disaDescription", this.rule, this.descriptionCopy, this.index);
-    },
   },
 };
 </script>
