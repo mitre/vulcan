@@ -16,7 +16,6 @@
         :rule="rule"
         :statuses="statuses"
         :severities="severities"
-        @ruleUpdated="(id) => $emit('ruleUpdated', id)"
       />
     </b-collapse>
   </div>
