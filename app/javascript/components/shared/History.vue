@@ -7,6 +7,7 @@
       <p class="ml-2 mb-0">
         <small>{{ friendlyDateTime(history.created_at) }}</small>
       </p>
+      <p v-if="history.comment" class="ml-3 mb-0">{{ history.comment }}</p>
       <!-- Edit on the Rule itself -->
       <template v-if="history.auditable_type == 'Rule'">
         <!-- Edit on the rule itself -->

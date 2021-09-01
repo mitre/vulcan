@@ -23,7 +23,16 @@
         </span>
       </template>
       <template v-else>
-        <b-button variant="success" @click="saveRule()">Save Control</b-button>
+        <CommentModal
+          title="Save Control"
+          message="Provide a comment that summarizes your changes to this control."
+          :require-non-empty="true"
+          button-text="Save Control"
+          button-variant="success"
+          :button-disabled="false"
+          wrapper-class="d-inline-block"
+          @comment="saveRule($event)"
+        />
         <b-button variant="danger">Delete Control</b-button>
         <!-- <b-button>Duplicate Control</b-button> -->
       </template>
@@ -40,9 +49,11 @@ import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import CommentModal from "../shared/CommentModal.vue";
 
 export default {
   name: "RuleEditorHeader",
+  components: { CommentModal },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     rule: {
@@ -72,9 +83,15 @@ export default {
       this.alertOrNotifyResponse(response);
       this.$root.$emit("refresh:rule", this.rule.id);
     },
-    saveRule() {
+    saveRule(comment) {
+      const payload = {
+        rule: {
+          ...this.rule,
+          audit_comment: comment,
+        },
+      };
       axios
-        .put(`/rules/${this.rule.id}`, this.rule)
+        .put(`/rules/${this.rule.id}`, payload)
         .then(this.saveRuleSuccess)
         .catch(this.alertOrNotifyResponse);
     },
