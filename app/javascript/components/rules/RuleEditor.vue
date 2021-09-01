@@ -16,7 +16,7 @@
       <!-- <template v-if="rule.status == 'Applicable - Configurable'">
         <div @click="showRuleDescriptions = !showRuleDescriptions" class="clickable mb-2">
           <h2 class="m-0 d-inline-block">Rule Descriptions</h2>
-          <b-badge pill class="superVerticalAlign">{{rule.rule_descriptions_attributes.length}}</b-badge>
+          <b-badge pill class="superVerticalAlign">{{rule.rule_descriptions_attributes.filter((e) => e._destroy != true ).length}}</b-badge>
 
           <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showRuleDescriptions"></i>
           <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showRuleDescriptions"></i>
@@ -38,7 +38,7 @@
       <template v-if="rule.status == 'Applicable - Configurable'">
         <div class="clickable mb-2" @click="showDisaRuleDescriptions = !showDisaRuleDescriptions">
           <h2 class="m-0 d-inline-block">Rule Description</h2>
-          <!-- <b-badge pill class="superVerticalAlign">{{rule.disa_rule_descriptions_attributes.length}}</b-badge> -->
+          <!-- <b-badge pill class="superVerticalAlign">{{rule.disa_rule_descriptions_attributes.filter((e) => e._destroy != true ).length}}</b-badge> -->
 
           <i
             v-if="showDisaRuleDescriptions"
@@ -67,7 +67,9 @@
       <template v-if="rule.status == 'Applicable - Configurable'">
         <div class="clickable mb-2" @click="showChecks = !showChecks">
           <h2 class="m-0 d-inline-block">Checks</h2>
-          <b-badge pill class="superVerticalAlign">{{ rule.checks_attributes.length }}</b-badge>
+          <b-badge pill class="superVerticalAlign">{{
+            rule.checks_attributes.filter((e) => e._destroy != true).length
+          }}</b-badge>
 
           <i v-if="showChecks" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
           <i v-if="!showChecks" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
