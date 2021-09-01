@@ -48,8 +48,9 @@ class RulesController < ApplicationController
 
   def rule_update_params
     params.require(:rule).permit(
-      :status, :status_justification, :artifact_description, :vendor_comments, :rule_severity,
-      :rule_weight, :version, :title, :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
+      :status, :status_justification, :artifact_description, :vendor_comments,
+      :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
+      :fix_id, :fixtext_fixref, :audit_comment,
       checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
       rule_descriptions_attributes: %i[id description _destroy],
       disa_rule_descriptions_attributes: %i[

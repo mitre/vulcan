@@ -16,14 +16,23 @@
       <!-- Disable and enable save & delete buttons based on locked state of rule -->
       <template v-if="rule.locked">
         <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
-          <b-button variant="success" disabled>Save Control</b-button>
+          <!-- <b-button variant="success" disabled>Save Control</b-button> -->
         </span>
         <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
           <b-button variant="danger" disabled>Delete Control</b-button>
         </span>
       </template>
       <template v-else>
-        <b-button variant="success" @click="saveRule()">Save Control</b-button>
+        <CommentModal
+          title="Save Control"
+          message="Provide a comment that summarizes your changes to this control."
+          :require-non-empty="true"
+          button-text="Save Control"
+          button-variant="success"
+          :button-disabled="false"
+          wrapper-class="d-inline-block"
+          @comment="saveRule($event)"
+        />
         <b-button variant="danger">Delete Control</b-button>
         <!-- <b-button>Duplicate Control</b-button> -->
       </template>
@@ -40,9 +49,12 @@ import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import CommentModal from "../shared/CommentModal.vue";
+import _ from "lodash";
 
 export default {
   name: "RuleEditorHeader",
+  components: { CommentModal },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     rule: {
@@ -72,9 +84,13 @@ export default {
       this.alertOrNotifyResponse(response);
       this.$root.$emit("refresh:rule", this.rule.id);
     },
-    saveRule() {
+    saveRule(comment) {
+      let payload = {
+        rule: _.cloneDeep(this.rule),
+      };
+      payload["rule"]["audit_comment"] = comment;
       axios
-        .put(`/rules/${this.rule.id}`, this.rule)
+        .put(`/rules/${this.rule.id}`, payload)
         .then(this.saveRuleSuccess)
         .catch(this.alertOrNotifyResponse);
     },
