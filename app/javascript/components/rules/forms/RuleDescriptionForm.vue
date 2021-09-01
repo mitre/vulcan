@@ -19,13 +19,15 @@
         </label>
         <b-form-textarea
           :id="`ruleEditor-rule_description-${mod}`"
-          v-model="descriptionCopy.description"
+          :value="description.description"
           :class="inputClass('description')"
           placeholder=""
           :disabled="disabled"
           rows="1"
           max-rows="99"
-          @input="$root.$emit('update:description', rule, descriptionCopy, index)"
+          @input="
+            $root.$emit('update:description', rule, { ...description, description: $event }, index)
+          "
         />
         <b-form-valid-feedback v-if="hasValidFeedback('description')">
           {{ validFeedback["description"] }}
@@ -36,7 +38,11 @@
       </b-form-group>
 
       <!-- Remove link -->
-      <a v-if="!disabled" class="clickable text-dark" @click="removeDescription()">
+      <a
+        v-if="!disabled"
+        class="clickable text-dark"
+        @click="$root.$emit('update:description', rule, { ...description, _destroy: true }, index)"
+      >
         <i class="mdi mdi-trash-can" aria-hidden="true" />
         Remove Rule Description
       </a>
@@ -46,7 +52,6 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import _ from "lodash";
 
 export default {
   name: "RuleDescriptionForm",
@@ -72,22 +77,10 @@ export default {
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
-      descriptionCopy: _.cloneDeep(this.description),
       tooltips: {
         rule_description: null,
       },
     };
-  },
-  watch: {
-    description: function (_oldVal, _newVal) {
-      this.descriptionCopy = this.description;
-    },
-  },
-  methods: {
-    removeDescription: function () {
-      this.descriptionCopy._destroy = true;
-      this.$root.$emit("update:description", this.rule, this.descriptionCopy, this.index);
-    },
   },
 };
 </script>
