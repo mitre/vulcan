@@ -16,7 +16,7 @@
       <!-- Disable and enable save & delete buttons based on locked state of rule -->
       <template v-if="rule.locked">
         <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
-          <!-- <b-button variant="success" disabled>Save Control</b-button> -->
+          <b-button variant="success" disabled>Save Control</b-button>
         </span>
         <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
           <b-button variant="danger" disabled>Delete Control</b-button>
@@ -50,7 +50,6 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
-import _ from "lodash";
 
 export default {
   name: "RuleEditorHeader",
@@ -85,10 +84,12 @@ export default {
       this.$root.$emit("refresh:rule", this.rule.id);
     },
     saveRule(comment) {
-      let payload = {
-        rule: _.cloneDeep(this.rule),
+      const payload = {
+        rule: {
+          ...this.rule,
+          audit_comment: comment,
+        },
       };
-      payload["rule"]["audit_comment"] = comment;
       axios
         .put(`/rules/${this.rule.id}`, payload)
         .then(this.saveRuleSuccess)
