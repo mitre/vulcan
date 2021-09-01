@@ -53,7 +53,7 @@ class Rule < ApplicationRecord
   #    audit_id (integer) - A specific ID for an audited record
   #    field (string) - A specific field to revert from the audit record
   #
-  def self.revert(rule, audit_id, field)
+  def self.revert(rule, audit_id, field, audit_comment)
     audit = rule.own_and_associated_audits.find(audit_id)
 
     # nil check for audit
@@ -68,6 +68,7 @@ class Rule < ApplicationRecord
 
       record[field] =
         audit.audited_changes[field].is_a?(Array) ? audit.audited_changes[field][0] : audit.audited_changes[field]
+      record.audit_comment = audit_comment
       record.save
       return
     end
@@ -85,7 +86,7 @@ class Rule < ApplicationRecord
                        raise(RuleRevertError, 'Cannot revert this history type.')
                      end
     begin
-      auditable_type.create!(audit.audited_changes.merge({ rule_id: rule.id }))
+      auditable_type.create!(audit.audited_changes.merge({ rule_id: rule.id, audit_comment: audit_comment }))
     rescue ActiveRecord::RecordInvalid => e
       raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
     end

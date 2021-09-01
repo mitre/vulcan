@@ -1,24 +1,28 @@
 <template>
   <div :class="wrapperClass">
     <b-button
-      v-b-modal.comment-modal
       :variant="buttonVariant"
       :class="buttonClass"
       :disabled="buttonDisabled"
+      @click="$bvModal.show(`comment-modal-${mod}`)"
     >
       {{ buttonText }}
     </b-button>
 
     <b-modal
-      id="comment-modal"
+      :id="`comment-modal-${mod}`"
       ref="modal"
       :title="title"
+      :size="size"
       centered
       @show="resetModal"
       @hidden="resetModal"
       @ok="handleOk"
     >
+      <slot />
+
       <p v-if="message">{{ message }}</p>
+
       <form ref="form" @submit.stop.prevent="handleSubmit">
         <b-form-group
           label="Comment"
@@ -78,9 +82,14 @@ export default {
       type: String,
       default: "",
     },
+    size: {
+      type: String,
+      default: null,
+    },
   },
   data: function () {
     return {
+      mod: Math.floor(Math.random() * 1000),
       comment: "",
       commentValidState: null,
     };
@@ -112,7 +121,7 @@ export default {
 
       // Hide the modal manually
       this.$nextTick(() => {
-        this.$bvModal.hide("comment-modal");
+        this.$bvModal.hide(`comment-modal-${this.mod}`);
       });
     },
     checkFormValidity() {
