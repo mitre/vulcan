@@ -1,11 +1,7 @@
 <template>
-  <div v-if="check._destroy != true" class="card p-3 mb-3">
-    <p>
-      <strong>{{ check.id == null ? "New " : "" }}Check</strong>
-    </p>
-
+  <div v-if="check._destroy != true">
     <!-- system -->
-    <b-form-group :id="`ruleEditor-check-system-group-${mod}`">
+    <b-form-group v-if="showFields.includes('system')" :id="`ruleEditor-check-system-group-${mod}`">
       <label :for="`ruleEditor-check-system-${mod}`">
         System
         <i
@@ -33,7 +29,10 @@
     </b-form-group>
 
     <!-- content_ref_name -->
-    <b-form-group :id="`ruleEditor-check-content_ref_name-group-${mod}`">
+    <b-form-group
+      v-if="showFields.includes('content_ref_name')"
+      :id="`ruleEditor-check-content_ref_name-group-${mod}`"
+    >
       <label :for="`ruleEditor-check-content_ref_name-${mod}`">
         Reference Name
         <i
@@ -61,7 +60,10 @@
     </b-form-group>
 
     <!-- content_ref_href -->
-    <b-form-group :id="`ruleEditor-check-content_ref_href-group-${mod}`">
+    <b-form-group
+      v-if="showFields.includes('content_ref_href')"
+      :id="`ruleEditor-check-content_ref_href-group-${mod}`"
+    >
       <label :for="`ruleEditor-check-content_ref_href-${mod}`">
         Reference Link
         <i
@@ -89,7 +91,10 @@
     </b-form-group>
 
     <!-- content -->
-    <b-form-group :id="`ruleEditor-check-content-group-${mod}`">
+    <b-form-group
+      v-if="showFields.includes('content')"
+      :id="`ruleEditor-check-content-group-${mod}`"
+    >
       <label :for="`ruleEditor-check-content-${mod}`">
         Check
         <i
@@ -117,16 +122,6 @@
         {{ invalidFeedback["content"] }}
       </b-form-invalid-feedback>
     </b-form-group>
-
-    <!-- Remove link -->
-    <a
-      v-if="!disabled"
-      class="clickable text-dark"
-      @click="$root.$emit('update:check', rule, { ...check, _destroy: true }, index)"
-    >
-      <i class="mdi mdi-trash-can" aria-hidden="true" />
-      Remove Check
-    </a>
   </div>
 </template>
 
@@ -152,6 +147,10 @@ export default {
     disabled: {
       type: Boolean,
       required: true,
+    },
+    showFields: {
+      type: Array,
+      default: () => ["system", "content_ref_name", "content_ref_href", "content"],
     },
   },
   data: function () {
