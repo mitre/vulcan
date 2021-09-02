@@ -71,8 +71,8 @@ export default {
       default: "primary",
     },
     buttonClass: {
-      type: String,
-      default: "",
+      type: [Object, Array],
+      default: () => [],
     },
     buttonDisabled: {
       type: Boolean,

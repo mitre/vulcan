@@ -4,11 +4,81 @@
       title="Revert Rule History"
       message="Provide a reason for reverting this change."
       :require-non-empty="true"
-      button-text="Revert"
+      :button-text="buttonText"
       size="xl"
-      button-variant="warning"
+      button-variant="link"
+      :button-class="buttonClass"
       @comment="revertHistory($event)"
     >
+      <!-- History Metadata -->
+      <p class="mb-0">
+        <strong>{{ history.name }}</strong>
+      </p>
+      <p class="mb-0">
+        <small>{{ friendlyDateTime(history.created_at) }}</small>
+      </p>
+      <p class="ml-3 mb-3">{{ history.comment || "No change comment was provided." }}</p>
+
+      <!-- Selection of fields to revert -->
+      <template v-if="history.action == 'update'">
+        <p class="h3">Select Changes to Revert</p>
+        <div>
+          <b-table
+            ref="selectableRevertTable"
+            :items="history.audited_changes"
+            :fields="revertFields"
+            select-mode="multi"
+            responsive="sm"
+            selectable
+            @row-selected="onRowSelected"
+          >
+            <!-- Custom Header for prev_value -->
+            <template #head(prev_value)="">
+              Changed From
+              <i
+                v-b-tooltip.hover.html
+                class="mdi mdi-information"
+                aria-hidden="true"
+                title="This is the state of the record before the author made the change.<br/>When a row is selected, the record will revert to this value."
+              />
+            </template>
+
+            <!-- Custom Header for new_value -->
+            <template #head(new_value)="">
+              Changed To
+              <i
+                v-b-tooltip.hover.html
+                class="mdi mdi-information"
+                aria-hidden="true"
+                title="This is the state of the record after the author made the change."
+              />
+            </template>
+
+            <!-- Selected Column -->
+            <template #cell(selected)="{ rowSelected }">
+              <template v-if="rowSelected">
+                <span aria-hidden="true">&check;</span>
+                <span class="sr-only">Selected</span>
+              </template>
+              <template v-else>
+                <span aria-hidden="true">&nbsp;</span>
+                <span class="sr-only">Not selected</span>
+              </template>
+            </template>
+
+            <!-- Field Column -->
+            <template #cell(field)="data">
+              {{ humanizedType(data.item.field) }}
+            </template>
+          </b-table>
+
+          <b-button size="sm" @click="selectAllRows">Select all</b-button>
+          <b-button size="sm" @click="clearSelectedRows">Clear selected</b-button>
+        </div>
+      </template>
+
+      <hr />
+
       <div class="row">
         <!-- CURRENT STATE -->
         <div class="col-6">
@@ -105,9 +175,13 @@
 
 <script>
 import axios from "axios";
+
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import EmptyObjectMixinVue from "../../mixins/EmptyObjectMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
+
 import RuleForm from "./forms/RuleForm";
 import RuleDescriptionForm from "./forms/RuleDescriptionForm";
 import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm";
@@ -123,7 +197,13 @@ export default {
     CheckForm,
     CommentModal,
   },
-  mixins: [AlertMixinVue, EmptyObjectMixinVue, FormMixinVue],
+  mixins: [
+    AlertMixinVue,
+    EmptyObjectMixinVue,
+    FormMixinVue,
+    DateFormatMixinVue,
+    HumanizedTypesMixInVue,
+  ],
   props: {
     rule: {
       type: Object,
@@ -132,10 +212,6 @@ export default {
     history: {
       type: Object,
       required: true,
-    },
-    audited_change: {
-      type: Object,
-      required: false,
     },
     statuses: {
       type: Array,
@@ -146,9 +222,41 @@ export default {
       required: true,
     },
   },
+  data: function () {
+    return {
+      selectedRevertRows: [],
+      revertFields: ["selected", "field", "prev_value", "new_value"],
+    };
+  },
   computed: {
+    selectedRevertFields: function () {
+      return this.selectedRevertRows.map((audit) => audit.field);
+    },
+    buttonText: function () {
+      if (this.history.action == "destroy") {
+        return `${this.humanizedType(this.history.auditable_type)} was Deleted...`;
+      }
+
+      if (this.history.action == "update") {
+        return `${this.humanizedType(this.history.auditable_type)} was Updated...`;
+      }
+
+      return "";
+    },
+    buttonClass: function () {
+      if (this.history.action == "destroy") {
+        return ["text-danger", "p-0", "ml-3"];
+      }
+
+      return ["text-info", "p-0", "ml-3"];
+    },
+    revertOptions: function () {
+      return this.history.audited_changes.map(function (audit) {
+        return { text: audit.humanized_field, value: audit.field };
+      });
+    },
     modalId: function () {
-      return `revert-modal-${this.history.id}-${this.audited_change["field"] || "unknown"}`;
+      return `revert-modal-${this.history.id}}`;
     },
     currentState: function () {
       let dependentRecord = {};
@@ -180,48 +288,43 @@ export default {
       // Get `currentState` and duplicate for modification
       let afterState = Object.assign({}, this.currentState);
 
-      // Could not find the before state because the record was either
-      // deleted or something went wrong and `{}` was returned by `currentState`
-      if (this.isEmpty(afterState)) {
-        // `this.audited_change == null` implies that action was a deletion
-        // This means that `afterState` needs to be populated with the entirety of `history.audited_changes`
-        if (this.audited_change == null) {
-          for (let i = 0; i < this.history.audited_changes.length; i++) {
-            afterState[this.history.audited_changes[i].field] =
-              this.history.audited_changes[i].new_value;
-          }
-          return afterState;
+      // For each audited_change, check if it is one of the selected properties to revert.
+      for (let i = 0; i < this.history.audited_changes.length; i++) {
+        const audited_field = this.history.audited_changes[i].field;
+        if (this.selectedRevertFields.includes(audited_field)) {
+          afterState[audited_field] = this.history.audited_changes[i].prev_value;
         }
-        return {};
       }
 
-      // For and edit, just update the single `audited_change` from `currentState`
-      afterState[this.audited_change.field] = this.audited_change.prev_value;
       return afterState;
     },
     // Generate `formFeedback` to be fed to resulting forms to
     // visually display which fields will be changed by a revert.
     formFeedback: function () {
       let formFeedback = {};
-      if (this.audited_change == null) {
-        for (let i = 0; i < this.history.audited_changes.length; i++) {
-          formFeedback[this.history.audited_changes[i].field] = "";
-        }
-        return formFeedback;
+      for (let i = 0; i < this.selectedRevertFields.length; i++) {
+        formFeedback[this.selectedRevertFields[i]] = "";
       }
-
-      formFeedback[this.audited_change.field] = "";
       return formFeedback;
     },
   },
   methods: {
+    selectAllRows: function () {
+      this.$refs.selectableRevertTable.selectAllRows();
+    },
+    clearSelectedRows() {
+      this.$refs.selectableRevertTable.clearSelected();
+    },
+    onRowSelected(items) {
+      this.selectedRevertRows = items;
+    },
     showModal: function () {
       this.$refs["revertModal"].show();
     },
     revertHistory: function (comment) {
       let payload = {
         audit_id: this.history.id,
-        field: this.audited_change ? this.audited_change.field : null,
+        fields: this.selectedRevertFields,
         audit_comment: comment,
       };
       axios

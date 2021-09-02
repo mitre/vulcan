@@ -29,6 +29,7 @@ class ApplicationRecord < ActiveRecord::Base
           # After an edit, the `audited_value` will be an Array where `[0]` is prev and `[1]` is new
           {
             field: audited_field,
+            humanized_field: audited_field.humanize,
             prev_value: (audited_value.is_a?(Array) ? audited_value[0] : nil),
             new_value: (audited_value.is_a?(Array) ? audited_value[1] : audited_value)
           }
