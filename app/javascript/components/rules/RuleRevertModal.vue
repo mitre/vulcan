@@ -250,11 +250,6 @@ export default {
 
       return ["text-info", "p-0", "ml-3"];
     },
-    revertOptions: function () {
-      return this.history.audited_changes.map(function (audit) {
-        return { text: audit.humanized_field, value: audit.field };
-      });
-    },
     modalId: function () {
       return `revert-modal-${this.history.id}}`;
     },
