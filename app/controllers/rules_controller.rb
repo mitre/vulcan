@@ -38,7 +38,7 @@ class RulesController < ApplicationController
   end
 
   def revert
-    Rule.revert(@rule, params[:audit_id], params[:field], params[:audit_comment])
+    Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
     render json: { notice: 'Successfully reverted history for control.' }
   rescue RuleRevertError => e
     render json: { alert: e.message }

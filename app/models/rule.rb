@@ -54,7 +54,7 @@ class Rule < ApplicationRecord
   #    audit_id (integer) - A specific ID for an audited record
   #    field (string) - A specific field to revert from the audit record
   #
-  def self.revert(rule, audit_id, field, audit_comment)
+  def self.revert(rule, audit_id, fields, audit_comment)
     audit = rule.own_and_associated_audits.find(audit_id)
 
     # nil check for audit
@@ -62,14 +62,24 @@ class Rule < ApplicationRecord
 
     if audit.action == 'update'
       record = audit.auditable
-      unless audit.audited_changes.include?(field)
-        raise(RuleRevertError,
-              'Field to revert does not exist in this history.')
-      end
 
-      record[field] =
-        audit.audited_changes[field].is_a?(Array) ? audit.audited_changes[field][0] : audit.audited_changes[field]
-      record.audit_comment = audit_comment
+      # nil check for record
+      raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
+
+      fields.each do |field|
+        unless audit.audited_changes.include?(field)
+          raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.")
+        end
+
+        # The audited change can either be an array `[prev_val, new_val]`
+        # or just the `val`
+        record[field] = if audit.audited_changes[field].is_a?(Array)
+                          audit.audited_changes[field][0]
+                        else
+                          audit.audited_changes[field]
+                        end
+      end
+      record.audit_comment = audit_comment if record.changed?
       record.save
       return
     end
