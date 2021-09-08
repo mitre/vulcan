@@ -64,7 +64,7 @@
     </p>
     <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- title -->
-      <b-form-group :id="`ruleEditor-title-group-${mod}`">
+      <b-form-group v-if="showFields.includes('title')" :id="`ruleEditor-title-group-${mod}`">
         <label :for="`ruleEditor-title-${mod}`">
           Title
           <i
@@ -92,7 +92,7 @@
       </b-form-group>
 
       <!-- version -->
-      <b-form-group :id="`ruleEditor-version-group-${mod}`">
+      <b-form-group v-if="showFields.includes('version')" :id="`ruleEditor-version-group-${mod}`">
         <label :for="`ruleEditor-version-${mod}`">
           Version
           <i
@@ -121,7 +121,11 @@
 
       <div class="row">
         <!-- rule_severity -->
-        <b-form-group :id="`ruleEditor-rule_severity-group-${mod}`" class="col-6">
+        <b-form-group
+          v-if="showFields.includes('rule_severity')"
+          :id="`ruleEditor-rule_severity-group-${mod}`"
+          class="col-6"
+        >
           <label :for="`ruleEditor-rule_severity-${mod}`">
             Rule Severity
             <i
@@ -149,7 +153,11 @@
         </b-form-group>
 
         <!-- rule_weight -->
-        <b-form-group :id="`ruleEditor-rule_weight-group-${mod}`" class="col-6">
+        <b-form-group
+          v-if="showFields.includes('rule_weight')"
+          :id="`ruleEditor-rule_weight-group-${mod}`"
+          class="col-6"
+        >
           <label :for="`ruleEditor-rule_weight-${mod}`">
             Rule Weight
             <i
@@ -178,7 +186,10 @@
       </div>
 
       <!-- artifact_description -->
-      <b-form-group :id="`ruleEditor-artifact_description-group-${mod}`">
+      <b-form-group
+        v-if="showFields.includes('artifact_description')"
+        :id="`ruleEditor-artifact_description-group-${mod}`"
+      >
         <label :for="`ruleEditor-artifact_description-${mod}`">
           Artifact Description
           <i
@@ -209,7 +220,11 @@
 
       <div class="row">
         <!-- fix_id -->
-        <b-form-group :id="`ruleEditor-fix_id-group-${mod}`" class="col-6">
+        <b-form-group
+          v-if="showFields.includes('fix_id')"
+          :id="`ruleEditor-fix_id-group-${mod}`"
+          class="col-6"
+        >
           <label :for="`ruleEditor-fix_id-${mod}`">
             Fix ID
             <i
@@ -237,7 +252,11 @@
         </b-form-group>
 
         <!-- fixtext_fixref -->
-        <b-form-group :id="`ruleEditor-fixtext_fixref-group-${mod}`" class="col-6">
+        <b-form-group
+          v-if="showFields.includes('fixtext_fixref')"
+          :id="`ruleEditor-fixtext_fixref-group-${mod}`"
+          class="col-6"
+        >
           <label :for="`ruleEditor-fixtext_fixref-${mod}`">
             Fix Text Reference
             <i
@@ -266,7 +285,7 @@
       </div>
 
       <!-- fixtext -->
-      <b-form-group :id="`ruleEditor-fixtext-group-${mod}`">
+      <b-form-group v-if="showFields.includes('fixtext')" :id="`ruleEditor-fixtext-group-${mod}`">
         <label :for="`ruleEditor-fixtext-${mod}`">
           Fix Text
           <i
@@ -297,7 +316,11 @@
 
       <div class="row">
         <!-- ident -->
-        <b-form-group :id="`ruleEditor-ident-group-${mod}`" class="col-4">
+        <b-form-group
+          v-if="showFields.includes('ident')"
+          :id="`ruleEditor-ident-group-${mod}`"
+          class="col-4"
+        >
           <label :for="`ruleEditor-ident-${mod}`">
             Identity
             <i
@@ -325,7 +348,11 @@
         </b-form-group>
 
         <!-- ident_system -->
-        <b-form-group :id="`ruleEditor-ident_system-group-${mod}`" class="col-8">
+        <b-form-group
+          v-if="showFields.includes('ident_system')"
+          :id="`ruleEditor-ident_system-group-${mod}`"
+          class="col-8"
+        >
           <label :for="`ruleEditor-ident_system-${mod}`">
             Identity System
             <i
@@ -354,7 +381,10 @@
       </div>
 
       <!-- vendor_comments -->
-      <b-form-group :id="`ruleEditor-vendor_comments-group-${mod}`">
+      <b-form-group
+        v-if="showFields.includes('vendor_comments')"
+        :id="`ruleEditor-vendor_comments-group-${mod}`"
+      >
         <label :for="`ruleEditor-vendor_comments-${mod}`">
           Vendor Comments
           <i
@@ -408,6 +438,24 @@ export default {
     disabled: {
       type: Boolean,
       required: true,
+    },
+    showFields: {
+      type: Array,
+      default: () => [
+        "status",
+        "status_justification",
+        "title",
+        "version",
+        "rule_severity",
+        "rule_weight",
+        "artifact_description",
+        "fix_id",
+        "fixtext_fixref",
+        "fixtext",
+        "ident",
+        "ident_system",
+        "vendor_comments",
+      ],
     },
   },
   data: function () {
