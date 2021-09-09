@@ -81,6 +81,21 @@ export default {
       return this.filterRules(openRules);
     },
   },
+  watch: {
+    openRuleIds: function (_) {
+      localStorage.setItem("openRuleIds", JSON.stringify(this.openRuleIds));
+    },
+  },
+  mounted: function () {
+    // Persist `openRuleIds` across page loads
+    if (localStorage.getItem("openRuleIds")) {
+      try {
+        this.openRuleIds = JSON.parse(localStorage.getItem("openRuleIds"));
+      } catch (e) {
+        localStorage.removeItem("openRuleIds");
+      }
+    }
+  },
   methods: {
     // Event handler for when a rule is selected
     ruleSelected: function (rule) {

@@ -53,6 +53,21 @@ export default {
       advancedEditor: false,
     };
   },
+  watch: {
+    advancedEditor: function (_) {
+      localStorage.setItem("advancedEditor", JSON.stringify(this.advancedEditor));
+    },
+  },
+  mounted: function () {
+    // Persist `advancedEditor` across page loads
+    if (localStorage.getItem("advancedEditor")) {
+      try {
+        this.advancedEditor = JSON.parse(localStorage.getItem("advancedEditor"));
+      } catch (e) {
+        localStorage.removeItem("advancedEditor");
+      }
+    }
+  },
 };
 </script>
 
