@@ -91,6 +91,21 @@ export default {
       return "Unknown User";
     },
   },
+  watch: {
+    selectedRuleId: function (_) {
+      localStorage.setItem("selectedRuleId", JSON.stringify(this.selectedRuleId));
+    },
+  },
+  mounted: function () {
+    // Persist `selectedRuleId` across page loads
+    if (localStorage.getItem("selectedRuleId")) {
+      try {
+        this.selectedRuleId = JSON.parse(localStorage.getItem("selectedRuleId"));
+      } catch (e) {
+        localStorage.removeItem("selectedRuleId");
+      }
+    }
+  },
   methods: {
     handleRuleSelected: function (event) {
       this.selectedRuleId = event;
