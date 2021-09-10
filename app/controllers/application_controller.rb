@@ -49,7 +49,15 @@ class ApplicationController < ActionController::Base
         flash.alert = exception.message
         redirect_to '/'
       end
-      format.json { render json: { alert: exception.message }, status: :unauthorized }
+      format.json do
+        render json: {
+          toast: {
+            title: 'Not Authorized.',
+            message: exception.message,
+            variant: 'danger'
+          }
+        }, status: :unauthorized
+      end
     end
   end
 

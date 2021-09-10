@@ -26,27 +26,51 @@ class RulesController < ApplicationController
                                              }))
 
     if rule.save
-      render json: { notice: 'Successfully created control.', data: rule }
+      render json: { toast: 'Successfully created control.', data: rule }
     else
-      render json: { alert: "Could not create control. #{rule.errors.full_messages}" }, status: :unprocessable_entity
+      render json: {
+        toast: {
+          title: 'Could not create control.',
+          message: rule.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
     end
   end
 
   def update
     if @rule.update(rule_update_params)
-      render json: { notice: 'Successfully updated control.' }
+      render json: { toast: 'Successfully updated control.' }
     else
-      render json: { alert: "Could not update control. #{@rule.errors.full_messages}" }, status: :unprocessable_entity
+      render json: {
+        toast: {
+          title: 'Could not update control.',
+          message: @rule.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
     end
   rescue RuleLockedError => e
-    render json: { alert: e.message }
+    render json: {
+      toast: {
+        title: 'Could not update control.',
+        message: e.message,
+        variant: 'danger'
+      }, status: :unprocessable_entity
+    }
   end
 
   def destroy
     if @rule.destroy
-      render json: { notice: 'Successfully deleted control.' }
+      render json: { toast: 'Successfully deleted control.' }
     else
-      render json: { alert: "Could not delete control. #{@rule.errors.full_messages}" }, status: :unprocessable_entity
+      render json: {
+        toast: {
+          title: 'Could not delete control.',
+          message: @rule.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
     end
   end
 
@@ -56,14 +80,20 @@ class RulesController < ApplicationController
     # rubocop:disable Rails/SkipsModelValidations
     @rule.update_attribute(:locked, manage_lock_params[:locked])
     # rubocop:enable Rails/SkipsModelValidations
-    render json: { notice: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} control." }
+    render json: { toast: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} control." }
   end
 
   def revert
     Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
-    render json: { notice: 'Successfully reverted history for control.' }
+    render json: { toast: 'Successfully reverted history for control.' }
   rescue RuleRevertError => e
-    render json: { alert: e.message }, status: :unprocessable_entity
+    render json: {
+      toast: {
+        title: 'Could not revert history.',
+        message: e.message,
+        variant: 'danger'
+      }
+    }, status: :unprocessable_entity
   end
 
   private

@@ -5,47 +5,59 @@ export default {
     // Take in a `response` directly from an AJAX call and see if it
     // contains data that we can make into either an alert or notice.
     //
-    // `response['data']['notice']` and `response['data']['alert']` are
-    // valid for generating alerts.
+    // First, the function will try to collect a toast from either
+    // - response["data"]["toast"]
+    // - response["response"]["data"]["toast"]
+    //
+    // Second, it will check if the toast is a string or object
+    // - If string -> generate a basic success toast with that message
+    // - If object -> generate a toast using 'title', 'variant', and 'message' parameters
+    //   - 'message' is required and can be a string or array of strings
+    //   - 'title', and 'variant' are optional and will default to 'Success' and 'sucess'
     alertOrNotifyResponse: function (response) {
-      // check for a notice
-      let notice =
-        response["data"] && response["data"]["notice"] ? response["data"]["notice"] : null;
+      let toast = response["data"] && response["data"]["toast"] ? response["data"]["toast"] : null;
       if (
-        !notice &&
+        !toast &&
         response["response"] &&
         response["response"]["data"] &&
-        response["response"]["data"]["notice"]
+        response["response"]["data"]["toast"]
       ) {
-        notice = response["response"]["data"]["notice"];
+        toast = response["response"]["data"]["toast"];
       }
 
-      if (notice) {
-        this.$bvToast.toast(notice, {
-          title: `Success`,
+      // If toast is just a string, then assume it's a basic success message
+      if (typeof toast === "string" || toast instanceof String) {
+        this.$bvToast.toast(toast, {
+          title: "Success",
           variant: "success",
           solid: true,
         });
+        return;
       }
 
-      // check for an alert
-      let alert = response["data"] && response["data"]["alert"] ? response["data"]["alert"] : null;
-      if (
-        !notice &&
-        response["response"] &&
-        response["response"]["data"] &&
-        response["response"]["data"]["alert"]
-      ) {
-        alert = response["response"]["data"]["alert"];
-      }
+      // If toast is an object, then gather its parameters with some defaults
+      if (_.isPlainObject(toast)) {
+        const title = toast["title"] || "Success";
+        const variant = toast["variant"] || "success";
+        let message = toast["message"];
+        if (_.isArray(message)) {
+          message = this.arrayToMessage(message);
+        }
 
-      if (alert) {
-        this.$bvToast.toast(alert, {
-          title: `Error`,
-          variant: "danger",
+        this.$bvToast.toast(message, {
+          title: title,
+          variant: variant,
           solid: true,
         });
+        return;
       }
+    },
+    // Takes an array of messages and forms them into a nicely formatted toast message
+    arrayToMessage: function (messageArray) {
+      return this.$createElement(
+        "div",
+        messageArray.map((message) => this.$createElement("p", message))
+      );
     },
   },
 };
