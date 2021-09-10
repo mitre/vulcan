@@ -11,7 +11,7 @@ class CommentsController < ApplicationController
     comment = Comment.new(comment_params.merge({ user: current_user, rule: @rule }))
     return if comment.save
 
-    render json: { alert: "Could not create comment. #{comment.errors.full_messages}" }
+    render json: { alert: "Could not create comment. #{comment.errors.full_messages}" }, status: :unprocessable_entity
   end
 
   private

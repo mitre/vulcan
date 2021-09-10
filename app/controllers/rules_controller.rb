@@ -5,9 +5,9 @@
 #
 class RulesController < ApplicationController
   before_action :set_rule, only: %i[show update manage_lock revert]
-  before_action :set_project, only: %i[index show update manage_lock revert]
+  before_action :set_project, only: %i[index show create update manage_lock revert]
   before_action :set_project_permissions, only: %i[index]
-  before_action :authorize_author_project, only: %i[index update show revert]
+  before_action :authorize_author_project, only: %i[index show create update revert]
   before_action :authorize_review_project, only: %i[manage_lock]
 
   def index
@@ -18,11 +18,25 @@ class RulesController < ApplicationController
     render json: @rule
   end
 
+  def create
+    rule = Rule.new(rule_create_params.merge({
+                                               project: @project,
+                                               status: 'Applicable - Configurable',
+                                               rule_severity: 'unknown'
+                                             }))
+
+    if rule.save
+      render json: { notice: 'Successfully created control.', data: rule }
+    else
+      render json: { alert: "Could not create control. #{rule.errors.full_messages}" }, status: :unprocessable_entity
+    end
+  end
+
   def update
     if @rule.update(rule_update_params)
       render json: { notice: 'Successfully updated control.' }
     else
-      render json: { alert: "Could not update control. #{@rule.errors.full_messages}" }
+      render json: { alert: "Could not update control. #{@rule.errors.full_messages}" }, status: :unprocessable_entity
     end
   rescue RuleLockedError => e
     render json: { alert: e.message }
@@ -41,10 +55,14 @@ class RulesController < ApplicationController
     Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
     render json: { notice: 'Successfully reverted history for control.' }
   rescue RuleRevertError => e
-    render json: { alert: e.message }
+    render json: { alert: e.message }, status: :unprocessable_entity
   end
 
   private
+
+  def rule_create_params
+    params.require(:rule).permit(:rule_id)
+  end
 
   def rule_update_params
     params.require(:rule).permit(
@@ -77,7 +95,7 @@ class RulesController < ApplicationController
     @project = if @rule
                  @rule.project
                else
-                 Project.find(params[:project_id])
+                 Project.find(params[:project_id] || params[:rule][:project_id])
                end
   end
 

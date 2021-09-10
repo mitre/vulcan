@@ -78,8 +78,23 @@ export default {
     this.$root.$on("add:check", this.addCheck);
     this.$root.$on("add:description", this.addRuleDescription);
     this.$root.$on("add:disaDescription", this.addDisaRuleDescription);
+    this.$root.$on("create:rule", this.createRule);
   },
   methods: {
+    createRule: function (rule_id, successCallback = null) {
+      axios
+        .post(`/projects/${this.project.id}/rules`, { rule: { rule_id: rule_id } })
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.ruleFetchSuccess(response);
+          if (successCallback) {
+            try {
+              successCallback(response);
+            } catch (_) {}
+          }
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
     /**
      * Event handler for @add:description
      */
@@ -216,8 +231,15 @@ export default {
      * Changing behavior based on `updated` is necessary because we do not want to wipe away control
      * changes just beause a user has commented.
      */
-    ruleFetchSuccess: function (response, updated) {
+    ruleFetchSuccess: function (response, updated = "all") {
       const ruleIndex = this.reactiveRules.findIndex((r) => r.id == response.data.id);
+
+      // If the rule is not in the reactive rules then add it and return early
+      if (ruleIndex < 0) {
+        this.reactiveRules.push(response.data.data);
+        return;
+      }
+
       if (updated == "all") {
         this.reactiveRules.splice(ruleIndex, 1, response.data);
       } else if (updated == "comments") {

@@ -8,21 +8,43 @@ export default {
     // `response['data']['notice']` and `response['data']['alert']` are
     // valid for generating alerts.
     alertOrNotifyResponse: function (response) {
-      if (response["data"] && response["data"]["notice"]) {
-        this.$bvToast.toast(response["data"]["notice"], {
+      // check for a notice
+      let notice =
+        response["data"] && response["data"]["notice"] ? response["data"]["notice"] : null;
+      if (
+        !notice &&
+        response["response"] &&
+        response["response"]["data"] &&
+        response["response"]["data"]["notice"]
+      ) {
+        notice = response["response"]["data"]["notice"];
+      }
+
+      if (notice) {
+        this.$bvToast.toast(notice, {
           title: `Success`,
           variant: "success",
           solid: true,
         });
-      } else if (response["data"] && response["data"]["alert"]) {
-        this.$bvToast.toast(response["data"]["alert"], {
+      }
+
+      // check for an alert
+      let alert = response["data"] && response["data"]["alert"] ? response["data"]["alert"] : null;
+      if (
+        !notice &&
+        response["response"] &&
+        response["response"]["data"] &&
+        response["response"]["data"]["alert"]
+      ) {
+        alert = response["response"]["data"]["alert"];
+      }
+
+      if (alert) {
+        this.$bvToast.toast(alert, {
           title: `Error`,
           variant: "danger",
           solid: true,
         });
-      } else {
-        // The response did not contain data we can use for an alert or notice.
-        return;
       }
     },
   },

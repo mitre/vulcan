@@ -11,6 +11,7 @@ class Rule < ApplicationRecord
   before_validation :error_if_locked, on: :update
   before_save :apply_audit_comment
   before_create :ensure_disa_description_exists
+  before_create :ensure_check_exists
   before_destroy :error_if_locked
 
   has_many :comments, dependent: :destroy
@@ -30,6 +31,13 @@ class Rule < ApplicationRecord
     in: SEVERITIES,
     message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.reject(&:blank?).join("', '")}'"
   }
+
+  validates :rule_id,
+            uniqueness: {
+              scope: :project_id,
+              message: 'already exists for this project'
+            },
+            allow_blank: false
 
   ##
   # Override `as_json` to include dependent records (e.g. comments, histories)
@@ -119,6 +127,12 @@ class Rule < ApplicationRecord
     return unless disa_rule_descriptions.size.zero?
 
     disa_rule_descriptions << DisaRuleDescription.new(rule: self)
+  end
+
+  def ensure_check_exists
+    return unless checks.size.zero?
+
+    checks << Check.new(rule: self)
   end
 
   ##
