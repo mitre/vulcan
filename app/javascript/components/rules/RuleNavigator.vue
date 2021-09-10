@@ -39,6 +39,7 @@
       title="Create New Control"
       centered
       @show="rule_form_rule_id = ''"
+      @shown="$refs.newRuleIdInput.focus()"
       @ok="
         $root.$emit('create:rule', rule_form_rule_id, (response) =>
           ruleSelected(response.data.data)
@@ -54,6 +55,7 @@
         >
           <b-form-input
             id="rule-id-input"
+            ref="newRuleIdInput"
             v-model="rule_form_rule_id"
             placeholder="Enter control ID"
             autocomplete="off"
