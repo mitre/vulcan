@@ -4,31 +4,30 @@
       <RuleNavigator
         :rules="rules"
         :selected-rule-id="selectedRuleId"
+        :project-permissions="projectPermissions"
         @ruleSelected="handleRuleSelected($event)"
       />
     </div>
 
     <template v-if="selectedRule()">
       <div class="col-10">
-        <RuleEditorHeader :rule="selectedRule()" />
+        <RuleEditorHeader :rule="selectedRule()" :project-permissions="projectPermissions" />
 
         <hr />
 
         <div class="row">
           <!-- Main editor column -->
-          <div class="col-7">
+          <div class="col-7 border-right">
             <RuleEditor :rule="selectedRule()" :statuses="statuses" :severities="severities" />
           </div>
 
           <!-- Additional info column -->
           <div class="col-5">
             <RuleReviews
-              :rule="selectedRule"
+              :rule="selectedRule()"
               :project-permissions="projectPermissions"
               :current-user-id="currentUserId"
             />
-            <br />
-            <RuleComments :rule="selectedRule" />
             <br />
             <RuleHistories :rule="selectedRule()" :statuses="statuses" :severities="severities" />
           </div>
@@ -47,7 +46,6 @@
 </template>
 
 <script>
-import RuleComments from "./RuleComments.vue";
 import RuleEditorHeader from "./RuleEditorHeader.vue";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
@@ -57,7 +55,6 @@ import RuleReviews from "./RuleReviews.vue";
 export default {
   name: "RulesCodeEditorView",
   components: {
-    RuleComments,
     RuleNavigator,
     RuleEditor,
     RuleEditorHeader,
