@@ -90,7 +90,7 @@
 
           <template v-else-if="history.auditable_type == 'Rule'">
             <RuleForm
-              :rule="rule"
+              :rule="currentState"
               :statuses="statuses"
               :severities="severities"
               :disabled="true"
@@ -175,6 +175,7 @@
 
 <script>
 import axios from "axios";
+import _ from "lodash";
 
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import EmptyObjectMixinVue from "../../mixins/EmptyObjectMixin.vue";
@@ -271,17 +272,20 @@ export default {
         );
       }
 
-      let curState = Object.assign({}, dependentRecord);
+      let curState = _.cloneDeep(dependentRecord);
       if (this.isEmpty(curState)) {
         return {};
       }
 
+      // Remove ID to avoid propagating changes by making rule unidentifiable
+      delete curState.id;
+      // Remove _destroy so that form will not be inadvertently hidden
       delete curState._destroy;
       return curState;
     },
     afterState: function () {
       // Get `currentState` and duplicate for modification
-      let afterState = Object.assign({}, this.currentState);
+      let afterState = _.cloneDeep(this.currentState);
 
       // For each audited_change, check if it is one of the selected properties to revert.
       for (let i = 0; i < this.history.audited_changes.length; i++) {
