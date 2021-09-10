@@ -24,6 +24,7 @@
         @click.stop="removeOpenRule(rule.id)"
       />
       {{ rule.rule_id }}
+      <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
 
@@ -74,6 +75,7 @@
       @click="ruleSelected(rule)"
     >
       {{ rule.rule_id }}
+      <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
   </div>
@@ -91,6 +93,10 @@
 export default {
   name: "RuleNavigator",
   props: {
+    projectPermissions: {
+      type: String,
+      required: true,
+    },
     rules: {
       type: Array,
       required: true,
