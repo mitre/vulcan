@@ -79,8 +79,35 @@ export default {
     this.$root.$on("add:description", this.addRuleDescription);
     this.$root.$on("add:disaDescription", this.addDisaRuleDescription);
     this.$root.$on("create:rule", this.createRule);
+    this.$root.$on("delete:rule", this.deleteRule);
   },
   methods: {
+    /**
+     * Event handler for @delete:rule
+     */
+    deleteRule: function (rule_id, successCallback = null) {
+      axios
+        .delete(`/rules/${rule_id}`)
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+
+          // remove the rule
+          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+          if (ruleIndex >= 0) {
+            this.reactiveRules.splice(ruleIndex, 1);
+          }
+
+          if (successCallback) {
+            try {
+              successCallback(response);
+            } catch (_) {}
+          }
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    /**
+     * Event handler for @create:rule
+     */
     createRule: function (rule_id, successCallback = null) {
       axios
         .post(`/projects/${this.project.id}/rules`, { rule: { rule_id: rule_id } })
