@@ -5,7 +5,7 @@ module Xccdf
   # Groups, Rules and Values.
   class Item
     class SelectableItem
-      class Group
+      class Group < SelectableItem
         include HappyMapper
 
         tag 'Group'

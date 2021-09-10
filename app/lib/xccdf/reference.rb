@@ -28,6 +28,6 @@ module Xccdf
     element :source, String, tag: 'source', namespace: 'dc'
     element :subject, String, tag: 'subject', namespace: 'dc'
     element :title, String, tag: 'title', namespace: 'dc'
-    element :type, String, tag: 'type', namespace: 'dc'
+    element :reference_type, String, tag: 'type', namespace: 'dc'
   end
 end

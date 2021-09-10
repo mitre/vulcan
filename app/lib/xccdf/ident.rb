@@ -12,5 +12,9 @@ module Xccdf
     attribute :system, String, tag: 'system' # required
 
     content :ident, String
+
+    def legacy
+      system.eql?("http://cyber.mil/legacy")
+    end
   end
 end

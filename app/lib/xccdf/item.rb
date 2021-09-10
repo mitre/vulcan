@@ -16,5 +16,14 @@ module Xccdf
     attribute :hidden, Boolean, tag: 'hidden'
     attribute :prohibit_changes, Boolean, tag: 'prohibitChanges'
     attribute :Id, String, tag: 'Id'
+
+    has_many :status, Status, tag: 'status'
+    has_many :version, Version, tag: 'version'
+    has_many :title, String, tag: 'title'
+    # XHTML
+    has_many :description, String, tag: 'description'
+    has_many :warning, Warning, tag: 'warning'
+    has_many :question, String, tag: 'question'
+    has_many :reference, Reference, tag: 'reference'
   end
 end

@@ -4,7 +4,7 @@ module Xccdf
   # This abstract item type represents the basic data shared by all
   # Groups and Rules.
   class Item
-    class SelectableItem
+    class SelectableItem < Item
       include HappyMapper
 
       attribute :selected, Boolean, tag: 'selected'

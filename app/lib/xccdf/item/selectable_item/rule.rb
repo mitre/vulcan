@@ -5,7 +5,7 @@ module Xccdf
   # specific benchmark test.
   class Item
     class SelectableItem
-      class Rule
+      class Rule < SelectableItem
         include HappyMapper
 
         tag 'Rule'
@@ -39,10 +39,10 @@ module Xccdf
         has_many :ident, Ident, tag: 'ident'
         has_one :impact_metric, String, tag: 'impact-metric'
         has_many :profile_note, ProfileNote, tag: 'profile-note'
-        element :fixtext, FixText, tag: 'fixtext'
-        element :fix, Fix, tag: 'fix'
-        element :check, Check, tag: 'check'
-        element :complex_check, ComplexCheck, tag: 'complex-check'
+        has_many :fixtext, FixText, tag: 'fixtext'
+        has_many :fix, Fix, tag: 'fix'
+        has_many :check, Check, tag: 'check'
+        has_many :complex_check, ComplexCheck, tag: 'complex-check'
       end
     end
   end

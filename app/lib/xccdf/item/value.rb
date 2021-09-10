@@ -4,7 +4,7 @@ module Xccdf
   # Data type for the Value element, which represents a
   # tailorable string, boolean, or number in the Benchmark.
   class Item
-    class Value
+    class Value < Item
       include HappyMapper
 
       tag 'Value'
