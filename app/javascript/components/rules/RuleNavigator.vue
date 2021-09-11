@@ -30,6 +30,7 @@
     <p class="mt-3 mb-0">
       <strong>All Controls</strong>
       <i v-b-modal.create-rule-modal class="mdi mdi-plus-thick clickable float-right" />
+      <strong v-b-modal.create-rule-modal class="float-right clickable">add </strong>
     </p>
 
     <!-- New rule modal -->
