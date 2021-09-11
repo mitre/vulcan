@@ -5,14 +5,13 @@
     </p>
 
     <div class="mb-3 font-weight-bold">
-      <span>Basic Editor&nbsp;</span>
       <b-form-checkbox
         v-model="advancedEditor"
         name="editor-selector-check-button"
         class="d-inline-block"
         switch
       >
-        Advanced Editor
+        Advanced Fields
       </b-form-checkbox>
     </div>
 
