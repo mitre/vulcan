@@ -7,8 +7,9 @@ class RulesController < ApplicationController
   before_action :set_rule, only: %i[show update destroy manage_lock revert]
   before_action :set_project, only: %i[index show create update manage_lock revert]
   before_action :set_project_permissions, only: %i[index]
-  before_action :authorize_author_project, only: %i[index show create update destroy revert]
+  before_action :authorize_author_project, only: %i[index show update revert]
   before_action :authorize_review_project, only: %i[manage_lock]
+  before_action :authorize_admin_project, only: %i[create destroy]
 
   def index
     @rules = @project.rules
