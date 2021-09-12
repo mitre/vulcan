@@ -22,7 +22,13 @@
 
           <!-- Additional info column -->
           <div class="col-5">
-            <RuleComments :rule="selectedRule()" />
+            <RuleReviews
+              :rule="selectedRule"
+              :project-permissions="projectPermissions"
+              :current-user-id="currentUserId"
+            />
+            <br />
+            <RuleComments :rule="selectedRule" />
             <br />
             <RuleHistories :rule="selectedRule()" :statuses="statuses" :severities="severities" />
           </div>
@@ -46,6 +52,7 @@ import RuleEditorHeader from "./RuleEditorHeader.vue";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
 import RuleHistories from "./RuleHistories.vue";
+import RuleReviews from "./RuleReviews.vue";
 
 export default {
   name: "RulesCodeEditorView",
@@ -55,8 +62,17 @@ export default {
     RuleEditor,
     RuleEditorHeader,
     RuleHistories,
+    RuleReviews,
   },
   props: {
+    projectPermissions: {
+      type: String,
+      required: true,
+    },
+    currentUserId: {
+      type: Number,
+      required: true,
+    },
     project: {
       type: Object,
       required: true,

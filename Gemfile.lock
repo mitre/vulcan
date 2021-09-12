@@ -165,8 +165,6 @@ GEM
     multipart-post (2.1.1)
     net-ldap (0.17.0)
     nio4r (2.5.8)
-    nokogiri (1.12.3-x86_64-darwin)
-      racc (~> 1.4)
     nokogiri (1.12.3-x86_64-linux)
       racc (~> 1.4)
     nokogiri-happymapper (0.8.1)
@@ -338,6 +336,7 @@ GEM
     zeitwerk (2.4.2)
 
 PLATFORMS
+  x86_64-darwin-19
   x86_64-darwin-20
   x86_64-linux
 

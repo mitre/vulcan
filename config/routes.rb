@@ -15,6 +15,7 @@ Rails.application.routes.draw do
       post 'manage_lock', on: :member
       post 'revert', on: :member
       resources :comments, only: %i[create]
+      resources :reviews, only: %i[create]
     end
   end
   # Alias rules#index to controls for convenience

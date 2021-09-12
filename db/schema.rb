@@ -123,6 +123,17 @@ ActiveRecord::Schema.define(version: 2021_09_20_185438) do
     t.bigint "rule_id"
   end
 
+  create_table "reviews", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "rule_id"
+    t.string "action"
+    t.text "comment"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["rule_id"], name: "index_reviews_on_rule_id"
+    t.index ["user_id"], name: "index_reviews_on_user_id"
+  end
+
   create_table "rule_descriptions", force: :cascade do |t|
     t.bigint "rule_id"
     t.text "description"
@@ -150,8 +161,10 @@ ActiveRecord::Schema.define(version: 2021_09_20_185438) do
     t.text "fixtext"
     t.string "fixtext_fixref"
     t.string "fix_id"
+    t.bigint "review_requestor_id"
     t.index ["project_id"], name: "index_rules_on_project_id"
     t.index ["rule_id", "project_id"], name: "rules_rule_id_project_id_index", unique: true
+    t.index ["review_requestor_id"], name: "index_rules_on_review_requestor_id"
   end
 
   create_table "security_requirements_guides", force: :cascade do |t|
@@ -193,4 +206,5 @@ ActiveRecord::Schema.define(version: 2021_09_20_185438) do
   add_foreign_key "project_members", "projects"
   add_foreign_key "project_members", "users"
   add_foreign_key "rules", "projects"
+  add_foreign_key "rules", "users", column: "review_requestor_id"
 end
