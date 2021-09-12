@@ -15,6 +15,7 @@ class Rule < ApplicationRecord
   before_destroy :error_if_locked
 
   has_many :comments, dependent: :destroy
+  has_many :reviews, dependent: :destroy
   has_many :rule_descriptions, dependent: :destroy
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
@@ -68,8 +69,9 @@ class Rule < ApplicationRecord
   def as_json(options = {})
     super.merge(
       {
-        comments: comments.as_json.map { |c| c.except('id', 'user_id', 'rule_id', 'updated_at') },
+        comments: comments.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
         histories: histories,
+        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
         rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
@@ -143,7 +145,7 @@ class Rule < ApplicationRecord
     return unless locked_was
 
     # If the previous state was locked, error
-    raise(RuleLockedError, id) if locked_was
+    # raise(RuleLockedError, id) if locked_was
   end
 
   def ensure_disa_description_exists
