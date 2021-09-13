@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_18_143114) do
+ActiveRecord::Schema.define(version: 2021_09_10_000716) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -150,6 +150,7 @@ ActiveRecord::Schema.define(version: 2021_08_18_143114) do
     t.string "fixtext_fixref"
     t.string "fix_id"
     t.index ["project_id"], name: "index_rules_on_project_id"
+    t.index ["rule_id", "project_id"], name: "rules_rule_id_project_id_index", unique: true
   end
 
   create_table "users", force: :cascade do |t|
