@@ -22,9 +22,15 @@ class ProjectsController < ApplicationController
   # Update project and response with json
   def update
     if @project.update(project_params)
-      render json: { notice: 'Project updated successfully' }
+      render json: { toast: 'Project updated successfully' }
     else
-      render json: { alert: "Could not update project. #{@project.errors.full_messages}" }
+      render json: {
+        toast: {
+          title: 'Could not update project.',
+          message: @project.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
     end
   end
 

@@ -27,7 +27,46 @@
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
 
-    <p class="mt-3 mb-0"><strong>All Controls</strong></p>
+    <p class="mt-3 mb-0">
+      <strong>All Controls</strong>
+      <i v-b-modal.create-rule-modal class="mdi mdi-plus-thick clickable float-right" />
+      <strong v-b-modal.create-rule-modal class="float-right clickable">add </strong>
+    </p>
+
+    <!-- New rule modal -->
+    <b-modal
+      id="create-rule-modal"
+      ref="modal"
+      title="Create New Control"
+      centered
+      @show="rule_form_rule_id = ''"
+      @shown="$refs.newRuleIdInput.focus()"
+      @ok="
+        $root.$emit('create:rule', rule_form_rule_id, (response) =>
+          ruleSelected(response.data.data)
+        )
+      "
+    >
+      <form ref="form" @submit.stop.prevent="handleSubmit">
+        <b-form-group
+          id="rule-id-input-group"
+          label="Control ID"
+          label-for="rule-id-input"
+          description="This must be unique for the project."
+        >
+          <b-form-input
+            id="rule-id-input"
+            ref="newRuleIdInput"
+            v-model="rule_form_rule_id"
+            placeholder="Enter control ID"
+            autocomplete="off"
+            required
+          />
+        </b-form-group>
+      </form>
+    </b-modal>
+
+    <!-- All rules list -->
     <div
       v-for="rule in filteredRules"
       :key="`rule-${rule.id}`"
@@ -66,6 +105,7 @@ export default {
       // Tried using a `new Set()` for `openRuleIds`, but Vue would not react to changes.
       openRuleIds: [],
       search: "",
+      rule_form_rule_id: "",
     };
   },
   computed: {
@@ -125,10 +165,10 @@ export default {
     },
     // Helper to sort rules by ID
     sortById(rule1, rule2) {
-      if (rule1.id < rule2.id) {
+      if (rule1.rule_id.toLowerCase() < rule2.rule_id.toLowerCase()) {
         return -1;
       }
-      if (rule1.id > rule2.id) {
+      if (rule1.rule_id.toLowerCase() > rule2.rule_id.toLowerCase()) {
         return 1;
       }
       return 0;

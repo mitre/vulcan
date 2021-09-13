@@ -4,11 +4,12 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update manage_lock revert]
-  before_action :set_project, only: %i[index show update manage_lock revert]
+  before_action :set_rule, only: %i[show update destroy manage_lock revert]
+  before_action :set_project, only: %i[index show create update manage_lock revert]
   before_action :set_project_permissions, only: %i[index]
-  before_action :authorize_author_project, only: %i[index update show revert]
+  before_action :authorize_author_project, only: %i[index show update revert]
   before_action :authorize_review_project, only: %i[manage_lock]
+  before_action :authorize_admin_project, only: %i[create destroy]
 
   def index
     @rules = @project.rules
@@ -18,14 +19,60 @@ class RulesController < ApplicationController
     render json: @rule
   end
 
+  def create
+    rule = Rule.new(rule_create_params.merge({
+                                               project: @project,
+                                               status: 'Applicable - Configurable',
+                                               rule_severity: 'unknown'
+                                             }))
+
+    if rule.save
+      render json: { toast: 'Successfully created control.', data: rule }
+    else
+      render json: {
+        toast: {
+          title: 'Could not create control.',
+          message: rule.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
+    end
+  end
+
   def update
     if @rule.update(rule_update_params)
-      render json: { notice: 'Successfully updated control.' }
+      render json: { toast: 'Successfully updated control.' }
     else
-      render json: { alert: "Could not update control. #{@rule.errors.full_messages}" }
+      render json: {
+        toast: {
+          title: 'Could not update control.',
+          message: @rule.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
     end
   rescue RuleLockedError => e
-    render json: { alert: e.message }
+    render json: {
+      toast: {
+        title: 'Could not update control.',
+        message: e.message,
+        variant: 'danger'
+      }, status: :unprocessable_entity
+    }
+  end
+
+  def destroy
+    if @rule.destroy
+      render json: { toast: 'Successfully deleted control.' }
+    else
+      render json: {
+        toast: {
+          title: 'Could not delete control.',
+          message: @rule.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
+    end
   end
 
   def manage_lock
@@ -34,17 +81,27 @@ class RulesController < ApplicationController
     # rubocop:disable Rails/SkipsModelValidations
     @rule.update_attribute(:locked, manage_lock_params[:locked])
     # rubocop:enable Rails/SkipsModelValidations
-    render json: { notice: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} control." }
+    render json: { toast: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} control." }
   end
 
   def revert
     Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
-    render json: { notice: 'Successfully reverted history for control.' }
+    render json: { toast: 'Successfully reverted history for control.' }
   rescue RuleRevertError => e
-    render json: { alert: e.message }
+    render json: {
+      toast: {
+        title: 'Could not revert history.',
+        message: e.message,
+        variant: 'danger'
+      }
+    }, status: :unprocessable_entity
   end
 
   private
+
+  def rule_create_params
+    params.require(:rule).permit(:rule_id)
+  end
 
   def rule_update_params
     params.require(:rule).permit(
@@ -77,7 +134,7 @@ class RulesController < ApplicationController
     @project = if @rule
                  @rule.project
                else
-                 Project.find(params[:project_id])
+                 Project.find(params[:project_id] || params[:rule][:project_id])
                end
   end
 

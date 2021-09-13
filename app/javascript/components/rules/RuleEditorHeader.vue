@@ -23,6 +23,7 @@
         </span>
       </template>
       <template v-else>
+        <!-- Save rule -->
         <CommentModal
           title="Save Control"
           message="Provide a comment that summarizes your changes to this control."
@@ -33,7 +34,27 @@
           wrapper-class="d-inline-block"
           @comment="saveRule($event)"
         />
-        <b-button variant="danger">Delete Control</b-button>
+
+        <!-- Delete rule -->
+        <b-button v-b-modal.delete-rule-modal variant="danger">Delete Control</b-button>
+        <b-modal
+          id="delete-rule-modal"
+          title="Delete Control"
+          centered
+          @ok="$root.$emit('delete:rule', rule.id)"
+        >
+          <p class="my-4">
+            Are you sure you want to delete this control?<br />This cannot be undone.
+          </p>
+
+          <template #modal-footer="{ cancel, ok }">
+            <!-- Emulate built in modal footer ok and cancel button actions -->
+            <b-button @click="cancel()"> Cancel </b-button>
+            <b-button variant="danger" @click="ok()"> Permanently Delete Control </b-button>
+          </template>
+        </b-modal>
+
+        <!-- Duplicate rule -->
         <!-- <b-button>Duplicate Control</b-button> -->
       </template>
       <b-button v-if="rule.locked" variant="warning" @click="manageLock(false)"

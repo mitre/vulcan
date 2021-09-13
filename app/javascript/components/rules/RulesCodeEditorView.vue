@@ -8,23 +8,23 @@
       />
     </div>
 
-    <template v-if="selectedRuleId != null">
+    <template v-if="selectedRule()">
       <div class="col-10">
-        <RuleEditorHeader :rule="selectedRule" />
+        <RuleEditorHeader :rule="selectedRule()" />
 
         <hr />
 
         <div class="row">
           <!-- Main editor column -->
           <div class="col-7">
-            <RuleEditor :rule="selectedRule" :statuses="statuses" :severities="severities" />
+            <RuleEditor :rule="selectedRule()" :statuses="statuses" :severities="severities" />
           </div>
 
           <!-- Additional info column -->
           <div class="col-5">
-            <RuleComments :rule="selectedRule" />
+            <RuleComments :rule="selectedRule()" />
             <br />
-            <RuleHistories :rule="selectedRule" :statuses="statuses" :severities="severities" />
+            <RuleHistories :rule="selectedRule()" :statuses="statuses" :severities="severities" />
           </div>
         </div>
       </div>
@@ -80,11 +80,11 @@ export default {
     };
   },
   computed: {
-    selectedRule: function () {
-      return this.rules.find((rule) => rule.id == this.selectedRuleId);
+    selectedRuleIdKey: function () {
+      return `selectedRuleId-${this.project.id}`;
     },
     lastEditor: function () {
-      const histories = this.selectedRule.histories;
+      const histories = this.selectedRule().histories;
       if (histories.length > 0) {
         return histories[histories.length - 1].name;
       }
@@ -93,20 +93,31 @@ export default {
   },
   watch: {
     selectedRuleId: function (_) {
-      localStorage.setItem("selectedRuleId", JSON.stringify(this.selectedRuleId));
+      localStorage.setItem(this.selectedRuleIdKey, JSON.stringify(this.selectedRuleId));
     },
   },
   mounted: function () {
     // Persist `selectedRuleId` across page loads
-    if (localStorage.getItem("selectedRuleId")) {
+    if (localStorage.getItem(this.selectedRuleIdKey)) {
       try {
-        this.selectedRuleId = JSON.parse(localStorage.getItem("selectedRuleId"));
+        this.selectedRuleId = JSON.parse(localStorage.getItem(this.selectedRuleIdKey));
       } catch (e) {
-        localStorage.removeItem("selectedRuleId");
+        localStorage.removeItem(this.selectedRuleIdKey);
       }
     }
   },
   methods: {
+    // This should not be a computed property because it has side effects when
+    // the selected rule ID does not actually exist
+    selectedRule: function () {
+      const foundRule = this.rules.find((rule) => rule.id == this.selectedRuleId);
+      if (foundRule) {
+        return foundRule;
+      }
+
+      this.selectedRuleId = null;
+      return null;
+    },
     handleRuleSelected: function (event) {
       this.selectedRuleId = event;
     },
