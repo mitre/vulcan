@@ -1,7 +1,11 @@
 <template>
   <div>
-    <p class="mt-3 mb-0"><strong>Filter &amp; Search</strong></p>
-    <div class="input-group">
+    <!-- Rule search -->
+    <p class="mt-3">
+      <strong>Filter &amp; Search</strong>
+      <span class="text-primary clickable float-right" @click="clearFilters">clear filters</span>
+    </p>
+    <div class="input-group ml-2">
       <input
         id="ruleSearch"
         type="text"
@@ -11,9 +15,96 @@
       />
     </div>
 
+    <!-- Filter by rule status -->
+    <b-form-group class="ml-2 mt-3" label="Filter by Control Status">
+      <b-form-checkbox
+        id="acFilterChecked-filter"
+        v-model="filters.acFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="acFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
+      </b-form-checkbox>
+
+      <b-form-checkbox
+        id="aimFilterChecked-filter"
+        v-model="filters.aimFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="aimFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.aim }})</strong> Applicable - Inherently Meets
+      </b-form-checkbox>
+
+      <b-form-checkbox
+        id="adnmFilterChecked-filter"
+        v-model="filters.adnmFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="adnmFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.adnm }})</strong> Applicable - Does Not Meet
+      </b-form-checkbox>
+
+      <b-form-checkbox
+        id="naFilterChecked-filter"
+        v-model="filters.naFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="naFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.na }})</strong> Not Applicable
+      </b-form-checkbox>
+
+      <b-form-checkbox
+        id="nydFilterChecked-filter"
+        v-model="filters.nydFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="nydFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.nyd }})</strong> Not Yet Determined
+      </b-form-checkbox>
+    </b-form-group>
+
+    <!-- Filter by review status -->
+    <b-form-group class="ml-2 mt-3" label="Filter by Review Status">
+      <b-form-checkbox
+        id="nurFilterChecked-filter"
+        v-model="filters.nurFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="nurFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.nur }})</strong> Not Under Review
+      </b-form-checkbox>
+
+      <b-form-checkbox
+        id="urFilterChecked-filter"
+        v-model="filters.urFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="urFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.ur }})</strong> Under Review
+      </b-form-checkbox>
+
+      <b-form-checkbox
+        id="lckFilterChecked-filter"
+        v-model="filters.lckFilterChecked"
+        size="sm"
+        class="mb-1 unselectable"
+        name="lckFilterChecked-filter"
+      >
+        <strong>({{ ruleStatusCounts.lck }})</strong> Locked
+      </b-form-checkbox>
+    </b-form-group>
+
+    <!-- Currently opened controls -->
     <p class="mt-3 mb-0"><strong>Open Controls</strong></p>
     <div
-      v-for="rule in filteredOpenRules"
+      v-for="rule in openRules"
       :key="`open-${rule.id}`"
       :class="ruleRowClass(rule)"
       @click="ruleSelected(rule)"
@@ -28,11 +119,12 @@
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
 
+    <!-- All project controls -->
     <p class="mt-3 mb-0">
       <strong>All Controls</strong>
       <template v-if="!readOnly">
-        <i v-b-modal.create-rule-modal class="mdi mdi-plus-thick clickable float-right" />
-        <strong v-b-modal.create-rule-modal class="float-right clickable">add </strong>
+        <i v-b-modal.create-rule-modal class="text-primary mdi mdi-plus clickable float-right" />
+        <span v-b-modal.create-rule-modal class="text-primary float-right clickable">add </span>
       </template>
     </p>
 
@@ -77,6 +169,10 @@ export default {
       type: String,
       default: "",
     },
+    componentId: {
+      type: Number,
+      required: true,
+    },
     rules: {
       type: Array,
       required: true,
@@ -100,25 +196,109 @@ export default {
   },
   data: function () {
     return {
-      search: "",
+      rule_form_rule_id: "",
+      filters: {
+        search: "",
+        acFilterChecked: true, // Applicable - Configurable
+        aimFilterChecked: true, // Applicable - Inherently Meets
+        adnmFilterChecked: true, // Applicable - Does Not Meet
+        naFilterChecked: true, // Not Applicable
+        nydFilterChecked: true, // Not Yet Determined
+        nurFilterChecked: true, // Not under review
+        urFilterChecked: true, // Under review
+        lckFilterChecked: true, // Locked
+      },
     };
   },
   computed: {
+    // generates the options for the status checkboxes
+    ruleStatusCounts: function () {
+      // status counts
+      let acCount = 0;
+      let aimCount = 0;
+      let adnmCount = 0;
+      let naCount = 0;
+      let nydCount = 0;
+
+      // review counts
+      let nurCount = 0;
+      let urCount = 0;
+      let lckCount = 0;
+
+      for (var i = 0; i < this.rules.length; i++) {
+        const status = this.rules[i].status;
+        // Status counts
+        if (status == "Applicable - Configurable") {
+          acCount += 1;
+        } else if (status == "Applicable - Inherently Meets") {
+          aimCount += 1;
+        } else if (status == "Applicable - Does Not Meet") {
+          adnmCount += 1;
+        } else if (status == "Not Applicable") {
+          naCount += 1;
+        } else if (status == "Not Yet Determined") {
+          nydCount += 1;
+        }
+
+        // Review counts
+        const hasReviewRequestor = this.rules[i].review_requestor_id != null;
+        const isLocked = this.rules[i].locked;
+        if (!hasReviewRequestor && !isLocked) {
+          nurCount += 1;
+        } else if (hasReviewRequestor) {
+          urCount += 1;
+        } else if (isLocked) {
+          lckCount += 1;
+        }
+      }
+
+      return {
+        ac: acCount,
+        aim: aimCount,
+        adnm: adnmCount,
+        na: naCount,
+        nyd: nydCount,
+        nur: nurCount,
+        ur: urCount,
+        lck: lckCount,
+      };
+    },
     // Filters down to all rules that apply to search & applied filters
     filteredRules: function () {
       return this.filterRules(this.rules).sort(this.compareRules);
     },
     // Filters down to open rules that also apply to search & applied filters
-    filteredOpenRules: function () {
+    openRules: function () {
       const openRules = this.rules
         .filter((rule) => this.openRuleIds.includes(rule.id))
         .sort(this.compareRules);
-      return this.filterRules(openRules);
+      return openRules;
     },
+  },
+  watch: {
+    filters: {
+      handler(_) {
+        localStorage.setItem(
+          `ruleNavigatorFilters-${this.componentId}`,
+          JSON.stringify(this.filters)
+        );
+      },
+      deep: true,
+    },
+  },
+  mounted: function () {
+    // Persist `filters` across page loads
+    if (localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`)) {
+      try {
+        this.filters = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
+      } catch (e) {
+        localStorage.removeItem(`ruleNavigatorFilters-${this.componentId}`);
+      }
+    }
   },
   methods: {
     searchUpdated: _.debounce(function (newSearch) {
-      this.search = newSearch;
+      this.filters.search = newSearch;
     }, 500),
     // Event handler for when a rule is selected
     ruleSelected: function (rule) {
@@ -147,11 +327,37 @@ export default {
         selectedRuleRow: this.selectedRuleId == rule.id,
       };
     },
+    // Helper to test if a rule's status is a currently selected filter checkboxes
+    doesRuleHaveFilteredStatus: function (rule) {
+      return (
+        (this.filters.acFilterChecked && rule.status == "Applicable - Configurable") ||
+        (this.filters.aimFilterChecked && rule.status == "Applicable - Inherently Meets") ||
+        (this.filters.adnmFilterChecked && rule.status == "Applicable - Does Not Meet") ||
+        (this.filters.naFilterChecked && rule.status == "Not Applicable") ||
+        (this.filters.nydFilterChecked && rule.status == "Not Yet Determined")
+      );
+    },
+    doesRuleHaveFilteredReviewStatus: function (rule) {
+      return (
+        (this.filters.nurFilterChecked &&
+          rule.locked == false &&
+          rule.review_requestor_id == null) ||
+        (this.filters.urFilterChecked &&
+          rule.locked == false &&
+          rule.review_requestor_id != null) ||
+        (this.filters.lckFilterChecked && rule.locked == true)
+      );
+    },
     // Helper to filter & search a group of rules
-    // PLACEHOLDER! searching by id - should be changed to title/name once implemented
     filterRules: function (rules) {
-      let downcaseSearch = this.search.toLowerCase();
-      return rules.filter((rule) => this.searchTextForRule(rule).includes(downcaseSearch));
+      let downcaseSearch = this.filters.search.toLowerCase();
+      return rules.filter((rule) => {
+        return (
+          this.searchTextForRule(rule).includes(downcaseSearch) &&
+          this.doesRuleHaveFilteredStatus(rule) &&
+          this.doesRuleHaveFilteredReviewStatus(rule)
+        );
+      });
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
@@ -224,6 +430,20 @@ export default {
         }
       }
       return searchText.toLowerCase();
+    },
+    // Helper to clear all filters
+    clearFilters: function () {
+      this.filters = {
+        search: "",
+        acFilterChecked: true, // Applicable - Configurable
+        aimFilterChecked: true, // Applicable - Inherently Meets
+        adnmFilterChecked: true, // Applicable - Does Not Meet
+        naFilterChecked: true, // Not Applicable
+        nydFilterChecked: true, // Not Yet Determined
+        nurFilterChecked: true, // Not under review
+        urFilterChecked: true, // Under review
+        lckFilterChecked: true, // Locked
+      };
     },
   },
 };

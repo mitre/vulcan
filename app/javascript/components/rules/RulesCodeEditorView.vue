@@ -2,6 +2,7 @@
   <div class="row">
     <div class="col-2">
       <RuleNavigator
+        :component-id="component.id"
         :rules="rules"
         :selected-rule-id="selectedRuleId"
         :project-prefix="component.prefix"
