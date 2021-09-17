@@ -31,8 +31,13 @@ export default {
   name: "SecurityRequirementsGuidesTable",
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
-    srgs: Array,
-    required: true
+    srgs: {
+      type: Array,
+      required: true
+    },
+    refresh: {
+      type: Boolean
+    }
   },
   data: function () {
     return {
@@ -55,7 +60,11 @@ export default {
     },
     loadSrgs: function() {
       axios.get('/srgs')
-      .then()
+      .then((response) => {this.updateTable(response)})
+      .catch(this.alertOrNotifyResponse)
+    },
+    updateTable: function(data) {
+      this.srgs = data.data;
     }
   },
   watch: {
