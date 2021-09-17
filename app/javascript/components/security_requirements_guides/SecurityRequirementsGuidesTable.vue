@@ -1,10 +1,6 @@
 <template>
   <div>
-    <b-table
-      id="srgs-table"
-      :items="srgs"
-      :fields="fields"
-    >
+    <b-table id="srgs-table" :items="srgs" :fields="fields">
       <template #cell(actions)="data">
         <b-button
           class="float-right mt-1"
@@ -26,51 +22,53 @@ import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 
-
 export default {
   name: "SecurityRequirementsGuidesTable",
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     srgs: {
       type: Array,
-      required: true
+      required: true,
     },
     refresh: {
-      type: Boolean
-    }
+      type: Boolean,
+    },
   },
   data: function () {
     return {
       fields: [
         { key: "srg_id", label: "SRG ID" },
-        { key: 'title', label: "Title" },
-        { key: 'version', label: "Version" },
+        { key: "title", label: "Title" },
+        { key: "version", label: "Version" },
         {
           key: "actions",
           label: "Actions",
           thClass: "text-right",
           tdClass: "p-0 text-right",
         },
-      ]
-    }
-  },
-  methods: {
-    destroyAction: function(srg) {
-      return `/srgs/${srg.id}`
-    },
-    loadSrgs: function() {
-      axios.get('/srgs')
-      .then((response) => {this.updateTable(response)})
-      .catch(this.alertOrNotifyResponse)
-    },
-    updateTable: function(data) {
-      this.srgs = data.data;
-    }
+      ],
+    };
   },
   watch: {
     refresh: function () {
       this.loadSrgs();
-    }
-  }
-}
+    },
+  },
+  methods: {
+    destroyAction: function (srg) {
+      return `/srgs/${srg.id}`;
+    },
+    loadSrgs: function () {
+      axios
+        .get("/srgs")
+        .then((response) => {
+          this.updateTable(response);
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    updateTable: function (data) {
+      this.srgs = data.data;
+    },
+  },
+};
 </script>
