@@ -20,6 +20,18 @@ class Project < ApplicationRecord
 
   validates :name, :prefix, :based_on, presence: true
 
+  has_many :components, dependent: :destroy
+  has_many :component_projects, through: :components, source: :child_project
+
+  has_many :parent_components,
+           foreign_key: :child_project_id,
+           class_name: 'Component',
+           inverse_of: :child_project,
+           dependent: :destroy
+  has_many :parent_projects, through: :parent_components, source: :project
+
+  accepts_nested_attributes_for :project_metadata
+
   scope :alphabetical, -> { order(:name) }
 
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
@@ -45,5 +57,11 @@ class Project < ApplicationRecord
   #
   def available_members
     (User.all.select(:id, :name, :email) - users.select(:id, :name, :email))
+  end
+
+  ##
+  # Get a list of projects that can be added as components to this project
+  def available_components
+    Project.all - Project.where(id: components.pluck(:child_project_id))
   end
 end
