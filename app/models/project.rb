@@ -62,6 +62,6 @@ class Project < ApplicationRecord
   ##
   # Get a list of projects that can be added as components to this project
   def available_components
-    Project.all - Project.where(id: components.pluck(:child_project_id))
+    Project.all - component_projects - [self]
   end
 end

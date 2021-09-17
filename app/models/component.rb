@@ -13,19 +13,41 @@ class Component < ApplicationRecord
             presence: true
   validates :child_project_id, presence: true
   validate :no_circular_dependencies
+  validate :enforce_one_level_deep
 
   ##
   # Override `as_json` to include dependent records
   #
   def as_json(options = {})
+    project_admin = ProjectMember.find_by(project_id: child_project_id)&.user
     super.merge(
       {
-        child_project_name: child_project.name
+        child_project_name: child_project.name,
+        project_admin_name: project_admin&.name,
+        project_admin_email: project_admin&.email,
+        rule_count: Rule.where(project_id: child_project_id).count
       }
     )
   end
 
   private
+
+  ##
+  # Ensure that project relationships are just one level deep
+  #
+  # i.e. (P1 => P2, P1 => P3) is OK
+  #      (P1 => P2, P2 => P3) is NOT OK
+  def enforce_one_level_deep
+    # Parent project cannot have any parents
+    unless project.parent_components.size.zero?
+      errors.add(:base, 'Component relationship is too deep due to parent project')
+    end
+
+    # Child project cannot have any children
+    return if child_project.components.size.zero?
+
+    errors.add(:base, 'Component relationship is too deep due to child project')
+  end
 
   ##
   # Ensure that the relationship does not create any circular dependencies between projects

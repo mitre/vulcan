@@ -46,10 +46,21 @@
           </b-tab>
 
           <!-- Project components -->
-          <b-tab title="Components">
-            <b-button v-if="project_permissions == 'admin'" variant="primary">
-              Add Project Component
-            </b-button>
+          <b-tab :title="`Components (${project.components.length})`">
+            <AddComponentModal
+              v-if="project_permissions == 'admin'"
+              :project="project"
+              @projectUpdated="refreshProject"
+            />
+
+            <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
+              <b-col v-for="component in project.components" :key="component.id">
+                <ComponentCard
+                  :component="component"
+                  @deleteComponent="deleteComponent($event)"
+                />
+              </b-col>
+            </b-row>
           </b-tab>
 
           <!-- Project members -->
@@ -108,15 +119,26 @@
 <script>
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import FormMixinVue from "../../mixins/FormMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import History from "../shared/History.vue";
 import ProjectMembersTable from "../project_members/ProjectMembersTable.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
 import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
+import ComponentCard from "../components/ComponentCard.vue";
+import AddComponentModal from "../components/AddComponentModal.vue";
 
 export default {
   name: "Project",
-  components: { History, ProjectMembersTable, UpdateMetadataModal, RulesReadOnlyView },
-  mixins: [DateFormatMixinVue],
+  components: {
+    History,
+    ProjectMembersTable,
+    UpdateMetadataModal,
+    RulesReadOnlyView,
+    ComponentCard,
+    AddComponentModal,
+  },
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     project_permissions: {
       type: String,
@@ -169,6 +191,18 @@ export default {
       axios.get(`/projects/${this.project.id}`).then((response) => {
         this.project = response.data;
       });
+    },
+    // Having deleteComponent on the `ComponentCard` causes it to
+    // disappear almost immediately because the component gets
+    // destroyed once `refreshProject` executes
+    deleteComponent: function (componentId) {
+      axios
+        .delete(`/components/${componentId}`)
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.refreshProject();
+        })
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };
