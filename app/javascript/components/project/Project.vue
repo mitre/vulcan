@@ -23,11 +23,47 @@
 
     <b-row>
       <b-col md="8" class="border-right">
-        <ProjectMembersTable
-          :project="project"
-          :project_members="project.project_members"
-          :project_members_count="project.project_members.length"
-        />
+        <!-- Tab view for project information -->
+        <b-tabs content-class="mt-3" justified>
+          <!-- Project rules -->
+          <b-tab :title="`Rules (${project.rules.length})`" active>
+            <b-button
+              v-if="project_permissions"
+              variant="primary"
+              :href="`/projects/${project.id}/controls`"
+            >
+              Edit Project Controls
+            </b-button>
+
+            <RulesReadOnlyView
+              :project-permissions="project_permissions"
+              :current-user-id="current_user_id"
+              :project="project"
+              :rules="project.rules"
+              :statuses="statuses"
+              :severities="severities"
+            />
+          </b-tab>
+
+          <!-- Project components -->
+          <b-tab title="Components">
+            <b-button v-if="project_permissions == 'admin'" variant="primary">
+              Add Project Component
+            </b-button>
+          </b-tab>
+
+          <!-- Project members -->
+          <b-tab
+            v-if="project_permissions"
+            :title="`Project Members (${project.project_members.length})`"
+          >
+            <ProjectMembersTable
+              :project="project"
+              :project_members="project.project_members"
+              :project_members_count="project.project_members.length"
+            />
+          </b-tab>
+        </b-tabs>
       </b-col>
       <b-col md="4">
         <b-row class="pb-4">
@@ -75,14 +111,29 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import History from "../shared/History.vue";
 import ProjectMembersTable from "../project_members/ProjectMembersTable.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
+import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
 
 export default {
   name: "Project",
-  components: { History, ProjectMembersTable, UpdateMetadataModal },
+  components: { History, ProjectMembersTable, UpdateMetadataModal, RulesReadOnlyView },
   mixins: [DateFormatMixinVue],
   props: {
+    project_permissions: {
+      type: String,
+    },
     initialProjectState: {
       type: Object,
+      required: true,
+    },
+    current_user_id: {
+      type: Number,
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
+      type: Array,
       required: true,
     },
   },

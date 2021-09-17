@@ -204,28 +204,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.ruleRow {
-  padding: 0.25em;
-}
-
-.ruleRow:hover {
-  background: rgb(0, 0, 0, 0.12);
-}
-
-.selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
-}
-
-.closeRuleButton {
-  color: red;
-  padding: 0.1em;
-  border: 1px solid rgb(0, 0, 0, 0);
-  box-sizing: border-box;
-}
-
-.closeRuleButton:hover {
-  border: 1px solid red;
-  border-radius: 0.2em;
-}
-</style>
+<style scoped></style>

@@ -120,8 +120,4 @@ class RulesController < ApplicationController
                         .find(params[:project_id] || params[:rule][:project_id])
                end
   end
-
-  def set_project_permissions
-    @project_permissions = current_user&.project_permissions(@project)
-  end
 end
