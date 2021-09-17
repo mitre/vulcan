@@ -16,9 +16,16 @@
       :rule="rule"
       :statuses="statuses"
       :severities="severities"
+      :read-only="readOnly"
     />
 
-    <BasicRuleForm v-else :rule="rule" :statuses="statuses" :severities="severities" />
+    <BasicRuleForm
+      v-else
+      :rule="rule"
+      :statuses="statuses"
+      :severities="severities"
+      :read-only="readOnly"
+    />
   </div>
 </template>
 
@@ -41,6 +48,10 @@ export default {
     severities: {
       type: Array,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {

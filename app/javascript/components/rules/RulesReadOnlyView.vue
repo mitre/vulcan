@@ -1,42 +1,28 @@
 <template>
   <div class="row">
-    <div class="col-2">
+    <div class="col-3">
       <RuleNavigator
         :rules="rules"
         :selected-rule-id="selectedRuleId"
-        :project-prefix="project.prefix"
         :project-permissions="projectPermissions"
         @ruleSelected="handleRuleSelected($event)"
       />
     </div>
 
     <template v-if="selectedRule()">
-      <div class="col-10">
+      <div class="col-9">
         <RuleEditorHeader
           :rule="selectedRule()"
-          :project-prefix="project.prefix"
           :project-permissions="projectPermissions"
+          :read-only="true"
         />
-
         <hr />
-
-        <div class="row">
-          <!-- Main editor column -->
-          <div class="col-7 border-right">
-            <RuleEditor :rule="selectedRule()" :statuses="statuses" :severities="severities" />
-          </div>
-
-          <!-- Additional info column -->
-          <div class="col-5">
-            <RuleReviews
-              :rule="selectedRule()"
-              :project-permissions="projectPermissions"
-              :current-user-id="currentUserId"
-            />
-            <br />
-            <RuleHistories :rule="selectedRule()" :statuses="statuses" :severities="severities" />
-          </div>
-        </div>
+        <RuleEditor
+          :rule="selectedRule()"
+          :statuses="statuses"
+          :severities="severities"
+          :read-only="true"
+        />
       </div>
     </template>
 
@@ -54,17 +40,13 @@
 import RuleEditorHeader from "./RuleEditorHeader.vue";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
-import RuleHistories from "./RuleHistories.vue";
-import RuleReviews from "./RuleReviews.vue";
 
 export default {
-  name: "RulesCodeEditorView",
+  name: "RulesReadOnlyView",
   components: {
     RuleNavigator,
     RuleEditor,
     RuleEditorHeader,
-    RuleHistories,
-    RuleReviews,
   },
   props: {
     projectPermissions: {

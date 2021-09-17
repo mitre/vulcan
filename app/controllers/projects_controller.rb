@@ -7,7 +7,8 @@ class ProjectsController < ApplicationController
   include ProjectMemberConstants
 
   before_action :set_project, only: %i[show update destroy]
-  before_action :authorize_admin_project, only: %i[destroy]
+  before_action :set_project_permissions, only: %i[show]
+  before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_logged_in, only: %i[index]
 
   def index
