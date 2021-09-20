@@ -6,7 +6,8 @@ module RuleConstants
     'Applicable - Configurable',
     'Applicable - Inherently Meets',
     'Applicable - Does Not Meet',
-    'Not Applicable'
+    'Not Applicable',
+    nil
   ].freeze
 
   SEVERITIES = %w[

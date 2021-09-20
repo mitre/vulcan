@@ -18,9 +18,10 @@ class Rule < ApplicationRecord
   has_many :rule_descriptions, dependent: :destroy
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
+  has_many :references, dependent: :destroy
   belongs_to :project
 
-  accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, allow_destroy: true
+  accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
   validates :status, inclusion: {
     in: STATUSES,
@@ -38,6 +39,28 @@ class Rule < ApplicationRecord
               message: 'already exists for this project'
             },
             allow_blank: false
+
+  # In all cases of has_many, it is very unlikely (based on past releases of SRGs
+  # that there will be multiple of these fields. Just take the first one.
+  # Extend the model if required
+
+  # Reject legacy idents for the same reason, array of idents not established
+  def self.from_mapping(rule_mapping)
+    Rule.new(
+      rule_id: rule_mapping.id,
+      status: rule_mapping.status.first&.status,
+      rule_severity: rule_mapping.severity || nil,
+      rule_weight: rule_mapping.weight || nil,
+      version: rule_mapping.version.first&.version,
+      title: rule_mapping.title.first || nil,
+      ident: rule_mapping.ident.reject(&:legacy).first.ident,
+      ident_system: rule_mapping.ident.reject(&:legacy).first.system,
+      fixtext: rule_mapping.fixtext.first&.fixtext,
+      fixtext_fixref: rule_mapping.fixtext.first&.fixref,
+      fix_id: rule_mapping.fix.first&.id,
+      references: [Reference.from_mapping(rule_mapping.reference.first)]
+    )
+  end
 
   ##
   # Override `as_json` to include dependent records (e.g. comments, histories)

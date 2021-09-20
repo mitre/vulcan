@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_10_000716) do
+ActiveRecord::Schema.define(version: 2021_09_20_185438) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -117,9 +117,10 @@ ActiveRecord::Schema.define(version: 2021_09_10_000716) do
     t.string "source"
     t.string "subject"
     t.string "title"
-    t.string "type"
+    t.string "reference_type"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.bigint "rule_id"
   end
 
   create_table "rule_descriptions", force: :cascade do |t|
@@ -151,6 +152,16 @@ ActiveRecord::Schema.define(version: 2021_09_10_000716) do
     t.string "fix_id"
     t.index ["project_id"], name: "index_rules_on_project_id"
     t.index ["rule_id", "project_id"], name: "rules_rule_id_project_id_index", unique: true
+  end
+
+  create_table "security_requirements_guides", force: :cascade do |t|
+    t.string "srg_id", null: false
+    t.string "title", null: false
+    t.string "version", null: false
+    t.xml "xml", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
   end
 
   create_table "users", force: :cascade do |t|
