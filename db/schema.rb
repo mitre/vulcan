@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_10_000716) do
+ActiveRecord::Schema.define(version: 2021_09_20_185438) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -161,6 +161,7 @@ ActiveRecord::Schema.define(version: 2021_09_10_000716) do
     t.xml "xml", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
   end
 
   create_table "users", force: :cascade do |t|

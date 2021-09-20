@@ -14,7 +14,7 @@ module Xccdf
     content :ident, String
 
     def legacy
-      system.eql?("http://cyber.mil/legacy")
+      system.eql?('http://cyber.mil/legacy')
     end
   end
 end
