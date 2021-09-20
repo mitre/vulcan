@@ -10,9 +10,13 @@ module ApplicationHelper
   def base_navigation
     [
       { icon: 'mdi-folder-open-outline', name: 'Projects', link: projects_path },
-      { icon: 'mdi-timer-sand', name: 'Start New Project', link: root_path },
-      { icon: 'mdi-folder', name: 'SRGs', link: root_path },
-      { icon: 'mdi-folder-zip-outline', name: 'Upload SRG', link: root_path }
+      { icon: 'mdi-timer-sand', name: 'Start New Project', link: root_path }
+    ]
+  end
+
+  def admin_navigation
+    [
+      { icon: 'mdi-folder', name: 'SRGs', link: srgs_path }
     ]
   end
 end

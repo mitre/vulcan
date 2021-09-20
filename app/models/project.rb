@@ -8,9 +8,16 @@ class Project < ApplicationRecord
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
   has_one :project_metadata, dependent: :destroy
-  accepts_nested_attributes_for :project_metadata
+  accepts_nested_attributes_for :project_metadata, :rules
 
   scope :alphabetical, -> { order(:name) }
+
+  def self.from_mapping(benchmark)
+    rule_models = benchmark.rule.map do |rule|
+      Rule.from_mapping(rule)
+    end
+    rule_models.import!
+  end
 
   ##
   # Override `as_json` to include dependent records
