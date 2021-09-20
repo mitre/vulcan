@@ -14,20 +14,23 @@
         </b-button>
       </b-col>
     </b-row>
-    <SecurityRequirementsGuidesTable :srgs="srgs" :refresh="refresh" />
-    <SecurityRequirementsGuidesUpload v-model="showUploadComponent" @uploaded="srgUploaded" />
+    <SecurityRequirementsGuidesTable :srgs="srgs" />
+    <SecurityRequirementsGuidesUpload v-model="showUploadComponent" @uploaded="loadSrgs" />
   </div>
 </template>
 
 <script>
+import axios from "axios";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import SecurityRequirementsGuidesTable from "./SecurityRequirementsGuidesTable";
 import SecurityRequirementsGuidesUpload from "./SecurityRequirementsGuidesUpload";
 
 export default {
   name: "SecurityRequirementsGuides",
   components: { SecurityRequirementsGuidesTable, SecurityRequirementsGuidesUpload },
+  mixins: [AlertMixinVue],
   props: {
-    srgs: {
+    givensrgs: {
       type: Array,
       required: true,
     },
@@ -35,12 +38,20 @@ export default {
   data: function () {
     return {
       showUploadComponent: false,
-      refresh: false,
+      srgs: [],
     };
   },
+  mounted: function () {
+    this.srgs = this.givensrgs;
+  },
   methods: {
-    srgUploaded: function () {
-      this.refresh = !this.refresh;
+    loadSrgs: function () {
+      axios
+        .get("/srgs")
+        .then(({ data }) => {
+          this.srgs = data;
+        })
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };

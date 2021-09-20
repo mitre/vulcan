@@ -18,20 +18,15 @@
   </div>
 </template>
 <script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
   name: "SecurityRequirementsGuidesTable",
-  mixins: [FormMixinVue, AlertMixinVue],
+  mixins: [FormMixinVue],
   props: {
     srgs: {
       type: Array,
       required: true,
-    },
-    refresh: {
-      type: Boolean,
     },
   },
   data: function () {
@@ -57,17 +52,6 @@ export default {
   methods: {
     destroyAction: function (srg) {
       return `/srgs/${srg.id}`;
-    },
-    loadSrgs: function () {
-      axios
-        .get("/srgs")
-        .then((response) => {
-          this.updateTable(response);
-        })
-        .catch(this.alertOrNotifyResponse);
-    },
-    updateTable: function (data) {
-      this.srgs = data.data;
     },
   },
 };
