@@ -6,8 +6,10 @@
 </template>
 
 <script>
+import ProjectsTable from "../projects/ProjectsTable.vue"
 export default {
   name: "Projects",
+  components: { ProjectsTable },
   props: {
     projects: {
       type: Array,

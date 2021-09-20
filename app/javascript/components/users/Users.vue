@@ -6,8 +6,10 @@
 </template>
 
 <script>
+import UsersTable from "./UsersTable.vue"
 export default {
   name: "Users",
+  components: { UsersTable },
   props: {
     users: {
       type: Array,
