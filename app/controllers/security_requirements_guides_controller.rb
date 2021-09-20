@@ -18,9 +18,16 @@ class SecurityRequirementsGuidesController < ApplicationController
     file.tempfile.seek(0)
     srg.xml = file.read
     if srg.save
-      render(json: { notice: 'Successfully created SRG.'}, status: :ok)
+      render(json: { toast: 'Successfully created SRG.'}, status: :ok)
     else
-      render(json: { alert: "Could not create SRG. #{srg.errors.full_messages.join(', ')}" }, status: :unprocessable_entity)
+      render(json: {
+        toast: {
+          title: 'Could not create SRG.',
+          message: "#{srg.errors.full_messages.join(', ')}",
+          variant: 'danger'
+        },
+        status: :unprocessable_entity
+      )
     end
   end
 
