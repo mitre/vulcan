@@ -3,6 +3,8 @@
 # SecurityRequirementsGuides (abbreviated SRGs) are XCCDF documents that contain a
 # benchmark that describes how to evaluate generic IT systems.
 class SecurityRequirementsGuide < ApplicationRecord
+  has_many :projects, dependent: :restrict_with_error
+
   validates :srg_id, :title, :version, :xml, presence: true
   validates :srg_id, uniqueness: {
     scope: :version,
@@ -27,5 +29,22 @@ class SecurityRequirementsGuide < ApplicationRecord
     return '' if revision_string.nil?
 
     "R#{revision_string.match(/^\d+/)[0]}"
+  end
+
+  def self.latest
+    query = <<-SQL.squish
+      SELECT id, title, version
+      FROM security_requirements_guides
+      WHERE version IN (
+          SELECT MAX(version)
+          FROM security_requirements_guides
+          GROUP BY title
+      )
+    SQL
+    SecurityRequirementsGuide.connection.execute(Arel.sql(query)).map { |r| r }
+  end
+
+  def full_title
+    "#{title} #{version}"
   end
 end

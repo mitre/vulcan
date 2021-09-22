@@ -45,8 +45,9 @@ class Rule < ApplicationRecord
   # Extend the model if required
 
   # Reject legacy idents for the same reason, array of idents not established
-  def self.from_mapping(rule_mapping)
+  def self.from_mapping(rule_mapping, project_id)
     Rule.new(
+      project_id: project_id,
       rule_id: rule_mapping.id,
       status: rule_mapping.status.first&.status,
       rule_severity: rule_mapping.severity || nil,
@@ -58,7 +59,9 @@ class Rule < ApplicationRecord
       fixtext: rule_mapping.fixtext.first&.fixtext,
       fixtext_fixref: rule_mapping.fixtext.first&.fixref,
       fix_id: rule_mapping.fix.first&.id,
-      references: [Reference.from_mapping(rule_mapping.reference.first)]
+      references: [Reference.from_mapping(rule_mapping.reference.first)],
+      disa_rule_descriptions: [DisaRuleDescription.from_mapping(rule_mapping.description.first)],
+      checks: [Check.from_mapping(rule_mapping.check.first)]
     )
   end
 
