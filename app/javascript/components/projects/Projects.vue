@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import ProjectsTable from './ProjectsTable.vue';
+import ProjectsTable from "./ProjectsTable.vue";
 
 export default {
   name: "Projects",
