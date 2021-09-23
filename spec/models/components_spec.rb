@@ -56,6 +56,34 @@ RSpec.describe Component, type: :model do
       component.valid?
       expect(component.errors[:base]).to include(@child_depth_err)
     end
+
+    it 'Project#available_components are all valid' do
+      Component.create(project: @p2, child_project: @p3)
+      Component.create(project: @p6, child_project: @p8)
+      Component.create(project: @p5, child_project: @p3)
+      Component.create(project: @p5, child_project: @p7)
+
+      Project.all.each do |project|
+        project.available_components.each do |child_project|
+          component = Component.create(project: project, child_project: child_project)
+          expect(component.valid?).to eq(true)
+        end
+      end
+    end
+
+    it 'Projects.all - Project#available_components are all NOT valid' do
+      Component.create(project: @p2, child_project: @p3)
+      Component.create(project: @p6, child_project: @p8)
+      Component.create(project: @p5, child_project: @p3)
+      Component.create(project: @p5, child_project: @p7)
+
+      Project.all.each do |project|
+        (Project.all - project.available_components).each do |child_project|
+          component = Component.create(project: project, child_project: child_project)
+          expect(component.valid?).to eq(false)
+        end
+      end
+    end
   end
 
   context 'no duplicates allowed' do
