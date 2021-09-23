@@ -49,12 +49,13 @@
           <b-tab :title="`Components (${project.components.length})`">
             <AddComponentModal
               v-if="project_permissions == 'admin'"
-              :project="project"
+              :project_id="project.id"
+              :available_components="sortedAvailableComponents"
               @projectUpdated="refreshProject"
             />
 
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
-              <b-col v-for="component in project.components" :key="component.id">
+              <b-col v-for="component in sortedComponents" :key="component.id">
                 <ComponentCard
                   :component="component"
                   @deleteComponent="deleteComponent($event)"
@@ -117,6 +118,7 @@
 </template>
 
 <script>
+import _ from "lodash";
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
@@ -167,6 +169,12 @@ export default {
     };
   },
   computed: {
+    sortedComponents: function () {
+      return _.sortBy(this.project.components, ['child_project_name'], ['asc']);
+    },
+    sortedAvailableComponents: function () {
+      return _.sortBy(this.project.available_components, ['child_project_name'], ['asc']);
+    },
     adminList: function () {
       return this.project.admins.map((a) => `${a.name} <${a.email}>`).join(", ");
     },

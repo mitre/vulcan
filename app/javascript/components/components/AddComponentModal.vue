@@ -27,7 +27,7 @@
               <vue-simple-suggest
                 ref="componentSearch"
                 v-model="search"
-                :list="project.available_components"
+                :list="available_components"
                 :filter-by-query="true"
                 value-attribute="child_project_id"
                 display-attribute="child_project_name"
@@ -84,10 +84,14 @@ export default {
   },
   mixins: [AlertMixinVue, FormMixinVue],
   props: {
-    project: {
-      type: Object,
+    project_id: {
+      type: Number,
       required: true,
     },
+    available_components: {
+      type: Array,
+      required: true,
+    }
   },
   data: function () {
     return initialState();
@@ -120,7 +124,7 @@ export default {
       };
 
       axios
-        .post(`/projects/${this.project.id}/components`, payload)
+        .post(`/projects/${this.project_id}/components`, payload)
         .then(this.addComponentSuccess)
         .catch(this.alertOrNotifyResponse);
     },
