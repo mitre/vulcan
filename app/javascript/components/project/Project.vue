@@ -29,6 +29,7 @@
           <b-tab :title="`Rules (${project.rules.length})`" active>
             <b-button
               v-if="project_permissions"
+              class="m-2"
               variant="primary"
               :href="`/projects/${project.id}/controls`"
             >
@@ -69,6 +70,14 @@
             v-if="project_permissions"
             :title="`Project Members (${project.project_members.length})`"
           >
+            <b-button
+              v-if="project_permissions == 'admin'"
+              class="m-2"
+              variant="primary"
+              :href="`/projects/${project.id}/project_members`"
+            >
+              Manage Project Members
+            </b-button>
             <ProjectMembersTable
               :project="project"
               :project_members="project.project_members"
