@@ -9,6 +9,8 @@
       :rules="reactiveRules"
       :statuses="statuses"
       :severities="severities"
+      :project-permissions="project_permissions"
+      :current-user-id="current_user_id"
     />
   </div>
 </template>
@@ -25,12 +27,16 @@ export default {
   components: { RulesCodeEditorView },
   mixins: [AlertMixinVue, FormMixinVue],
   props: {
-    project: {
-      type: Object,
-      required: true,
-    },
     project_permissions: {
       type: String,
+      required: true,
+    },
+    current_user_id: {
+      type: Number,
+      required: true,
+    },
+    project: {
+      type: Object,
       required: true,
     },
     rules: {

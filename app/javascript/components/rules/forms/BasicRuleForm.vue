@@ -5,7 +5,7 @@
         :rule="rule"
         :statuses="statuses"
         :severities="severities"
-        :disabled="rule.locked"
+        :disabled="disabledForm"
         :show-fields="ruleFormFields"
       />
 
@@ -18,7 +18,7 @@
         :rule="rule"
         :index="0"
         :description="rule.disa_rule_descriptions_attributes[0]"
-        :disabled="rule.locked"
+        :disabled="disabledForm"
         :show-fields="disaDescriptionFormFields"
       />
 
@@ -28,7 +28,7 @@
         :rule="rule"
         :index="0"
         :check="rule.checks_attributes[0]"
-        :disabled="rule.locked"
+        :disabled="disabledForm"
         :show-fields="checkFormFields"
       />
     </b-form>
@@ -94,6 +94,11 @@ export default {
         "content",
       ],
     };
+  },
+  computed: {
+    disabledForm: function () {
+      return this.rule.locked || this.rule.review_requestor_id ? true : false;
+    },
   },
 };
 </script>
