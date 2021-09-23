@@ -91,7 +91,7 @@ export default {
     available_components: {
       type: Array,
       required: true,
-    }
+    },
   },
   data: function () {
     return initialState();
