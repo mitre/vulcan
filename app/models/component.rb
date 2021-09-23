@@ -12,8 +12,7 @@ class Component < ApplicationRecord
             },
             presence: true
   validates :child_project_id, presence: true
-  validate :no_circular_dependencies
-  validate :enforce_one_level_deep
+  validate :no_circular_dependencies, :enforce_one_level_deep
 
   ##
   # Override `as_json` to include dependent records
