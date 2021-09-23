@@ -3,10 +3,11 @@
   = stylesheet_pack_tag 'rules'
 
 #Rules
-  %Rules{                                                      |
-    'v-bind:project': @project.to_json,                        |
-    'v-bind:rules': @rules.to_json,                            |
-    'v-bind:statuses': RuleConstants::STATUSES,                |
-    'v-bind:severities': RuleConstants::SEVERITIES,            |
-    'v-bind:project_permissions': @project_permissions.to_json |
+  %Rules{                                                       |
+    'v-bind:project': @project.to_json,                         |
+    'v-bind:rules': @rules.to_json,                             |
+    'v-bind:statuses': RuleConstants::STATUSES.to_json,         |
+    'v-bind:severities': RuleConstants::SEVERITIES.to_json,     |
+    'v-bind:project_permissions': @project_permissions.to_json, |
+    'v-bind:current_user_id': current_user.id.to_json           |
   }  

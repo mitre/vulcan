@@ -31,3 +31,7 @@ Metrics/BlockLength:
   Enabled: false
   Exclude:
     - spec/**/*
+Rails/ContentTag:
+  Enabled: true
+  Exclude:
+    - 'app/lib/**/*'

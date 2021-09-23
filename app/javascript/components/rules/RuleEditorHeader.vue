@@ -2,7 +2,18 @@
   <!-- Rule Details column -->
   <div class="row">
     <div class="col-12">
-      <h2>{{ rule.rule_id }}</h2>
+      <h2>
+        <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
+        <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
+        {{ rule.rule_id }}
+      </h2>
+
+      <p v-if="rule.locked" class="text-danger font-weight-bold">
+        This control is locked and must first be unlocked if changes or deletion are required.
+      </p>
+      <p v-if="rule.review_requestor_id" class="text-danger font-weight-bold">
+        This control is under review and cannot be edited at this time.
+      </p>
 
       <!-- Rule info -->
       <!-- <p>Based on ...</p> -->
@@ -14,11 +25,20 @@
 
       <!-- Action Buttons -->
       <!-- Disable and enable save & delete buttons based on locked state of rule -->
-      <template v-if="rule.locked">
-        <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
+      <template v-if="rule.locked || rule.review_requestor_id ? true : false">
+        <span
+          v-b-tooltip.hover
+          class="d-inline-block"
+          title="Cannot save a control that is locked or under review."
+        >
           <b-button variant="success" disabled>Save Control</b-button>
         </span>
-        <span v-b-tooltip.hover class="d-inline-block" title="Control is locked.">
+        <span
+          v-if="projectPermissions == 'admin'"
+          v-b-tooltip.hover
+          class="d-inline-block"
+          title="Cannot delete a control that is locked or under review"
+        >
           <b-button variant="danger" disabled>Delete Control</b-button>
         </span>
       </template>
@@ -36,7 +56,9 @@
         />
 
         <!-- Delete rule -->
-        <b-button v-b-modal.delete-rule-modal variant="danger">Delete Control</b-button>
+        <b-button v-if="projectPermissions == 'admin'" v-b-modal.delete-rule-modal variant="danger">
+          Delete Control
+        </b-button>
         <b-modal
           id="delete-rule-modal"
           title="Delete Control"
@@ -57,10 +79,6 @@
         <!-- Duplicate rule -->
         <!-- <b-button>Duplicate Control</b-button> -->
       </template>
-      <b-button v-if="rule.locked" variant="warning" @click="manageLock(false)"
-        >Unlock Control</b-button
-      >
-      <b-button v-else variant="warning" @click="manageLock(true)">Lock Control</b-button>
     </div>
   </div>
 </template>
@@ -77,6 +95,10 @@ export default {
   components: { CommentModal },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
+    projectPermissions: {
+      type: String,
+      required: true,
+    },
     rule: {
       type: Object,
       required: true,
@@ -92,18 +114,6 @@ export default {
     },
   },
   methods: {
-    manageLock: function (desiredLockState) {
-      axios
-        .post(`/rules/${this.rule.id}/manage_lock`, {
-          locked: desiredLockState,
-        })
-        .then(this.manageLockSuccess)
-        .catch(this.alertOrNotifyResponse);
-    },
-    manageLockSuccess: function (response) {
-      this.alertOrNotifyResponse(response);
-      this.$root.$emit("refresh:rule", this.rule.id);
-    },
     saveRule(comment) {
       const payload = {
         rule: {

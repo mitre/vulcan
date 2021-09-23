@@ -1,9 +1,5 @@
 <template>
   <div>
-    <p v-if="rule.locked" class="text-danger">
-      This control is locked and must first be unlocked if changes or deletion are required.
-    </p>
-
     <div class="mb-3 font-weight-bold">
       <b-form-checkbox
         v-model="advancedEditor"
