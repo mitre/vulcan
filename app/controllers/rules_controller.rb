@@ -134,7 +134,7 @@ class RulesController < ApplicationController
     @project = if @rule
                  @rule.project
                else
-                 Project.find(params[:project_id] || params[:rule][:project_id])
+                 Project.includes({rules: %i[comments checks disa_rule_descriptions rule_descriptions]}).find(params[:project_id] || params[:rule][:project_id])
                end
   end
 
