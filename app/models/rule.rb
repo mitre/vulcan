@@ -66,21 +66,6 @@ class Rule < ApplicationRecord
   end
 
   ##
-  # Override `as_json` to include dependent records (e.g. comments, histories)
-  #
-  def as_json(options = {})
-    super.merge(
-      {
-        comments: comments.as_json.map { |c| c.except('id', 'user_id', 'rule_id', 'updated_at') },
-        histories: histories,
-        rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
-      }
-    )
-  end
-
-  ##
   # Revert a specific field on a rule from an audit
   #
   # Parameters:
@@ -135,6 +120,21 @@ class Rule < ApplicationRecord
     rescue ActiveRecord::RecordInvalid => e
       raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
     end
+  end
+
+  ##
+  # Override `as_json` to include dependent records (e.g. comments, histories)
+  #
+  def as_json(options = {})
+    super.merge(
+      {
+        comments: comments.as_json.map { |c| c.except('id', 'user_id', 'rule_id', 'updated_at') },
+        histories: histories,
+        rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
+        disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
+        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
+      }
+    )
   end
 
   private

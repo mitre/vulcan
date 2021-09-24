@@ -20,7 +20,10 @@ class ProjectsController < ApplicationController
   end
 
   def new
-    @srgs = SecurityRequirementsGuide.latest
+    @srgs = SecurityRequirementsGuide.latest.map do |srg|
+      srg['title'] = "#{srg['title']} #{srg['version']}"
+      srg
+    end
   end
 
   def create

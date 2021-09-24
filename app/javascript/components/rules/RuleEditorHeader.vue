@@ -2,7 +2,7 @@
   <!-- Rule Details column -->
   <div class="row">
     <div class="col-12">
-      <h2>{{ rule.rule_id }}</h2>
+      <h2>{{ `${this.projectPrefix}-${rule.id}` }}</h2>
 
       <!-- Rule info -->
       <!-- <p>Based on ...</p> -->
@@ -79,6 +79,10 @@ export default {
   props: {
     rule: {
       type: Object,
+      required: true,
+    },
+    projectPrefix: {
+      type: String,
       required: true,
     },
   },
