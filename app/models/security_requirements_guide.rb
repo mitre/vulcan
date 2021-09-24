@@ -41,7 +41,7 @@ class SecurityRequirementsGuide < ApplicationRecord
           GROUP BY title
       )
     SQL
-    SecurityRequirementsGuide.connection.execute(Arel.sql(query)).map { |r| r }
+    SecurityRequirementsGuide.connection.execute(Arel.sql(query)).to_a
   end
 
   def full_title

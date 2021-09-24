@@ -20,7 +20,7 @@ class ProjectsController < ApplicationController
   end
 
   def new
-    @srgs = SecurityRequirementsGuide.all.select(:id, :srg_id, :title, :version)
+    @srgs = SecurityRequirementsGuide.latest
   end
 
   def create
@@ -33,8 +33,12 @@ class ProjectsController < ApplicationController
     # First save ensures base Project is acceptable.
     if project.save
       # Create rules
-      Project.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
-      redirect_to action: 'index'
+      if Project.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
+        redirect_to action: 'index'
+      else
+        flash.alert = 'Unable to create project. An error occured parsing the selected SRG'
+        redirect_to action: 'new'
+      end
     else
       flash.alert = "Unable to create project. #{project.errors.full_messages}"
       redirect_to action: 'new'

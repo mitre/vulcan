@@ -4,6 +4,9 @@
 class Reference < ApplicationRecord
   belongs_to :rule
 
+  # Because from_mappings take advantage of accepts_nested_attributes, these methods
+  # must return Hashes instead of an actual object to be properly created and associated
+  # with the rule.
   def self.from_mapping(reference_mapping)
     attrs = reference_mapping.instance_values
     attrs.delete('href')

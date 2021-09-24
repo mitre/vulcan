@@ -24,7 +24,8 @@ class Project < ApplicationRecord
     rule_models = benchmark.rule.map do |rule|
       Rule.from_mapping(rule, project_id)
     end
-    Rule.import(rule_models)
+    # Examine import results for failures
+    Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
   end
 
   def prefix=(val)
