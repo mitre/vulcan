@@ -9,6 +9,16 @@ class SecurityRequirementsGuide < ApplicationRecord
     message: ' ID has already been taken'
   }
 
+  def xml=(value)
+    # If the xml changes, then parsed_xml becomes invalid and will need to be re-parsed.
+    self.parsed_xml = nil
+    super(value)
+  end
+
+  def srg
+    self.parsed_xml ||= Xccdf::Benchmark.parse(xml)
+  end
+
   # Since an SRG is top-level, the parameter is the entire parsed benchmark
   def self.from_mapping(benchmark_mapping)
     # Disabling `Style/RescueModifier` here because the goal is simply just to try and
@@ -32,4 +42,10 @@ class SecurityRequirementsGuide < ApplicationRecord
 
     "R#{revision_string.match(/^\d+/)[0]}"
   end
+
+  private
+
+  # This is used to cache the result of `Xccdf::Benchmark.parse(xml)` so that it
+  # only needs to be calculated once for the model as long as `xml` does not change.
+  attr_accessor :parsed_xml
 end
