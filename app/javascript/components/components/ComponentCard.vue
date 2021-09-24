@@ -7,7 +7,7 @@
         <b-button variant="outline-secondary" @click="showDeleteConfirmation = false">
           Cancel
         </b-button>
-        <b-button variant="danger" @click="$emit('deleteComponent', component.id)">Delete</b-button>
+        <b-button variant="danger" @click="$emit('deleteComponent', component.id)">Remove</b-button>
       </div>
     </template>
 

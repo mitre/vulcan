@@ -5,6 +5,7 @@
         :rules="rules"
         :selected-rule-id="selectedRuleId"
         :project-permissions="projectPermissions"
+        :read-only="true"
         @ruleSelected="handleRuleSelected($event)"
       />
     </div>
