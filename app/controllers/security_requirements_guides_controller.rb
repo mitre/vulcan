@@ -25,7 +25,7 @@ class SecurityRequirementsGuidesController < ApplicationController
       render(json: {
                toast: {
                  title: 'Could not create SRG.',
-                 message: srg.errors.full_messages.join(', ').to_s,
+                 message: srg.errors.full_messages,
                  variant: 'danger'
                },
                status: :unprocessable_entity
@@ -37,7 +37,7 @@ class SecurityRequirementsGuidesController < ApplicationController
     if @srg.destroy
       flash.notice = 'Successfully removed SRG.'
     else
-      flash.alert = "Unable to remove SRG. #{@srg.errors.full_messages}"
+      flash.alert = "Unable to remove SRG. #{@project_member.errors.full_messages.join(', ')}"
     end
     redirect_to action: 'index'
   end

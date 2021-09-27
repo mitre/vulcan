@@ -91,6 +91,10 @@
 export default {
   name: "RuleNavigator",
   props: {
+    projectPermissions: {
+      type: String,
+      required: true,
+    },
     rules: {
       type: Array,
       required: true,

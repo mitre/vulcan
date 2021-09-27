@@ -4,11 +4,10 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update destroy manage_lock revert]
-  before_action :set_project, only: %i[index show create update manage_lock revert]
+  before_action :set_rule, only: %i[show update destroy revert]
+  before_action :set_project, only: %i[index show create update revert]
   before_action :set_project_permissions, only: %i[index]
   before_action :authorize_author_project, only: %i[index show update revert]
-  before_action :authorize_review_project, only: %i[manage_lock]
   before_action :authorize_admin_project, only: %i[create destroy]
 
   def index
@@ -51,14 +50,6 @@ class RulesController < ApplicationController
         }
       }, status: :unprocessable_entity
     end
-  rescue RuleLockedError => e
-    render json: {
-      toast: {
-        title: 'Could not update control.',
-        message: e.message,
-        variant: 'danger'
-      }, status: :unprocessable_entity
-    }
   end
 
   def destroy
@@ -73,15 +64,6 @@ class RulesController < ApplicationController
         }
       }, status: :unprocessable_entity
     end
-  end
-
-  def manage_lock
-    return if @rule.locked == manage_lock_params[:locked]
-
-    # rubocop:disable Rails/SkipsModelValidations
-    @rule.update_attribute(:locked, manage_lock_params[:locked])
-    # rubocop:enable Rails/SkipsModelValidations
-    render json: { toast: "Successfully #{manage_lock_params[:locked] ? 'locked' : 'unlocked'} control." }
   end
 
   def revert
@@ -134,7 +116,7 @@ class RulesController < ApplicationController
     @project = if @rule
                  @rule.project
                else
-                 Project.includes({rules: %i[comments checks disa_rule_descriptions rule_descriptions]}).find(params[:project_id] || params[:rule][:project_id])
+                 Project.includes({rules: %i[reviews checks disa_rule_descriptions rule_descriptions]}).find(params[:project_id] || params[:rule][:project_id])
                end
   end
 

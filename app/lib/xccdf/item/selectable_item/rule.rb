@@ -15,7 +15,7 @@ module Xccdf
         #           result contribute to the score and appear in reports
         #           (default, for compatibility for XCCDF 1.0).
         #    unscored = check the rule, and include the results in
-        #           any report, but do not include the result in
+        #           any report, but do notsev include the result in
         #           score computations (in the default scoring model
         #           the same effect can be achieved with weight=0)
         #    unchecked = don't check the rule, just force the result

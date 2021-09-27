@@ -5,23 +5,26 @@
 class Rule < ApplicationRecord
   include RuleConstants
 
-  audited except: %i[project_id created_at updated_at locked], max_audits: 1000
+  audited except: %i[project_id review_requestor_id created_at updated_at locked], max_audits: 1000
   has_associated_audits
 
-  before_validation :error_if_locked, on: :update
   before_save :apply_audit_comment
   before_create :ensure_disa_description_exists
   before_create :ensure_check_exists
-  before_destroy :error_if_locked
+  before_destroy :prevent_destroy_if_under_review_or_locked
 
-  has_many :comments, dependent: :destroy
+  has_many :reviews, dependent: :destroy
   has_many :rule_descriptions, dependent: :destroy
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
   belongs_to :project
+  belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
 
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
+
+  validate :cannot_be_locked_and_under_review
+  validate :review_fields_cannot_change_with_other_fields, on: :update
 
   validates :status, inclusion: {
     in: STATUSES,
@@ -130,8 +133,8 @@ class Rule < ApplicationRecord
   def as_json(options = {})
     super.merge(
       {
-        comments: comments.as_json.map { |c| c.except('id', 'user_id', 'rule_id', 'updated_at') },
         histories: histories,
+        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
         rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
@@ -141,14 +144,42 @@ class Rule < ApplicationRecord
 
   private
 
-  def error_if_locked
-    # locked = current update
-    # locked_was = before
-    # If the previous state was not locked, updates can be made.
+  def cannot_be_locked_and_under_review
+    return unless locked && review_requestor_id.present?
+
+    errors.add(:base, 'Control cannot be under review and locked at the same time.')
+  end
+
+  ##
+  # Check to ensure that "review fields" are not changed
+  # in the same `.save` action as any "non-review fields"
+  def review_fields_cannot_change_with_other_fields
+    review_fields = Set.new(%w[review_requestor_id locked])
+    ignored_fields = %w[updated_at created_at]
+    changed_filtered = changed.reject { |f| ignored_fields.include? f }
+    any_review_fields_changed = changed_filtered.any? { |field| review_fields.include? field }
+    any_non_review_fields_changed = changed_filtered.any? { |field| review_fields.exclude? field }
+    # Break early if review and non-review fields have not changed together
+    return unless any_review_fields_changed && any_non_review_fields_changed
+
+    errors.add(:base, 'Cannot update review-related attributes with other non-review-related attributes')
+  end
+
+  ##
+  # Rules should never be deleted if they are under review or locked
+  # This checks *_was to cover the case where an attrubute was changed before attempting to destroy
+  def prevent_destroy_if_under_review_or_locked
+    # Abort if under review and trying to delete
+    if review_requestor_id_was.present?
+      errors.add(:base, 'Control is under review and cannot be destroyed')
+      throw(:abort)
+    end
+
+    # Abort if locked and trying to delete
     return unless locked_was
 
-    # If the previous state was locked, error
-    raise(RuleLockedError, id) if locked_was
+    errors.add(:base, 'Control is locked and cannot be destroyed')
+    throw(:abort)
   end
 
   def ensure_disa_description_exists

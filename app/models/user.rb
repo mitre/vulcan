@@ -13,7 +13,7 @@ class User < ApplicationRecord
 
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
 
-  has_many :comments, dependent: :nullify
+  has_many :reviews, dependent: :nullify
   has_many :project_members, dependent: :destroy
   has_many :projects, through: :project_members
 

@@ -5,6 +5,7 @@
         :rules="rules"
         :selected-rule-id="selectedRuleId"
         :projectPrefix="project.prefix"
+        :project-permissions="projectPermissions"
         @ruleSelected="handleRuleSelected($event)"
       />
     </div>
@@ -14,19 +15,24 @@
         <RuleEditorHeader
           :rule="selectedRule()"
           :projectPrefix="project.prefix"
+          :project-permissions="projectPermissions"
         />
 
         <hr />
 
         <div class="row">
           <!-- Main editor column -->
-          <div class="col-7">
+          <div class="col-7 border-right">
             <RuleEditor :rule="selectedRule()" :statuses="statuses" :severities="severities" />
           </div>
 
           <!-- Additional info column -->
           <div class="col-5">
-            <RuleComments :rule="selectedRule()" />
+            <RuleReviews
+              :rule="selectedRule()"
+              :project-permissions="projectPermissions"
+              :current-user-id="currentUserId"
+            />
             <br />
             <RuleHistories :rule="selectedRule()" :statuses="statuses" :severities="severities" />
           </div>
@@ -45,22 +51,30 @@
 </template>
 
 <script>
-import RuleComments from "./RuleComments.vue";
 import RuleEditorHeader from "./RuleEditorHeader.vue";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
 import RuleHistories from "./RuleHistories.vue";
+import RuleReviews from "./RuleReviews.vue";
 
 export default {
   name: "RulesCodeEditorView",
   components: {
-    RuleComments,
     RuleNavigator,
     RuleEditor,
     RuleEditorHeader,
     RuleHistories,
+    RuleReviews,
   },
   props: {
+    projectPermissions: {
+      type: String,
+      required: true,
+    },
+    currentUserId: {
+      type: Number,
+      required: true,
+    },
     project: {
       type: Object,
       required: true,

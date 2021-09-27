@@ -6,7 +6,8 @@
 </template>
 
 <script>
-import ProjectsTable from "../projects/ProjectsTable.vue"
+import ProjectsTable from "./ProjectsTable.vue";
+
 export default {
   name: "Projects",
   components: { ProjectsTable },

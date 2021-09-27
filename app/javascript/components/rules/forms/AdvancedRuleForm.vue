@@ -5,7 +5,7 @@
         :rule="rule"
         :statuses="statuses"
         :severities="severities"
-        :disabled="rule.locked"
+        :disabled="disabledForm"
       />
 
       <!-- rule_descriptions -->
@@ -28,11 +28,11 @@
                 :rule="rule"
                 :index="index"
                 :description="description"
-                :disabled="rule.locked"
+                :disabled="disabledForm"
               />
 
               <a
-                v-if="!rule.locked"
+                v-if="!disabledForm"
                 class="clickable text-dark"
                 @click="$root.$emit('update:description', rule, { ...description, _destroy: true }, index)"
               >
@@ -42,7 +42,7 @@
             </div>
           </div>
 
-          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add Description</b-button>
+          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="!disabledForm"><i class="mdi mdi-plus"></i>Add Description</b-button>
         </b-collapse>
       </template> -->
 
@@ -74,11 +74,11 @@
                 :rule="rule"
                 :index="index"
                 :description="description"
-                :disabled="rule.locked"
+                :disabled="disabledForm"
               />
               <!-- This is commented out because there is currently the assumption that users will only need one description -->
               <!-- <a
-                v-if="!rule.locked"
+                v-if="!disabledForm"
                 class="clickable text-dark"
                 @click="
                   $root.$emit('update:disaDescription', rule, { ...description, _destroy: true }, index)
@@ -91,7 +91,7 @@
           </div>
 
           <!-- This is commented out because there is currently the assumption that users will only need one description -->
-          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="rule.locked == false"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
+          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="disabledForm"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
         </b-collapse>
       </template>
 
@@ -112,10 +112,10 @@
               <p>
                 <strong>{{ check.id == null ? "New " : "" }}Check</strong>
               </p>
-              <CheckForm :rule="rule" :index="index" :check="check" :disabled="rule.locked" />
+              <CheckForm :rule="rule" :index="index" :check="check" :disabled="disabledForm" />
               <!-- Remove link -->
               <a
-                v-if="!rule.locked"
+                v-if="!disabledForm"
                 class="clickable text-dark"
                 @click="$root.$emit('update:check', rule, { ...check, _destroy: true }, index)"
               >
@@ -125,7 +125,7 @@
             </div>
           </div>
 
-          <b-button v-if="rule.locked == false" class="mb-2" @click="$root.$emit('add:check', rule)"
+          <b-button v-if="!disabledForm" class="mb-2" @click="$root.$emit('add:check', rule)"
             ><i class="mdi mdi-plus" />Add Check</b-button
           >
         </b-collapse>
@@ -162,6 +162,11 @@ export default {
       showDisaRuleDescriptions: false,
       showRuleDescriptions: false,
     };
+  },
+  computed: {
+    disabledForm: function () {
+      return this.rule.locked || this.rule.review_requestor_id ? true : false;
+    },
   },
 };
 </script>
