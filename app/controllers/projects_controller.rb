@@ -4,6 +4,8 @@
 # Controller for application projects.
 #
 class ProjectsController < ApplicationController
+  include ProjectMemberConstants
+
   before_action :set_project, only: %i[show update destroy]
   before_action :authorize_admin_project, only: %i[destroy]
   before_action :authorize_logged_in, only: %i[index]
@@ -30,7 +32,8 @@ class ProjectsController < ApplicationController
     project = Project.new(
       name: new_project_params[:name],
       based_on: SecurityRequirementsGuide.find(new_project_params[:srg_id]),
-      prefix: new_project_params[:prefix]
+      prefix: new_project_params[:prefix],
+      project_members_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
     )
 
     # First save ensures base Project is acceptable.

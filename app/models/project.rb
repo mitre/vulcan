@@ -14,7 +14,7 @@ class Project < ApplicationRecord
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
   has_one :project_metadata, dependent: :destroy
-  accepts_nested_attributes_for :project_metadata, :rules
+  accepts_nested_attributes_for :project_metadata, :rules, :project_members
 
   validates_with PrefixValidator
 
