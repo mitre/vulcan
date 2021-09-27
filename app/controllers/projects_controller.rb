@@ -15,9 +15,10 @@ class ProjectsController < ApplicationController
   end
 
   def show
+    @project_json = @project.to_json(methods: [:histories, :project_members, :metadata])
     respond_to do |format|
       format.html
-      format.json { render json: @project }
+      format.json { render json: @project_json }
     end
   end
 

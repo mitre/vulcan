@@ -10,7 +10,7 @@ class Project < ApplicationRecord
              class_name: :SecurityRequirementsGuide,
              foreign_key: 'security_requirements_guide_id',
              inverse_of: 'projects'
-  has_many :project_members, dependent: :destroy
+  has_many :project_members, -> { includes :user }, dependent: :destroy
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
   has_one :project_metadata, dependent: :destroy
@@ -35,19 +35,9 @@ class Project < ApplicationRecord
     self[:prefix] = val.upcase
   end
 
-  ##
-  # Override `as_json` to include dependent records
-  #
-  def as_json(options = {})
-    super.merge(
-      {
-        histories: histories,
-        admins: users.where(project_members: { role: :admin }),
-        metadata: project_metadata&.data,
-        project_members: project_members.includes(:user).alphabetical,
-        based_on: based_on.full_title
-      }
-    )
+  # Helper method to extract data from Project Metadata
+  def metadata
+    project_metadata&.data
   end
 
   ##
