@@ -127,7 +127,7 @@
           class="col-6"
         >
           <label :for="`ruleEditor-rule_severity-${mod}`">
-            Rule Severity
+            Control Severity
             <i
               v-if="tooltips['rule_severity']"
               v-b-tooltip.hover.html
@@ -463,15 +463,15 @@ export default {
       mod: Math.floor(Math.random() * 1000),
       tooltips: {
         status: null,
-        status_justification: null,
-        title: null,
+        status_justification: 'Explain the rationale behind selecting one of the above statuses',
+        title: 'Describe the vulnerability for this control',
         version: null,
-        rule_severity: null,
+        rule_severity: 'Unknown: severity not defined, Info: rule is informational only, Low: not a serious problem, Medium: fairly serious problem, High: a grave or critical problem',
         rule_weight: null,
         artifact_description: null,
         fix_id: null,
         fixtext_fixref: null,
-        fixtext: null,
+        fixtext: 'Explain how to fix the vulnerability discussed',
         ident: null,
         ident_system: null,
         vendor_comments: null,
