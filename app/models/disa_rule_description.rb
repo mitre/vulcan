@@ -22,15 +22,11 @@ class DisaRuleDescription < ApplicationRecord
     begin
       parsed_mapping = Hash.from_xml(disa_rule_description_mapping)
     rescue ::REXML::ParseException => e
-      if e.continued_exception.is_a?(RuntimeError) || retried
-        raise unless e.continued_exception.message.include?('"&"')
+      raise if e.continued_exception.is_a?(RuntimeError) && !retried && e.continued_exception.message.include?('"&"')
 
-        disa_rule_description_mapping = disa_rule_description_mapping.gsub('&', '(literal ampersand)')
-        retried = true
-        retry
-      else
-        raise
-      end
+      disa_rule_description_mapping = disa_rule_description_mapping.gsub('&', '(literal ampersand)')
+      retried = true
+      retry
     end
     parsed_mapping = parsed_mapping['root']
 

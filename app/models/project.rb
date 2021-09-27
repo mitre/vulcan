@@ -6,7 +6,10 @@ class Project < ApplicationRecord
 
   belongs_to :based_on, lambda {
                           select(:srg_id, :title, :version)
-                        }, class_name: :SecurityRequirementsGuide, foreign_key: 'security_requirements_guide_id', inverse_of: 'projects'
+                        },
+             class_name: :SecurityRequirementsGuide,
+             foreign_key: 'security_requirements_guide_id',
+             inverse_of: 'projects'
   has_many :project_members, dependent: :destroy
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
