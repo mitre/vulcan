@@ -11,6 +11,7 @@
         v-model="file"
         placeholder="Choose or drop an SRG XML here..."
         drop-placeholder="Drop SRG XML here..."
+        accept="text/xml, application/xml"
       />
       <template #modal-footer>
         <div class="row w-100">

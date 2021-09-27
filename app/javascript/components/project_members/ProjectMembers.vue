@@ -53,7 +53,7 @@ export default {
           href: "/projects/" + this.project.id,
         },
         {
-          text: "Controls",
+          text: "Project Members",
           active: true,
         },
       ];
