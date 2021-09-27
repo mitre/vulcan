@@ -4,6 +4,7 @@
       <RuleNavigator
         :rules="rules"
         :selected-rule-id="selectedRuleId"
+        :projectPrefix="project.prefix"
         :project-permissions="projectPermissions"
         @ruleSelected="handleRuleSelected($event)"
       />
@@ -11,7 +12,11 @@
 
     <template v-if="selectedRule()">
       <div class="col-10">
-        <RuleEditorHeader :rule="selectedRule()" :project-permissions="projectPermissions" />
+        <RuleEditorHeader
+          :rule="selectedRule()"
+          :projectPrefix="project.prefix"
+          :project-permissions="projectPermissions"
+        />
 
         <hr />
 

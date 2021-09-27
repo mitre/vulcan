@@ -41,15 +41,16 @@ class Rule < ApplicationRecord
               scope: :project_id,
               message: 'already exists for this project'
             },
-            allow_blank: false
+            allow_blank: false, presence: true
 
   # In all cases of has_many, it is very unlikely (based on past releases of SRGs
   # that there will be multiple of these fields. Just take the first one.
   # Extend the model if required
 
   # Reject legacy idents for the same reason, array of idents not established
-  def self.from_mapping(rule_mapping)
-    Rule.new(
+  def self.from_mapping(rule_mapping, project_id)
+    rule = Rule.new(
+      project_id: project_id,
       rule_id: rule_mapping.id,
       status: rule_mapping.status.first&.status,
       rule_severity: rule_mapping.severity || nil,
@@ -60,24 +61,13 @@ class Rule < ApplicationRecord
       ident_system: rule_mapping.ident.reject(&:legacy).first.system,
       fixtext: rule_mapping.fixtext.first&.fixtext,
       fixtext_fixref: rule_mapping.fixtext.first&.fixref,
-      fix_id: rule_mapping.fix.first&.id,
-      references: [Reference.from_mapping(rule_mapping.reference.first)]
+      fix_id: rule_mapping.fix.first&.id
     )
-  end
-
-  ##
-  # Override `as_json` to include dependent records (e.g. reviews, histories)
-  #
-  def as_json(options = {})
-    super.merge(
-      {
-        histories: histories,
-        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-        rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
-      }
-    )
+    rule.references.build(Reference.from_mapping(rule_mapping.reference.first))
+    rule.disa_rule_descriptions.build(DisaRuleDescription.from_mapping(rule_mapping.description.first))
+    rule.checks.build(Check.from_mapping(rule_mapping.check.first))
+    rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(project_id))
+    rule
   end
 
   ##
@@ -135,6 +125,21 @@ class Rule < ApplicationRecord
     rescue ActiveRecord::RecordInvalid => e
       raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
     end
+  end
+
+  ##
+  # Override `as_json` to include dependent records (e.g. comments, histories)
+  #
+  def as_json(options = {})
+    super.merge(
+      {
+        histories: histories,
+        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
+        rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
+        disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
+        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
+      }
+    )
   end
 
   private

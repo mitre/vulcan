@@ -5,7 +5,7 @@
       <b-col md="8">
         <h1>{{ project.name }}</h1>
       </b-col>
-      <b-col md="4" class="text-muted text-md-right"> STIG Version Info... </b-col>
+      <b-col md="4" class="text-muted text-md-right">{{ project.based_on }}</b-col>
     </b-row>
     <b-row class="pb-4">
       <b-col>

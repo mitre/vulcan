@@ -23,8 +23,7 @@
         aria-hidden="true"
         @click.stop="removeOpenRule(rule.id)"
       />
-      {{ rule.rule_id }}
-      <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
+      {{ formatRuleId(rule.id) }}
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
 
@@ -74,8 +73,7 @@
       :class="ruleRowClass(rule)"
       @click="ruleSelected(rule)"
     >
-      {{ rule.rule_id }}
-      <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
+      {{ formatRuleId(rule.id) }}
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
     </div>
   </div>
@@ -104,6 +102,10 @@ export default {
     selectedRuleId: {
       type: Number,
       required: false,
+    },
+    projectPrefix: {
+      type: String,
+      required: true,
     },
   },
   data: function () {
@@ -171,10 +173,10 @@ export default {
     },
     // Helper to sort rules by ID
     sortById(rule1, rule2) {
-      if (rule1.rule_id.toLowerCase() < rule2.rule_id.toLowerCase()) {
+      if (this.formatRuleId(rule1.id).toLowerCase() < this.formatRuleId(rule2.id).toLowerCase()) {
         return -1;
       }
-      if (rule1.rule_id.toLowerCase() > rule2.rule_id.toLowerCase()) {
+      if (this.formatRuleId(rule1.id).toLowerCase() > this.formatRuleId(rule2.id).toLowerCase()) {
         return 1;
       }
       return 0;
@@ -191,7 +193,10 @@ export default {
     // PLACEHOLDER! searching by id - should be changed to title/name once implemented
     filterRules(rules) {
       let downcaseSearch = this.search.toLowerCase();
-      return rules.filter((rule) => rule.rule_id.toString().toLowerCase().includes(downcaseSearch));
+      return rules.filter((rule) => this.formatRuleId(rule.id).toString().toLowerCase().includes(downcaseSearch));
+    },
+    formatRuleId(id) {
+      return `${this.projectPrefix}-${id}`
     },
   },
 };

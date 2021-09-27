@@ -18,7 +18,10 @@ end
 User.import(users)
 puts 'Created Users'
 puts 'Creating Projects with rules...'
-project = Project.create(name: 'Test Project')
+project = Project.create(
+  name: 'Test Project',
+  prefix: 'ABCD-01'
+)
 Rule.create(
   project: project,
   rule_id: 'SV-53023r3_rule',
