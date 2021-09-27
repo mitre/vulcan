@@ -36,7 +36,7 @@ class DisaRuleDescription < ApplicationRecord
 
     return unless parsed_mapping
 
-    DisaRuleDescription.new(
+    {
       vuln_discussion: parsed_mapping['VulnDiscussion'],
       false_positives: parsed_mapping['FalsePositives'],
       false_negatives: parsed_mapping['FalseNegatives'],
@@ -48,6 +48,6 @@ class DisaRuleDescription < ApplicationRecord
       mitigation_control: parsed_mapping['MitigationControl'],
       responsibility: parsed_mapping['Responsibility'],
       ia_controls: parsed_mapping['IAControls']
-    )
+    }
   end
 end

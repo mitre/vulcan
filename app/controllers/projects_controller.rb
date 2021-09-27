@@ -39,6 +39,7 @@ class ProjectsController < ApplicationController
       if Project.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
         redirect_to action: 'index'
       else
+        project.destroy
         flash.alert = 'Unable to create project. An error occured parsing the selected SRG'
         redirect_to action: 'new'
       end

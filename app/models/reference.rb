@@ -11,6 +11,6 @@ class Reference < ApplicationRecord
     attrs = reference_mapping.instance_values
     attrs.delete('href')
     attrs.delete('override')
-    Reference.new(attrs)
+    attrs
   end
 end

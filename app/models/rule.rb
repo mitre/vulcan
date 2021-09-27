@@ -38,7 +38,7 @@ class Rule < ApplicationRecord
               scope: :project_id,
               message: 'already exists for this project'
             },
-            allow_blank: false
+            allow_blank: false, presence: true
 
   # In all cases of has_many, it is very unlikely (based on past releases of SRGs
   # that there will be multiple of these fields. Just take the first one.
@@ -46,7 +46,7 @@ class Rule < ApplicationRecord
 
   # Reject legacy idents for the same reason, array of idents not established
   def self.from_mapping(rule_mapping, project_id)
-    Rule.new(
+    rule = Rule.new(
       project_id: project_id,
       rule_id: rule_mapping.id,
       status: rule_mapping.status.first&.status,
@@ -58,11 +58,13 @@ class Rule < ApplicationRecord
       ident_system: rule_mapping.ident.reject(&:legacy).first.system,
       fixtext: rule_mapping.fixtext.first&.fixtext,
       fixtext_fixref: rule_mapping.fixtext.first&.fixref,
-      fix_id: rule_mapping.fix.first&.id,
-      references: [Reference.from_mapping(rule_mapping.reference.first)],
-      disa_rule_descriptions: [DisaRuleDescription.from_mapping(rule_mapping.description.first)],
-      checks: [Check.from_mapping(rule_mapping.check.first)]
+      fix_id: rule_mapping.fix.first&.id
     )
+    rule.references.build(Reference.from_mapping(rule_mapping.reference.first))
+    rule.disa_rule_descriptions.build(DisaRuleDescription.from_mapping(rule_mapping.description.first))
+    rule.checks.build(Check.from_mapping(rule_mapping.check.first))
+    rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(project_id))
+    rule
   end
 
   ##
