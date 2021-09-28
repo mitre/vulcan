@@ -4,7 +4,7 @@
       <RuleNavigator
         :rules="rules"
         :selected-rule-id="selectedRuleId"
-        :projectPrefix="project.prefix"
+        :project-prefix="project.prefix"
         :project-permissions="projectPermissions"
         @ruleSelected="handleRuleSelected($event)"
       />
@@ -14,7 +14,7 @@
       <div class="col-10">
         <RuleEditorHeader
           :rule="selectedRule()"
-          :projectPrefix="project.prefix"
+          :project-prefix="project.prefix"
           :project-permissions="projectPermissions"
         />
 

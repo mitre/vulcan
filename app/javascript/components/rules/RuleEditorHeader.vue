@@ -5,7 +5,7 @@
       <h2>
         <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
         <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
-        {{ `${this.projectPrefix}-${rule.id}` }}
+        {{ `${projectPrefix}-${rule.id}` }}
       </h2>
 
       <p v-if="rule.locked" class="text-danger font-weight-bold">
