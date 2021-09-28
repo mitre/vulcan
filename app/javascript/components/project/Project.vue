@@ -5,24 +5,26 @@
       <b-col md="8">
         <h1>{{ project.name }}</h1>
       </b-col>
-      <b-col md="4" class="text-muted text-md-right">{{ project.based_on }}</b-col>
-    </b-row>
-    <b-row class="pb-4">
-      <b-col>
+      <b-col md="4" class="text-muted text-md-right">
+        {{ `${project.based_on.title} ${project.based_on.version}` }}
         <div v-if="lastAudit" class="text-muted">
-          <template v-if="lastAudit.created_at">
+        <template v-if="lastAudit.created_at">
             Last update on {{ friendlyDateTime(lastAudit.created_at) }}
-          </template>
-          <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
-        </div>
-        <div v-if="project.admins && project.admins.length" class="text-muted">
+        </template>
+        <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
+      </div>
+      </b-col>
+    </b-row>
+    <b-row v-if="project.admins && project.admins.length" class="pb-4">
+      <b-col>
+        <div  class="text-muted">
           Project Administrators: {{ adminList }}
         </div>
       </b-col>
     </b-row>
 
     <b-row>
-      <b-col md="8" class="border-right">
+      <b-col md="10" class="border-right">
         <!-- Tab view for project information -->
         <b-tabs content-class="mt-3" justified>
           <!-- Project rules -->
@@ -83,7 +85,7 @@
           </b-tab>
         </b-tabs>
       </b-col>
-      <b-col md="4">
+      <b-col md="2">
         <b-row class="pb-4">
           <b-col>
             <div class="clickable" @click="showMetadata = !showMetadata">
