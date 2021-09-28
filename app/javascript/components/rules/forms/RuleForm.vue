@@ -463,18 +463,20 @@ export default {
       mod: Math.floor(Math.random() * 1000),
       tooltips: {
         status: null,
-        status_justification: 'Explain the rationale behind selecting one of the above statuses',
-        title: 'Describe the vulnerability for this control',
+        status_justification: "Explain the rationale behind selecting one of the above statuses",
+        title: "Describe the vulnerability for this control",
         version: null,
-        rule_severity: 'Unknown: severity not defined, Info: rule is informational only, Low: not a serious problem, Medium: fairly serious problem, High: a grave or critical problem',
+        rule_severity:
+          "Unknown: severity not defined, Info: rule is informational only, Low: not a serious problem, Medium: fairly serious problem, High: a grave or critical problem",
         rule_weight: null,
         artifact_description: null,
         fix_id: null,
         fixtext_fixref: null,
-        fixtext: 'Explain how to fix the vulnerability discussed',
-        ident: 'Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control',
+        fixtext: "Explain how to fix the vulnerability discussed",
+        ident:
+          "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",
         ident_system: null,
-        vendor_comments: 'Provide context to a reviewing authority; not a published field',
+        vendor_comments: "Provide context to a reviewing authority; not a published field",
       },
     };
   },
