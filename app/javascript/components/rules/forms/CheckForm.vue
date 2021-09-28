@@ -160,7 +160,7 @@ export default {
         system: null,
         content_ref_name: null,
         content_ref_href: null,
-        content: null,
+        content: "Describe how to check for the presence of the vulnerability",
       },
     };
   },
