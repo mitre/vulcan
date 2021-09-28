@@ -472,9 +472,9 @@ export default {
         fix_id: null,
         fixtext_fixref: null,
         fixtext: 'Explain how to fix the vulnerability discussed',
-        ident: null,
+        ident: 'Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control',
         ident_system: null,
-        vendor_comments: null,
+        vendor_comments: 'Provide context to a reviewing authority; not a published field',
       },
     };
   },
