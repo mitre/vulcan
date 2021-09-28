@@ -471,14 +471,16 @@ export default {
       mod: Math.floor(Math.random() * 1000),
       tooltips: {
         documentable: null,
-        vuln_discussion: null,
-        false_positives: null,
-        false_negatives: null,
+        vuln_discussion: "Discuss, in detail, the rationale for this control's vulnerability",
+        false_positives: "List any likely false-positives associated with evaluating this control",
+        false_negatives: "List any likely false-negatives associated with evaluating this control",
         mitigations: null,
         severity_override_guidance: null,
-        potential_impacts: null,
+        potential_impacts:
+          "List the potential operational impacts on a system when applying fix discussed in this control",
         third_party_tools: null,
-        mitigation_control: null,
+        mitigation_control:
+          "Discuss how the system mitigates this vulnerability in the absence of a configuration that would elimiate it",
         responsibility: null,
         ia_controls: null,
       },
