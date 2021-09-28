@@ -10,7 +10,7 @@ class Project < ApplicationRecord
              class_name: :SecurityRequirementsGuide,
              foreign_key: 'security_requirements_guide_id',
              inverse_of: 'projects'
-  has_many :project_members, -> { includes :user }, dependent: :destroy
+  has_many :project_members, -> { includes :user }, inverse_of: 'project', dependent: :destroy
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
   has_one :project_metadata, dependent: :destroy
