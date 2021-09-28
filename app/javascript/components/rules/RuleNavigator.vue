@@ -193,10 +193,12 @@ export default {
     // PLACEHOLDER! searching by id - should be changed to title/name once implemented
     filterRules(rules) {
       let downcaseSearch = this.search.toLowerCase();
-      return rules.filter((rule) => this.formatRuleId(rule.id).toString().toLowerCase().includes(downcaseSearch));
+      return rules.filter((rule) =>
+        this.formatRuleId(rule.id).toString().toLowerCase().includes(downcaseSearch)
+      );
     },
     formatRuleId(id) {
-      return `${this.projectPrefix}-${id}`
+      return `${this.projectPrefix}-${id}`;
     },
   },
 };
