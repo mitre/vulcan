@@ -19,12 +19,14 @@ class Component < ApplicationRecord
   #
   def as_json(options = {})
     project_admin = ProjectMember.find_by(project_id: child_project_id)&.user
+    child = child_project
     super.merge(
       {
-        child_project_name: child_project.name,
+        child_project_name: child.name,
         project_admin_name: project_admin&.name,
         project_admin_email: project_admin&.email,
-        rule_count: Rule.where(project_id: child_project_id).count
+        rule_count: Rule.where(project_id: child_project_id).count,
+        based_on: child.based_on
       }
     )
   end

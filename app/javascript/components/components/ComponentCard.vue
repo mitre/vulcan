@@ -17,7 +17,9 @@
         {{ component.child_project_name }}
         <span class="float-right h6">{{ component.rule_count }} Controls</span>
       </b-card-title>
-      <b-card-sub-title class="mb-2">Based on SRG-00000 Version</b-card-sub-title>
+      <b-card-sub-title class="mb-2"
+        >Based on {{ component.based_on.srg_id }} {{ component.based_on.version }}</b-card-sub-title
+      >
       <p>
         <span v-if="component.project_admin_name">
           {{ component.project_admin_name }}
