@@ -26,7 +26,7 @@
         <!-- Tab view for project information -->
         <b-tabs content-class="mt-3" justified>
           <!-- Project rules -->
-          <b-tab :title="`Rules (${project.rules.length})`" active>
+          <b-tab :title="`Controls (${project.rules.length})`" active>
             <b-button
               v-if="project_permissions"
               class="m-2"
