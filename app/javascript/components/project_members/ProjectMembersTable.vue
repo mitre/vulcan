@@ -133,7 +133,7 @@ export default {
     },
     available_members: {
       type: Array,
-      required: true,
+      required: false,
     },
     project_members_count: {
       type: Number,
