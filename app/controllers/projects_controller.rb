@@ -16,7 +16,12 @@ class ProjectsController < ApplicationController
   end
 
   def show
-    @project_json = @project.to_json(methods: %i[histories project_members metadata])
+    # Setting current_user allows `available_components` to be filtered down only to the
+    # projects that a user has permissions to access
+    @project.current_user = current_user
+    @project_json = @project.to_json(
+      methods: %i[histories project_members metadata components rules available_components]
+    )
     respond_to do |format|
       format.html
       format.json { render json: @project_json }

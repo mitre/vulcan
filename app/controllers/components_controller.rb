@@ -9,6 +9,13 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_project
 
   def create
+    # If not an Vulcan admin, then we must ensure that the current_user has
+    # sufficient permissions on the child project.
+    unless current_user.admin
+      has_permissions = ProjectMember.find_by(user_id: current_user.id, project_id: @project.id).present?
+      raise(NotAuthorizedError, 'You are not authorized to add this project as a component') unless has_permissions
+    end
+
     component = Component.new(component_params.merge({ project: @project }))
     if component.save
       render json: { toast: 'Successfully added component to project.' }

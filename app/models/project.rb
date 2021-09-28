@@ -2,6 +2,8 @@
 
 # Projects are home to a collection of Rules and are managed by Users.
 class Project < ApplicationRecord
+  attr_accessor :current_user
+
   audited except: %i[id created_at updated_at project_members_count], max_audits: 1000
 
   belongs_to :based_on, lambda {
@@ -64,6 +66,15 @@ class Project < ApplicationRecord
   def available_components
     return [] unless Component.where(child_project_id: id).count.zero?
 
-    Project.where.not(id: [id] + component_projects.pluck(:child_project_id) + Component.pluck(:project_id))
+    projects = Project.where.not(
+      id: [id] + component_projects.pluck(:child_project_id) + Component.pluck(:project_id)
+    )
+    # If there is a current user and they are not an admin,
+    # then we should filter down to only the projects that they are a member of.
+    if current_user && !current_user.admin
+      allowed_project_ids = ProjectMember.where(user_id: current_user.id).pluck(:id)
+      projects = projects.where(id: allowed_project_ids)
+    end
+    projects.pluck(:id).map { |pid| Component.new(project_id: id, child_project_id: pid) }
   end
 end

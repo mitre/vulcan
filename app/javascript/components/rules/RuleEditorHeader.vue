@@ -112,6 +112,7 @@ export default {
     projectPrefix: {
       type: String,
       required: true,
+    },
     readOnly: {
       type: Boolean,
       default: false,

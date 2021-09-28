@@ -9,15 +9,21 @@ RSpec.describe Component, type: :model do
     @parent_depth_err = 'Component relationship is too deep due to parent project'
     @child_depth_err = 'Component relationship is too deep due to child project'
 
-    @p0 = Project.create(name: 'P0')
-    @p1 = Project.create(name: 'P1')
-    @p2 = Project.create(name: 'P2')
-    @p3 = Project.create(name: 'P3')
-    @p4 = Project.create(name: 'P4')
-    @p5 = Project.create(name: 'P5')
-    @p6 = Project.create(name: 'P6')
-    @p7 = Project.create(name: 'P7')
-    @p8 = Project.create(name: 'P8')
+    srg_xml = file_fixture('U_Web_Server_V2R3_Manual-xccdf.xml').read
+    parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
+    srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
+    srg.xml = srg_xml
+    srg.save!
+
+    @p0 = Project.create(name: 'P0', prefix: 'AAAA-00', based_on: srg)
+    @p1 = Project.create(name: 'P1', prefix: 'AAAA-00', based_on: srg)
+    @p2 = Project.create(name: 'P2', prefix: 'AAAA-00', based_on: srg)
+    @p3 = Project.create(name: 'P3', prefix: 'AAAA-00', based_on: srg)
+    @p4 = Project.create(name: 'P4', prefix: 'AAAA-00', based_on: srg)
+    @p5 = Project.create(name: 'P5', prefix: 'AAAA-00', based_on: srg)
+    @p6 = Project.create(name: 'P6', prefix: 'AAAA-00', based_on: srg)
+    @p7 = Project.create(name: 'P7', prefix: 'AAAA-00', based_on: srg)
+    @p8 = Project.create(name: 'P8', prefix: 'AAAA-00', based_on: srg)
 
     # Representation of the created graph
     # Note that not all relationships are "downward"
@@ -64,8 +70,7 @@ RSpec.describe Component, type: :model do
       Component.create(project: @p5, child_project: @p7)
 
       Project.all.each do |project|
-        project.available_components.each do |child_project|
-          component = Component.create(project: project, child_project: child_project)
+        project.available_components.each do |component|
           expect(component.valid?).to eq(true)
         end
       end
@@ -78,8 +83,8 @@ RSpec.describe Component, type: :model do
       Component.create(project: @p5, child_project: @p7)
 
       Project.all.each do |project|
-        (Project.all - project.available_components).each do |child_project|
-          component = Component.create(project: project, child_project: child_project)
+        Project.where.not(id: project.available_components.map(&:child_project_id)).each do |child_project|
+          component = Component.new(project: project, child_project: child_project)
           expect(component.valid?).to eq(false)
         end
       end

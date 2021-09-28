@@ -5,6 +5,7 @@
         :rules="rules"
         :selected-rule-id="selectedRuleId"
         :project-permissions="projectPermissions"
+        :project-prefix="project.prefix"
         :read-only="true"
         @ruleSelected="handleRuleSelected($event)"
       />
@@ -15,6 +16,7 @@
         <RuleEditorHeader
           :rule="selectedRule()"
           :project-permissions="projectPermissions"
+          :project-prefix="project.prefix"
           :read-only="true"
         />
         <hr />
