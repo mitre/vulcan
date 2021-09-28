@@ -8,16 +8,10 @@
         name="authenticity_token"
         :value="authenticityToken"
       />
-      <input
-        type="hidden"
-        name="project[srg_id]"
-        :value="selectedSrgId"
-      />
+      <input type="hidden" name="project[srg_id]" :value="selectedSrgId" />
       <b-row>
         <b-col md="6">
-          <b-form-group
-            label="Select a Security Requirements Guide"
-          >
+          <b-form-group label="Select a Security Requirements Guide">
             <vue-simple-suggest
               ref="srgSearch"
               :list="srgs"
@@ -29,9 +23,7 @@
               @select="setSelectedSrg($refs.srgSearch.selected)"
             />
           </b-form-group>
-          <b-form-group
-            label="Project Title"
-          >
+          <b-form-group label="Project Title">
             <b-form-input
               placeholder="Project Title"
               required
@@ -50,12 +42,7 @@
               autocomplete="off"
             />
           </b-form-group>
-          <b-button
-            type="submit"
-            variant="primary"
-          >
-            Create Project
-          </b-button>
+          <b-button type="submit" variant="primary"> Create Project </b-button>
         </b-col>
       </b-row>
     </b-form>
@@ -67,11 +54,10 @@ import VueSimpleSuggest from "vue-simple-suggest";
 import "vue-simple-suggest/dist/styles.css";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 
-
 export default {
   name: "NewProject",
-  mixins: [FormMixinVue],
   components: { VueSimpleSuggest },
+  mixins: [FormMixinVue],
   props: {
     srgs: {
       type: Array,
@@ -81,7 +67,7 @@ export default {
   data: function () {
     return {
       selectedSrgId: "",
-    }
+    };
   },
   methods: {
     formAction: function () {
@@ -89,8 +75,8 @@ export default {
     },
     setSelectedSrg: function (srg) {
       this.selectedSrgId = srg.id;
-    }
-  }
+    },
+  },
 };
 </script>
 
