@@ -8,18 +8,16 @@
       <b-col md="4" class="text-muted text-md-right">
         {{ `${project.based_on.title} ${project.based_on.version}` }}
         <div v-if="lastAudit" class="text-muted">
-        <template v-if="lastAudit.created_at">
+          <template v-if="lastAudit.created_at">
             Last update on {{ friendlyDateTime(lastAudit.created_at) }}
-        </template>
-        <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
-      </div>
+          </template>
+          <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
+        </div>
       </b-col>
     </b-row>
     <b-row v-if="project.admins && project.admins.length" class="pb-4">
       <b-col>
-        <div  class="text-muted">
-          Project Administrators: {{ adminList }}
-        </div>
+        <div class="text-muted">Project Administrators: {{ adminList }}</div>
       </b-col>
     </b-row>
 
