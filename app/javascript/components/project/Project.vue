@@ -24,9 +24,9 @@
     <b-row>
       <b-col md="10" class="border-right">
         <!-- Tab view for project information -->
-        <b-tabs content-class="mt-3" justified>
+        <b-tabs v-model="projectTabIndex" content-class="mt-3" justified>
           <!-- Project rules -->
-          <b-tab :title="`Controls (${project.rules.length})`" active>
+          <b-tab :title="`Controls (${project.rules.length})`">
             <b-button
               v-if="project_permissions"
               class="m-2"
@@ -172,6 +172,7 @@ export default {
       showMetadata: true,
       showHistory: true,
       project: this.initialProjectState,
+      projectTabIndex: 0,
     };
   },
   computed: {
@@ -199,6 +200,29 @@ export default {
         },
       ];
     },
+  },
+  watch: {
+    projectTabIndex: function (_) {
+      localStorage.setItem(
+        `projectTabIndex-${this.project.id}`,
+        JSON.stringify(this.projectTabIndex)
+      );
+    },
+  },
+  mounted: function () {
+    // Persist `currentTab` across page loads
+    if (localStorage.getItem(`projectTabIndex-${this.project.id}`)) {
+      try {
+        this.$nextTick(
+          () =>
+            (this.projectTabIndex = JSON.parse(
+              localStorage.getItem(`projectTabIndex-${this.project.id}`)
+            ))
+        );
+      } catch (e) {
+        localStorage.removeItem(`projectTabIndex-${this.project.id}`);
+      }
+    }
   },
   methods: {
     refreshProject: function () {
