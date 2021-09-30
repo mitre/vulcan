@@ -52,7 +52,7 @@ class Rule < ApplicationRecord
     rule = Rule.new(
       project_id: project_id,
       rule_id: rule_mapping.id,
-      status: rule_mapping.status.first&.status,
+      status: rule_mapping.status.first&.status || 'Not Yet Determined',
       rule_severity: rule_mapping.severity || nil,
       rule_weight: rule_mapping.weight || nil,
       version: rule_mapping.version.first&.version,
