@@ -58,10 +58,6 @@
       </b-form-invalid-feedback>
     </b-form-group>
 
-    <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
-    <p v-if="rule.status != 'Applicable - Configurable'">
-      <small>Some fields are hidden due to the control's status.</small>
-    </p>
     <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- title -->
       <b-form-group v-if="showFields.includes('title')" :id="`ruleEditor-title-group-${mod}`">
