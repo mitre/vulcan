@@ -33,7 +33,7 @@
 
       <!-- Create action -->
       <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
-        {{ humanizedType(history.auditable_type) }} was Created
+        {{ userIdentifier(history) }} was {{ computeCreationText(history) }}
       </p>
     </div>
   </div>
@@ -73,6 +73,15 @@ export default {
   methods: {
     userIdentifier: function (history) {
       return history.audited_name || `${history.auditable_type} ${history.auditable_id}`;
+    },
+    computeCreationText: function (history) {
+      if (history.auditable_type == "ProjectMember") {
+        return `added to the project with ${
+          history.audited_changes.find((element) => element["field"] == "role")["new_value"]
+        } permissions`;
+      } else {
+        return "Created";
+      }
     },
     computeUpdateText: function (changes) {
       if (changes.field == "admin") {
