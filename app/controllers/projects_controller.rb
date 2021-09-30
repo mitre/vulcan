@@ -7,7 +7,8 @@ class ProjectsController < ApplicationController
   include ProjectMemberConstants
 
   before_action :set_project, only: %i[show update destroy]
-  before_action :authorize_admin_project, only: %i[destroy]
+  before_action :set_project_permissions, only: %i[show]
+  before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_logged_in, only: %i[index]
 
   def index
@@ -15,7 +16,12 @@ class ProjectsController < ApplicationController
   end
 
   def show
-    @project_json = @project.to_json(methods: %i[histories project_members metadata])
+    # Setting current_user allows `available_components` to be filtered down only to the
+    # projects that a user has permissions to access
+    @project.current_user = current_user
+    @project_json = @project.to_json(
+      methods: %i[histories project_members metadata components rules available_components based_on]
+    )
     respond_to do |format|
       format.html
       format.json { render json: @project_json }

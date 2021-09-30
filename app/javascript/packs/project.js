@@ -1,7 +1,7 @@
 import TurbolinksAdapter from "vue-turbolinks";
 import Vue from "vue";
-import Project from "../components/project/Project.vue";
 import BootstrapVue from "bootstrap-vue";
+import Project from "../components/project/Project.vue";
 import linkify from "vue-linkify";
 
 Vue.use(TurbolinksAdapter);

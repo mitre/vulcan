@@ -5,31 +5,85 @@
       <b-col md="8">
         <h1>{{ project.name }}</h1>
       </b-col>
-      <b-col md="4" class="text-muted text-md-right">{{ project.based_on }}</b-col>
-    </b-row>
-    <b-row class="pb-4">
-      <b-col>
+      <b-col md="4" class="text-muted text-md-right">
+        {{ `${project.based_on.title} ${project.based_on.version}` }}
         <div v-if="lastAudit" class="text-muted">
           <template v-if="lastAudit.created_at">
             Last update on {{ friendlyDateTime(lastAudit.created_at) }}
           </template>
           <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
         </div>
-        <div v-if="project.admins && project.admins.length" class="text-muted">
-          Project Administrators: {{ adminList }}
-        </div>
+      </b-col>
+    </b-row>
+    <b-row v-if="project.admins && project.admins.length" class="pb-4">
+      <b-col>
+        <div class="text-muted">Project Administrators: {{ adminList }}</div>
       </b-col>
     </b-row>
 
     <b-row>
-      <b-col md="8" class="border-right">
-        <ProjectMembersTable
-          :project="project"
-          :project_members="project.project_members"
-          :project_members_count="project.project_members.length"
-        />
+      <b-col md="10" class="border-right">
+        <!-- Tab view for project information -->
+        <b-tabs content-class="mt-3" justified>
+          <!-- Project rules -->
+          <b-tab :title="`Controls (${project.rules.length})`" active>
+            <b-button
+              v-if="project_permissions"
+              class="m-2"
+              variant="primary"
+              :href="`/projects/${project.id}/controls`"
+            >
+              Edit Project Controls
+            </b-button>
+
+            <RulesReadOnlyView
+              :project-permissions="project_permissions"
+              :current-user-id="current_user_id"
+              :project="project"
+              :rules="project.rules"
+              :statuses="statuses"
+              :severities="severities"
+            />
+          </b-tab>
+
+          <!-- Project components -->
+          <b-tab :title="`Components (${project.components.length})`">
+            <AddComponentModal
+              v-if="project_permissions == 'admin'"
+              :project_id="project.id"
+              :available_components="sortedAvailableComponents"
+              @projectUpdated="refreshProject"
+            />
+
+            <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
+              <b-col v-for="component in sortedComponents" :key="component.id">
+                <ComponentCard :component="component" @deleteComponent="deleteComponent($event)" />
+              </b-col>
+            </b-row>
+          </b-tab>
+
+          <!-- Project members -->
+          <b-tab
+            v-if="project_permissions"
+            :title="`Project Members (${project.project_members.length})`"
+          >
+            <b-button
+              v-if="project_permissions == 'admin'"
+              class="m-2"
+              variant="primary"
+              :href="`/projects/${project.id}/project_members`"
+            >
+              Manage Project Members
+            </b-button>
+            <ProjectMembersTable
+              :project="project"
+              :project_members="project.project_members"
+              :project_members_count="project.project_members.length"
+            />
+          </b-tab>
+        </b-tabs>
       </b-col>
-      <b-col md="4">
+      <b-col md="2">
         <b-row class="pb-4">
           <b-col>
             <div class="clickable" @click="showMetadata = !showMetadata">
@@ -70,19 +124,46 @@
 </template>
 
 <script>
+import _ from "lodash";
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import FormMixinVue from "../../mixins/FormMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import History from "../shared/History.vue";
 import ProjectMembersTable from "../project_members/ProjectMembersTable.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
+import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
+import ComponentCard from "../components/ComponentCard.vue";
+import AddComponentModal from "../components/AddComponentModal.vue";
 
 export default {
   name: "Project",
-  components: { History, ProjectMembersTable, UpdateMetadataModal },
-  mixins: [DateFormatMixinVue],
+  components: {
+    History,
+    ProjectMembersTable,
+    UpdateMetadataModal,
+    RulesReadOnlyView,
+    ComponentCard,
+    AddComponentModal,
+  },
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
+    project_permissions: {
+      type: String,
+    },
     initialProjectState: {
       type: Object,
+      required: true,
+    },
+    current_user_id: {
+      type: Number,
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
+      type: Array,
       required: true,
     },
   },
@@ -94,6 +175,12 @@ export default {
     };
   },
   computed: {
+    sortedComponents: function () {
+      return _.sortBy(this.project.components, ["child_project_name"], ["asc"]);
+    },
+    sortedAvailableComponents: function () {
+      return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
+    },
     adminList: function () {
       return this.project.admins.map((a) => `${a.name} <${a.email}>`).join(", ");
     },
@@ -118,6 +205,18 @@ export default {
       axios.get(`/projects/${this.project.id}`).then((response) => {
         this.project = response.data;
       });
+    },
+    // Having deleteComponent on the `ComponentCard` causes it to
+    // disappear almost immediately because the component gets
+    // destroyed once `refreshProject` executes
+    deleteComponent: function (componentId) {
+      axios
+        .delete(`/components/${componentId}`)
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.refreshProject();
+        })
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };

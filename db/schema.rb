@@ -48,6 +48,16 @@ ActiveRecord::Schema.define(version: 2021_09_21_211120) do
     t.index ["rule_id"], name: "index_checks_on_rule_id"
   end
 
+  create_table "components", force: :cascade do |t|
+    t.bigint "project_id"
+    t.bigint "child_project_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["child_project_id"], name: "index_components_on_child_project_id"
+    t.index ["project_id", "child_project_id"], name: "components_parent_child_id_index", unique: true
+    t.index ["project_id"], name: "index_components_on_project_id"
+  end
+
   create_table "disa_rule_descriptions", force: :cascade do |t|
     t.bigint "rule_id"
     t.text "vuln_discussion"
@@ -195,6 +205,7 @@ ActiveRecord::Schema.define(version: 2021_09_21_211120) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "components", "projects", column: "child_project_id"
   add_foreign_key "project_members", "projects"
   add_foreign_key "project_members", "users"
   add_foreign_key "rules", "projects"

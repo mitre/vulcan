@@ -56,6 +56,10 @@ export default {
       type: Array,
       required: true,
     },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: function () {
     return {
@@ -97,7 +101,7 @@ export default {
   },
   computed: {
     disabledForm: function () {
-      return this.rule.locked || this.rule.review_requestor_id ? true : false;
+      return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
     },
   },
 };

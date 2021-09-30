@@ -2,7 +2,7 @@
   <div>
     <!-- Collapsable header -->
     <div class="clickable" @click="showReviews = !showReviews">
-      <h2 class="m-0 d-inline-block">Reviews &amp; Conversation</h2>
+      <h2 class="m-0 d-inline-block">Reviews &amp; Comments</h2>
       <b-badge pill class="superVerticalAlign">{{ rule.reviews.length }}</b-badge>
 
       <i v-if="showReviews" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
@@ -17,7 +17,7 @@
         size="sm"
         @click="showReviewPane = !showReviewPane"
       >
-        Add Review
+        Add Review or Comment
       </b-button>
 
       <!-- Review card -->
