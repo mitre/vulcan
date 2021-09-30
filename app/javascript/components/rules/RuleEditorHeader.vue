@@ -15,17 +15,17 @@
         This control is under review and cannot be edited at this time.
       </p>
 
-      <!-- Rule info -->
-      <!-- <p>Based on ...</p> -->
-      <p v-if="rule.histories.length > 0">
-        Last updated on {{ friendlyDateTime(rule.updated_at) }} by
-        {{ lastEditor }}
-      </p>
-      <p v-else>Created on {{ friendlyDateTime(rule.created_at) }}</p>
-
-      <!-- Action Buttons -->
-      <!-- Disable and enable save & delete buttons based on locked state of rule -->
       <div v-if="!readOnly">
+        <!-- Rule info -->
+        <!-- <p>Based on ...</p> -->
+        <p v-if="rule.histories.length > 0">
+          Last updated on {{ friendlyDateTime(rule.updated_at) }} by
+          {{ lastEditor }}
+        </p>
+        <p v-else>Created on {{ friendlyDateTime(rule.created_at) }}</p>
+
+        <!-- Action Buttons -->
+        <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
             v-b-tooltip.hover
