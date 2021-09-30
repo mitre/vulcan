@@ -11,21 +11,30 @@
 
       <!-- Edit or Delete action -->
       <template v-if="history.action == 'update' || history.action == 'destroy'">
-        <RuleRevertModal
-          v-if="revertable"
-          :rule="rule"
-          :history="history"
-          :statuses="statuses"
-          :severities="severities"
-        />
+        <template v-if="revertable">
+          <RuleRevertModal
+            :rule="rule"
+            :history="history"
+            :statuses="statuses"
+            :severities="severities"
+          />
+        </template>
+        <template v-else>
+          <div v-for="changes in history.audited_changes" :key="changes.id">
+            <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
+              {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
+            </p>
+          </div>
+          <p v-if="history.action == 'destroy'" class="ml-3 mb-0 text-danger">
+            {{ userIdentifier(history) }} was {{ computeDeletionText(history) }}
+          </p>
+        </template>
       </template>
 
       <!-- Create action -->
-      <template v-if="history.action == 'create'">
-        <p class="ml-3 mb-0 text-success">
-          {{ humanizedType(history.auditable_type) }} was Created.
-        </p>
-      </template>
+      <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
+        {{ userIdentifier(history) }} was {{ computeCreationText(history) }}
+      </p>
     </div>
   </div>
 </template>
@@ -59,6 +68,34 @@ export default {
     revertable: {
       type: Boolean,
       default: true,
+    },
+  },
+  methods: {
+    userIdentifier: function (history) {
+      return history.audited_name || `${history.auditable_type} ${history.auditable_id}`;
+    },
+    computeCreationText: function (history) {
+      if (history.auditable_type == "ProjectMember") {
+        return `added to the project with ${
+          history.audited_changes.find((element) => element["field"] == "role")["new_value"]
+        } permissions`;
+      } else {
+        return "Created";
+      }
+    },
+    computeUpdateText: function (changes) {
+      if (changes.field == "admin") {
+        return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
+      } else {
+        return `${changes.field} was updated from ${changes.prev_value} to ${changes.new_value}`;
+      }
+    },
+    computeDeletionText: function (history) {
+      if (history.auditable_type == "ProjectMember") {
+        return "removed from the project";
+      } else {
+        return "Deleted";
+      }
     },
   },
 };

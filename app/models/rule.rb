@@ -128,12 +128,11 @@ class Rule < ApplicationRecord
   end
 
   ##
-  # Override `as_json` to include dependent records (e.g. comments, histories)
+  # Override `as_json` to include dependent records
   #
   def as_json(options = {})
     super.merge(
       {
-        histories: histories,
         reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
         rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },

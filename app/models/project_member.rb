@@ -3,6 +3,8 @@
 # A ProjectMember is the has_many: :through Model that stores information
 # about a User's membership of a Project
 class ProjectMember < ApplicationRecord
+  audited except: %i[id created_at updated_at], max_audits: 1000, associated_with: :project
+
   include ProjectMemberConstants
 
   belongs_to :project, counter_cache: true

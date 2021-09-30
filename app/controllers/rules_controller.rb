@@ -11,11 +11,11 @@ class RulesController < ApplicationController
   before_action :authorize_admin_project, only: %i[create destroy]
 
   def index
-    @rules = @project.rules
+    @rules = @project.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
   end
 
   def show
-    render json: @rule
+    render json: @rule.to_json(methods: %i[histories])
   end
 
   def create
@@ -26,7 +26,7 @@ class RulesController < ApplicationController
                                              }))
 
     if rule.save
-      render json: { toast: 'Successfully created control.', data: rule }
+      render json: { toast: 'Successfully created control.', data: rule.to_json(methods: %i[histories]) }
     else
       render json: {
         toast: {

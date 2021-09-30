@@ -14,26 +14,6 @@ class ApplicationRecord < ActiveRecord::Base
   def histories(limit = 20)
     return unless defined?(own_and_associated_audits)
 
-    own_and_associated_audits.order(:created_at).limit(limit).map do |audit|
-      # Each audit can encompass multiple changes on the model (see audited_changes)
-      {
-        id: audit.id,
-        action: audit.action,
-        auditable_type: audit.auditable_type,
-        auditable_id: audit.auditable_id,
-        name: audit.user&.name || 'Unknown User',
-        comment: audit.comment,
-        created_at: audit.created_at,
-        audited_changes: audit.audited_changes.map do |audited_field, audited_value|
-          # On creation, the `audited_value` will be a single value (i.e. not an Array)
-          # After an edit, the `audited_value` will be an Array where `[0]` is prev and `[1]` is new
-          {
-            field: audited_field,
-            prev_value: (audited_value.is_a?(Array) ? audited_value[0] : nil),
-            new_value: (audited_value.is_a?(Array) ? audited_value[1] : audited_value)
-          }
-        end
-      }
-    end
+    own_and_associated_audits.order(:created_at).limit(limit).map(&:format)
   end
 end
