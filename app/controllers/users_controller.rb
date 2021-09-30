@@ -9,6 +9,10 @@ class UsersController < ApplicationController
 
   def index
     @users = User.alphabetical.select(:id, :name, :email, :provider, :admin)
+    @histories = Audited.audit_class.includes(:auditable, :user)
+                        .where(auditable_type: 'User')
+                        .order(created_at: :desc)
+                        .map(&:format)
   end
 
   def update
