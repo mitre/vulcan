@@ -26,7 +26,7 @@
             </p>
           </div>
           <p v-if="history.action == 'destroy'" class="ml-3 mb-0 text-danger">
-            {{ userIdentifier(history) }} was Deleted
+            {{ userIdentifier(history) }} was {{ computeDeletionText(history) }}
           </p>
         </template>
       </template>
@@ -79,6 +79,13 @@ export default {
         return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
       } else {
         return `${changes.field} was updated from ${changes.prev_value} to ${changes.new_value}`;
+      }
+    },
+    computeDeletionText: function (history) {
+      if (history.auditable_type == "ProjectMember") {
+        return "removed from the project";
+      } else {
+        return "Deleted";
       }
     },
   },
