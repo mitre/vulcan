@@ -10,7 +10,7 @@ Rails.application.routes.draw do
   resources :srgs, only: %i[index create destroy], controller: 'security_requirements_guides'
 
   resources :projects do
-    resources :project_members, only: %i[index create update destroy]
+    resources :project_members, only: %i[create update destroy]
     resources :components, only: %i[create destroy], shallow: true
     resources :rules, shallow: true do
       post 'manage_lock', on: :member

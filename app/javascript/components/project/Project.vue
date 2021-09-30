@@ -67,18 +67,13 @@
             v-if="project_permissions"
             :title="`Project Members (${project.project_members.length})`"
           >
-            <b-button
-              v-if="project_permissions == 'admin'"
-              class="m-2"
-              variant="primary"
-              :href="`/projects/${project.id}/project_members`"
-            >
-              Manage Project Members
-            </b-button>
             <ProjectMembersTable
+              :editable="project_permissions == 'admin'"
               :project="project"
               :project_members="project.project_members"
               :project_members_count="project.project_members.length"
+              :available_members="available_members"
+              :available_roles="available_roles"
             />
           </b-tab>
         </b-tabs>
@@ -163,6 +158,14 @@ export default {
       required: true,
     },
     severities: {
+      type: Array,
+      required: true,
+    },
+    available_members: {
+      type: Array,
+      required: true,
+    },
+    available_roles: {
       type: Array,
       required: true,
     },
