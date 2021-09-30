@@ -29,34 +29,36 @@
     </b-form-group>
 
     <!-- status_justification -->
-    <b-form-group :id="`ruleEditor-status_justification-group-${mod}`">
-      <label :for="`ruleEditor-status_justification-${mod}`">
-        Status Justification
-        <i
-          v-if="tooltips['status_justification']"
-          v-b-tooltip.hover.html
-          class="mdi mdi-information"
-          aria-hidden="true"
-          :title="tooltips['status_justification']"
+    <template v-if="rule.status != 'Not Yet Determined'">
+      <b-form-group :id="`ruleEditor-status_justification-group-${mod}`">
+        <label :for="`ruleEditor-status_justification-${mod}`">
+          Status Justification
+          <i
+            v-if="tooltips['status_justification']"
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            :title="tooltips['status_justification']"
+          />
+        </label>
+        <b-form-textarea
+          :id="`ruleEditor-status_justification-${mod}`"
+          :value="rule.status_justification"
+          :class="inputClass('status_justification')"
+          placeholder=""
+          :disabled="disabled"
+          rows="1"
+          max-rows="99"
+          @input="$root.$emit('update:rule', { ...rule, status_justification: $event })"
         />
-      </label>
-      <b-form-textarea
-        :id="`ruleEditor-status_justification-${mod}`"
-        :value="rule.status_justification"
-        :class="inputClass('status_justification')"
-        placeholder=""
-        :disabled="disabled"
-        rows="1"
-        max-rows="99"
-        @input="$root.$emit('update:rule', { ...rule, status_justification: $event })"
-      />
-      <b-form-valid-feedback v-if="hasValidFeedback('status_justification')">
-        {{ validFeedback["status_justification"] }}
-      </b-form-valid-feedback>
-      <b-form-invalid-feedback v-if="hasInvalidFeedback('status_justification')">
-        {{ invalidFeedback["status_justification"] }}
-      </b-form-invalid-feedback>
-    </b-form-group>
+        <b-form-valid-feedback v-if="hasValidFeedback('status_justification')">
+          {{ validFeedback["status_justification"] }}
+        </b-form-valid-feedback>
+        <b-form-invalid-feedback v-if="hasInvalidFeedback('status_justification')">
+          {{ invalidFeedback["status_justification"] }}
+        </b-form-invalid-feedback>
+      </b-form-group>
+    </template>
 
     <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- title -->
