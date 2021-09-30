@@ -34,37 +34,11 @@
     </p>
 
     <!-- New rule modal -->
-    <b-modal
-      id="create-rule-modal"
-      ref="modal"
-      title="Create New Control"
-      centered
-      @show="rule_form_rule_id = ''"
-      @shown="$refs.newRuleIdInput.focus()"
-      @ok="
-        $root.$emit('create:rule', rule_form_rule_id, (response) =>
-          ruleSelected(response.data.data)
-        )
-      "
-    >
-      <form ref="form" @submit.stop.prevent="handleSubmit">
-        <b-form-group
-          id="rule-id-input-group"
-          label="Control ID"
-          label-for="rule-id-input"
-          description="This must be unique for the project."
-        >
-          <b-form-input
-            id="rule-id-input"
-            ref="newRuleIdInput"
-            v-model="rule_form_rule_id"
-            placeholder="Enter control ID"
-            autocomplete="off"
-            required
-          />
-        </b-form-group>
-      </form>
-    </b-modal>
+    <NewRuleModalForm
+      :title="'Create New Control'"
+      :forDuplicate="false"
+      :idPrefix="'create'"
+    />
 
     <!-- All rules list -->
     <div
@@ -88,8 +62,10 @@
 //
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
 //
+import NewRuleModalForm from './forms/NewRuleModalForm.vue'
 export default {
   name: "RuleNavigator",
+  components: { NewRuleModalForm },
   props: {
     projectPermissions: {
       type: String,
@@ -113,7 +89,6 @@ export default {
       // Tried using a `new Set()` for `openRuleIds`, but Vue would not react to changes.
       openRuleIds: [],
       search: "",
-      rule_form_rule_id: "",
     };
   },
   computed: {

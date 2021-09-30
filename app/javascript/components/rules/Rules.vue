@@ -114,9 +114,9 @@ export default {
     /**
      * Event handler for @create:rule
      */
-    createRule: function (rule_id, successCallback = null) {
+    createRule: function (rule, successCallback = null) {
       axios
-        .post(`/projects/${this.project.id}/rules`, { rule: { rule_id: rule_id } })
+        .post(`/projects/${this.project.id}/rules`, { rule: rule })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.ruleFetchSuccess(response);

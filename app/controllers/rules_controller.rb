@@ -19,12 +19,7 @@ class RulesController < ApplicationController
   end
 
   def create
-    rule = Rule.new(rule_create_params.merge({
-                                               project: @project,
-                                               status: 'Applicable - Configurable',
-                                               rule_severity: 'unknown'
-                                             }))
-
+    rule = create_or_duplicate
     if rule.save
       render json: { toast: 'Successfully created control.', data: rule }
     else
@@ -81,8 +76,22 @@ class RulesController < ApplicationController
 
   private
 
+  def create_or_duplicate
+    if rule_create_params[:duplicate]
+      rule = Rule.find(rule_create_params[:id]).amoeba_dup
+      rule.rule_id = rule_create_params[:rule_id]
+      rule
+    else
+      Rule.new(rule_create_params.merge({
+        project: @project,
+        status: 'Applicable - Configurable',
+        rule_severity: 'unknown'
+      }))
+    end
+  end
+
   def rule_create_params
-    params.require(:rule).permit(:rule_id)
+    params.require(:rule).permit(:rule_id, :duplicate, :id)
   end
 
   def rule_update_params

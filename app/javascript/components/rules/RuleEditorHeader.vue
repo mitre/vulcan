@@ -24,6 +24,15 @@
       <p v-else>Created on {{ friendlyDateTime(rule.created_at) }}</p>
 
       <!-- Action Buttons -->
+      <!-- Duplicate rule modal -->
+      <NewRuleModalForm
+        :title="'Duplicate Control'"
+        :idPrefix="'duplicate'"
+        :forDuplicate="true"
+        :selectedRuleId="rule.id"
+      />
+
+      <b-button variant="primary" v-b-modal.duplicate-rule-modal> Duplicate Control</b-button>
       <!-- Disable and enable save & delete buttons based on locked state of rule -->
       <template v-if="rule.locked || rule.review_requestor_id ? true : false">
         <span
@@ -75,9 +84,6 @@
             <b-button variant="danger" @click="ok()"> Permanently Delete Control </b-button>
           </template>
         </b-modal>
-
-        <!-- Duplicate rule -->
-        <!-- <b-button>Duplicate Control</b-button> -->
       </template>
     </div>
   </div>
@@ -89,10 +95,11 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
+import NewRuleModalForm from "./forms/NewRuleModalForm.vue"
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal },
+  components: { CommentModal, NewRuleModalForm },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     projectPermissions: {
