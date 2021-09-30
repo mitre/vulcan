@@ -3,11 +3,11 @@
 # Constants that involve Rules
 module RuleConstants
   STATUSES = [
+    'Not Yet Determined',
     'Applicable - Configurable',
     'Applicable - Inherently Meets',
     'Applicable - Does Not Meet',
-    'Not Applicable',
-    nil
+    'Not Applicable'
   ].freeze
 
   SEVERITIES = %w[
