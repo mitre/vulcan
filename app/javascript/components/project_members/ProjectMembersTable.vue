@@ -134,6 +134,7 @@ export default {
     available_members: {
       type: Array,
       required: false,
+      default: () => [],
     },
     project_members_count: {
       type: Number,

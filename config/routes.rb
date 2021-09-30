@@ -11,6 +11,7 @@ Rails.application.routes.draw do
 
   resources :projects do
     resources :project_members, only: %i[index create update destroy]
+    resources :components, only: %i[create destroy], shallow: true
     resources :rules, shallow: true do
       post 'manage_lock', on: :member
       post 'revert', on: :member
