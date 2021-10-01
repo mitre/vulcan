@@ -30,6 +30,7 @@
         :idPrefix="'duplicate'"
         :forDuplicate="true"
         :selectedRuleId="rule.id"
+        @ruleSelected="handleRuleSelected($event)"
       />
 
       <b-button variant="primary" v-b-modal.duplicate-rule-modal> Duplicate Control</b-button>
@@ -141,6 +142,9 @@ export default {
       this.alertOrNotifyResponse(response);
       this.$root.$emit("refresh:rule", this.rule.id);
     },
+    handleRuleSelected: function (data) {
+      this.$emit('ruleSelected', data.id)
+    }
   },
 };
 </script>

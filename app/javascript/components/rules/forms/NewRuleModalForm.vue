@@ -73,7 +73,9 @@ export default {
     },
     handleSubmit: function () {
       this.ruleFormRuleId = this.generateRuleId();
-      this.$root.$emit('create:rule', {rule_id: this.ruleFormRuleId, duplicate: this.forDuplicate, id: this.selectedRuleId });
+      this.$root.$emit('create:rule', {rule_id: this.ruleFormRuleId, duplicate: this.forDuplicate, id: this.selectedRuleId }, (response) => {
+        this.$emit('ruleSelected', response.data.data);
+      });
     }
   },
   mounted: function () {

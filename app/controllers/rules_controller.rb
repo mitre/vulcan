@@ -82,7 +82,7 @@ class RulesController < ApplicationController
       rule.rule_id = rule_create_params[:rule_id]
       rule
     else
-      Rule.new(rule_create_params.merge({
+      Rule.new(rule_create_params.except(:duplicate).merge({
         project: @project,
         status: 'Applicable - Configurable',
         rule_severity: 'unknown'

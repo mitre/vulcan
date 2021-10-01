@@ -21,7 +21,7 @@
       <i
         class="mdi mdi-close closeRuleButton"
         aria-hidden="true"
-        @click.stop="removeOpenRule(rule.id)"
+        @click.stop="ruleDeselected(rule)"
       />
       {{ formatRuleId(rule.id) }}
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
@@ -38,6 +38,7 @@
       :title="'Create New Control'"
       :forDuplicate="false"
       :idPrefix="'create'"
+      @ruleSelected="ruleSelected($event)"
     />
 
     <!-- All rules list -->
@@ -83,11 +84,13 @@ export default {
       type: String,
       required: true,
     },
+    openRuleIds: {
+      type: Array,
+      required: true,
+    },
   },
   data: function () {
     return {
-      // Tried using a `new Set()` for `openRuleIds`, but Vue would not react to changes.
-      openRuleIds: [],
       search: "",
     };
   },
@@ -104,47 +107,13 @@ export default {
       return this.filterRules(openRules);
     },
   },
-  watch: {
-    openRuleIds: function (_) {
-      localStorage.setItem("openRuleIds", JSON.stringify(this.openRuleIds));
-    },
-  },
-  mounted: function () {
-    // Persist `openRuleIds` across page loads
-    if (localStorage.getItem("openRuleIds")) {
-      try {
-        this.openRuleIds = JSON.parse(localStorage.getItem("openRuleIds"));
-      } catch (e) {
-        localStorage.removeItem("openRuleIds");
-      }
-    }
-  },
   methods: {
     // Event handler for when a rule is selected
     ruleSelected: function (rule) {
-      this.addOpenRule(rule.id);
       this.$emit("ruleSelected", rule.id);
     },
-    // Adds a rule to the `openRules` array
-    addOpenRule: function (ruleId) {
-      if (this.openRuleIds.includes(ruleId)) {
-        return;
-      }
-      this.openRuleIds.push(ruleId);
-    },
-    // Removes a rule from the `openRules` array
-    removeOpenRule: function (ruleId) {
-      const ruleIndex = this.openRuleIds.findIndex((id) => id == ruleId);
-      // Guard from rule not found
-      if (ruleIndex == -1) {
-        return;
-      }
-      this.openRuleIds.splice(ruleIndex, 1);
-
-      // Handle edge case where closed rule is the currently selected rule
-      if (ruleId == this.selectedRuleId) {
-        this.$emit("ruleSelected", null);
-      }
+    ruleDeselected: function (rule) {
+      this.$emit("ruleDeselected", rule.id);
     },
     // Helper to sort rules by ID
     sortById(rule1, rule2) {
