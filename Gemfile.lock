@@ -138,6 +138,7 @@ GEM
       html2haml (>= 1.0.1)
       railties (>= 5.1)
     hashie (4.1.0)
+    highline (2.0.3)
     html2haml (2.2.0)
       erubis (~> 2.7.0)
       haml (>= 4.0, < 6)
@@ -360,6 +361,7 @@ DEPENDENCIES
   ffaker (~> 2.10)
   gitlab_omniauth-ldap (~> 2.1.1)
   haml-rails (~> 2.0)
+  highline (~> 2.0)
   jbuilder (~> 2.7)
   letter_opener
   listen (~> 3.1.5)
