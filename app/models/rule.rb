@@ -5,6 +5,16 @@
 class Rule < ApplicationRecord
   include RuleConstants
 
+  amoeba do
+    enable
+    include_association :rule_descriptions
+    include_association :disa_rule_descriptions
+    include_association :checks
+    include_association :references
+    set review_requestor_id: nil
+    set locked: false
+  end
+
   audited except: %i[project_id review_requestor_id created_at updated_at locked], max_audits: 1000
   has_associated_audits
 
