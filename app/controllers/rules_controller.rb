@@ -8,7 +8,7 @@ class RulesController < ApplicationController
   before_action :set_project, only: %i[index show create update revert]
   before_action :set_project_permissions, only: %i[index]
   before_action :authorize_author_project, only: %i[index show update revert]
-  before_action :authorize_admin_project, only: %i[create destroy]
+  before_action :authorize_admin_project, only: %i[destroy]
 
   def index
     @rules = @project.rules
@@ -77,11 +77,11 @@ class RulesController < ApplicationController
   private
 
   def create_or_duplicate
-    if rule_create_params[:duplicate]
+    if authorize_author_project.nil? && rule_create_params[:duplicate]
       rule = Rule.find(rule_create_params[:id]).amoeba_dup
       rule.rule_id = rule_create_params[:rule_id]
       rule
-    else
+    elsif authorize_admin_project.nil?
       Rule.new(rule_create_params.except(:duplicate).merge({
         project: @project,
         status: 'Applicable - Configurable',
