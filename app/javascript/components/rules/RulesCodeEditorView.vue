@@ -6,7 +6,7 @@
         :selected-rule-id="selectedRuleId"
         :project-prefix="project.prefix"
         :project-permissions="projectPermissions"
-        :openRuleIds="openRuleIds"
+        :open-rule-ids="openRuleIds"
         @ruleSelected="handleRuleSelected($event)"
         @ruleDeselected="handleRuleDeselected($event)"
       />

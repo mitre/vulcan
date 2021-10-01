@@ -83,10 +83,10 @@ class RulesController < ApplicationController
       rule
     elsif authorize_admin_project.nil?
       Rule.new(rule_create_params.except(:duplicate).merge({
-        project: @project,
-        status: 'Applicable - Configurable',
-        rule_severity: 'unknown'
-      }))
+                                                             project: @project,
+                                                             status: 'Not Yet Determined',
+                                                             rule_severity: 'unknown'
+                                                           }))
     end
   end
 

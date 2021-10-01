@@ -28,12 +28,12 @@
         <!-- Duplicate rule modal -->
         <NewRuleModalForm
           :title="'Duplicate Control'"
-          :idPrefix="'duplicate'"
-          :forDuplicate="true"
-          :selectedRuleId="rule.id"
-          @ruleSelected="handleRuleSelected($event)"
+          :id-prefix="'duplicate'"
+          :for-duplicate="true"
+          :selected-rule-id="rule.id"
+          @ruleSelected="$emit('ruleSelected', $event.id)"
         />
-        <b-button variant="primary" v-b-modal.duplicate-rule-modal> Duplicate Control</b-button>
+        <b-button v-b-modal.duplicate-rule-modal variant="primary"> Duplicate Control</b-button>
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
@@ -101,7 +101,7 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
-import NewRuleModalForm from "./forms/NewRuleModalForm.vue"
+import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 
 export default {
   name: "RuleEditorHeader",
@@ -151,9 +151,6 @@ export default {
       this.alertOrNotifyResponse(response);
       this.$root.$emit("refresh:rule", this.rule.id);
     },
-    handleRuleSelected: function (data) {
-      this.$emit('ruleSelected', data.id)
-    }
   },
 };
 </script>

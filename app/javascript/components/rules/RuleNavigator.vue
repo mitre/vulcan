@@ -38,8 +38,8 @@
     <!-- New rule modal -->
     <NewRuleModalForm
       :title="'Create New Control'"
-      :forDuplicate="false"
-      :idPrefix="'create'"
+      :for-duplicate="false"
+      :id-prefix="'create'"
       @ruleSelected="ruleSelected($event)"
     />
 
@@ -65,7 +65,7 @@
 //
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
 //
-import NewRuleModalForm from './forms/NewRuleModalForm.vue'
+import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 export default {
   name: "RuleNavigator",
   components: { NewRuleModalForm },
@@ -89,6 +89,7 @@ export default {
     openRuleIds: {
       type: Array,
       required: true,
+    },
     readOnly: {
       type: Boolean,
       default: false,

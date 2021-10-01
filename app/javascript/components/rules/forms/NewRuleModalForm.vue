@@ -37,9 +37,9 @@
   </div>
 </template>
 <script>
-import FormMixinVue from "../../../mixins/FormMixin.vue"
+import FormMixinVue from "../../../mixins/FormMixin.vue";
 export default {
-  name: 'NewRuleModalForm',
+  name: "NewRuleModalForm",
   mixins: [FormMixinVue],
   props: {
     idPrefix: {
@@ -48,39 +48,43 @@ export default {
     },
     title: {
       type: String,
-      required: true
+      required: true,
     },
     forDuplicate: {
       type: Boolean,
-      required: true
+      required: true,
     },
     selectedRuleId: {
       type: Number,
-      required: false
-    }
+      required: false,
+    },
   },
   data: function () {
     return {
       ruleFormRuleId: "",
       tooltips: {
         control_id: "This will be equivalent to the SV-#",
-      }
-    }
-  },
-  methods: {
-    generateRuleId: function() {
-      return `VULCAN-${Math.ceil((Math.random() * 1000000))}`
-    },
-    handleSubmit: function () {
-      this.ruleFormRuleId = this.generateRuleId();
-      this.$root.$emit('create:rule', {rule_id: this.ruleFormRuleId, duplicate: this.forDuplicate, id: this.selectedRuleId }, (response) => {
-        this.$emit('ruleSelected', response.data.data);
-      });
-    }
+      },
+    };
   },
   mounted: function () {
     this.ruleFormRuleId = this.generateRuleId();
-  }
-}
+  },
+  methods: {
+    generateRuleId: function () {
+      return `VULCAN-${Math.ceil(Math.random() * 1000000)}`;
+    },
+    handleSubmit: function () {
+      this.ruleFormRuleId = this.generateRuleId();
+      this.$root.$emit(
+        "create:rule",
+        { rule_id: this.ruleFormRuleId, duplicate: this.forDuplicate, id: this.selectedRuleId },
+        (response) => {
+          this.$emit("ruleSelected", response.data.data);
+        }
+      );
+    },
+  },
+};
 </script>
 <style scoped></style>

@@ -265,6 +265,9 @@ export default {
      * changes just beause a user has commented.
      */
     ruleFetchSuccess: function (response, updated = "all") {
+      if (response.data.id === undefined) {
+        response.data.data = JSON.parse(response.data.data);
+      }
       const ruleIndex = this.reactiveRules.findIndex((r) => r.id == response.data.id);
 
       // If the rule is not in the reactive rules then add it and return early
