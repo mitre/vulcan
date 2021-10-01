@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_21_211120) do
+ActiveRecord::Schema.define(version: 2021_09_30_182147) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -30,6 +30,8 @@ ActiveRecord::Schema.define(version: 2021_09_21_211120) do
     t.string "remote_address"
     t.string "request_uuid"
     t.datetime "created_at"
+    t.integer "audited_user_id"
+    t.string "audited_username"
     t.index ["associated_type", "associated_id"], name: "associated_index"
     t.index ["auditable_type", "auditable_id", "version"], name: "auditable_index"
     t.index ["created_at"], name: "index_audits_on_created_at"
@@ -46,6 +48,16 @@ ActiveRecord::Schema.define(version: 2021_09_21_211120) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["rule_id"], name: "index_checks_on_rule_id"
+  end
+
+  create_table "components", force: :cascade do |t|
+    t.bigint "project_id"
+    t.bigint "child_project_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["child_project_id"], name: "index_components_on_child_project_id"
+    t.index ["project_id", "child_project_id"], name: "components_parent_child_id_index", unique: true
+    t.index ["project_id"], name: "index_components_on_project_id"
   end
 
   create_table "disa_rule_descriptions", force: :cascade do |t|
@@ -139,7 +151,7 @@ ActiveRecord::Schema.define(version: 2021_09_21_211120) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "project_id"
-    t.string "status"
+    t.string "status", default: "Not Yet Determined"
     t.text "status_justification"
     t.text "artifact_description"
     t.text "vendor_comments"
@@ -195,6 +207,7 @@ ActiveRecord::Schema.define(version: 2021_09_21_211120) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "components", "projects", column: "child_project_id"
   add_foreign_key "project_members", "projects"
   add_foreign_key "project_members", "users"
   add_foreign_key "rules", "projects"

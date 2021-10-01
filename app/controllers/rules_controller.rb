@@ -11,17 +11,17 @@ class RulesController < ApplicationController
   before_action :authorize_admin_project, only: %i[destroy]
 
   def index
-    @rules = @project.rules
+    @rules = @project.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
   end
 
   def show
-    render json: @rule
+    render json: @rule.to_json(methods: %i[histories])
   end
 
   def create
     rule = create_or_duplicate
     if rule.save
-      render json: { toast: 'Successfully created control.', data: rule }
+      render json: { toast: 'Successfully created control.', data: rule.to_json(methods: %i[histories]) }
     else
       render json: {
         toast: {
@@ -128,9 +128,5 @@ class RulesController < ApplicationController
                  Project.includes({ rules: %i[reviews checks disa_rule_descriptions rule_descriptions] })
                         .find(params[:project_id] || params[:rule][:project_id])
                end
-  end
-
-  def set_project_permissions
-    @project_permissions = current_user&.project_permissions(@project)
   end
 end

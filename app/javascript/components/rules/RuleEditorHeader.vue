@@ -8,84 +8,89 @@
         {{ `${projectPrefix}-${rule.id}` }}
       </h2>
 
-      <p v-if="rule.locked" class="text-danger font-weight-bold">
+      <p v-if="!readOnly && rule.locked" class="text-danger font-weight-bold">
         This control is locked and must first be unlocked if changes or deletion are required.
       </p>
-      <p v-if="rule.review_requestor_id" class="text-danger font-weight-bold">
+      <p v-if="!readOnly && rule.review_requestor_id" class="text-danger font-weight-bold">
         This control is under review and cannot be edited at this time.
       </p>
 
-      <!-- Rule info -->
-      <!-- <p>Based on ...</p> -->
-      <p v-if="rule.histories.length > 0">
-        Last updated on {{ friendlyDateTime(rule.updated_at) }} by
-        {{ lastEditor }}
-      </p>
-      <p v-else>Created on {{ friendlyDateTime(rule.created_at) }}</p>
+      <div v-if="!readOnly">
+        <!-- Rule info -->
+        <!-- <p>Based on ...</p> -->
+        <p v-if="rule.histories.length > 0">
+          Last updated on {{ friendlyDateTime(rule.updated_at) }} by
+          {{ lastEditor }}
+        </p>
+        <p v-else>Created on {{ friendlyDateTime(rule.created_at) }}</p>
 
-      <!-- Action Buttons -->
-      <!-- Duplicate rule modal -->
-      <NewRuleModalForm
-        :title="'Duplicate Control'"
-        :idPrefix="'duplicate'"
-        :forDuplicate="true"
-        :selectedRuleId="rule.id"
-        @ruleSelected="handleRuleSelected($event)"
-      />
-
-      <b-button variant="primary" v-b-modal.duplicate-rule-modal> Duplicate Control</b-button>
-      <!-- Disable and enable save & delete buttons based on locked state of rule -->
-      <template v-if="rule.locked || rule.review_requestor_id ? true : false">
-        <span
-          v-b-tooltip.hover
-          class="d-inline-block"
-          title="Cannot save a control that is locked or under review."
-        >
-          <b-button variant="success" disabled>Save Control</b-button>
-        </span>
-        <span
-          v-if="projectPermissions == 'admin'"
-          v-b-tooltip.hover
-          class="d-inline-block"
-          title="Cannot delete a control that is locked or under review"
-        >
-          <b-button variant="danger" disabled>Delete Control</b-button>
-        </span>
-      </template>
-      <template v-else>
-        <!-- Save rule -->
-        <CommentModal
-          title="Save Control"
-          message="Provide a comment that summarizes your changes to this control."
-          :require-non-empty="true"
-          button-text="Save Control"
-          button-variant="success"
-          :button-disabled="false"
-          wrapper-class="d-inline-block"
-          @comment="saveRule($event)"
+        <!-- Action Buttons -->
+        <!-- Duplicate rule modal -->
+        <NewRuleModalForm
+          :title="'Duplicate Control'"
+          :idPrefix="'duplicate'"
+          :forDuplicate="true"
+          :selectedRuleId="rule.id"
+          @ruleSelected="handleRuleSelected($event)"
         />
+        <b-button variant="primary" v-b-modal.duplicate-rule-modal> Duplicate Control</b-button>
+        <!-- Disable and enable save & delete buttons based on locked state of rule -->
+        <template v-if="rule.locked || rule.review_requestor_id ? true : false">
+          <span
+            v-b-tooltip.hover
+            class="d-inline-block"
+            title="Cannot save a control that is locked or under review."
+          >
+            <b-button variant="success" disabled>Save Control</b-button>
+          </span>
+          <span
+            v-if="projectPermissions == 'admin'"
+            v-b-tooltip.hover
+            class="d-inline-block"
+            title="Cannot delete a control that is locked or under review"
+          >
+            <b-button variant="danger" disabled>Delete Control</b-button>
+          </span>
+        </template>
+        <template v-else>
+          <!-- Save rule -->
+          <CommentModal
+            title="Save Control"
+            message="Provide a comment that summarizes your changes to this control."
+            :require-non-empty="true"
+            button-text="Save Control"
+            button-variant="success"
+            :button-disabled="false"
+            wrapper-class="d-inline-block"
+            @comment="saveRule($event)"
+          />
 
-        <!-- Delete rule -->
-        <b-button v-if="projectPermissions == 'admin'" v-b-modal.delete-rule-modal variant="danger">
-          Delete Control
-        </b-button>
-        <b-modal
-          id="delete-rule-modal"
-          title="Delete Control"
-          centered
-          @ok="$root.$emit('delete:rule', rule.id)"
-        >
-          <p class="my-4">
-            Are you sure you want to delete this control?<br />This cannot be undone.
-          </p>
+          <!-- Delete rule -->
+          <b-button
+            v-if="projectPermissions == 'admin'"
+            v-b-modal.delete-rule-modal
+            variant="danger"
+          >
+            Delete Control
+          </b-button>
+          <b-modal
+            id="delete-rule-modal"
+            title="Delete Control"
+            centered
+            @ok="$root.$emit('delete:rule', rule.id)"
+          >
+            <p class="my-4">
+              Are you sure you want to delete this control?<br />This cannot be undone.
+            </p>
 
-          <template #modal-footer="{ cancel, ok }">
-            <!-- Emulate built in modal footer ok and cancel button actions -->
-            <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="danger" @click="ok()"> Permanently Delete Control </b-button>
-          </template>
-        </b-modal>
-      </template>
+            <template #modal-footer="{ cancel, ok }">
+              <!-- Emulate built in modal footer ok and cancel button actions -->
+              <b-button @click="cancel()"> Cancel </b-button>
+              <b-button variant="danger" @click="ok()"> Permanently Delete Control </b-button>
+            </template>
+          </b-modal>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -114,6 +119,10 @@ export default {
     projectPrefix: {
       type: String,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   computed: {

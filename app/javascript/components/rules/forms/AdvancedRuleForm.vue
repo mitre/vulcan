@@ -47,7 +47,11 @@
       </template> -->
 
       <!-- disa_rule_description -->
-      <template v-if="rule.status == 'Applicable - Configurable'">
+      <template
+        v-if="
+          rule.status == 'Applicable - Configurable' || rule.status == 'Applicable - Does Not Meet'
+        "
+      >
         <div class="clickable mb-2" @click="showDisaRuleDescriptions = !showDisaRuleDescriptions">
           <h2 class="m-0 d-inline-block">Rule Description</h2>
           <!-- <b-badge pill class="superVerticalAlign">{{rule.disa_rule_descriptions_attributes.filter((e) => e._destroy != true ).length}}</b-badge> -->
@@ -75,6 +79,7 @@
                 :index="index"
                 :description="description"
                 :disabled="disabledForm"
+                :show-fields="disaDescriptionFormFields"
               />
               <!-- This is commented out because there is currently the assumption that users will only need one description -->
               <!-- <a
@@ -131,6 +136,10 @@
         </b-collapse>
       </template>
     </b-form>
+    <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
+    <p v-if="rule.status != 'Applicable - Configurable'">
+      <small>Some fields are hidden due to the control's status.</small>
+    </p>
   </div>
 </template>
 
@@ -155,6 +164,10 @@ export default {
       type: Array,
       required: true,
     },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: function () {
     return {
@@ -165,7 +178,27 @@ export default {
   },
   computed: {
     disabledForm: function () {
-      return this.rule.locked || this.rule.review_requestor_id ? true : false;
+      return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
+    },
+    disaDescriptionFormFields: function () {
+      if (this.rule.status == "Applicable - Configurable") {
+        return [
+          "documentable",
+          "vuln_discussion",
+          "false_positives",
+          "false_negatives",
+          "mitigations",
+          "severity_override_guidance",
+          "potential_impacts",
+          "third_party_tools",
+          "mitigation_control",
+          "responsibility",
+          "ia_controls",
+        ];
+      } else if (this.rule.status == "Applicable - Does Not Meet") {
+        return ["mitigation_control"];
+      }
+      return [];
     },
   },
 };

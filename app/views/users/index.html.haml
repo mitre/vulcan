@@ -2,6 +2,7 @@
   = javascript_pack_tag 'users'
 
 #users
-  %Users{                           |
-    'v-bind:users': @users.to_json, |
+  %Users{                                   |
+    'v-bind:users': @users.to_json,        |
+    'v-bind:histories': @histories.to_json |
   }

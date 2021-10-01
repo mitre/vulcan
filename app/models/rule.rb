@@ -62,7 +62,7 @@ class Rule < ApplicationRecord
     rule = Rule.new(
       project_id: project_id,
       rule_id: rule_mapping.id,
-      status: rule_mapping.status.first&.status,
+      status: rule_mapping.status.first&.status || 'Not Yet Determined',
       rule_severity: rule_mapping.severity || nil,
       rule_weight: rule_mapping.weight || nil,
       version: rule_mapping.version.first&.version,
@@ -138,12 +138,11 @@ class Rule < ApplicationRecord
   end
 
   ##
-  # Override `as_json` to include dependent records (e.g. comments, histories)
+  # Override `as_json` to include dependent records
   #
   def as_json(options = {})
     super.merge(
       {
-        histories: histories,
         reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
         rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },

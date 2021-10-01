@@ -11,10 +11,7 @@
 
       <!-- disa_rule_description -->
       <DisaRuleDescriptionForm
-        v-if="
-          rule.status == 'Applicable - Configurable' &&
-          rule.disa_rule_descriptions_attributes.length >= 1
-        "
+        v-if="rule.disa_rule_descriptions_attributes.length >= 1"
         :rule="rule"
         :index="0"
         :description="rule.disa_rule_descriptions_attributes[0]"
@@ -32,6 +29,10 @@
         :show-fields="checkFormFields"
       />
     </b-form>
+    <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
+    <p v-if="rule.status != 'Applicable - Configurable'">
+      <small>Some fields are hidden due to the control's status.</small>
+    </p>
   </div>
 </template>
 
@@ -56,6 +57,10 @@ export default {
       type: Array,
       required: true,
     },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: function () {
     return {
@@ -74,19 +79,6 @@ export default {
         // "ident_system",
         "vendor_comments",
       ],
-      disaDescriptionFormFields: [
-        // "documentable",
-        "vuln_discussion",
-        // "false_positives",
-        // "false_negatives",
-        // "mitigations",
-        // "severity_override_guidance",
-        // "potential_impacts",
-        // "third_party_tools",
-        "mitigation_control",
-        // "responsibility",
-        "ia_controls",
-      ],
       checkFormFields: [
         // "system",
         // "content_ref_name",
@@ -97,7 +89,16 @@ export default {
   },
   computed: {
     disabledForm: function () {
-      return this.rule.locked || this.rule.review_requestor_id ? true : false;
+      return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
+    },
+    // The fields to show need to be dynamic based on the rule status
+    disaDescriptionFormFields: function () {
+      if (this.rule.status == "Applicable - Configurable") {
+        return ["vuln_discussion", "mitigation_control", "ia_controls"];
+      } else if (this.rule.status == "Applicable - Does Not Meet") {
+        return ["mitigation_control"];
+      }
+      return [];
     },
   },
 };
