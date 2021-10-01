@@ -10,9 +10,7 @@
     >
       <form ref="form" method="post">
         <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
-        <div v-if="forDuplicate">
-          Duplicate control {{ selectedRuleId }}?
-        </div>
+        <div v-if="forDuplicate">Duplicate control {{ selectedRuleId }}?</div>
         <b-form-group
           id="rule-id-input-group"
           label-for="rule-id-input"
