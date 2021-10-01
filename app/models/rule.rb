@@ -28,7 +28,8 @@ class Rule < ApplicationRecord
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
-  belongs_to :project
+  # touch the project so that the rule counters are updated
+  belongs_to :project, touch: true
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
 
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true

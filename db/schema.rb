@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_30_182147) do
+ActiveRecord::Schema.define(version: 2021_10_01_130720) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -104,6 +104,9 @@ ActiveRecord::Schema.define(version: 2021_09_30_182147) do
     t.integer "project_members_count", default: 0
     t.bigint "security_requirements_guide_id"
     t.string "prefix"
+    t.integer "in_development_rule_count", default: 0
+    t.integer "under_review_rule_count", default: 0
+    t.integer "locked_rule_count", default: 0
   end
 
   create_table "references", force: :cascade do |t|
