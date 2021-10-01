@@ -18,6 +18,9 @@ class Project < ApplicationRecord
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :rules, :project_members
 
+  # Expect rules to touch the project when they are updated
+  after_touch :update_rule_status_counters
+
   validates_with PrefixValidator
 
   validates :name, :prefix, :based_on, presence: true
@@ -41,8 +44,13 @@ class Project < ApplicationRecord
     rule_models = benchmark.rule.map do |rule|
       Rule.from_mapping(rule, project_id)
     end
+
     # Examine import results for failures
-    Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
+    import_result = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
+    # rubocop:disable Rails/SkipsModelValidations
+    Project.find(project_id).touch
+    # rubocop:enable Rails/SkipsModelValidations
+    import_result
   end
 
   def prefix=(val)
@@ -76,5 +84,16 @@ class Project < ApplicationRecord
       projects = projects.where(id: allowed_project_ids)
     end
     projects.pluck(:id).map { |pid| Component.new(project_id: id, child_project_id: pid) }
+  end
+
+  private
+
+  def update_rule_status_counters
+    sql_counts = rules.group('review_requestor_id IS NOT NULL', :locked).count
+    update(
+      in_development_rule_count: sql_counts[[false, false]] || 0,
+      under_review_rule_count: sql_counts[[true, false]] || 0,
+      locked_rule_count: sql_counts[[false, true]] || 0
+    )
   end
 end
