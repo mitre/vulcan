@@ -6,12 +6,12 @@ class Rule < ApplicationRecord
   include RuleConstants
 
   amoeba do
-    enable
     include_association :rule_descriptions
     include_association :disa_rule_descriptions
     include_association :checks
     include_association :references
-    set review_requestor_id: nil
+    # Using set review_requestor_id: nil does not work as expected, must use nullify
+    nullify :review_requestor_id
     set locked: false
   end
 
