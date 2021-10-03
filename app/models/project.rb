@@ -38,6 +38,8 @@ class Project < ApplicationRecord
   accepts_nested_attributes_for :project_metadata
 
   scope :alphabetical, -> { order(:name) }
+  scope :components, -> { where.not(security_requirements_guide_id: nil) }
+  scope :projects, -> { where(security_requirements_guide_id: nil) }
 
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
   def self.from_mapping(benchmark, project_id)
@@ -55,6 +57,18 @@ class Project < ApplicationRecord
 
   def prefix=(val)
     self[:prefix] = val.upcase
+  end
+
+  def as_json(options = {})
+    # Grab all requested methods and the `component?` method
+    methods = (options[:methods] || []) + %i[component?]
+    super(options.merge({ methods: methods }))
+  end
+
+  # Helper that tells if the project is a component
+  # Right now this is very simlple, but may become more complicated in the future
+  def component?
+    security_requirements_guide_id.present?
   end
 
   # Helper method to extract data from Project Metadata
