@@ -94,7 +94,7 @@ export default {
     // The fields to show need to be dynamic based on the rule status
     disaDescriptionFormFields: function () {
       if (this.rule.status == "Applicable - Configurable") {
-        return ["vuln_discussion", "mitigation_control", "ia_controls"];
+        return ["vuln_discussion"];
       } else if (this.rule.status == "Applicable - Does Not Meet") {
         return ["mitigation_control"];
       }

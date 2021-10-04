@@ -480,9 +480,9 @@ export default {
           "List the potential operational impacts on a system when applying fix discussed in this control",
         third_party_tools: null,
         mitigation_control:
-          "Discuss how the system mitigates this vulnerability in the absence of a configuration that would elimiate it",
+          "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
         responsibility: null,
-        ia_controls: null,
+        ia_controls: "The Common Control Indicator (CCI) that applies to this vulnerability",
       },
     };
   },
