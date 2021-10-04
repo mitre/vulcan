@@ -2,7 +2,7 @@
   <div>
     <!-- Table information -->
     <p>
-      <b>Project Count:</b> <span>{{ projectCount }}</span>
+      <b>{{ components ? "Component" : "Project" }} Count:</b> <span>{{ projectCount }}</span>
     </p>
 
     <!-- Project search -->
@@ -66,6 +66,11 @@ export default {
       type: Array,
       required: true,
     },
+    // Indicate if the table should show component-specific fields
+    components: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: function () {
     return {
@@ -95,18 +100,6 @@ export default {
     },
   },
   methods: {
-    // Path to POST/DELETE to when updating/deleting a project
-    formAction: function (project) {
-      return "/projects/" + project.id;
-    },
-    // Path to the manage project members page
-    manageProjectMembersAction: function (project) {
-      return "/projects/" + project.id + "/project_members";
-    },
-    // Path to the project controls page
-    projectControlsAction: function (project) {
-      return "/projects/" + project.id + "/controls";
-    },
     getProjectAction: function (project) {
       return "/projects/" + project.id;
     },

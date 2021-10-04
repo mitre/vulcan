@@ -10,7 +10,9 @@ module ApplicationHelper
   def base_navigation
     [
       { icon: 'mdi-folder-open-outline', name: 'Projects', link: projects_path },
-      { icon: 'mdi-timer-sand', name: 'Start New Project', link: new_project_path }
+      { icon: 'mdi-timer-sand', name: 'New Project', link: new_project_path },
+      { icon: 'mdi-toy-brick', name: 'Components', link: components_path },
+      { icon: 'mdi-toy-brick-plus', name: 'New Component', link: new_component_path }
     ]
   end
 

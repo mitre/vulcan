@@ -11,6 +11,8 @@ class RulesController < ApplicationController
   before_action :authorize_admin_project, only: %i[destroy]
 
   def index
+    redirect_to @project and return unless @project.component?
+
     @rules = @project.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
   end
 

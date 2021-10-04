@@ -13,7 +13,7 @@ class ProjectsController < ApplicationController
   before_action :authorize_author_project, only: %i[show]
 
   def index
-    @projects = current_user.available_projects.alphabetical
+    @projects = current_user.available_projects.projects.alphabetical
   end
 
   def show
@@ -29,38 +29,14 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def new
-    @srgs = SecurityRequirementsGuide.latest.map do |srg|
-      srg['title'] = "#{srg['title']} #{srg['version']}"
-      srg
-    end
-  end
+  def new; end
 
   def create
-    project = Project.new(
-      name: new_project_params[:name],
-      based_on: SecurityRequirementsGuide.find(new_project_params[:srg_id]),
-      prefix: new_project_params[:prefix],
-      project_members_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
-    )
-
-    # First save ensures base Project is acceptable.
-    if project.save
-      # Create rules
-      if Project.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
-        redirect_to action: 'index'
-      else
-        project.destroy
-        flash.alert = 'Unable to create project. An error occured parsing the selected SRG'
-        redirect_to action: 'new'
-      end
+    if new_project_params[:srg_id]
+      create_component
     else
-      flash.alert = "Unable to create project. #{project.errors.full_messages}"
-      redirect_to action: 'new'
+      create_project
     end
-  rescue ActiveRecord::RecordNotFound
-    flash.alert = 'Unable to create project. Could not find Security Requirements Guide'
-    redirect_to action: 'new'
   end
 
   # Update project and response with json
@@ -88,6 +64,48 @@ class ProjectsController < ApplicationController
   end
 
   private
+
+  def create_project
+    project = Project.new(
+      name: new_project_params[:name],
+      project_members_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
+    )
+
+    # First save ensures base Project is acceptable.
+    if project.save
+      redirect_to project
+    else
+      flash.alert = "Unable to create project. #{project.errors.full_messages}"
+      redirect_to action: 'new'
+    end
+  end
+
+  def create_component
+    project = Project.new(
+      name: new_project_params[:name],
+      based_on: SecurityRequirementsGuide.find(new_project_params[:srg_id]),
+      prefix: new_project_params[:prefix],
+      project_members_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
+    )
+
+    # First save ensures base Project is acceptable.
+    if project.save
+      # Create rules
+      if Project.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
+        redirect_to project
+      else
+        project.destroy
+        flash.alert = 'Unable to create component. An error occured parsing the selected SRG'
+        redirect_to new_project_path
+      end
+    else
+      flash.alert = "Unable to create project. #{project.errors.full_messages}"
+      redirect_to new_project_path
+    end
+  rescue ActiveRecord::RecordNotFound
+    flash.alert = 'Unable to create component. Could not find Security Requirements Guide'
+    redirect_to new_project_path
+  end
 
   def set_project
     @project = Project.find(params[:id])

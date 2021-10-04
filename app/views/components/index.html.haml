@@ -1,0 +1,8 @@
+- content_for :assets do
+  = javascript_pack_tag 'components'
+  -# = stylesheet_pack_tag 'projects'
+
+#Components
+  %Components{                                                 |
+    'v-bind:projects': @projects.to_json,                      |
+  }
