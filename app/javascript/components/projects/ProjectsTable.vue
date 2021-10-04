@@ -44,33 +44,6 @@
       <template #cell(updated_at)="data">
         {{ friendlyDateTime(data.item.updated_at) }}
       </template>
-
-      <!-- Column template for Actions -->
-      <!-- TODO - control actions available here based on user's admin status and/or project membership roles -->
-      <template #cell(actions)="data">
-        <b-dropdown text="Actions" class="m-md-2" right>
-          <!-- View controls dropdown item -->
-          <b-dropdown-item :href="projectControlsAction(data.item)">
-            <i class="mdi mdi-file-document" aria-hidden="true" />
-            View Controls
-          </b-dropdown-item>
-          <!-- Manage projects dropdown item -->
-          <b-dropdown-item :href="manageProjectMembersAction(data.item)">
-            <i class="mdi mdi-account-circle" aria-hidden="true" />
-            Manage Project Members
-          </b-dropdown-item>
-          <!-- Delete project dropdown item -->
-          <b-dropdown-item
-            data-confirm="Are you sure you want to permanently delete this project?"
-            data-method="delete"
-            :href="formAction(data.item)"
-            rel="nofollow"
-          >
-            <i class="mdi mdi-trash-can" aria-hidden="true" />
-            Delete Project
-          </b-dropdown-item>
-        </b-dropdown>
-      </template>
     </b-table>
 
     <!-- Pagination controls -->
@@ -100,15 +73,9 @@ export default {
       perPage: 10,
       currentPage: 1,
       fields: [
-        "name",
-        { key: "project_members_count", label: "Members" },
-        { key: "updated_at", label: "Last Updated" },
-        {
-          key: "actions",
-          label: "Actions",
-          thClass: "text-right",
-          tdClass: "p-0 text-right",
-        },
+        { key: "name", sortable: true },
+        { key: "project_members_count", label: "Members", sortable: true },
+        { key: "updated_at", label: "Last Updated", sortable: true },
       ],
     };
   },
