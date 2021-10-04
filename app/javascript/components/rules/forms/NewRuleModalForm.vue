@@ -9,10 +9,15 @@
       @ok="handleSubmit"
     >
       <form ref="form" method="post">
+        <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
+        <div v-if="forDuplicate">
+          Duplicate control {{ selectedRuleId }}?
+        </div>
         <b-form-group
           id="rule-id-input-group"
           label-for="rule-id-input"
           description="This must be unique for the project. It will not appear in the sidebar and is hidden."
+          :hidden="forDuplicate"
         >
           <label :for="`rule-id-input`">
             Control ID
