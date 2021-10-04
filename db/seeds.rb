@@ -24,19 +24,33 @@ srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
 srg.xml = srg_xml
 srg.save!
 puts 'Created SRG'
-puts 'Creating Projects with rules...'
-project = Project.create(
-  name: 'Test Project',
+puts 'Creating Components with rules...'
+component1 = Project.create(
+  name: 'Test Component 1',
   prefix: 'ABCD-01',
   based_on: srg
 )
-Project.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
-puts 'Created Projects with Rules'
+Project.from_mapping(Xccdf::Benchmark.parse(component1.based_on.xml), component1.id)
+
+component2 = Project.create(
+  name: 'Test Component 2',
+  prefix: 'ZZZZ-41',
+  based_on: srg
+)
+Project.from_mapping(Xccdf::Benchmark.parse(component2.based_on.xml), component2.id)
+puts 'Created Components with Rules'
+
+puts 'Creating Projects...'
+project1 = Project.create(name: 'Test Project 1')
+Component.create(project: project1, child_project: component1)
+puts 'Created Projects'
 
 puts 'Adding Users to Projects...'
 project_members = []
 User.all.each do |user|
-  project_members << ProjectMember.new(user: user, project: project)
+  project_members << ProjectMember.new(user: user, project: component1)
+  project_members << ProjectMember.new(user: user, project: component2)
+  project_members << ProjectMember.new(user: user, project: project1)
 end
 ProjectMember.import(project_members)
 puts 'Project Members added'

@@ -15,61 +15,44 @@ RSpec.describe Component, type: :model do
     srg.xml = srg_xml
     srg.save!
 
-    @p0 = Project.create(name: 'P0', prefix: 'AAAA-00', based_on: srg)
-    @p1 = Project.create(name: 'P1', prefix: 'AAAA-00', based_on: srg)
-    @p2 = Project.create(name: 'P2', prefix: 'AAAA-00', based_on: srg)
-    @p3 = Project.create(name: 'P3', prefix: 'AAAA-00', based_on: srg)
-    @p4 = Project.create(name: 'P4', prefix: 'AAAA-00', based_on: srg)
-    @p5 = Project.create(name: 'P5', prefix: 'AAAA-00', based_on: srg)
-    @p6 = Project.create(name: 'P6', prefix: 'AAAA-00', based_on: srg)
-    @p7 = Project.create(name: 'P7', prefix: 'AAAA-00', based_on: srg)
-    @p8 = Project.create(name: 'P8', prefix: 'AAAA-00', based_on: srg)
+    @admin = build(:user)
+    @admin.update(admin: true)
 
-    # Representation of the created graph
-    # Note that not all relationships are "downward"
-    # - P8 => P5
-    # - P8 => P7
-    #
-    #     P1      P2
-    #       \    /   \
-    #         P3      P4
-    #       /   \    /
-    #     P5      P6
-    #    /   \  /
-    # P7 ---- P8
-    # Commented out components can be used if component depth constraint is lifted
-    Component.create(project: @p1, child_project: @p3)
-    # Component.create(project: @p2, child_project: @p3)
-    # Component.create(project: @p2, child_project: @p4)
-    # Component.create(project: @p3, child_project: @p5)
-    # Component.create(project: @p3, child_project: @p6)
-    # Component.create(project: @p4, child_project: @p6)
-    # Component.create(project: @p5, child_project: @p7)
-    # Component.create(project: @p6, child_project: @p8)
-    # Component.create(project: @p8, child_project: @p5)
-    # Component.create(project: @p8, child_project: @p7)
+    @p1 = Project.create!(name: 'P1')
+    @p2 = Project.create!(name: 'P2')
+    @p3 = Project.create!(name: 'P3')
+    @p4 = Project.create!(name: 'P4')
+
+    @c1 = Project.create!(name: 'C1', prefix: 'AAAA-00', based_on: srg)
+    @c2 = Project.create!(name: 'C2', prefix: 'AAAA-00', based_on: srg)
+    @c3 = Project.create!(name: 'C3', prefix: 'AAAA-00', based_on: srg)
+    @c4 = Project.create!(name: 'C4', prefix: 'AAAA-00', based_on: srg)
+    @c5 = Project.create!(name: 'C5', prefix: 'AAAA-00', based_on: srg)
+
+    Component.create!(project: @p1, child_project: @c1)
   end
 
   context 'enforced component depth of 1' do
-    it 'blocks parent depth with P3 => P6' do
-      component = Component.new(project: @p3, child_project: @p6)
+    it 'blocks parent depth with P2 => P1' do
+      component = Component.new(project: @c1, child_project: @c2)
       component.valid?
       expect(component.errors[:base]).to include(@parent_depth_err)
     end
 
-    it 'blocks child depth with P0 => P1' do
-      component = Component.new(project: @p0, child_project: @p1)
+    it 'blocks child depth with C1 => C2' do
+      component = Component.new(project: @p2, child_project: @p1)
       component.valid?
       expect(component.errors[:base]).to include(@child_depth_err)
     end
 
     it 'Project#available_components are all valid' do
-      Component.create(project: @p2, child_project: @p3)
-      Component.create(project: @p6, child_project: @p8)
-      Component.create(project: @p5, child_project: @p3)
-      Component.create(project: @p5, child_project: @p7)
+      Component.create(project: @p1, child_project: @c2)
+      Component.create(project: @p1, child_project: @c2)
+      Component.create(project: @p2, child_project: @c2)
+      Component.create(project: @p2, child_project: @c4)
 
       Project.all.each do |project|
+        project.current_user = @admin
         project.available_components.each do |component|
           expect(component.valid?).to eq(true)
         end
@@ -77,12 +60,13 @@ RSpec.describe Component, type: :model do
     end
 
     it 'Projects.all - Project#available_components are all NOT valid' do
-      Component.create(project: @p2, child_project: @p3)
-      Component.create(project: @p6, child_project: @p8)
-      Component.create(project: @p5, child_project: @p3)
-      Component.create(project: @p5, child_project: @p7)
+      Component.create(project: @p1, child_project: @c2)
+      Component.create(project: @p1, child_project: @c2)
+      Component.create(project: @p2, child_project: @c2)
+      Component.create(project: @p2, child_project: @c4)
 
       Project.all.each do |project|
+        project.current_user = @admin
         Project.where.not(id: project.available_components.map(&:child_project_id)).each do |child_project|
           component = Component.new(project: project, child_project: child_project)
           expect(component.valid?).to eq(false)
@@ -92,8 +76,8 @@ RSpec.describe Component, type: :model do
   end
 
   context 'no duplicates allowed' do
-    it 'blocks P1 => P3' do
-      component = Component.new(project: @p1, child_project: @p3)
+    it 'blocks P1 => C1' do
+      component = Component.new(project: @p1, child_project: @c1)
       component.valid?
       expect(component.errors[:project_id]).to include(@duplicate_err)
     end
@@ -114,8 +98,8 @@ RSpec.describe Component, type: :model do
       expect(component.errors[:base]).to include(@circular_err)
     end
 
-    it 'blocks P3 => P1' do
-      component = Component.new(project: @p1, child_project: @p1)
+    it 'blocks C1 => P1' do
+      component = Component.new(project: @c1, child_project: @p1)
       component.valid?
       expect(component.errors[:base]).to include(@circular_err)
     end
