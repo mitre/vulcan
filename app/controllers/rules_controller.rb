@@ -8,7 +8,7 @@ class RulesController < ApplicationController
   before_action :set_project, only: %i[index show create update revert]
   before_action :set_project_permissions, only: %i[index]
   before_action :authorize_author_project, only: %i[index show update revert]
-  before_action :authorize_admin_project, only: %i[create destroy]
+  before_action :authorize_admin_project, only: %i[destroy]
 
   def index
     @rules = @project.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
@@ -19,12 +19,7 @@ class RulesController < ApplicationController
   end
 
   def create
-    rule = Rule.new(rule_create_params.merge({
-                                               project: @project,
-                                               status: 'Applicable - Configurable',
-                                               rule_severity: 'unknown'
-                                             }))
-
+    rule = create_or_duplicate
     if rule.save
       render json: { toast: 'Successfully created control.', data: rule.to_json(methods: %i[histories]) }
     else
@@ -81,8 +76,22 @@ class RulesController < ApplicationController
 
   private
 
+  def create_or_duplicate
+    if authorize_author_project.nil? && rule_create_params[:duplicate]
+      rule = Rule.find(rule_create_params[:id]).amoeba_dup
+      rule.rule_id = rule_create_params[:rule_id]
+      rule
+    elsif authorize_admin_project.nil?
+      Rule.new(rule_create_params.except(:duplicate).merge({
+                                                             project: @project,
+                                                             status: 'Not Yet Determined',
+                                                             rule_severity: 'unknown'
+                                                           }))
+    end
+  end
+
   def rule_create_params
-    params.require(:rule).permit(:rule_id)
+    params.require(:rule).permit(:rule_id, :duplicate, :id)
   end
 
   def rule_update_params

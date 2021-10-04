@@ -21,7 +21,7 @@
       <i
         class="mdi mdi-close closeRuleButton"
         aria-hidden="true"
-        @click.stop="removeOpenRule(rule.id)"
+        @click.stop="ruleDeselected(rule)"
       />
       {{ formatRuleId(rule.id) }}
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
@@ -36,37 +36,12 @@
     </p>
 
     <!-- New rule modal -->
-    <b-modal
-      id="create-rule-modal"
-      ref="modal"
-      title="Create New Control"
-      centered
-      @show="rule_form_rule_id = ''"
-      @shown="$refs.newRuleIdInput.focus()"
-      @ok="
-        $root.$emit('create:rule', rule_form_rule_id, (response) =>
-          ruleSelected(response.data.data)
-        )
-      "
-    >
-      <form ref="form" @submit.stop.prevent="handleSubmit">
-        <b-form-group
-          id="rule-id-input-group"
-          label="Control ID"
-          label-for="rule-id-input"
-          description="This must be unique for the project."
-        >
-          <b-form-input
-            id="rule-id-input"
-            ref="newRuleIdInput"
-            v-model="rule_form_rule_id"
-            placeholder="Enter control ID"
-            autocomplete="off"
-            required
-          />
-        </b-form-group>
-      </form>
-    </b-modal>
+    <NewRuleModalForm
+      :title="'Create New Control'"
+      :for-duplicate="false"
+      :id-prefix="'create'"
+      @ruleSelected="ruleSelected($event)"
+    />
 
     <!-- All rules list -->
     <div
@@ -90,8 +65,10 @@
 //
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
 //
+import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 export default {
   name: "RuleNavigator",
+  components: { NewRuleModalForm },
   props: {
     projectPermissions: {
       type: String,
@@ -109,6 +86,10 @@ export default {
       type: String,
       required: true,
     },
+    openRuleIds: {
+      type: Array,
+      required: true,
+    },
     readOnly: {
       type: Boolean,
       default: false,
@@ -116,73 +97,38 @@ export default {
   },
   data: function () {
     return {
-      // Tried using a `new Set()` for `openRuleIds`, but Vue would not react to changes.
-      openRuleIds: [],
       search: "",
-      rule_form_rule_id: "",
     };
   },
   computed: {
     // Filters down to all rules that apply to search & applied filters
     filteredRules: function () {
-      return this.filterRules(this.rules).sort(this.sortById);
+      return this.filterRules(this.rules).sort(this.compareRules);
     },
     // Filters down to open rules that also apply to search & applied filters
     filteredOpenRules: function () {
       const openRules = this.rules
         .filter((rule) => this.openRuleIds.includes(rule.id))
-        .sort(this.sortById);
+        .sort(this.compareRules);
       return this.filterRules(openRules);
     },
-  },
-  watch: {
-    openRuleIds: function (_) {
-      localStorage.setItem("openRuleIds", JSON.stringify(this.openRuleIds));
-    },
-  },
-  mounted: function () {
-    // Persist `openRuleIds` across page loads
-    if (localStorage.getItem("openRuleIds")) {
-      try {
-        this.openRuleIds = JSON.parse(localStorage.getItem("openRuleIds"));
-      } catch (e) {
-        localStorage.removeItem("openRuleIds");
-      }
-    }
   },
   methods: {
     // Event handler for when a rule is selected
     ruleSelected: function (rule) {
-      this.addOpenRule(rule.id);
       this.$emit("ruleSelected", rule.id);
     },
-    // Adds a rule to the `openRules` array
-    addOpenRule: function (ruleId) {
-      if (this.openRuleIds.includes(ruleId)) {
-        return;
-      }
-      this.openRuleIds.push(ruleId);
-    },
-    // Removes a rule from the `openRules` array
-    removeOpenRule: function (ruleId) {
-      const ruleIndex = this.openRuleIds.findIndex((id) => id == ruleId);
-      // Guard from rule not found
-      if (ruleIndex == -1) {
-        return;
-      }
-      this.openRuleIds.splice(ruleIndex, 1);
-
-      // Handle edge case where closed rule is the currently selected rule
-      if (ruleId == this.selectedRuleId) {
-        this.$emit("ruleSelected", null);
-      }
+    ruleDeselected: function (rule) {
+      this.$emit("ruleDeselected", rule.id);
     },
     // Helper to sort rules by ID
-    sortById(rule1, rule2) {
-      if (this.formatRuleId(rule1.id).toLowerCase() < this.formatRuleId(rule2.id).toLowerCase()) {
+    compareRules(rule1, rule2) {
+      let rule1Comp = rule1.id;
+      let rule2Comp = rule2.id;
+      if (rule1Comp < rule2Comp) {
         return -1;
       }
-      if (this.formatRuleId(rule1.id).toLowerCase() > this.formatRuleId(rule2.id).toLowerCase()) {
+      if (rule1Comp > rule2Comp) {
         return 1;
       }
       return 0;
