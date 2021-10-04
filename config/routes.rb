@@ -9,6 +9,7 @@ Rails.application.routes.draw do
   resources :users, only: %i[index create update destroy]
   resources :srgs, only: %i[index create destroy], controller: 'security_requirements_guides'
 
+  resources :components, only: %i[index new]
   resources :projects do
     resources :project_members, only: %i[create update destroy]
     resources :components, only: %i[create destroy], shallow: true

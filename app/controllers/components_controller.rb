@@ -6,7 +6,19 @@
 class ComponentsController < ApplicationController
   before_action :set_project, only: %i[create]
   before_action :set_component, only: %i[destroy]
-  before_action :authorize_admin_project
+  before_action :authorize_admin_project, only: %i[create destroy]
+  before_action :authorize_logged_in, only: %i[index]
+
+  def index
+    @projects = current_user.available_projects.components.alphabetical
+  end
+
+  def new
+    @srgs = SecurityRequirementsGuide.latest.map do |srg|
+      srg['title'] = "#{srg['title']} #{srg['version']}"
+      srg
+    end
+  end
 
   def create
     # If not an Vulcan admin, then we must ensure that the current_user has

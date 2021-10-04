@@ -1,0 +1,8 @@
+- content_for :assets do
+  = javascript_pack_tag 'new_component'
+  = stylesheet_pack_tag 'new_component'
+
+#NewComponent
+  %NewComponent{                    |
+    'v-bind:srgs': @srgs.to_json, |
+  }

@@ -11,7 +11,8 @@ class Project < ApplicationRecord
                         },
              class_name: :SecurityRequirementsGuide,
              foreign_key: 'security_requirements_guide_id',
-             inverse_of: 'projects'
+             inverse_of: 'projects',
+             optional: true
   has_many :project_members, -> { includes :user }, inverse_of: 'project', dependent: :destroy
   has_many :users, through: :project_members
   has_many :rules, dependent: :destroy
@@ -21,9 +22,9 @@ class Project < ApplicationRecord
   # Expect rules to touch the project when they are updated
   after_touch :update_rule_status_counters
 
-  validates_with PrefixValidator
+  validates_with PrefixValidator, if: -> { prefix.present? }
 
-  validates :name, :prefix, :based_on, presence: true
+  validates :name, presence: true
 
   has_many :components, dependent: :destroy
   has_many :component_projects, through: :components, source: :child_project
@@ -60,9 +61,7 @@ class Project < ApplicationRecord
   end
 
   def as_json(options = {})
-    # Grab all requested methods and the `component?` method
-    methods = (options[:methods] || []) + %i[component?]
-    super(options.merge({ methods: methods }))
+    super(options).merge({ component: component? })
   end
 
   # Helper that tells if the project is a component
@@ -86,23 +85,22 @@ class Project < ApplicationRecord
   ##
   # Get a list of projects that can be added as components to this project
   def available_components
-    return [] unless Component.where(child_project_id: id).count.zero?
+    # Components cannot contain components
+    return [] if component?
 
-    projects = Project.where.not(
-      id: [id] + component_projects.pluck(:child_project_id) + Component.pluck(:project_id)
-    )
-    # If there is a current user and they are not an admin,
-    # then we should filter down to only the projects that they are a member of.
-    if current_user && !current_user.admin
-      allowed_project_ids = ProjectMember.where(user_id: current_user.id).pluck(:id)
-      projects = projects.where(id: allowed_project_ids)
-    end
+    projects = current_user.available_projects
+                           .components
+                           .alphabetical
+                           .where.not(id: component_projects.pluck(:child_project_id))
     projects.pluck(:id).map { |pid| Component.new(project_id: id, child_project_id: pid) }
   end
 
   private
 
   def update_rule_status_counters
+    # Projects are not expected to have rules
+    return unless component?
+
     sql_counts = rules.group('review_requestor_id IS NOT NULL', :locked).count
     update(
       in_development_rule_count: sql_counts[[false, false]] || 0,
