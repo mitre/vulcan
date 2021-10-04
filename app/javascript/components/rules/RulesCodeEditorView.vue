@@ -6,7 +6,9 @@
         :selected-rule-id="selectedRuleId"
         :project-prefix="project.prefix"
         :project-permissions="projectPermissions"
+        :open-rule-ids="openRuleIds"
         @ruleSelected="handleRuleSelected($event)"
+        @ruleDeselected="handleRuleDeselected($event)"
       />
     </div>
 
@@ -16,6 +18,7 @@
           :rule="selectedRule()"
           :project-prefix="project.prefix"
           :project-permissions="projectPermissions"
+          @ruleSelected="handleRuleSelected($event)"
         />
 
         <hr />
@@ -56,6 +59,7 @@ import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
 import RuleHistories from "./RuleHistories.vue";
 import RuleReviews from "./RuleReviews.vue";
+import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
 
 export default {
   name: "RulesCodeEditorView",
@@ -66,6 +70,7 @@ export default {
     RuleHistories,
     RuleReviews,
   },
+  mixins: [SelectedRulesMixin],
   props: {
     projectPermissions: {
       type: String,
@@ -90,54 +95,6 @@ export default {
     severities: {
       type: Array,
       required: true,
-    },
-  },
-  data: function () {
-    return {
-      selectedRuleId: null, // Integer for rule id
-    };
-  },
-  computed: {
-    selectedRuleIdKey: function () {
-      return `selectedRuleId-${this.project.id}`;
-    },
-    lastEditor: function () {
-      const histories = this.selectedRule().histories;
-      if (histories.length > 0) {
-        return histories[histories.length - 1].name;
-      }
-      return "Unknown User";
-    },
-  },
-  watch: {
-    selectedRuleId: function (_) {
-      localStorage.setItem(this.selectedRuleIdKey, JSON.stringify(this.selectedRuleId));
-    },
-  },
-  mounted: function () {
-    // Persist `selectedRuleId` across page loads
-    if (localStorage.getItem(this.selectedRuleIdKey)) {
-      try {
-        this.selectedRuleId = JSON.parse(localStorage.getItem(this.selectedRuleIdKey));
-      } catch (e) {
-        localStorage.removeItem(this.selectedRuleIdKey);
-      }
-    }
-  },
-  methods: {
-    // This should not be a computed property because it has side effects when
-    // the selected rule ID does not actually exist
-    selectedRule: function () {
-      const foundRule = this.rules.find((rule) => rule.id == this.selectedRuleId);
-      if (foundRule) {
-        return foundRule;
-      }
-
-      this.selectedRuleId = null;
-      return null;
-    },
-    handleRuleSelected: function (event) {
-      this.selectedRuleId = event;
     },
   },
 };
