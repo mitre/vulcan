@@ -24,9 +24,9 @@
     <b-row>
       <b-col md="10" class="border-right">
         <!-- Tab view for project information -->
-        <b-tabs content-class="mt-3" justified>
+        <b-tabs v-model="projectTabIndex" content-class="mt-3" justified>
           <!-- Project rules -->
-          <b-tab :title="`Controls (${project.rules.length})`" active>
+          <b-tab :title="`Controls (${project.rules.length})`">
             <b-button
               v-if="project_permissions"
               class="m-2"
@@ -67,18 +67,13 @@
             v-if="project_permissions"
             :title="`Project Members (${project.project_members.length})`"
           >
-            <b-button
-              v-if="project_permissions == 'admin'"
-              class="m-2"
-              variant="primary"
-              :href="`/projects/${project.id}/project_members`"
-            >
-              Manage Project Members
-            </b-button>
             <ProjectMembersTable
+              :editable="project_permissions == 'admin'"
               :project="project"
               :project_members="project.project_members"
               :project_members_count="project.project_members.length"
+              :available_members="available_members"
+              :available_roles="available_roles"
             />
           </b-tab>
         </b-tabs>
@@ -166,12 +161,21 @@ export default {
       type: Array,
       required: true,
     },
+    available_members: {
+      type: Array,
+      required: true,
+    },
+    available_roles: {
+      type: Array,
+      required: true,
+    },
   },
   data: function () {
     return {
       showMetadata: true,
       showHistory: true,
       project: this.initialProjectState,
+      projectTabIndex: 0,
     };
   },
   computed: {
@@ -199,6 +203,29 @@ export default {
         },
       ];
     },
+  },
+  watch: {
+    projectTabIndex: function (_) {
+      localStorage.setItem(
+        `projectTabIndex-${this.project.id}`,
+        JSON.stringify(this.projectTabIndex)
+      );
+    },
+  },
+  mounted: function () {
+    // Persist `currentTab` across page loads
+    if (localStorage.getItem(`projectTabIndex-${this.project.id}`)) {
+      try {
+        this.$nextTick(
+          () =>
+            (this.projectTabIndex = JSON.parse(
+              localStorage.getItem(`projectTabIndex-${this.project.id}`)
+            ))
+        );
+      } catch (e) {
+        localStorage.removeItem(`projectTabIndex-${this.project.id}`);
+      }
+    }
   },
   methods: {
     refreshProject: function () {

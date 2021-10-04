@@ -17,7 +17,7 @@ class ProjectMembersController < ApplicationController
     else
       flash.alert = "Unable to create project member. #{project_member.errors.full_messages}"
     end
-    redirect_to action: 'index'
+    redirect_to @project
   end
 
   def update
@@ -26,7 +26,7 @@ class ProjectMembersController < ApplicationController
     else
       flash.alert = "Unable to updated project member. #{@project_member.errors.full_messages}"
     end
-    redirect_to action: 'index'
+    redirect_to @project_member.project
   end
 
   def destroy
@@ -35,7 +35,7 @@ class ProjectMembersController < ApplicationController
     else
       flash.alert = "Unable to remove project member. #{@project_member.errors.full_messages}"
     end
-    redirect_to action: 'index'
+    redirect_to @project_member.project
   end
 
   private

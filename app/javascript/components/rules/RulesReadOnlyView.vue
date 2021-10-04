@@ -32,9 +32,9 @@
     </template>
 
     <template v-else>
-      <div class="col-10">
+      <div class="col-9">
         <p class="text-center">
-          No control currently selected. Select a control on the left to view or edit.
+          No control currently selected. Select a control on the left to view.
         </p>
       </div>
     </template>

@@ -9,7 +9,8 @@ class ProjectsController < ApplicationController
   before_action :set_project, only: %i[show update destroy]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
-  before_action :authorize_logged_in, only: %i[index]
+  before_action :authorize_logged_in, only: %i[index new create]
+  before_action :authorize_author_project, only: %i[show]
 
   def index
     @projects = current_user.available_projects.alphabetical
