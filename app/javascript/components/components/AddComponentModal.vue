@@ -47,7 +47,7 @@
       <template v-if="selectedComponent">
         <ComponentCard :component="selectedComponent" />
         <span class="text-danger clickable float-right mr-3" @click="chooseAnotherProject"
-          >Choose a different project</span
+          >Choose a different component</span
         >
       </template>
     </b-modal>

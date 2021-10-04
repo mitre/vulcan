@@ -4,7 +4,15 @@
 class Project < ApplicationRecord
   attr_accessor :current_user
 
-  audited except: %i[id created_at updated_at project_members_count], max_audits: 1000
+  audited except: %i[
+    id
+    created_at
+    updated_at
+    project_members_count
+    in_development_rule_count
+    under_review_rule_count
+    locked_rule_count
+  ], max_audits: 1000
 
   belongs_to :based_on, lambda {
                           select(:srg_id, :title, :version)
@@ -86,7 +94,7 @@ class Project < ApplicationRecord
   # Get a list of projects that can be added as components to this project
   def available_components
     # Components cannot contain components
-    return [] if component?
+    return [] if component? || current_user.nil?
 
     projects = current_user.available_projects
                            .components

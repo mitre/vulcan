@@ -12,7 +12,7 @@ class Component < ApplicationRecord
             },
             presence: true
   validates :child_project_id, presence: true
-  validate :no_circular_dependencies, :enforce_one_level_deep
+  validate :no_circular_dependencies, :enforce_one_level_deep, :parent_cannot_be_a_component, :child_cannot_be_a_project
 
   ##
   # Override `as_json` to include dependent records
@@ -32,6 +32,18 @@ class Component < ApplicationRecord
   end
 
   private
+
+  def parent_cannot_be_a_component
+    return unless project.component?
+
+    errors.add(:base, 'Parent in component relationship cannot be a component')
+  end
+
+  def child_cannot_be_a_project
+    return if child_project.component?
+
+    errors.add(:base, 'Child in component relationship cannot be a project')
+  end
 
   ##
   # Ensure that project relationships are just one level deep
