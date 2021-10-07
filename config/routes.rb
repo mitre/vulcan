@@ -11,16 +11,16 @@ Rails.application.routes.draw do
 
   resources :projects do
     resources :project_members, only: %i[create update destroy]
-    resources :components, only: %i[create destroy], shallow: true
-    resources :rules, shallow: true do
-      post 'manage_lock', on: :member
-      post 'revert', on: :member
-      resources :comments, only: %i[create]
-      resources :reviews, only: %i[create]
+    resources :components, only: %i[show create update destroy], shallow: true do
+      resources :rules, only: %i[index show create update destroy], shallow: true do
+        post 'revert', on: :member
+        resources :comments, only: %i[create]
+        resources :reviews, only: %i[create]
+      end
     end
   end
   # Alias rules#index to controls for convenience
-  get '/projects/:project_id/controls', to: 'rules#index'
+  get '/components/:component_id/controls', to: 'rules#index'
 
   root to: 'hello#index'
   get 'hello/index'

@@ -6,6 +6,7 @@
 
     <RulesCodeEditorView
       :project="project"
+      :component="component"
       :rules="reactiveRules"
       :statuses="statuses"
       :severities="severities"
@@ -39,6 +40,10 @@ export default {
       type: Object,
       required: true,
     },
+    component: {
+      type: Object,
+      required: true,
+    },
     rules: {
       type: Array,
       required: true,
@@ -67,6 +72,10 @@ export default {
         {
           text: this.project.name,
           href: "/projects/" + this.project.id,
+        },
+        {
+          text: this.component.version,
+          href: "/components/" + this.component.id,
         },
         {
           text: "Controls",
@@ -116,7 +125,7 @@ export default {
      */
     createRule: function (rule, successCallback = null) {
       axios
-        .post(`/projects/${this.project.id}/rules`, { rule: rule })
+        .post(`/components/${this.component.id}/rules`, { rule: rule })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.ruleFetchSuccess(response);

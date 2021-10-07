@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
   rescue_from NotAuthorizedError, with: :not_authorized
 
   def set_project_permissions
-    @project_permissions = current_user&.project_permissions(@project)
+    @project_permissions = current_user&.effective_permissions(@project)
   end
 
   def authorize_logged_in

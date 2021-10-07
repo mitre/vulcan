@@ -4,144 +4,75 @@ require 'rails_helper'
 
 RSpec.describe Component, type: :model do
   before :each do
-    @circular_err = 'Relationship would create a circular dependency among components'
-    @duplicate_err = 'already has this component'
-    @parent_depth_err = 'Component relationship is too deep due to parent project'
-    @child_depth_err = 'Component relationship is too deep due to child project'
-
-    srg_xml = file_fixture('U_Web_Server_V2R3_Manual-xccdf.xml').read
+    srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
-    srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
+    @srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
     srg.xml = srg_xml
     srg.save!
 
-    @p0 = Project.create(name: 'P0', prefix: 'AAAA-00', based_on: srg)
-    @p1 = Project.create(name: 'P1', prefix: 'AAAA-00', based_on: srg)
-    @p2 = Project.create(name: 'P2', prefix: 'AAAA-00', based_on: srg)
-    @p3 = Project.create(name: 'P3', prefix: 'AAAA-00', based_on: srg)
-    @p4 = Project.create(name: 'P4', prefix: 'AAAA-00', based_on: srg)
-    @p5 = Project.create(name: 'P5', prefix: 'AAAA-00', based_on: srg)
-    @p6 = Project.create(name: 'P6', prefix: 'AAAA-00', based_on: srg)
-    @p7 = Project.create(name: 'P7', prefix: 'AAAA-00', based_on: srg)
-    @p8 = Project.create(name: 'P8', prefix: 'AAAA-00', based_on: srg)
-
-    # Representation of the created graph
-    # Note that not all relationships are "downward"
-    # - P8 => P5
-    # - P8 => P7
-    #
-    #     P1      P2
-    #       \    /   \
-    #         P3      P4
-    #       /   \    /
-    #     P5      P6
-    #    /   \  /
-    # P7 ---- P8
-    # Commented out components can be used if component depth constraint is lifted
-    Component.create(project: @p1, child_project: @p3)
-    # Component.create(project: @p2, child_project: @p3)
-    # Component.create(project: @p2, child_project: @p4)
-    # Component.create(project: @p3, child_project: @p5)
-    # Component.create(project: @p3, child_project: @p6)
-    # Component.create(project: @p4, child_project: @p6)
-    # Component.create(project: @p5, child_project: @p7)
-    # Component.create(project: @p6, child_project: @p8)
-    # Component.create(project: @p8, child_project: @p5)
-    # Component.create(project: @p8, child_project: @p7)
+    @p1 = Project.create(name: 'Photon OS 3')
+    @p1_c1 = Component.create(project: @p1, version: 'Photon OS 3  V1R1', prefix: 'PHOS-03')
   end
 
-  context 'enforced component depth of 1' do
-    it 'blocks parent depth with P3 => P6' do
-      component = Component.new(project: @p3, child_project: @p6)
-      component.valid?
-      expect(component.errors[:base]).to include(@parent_depth_err)
-    end
-
-    it 'blocks child depth with P0 => P1' do
-      component = Component.new(project: @p0, child_project: @p1)
-      component.valid?
-      expect(component.errors[:base]).to include(@child_depth_err)
-    end
-
-    it 'Project#available_components are all valid' do
-      Component.create(project: @p2, child_project: @p3)
-      Component.create(project: @p6, child_project: @p8)
-      Component.create(project: @p5, child_project: @p3)
-      Component.create(project: @p5, child_project: @p7)
-
-      Project.all.each do |project|
-        project.available_components.each do |component|
-          expect(component.valid?).to eq(true)
-        end
-      end
-    end
-
-    it 'Projects.all - Project#available_components are all NOT valid' do
-      Component.create(project: @p2, child_project: @p3)
-      Component.create(project: @p6, child_project: @p8)
-      Component.create(project: @p5, child_project: @p3)
-      Component.create(project: @p5, child_project: @p7)
-
-      Project.all.each do |project|
-        Project.where.not(id: project.available_components.map(&:child_project_id)).each do |child_project|
-          component = Component.new(project: project, child_project: child_project)
-          expect(component.valid?).to eq(false)
-        end
-      end
+  context 'component_id validation' do
+    it 'should not allow component to overlay itself' do
+      expect(@p1_c1.valid?).to eq(true)
+      @p1_c1.component_id = @p1_c1.id
+      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1r1.errors[:component_id]).to include('cannot overlay itself')
     end
   end
 
-  context 'no duplicates allowed' do
-    it 'blocks P1 => P3' do
-      component = Component.new(project: @p1, child_project: @p3)
-      component.valid?
-      expect(component.errors[:project_id]).to include(@duplicate_err)
+  context 'prefix validation' do
+    it 'should not be nil or blank' do
+      expect(@p1_c1.valid?).to eq(true)
+
+      @p1_c1.prefix = nil
+      expect(@p1_c1.valid?).to eq(false)
+
+      @p1_c1.prefix = ''
+      expect(@p1_c1.valid?).to eq(false)
+
+      @p1_c1.prefix = '      '
+      expect(@p1_c1.valid?).to eq(false)
     end
 
-    # Commented out tests can be used if component depth constraint is lifted
-    # it 'blocks P5 => P7' do
-    #   component = Component.new(project: @p5, child_project: @p7)
-    #   component.valid?
-    #   expect(component.errors[:project_id]).to include(@duplicate_err)
-    # end
+    it 'should validate format' do
+      expect(@p1_c1.valid?).to eq(true)
+
+      @p1_c1.prefix = '1111-AA'
+      expect(@p1_c1.valid?).to eq(false)
+
+      @p1_c1.prefix = 'AAAA00'
+      expect(@p1_c1.valid?).to eq(false)
+
+      @p1_c1.prefix = 'AAA1-00'
+      expect(@p1_c1.valid?).to eq(false)
+
+      @p1_c1.prefix = ' AAAA-00 '
+      expect(@p1_c1.valid?).to eq(false)
+    end
   end
 
-  # Commented out tests can be used if component depth constraint is lifted
-  context 'no circular dependencies allowed' do
-    it 'blocks P1 => P1' do
-      component = Component.new(project: @p1, child_project: @p1)
-      component.valid?
-      expect(component.errors[:base]).to include(@circular_err)
+  context 'component creation' do
+    it 'can duplicate a component under the same project' do
+      @p1_c1.from_mapping(@srg)
+      @p1_c1.reload
+
+      p1_c2 = p1_c1.duplicate(version: 'Photon OS 3 V1R2')
+      # should have the same number of rules
+      expect(@p1_c1.rules.count).to eq(p1_c2.rules.count)
+      # should still belong to the same SRG
+      expect(@p1_c1.security_requirements_guide_id).to eq(p1_c2.security_requirements_guide_id)
+      # should still belong to the same project
+      expect(@p1_c1.project_id).to eq(p1_c2.project_id)
     end
 
-    it 'blocks P3 => P1' do
-      component = Component.new(project: @p1, child_project: @p1)
-      component.valid?
-      expect(component.errors[:base]).to include(@circular_err)
+    it 'can create a new component from a base SRG' do
+      @p1_c1.from_mapping(@srg)
+      @p1_c1.reload
+      byebug # dont know how many in SRG - just should be above 0
+      expect(@p1_c1.rules.count).to eq(99)
     end
-
-    # it 'blocks P8 => P4' do
-    #   component = Component.new(project: @p8, child_project: @p4)
-    #   component.valid?
-    #   expect(component.errors[:base]).to include(@circular_err)
-    # end
-
-    # it 'blocks P8 => P2' do
-    #   component = Component.new(project: @p8, child_project: @p2)
-    #   component.valid?
-    #   expect(component.errors[:base]).to include(@circular_err)
-    # end
-
-    # it 'blocks P5 => P8' do
-    #   component = Component.new(project: @p5, child_project: @p8)
-    #   component.valid?
-    #   expect(component.errors[:base]).to include(@circular_err)
-    # end
-
-    # it 'blocks P6 => P1' do
-    #   component = Component.new(project: @p6, child_project: @p1)
-    #   component.valid?
-    #   expect(component.errors[:base]).to include(@circular_err)
-    # end
   end
 end

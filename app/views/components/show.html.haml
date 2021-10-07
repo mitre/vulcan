@@ -1,0 +1,13 @@
+- content_for :assets do
+  = javascript_pack_tag 'project_component'
+  = stylesheet_pack_tag 'project_component'
+
+#projectcomponent
+  %projectcomponent{                                                                |
+    'v-bind:project_permissions': @project_permissions.to_json,                     |
+    'v-bind:initial-component-state': @component_json,                              |
+    'v-bind:project': @project_json,                                                |
+    'v-bind:current_user_id': current_user.id.to_json,                              |
+    'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |
+    'v-bind:severities': RuleConstants::SEVERITIES.to_json,                         |
+  }

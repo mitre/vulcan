@@ -4,7 +4,7 @@
       <RuleNavigator
         :rules="rules"
         :selected-rule-id="selectedRuleId"
-        :project-prefix="project.prefix"
+        :project-prefix="component.prefix"
         :project-permissions="projectPermissions"
         :open-rule-ids="openRuleIds"
         @ruleSelected="handleRuleSelected($event)"
@@ -16,7 +16,7 @@
       <div class="col-10">
         <RuleEditorHeader
           :rule="selectedRule()"
-          :project-prefix="project.prefix"
+          :project-prefix="component.prefix"
           :project-permissions="projectPermissions"
           @ruleSelected="handleRuleSelected($event)"
         />
@@ -81,6 +81,10 @@ export default {
       required: true,
     },
     project: {
+      type: Object,
+      required: true,
+    },
+    component: {
       type: Object,
       required: true,
     },

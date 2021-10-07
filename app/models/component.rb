@@ -1,76 +1,116 @@
 # frozen_string_literal: true
 
-# Component are home to a collection of Rules and are managed by Users.
+# Components are home to a collection of Rules.
 class Component < ApplicationRecord
+  amoeba do
+    include_association :rules
+  end
+
+  audited except: %i[id created_at updated_at], max_audits: 1000
+
   belongs_to :project, inverse_of: :components
-  belongs_to :child_project, class_name: 'Project', inverse_of: :parent_components
+  belongs_to :based_on,
+             lambda {
+               select(:srg_id, :title, :version)
+             },
+             class_name: :SecurityRequirementsGuide,
+             foreign_key: 'security_requirements_guide_id',
+             inverse_of: 'projects'
+  has_many :rules, dependent: :destroy
+  belongs_to :component, class_name: 'Component', inverse_of: :child_components, optional: true
+  has_many :child_components, class_name: 'Component', inverse_of: :component, dependent: :destroy
 
-  validates :project_id,
-            uniqueness: {
-              scope: :child_project_id,
-              message: 'already has this component'
-            },
-            presence: true
-  validates :child_project_id, presence: true
-  validate :no_circular_dependencies, :enforce_one_level_deep
+  after_create :import_srg_rules
 
-  ##
-  # Override `as_json` to include dependent records
-  #
+  validates_with PrefixValidator
+  validates :prefix, :based_on, presence: true
+  validate :associated_component_must_be_released,
+           :rules_must_be_locked_to_release_component,
+           :cannot_unrelease_component
+
   def as_json(options = {})
-    project_admin = ProjectMember.find_by(project_id: child_project_id)&.user
-    child = child_project
-    super.merge(
+    methods = (options[:methods] || []) + %i[releasable]
+    super(options.merge(methods: methods)).merge(
       {
-        child_project_name: child.name,
-        project_admin_name: project_admin&.name,
-        project_admin_email: project_admin&.email,
-        rule_count: Rule.where(project_id: child_project_id).count,
-        based_on: child.based_on
+        based_on_title: based_on.title,
+        based_on_version: based_on.version,
+        rule_count: rules.size
       }
     )
   end
 
+  def releasable
+    # If already released, then it cannot be released again
+    return false if released_was
+
+    # If all rules are locked, then component may be released
+    rules.where(locked: false).size.zero?
+  end
+
+  def duplicate(new_version: nil)
+    new_component = amoeba_dup
+    new_component.version = new_version if new_version
+    new_component
+  end
+
+  # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
+  def from_mapping(benchmark)
+    benchmark = Xccdf::Benchmark.parse(benchmark.xml)
+    rule_models = benchmark.rule.map do |rule|
+      Rule.from_mapping(rule, id)
+    end
+    # Examine import results for failures
+    success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
+    reload if success
+    errors.add(:base, 'Some rules failed to import successfully for the component.')
+    success
+  rescue StandardError => e
+    message = e.message[0, 50]
+    message += '...' if e.message.size >= 50
+    errors.add(:base, "Encountered and error when importing rules from the SRG: #{message}")
+    false
+  end
+
+  def prefix=(val)
+    self[:prefix] = val.upcase
+  end
+
   private
 
-  ##
-  # Ensure that project relationships are just one level deep
-  #
-  # i.e. (P1 => P2, P1 => P3) is OK
-  #      (P1 => P2, P2 => P3) is NOT OK
-  def enforce_one_level_deep
-    # Parent project cannot have any parents
-    unless project.parent_components.size.zero?
-      errors.add(:base, 'Component relationship is too deep due to parent project')
-    end
+  def import_srg_rules
+    # We assume that we will automatically add the SRG rules within the transaction of the inital creation
+    # if the `component_id` is `nil` and if `security_requirements_guide_id` if present
+    return unless component_id.nil? && security_requirements_guide_id.present?
 
-    # Child project cannot have any children
-    return if child_project.components.size.zero?
+    # Break early if all rules imported without any issues
+    return if from_mapping(SecurityRequirementsGuide.find(security_requirements_guide_id))
 
-    errors.add(:base, 'Component relationship is too deep due to child project')
+    raise ActiveRecord::RecordInvalid, self
   end
 
-  ##
-  # Ensure that the relationship does not create any circular dependencies between projects
-  #
-  # Follow the child and subseqent children and ensure that the parent is not arrived at
-  def no_circular_dependencies
-    # For unknown reasons, the `.any?` call in true_if_parent_reached causes the `component_projects`
-    # attribute of the child_project to be cleared out when directly passing `child_project` as an argument.
-    # Workaround is to do a `Project.find` to get a copy of that project
-    return unless true_if_parent_reached(Project.find(child_project_id))
+  def cannot_unrelease_component
+    # Error if component was released and has been changed to released = false
+    return unless released_was && !released
 
-    errors.add(:base, 'Relationship would create a circular dependency among components')
+    errors.add(:base, 'Cannot unrelease a released component')
   end
 
-  ##
-  # Recursive helper function for no_circular_dependencies
-  #
-  # This is currently expensive for DB queries if relevant relationships are not pre-loaded somehow
-  # - one optimization may be explicitly only selecting `id` from the projects table
-  def true_if_parent_reached(n_child_project)
-    return true if n_child_project.id == project_id
+  def associated_component_must_be_released
+    # If this isn't an imported component, then skip this vaildation
+    return if component_id.nil? || component.released
 
-    n_child_project.component_projects.any? { |component_project| true_if_parent_reached(component_project) }
+    errors.add(:base, 'Cannot depend on a component that has not been released')
+  end
+
+  # All rules associated with the component should be in a locked state in order
+  # for the component to be released.
+  def rules_must_be_locked_to_release_component
+    # If rule is not released, then skip this validation
+    return unless released
+
+    # If rule is releasable, then this validation passes
+    return if releasable
+
+    errors.add(:base, 'Cannot release a component that contains rules that are not yet locked')
   end
 end

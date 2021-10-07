@@ -5,7 +5,7 @@
         :rules="rules"
         :selected-rule-id="selectedRuleId"
         :project-permissions="projectPermissions"
-        :project-prefix="project.prefix"
+        :project-prefix="component.prefix"
         :read-only="true"
         :open-rule-ids="openRuleIds"
         @ruleSelected="handleRuleSelected($event)"
@@ -18,7 +18,7 @@
         <RuleEditorHeader
           :rule="selectedRule()"
           :project-permissions="projectPermissions"
-          :project-prefix="project.prefix"
+          :project-prefix="component.prefix"
           :read-only="true"
         />
         <hr />
@@ -64,7 +64,7 @@ export default {
       type: Number,
       required: true,
     },
-    project: {
+    component: {
       type: Object,
       required: true,
     },

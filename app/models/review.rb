@@ -30,7 +30,7 @@ class Review < ApplicationRecord
   ##
   # Helper to fetch the permissions the reviewing user has on the review's project
   def project_permissions
-    user.project_permissions(rule.project)
+    user.effective_permissions(rule.component)
   end
 
   def validate_project_permissions

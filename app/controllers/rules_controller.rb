@@ -5,13 +5,14 @@
 #
 class RulesController < ApplicationController
   before_action :set_rule, only: %i[show update destroy revert]
+  before_action :set_component, only: %i[index show create update revert]
   before_action :set_project, only: %i[index show create update revert]
   before_action :set_project_permissions, only: %i[index]
   before_action :authorize_author_project, only: %i[index show update revert]
   before_action :authorize_admin_project, only: %i[destroy]
 
   def index
-    @rules = @project.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
+    @rules = @component.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
   end
 
   def show
@@ -83,7 +84,7 @@ class RulesController < ApplicationController
       rule
     elsif authorize_admin_project.nil?
       Rule.new(rule_create_params.except(:duplicate).merge({
-                                                             project: @project,
+                                                             component: @component,
                                                              status: 'Not Yet Determined',
                                                              rule_severity: 'unknown'
                                                            }))
@@ -121,12 +122,20 @@ class RulesController < ApplicationController
     @rule = Rule.find(params[:id])
   end
 
+  def set_component
+    @component = if @rule
+                   @rule.component
+                 else
+                   Component.find(params[:component_id] || params.dig(:rule, :component_id))
+                 end
+  end
+
   def set_project
-    @project = if @rule
-                 @rule.project
+    @project = if @component
+                 @component.project
                else
                  Project.includes({ rules: %i[reviews checks disa_rule_descriptions rule_descriptions] })
-                        .find(params[:project_id] || params[:rule][:project_id])
+                        .find(@component.project_id || params[:project_id] || params.dig(:rule, :project_id))
                end
   end
 end

@@ -52,13 +52,19 @@ class User < ApplicationRecord
   ##
   # Get the effective permissions on a specific project for the user
   #
-  def project_permissions(project)
-    return nil if project.nil?
+  def effective_permissions(project_or_component)
+    return nil if project_or_component.nil?
 
     return 'admin' if admin
 
-    # Use the project ID to find ProjectMember permissions
-    project = project.id if project.is_a? Project
-    ProjectMember.where(project_id: project).find_by(user_id: id)&.role
+    member_search_ids = case project_or_component
+                        when Project
+                          [project_or_component.id]
+                        when Component
+                          [project_or_component.project_id]
+                        else
+                          []
+                        end
+    ProjectMember.where(project_id: member_search_ids).find_by(user_id: id)&.role
   end
 end

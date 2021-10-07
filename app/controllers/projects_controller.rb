@@ -21,7 +21,7 @@ class ProjectsController < ApplicationController
     # projects that a user has permissions to access
     @project.current_user = current_user
     @project_json = @project.to_json(
-      methods: %i[histories project_members metadata components rules available_components based_on]
+      methods: %i[histories project_members metadata components available_components]
     )
     respond_to do |format|
       format.html
