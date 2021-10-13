@@ -24,9 +24,9 @@
         >Based on {{ component.based_on_title }} {{ component.based_on_version }}</b-card-sub-title
       >
       <p>
-        <span v-if="component.project_admin_name">
-          {{ component.project_admin_name }}
-          {{ component.project_admin_email ? `(${component.project_admin_email})` : "" }}
+        <span v-if="component.admin_name">
+          {{ component.admin_name }}
+          {{ component.admin_email ? `(${component.admin_email})` : "" }}
         </span>
         <em v-else>No Project Admin</em>
 

@@ -36,13 +36,41 @@ class Component < ApplicationRecord
 
   def as_json(options = {})
     methods = (options[:methods] || []) + %i[releasable]
+    component_admin = admin
     super(options.merge(methods: methods)).merge(
       {
         based_on_title: based_on.title,
         based_on_version: based_on.version,
-        rule_count: rules.size
+        rule_count: rules.size,
+        admin_name: component_admin&.name,
+        admin_email: component_admin&.email
       }
     )
+  end
+
+  ##
+  # Get a user that has admin permission on the component
+  #
+  # Priority:
+  # - admin on the component itself
+  # - admin on the owning project
+  # - `nil`
+  def admin
+    admin_memberships = Membership.where(
+      membership_type: 'Component',
+      membership_id: id,
+      role: 'admin'
+    ).or(
+      Membership.where(
+        membership_type: 'Project',
+        membership_id: project_id,
+        role: 'admin'
+      )
+    ).includes(:user)
+    admin_component_membership = admin_memberships.select { |member| member.membership_type == 'Component' }
+    admin_project_membership = admin_memberships.select { |member| member.membership_type == 'Project' }
+
+    admin_component_membership&.first&.user || admin_project_membership&.first&.user || nil
   end
 
   def releasable
