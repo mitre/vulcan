@@ -9,8 +9,8 @@ Rails.application.routes.draw do
   resources :users, only: %i[index create update destroy]
   resources :srgs, only: %i[index create destroy], controller: 'security_requirements_guides'
 
+  resources :memberships, only: %i[create update destroy]
   resources :projects do
-    resources :project_members, only: %i[create update destroy]
     resources :components, only: %i[show create update destroy], shallow: true do
       resources :rules, only: %i[index show create update destroy], shallow: true do
         post 'revert', on: :member

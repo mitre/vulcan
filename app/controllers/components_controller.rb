@@ -6,27 +6,21 @@
 class ComponentsController < ApplicationController
   before_action :set_component, only: %i[show update destroy]
   before_action :set_project, only: %i[show create]
-  before_action :set_project_permissions, only: %i[show]
-  before_action :authorize_admin_project, only: %i[create destroy]
-  before_action :authorize_author_project, only: %i[show update]
+  before_action :set_component_permissions, only: %i[show]
+
+  before_action :authorize_admin_project, only: %i[create]
+  before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_author_component, only: %i[update]
+  before_action :authorize_viewer_component, only: %i[show]
 
   def show
     @component_json = @component.to_json(
-      methods: %i[histories rules]
+      methods: %i[histories memberships available_members rules]
     )
     @project_json = @component.project.to_json
   end
 
   def create
-    # If not an Vulcan admin, then we must ensure that the current_user has
-    # sufficient permissions on a component overlay's project.
-    if component_create_params[:component_id] && !current_user.admin
-      overlayed_component_project_id = Component.find_by(id: component_create_params[:component_id]).pluck(:project_id)
-      has_permissions = ProjectMember.find_by(user_id: current_user.id,
-                                              project_id: overlayed_component_project_id).present?
-      raise(NotAuthorizedError, 'You are not authorized to add this component to your project.') unless has_permissions
-    end
-
     component = Component.new(component_create_params.merge({ project: @project }))
     if component.save
       render json: { toast: 'Successfully added component to project.' }

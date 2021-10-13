@@ -44,7 +44,7 @@
 
           <!-- Remove component -->
           <i
-            v-if="component.id"
+            v-if="component.id && effectivePermissions == 'admin'"
             v-b-tooltip.hover
             class="mdi mdi-delete float-right h5 clickable mr-2"
             aria-hidden="true"
@@ -53,7 +53,7 @@
           />
 
           <!-- Duplicate component -->
-          <span class="float-right mr-2">
+          <span v-if="effectivePermissions == 'admin'" class="float-right mr-2">
             <NewComponentModal
               :project_id="component.project_id"
               :predetermined_prefix="component.prefix"
@@ -75,7 +75,7 @@
           </span>
 
           <!-- Release component -->
-          <span v-if="component.id" class="float-right mr-2">
+          <span v-if="component.id && effectivePermissions == 'admin'" class="float-right mr-2">
             <template v-if="component.releasable">
               <i
                 v-b-tooltip.hover

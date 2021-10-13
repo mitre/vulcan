@@ -72,7 +72,7 @@ export default {
   name: "RuleNavigator",
   components: { NewRuleModalForm },
   props: {
-    projectPermissions: {
+    effectivePermissions: {
       type: String,
       required: true,
     },

@@ -1,11 +1,11 @@
 <template>
   <div>
     <!-- Modal trigger button -->
-    <div @click="showModal()">
+    <span @click="showModal()">
       <slot name="opener">
         <b-button class="px-2 m-2" variant="primary"> Create a New Component </b-button>
       </slot>
-    </div>
+    </span>
 
     <!-- Add component modal -->
     <b-modal

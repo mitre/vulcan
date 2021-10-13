@@ -4,7 +4,7 @@
       <RuleNavigator
         :rules="rules"
         :selected-rule-id="selectedRuleId"
-        :project-permissions="projectPermissions"
+        :effective-permissions="effectivePermissions"
         :project-prefix="component.prefix"
         :read-only="true"
         :open-rule-ids="openRuleIds"
@@ -17,7 +17,7 @@
       <div class="col-9">
         <RuleEditorHeader
           :rule="selectedRule()"
-          :project-permissions="projectPermissions"
+          :effective-permissions="effectivePermissions"
           :project-prefix="component.prefix"
           :read-only="true"
         />
@@ -56,7 +56,7 @@ export default {
   },
   mixins: [SelectedRulesMixin],
   props: {
-    projectPermissions: {
+    effectivePermissions: {
       type: String,
       required: true,
     },

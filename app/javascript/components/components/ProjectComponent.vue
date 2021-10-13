@@ -22,7 +22,7 @@
           <!-- Component rules -->
           <b-tab :title="`Controls (${component.rules.length})`">
             <b-button
-              v-if="project_permissions"
+              v-if="role_gte_to(effective_permissions, 'author')"
               class="m-2"
               variant="primary"
               :href="`/components/${component.id}/controls`"
@@ -31,12 +31,25 @@
             </b-button>
 
             <RulesReadOnlyView
-              :project-permissions="project_permissions"
+              :effective-permissions="effective_permissions"
               :current-user-id="current_user_id"
               :component="component"
               :rules="component.rules"
               :statuses="statuses"
               :severities="severities"
+            />
+          </b-tab>
+
+          <!-- Members -->
+          <b-tab v-if="effective_permissions" :title="`Members (${component.memberships_count})`">
+            <MembershipsTable
+              :editable="role_gte_to(effective_permissions, 'admin')"
+              :membership_type="'Component'"
+              :membership_id="component.id"
+              :memberships="component.memberships"
+              :memberships_count="component.memberships_count"
+              :available_members="component.available_members"
+              :available_roles="available_roles"
             />
           </b-tab>
         </b-tabs>
@@ -66,18 +79,21 @@ import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import History from "../shared/History.vue";
 import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
+import MembershipsTable from "../memberships/MembershipsTable.vue";
 
 export default {
   name: "Projectcomponent",
   components: {
     History,
     RulesReadOnlyView,
+    MembershipsTable,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
-    project_permissions: {
+    effective_permissions: {
       type: String,
     },
     initialComponentState: {
@@ -96,6 +112,10 @@ export default {
       required: true,
     },
     severities: {
+      type: Array,
+      required: true,
+    },
+    available_roles: {
       type: Array,
       required: true,
     },

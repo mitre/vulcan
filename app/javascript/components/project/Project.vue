@@ -28,7 +28,7 @@
           <b-tab :title="`Components (${project.components.length})`">
             <h2>Project Components</h2>
             <NewComponentModal
-              v-if="project_permissions == 'admin'"
+              v-if="role_gte_to(effective_permissions, 'admin')"
               :project_id="project.id"
               @projectUpdated="refreshProject"
             />
@@ -36,6 +36,7 @@
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
                 <ComponentCard
                   :component="component"
+                  :effective-permissions="effective_permissions"
                   @deleteComponent="deleteComponent($event)"
                   @projectUpdated="refreshProject"
                 />
@@ -44,7 +45,7 @@
 
             <h2>Overlay Components</h2>
             <AddComponentModal
-              v-if="project_permissions == 'admin'"
+              v-if="role_gte_to(effective_permissions, 'admin')"
               :project_id="project.id"
               :available_components="sortedAvailableComponents"
               @projectUpdated="refreshProject"
@@ -53,6 +54,7 @@
               <b-col v-for="component in sortedOverlayComponents()" :key="component.id">
                 <ComponentCard
                   :component="component"
+                  :effective-permissions="effective_permissions"
                   @deleteComponent="deleteComponent($event)"
                   @projectUpdated="refreshProject"
                 />
@@ -61,16 +63,14 @@
           </b-tab>
 
           <!-- Project members -->
-          <b-tab
-            v-if="project_permissions"
-            :title="`Project Members (${project.project_members.length})`"
-          >
-            <ProjectMembersTable
-              :editable="project_permissions == 'admin'"
-              :project="project"
-              :project_members="project.project_members"
-              :project_members_count="project.project_members.length"
-              :available_members="available_members"
+          <b-tab :title="`Members (${project.memberships_count})`">
+            <MembershipsTable
+              :editable="role_gte_to(effective_permissions, 'admin')"
+              :membership_type="'Project'"
+              :membership_id="project.id"
+              :memberships="project.memberships"
+              :memberships_count="project.memberships_count"
+              :available_members="project.available_members"
               :available_roles="available_roles"
             />
           </b-tab>
@@ -122,8 +122,9 @@ import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import History from "../shared/History.vue";
-import ProjectMembersTable from "../project_members/ProjectMembersTable.vue";
+import MembershipsTable from "../memberships/MembershipsTable.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
@@ -133,15 +134,15 @@ export default {
   name: "Project",
   components: {
     History,
-    ProjectMembersTable,
+    MembershipsTable,
     UpdateMetadataModal,
     ComponentCard,
     AddComponentModal,
     NewComponentModal,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
-    project_permissions: {
+    effective_permissions: {
       type: String,
     },
     initialProjectState: {
@@ -156,10 +157,6 @@ export default {
       required: true,
     },
     severities: {
-      type: Array,
-      required: true,
-    },
-    available_members: {
       type: Array,
       required: true,
     },

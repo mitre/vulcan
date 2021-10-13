@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_11_163149) do
+ActiveRecord::Schema.define(version: 2021_10_12_173448) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -59,6 +59,7 @@ ActiveRecord::Schema.define(version: 2021_10_11_163149) do
     t.bigint "security_requirements_guide_id"
     t.string "version"
     t.boolean "released", default: false, null: false
+    t.integer "memberships_count", default: 0
     t.index ["component_id"], name: "index_components_on_component_id"
     t.index ["project_id"], name: "index_components_on_project_id"
   end
@@ -81,15 +82,16 @@ ActiveRecord::Schema.define(version: 2021_10_11_163149) do
     t.index ["rule_id"], name: "index_disa_rule_descriptions_on_rule_id"
   end
 
-  create_table "project_members", force: :cascade do |t|
+  create_table "memberships", force: :cascade do |t|
     t.bigint "user_id"
-    t.bigint "project_id"
-    t.string "role", default: "author", null: false
+    t.bigint "membership_id"
+    t.string "role", default: "viewer", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["project_id"], name: "index_project_members_on_project_id"
-    t.index ["user_id", "project_id"], name: "by_user_and_project", unique: true
-    t.index ["user_id"], name: "index_project_members_on_user_id"
+    t.string "membership_type"
+    t.index ["membership_id"], name: "index_memberships_on_membership_id"
+    t.index ["user_id", "membership_type", "membership_id"], name: "by_user_and_membership", unique: true
+    t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
   create_table "project_metadata", force: :cascade do |t|
@@ -104,7 +106,7 @@ ActiveRecord::Schema.define(version: 2021_10_11_163149) do
     t.string "name", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.integer "project_members_count", default: 0
+    t.integer "memberships_count", default: 0
   end
 
   create_table "references", force: :cascade do |t|
@@ -208,8 +210,8 @@ ActiveRecord::Schema.define(version: 2021_10_11_163149) do
   end
 
   add_foreign_key "components", "components"
-  add_foreign_key "project_members", "projects"
-  add_foreign_key "project_members", "users"
+  add_foreign_key "memberships", "projects", column: "membership_id"
+  add_foreign_key "memberships", "users"
   add_foreign_key "rules", "components"
   add_foreign_key "rules", "users", column: "review_requestor_id"
 end

@@ -5,7 +5,7 @@
         :rules="rules"
         :selected-rule-id="selectedRuleId"
         :project-prefix="component.prefix"
-        :project-permissions="projectPermissions"
+        :effective-permissions="effectivePermissions"
         :open-rule-ids="openRuleIds"
         @ruleSelected="handleRuleSelected($event)"
         @ruleDeselected="handleRuleDeselected($event)"
@@ -17,7 +17,7 @@
         <RuleEditorHeader
           :rule="selectedRule()"
           :project-prefix="component.prefix"
-          :project-permissions="projectPermissions"
+          :effective-permissions="effectivePermissions"
           @ruleSelected="handleRuleSelected($event)"
         />
 
@@ -33,7 +33,7 @@
           <div class="col-5">
             <RuleReviews
               :rule="selectedRule()"
-              :project-permissions="projectPermissions"
+              :effective-permissions="effectivePermissions"
               :current-user-id="currentUserId"
             />
             <br />
@@ -72,7 +72,7 @@ export default {
   },
   mixins: [SelectedRulesMixin],
   props: {
-    projectPermissions: {
+    effectivePermissions: {
       type: String,
       required: true,
     },

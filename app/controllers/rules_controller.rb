@@ -8,8 +8,8 @@ class RulesController < ApplicationController
   before_action :set_component, only: %i[index show create update revert]
   before_action :set_project, only: %i[index show create update revert]
   before_action :set_project_permissions, only: %i[index]
-  before_action :authorize_author_project, only: %i[index show update revert]
-  before_action :authorize_admin_project, only: %i[destroy]
+  before_action :authorize_author_component, only: %i[index show create update revert]
+  before_action :authorize_admin_component, only: %i[destroy]
 
   def index
     @rules = @component.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)

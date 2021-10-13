@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>{{ project_members_count }} Members</h2>
+    <h2>{{ memberships_count }} Members</h2>
 
     <!-- User search -->
     <div class="row">
@@ -32,8 +32,9 @@
           centered
           :hide-footer="true"
         >
-          <NewProjectMember
-            :project="project"
+          <NewMembership
+            :membership_type="membership_type"
+            :membership_id="membership_id"
             :available_members="available_members"
             :available_roles="available_roles"
           />
@@ -66,7 +67,7 @@
           <select
             v-model="data.item.role"
             class="form-control"
-            name="project_member[role]"
+            name="membership[role]"
             @change="roleChanged($event, data.item)"
           >
             <option v-for="available_role in available_roles" :key="available_role">
@@ -108,19 +109,24 @@
 
 <script>
 import FormMixinVue from "../../mixins/FormMixin.vue";
-import NewProjectMember from "./NewProjectMember.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import NewMembership from "./NewMembership.vue";
 
 export default {
-  name: "ProjectMembersTable",
-  components: { NewProjectMember },
-  mixins: [FormMixinVue],
+  name: "MembershipsTable",
+  components: { NewMembership },
+  mixins: [FormMixinVue, RoleComparisonMixin],
   props: {
-    project_members: {
+    memberships: {
       type: Array,
       required: true,
     },
-    project: {
-      type: Object,
+    membership_type: {
+      type: String,
+      required: true,
+    },
+    membership_id: {
+      type: Number,
       required: true,
     },
     editable: {
@@ -136,7 +142,7 @@ export default {
       required: false,
       default: () => [],
     },
-    project_members_count: {
+    memberships_count: {
       type: Number,
       required: true,
     },
@@ -157,7 +163,7 @@ export default {
     // Search users based on name and email
     searchedProjectMembers: function () {
       let downcaseSearch = this.search.toLowerCase();
-      return this.project_members.filter(
+      return this.memberships.filter(
         (pm) =>
           pm.email.toLowerCase().includes(downcaseSearch) ||
           pm.name.toLowerCase().includes(downcaseSearch)
@@ -179,7 +185,7 @@ export default {
     },
     // Path to POST/DELETE to when updating/deleting a user
     formAction: function (project_member) {
-      return `/projects/${this.project.id}/project_members/${project_member.id}`;
+      return `/memberships/${project_member.id}`;
     },
   },
 };

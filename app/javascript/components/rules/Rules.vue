@@ -10,7 +10,7 @@
       :rules="reactiveRules"
       :statuses="statuses"
       :severities="severities"
-      :project-permissions="project_permissions"
+      :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
     />
   </div>
@@ -28,7 +28,7 @@ export default {
   components: { RulesCodeEditorView },
   mixins: [AlertMixinVue, FormMixinVue],
   props: {
-    project_permissions: {
+    effective_permissions: {
       type: String,
       required: true,
     },

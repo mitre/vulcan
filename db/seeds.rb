@@ -20,6 +20,10 @@ users = []
   users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: '1234567ab!')
 end
 User.import(users)
+User.all.each do |user|
+  user.skip_confirmation!
+  user.save!
+end
 puts 'Created Users'
 
 # ------------------ #
@@ -37,15 +41,15 @@ puts 'Created Projects'
 puts 'Adding Users to Projects...'
 project_members = []
 User.all.each do |user|
-  project_members << ProjectMember.new(user: user, project: photon3)
-  project_members << ProjectMember.new(user: user, project: photon4)
-  project_members << ProjectMember.new(user: user, project: vsphere)
+  project_members << Membership.new(user: user, membership_id: photon3.id, membership_type: 'Project')
+  project_members << Membership.new(user: user, membership_id: photon4.id, membership_type: 'Project')
+  project_members << Membership.new(user: user, membership_id: vsphere.id, membership_type: 'Project')
 end
-ProjectMember.import(project_members)
+Membership.import(project_members)
 puts 'Project Members added'
 
 # Counter cache update
-Project.all.each { |p| Project.reset_counters(p.id, :project_members) }
+Project.all.each { |p| Project.reset_counters(p.id, :memberships_count) }
 
 # -------------- #
 # Seeds for SRGs #
@@ -68,12 +72,38 @@ puts 'Created SRGs'
 # Seeds for Project Components #
 # ---------------------------- #
 puts 'Creating Components...'
-photon3_v1r1 = Component.create!(project: photon3, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: web_srg)
-photon3_v1r1.from_mapping(web_srg)
+photon3_v1r1 = Component.create!(project: photon3, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: gpos_srg)
 photon3_v1r1.reload
-photon4_v1r1 = Component.create!(project: photon4, version: 'Photon OS 3 V1R1', prefix: 'PHOS-04', based_on: web_srg)
-photon4_v1r1.from_mapping(web_srg)
+photon3_v1r1.rules.update(locked: true)
+photon3_v1r1.update(released: true)
+photon3_v1r1.duplicate(new_version: 'Photon OS 3 V1R2').save!
+photon4_v1r1 = Component.create!(project: photon4, version: 'Photon OS 3 V1R1', prefix: 'PHOS-04', based_on: gpos_srg)
 photon4_v1r1.reload
+_photon3_v1r1_overlay = Component.create!(
+  project: vsphere,
+  component_id: photon3_v1r1.id,
+  prefix: photon3_v1r1.prefix,
+  security_requirements_guide_id: photon3_v1r1.security_requirements_guide_id,
+  version: photon3_v1r1.version
+)
+_vcenter_perf_v1r1 = Component.create!(
+  project: vsphere,
+  version: 'vCenter Perf V1R1',
+  prefix: 'VCPF-01',
+  based_on: web_srg
+)
+_vcenter_sts_v1r1 = Component.create!(
+  project: vsphere,
+  version: 'vCenter STS V1R1',
+  prefix: 'VSTS-01',
+  based_on: web_srg
+)
+_vcenter_vami_v1r1 = Component.create!(
+  project: vsphere,
+  version: 'vCenter VAMI V1R1',
+  prefix: 'VAMI-01',
+  based_on: web_srg
+)
 puts 'Created Components'
 
 # rubocop:enable Rails/Output
