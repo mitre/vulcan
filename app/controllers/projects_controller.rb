@@ -29,38 +29,21 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def new
-    @srgs = SecurityRequirementsGuide.latest.map do |srg|
-      srg['title'] = "#{srg['title']} #{srg['version']}"
-      srg
-    end
-  end
+  def new; end
 
   def create
     project = Project.new(
       name: new_project_params[:name],
-      based_on: SecurityRequirementsGuide.find(new_project_params[:srg_id]),
-      prefix: new_project_params[:prefix],
-      project_members_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
+      memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
     )
 
     # First save ensures base Project is acceptable.
     if project.save
-      # Create rules
-      if Project.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
-        redirect_to action: 'index'
-      else
-        project.destroy
-        flash.alert = 'Unable to create project. An error occured parsing the selected SRG'
-        redirect_to action: 'new'
-      end
+      redirect_to project
     else
       flash.alert = "Unable to create project. #{project.errors.full_messages}"
       redirect_to action: 'new'
     end
-  rescue ActiveRecord::RecordNotFound
-    flash.alert = 'Unable to create project. Could not find Security Requirements Guide'
-    redirect_to action: 'new'
   end
 
   # Update project and response with json
@@ -94,7 +77,7 @@ class ProjectsController < ApplicationController
   end
 
   def new_project_params
-    params.require(:project).permit(:name, :prefix, :srg_id)
+    params.require(:project).permit(:name)
   end
 
   def project_params
