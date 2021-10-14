@@ -3,7 +3,10 @@
     <b-breadcrumb :items="breadcrumbs" />
     <b-row class="align-items-center">
       <b-col md="8">
-        <h1>{{ component.version }}</h1>
+        <h1>
+          {{ component.version }}
+          <i v-if="component.released" class="mdi mdi-stamper" aria-hidden="true" />
+        </h1>
       </b-col>
       <b-col md="4" class="text-muted text-md-right">
         <p v-if="lastAudit" class="text-muted mb-1">
@@ -36,6 +39,17 @@
             >
               Edit Component Controls
             </b-button>
+            <span v-b-tooltip.hover :title="releaseComponentTooltip">
+              <b-button
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                class="m-2"
+                variant="success"
+                :disabled="!component.releasable"
+                @click="confirmComponentRelease"
+              >
+                Release Component
+              </b-button>
+            </span>
 
             <RulesReadOnlyView
               :effective-permissions="effective_permissions"
@@ -102,6 +116,7 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import History from "../shared/History.vue";
 import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
 import MembershipsTable from "../memberships/MembershipsTable.vue";
@@ -113,7 +128,13 @@ export default {
     RulesReadOnlyView,
     MembershipsTable,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
+  mixins: [
+    DateFormatMixinVue,
+    AlertMixinVue,
+    FormMixinVue,
+    RoleComparisonMixin,
+    ConfirmComponentReleaseMixin,
+  ],
   props: {
     effective_permissions: {
       type: String,
@@ -175,6 +196,17 @@ export default {
         return "10";
       }
       return "12";
+    },
+    releaseComponentTooltip: function () {
+      if (this.component.released) {
+        return "Component has already been released";
+      }
+
+      if (this.component.releasable) {
+        return "";
+      }
+
+      return "All rules must be locked to release a component";
     },
   },
   watch: {

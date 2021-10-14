@@ -2,7 +2,7 @@
   <div>
     <!-- Modal trigger button -->
     <b-button class="px-2 m-2" variant="primary" @click="showModal()">
-      Import Existing Component
+      Import a Released Component
     </b-button>
 
     <!-- Add component modal -->

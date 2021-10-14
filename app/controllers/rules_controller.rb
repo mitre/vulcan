@@ -12,7 +12,7 @@ class RulesController < ApplicationController
   before_action :authorize_admin_component, only: %i[destroy]
 
   def index
-    @rules = @component.rules.includes(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
+    @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks)
   end
 
   def show

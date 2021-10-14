@@ -45,7 +45,7 @@
               </b-col>
             </b-row>
 
-            <h2>Overlay Components</h2>
+            <h2>Overlayed Components</h2>
             <AddComponentModal
               v-if="role_gte_to(effective_permissions, 'admin')"
               :project_id="project.id"

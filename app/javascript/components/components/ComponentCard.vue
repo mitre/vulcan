@@ -15,7 +15,7 @@
     <b-card class="shadow">
       <b-card-title>
         {{ component.version }}
-        <i v-if="component.released" class="mdi mdi-stamper h5 clickable" aria-hidden="true" />
+        <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
         <!-- Rules count info -->
         <span class="float-right h6">
           {{ component.rules_count }} {{ component.component_id ? "Overlayed" : "" }} Controls
@@ -80,27 +80,13 @@
             v-if="actionable && component.id && effectivePermissions == 'admin'"
             class="float-right mr-2"
           >
-            <template v-if="component.releasable">
+            <span v-b-tooltip.hover :title="releaseComponentTooltip">
               <i
-                v-b-tooltip.hover
-                class="mdi mdi-stamper h5 clickable"
+                :class="releaseComponentClasses"
                 aria-hidden="true"
-                title="Release Component"
                 @click="confirmComponentRelease"
               />
-            </template>
-            <template v-else>
-              <span
-                v-b-tooltip.hover
-                :title="
-                  component.released
-                    ? 'Component has already been released'
-                    : 'All rules must be locked to release a component'
-                "
-              >
-                <i class="mdi mdi-stamper h5 clickable text-muted" aria-hidden="true" />
-              </span>
-            </template>
+            </span>
           </span>
         </span>
       </p>
@@ -109,9 +95,9 @@
 </template>
 
 <script>
-import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 
 export default {
@@ -119,7 +105,7 @@ export default {
   components: {
     NewComponentModal,
   },
-  mixins: [AlertMixinVue, FormMixinVue],
+  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin],
   props: {
     // Indicate if the card is for "read-only" or can take actions against it
     actionable: {
@@ -140,43 +126,24 @@ export default {
       showDeleteConfirmation: false,
     };
   },
-  methods: {
-    confirmComponentRelease: function () {
-      let body = this.$createElement("div", {
-        domProps: {
-          innerHTML:
-            "<p>Are you sure you want to release this component?</p><p>This cannot be undone and will make the component publicly available within Vulcan.</p>",
-        },
-      });
-      this.$bvModal
-        .msgBoxConfirm(body, {
-          title: "Release Component",
-          size: "md",
-          okTitle: "Release Component",
-          cancelTitle: "Cancel",
-          hideHeaderClose: false,
-          centered: true,
-        })
-        .then((value) => {
-          // confirm value was either null or false (clicked away or clicked cancel)
-          if (!value) {
-            return;
-          }
+  computed: {
+    releaseComponentClasses: function () {
+      let classes = ["mdi", "mdi-stamper", "h5", "clickable"];
+      if (!this.component.releasable) {
+        classes.push("text-muted");
+      }
+      return classes;
+    },
+    releaseComponentTooltip: function () {
+      if (this.component.released) {
+        return "Component has already been released";
+      }
 
-          let payload = {
-            component: {
-              released: true,
-            },
-          };
-          axios
-            .patch(`/components/${this.component.id}`, payload)
-            .then((response) => {
-              this.alertOrNotifyResponse(response);
-              this.$emit("projectUpdated");
-            })
-            .catch(this.alertOrNotifyResponse);
-        })
-        .catch((err) => {});
+      if (this.component.releasable) {
+        return "Release Component";
+      }
+
+      return "All rules must be locked to release a component";
     },
   },
 };

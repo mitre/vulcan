@@ -75,7 +75,9 @@ class ComponentsController < ApplicationController
   private
 
   def set_component
-    @component = Component.find(params[:id])
+    @component = Component.eager_load(
+      rules: %i[reviews disa_rule_descriptions rule_descriptions checks]
+    ).find(params[:id])
   end
 
   def set_project
