@@ -10,8 +10,8 @@ RSpec.describe Review, type: :model do
     srg.xml = srg_xml
     srg.save!
     # Create projects
-    @p1 = Project.create(name: 'P1', prefix: 'AAAA-00', based_on: srg)
-    @p2 = Project.create(name: 'P2', prefix: 'BBBB-00', based_on: srg)
+    @p1 = Project.create(name: 'P1')
+    @p2 = Project.create(name: 'P2')
 
     # Create Users
     @admin = create(:user, admin: true)
@@ -21,14 +21,17 @@ RSpec.describe Review, type: :model do
     @other_p_admin = build(:user)
 
     # Give users project roles
-    ProjectMember.create(user: @p_admin, project: @p1, role: 'admin')
-    ProjectMember.create(user: @p_reviewer, project: @p1, role: 'reviewer')
-    ProjectMember.create(user: @p_author, project: @p1, role: 'author')
-    ProjectMember.create(user: @other_p_admin, project: @p2, role: 'admin')
+    Membership.create(user: @p_admin, membership: @p1, role: 'admin')
+    Membership.create(user: @p_reviewer, membership: @p1, role: 'reviewer')
+    Membership.create(user: @p_author, membership: @p1, role: 'author')
+    Membership.create(user: @other_p_admin, membership: @p2, role: 'admin')
+
+    # Create a component
+    @p1_c1 = Component.create!(project: @p1, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: srg)
 
     # Create rules
     @p1r1 = Rule.create(
-      project: @p1,
+      component: @p1_c1,
       rule_id: 'P1-R1',
       status: 'Applicable - Configurable',
       rule_severity: 'medium'

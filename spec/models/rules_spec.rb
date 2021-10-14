@@ -14,8 +14,7 @@ RSpec.describe Review, type: :model do
     @p2 = Project.create(name: 'Photon OS 3.1')
 
     # Create components
-    @p1_c1 = Component.create(project: @p1, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03')
-    Component.from_mapping(Xccdf::Benchmark.parse(project.based_on.xml), project.id)
+    @p1_c1 = Component.create(project: @p1, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: srg)
     @p1_c1.reload
 
     # Create Users
@@ -25,14 +24,14 @@ RSpec.describe Review, type: :model do
     @other_p_admin = build(:user)
 
     # Give users project roles
-    ProjectMember.create!(user: @p_admin, project: @p1, role: 'admin')
-    ProjectMember.create!(user: @p_reviewer, project: @p1, role: 'reviewer')
-    ProjectMember.create!(user: @p_author, project: @p1, role: 'author')
-    ProjectMember.create!(user: @other_p_admin, project: @p2, role: 'admin')
+    Membership.create(user: @p_admin, membership: @p1, role: 'admin')
+    Membership.create(user: @p_reviewer, membership: @p1, role: 'reviewer')
+    Membership.create(user: @p_author, membership: @p1, role: 'author')
+    Membership.create(user: @other_p_admin, membership: @p2, role: 'admin')
 
     # Create rules
-    @p1r1 = Rule.create!(
-      project: @p1,
+    @p1r1 = Rule.create(
+      component: @p1_c1,
       rule_id: 'P1-R1',
       status: 'Applicable - Configurable',
       rule_severity: 'medium'
