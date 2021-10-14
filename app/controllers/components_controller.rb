@@ -19,9 +19,13 @@ class ComponentsController < ApplicationController
   end
 
   def show
-    @component_json = @component.to_json(
-      methods: %i[histories memberships inherited_memberships available_members rules]
-    )
+    @component_json = if @effective_permissions
+                        @component.to_json(
+                          methods: %i[histories memberships inherited_memberships available_members rules]
+                        )
+                      else
+                        @component.to_json(methods: %i[rules])
+                      end
     @project_json = @component.project.to_json
   end
 

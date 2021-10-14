@@ -152,7 +152,7 @@ export default {
   },
   computed: {
     lastAudit: function () {
-      return this.component.histories.slice(0, 1).pop();
+      return this.component.histories?.slice(0, 1)?.pop();
     },
     breadcrumbs: function () {
       return [

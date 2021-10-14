@@ -110,7 +110,7 @@ export default {
   props: {
     effectivePermissions: {
       type: String,
-      required: true,
+      default: "",
     },
     rule: {
       type: Object,

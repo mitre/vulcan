@@ -74,7 +74,7 @@ export default {
   props: {
     effectivePermissions: {
       type: String,
-      required: true,
+      default: "",
     },
     rules: {
       type: Array,
