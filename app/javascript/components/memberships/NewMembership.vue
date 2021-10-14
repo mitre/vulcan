@@ -151,10 +151,10 @@ export default {
       selectedUser: null,
       selectedRole: null,
       roleDescriptions: [
-        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
-        "Author and approve changes to a Control.",
-        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
         "Read only access tot he Project or Component",
+        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
+        "Author and approve changes to a Control.",
+        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
       ],
       userSearchStyles: {
         vueSimpleSuggest: "userSearchVueSimpleSuggest",
