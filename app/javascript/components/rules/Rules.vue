@@ -2,7 +2,7 @@
   <div class="mb-5">
     <b-breadcrumb :items="breadcrumbs" />
 
-    <h1>{{ project.name }} - Controls</h1>
+    <h1>{{ component.version }} - Controls</h1>
 
     <RulesCodeEditorView
       :project="project"

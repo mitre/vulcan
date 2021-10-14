@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_12_173448) do
+ActiveRecord::Schema.define(version: 2021_10_14_151618) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -60,6 +60,9 @@ ActiveRecord::Schema.define(version: 2021_10_12_173448) do
     t.string "version"
     t.boolean "released", default: false, null: false
     t.integer "memberships_count", default: 0
+    t.integer "rules_count", default: 0
+    t.string "admin_name"
+    t.string "admin_email"
     t.index ["component_id"], name: "index_components_on_component_id"
     t.index ["project_id"], name: "index_components_on_project_id"
   end
@@ -107,6 +110,8 @@ ActiveRecord::Schema.define(version: 2021_10_12_173448) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.integer "memberships_count", default: 0
+    t.string "admin_name"
+    t.string "admin_email"
   end
 
   create_table "references", force: :cascade do |t|

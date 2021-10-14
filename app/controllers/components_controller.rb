@@ -11,11 +11,15 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
-  before_action :authorize_viewer_component, only: %i[show]
+  before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
+
+  def index
+    @components_json = Component.eager_load(:based_on).where(released: true).to_json
+  end
 
   def show
     @component_json = @component.to_json(
-      methods: %i[histories memberships available_members rules]
+      methods: %i[histories memberships inherited_memberships available_members rules]
     )
     @project_json = @component.project.to_json
   end

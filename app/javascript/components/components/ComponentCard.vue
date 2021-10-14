@@ -16,22 +16,23 @@
       <b-card-title>
         {{ component.version }}
         <i v-if="component.released" class="mdi mdi-stamper h5 clickable" aria-hidden="true" />
-        <span class="float-right h6"
-          >{{ component.rule_count }} {{ component.component_id ? "Overlayed" : "" }} Controls</span
-        >
+        <!-- Rules count info -->
+        <span class="float-right h6">
+          {{ component.rules_count }} {{ component.component_id ? "Overlayed" : "" }} Controls
+        </span>
       </b-card-title>
-      <b-card-sub-title class="mb-2"
-        >Based on {{ component.based_on_title }} {{ component.based_on_version }}</b-card-sub-title
-      >
+      <b-card-sub-title class="mb-2">
+        Based on {{ component.based_on_title }} {{ component.based_on_version }}
+      </b-card-sub-title>
       <p>
         <span v-if="component.admin_name">
           {{ component.admin_name }}
           {{ component.admin_email ? `(${component.admin_email})` : "" }}
         </span>
-        <em v-else>No Project Admin</em>
+        <em v-else>No Component Admin</em>
 
         <!-- Component actions -->
-        <span v-if="actionable">
+        <span>
           <!-- Open component -->
           <a :href="`/components/${component.id}`" target="_blank" class="text-body">
             <i
@@ -44,7 +45,7 @@
 
           <!-- Remove component -->
           <i
-            v-if="component.id && effectivePermissions == 'admin'"
+            v-if="actionable && component.id && effectivePermissions == 'admin'"
             v-b-tooltip.hover
             class="mdi mdi-delete float-right h5 clickable mr-2"
             aria-hidden="true"
@@ -53,7 +54,7 @@
           />
 
           <!-- Duplicate component -->
-          <span v-if="effectivePermissions == 'admin'" class="float-right mr-2">
+          <span v-if="actionable && effectivePermissions == 'admin'" class="float-right mr-2">
             <NewComponentModal
               :project_id="component.project_id"
               :predetermined_prefix="component.prefix"
@@ -75,7 +76,10 @@
           </span>
 
           <!-- Release component -->
-          <span v-if="component.id && effectivePermissions == 'admin'" class="float-right mr-2">
+          <span
+            v-if="actionable && component.id && effectivePermissions == 'admin'"
+            class="float-right mr-2"
+          >
             <template v-if="component.releasable">
               <i
                 v-b-tooltip.hover

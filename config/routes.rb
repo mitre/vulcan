@@ -21,6 +21,8 @@ Rails.application.routes.draw do
   end
   # Alias rules#index to controls for convenience
   get '/components/:component_id/controls', to: 'rules#index'
+  # Make components#index not a child of project
+  get '/components', to: 'components#index'
 
   root to: 'hello#index'
   get 'hello/index'

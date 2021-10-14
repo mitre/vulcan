@@ -33,6 +33,7 @@ puts 'Creating Projects...'
 photon3 = Project.create!(name: 'Photon 3')
 photon4 = Project.create!(name: 'Photon 4')
 vsphere = Project.create!(name: 'vSphere 7.0')
+dummy_project = Project.create!(name: 'Nothing to See Here')
 puts 'Created Projects'
 
 # ------------------------- #
@@ -104,6 +105,14 @@ _vcenter_vami_v1r1 = Component.create!(
   prefix: 'VAMI-01',
   based_on: web_srg
 )
+# Make a bunch of dummy released components
+20.times do
+  c = Component.create(version: SecureRandom.hex(3), prefix: 'zzzz-00', based_on: web_srg, project: dummy_project)
+  # rubocop:disable Rails/SkipsModelValidations
+  c.rules.update_all(locked: true)
+  # rubocop:enable Rails/SkipsModelValidations
+  c.update(released: true)
+end
 puts 'Created Components'
 
 # rubocop:enable Rails/Output

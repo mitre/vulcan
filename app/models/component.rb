@@ -8,7 +8,7 @@ class Component < ApplicationRecord
     include_association :rules
   end
 
-  audited except: %i[id memberships_count created_at updated_at], max_audits: 1000
+  audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
 
   belongs_to :project, inverse_of: :components
   belongs_to :based_on,
@@ -36,27 +36,51 @@ class Component < ApplicationRecord
 
   def as_json(options = {})
     methods = (options[:methods] || []) + %i[releasable]
-    component_admin = admin
     super(options.merge(methods: methods)).merge(
       {
         based_on_title: based_on.title,
-        based_on_version: based_on.version,
-        rule_count: rules.size,
-        admin_name: component_admin&.name,
-        admin_email: component_admin&.email
+        based_on_version: based_on.version
       }
     )
   end
 
   ##
-  # Get a user that has admin permission on the component
+  # Helper to get the memberships associated with the parent project
+  #
+  # Excludes users that already have permissions on the component
+  # because we can assume that those component permissions are greater
+  # than those on the project for that user.
+  def inherited_memberships
+    project.memberships.where.not(user_id: memberships.pluck(:user_id))
+  end
+
+  def update_admin_contact_info
+    admin_members = admins
+    admin_component_membership = admin_members.select { |member| member.membership_type == 'Component' }
+    admin_project_membership = admin_members.select { |member| member.membership_type == 'Project' }
+
+    if admin_component_membership.present?
+      self.admin_name = admin_component_membership.first.name
+      self.admin_email = admin_component_membership.first.email
+    elsif admin_project_membership.present?
+      self.admin_name = admin_project_membership.first.name
+      self.admin_email = admin_project_membership.first.email
+    else
+      self.admin_name = nil
+      self.admin_email = nil
+    end
+    save if admin_name_changed? || admin_email_changed?
+  end
+
+  ##
+  # Get information for users that have admin permission on the component
   #
   # Priority:
   # - admin on the component itself
   # - admin on the owning project
   # - `nil`
-  def admin
-    admin_memberships = Membership.where(
+  def admins
+    Membership.where(
       membership_type: 'Component',
       membership_id: id,
       role: 'admin'
@@ -66,11 +90,7 @@ class Component < ApplicationRecord
         membership_id: project_id,
         role: 'admin'
       )
-    ).includes(:user)
-    admin_component_membership = admin_memberships.select { |member| member.membership_type == 'Component' }
-    admin_project_membership = admin_memberships.select { |member| member.membership_type == 'Project' }
-
-    admin_component_membership&.first&.user || admin_project_membership&.first&.user || nil
+    ).eager_load(:user).select(:user_id, :name, :email, :membership_type)
   end
 
   def releasable
@@ -86,22 +106,24 @@ class Component < ApplicationRecord
     new_component.version = new_version if new_version
     new_component.released = false
     new_component.skip_import_srg_rules = true
+    new_component.rules_count = 0
     new_component
   end
 
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
   def from_mapping(benchmark)
-    # Break early if the `skip_import_srg_rules` has been set to a true value
-    return true if skip_import_srg_rules
-
     benchmark = Xccdf::Benchmark.parse(benchmark.xml)
     rule_models = benchmark.rule.map do |rule|
       Rule.from_mapping(rule, id)
     end
     # Examine import results for failures
     success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
-    reload if success
-    errors.add(:base, 'Some rules failed to import successfully for the component.') unless success
+    if success
+      Component.reset_counters(id, :rules_count)
+      reload
+    else
+      errors.add(:base, 'Some rules failed to import successfully for the component.')
+    end
     success
   rescue StandardError => e
     message = e.message[0, 50]
@@ -139,6 +161,9 @@ class Component < ApplicationRecord
     # if the `component_id` is `nil` and if `security_requirements_guide_id` if present
     return unless component_id.nil? && security_requirements_guide_id.present?
 
+    # Break early if the `skip_import_srg_rules` has been set to a true value
+    return if skip_import_srg_rules
+
     # Break early if all rules imported without any issues
     return if from_mapping(SecurityRequirementsGuide.find(security_requirements_guide_id))
 
@@ -170,7 +195,7 @@ class Component < ApplicationRecord
   # for the component to be released.
   def rules_must_be_locked_to_release_component
     # If rule is not released, then skip this validation
-    return unless released
+    return if !released || (released && released_was == true)
 
     # If rule is releasable, then this validation passes
     return if releasable

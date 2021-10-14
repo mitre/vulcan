@@ -28,12 +28,13 @@ class Rule < ApplicationRecord
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
-  belongs_to :component
+  belongs_to :component, counter_cache: true
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
 
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
-  validate :cannot_be_locked_and_under_review, :component_must_not_be_released
+  validate :cannot_be_locked_and_under_review,
+           :component_must_not_be_released
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
   validates :status, inclusion: {

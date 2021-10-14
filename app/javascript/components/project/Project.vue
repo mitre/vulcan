@@ -6,17 +6,19 @@
         <h1>{{ project.name }}</h1>
       </b-col>
       <b-col md="4" class="text-muted text-md-right">
-        <div v-if="lastAudit" class="text-muted">
+        <p v-if="lastAudit" class="text-muted mb-1">
           <template v-if="lastAudit.created_at">
             Last update on {{ friendlyDateTime(lastAudit.created_at) }}
           </template>
           <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
-        </div>
-      </b-col>
-    </b-row>
-    <b-row v-if="project.admins && project.admins.length" class="pb-4">
-      <b-col>
-        <div class="text-muted">Project Administrators: {{ adminList }}</div>
+        </p>
+        <p class="mb-1">
+          <span v-if="project.admin_name">
+            {{ project.admin_name }}
+            {{ project.admin_email ? `(${project.admin_email})` : "" }}
+          </span>
+          <em v-else>No Project Admin</em>
+        </p>
       </b-col>
     </b-row>
 

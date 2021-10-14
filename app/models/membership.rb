@@ -11,7 +11,9 @@ class Membership < ApplicationRecord
   belongs_to :user
 
   validate :cannot_have_equal_or_lesser_component_permissions
-  after_save :remove_equal_or_lesser_component_permissions
+  after_destroy -> { membership.update_admin_contact_info }
+  after_save -> { membership.update_admin_contact_info }
+  after_save :remove_equal_or_lesser_component_permissions, if: -> { membership_type == 'Project' }
 
   delegate :name, to: :user
   delegate :email, to: :user
@@ -44,9 +46,6 @@ class Membership < ApplicationRecord
   # equal or lesser permission because they will now have no effect
   # on the user's abilites
   def remove_equal_or_lesser_component_permissions
-    # Break early if this is a component permission
-    return if membership_type == 'Component'
-
     # Gather all user's memberships for components that are children
     # of the current project
     child_component_ids = Component.where(project_id: membership_id).pluck(:id)

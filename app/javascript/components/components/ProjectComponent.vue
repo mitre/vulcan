@@ -6,17 +6,24 @@
         <h1>{{ component.version }}</h1>
       </b-col>
       <b-col md="4" class="text-muted text-md-right">
-        <div v-if="lastAudit" class="text-muted">
+        <p v-if="lastAudit" class="text-muted mb-1">
           <template v-if="lastAudit.created_at">
             Last update on {{ friendlyDateTime(lastAudit.created_at) }}
           </template>
           <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
-        </div>
+        </p>
+        <p class="mb-1">
+          <span v-if="component.admin_name">
+            {{ component.admin_name }}
+            {{ component.admin_email ? `(${component.admin_email})` : "" }}
+          </span>
+          <em v-else>No Component Admin</em>
+        </p>
       </b-col>
     </b-row>
 
     <b-row>
-      <b-col md="10" class="border-right">
+      <b-col :md="tabsColumns" class="border-right">
         <!-- Tab view for project information -->
         <b-tabs v-model="componentTabIndex" content-class="mt-3" justified>
           <!-- Component rules -->
@@ -41,7 +48,12 @@
           </b-tab>
 
           <!-- Members -->
-          <b-tab v-if="effective_permissions" :title="`Members (${component.memberships_count})`">
+          <b-tab
+            v-if="effective_permissions"
+            :title="`Members (${
+              component.memberships_count + component.inherited_memberships.length
+            })`"
+          >
             <MembershipsTable
               :editable="role_gte_to(effective_permissions, 'admin')"
               :membership_type="'Component'"
@@ -51,10 +63,20 @@
               :available_members="component.available_members"
               :available_roles="available_roles"
             />
+            <hr />
+
+            <MembershipsTable
+              :editable="false"
+              :membership_type="'Component'"
+              :membership_id="component.id"
+              :memberships="component.inherited_memberships"
+              :memberships_count="component.inherited_memberships.length"
+              :header_text="'Inherited Members from Project'"
+            />
           </b-tab>
         </b-tabs>
       </b-col>
-      <b-col md="2">
+      <b-col v-if="effective_permissions" md="2">
         <b-row>
           <b-col>
             <div class="clickable" @click="showHistory = !showHistory">
@@ -147,6 +169,12 @@ export default {
           active: true,
         },
       ];
+    },
+    tabsColumns: function () {
+      if (this.effective_permissions) {
+        return "10";
+      }
+      return "12";
     },
   },
   watch: {

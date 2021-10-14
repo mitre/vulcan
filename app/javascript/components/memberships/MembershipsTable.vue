@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>{{ memberships_count }} Members</h2>
+    <h2>{{ memberships_count }} {{ header_text }}</h2>
 
     <!-- User search -->
     <div class="row">
@@ -145,6 +145,10 @@ export default {
     memberships_count: {
       type: Number,
       required: true,
+    },
+    header_text: {
+      type: String,
+      default: "Members",
     },
   },
   data: function () {

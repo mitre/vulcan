@@ -4,7 +4,7 @@
 class Project < ApplicationRecord
   attr_accessor :current_user
 
-  audited except: %i[id memberships_count created_at updated_at], max_audits: 1000
+  audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
 
   has_many :memberships, -> { includes :user }, as: :membership, inverse_of: :membership, dependent: :destroy
   has_many :users, through: :memberships
@@ -20,6 +20,25 @@ class Project < ApplicationRecord
   # Helper method to extract data from Project Metadata
   def metadata
     project_metadata&.data
+  end
+
+  def admins
+    memberships.where(
+      role: 'admin'
+    ).eager_load(:user).select(:user_id, :name, :email)
+  end
+
+  def update_admin_contact_info
+    project_admin = admins.first
+    if project_admin
+      self.admin_name = project_admin.name
+      self.admin_email = project_admin.email
+    else
+      self.admin_name = nil
+      self.admin_email = nil
+    end
+    save
+    components.each(&:update_admin_contact_info)
   end
 
   ##
