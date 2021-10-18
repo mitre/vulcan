@@ -45,7 +45,7 @@
         :value="description.vuln_discussion"
         :class="inputClass('vuln_discussion')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || rule.status == 'Not Yet Determined'"
         rows="1"
         max-rows="99"
         @input="

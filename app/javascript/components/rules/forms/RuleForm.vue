@@ -80,7 +80,7 @@
           :value="rule.title"
           :class="inputClass('title')"
           placeholder=""
-          :disabled="disabled"
+          :disabled="disabled || rule.status == 'Not Yet Determined'"
           @input="$root.$emit('update:rule', { ...rule, title: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('title')">

@@ -180,7 +180,12 @@ export default {
   },
   computed: {
     disabledForm: function () {
-      return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
+      return (
+        this.readOnly ||
+        this.rule.locked ||
+        (this.rule.review_requestor_id ? true : false) ||
+        this.rule.status == "Not Yet Determined"
+      );
     },
     disaDescriptionFormFields: function () {
       if (this.rule.status == "Applicable - Configurable") {
