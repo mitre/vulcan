@@ -6,6 +6,8 @@ class Component < ApplicationRecord
 
   amoeba do
     include_association :rules
+    set released: false
+    set rules_count: 0
   end
 
   audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
@@ -104,9 +106,7 @@ class Component < ApplicationRecord
   def duplicate(new_version: nil)
     new_component = amoeba_dup
     new_component.version = new_version if new_version
-    new_component.released = false
     new_component.skip_import_srg_rules = true
-    new_component.rules_count = 0
     new_component
   end
 
@@ -128,7 +128,7 @@ class Component < ApplicationRecord
   rescue StandardError => e
     message = e.message[0, 50]
     message += '...' if e.message.size >= 50
-    errors.add(:base, "Encountered and error when importing rules from the SRG: #{message}")
+    errors.add(:base, "Encountered an error when importing rules from the SRG: #{message}")
     false
   end
 
