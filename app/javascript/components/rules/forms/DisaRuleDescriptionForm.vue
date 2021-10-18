@@ -27,7 +27,7 @@
 
     <!-- vuln_discussion -->
     <b-form-group
-      v-if="showFields.includes('vuln_discussion')"
+      v-if="showFields.includes('vuln_discussion') || rule.status == 'Not Yet Determined'"
       :id="`ruleEditor-disa_rule_description-vuln_discussion-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-vuln_discussion-${mod}`">

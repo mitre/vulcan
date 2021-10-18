@@ -60,7 +60,9 @@
       </b-form-group>
     </template>
 
-    <template v-if="rule.status == 'Applicable - Configurable'">
+    <template
+      v-if="rule.status == 'Applicable - Configurable' || rule.status == 'Not Yet Determined'"
+    >
       <!-- title -->
       <b-form-group v-if="showFields.includes('title')" :id="`ruleEditor-title-group-${mod}`">
         <label :for="`ruleEditor-title-${mod}`">
@@ -88,7 +90,9 @@
           {{ invalidFeedback["title"] }}
         </b-form-invalid-feedback>
       </b-form-group>
+    </template>
 
+    <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- version -->
       <b-form-group v-if="showFields.includes('version')" :id="`ruleEditor-version-group-${mod}`">
         <label :for="`ruleEditor-version-${mod}`">

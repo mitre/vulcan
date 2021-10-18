@@ -49,7 +49,9 @@
       <!-- disa_rule_description -->
       <template
         v-if="
-          rule.status == 'Applicable - Configurable' || rule.status == 'Applicable - Does Not Meet'
+          rule.status == 'Applicable - Configurable' ||
+          rule.status == 'Applicable - Does Not Meet' ||
+          rule.status == 'Not Yet Determined'
         "
       >
         <div class="clickable mb-2" @click="showDisaRuleDescriptions = !showDisaRuleDescriptions">
@@ -197,6 +199,8 @@ export default {
         ];
       } else if (this.rule.status == "Applicable - Does Not Meet") {
         return ["mitigation_control"];
+      } else if (this.rule.status == "Not Yet Determined") {
+        return ["vuln_discussion"];
       }
       return [];
     },
