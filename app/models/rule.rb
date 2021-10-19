@@ -15,7 +15,7 @@ class Rule < ApplicationRecord
     set locked: false
   end
 
-  audited except: %i[project_id review_requestor_id created_at updated_at locked], max_audits: 1000
+  audited except: %i[component_id review_requestor_id created_at updated_at locked], max_audits: 1000
   has_associated_audits
 
   before_save :apply_audit_comment
@@ -28,12 +28,13 @@ class Rule < ApplicationRecord
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
-  belongs_to :project
+  belongs_to :component, counter_cache: true
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
 
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
-  validate :cannot_be_locked_and_under_review
+  validate :cannot_be_locked_and_under_review,
+           :component_must_not_be_released
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
   validates :status, inclusion: {
@@ -46,21 +47,16 @@ class Rule < ApplicationRecord
     message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.reject(&:blank?).join("', '")}'"
   }
 
-  validates :rule_id,
-            uniqueness: {
-              scope: :project_id,
-              message: 'already exists for this project'
-            },
-            allow_blank: false, presence: true
+  validates :rule_id, allow_blank: false, presence: true
 
   # In all cases of has_many, it is very unlikely (based on past releases of SRGs
   # that there will be multiple of these fields. Just take the first one.
   # Extend the model if required
 
   # Reject legacy idents for the same reason, array of idents not established
-  def self.from_mapping(rule_mapping, project_id)
+  def self.from_mapping(rule_mapping, component_id)
     rule = Rule.new(
-      project_id: project_id,
+      component_id: component_id,
       rule_id: rule_mapping.id,
       status: rule_mapping.status.first&.status || 'Not Yet Determined',
       rule_severity: rule_mapping.severity || nil,
@@ -76,7 +72,7 @@ class Rule < ApplicationRecord
     rule.references.build(Reference.from_mapping(rule_mapping.reference.first))
     rule.disa_rule_descriptions.build(DisaRuleDescription.from_mapping(rule_mapping.description.first))
     rule.checks.build(Check.from_mapping(rule_mapping.check.first))
-    rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(project_id))
+    rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(component_id))
     rule
   end
 
@@ -152,6 +148,12 @@ class Rule < ApplicationRecord
   end
 
   private
+
+  def component_must_not_be_released
+    return unless component.released
+
+    errors.add(:base, 'Cannot make modifications to a component that has been released')
+  end
 
   def cannot_be_locked_and_under_review
     return unless locked && review_requestor_id.present?

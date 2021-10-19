@@ -4,8 +4,8 @@
       <RuleNavigator
         :rules="rules"
         :selected-rule-id="selectedRuleId"
-        :project-permissions="projectPermissions"
-        :project-prefix="project.prefix"
+        :effective-permissions="effectivePermissions"
+        :project-prefix="component.prefix"
         :read-only="true"
         :open-rule-ids="openRuleIds"
         @ruleSelected="handleRuleSelected($event)"
@@ -17,8 +17,8 @@
       <div class="col-9">
         <RuleEditorHeader
           :rule="selectedRule()"
-          :project-permissions="projectPermissions"
-          :project-prefix="project.prefix"
+          :effective-permissions="effectivePermissions"
+          :project-prefix="component.prefix"
           :read-only="true"
         />
         <hr />
@@ -56,15 +56,15 @@ export default {
   },
   mixins: [SelectedRulesMixin],
   props: {
-    projectPermissions: {
+    effectivePermissions: {
       type: String,
-      required: true,
+      default: "",
     },
     currentUserId: {
       type: Number,
       required: true,
     },
-    project: {
+    component: {
       type: Object,
       required: true,
     },

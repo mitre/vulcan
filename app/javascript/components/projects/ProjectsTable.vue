@@ -74,7 +74,7 @@ export default {
       currentPage: 1,
       fields: [
         { key: "name", sortable: true },
-        { key: "project_members_count", label: "Members", sortable: true },
+        { key: "memberships_count", label: "Members", sortable: true },
         { key: "updated_at", label: "Last Updated", sortable: true },
       ],
     };

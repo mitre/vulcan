@@ -108,7 +108,7 @@ export default {
   name: "RuleReviews",
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
-    projectPermissions: {
+    effectivePermissions: {
       type: String,
       required: true,
     },
@@ -191,9 +191,9 @@ export default {
 
       // Set some helper variables for readability
       const isRequestor = this.currentUserId == this.rule.review_requestor_id;
-      const isAdmin = this.projectPermissions == "admin";
+      const isAdmin = this.effectivePermissions == "admin";
       const isUnderReview = this.rule.review_requestor_id != null;
-      const isReviewer = this.projectPermissions == "reviewer";
+      const isReviewer = this.effectivePermissions == "reviewer";
 
       // should only be able to request review if
       // - not currently under review

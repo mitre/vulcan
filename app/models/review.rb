@@ -4,6 +4,7 @@
 class Review < ApplicationRecord
   belongs_to :user
   belongs_to :rule
+  has_one :component, through: :rule
 
   validates :user_id, :comment, :action, presence: true
 
@@ -30,7 +31,7 @@ class Review < ApplicationRecord
   ##
   # Helper to fetch the permissions the reviewing user has on the review's project
   def project_permissions
-    user.project_permissions(rule.project)
+    user.effective_permissions(rule.component)
   end
 
   def validate_project_permissions
@@ -112,8 +113,11 @@ class Review < ApplicationRecord
   # should only be able to unlock a control if
   # - current user is admin
   # - control is locked
+  # - component is not released
   def can_unlock_control
-    if project_permissions != 'admin'
+    if component.released
+      errors.add(:base, 'Cannot unlock a control on a component that has been released')
+    elsif project_permissions != 'admin'
       errors.add(:base, 'Only an admin can unlock')
     elsif !rule.review_requestor_id.nil?
       errors.add(:base, 'Cannot unlock a control that is currently under review')

@@ -4,14 +4,18 @@ require 'rails_helper'
 
 RSpec.describe Review, type: :model do
   before :each do
-    srg_xml = file_fixture('U_Web_Server_V2R3_Manual-xccdf.xml').read
+    srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
     srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
     srg.xml = srg_xml
     srg.save!
     # Create projects
-    @p1 = Project.create(name: 'P1', prefix: 'AAAA-00', based_on: srg)
-    @p2 = Project.create(name: 'P2', prefix: 'BBBB-00', based_on: srg)
+    @p1 = Project.create(name: 'Photon OS 3')
+    @p2 = Project.create(name: 'Photon OS 3.1')
+
+    # Create components
+    @p1_c1 = Component.create(project: @p1, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: srg)
+    @p1_c1.reload
 
     # Create Users
     @p_admin = build(:user)
@@ -20,19 +24,52 @@ RSpec.describe Review, type: :model do
     @other_p_admin = build(:user)
 
     # Give users project roles
-    ProjectMember.create!(user: @p_admin, project: @p1, role: 'admin')
-    ProjectMember.create!(user: @p_reviewer, project: @p1, role: 'reviewer')
-    ProjectMember.create!(user: @p_author, project: @p1, role: 'author')
-    ProjectMember.create!(user: @other_p_admin, project: @p2, role: 'admin')
+    Membership.create(user: @p_admin, membership: @p1, role: 'admin')
+    Membership.create(user: @p_reviewer, membership: @p1, role: 'reviewer')
+    Membership.create(user: @p_author, membership: @p1, role: 'author')
+    Membership.create(user: @other_p_admin, membership: @p2, role: 'admin')
 
     # Create rules
-    @p1r1 = Rule.create!(
-      project: @p1,
+    @p1r1 = Rule.create(
+      component: @p1_c1,
       rule_id: 'P1-R1',
       status: 'Applicable - Configurable',
       rule_severity: 'medium'
     )
   end
+
+  # context 'overlayed rules are delegated to overlayed components' do
+  #   it 'properly collects all rule information into one rule' do
+  #     # Create a component overlay of `p2_c1 overlays p1_c1`
+  #     @p2_c1 = Component.create(project: @p2, version: 'Photon OS 3.1 V1R1', prefix: 'PHOS-03')
+  #     # Pick a rule to overlay
+  #     rule_to_overlay = @p1_c1.rules.first
+  #     # Create the overlayed version - connected via rule_id
+  #     new_rule = Rule.create(component: @p2_c1, rule_id: rule_to_overlay.rule_id)
+  #     # Verify that a field we will modify is currently nil
+  #     expect(new_rule.status).to eq(nil)
+  #     # Check that the field propagates through the overlay_rule method
+  #     expect(new_rule.overlay_rule.status).not_to eq(nil)
+  #     expect(new_rule.overlay_rule.status).to eq(rule_to_overlay.status)
+  #     # Verify that the new_rule has no checks or disa descriptions
+  #     expect(new_rule.checks.size).to eq(0)
+  #     expect(new_rule.disa_rule_descriptions.size).to eq(0)
+  #     # Verify that the overlayed rule has the right number of checks and disa descriptions
+  #     expect(new_rule.overlay_rule.checks.size).not_to eq(0)
+  #     expect(new_rule.overlay_rule.disa_rule_descriptions.size).not_to eq(0)
+  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size)
+  #     expect(new_rule.overlay_rule.disa_rule_descriptions.size).to eq(rule_to_overlay.disa_rule_descriptions.size)
+  #     # Add a check that is not an overlay on another check
+  #     Check.create(rule: new_rule, content: 'not an overlay check')
+  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size + 1)
+  #     # Add a check that is an overlay on another check
+  #     check_to_overlay = rule_to_overlay.checks.first
+  #     Check.create(rule: new_rule, content: 'an overlay check', check: check_to_overlay)
+  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size + 1)
+  #     # Make sure that the check text was overridden
+  #     expect(new_rule.overlay_rule.checks.select { |c| c.check_id == check_to_overlay.id }).to eq('an overlay check')
+  #   end
+  # end
 
   context 'rule duplication' do
     it 'properly duplicated rule and required associated records' do

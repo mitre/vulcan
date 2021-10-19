@@ -16,8 +16,9 @@ class User < ApplicationRecord
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
 
   has_many :reviews, dependent: :nullify
-  has_many :project_members, dependent: :destroy
-  has_many :projects, through: :project_members
+  has_many :memberships, dependent: :destroy
+  has_many :projects, through: :memberships, source: :membership, source_type: 'Project'
+  has_many :components, through: :memberships, source: :membership, source_type: 'Component'
 
   scope :alphabetical, -> { order(:name) }
 
@@ -37,28 +38,71 @@ class User < ApplicationRecord
     end
   end
 
+  # Project permssions checking
+  def can_view_project?(project)
+    admin || project.memberships.where(user_id: id, role: PROJECT_MEMBER_VIEWERS).any?
+  end
+
   def can_author_project?(project)
-    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_AUTHORS).any?
+    admin || project.memberships.where(user_id: id, role: PROJECT_MEMBER_AUTHORS).any?
   end
 
   def can_review_project?(project)
-    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_REVIEWERS).any?
+    admin || project.memberships.where(user_id: id, role: PROJECT_MEMBER_REVIEWERS).any?
   end
 
   def can_admin_project?(project)
-    admin || project.project_members.where(user_id: id, role: PROJECT_MEMBER_ADMINS).any?
+    admin || project.memberships.where(user_id: id, role: PROJECT_MEMBER_ADMINS).any?
+  end
+
+  # Component permissions checking
+  def can_view_component?(component)
+    admin || PROJECT_MEMBER_VIEWERS.include?(effective_permissions(component))
+  end
+
+  def can_author_component?(component)
+    admin || PROJECT_MEMBER_AUTHORS.include?(effective_permissions(component))
+  end
+
+  def can_review_component?(component)
+    admin || PROJECT_MEMBER_REVIEWERS.include?(effective_permissions(component))
+  end
+
+  def can_admin_component?(component)
+    admin || effective_permissions(component) == 'admin'
   end
 
   ##
   # Get the effective permissions on a specific project for the user
   #
-  def project_permissions(project)
-    return nil if project.nil?
+  def effective_permissions(project_or_component)
+    return nil if project_or_component.nil?
 
     return 'admin' if admin
 
-    # Use the project ID to find ProjectMember permissions
-    project = project.id if project.is_a? Project
-    ProjectMember.where(project_id: project).find_by(user_id: id)&.role
+    case project_or_component
+    when Project
+      Membership.where(
+        membership_type: 'Project',
+        membership_id: project_or_component.id,
+        user_id: id
+      ).pick(:role)
+    when Component
+      memberships = Membership.where(
+        membership_type: 'Project',
+        membership_id: project_or_component.project_id,
+        user_id: id
+      ).or(
+        Membership.where(
+          membership_type: 'Component',
+          membership_id: project_or_component.id,
+          user_id: id
+        )
+      ).pluck(:role)
+      # Pick the greater of the two possible permissions
+      memberships.max do |role_a, role_b|
+        PROJECT_MEMBER_ROLES.index(role_a) <=> PROJECT_MEMBER_ROLES.index(role_b)
+      end
+    end
   end
 end
