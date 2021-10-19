@@ -14,36 +14,108 @@
     <!-- Card -->
     <b-card class="shadow">
       <b-card-title>
-        {{ component.child_project_name }}
-        <span class="float-right h6">{{ component.rule_count }} Controls</span>
-      </b-card-title>
-      <b-card-sub-title class="mb-2"
-        >Based on {{ component.based_on.srg_id }} {{ component.based_on.version }}</b-card-sub-title
-      >
-      <p>
-        <span v-if="component.project_admin_name">
-          {{ component.project_admin_name }}
-          {{ component.project_admin_email ? `(${component.project_admin_email})` : "" }}
+        {{ component.version }}
+        <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
+        <!-- Rules count info -->
+        <span class="float-right h6">
+          {{ component.rules_count }} {{ component.component_id ? "Overlayed" : "" }} Controls
         </span>
-        <em v-else>No Project Admin</em>
-        <a :href="`/projects/${component.child_project_id}`" target="_blank" class="text-body">
-          <i class="mdi mdi-open-in-new float-right h5 clickable" aria-hidden="true" />
-        </a>
-        <i
-          v-if="component.id"
-          class="mdi mdi-delete float-right h5 clickable mr-2"
-          aria-hidden="true"
-          @click="showDeleteConfirmation = !showDeleteConfirmation"
-        />
+      </b-card-title>
+      <b-card-sub-title class="mb-2">
+        Based on {{ component.based_on_title }} {{ component.based_on_version }}
+      </b-card-sub-title>
+      <p>
+        <span v-if="component.admin_name">
+          {{ component.admin_name }}
+          {{ component.admin_email ? `(${component.admin_email})` : "" }}
+        </span>
+        <em v-else>No Component Admin</em>
+
+        <!-- Component actions -->
+        <span>
+          <!-- Open component -->
+          <a :href="`/components/${component.id}`" target="_blank" class="text-body">
+            <i
+              v-b-tooltip.hover
+              class="mdi mdi-open-in-new float-right h5 clickable"
+              aria-hidden="true"
+              title="Open Component"
+            />
+          </a>
+
+          <!-- Remove component -->
+          <i
+            v-if="actionable && component.id && effectivePermissions == 'admin'"
+            v-b-tooltip.hover
+            class="mdi mdi-delete float-right h5 clickable mr-2"
+            aria-hidden="true"
+            title="Remove Component"
+            @click="showDeleteConfirmation = !showDeleteConfirmation"
+          />
+
+          <!-- Duplicate component -->
+          <span v-if="actionable && effectivePermissions == 'admin'" class="float-right mr-2">
+            <NewComponentModal
+              :project_id="component.project_id"
+              :predetermined_prefix="component.prefix"
+              :predetermined_security_requirements_guide_id="
+                component.security_requirements_guide_id
+              "
+              @projectUpdated="$emit('projectUpdated')"
+            >
+              <template #opener>
+                <i
+                  v-if="component.id"
+                  v-b-tooltip.hover
+                  class="mdi mdi-content-copy h5 clickable"
+                  aria-hidden="true"
+                  title="Duplicate component and create a new version"
+                />
+              </template>
+            </NewComponentModal>
+          </span>
+
+          <!-- Release component -->
+          <span
+            v-if="actionable && component.id && effectivePermissions == 'admin'"
+            class="float-right mr-2"
+          >
+            <span v-b-tooltip.hover :title="releaseComponentTooltip">
+              <i
+                :class="releaseComponentClasses"
+                aria-hidden="true"
+                @click="confirmComponentRelease"
+              />
+            </span>
+          </span>
+        </span>
       </p>
     </b-card>
   </b-overlay>
 </template>
 
 <script>
+import FormMixinVue from "../../mixins/FormMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
+import NewComponentModal from "../components/NewComponentModal.vue";
+
 export default {
   name: "ComponentCard",
+  components: {
+    NewComponentModal,
+  },
+  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin],
   props: {
+    // Indicate if the card is for "read-only" or can take actions against it
+    actionable: {
+      type: Boolean,
+      default: true,
+    },
+    effectivePermissions: {
+      type: String,
+      required: false,
+    },
     component: {
       type: Object,
       required: true,
@@ -53,6 +125,26 @@ export default {
     return {
       showDeleteConfirmation: false,
     };
+  },
+  computed: {
+    releaseComponentClasses: function () {
+      let classes = ["mdi", "mdi-stamper", "h5", "clickable"];
+      if (!this.component.releasable) {
+        classes.push("text-muted");
+      }
+      return classes;
+    },
+    releaseComponentTooltip: function () {
+      if (this.component.released) {
+        return "Component has already been released";
+      }
+
+      if (this.component.releasable) {
+        return "Release Component";
+      }
+
+      return "All rules must be locked to release a component";
+    },
   },
 };
 </script>

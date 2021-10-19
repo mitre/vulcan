@@ -4,10 +4,10 @@
     <div class="input-group">
       <input
         id="ruleSearch"
-        v-model="search"
         type="text"
         class="form-control"
         placeholder="Search controls..."
+        @input="searchUpdated($event.target.value)"
       />
     </div>
 
@@ -67,14 +67,15 @@
 //
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
 //
+import _ from "lodash";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 export default {
   name: "RuleNavigator",
   components: { NewRuleModalForm },
   props: {
-    projectPermissions: {
+    effectivePermissions: {
       type: String,
-      required: true,
+      default: "",
     },
     rules: {
       type: Array,
@@ -116,6 +117,9 @@ export default {
     },
   },
   methods: {
+    searchUpdated: _.debounce(function (newSearch) {
+      this.search = newSearch;
+    }, 500),
     // Event handler for when a rule is selected
     ruleSelected: function (rule) {
       this.$emit("ruleSelected", rule.id);
@@ -145,14 +149,81 @@ export default {
     },
     // Helper to filter & search a group of rules
     // PLACEHOLDER! searching by id - should be changed to title/name once implemented
-    filterRules(rules) {
+    filterRules: function (rules) {
       let downcaseSearch = this.search.toLowerCase();
-      return rules.filter((rule) =>
-        this.formatRuleId(rule.id).toString().toLowerCase().includes(downcaseSearch)
-      );
+      return rules.filter((rule) => this.searchTextForRule(rule).includes(downcaseSearch));
     },
-    formatRuleId(id) {
+    formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
+    },
+    // This is a super basic function that provides a single searchable string for a given rule
+    // It does not do anything like exclude attributes from search depending on the rule status.
+    // It is unclear at this time if that would be necessary or useful, but if that does become
+    // the case then expect this function to change.
+    searchTextForRule: function (rule) {
+      const ruleSearchAttrs = [
+        "artifact_description",
+        "fix_id",
+        "fixtext",
+        "fixtext_fixref",
+        "ident",
+        "ident_system",
+        "rule_id",
+        "rule_severity",
+        "rule_weight",
+        "status",
+        "title",
+        "vendor_comments",
+        "version",
+      ];
+      const checkDescriptionSearchAttrs = [
+        "content",
+        "content_ref_href",
+        "content_ref_name",
+        "system",
+      ];
+      const disaDescriptionSearchAttrs = [
+        "false_negatives",
+        "false_positives",
+        "ia_controls",
+        "mitigation_controls",
+        "mitigations",
+        "potential_impacts",
+        "responsibility",
+        "security_override_guidance",
+        "third_party_tools",
+        "vuln_discussion",
+      ];
+      // Start with the rule ID as searchable
+      let searchText = this.formatRuleId(rule.id);
+      // The `|| ''` statements below prevent the literal string 'undefined' from being part of the searchable text
+      // Add all rule attrs for rule
+      for (var attrIndex = 0; attrIndex < ruleSearchAttrs.length; attrIndex++) {
+        searchText += ` | ${rule[ruleSearchAttrs[attrIndex]] || ""}`;
+      }
+      // Add all check attrs for each rule check
+      for (var attrIndex = 0; attrIndex < checkDescriptionSearchAttrs.length; attrIndex++) {
+        for (var checkIndex = 0; checkIndex < rule.checks_attributes.length; checkIndex++) {
+          searchText += ` | ${
+            rule.checks_attributes[checkIndex][checkDescriptionSearchAttrs[attrIndex]] || ""
+          }`;
+        }
+      }
+      // Add all descriptions attrs for each rule disa description
+      for (var attrIndex = 0; attrIndex < disaDescriptionSearchAttrs.length; attrIndex++) {
+        for (
+          var descIndex = 0;
+          descIndex < rule.disa_rule_descriptions_attributes.length;
+          descIndex++
+        ) {
+          searchText += ` | ${
+            rule.disa_rule_descriptions_attributes[descIndex][
+              disaDescriptionSearchAttrs[attrIndex]
+            ] || ""
+          }`;
+        }
+      }
+      return searchText.toLowerCase();
     },
   },
 };

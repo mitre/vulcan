@@ -75,8 +75,8 @@ export default {
       return history.audited_name || `${history.auditable_type} ${history.auditable_id}`;
     },
     computeCreationText: function (history) {
-      if (history.auditable_type == "ProjectMember") {
-        return `added to the project with ${
+      if (history.auditable_type == "Membership") {
+        return `added as a member with ${
           history.audited_changes.find((element) => element["field"] == "role")["new_value"]
         } permissions`;
       } else {
@@ -91,8 +91,8 @@ export default {
       }
     },
     computeDeletionText: function (history) {
-      if (history.auditable_type == "ProjectMember") {
-        return "removed from the project";
+      if (history.auditable_type == "Membership") {
+        return "removed as a member";
       } else {
         return "Deleted";
       }

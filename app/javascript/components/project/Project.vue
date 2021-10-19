@@ -6,18 +6,19 @@
         <h1>{{ project.name }}</h1>
       </b-col>
       <b-col md="4" class="text-muted text-md-right">
-        {{ `${project.based_on.title} ${project.based_on.version}` }}
-        <div v-if="lastAudit" class="text-muted">
+        <p v-if="lastAudit" class="text-muted mb-1">
           <template v-if="lastAudit.created_at">
             Last update on {{ friendlyDateTime(lastAudit.created_at) }}
           </template>
           <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
-        </div>
-      </b-col>
-    </b-row>
-    <b-row v-if="project.admins && project.admins.length" class="pb-4">
-      <b-col>
-        <div class="text-muted">Project Administrators: {{ adminList }}</div>
+        </p>
+        <p class="mb-1">
+          <span v-if="project.admin_name">
+            {{ project.admin_name }}
+            {{ project.admin_email ? `(${project.admin_email})` : "" }}
+          </span>
+          <em v-else>No Project Admin</em>
+        </p>
       </b-col>
     </b-row>
 
@@ -25,54 +26,53 @@
       <b-col md="10" class="border-right">
         <!-- Tab view for project information -->
         <b-tabs v-model="projectTabIndex" content-class="mt-3" justified>
-          <!-- Project rules -->
-          <b-tab :title="`Controls (${project.rules.length})`">
-            <b-button
-              v-if="project_permissions"
-              class="m-2"
-              variant="primary"
-              :href="`/projects/${project.id}/controls`"
-            >
-              Edit Project Controls
-            </b-button>
-
-            <RulesReadOnlyView
-              :project-permissions="project_permissions"
-              :current-user-id="current_user_id"
-              :project="project"
-              :rules="project.rules"
-              :statuses="statuses"
-              :severities="severities"
-            />
-          </b-tab>
-
           <!-- Project components -->
           <b-tab :title="`Components (${project.components.length})`">
+            <h2>Project Components</h2>
+            <NewComponentModal
+              v-if="role_gte_to(effective_permissions, 'admin')"
+              :project_id="project.id"
+              @projectUpdated="refreshProject"
+            />
+            <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
+              <b-col v-for="component in sortedRegularComponents()" :key="component.id">
+                <ComponentCard
+                  :component="component"
+                  :effective-permissions="effective_permissions"
+                  @deleteComponent="deleteComponent($event)"
+                  @projectUpdated="refreshProject"
+                />
+              </b-col>
+            </b-row>
+
+            <h2>Overlayed Components</h2>
             <AddComponentModal
-              v-if="project_permissions == 'admin'"
+              v-if="role_gte_to(effective_permissions, 'admin')"
               :project_id="project.id"
               :available_components="sortedAvailableComponents"
               @projectUpdated="refreshProject"
             />
-
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
-              <b-col v-for="component in sortedComponents" :key="component.id">
-                <ComponentCard :component="component" @deleteComponent="deleteComponent($event)" />
+              <b-col v-for="component in sortedOverlayComponents()" :key="component.id">
+                <ComponentCard
+                  :component="component"
+                  :effective-permissions="effective_permissions"
+                  @deleteComponent="deleteComponent($event)"
+                  @projectUpdated="refreshProject"
+                />
               </b-col>
             </b-row>
           </b-tab>
 
           <!-- Project members -->
-          <b-tab
-            v-if="project_permissions"
-            :title="`Project Members (${project.project_members.length})`"
-          >
-            <ProjectMembersTable
-              :editable="project_permissions == 'admin'"
-              :project="project"
-              :project_members="project.project_members"
-              :project_members_count="project.project_members.length"
-              :available_members="available_members"
+          <b-tab :title="`Members (${project.memberships_count})`">
+            <MembershipsTable
+              :editable="role_gte_to(effective_permissions, 'admin')"
+              :membership_type="'Project'"
+              :membership_id="project.id"
+              :memberships="project.memberships"
+              :memberships_count="project.memberships_count"
+              :available_members="project.available_members"
               :available_roles="available_roles"
             />
           </b-tab>
@@ -124,26 +124,27 @@ import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import History from "../shared/History.vue";
-import ProjectMembersTable from "../project_members/ProjectMembersTable.vue";
+import MembershipsTable from "../memberships/MembershipsTable.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
-import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
+import NewComponentModal from "../components/NewComponentModal.vue";
 
 export default {
   name: "Project",
   components: {
     History,
-    ProjectMembersTable,
+    MembershipsTable,
     UpdateMetadataModal,
-    RulesReadOnlyView,
     ComponentCard,
     AddComponentModal,
+    NewComponentModal,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
-    project_permissions: {
+    effective_permissions: {
       type: String,
     },
     initialProjectState: {
@@ -161,10 +162,6 @@ export default {
       type: Array,
       required: true,
     },
-    available_members: {
-      type: Array,
-      required: true,
-    },
     available_roles: {
       type: Array,
       required: true,
@@ -179,9 +176,6 @@ export default {
     };
   },
   computed: {
-    sortedComponents: function () {
-      return _.sortBy(this.project.components, ["child_project_name"], ["asc"]);
-    },
     sortedAvailableComponents: function () {
       return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
     },
@@ -228,6 +222,15 @@ export default {
     }
   },
   methods: {
+    sortedComponents: function () {
+      return _.sortBy(this.project.components, ["version"], ["asc"]);
+    },
+    sortedOverlayComponents: function () {
+      return this.sortedComponents().filter((e) => e.component_id != null);
+    },
+    sortedRegularComponents: function () {
+      return this.sortedComponents().filter((e) => e.component_id == null);
+    },
     refreshProject: function () {
       axios.get(`/projects/${this.project.id}`).then((response) => {
         this.project = response.data;

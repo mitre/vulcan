@@ -10,7 +10,7 @@ export default {
   },
   computed: {
     selectedRuleIdKey: function () {
-      return `selectedRuleId-${this.project.id}`;
+      return `selectedRuleId-${this.component.id}`;
     },
     lastEditor: function () {
       const histories = this.selectedRule().histories;

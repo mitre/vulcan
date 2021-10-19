@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_30_182147) do
+ActiveRecord::Schema.define(version: 2021_10_14_170155) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -52,11 +52,18 @@ ActiveRecord::Schema.define(version: 2021_09_30_182147) do
 
   create_table "components", force: :cascade do |t|
     t.bigint "project_id"
-    t.bigint "child_project_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["child_project_id"], name: "index_components_on_child_project_id"
-    t.index ["project_id", "child_project_id"], name: "components_parent_child_id_index", unique: true
+    t.bigint "component_id"
+    t.string "prefix"
+    t.bigint "security_requirements_guide_id"
+    t.string "version"
+    t.boolean "released", default: false, null: false
+    t.integer "memberships_count", default: 0
+    t.integer "rules_count", default: 0
+    t.string "admin_name"
+    t.string "admin_email"
+    t.index ["component_id"], name: "index_components_on_component_id"
     t.index ["project_id"], name: "index_components_on_project_id"
   end
 
@@ -78,15 +85,16 @@ ActiveRecord::Schema.define(version: 2021_09_30_182147) do
     t.index ["rule_id"], name: "index_disa_rule_descriptions_on_rule_id"
   end
 
-  create_table "project_members", force: :cascade do |t|
+  create_table "memberships", force: :cascade do |t|
     t.bigint "user_id"
-    t.bigint "project_id"
-    t.string "role", default: "author", null: false
+    t.bigint "membership_id"
+    t.string "role", default: "viewer", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["project_id"], name: "index_project_members_on_project_id"
-    t.index ["user_id", "project_id"], name: "by_user_and_project", unique: true
-    t.index ["user_id"], name: "index_project_members_on_user_id"
+    t.string "membership_type"
+    t.index ["membership_id"], name: "index_memberships_on_membership_id"
+    t.index ["user_id", "membership_type", "membership_id"], name: "by_user_and_membership", unique: true
+    t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
   create_table "project_metadata", force: :cascade do |t|
@@ -101,9 +109,9 @@ ActiveRecord::Schema.define(version: 2021_09_30_182147) do
     t.string "name", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.integer "project_members_count", default: 0
-    t.bigint "security_requirements_guide_id"
-    t.string "prefix"
+    t.integer "memberships_count", default: 0
+    t.string "admin_name"
+    t.string "admin_email"
   end
 
   create_table "references", force: :cascade do |t|
@@ -150,7 +158,6 @@ ActiveRecord::Schema.define(version: 2021_09_30_182147) do
     t.boolean "locked", default: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.bigint "project_id"
     t.string "status", default: "Not Yet Determined"
     t.text "status_justification"
     t.text "artifact_description"
@@ -166,9 +173,9 @@ ActiveRecord::Schema.define(version: 2021_09_30_182147) do
     t.string "fixtext_fixref"
     t.string "fix_id"
     t.bigint "review_requestor_id"
-    t.index ["project_id"], name: "index_rules_on_project_id"
+    t.bigint "component_id"
+    t.index ["component_id"], name: "index_rules_on_component_id"
     t.index ["review_requestor_id"], name: "index_rules_on_review_requestor_id"
-    t.index ["rule_id", "project_id"], name: "rules_rule_id_project_id_index", unique: true
   end
 
   create_table "security_requirements_guides", force: :cascade do |t|
@@ -207,9 +214,8 @@ ActiveRecord::Schema.define(version: 2021_09_30_182147) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "components", "projects", column: "child_project_id"
-  add_foreign_key "project_members", "projects"
-  add_foreign_key "project_members", "users"
-  add_foreign_key "rules", "projects"
+  add_foreign_key "components", "components"
+  add_foreign_key "memberships", "users"
+  add_foreign_key "rules", "components"
   add_foreign_key "rules", "users", column: "review_requestor_id"
 end
