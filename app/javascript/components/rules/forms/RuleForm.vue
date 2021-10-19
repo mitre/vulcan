@@ -17,7 +17,7 @@
         :value="rule.status"
         :class="inputClass('status')"
         :options="statuses"
-        :disabled="disabled"
+        :disabled="disabledStatus"
         @input="$root.$emit('update:rule', { ...rule, status: $event })"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('status')">
@@ -438,6 +438,10 @@ export default {
       required: true,
     },
     disabled: {
+      type: Boolean,
+      required: true,
+    },
+    disabledStatus: {
       type: Boolean,
       required: true,
     },
