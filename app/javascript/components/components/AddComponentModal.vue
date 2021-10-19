@@ -2,7 +2,7 @@
   <div>
     <!-- Modal trigger button -->
     <b-button class="px-2 m-2" variant="primary" @click="showModal()">
-      Add Project Component
+      Import a Released Component
     </b-button>
 
     <!-- Add component modal -->
@@ -29,9 +29,9 @@
                 v-model="search"
                 :list="available_components"
                 :filter-by-query="true"
-                value-attribute="child_project_id"
-                display-attribute="child_project_name"
-                placeholder="Search for a project by name..."
+                value-attribute="id"
+                display-attribute="version"
+                placeholder="Search for a component by name..."
                 :styles="projectSearchStyles"
                 @select="setSelectedComponent($refs.componentSearch.selected)"
               />
@@ -45,9 +45,9 @@
 
       <!-- When  -->
       <template v-if="selectedComponent">
-        <ComponentCard :component="selectedComponent" />
+        <ComponentCard :actionable="false" :component="selectedComponent" />
         <span class="text-danger clickable float-right mr-3" @click="chooseAnotherProject"
-          >Choose a different project</span
+          >Choose a different component</span
         >
       </template>
     </b-modal>
@@ -107,8 +107,8 @@ export default {
       this.search = "";
       this.selectedComponent = null;
     },
-    setSelectedComponent: function (project) {
-      this.selectedComponent = project;
+    setSelectedComponent: function (component) {
+      this.selectedComponent = component;
     },
     addComponent: function () {
       // Guard if no component project selected
@@ -119,7 +119,10 @@ export default {
       this.$refs["AddComponentModal"].hide();
       let payload = {
         component: {
-          child_project_id: this.selectedComponent.child_project_id,
+          component_id: this.selectedComponent.id,
+          prefix: this.selectedComponent.prefix,
+          security_requirements_guide_id: this.selectedComponent.security_requirements_guide_id,
+          version: this.selectedComponent.version,
         },
       };
 
@@ -130,6 +133,7 @@ export default {
     },
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);
+      this.$refs["AddComponentModal"].hide();
       this.$emit("projectUpdated");
     },
   },

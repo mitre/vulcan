@@ -33,7 +33,7 @@
           :selected-rule-id="rule.id"
           @ruleSelected="$emit('ruleSelected', $event.id)"
         />
-        <b-button v-b-modal.duplicate-rule-modal variant="primary"> Duplicate Control</b-button>
+        <b-button v-b-modal.duplicate-rule-modal variant="primary">Duplicate Control</b-button>
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
@@ -44,7 +44,7 @@
             <b-button variant="success" disabled>Save Control</b-button>
           </span>
           <span
-            v-if="projectPermissions == 'admin'"
+            v-if="effectivePermissions == 'admin'"
             v-b-tooltip.hover
             class="d-inline-block"
             title="Cannot delete a control that is locked or under review"
@@ -67,7 +67,7 @@
 
           <!-- Delete rule -->
           <b-button
-            v-if="projectPermissions == 'admin'"
+            v-if="effectivePermissions == 'admin'"
             v-b-modal.delete-rule-modal
             variant="danger"
           >
@@ -108,9 +108,9 @@ export default {
   components: { CommentModal, NewRuleModalForm },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
-    projectPermissions: {
+    effectivePermissions: {
       type: String,
-      required: true,
+      default: "",
     },
     rule: {
       type: Object,

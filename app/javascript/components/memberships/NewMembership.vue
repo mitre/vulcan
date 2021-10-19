@@ -79,15 +79,27 @@
             :value="authenticityToken"
           />
           <input
-            id="NewProjectMemberEmail"
+            id="NewMembershipMembershipType"
             type="hidden"
-            name="project_member[user_id]"
+            name="membership[membership_type]"
+            :value="membership_type"
+          />
+          <input
+            id="NewMembershipMembershipId"
+            type="hidden"
+            name="membership[membership_id]"
+            :value="membership_id"
+          />
+          <input
+            id="NewMembershipEmail"
+            type="hidden"
+            name="membership[user_id]"
             :value="selectedUserId"
           />
           <input
-            id="NewProjectMemberRole"
+            id="NewMembershipRole"
             type="hidden"
-            name="project_member[role]"
+            name="membership[role]"
             :value="selectedRole"
           />
           <b-button
@@ -111,13 +123,17 @@ import "vue-simple-suggest/dist/styles.css";
 import capitalize from "lodash/capitalize";
 
 export default {
-  name: "NewProjectMember",
+  name: "NewMembership",
   components: {
     VueSimpleSuggest,
   },
   props: {
-    project: {
-      type: Object,
+    membership_type: {
+      type: String,
+      required: true,
+    },
+    membership_id: {
+      type: Number,
       required: true,
     },
     available_members: {
@@ -135,9 +151,10 @@ export default {
       selectedUser: null,
       selectedRole: null,
       roleDescriptions: [
-        "Full control of a Project. Lock Controls, revert controls, and manage project members.",
-        "Author and approve changes to a Control.",
+        "Read only access tot he Project or Component",
         "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
+        "Author and approve changes to a Control.",
+        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
       ],
       userSearchStyles: {
         vueSimpleSuggest: "userSearchVueSimpleSuggest",
@@ -175,7 +192,7 @@ export default {
       this.search = "";
     },
     formAction: function () {
-      return `/projects/${this.project.id}/project_members`;
+      return `/memberships/`;
     },
   },
 };

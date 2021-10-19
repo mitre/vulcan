@@ -4,19 +4,33 @@
 # Components for project relationships.
 #
 class ComponentsController < ApplicationController
-  before_action :set_project, only: %i[create]
-  before_action :set_component, only: %i[destroy]
-  before_action :authorize_admin_project
+  before_action :set_component, only: %i[show update destroy]
+  before_action :set_project, only: %i[show create]
+  before_action :set_component_permissions, only: %i[show]
+
+  before_action :authorize_admin_project, only: %i[create]
+  before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_author_component, only: %i[update]
+  before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
+  before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
+
+  def index
+    @components_json = Component.eager_load(:based_on).where(released: true).to_json
+  end
+
+  def show
+    @component_json = if @effective_permissions
+                        @component.to_json(
+                          methods: %i[histories memberships inherited_memberships available_members rules]
+                        )
+                      else
+                        @component.to_json(methods: %i[rules])
+                      end
+    @project_json = @component.project.to_json
+  end
 
   def create
-    # If not an Vulcan admin, then we must ensure that the current_user has
-    # sufficient permissions on the child project.
-    unless current_user.admin
-      has_permissions = ProjectMember.find_by(user_id: current_user.id, project_id: @project.id).present?
-      raise(NotAuthorizedError, 'You are not authorized to add this project as a component') unless has_permissions
-    end
-
-    component = Component.new(component_params.merge({ project: @project }))
+    component = Component.new(component_create_params.merge({ project: @project }))
     if component.save
       render json: { toast: 'Successfully added component to project.' }
     else
@@ -24,6 +38,20 @@ class ComponentsController < ApplicationController
         toast: {
           title: 'Could not add component to project.',
           message: component.errors.full_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
+    end
+  end
+
+  def update
+    if @component.update(component_update_params)
+      render json: { toast: 'Successfully updated component.' }
+    else
+      render json: {
+        toast: {
+          title: 'Could not update component.',
+          message: @component.errors.full_messages,
           variant: 'danger'
         }
       }, status: :unprocessable_entity
@@ -47,14 +75,28 @@ class ComponentsController < ApplicationController
   private
 
   def set_component
-    @component = Component.find(params[:id])
+    @component = Component.eager_load(
+      rules: %i[reviews disa_rule_descriptions rule_descriptions checks]
+    ).find(params[:id])
   end
 
   def set_project
-    @project = Project.find(params[:project_id])
+    @project = Project.find(params[:project_id] || @component.project_id)
   end
 
-  def component_params
-    params.require(:component).permit(:child_project_id)
+  def component_update_params
+    params.require(:component).permit(
+      :released,
+      :version
+    )
+  end
+
+  def component_create_params
+    params.require(:component).permit(
+      :component_id,
+      :prefix,
+      :security_requirements_guide_id,
+      :version
+    )
   end
 end

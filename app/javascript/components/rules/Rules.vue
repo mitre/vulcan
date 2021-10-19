@@ -2,14 +2,15 @@
   <div class="mb-5">
     <b-breadcrumb :items="breadcrumbs" />
 
-    <h1>{{ project.name }} - Controls</h1>
+    <h1>{{ component.version }} - Controls</h1>
 
     <RulesCodeEditorView
       :project="project"
+      :component="component"
       :rules="reactiveRules"
       :statuses="statuses"
       :severities="severities"
-      :project-permissions="project_permissions"
+      :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
     />
   </div>
@@ -27,7 +28,7 @@ export default {
   components: { RulesCodeEditorView },
   mixins: [AlertMixinVue, FormMixinVue],
   props: {
-    project_permissions: {
+    effective_permissions: {
       type: String,
       required: true,
     },
@@ -36,6 +37,10 @@ export default {
       required: true,
     },
     project: {
+      type: Object,
+      required: true,
+    },
+    component: {
       type: Object,
       required: true,
     },
@@ -67,6 +72,10 @@ export default {
         {
           text: this.project.name,
           href: "/projects/" + this.project.id,
+        },
+        {
+          text: this.component.version,
+          href: "/components/" + this.component.id,
         },
         {
           text: "Controls",
@@ -116,7 +125,7 @@ export default {
      */
     createRule: function (rule, successCallback = null) {
       axios
-        .post(`/projects/${this.project.id}/rules`, { rule: rule })
+        .post(`/components/${this.component.id}/rules`, { rule: rule })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.ruleFetchSuccess(response);

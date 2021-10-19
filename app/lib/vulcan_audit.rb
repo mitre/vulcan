@@ -21,7 +21,9 @@ class VulcanAudit < ::Audited::Audit
   end
 
   # There are 2 different users associated with an action on a user,
-  # the user who is making the change and the user who the change is applied to
+  # the user who is making the change and the user who the change is applied to.
+  #
+  # This function saves information for the user that the change is being applied to.
   def find_and_save_audited_user
     if auditable.respond_to?(:user)
       self.audited_user = auditable.user
