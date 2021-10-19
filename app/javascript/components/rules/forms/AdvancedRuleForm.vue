@@ -5,7 +5,8 @@
         :rule="rule"
         :statuses="statuses"
         :severities="severities"
-        :disabled="disabledForm"
+        :disabled="disabled"
+        :disabled-status="disabledStatus"
       />
 
       <!-- rule_descriptions -->
@@ -49,7 +50,9 @@
       <!-- disa_rule_description -->
       <template
         v-if="
-          rule.status == 'Applicable - Configurable' || rule.status == 'Applicable - Does Not Meet'
+          rule.status == 'Applicable - Configurable' ||
+          rule.status == 'Applicable - Does Not Meet' ||
+          rule.status == 'Not Yet Determined'
         "
       >
         <div class="clickable mb-2" @click="showDisaRuleDescriptions = !showDisaRuleDescriptions">
@@ -177,7 +180,15 @@ export default {
     };
   },
   computed: {
-    disabledForm: function () {
+    disabled: function () {
+      return (
+        this.readOnly ||
+        this.rule.locked ||
+        (this.rule.review_requestor_id ? true : false) ||
+        this.rule.status == "Not Yet Determined"
+      );
+    },
+    disabledStatus: function () {
       return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
     },
     disaDescriptionFormFields: function () {
@@ -197,6 +208,8 @@ export default {
         ];
       } else if (this.rule.status == "Applicable - Does Not Meet") {
         return ["mitigation_control"];
+      } else if (this.rule.status == "Not Yet Determined") {
+        return ["vuln_discussion"];
       }
       return [];
     },
