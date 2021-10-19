@@ -17,7 +17,7 @@
         :value="rule.status"
         :class="inputClass('status')"
         :options="statuses"
-        :disabled="disabled"
+        :disabled="disabledStatus"
         @input="$root.$emit('update:rule', { ...rule, status: $event })"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('status')">
@@ -60,7 +60,9 @@
       </b-form-group>
     </template>
 
-    <template v-if="rule.status == 'Applicable - Configurable'">
+    <template
+      v-if="rule.status == 'Applicable - Configurable' || rule.status == 'Not Yet Determined'"
+    >
       <!-- title -->
       <b-form-group v-if="showFields.includes('title')" :id="`ruleEditor-title-group-${mod}`">
         <label :for="`ruleEditor-title-${mod}`">
@@ -78,7 +80,7 @@
           :value="rule.title"
           :class="inputClass('title')"
           placeholder=""
-          :disabled="disabled"
+          :disabled="disabled || rule.status == 'Not Yet Determined'"
           @input="$root.$emit('update:rule', { ...rule, title: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('title')">
@@ -88,7 +90,9 @@
           {{ invalidFeedback["title"] }}
         </b-form-invalid-feedback>
       </b-form-group>
+    </template>
 
+    <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- version -->
       <b-form-group v-if="showFields.includes('version')" :id="`ruleEditor-version-group-${mod}`">
         <label :for="`ruleEditor-version-${mod}`">
@@ -434,6 +438,10 @@ export default {
       required: true,
     },
     disabled: {
+      type: Boolean,
+      required: true,
+    },
+    disabledStatus: {
       type: Boolean,
       required: true,
     },
