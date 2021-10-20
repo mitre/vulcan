@@ -154,6 +154,17 @@ class Component < ApplicationRecord
     User.where.not(id: exclude_user_ids).select(:id, :name, :email)
   end
 
+  def csv_export
+    headers = ['IA Control', 'CCI', 'SRG ID', 'STIG ID', 'SRG Requirements', 'Requirement', 'SRG VulDiscussion', 'VulDiscussion', 'Status', 'SRG Check', 'Check', 'SRG Fix', 'Fix', 'Severity', 'Mitigation' 'Artifact Description', 'Status Justification']
+
+    csv = ::CSV.generate(headers: true) do |csv|
+      csv << headers
+      rules.each do |rule|
+        csv << rule.csv_attributes
+      end
+    end
+  end
+
   private
 
   def import_srg_rules
