@@ -24,7 +24,6 @@ Rails.application.routes.draw do
   # Make components#index not a child of project
   get '/components', to: 'components#index'
 
-  root to: 'hello#index'
-  get 'hello/index'
+  root to: 'projects#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
 end
