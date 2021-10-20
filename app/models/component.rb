@@ -157,7 +157,7 @@ class Component < ApplicationRecord
   end
 
   def csv_export
-    csv = ::CSV.generate(headers: true) do |csv|
+    ::CSV.generate(headers: true) do |csv|
       csv << ExportConstants::DISA_EXPORT_HEADERS
       rules.each do |rule|
         csv << rule.csv_attributes
