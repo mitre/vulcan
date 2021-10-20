@@ -2,6 +2,8 @@
 
 # Components are home to a collection of Rules.
 class Component < ApplicationRecord
+  include ExportConstants
+
   attr_accessor :skip_import_srg_rules
 
   amoeba do
@@ -155,10 +157,8 @@ class Component < ApplicationRecord
   end
 
   def csv_export
-    headers = ['IA Control', 'CCI', 'SRG ID', 'STIG ID', 'SRG Requirements', 'Requirement', 'SRG VulDiscussion', 'VulDiscussion', 'Status', 'SRG Check', 'Check', 'SRG Fix', 'Fix', 'Severity', 'Mitigation' 'Artifact Description', 'Status Justification']
-
     csv = ::CSV.generate(headers: true) do |csv|
-      csv << headers
+      csv << ExportConstants::DISA_EXPORT_HEADERS
       rules.each do |rule|
         csv << rule.csv_attributes
       end
