@@ -20,6 +20,9 @@ require 'rails/test_unit/railtie'
 # Require rexml for SRG parsing
 require 'rexml/rexml'
 
+# Require csv for CSV export
+require 'csv'
+
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)

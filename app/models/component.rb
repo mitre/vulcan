@@ -2,6 +2,8 @@
 
 # Components are home to a collection of Rules.
 class Component < ApplicationRecord
+  include ExportConstants
+
   attr_accessor :skip_import_srg_rules
 
   amoeba do
@@ -152,6 +154,15 @@ class Component < ApplicationRecord
       )
     ).pluck(:user_id)
     User.where.not(id: exclude_user_ids).select(:id, :name, :email)
+  end
+
+  def csv_export
+    ::CSV.generate(headers: true) do |csv|
+      csv << ExportConstants::DISA_EXPORT_HEADERS
+      rules.each do |rule|
+        csv << rule.csv_attributes
+      end
+    end
   end
 
   private
