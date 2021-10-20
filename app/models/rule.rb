@@ -147,6 +147,28 @@ class Rule < ApplicationRecord
     )
   end
 
+  def csv_attributes
+    [
+      nil,
+      ident,
+      version,
+      "#{component.prefix}-#{id}",
+      nil,
+      title,
+      nil,
+      disa_rule_descriptions.first.vuln_discussion,
+      status,
+      nil,
+      checks.first.content,
+      nil,
+      fixtext,
+      rule_severity,
+      disa_rule_descriptions.first.mitigation_control,
+      nil,
+      status_justification
+    ]
+  end
+
   private
 
   def component_must_not_be_released
