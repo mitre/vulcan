@@ -1,7 +1,10 @@
 <template>
   <div v-if="check._destroy != true">
     <!-- system -->
-    <b-form-group v-if="showFields.includes('system')" :id="`ruleEditor-check-system-group-${mod}`">
+    <b-form-group
+      v-if="fields.displayed.includes('system')"
+      :id="`ruleEditor-check-system-group-${mod}`"
+    >
       <label :for="`ruleEditor-check-system-${mod}`">
         System
         <i
@@ -17,7 +20,7 @@
         :value="check.system"
         :class="inputClass('system')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('system')"
         @input="$root.$emit('update:check', rule, { ...check, system: $event }, index)"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('system')">
@@ -30,7 +33,7 @@
 
     <!-- content_ref_name -->
     <b-form-group
-      v-if="showFields.includes('content_ref_name')"
+      v-if="fields.displayed.includes('content_ref_name')"
       :id="`ruleEditor-check-content_ref_name-group-${mod}`"
     >
       <label :for="`ruleEditor-check-content_ref_name-${mod}`">
@@ -48,7 +51,7 @@
         :value="check.content_ref_name"
         :class="inputClass('content_ref_name')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('content_ref_name')"
         @input="$root.$emit('update:check', rule, { ...check, content_ref_name: $event }, index)"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('content_ref_name')">
@@ -61,7 +64,7 @@
 
     <!-- content_ref_href -->
     <b-form-group
-      v-if="showFields.includes('content_ref_href')"
+      v-if="fields.displayed.includes('content_ref_href')"
       :id="`ruleEditor-check-content_ref_href-group-${mod}`"
     >
       <label :for="`ruleEditor-check-content_ref_href-${mod}`">
@@ -79,7 +82,7 @@
         :value="check.content_ref_href"
         :class="inputClass('content_ref_href')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('content_ref_href')"
         @input="$root.$emit('update:check', rule, { ...check, content_ref_href: $event }, index)"
       />
       <b-form-valid-feedback v-if="hasValidFeedback('content_ref_href')">
@@ -92,7 +95,7 @@
 
     <!-- content -->
     <b-form-group
-      v-if="showFields.includes('content')"
+      v-if="fields.displayed.includes('content')"
       :id="`ruleEditor-check-content-group-${mod}`"
     >
       <label :for="`ruleEditor-check-content-${mod}`">
@@ -110,7 +113,7 @@
         :value="check.content"
         :class="inputClass('content')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('content')"
         rows="1"
         max-rows="99"
         @input="$root.$emit('update:check', rule, { ...check, content: $event }, index)"
@@ -148,9 +151,14 @@ export default {
       type: Boolean,
       required: true,
     },
-    showFields: {
-      type: Array,
-      default: () => ["system", "content_ref_name", "content_ref_href", "content"],
+    fields: {
+      type: Object,
+      default: () => {
+        return {
+          displayed: ["system", "content_ref_name", "content_ref_href", "content"],
+          disabled: [],
+        };
+      },
     },
   },
   data: function () {

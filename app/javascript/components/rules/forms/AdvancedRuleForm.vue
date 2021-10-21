@@ -6,7 +6,7 @@
         :statuses="statuses"
         :severities="severities"
         :disabled="disabled"
-        :disabled-status="disabledStatus"
+        :fields="ruleFormFields"
       />
 
       <!-- rule_descriptions -->
@@ -29,11 +29,11 @@
                 :rule="rule"
                 :index="index"
                 :description="description"
-                :disabled="disabledForm"
+                :disabled="disabled"
               />
 
               <a
-                v-if="!disabledForm"
+                v-if="!disabled"
                 class="clickable text-dark"
                 @click="$root.$emit('update:description', rule, { ...description, _destroy: true }, index)"
               >
@@ -43,7 +43,7 @@
             </div>
           </div>
 
-          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="!disabledForm"><i class="mdi mdi-plus"></i>Add Description</b-button>
+          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="!disabled"><i class="mdi mdi-plus"></i>Add Description</b-button>
         </b-collapse>
       </template> -->
 
@@ -81,12 +81,12 @@
                 :rule="rule"
                 :index="index"
                 :description="description"
-                :disabled="disabledForm"
-                :show-fields="disaDescriptionFormFields"
+                :disabled="disabled"
+                :fields="disaDescriptionFormFields"
               />
               <!-- This is commented out because there is currently the assumption that users will only need one description -->
               <!-- <a
-                v-if="!disabledForm"
+                v-if="!disabled"
                 class="clickable text-dark"
                 @click="
                   $root.$emit('update:disaDescription', rule, { ...description, _destroy: true }, index)
@@ -99,7 +99,7 @@
           </div>
 
           <!-- This is commented out because there is currently the assumption that users will only need one description -->
-          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="disabledForm"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
+          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="disabled"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
         </b-collapse>
       </template>
 
@@ -120,10 +120,10 @@
               <p>
                 <strong>{{ check.id == null ? "New " : "" }}Check</strong>
               </p>
-              <CheckForm :rule="rule" :index="index" :check="check" :disabled="disabledForm" />
+              <CheckForm :rule="rule" :index="index" :check="check" :disabled="disabled" />
               <!-- Remove link -->
               <a
-                v-if="!disabledForm"
+                v-if="!disabled"
                 class="clickable text-dark"
                 @click="$root.$emit('update:check', rule, { ...check, _destroy: true }, index)"
               >
@@ -133,7 +133,7 @@
             </div>
           </div>
 
-          <b-button v-if="!disabledForm" class="mb-2" @click="$root.$emit('add:check', rule)"
+          <b-button v-if="!disabled" class="mb-2" @click="$root.$emit('add:check', rule)"
             ><i class="mdi mdi-plus" />Add Check</b-button
           >
         </b-collapse>
@@ -181,37 +181,66 @@ export default {
   },
   computed: {
     disabled: function () {
-      return (
-        this.readOnly ||
-        this.rule.locked ||
-        (this.rule.review_requestor_id ? true : false) ||
-        this.rule.status == "Not Yet Determined"
-      );
-    },
-    disabledStatus: function () {
       return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
+    },
+    // The fields to show need to be dynamic based on the rule status
+    ruleFormFields: function () {
+      if (this.rule.status == "Applicable - Configurable") {
+        return {
+          displayed: [
+            "status",
+            "status_justification",
+            "title",
+            "version",
+            "rule_severity",
+            "rule_weight",
+            "artifact_description",
+            "fix_id",
+            "fixtext_fixref",
+            "fixtext",
+            "ident",
+            "ident_system",
+            "vendor_comments",
+          ],
+          disabled: [],
+        };
+      } else if (this.rule.status == "Not Yet Determined") {
+        return {
+          displayed: ["status", "title"],
+          disabled: ["title"],
+        };
+      } else {
+        return {
+          displayed: ["status", "status_justification"],
+          disabled: [],
+        };
+      }
     },
     disaDescriptionFormFields: function () {
       if (this.rule.status == "Applicable - Configurable") {
-        return [
-          "documentable",
-          "vuln_discussion",
-          "false_positives",
-          "false_negatives",
-          "mitigations",
-          "severity_override_guidance",
-          "potential_impacts",
-          "third_party_tools",
-          "mitigation_control",
-          "responsibility",
-          "ia_controls",
-        ];
+        return {
+          displayed: [
+            "documentable",
+            "vuln_discussion",
+            "false_positives",
+            "false_negatives",
+            "mitigations",
+            "severity_override_guidance",
+            "potential_impacts",
+            "third_party_tools",
+            "mitigation_control",
+            "responsibility",
+            "ia_controls",
+          ],
+          disabled: [],
+        };
       } else if (this.rule.status == "Applicable - Does Not Meet") {
-        return ["mitigation_control"];
+        return { displayed: ["mitigation_control"], disabled: [] };
       } else if (this.rule.status == "Not Yet Determined") {
-        return ["vuln_discussion"];
+        return { displayed: ["vuln_discussion"], disabled: [] };
+      } else {
+        return { displayed: [], disabled: [] };
       }
-      return [];
     },
   },
 };

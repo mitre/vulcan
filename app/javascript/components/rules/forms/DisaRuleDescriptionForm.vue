@@ -1,10 +1,10 @@
 <template>
   <div v-if="description._destroy != true">
     <!-- documentable -->
-    <b-form-group v-if="showFields.includes('documentable')">
+    <b-form-group v-if="fields.displayed.includes('documentable')">
       <b-form-checkbox
         :checked="description.documentable"
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('documentable')"
         @input="
           $root.$emit(
             'update:disaDescription',
@@ -27,7 +27,7 @@
 
     <!-- vuln_discussion -->
     <b-form-group
-      v-if="showFields.includes('vuln_discussion') || rule.status == 'Not Yet Determined'"
+      v-if="fields.displayed.includes('vuln_discussion') || rule.status == 'Not Yet Determined'"
       :id="`ruleEditor-disa_rule_description-vuln_discussion-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-vuln_discussion-${mod}`">
@@ -45,7 +45,11 @@
         :value="description.vuln_discussion"
         :class="inputClass('vuln_discussion')"
         placeholder=""
-        :disabled="disabled || rule.status == 'Not Yet Determined'"
+        :disabled="
+          disabled ||
+          fields.disabled.includes('vuln_discussion') ||
+          rule.status == 'Not Yet Determined'
+        "
         rows="1"
         max-rows="99"
         @input="
@@ -67,7 +71,7 @@
 
     <!-- false_positives -->
     <b-form-group
-      v-if="showFields.includes('false_positives')"
+      v-if="fields.displayed.includes('false_positives')"
       :id="`ruleEditor-disa_rule_description-false_positives-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-false_positives-${mod}`">
@@ -85,7 +89,7 @@
         :value="description.false_positives"
         :class="inputClass('false_positives')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('false_positives')"
         rows="1"
         max-rows="99"
         @input="
@@ -107,7 +111,7 @@
 
     <!-- false_negatives -->
     <b-form-group
-      v-if="showFields.includes('false_negatives')"
+      v-if="fields.displayed.includes('false_negatives')"
       :id="`ruleEditor-disa_rule_description-false_negatives-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-false_negatives-${mod}`">
@@ -125,7 +129,7 @@
         :value="description.false_negatives"
         :class="inputClass('false_negatives')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('false_negatives')"
         rows="1"
         max-rows="99"
         @input="
@@ -147,7 +151,7 @@
 
     <!-- mitigations -->
     <b-form-group
-      v-if="showFields.includes('mitigations')"
+      v-if="fields.displayed.includes('mitigations')"
       :id="`ruleEditor-disa_rule_description-mitigations-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-mitigations-${mod}`">
@@ -165,7 +169,7 @@
         :value="description.mitigations"
         :class="inputClass('mitigations')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('mitigations')"
         rows="1"
         max-rows="99"
         @input="
@@ -187,7 +191,7 @@
 
     <!-- severity_override_guidance -->
     <b-form-group
-      v-if="showFields.includes('severity_override_guidance')"
+      v-if="fields.displayed.includes('severity_override_guidance')"
       :id="`ruleEditor-disa_rule_description-severity_override_guidance-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`">
@@ -205,7 +209,7 @@
         :value="description.severity_override_guidance"
         :class="inputClass('severity_override_guidance')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('severity_override_guidance')"
         rows="1"
         max-rows="99"
         @input="
@@ -227,7 +231,7 @@
 
     <!-- potential_impacts -->
     <b-form-group
-      v-if="showFields.includes('potential_impacts')"
+      v-if="fields.displayed.includes('potential_impacts')"
       :id="`ruleEditor-disa_rule_description-potential_impacts-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-potential_impacts-${mod}`">
@@ -245,7 +249,7 @@
         :value="description.potential_impacts"
         :class="inputClass('potential_impacts')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('potential_impacts')"
         rows="1"
         max-rows="99"
         @input="
@@ -267,7 +271,7 @@
 
     <!-- third_party_tools -->
     <b-form-group
-      v-if="showFields.includes('third_party_tools')"
+      v-if="fields.displayed.includes('third_party_tools')"
       :id="`ruleEditor-disa_rule_description-third_party_tools-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-third_party_tools-${mod}`">
@@ -285,7 +289,7 @@
         :value="description.third_party_tools"
         :class="inputClass('third_party_tools')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('third_party_tools')"
         rows="1"
         max-rows="99"
         @input="
@@ -307,7 +311,7 @@
 
     <!-- mitigation_control -->
     <b-form-group
-      v-if="showFields.includes('mitigation_control')"
+      v-if="fields.displayed.includes('mitigation_control')"
       :id="`ruleEditor-disa_rule_description-mitigation_control-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-mitigation_control-${mod}`">
@@ -325,7 +329,7 @@
         :value="description.mitigation_control"
         :class="inputClass('mitigation_control')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('mitigation_control')"
         rows="1"
         max-rows="99"
         @input="
@@ -347,7 +351,7 @@
 
     <!-- responsibility -->
     <b-form-group
-      v-if="showFields.includes('responsibility')"
+      v-if="fields.displayed.includes('responsibility')"
       :id="`ruleEditor-disa_rule_description-responsibility-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-responsibility-${mod}`">
@@ -365,7 +369,7 @@
         :value="description.responsibility"
         :class="inputClass('responsibility')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('responsibility')"
         rows="1"
         max-rows="99"
         @input="
@@ -387,7 +391,7 @@
 
     <!-- ia_controls -->
     <b-form-group
-      v-if="showFields.includes('ia_controls')"
+      v-if="fields.displayed.includes('ia_controls')"
       :id="`ruleEditor-disa_rule_description-ia_controls-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-ia_controls-${mod}`">
@@ -405,7 +409,7 @@
         :value="description.ia_controls"
         :class="inputClass('ia_controls')"
         placeholder=""
-        :disabled="disabled"
+        :disabled="disabled || fields.disabled.includes('ia_controls')"
         rows="1"
         max-rows="99"
         @input="
@@ -449,21 +453,26 @@ export default {
       type: Boolean,
       required: true,
     },
-    showFields: {
-      type: Array,
-      default: () => [
-        "documentable",
-        "vuln_discussion",
-        "false_positives",
-        "false_negatives",
-        "mitigations",
-        "severity_override_guidance",
-        "potential_impacts",
-        "third_party_tools",
-        "mitigation_control",
-        "responsibility",
-        "ia_controls",
-      ],
+    fields: {
+      type: Object,
+      default: () => {
+        return {
+          displayed: [
+            "documentable",
+            "vuln_discussion",
+            "false_positives",
+            "false_negatives",
+            "mitigations",
+            "severity_override_guidance",
+            "potential_impacts",
+            "third_party_tools",
+            "mitigation_control",
+            "responsibility",
+            "ia_controls",
+          ],
+          disabled: [],
+        };
+      },
     },
   },
   data: function () {
