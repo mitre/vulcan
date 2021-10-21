@@ -96,7 +96,8 @@ class ComponentsController < ApplicationController
       :component_id,
       :prefix,
       :security_requirements_guide_id,
-      :version
+      :version,
+      :advanced_fields
     )
   end
 end

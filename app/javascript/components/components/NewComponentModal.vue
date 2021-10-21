@@ -63,6 +63,19 @@
                 autocomplete="off"
               />
             </b-form-group>
+            <!-- Toggle advanced fields -->
+            <b-form-group>
+              <b-form-checkbox v-model="advanced_fields">
+                Advanced Fields
+                <i
+                  v-if="tooltips['advanced_fields']"
+                  v-b-tooltip.hover.html
+                  class="mdi mdi-information"
+                  aria-hidden="true"
+                  :title="tooltips['advanced_fields']"
+                />
+              </b-form-checkbox>
+            </b-form-group>
           </b-col>
         </b-row>
       </b-form>
@@ -106,11 +119,15 @@ export default {
   },
   data: function () {
     return {
-      prefix: this.predetermined_prefix,
-      security_requirements_guide_id: this.predetermined_security_requirements_guide_id,
-      component_id: this.predetermined_component_id,
-      version: "",
       srgs: [],
+      component_id: this.predetermined_component_id,
+      security_requirements_guide_id: this.predetermined_security_requirements_guide_id,
+      version: "",
+      prefix: this.predetermined_prefix,
+      advanced_fields: this.advanced_fields,
+      tooltips: {
+        advanced_fields: "Enable advanced fields for this component",
+      },
     };
   },
   methods: {
@@ -154,10 +171,11 @@ export default {
 
       let payload = {
         component: {
-          prefix: this.prefix,
+          component_id: this.component_id,
           security_requirements_guide_id: this.security_requirements_guide_id,
           version: this.version,
-          component_id: this.component_id,
+          prefix: this.prefix,
+          advanced_fields: this.advanced_fields,
         },
       };
 

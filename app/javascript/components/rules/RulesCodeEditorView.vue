@@ -27,7 +27,12 @@
         <div class="row">
           <!-- Main editor column -->
           <div class="col-7 border-right">
-            <RuleEditor :rule="selectedRule()" :statuses="statuses" :severities="severities" />
+            <RuleEditor
+              :rule="selectedRule()"
+              :statuses="statuses"
+              :severities="severities"
+              :advanced_fields="component.advanced_fields"
+            />
           </div>
 
           <!-- Additional info column -->
