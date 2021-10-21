@@ -5,8 +5,7 @@
         :rule="rule"
         :statuses="statuses"
         :severities="severities"
-        :disabled="disabledForm"
-        :disabled-status="disabledStatus"
+        :disabled="disabled"
         :fields="ruleFormFields"
       />
 

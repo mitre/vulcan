@@ -8,6 +8,7 @@
     <div class="input-group ml-2">
       <input
         id="ruleSearch"
+        ref="ruleSearch"
         type="text"
         class="form-control"
         placeholder="Search controls..."
@@ -291,6 +292,7 @@ export default {
     if (localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`)) {
       try {
         this.filters = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
+        this.$refs.ruleSearch.value = this.filters.search;
       } catch (e) {
         localStorage.removeItem(`ruleNavigatorFilters-${this.componentId}`);
       }
@@ -368,36 +370,37 @@ export default {
     // the case then expect this function to change.
     searchTextForRule: function (rule) {
       const ruleSearchAttrs = [
-        "artifact_description",
-        "fix_id",
+        // "artifact_description",
+        // "fix_id",
         "fixtext",
-        "fixtext_fixref",
-        "ident",
-        "ident_system",
-        "rule_id",
+        // "fixtext_fixref",
+        // "ident",
+        // "ident_system",
+        // "rule_id",
         "rule_severity",
-        "rule_weight",
-        "status",
+        // "rule_weight",
+        // "status",
+        "status_justification",
         "title",
         "vendor_comments",
-        "version",
+        // "version",
       ];
       const checkDescriptionSearchAttrs = [
         "content",
-        "content_ref_href",
-        "content_ref_name",
-        "system",
+        // "content_ref_href",
+        // "content_ref_name",
+        // "system",
       ];
       const disaDescriptionSearchAttrs = [
-        "false_negatives",
-        "false_positives",
-        "ia_controls",
-        "mitigation_controls",
-        "mitigations",
-        "potential_impacts",
-        "responsibility",
-        "security_override_guidance",
-        "third_party_tools",
+        // "false_negatives",
+        // "false_positives",
+        // "ia_controls",
+        // "mitigation_controls",
+        // "mitigations",
+        // "potential_impacts",
+        // "responsibility",
+        // "security_override_guidance",
+        // "third_party_tools",
         "vuln_discussion",
       ];
       // Start with the rule ID as searchable
