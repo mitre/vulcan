@@ -155,17 +155,17 @@ class Rule < ApplicationRecord
       version,
       "#{component.prefix}-#{id}",
       rule_severity,
-      nil, #original srg title
+      nil, # original srg title
       title,
-      nil, #original srg vuln discussion
+      nil, # original srg vuln discussion
       disa_rule_descriptions.first.vuln_discussion,
       status,
-      nil, #original SRG check content
+      nil, # original SRG check content
       checks.first.content,
-      nil, #original SRG fix text
+      nil, # original SRG fix text
       fixtext,
       status_justification,
-      disa_rule_descriptions.first.mitigation_control, #should be another field
+      disa_rule_descriptions.first.mitigation_control, # should be another field
       artifact_description,
       vendor_comments
     ]
