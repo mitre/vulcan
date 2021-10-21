@@ -3,7 +3,7 @@
     <!-- Rule search -->
     <p class="mt-3">
       <strong>Filter &amp; Search</strong>
-      <span class="text-primary clickable float-right" @click="clearFilters">clear filters</span>
+      <span class="text-primary clickable float-right" @click="clearFilters">reset</span>
     </p>
     <div class="input-group ml-2">
       <input
@@ -102,26 +102,39 @@
       </b-form-checkbox>
     </b-form-group>
 
+    <hr class="mt-2 mb-2" />
+
     <!-- Currently opened controls -->
-    <p class="mt-3 mb-0"><strong>Open Controls</strong></p>
-    <div
-      v-for="rule in openRules"
-      :key="`open-${rule.id}`"
-      :class="ruleRowClass(rule)"
-      @click="ruleSelected(rule)"
-    >
-      <i
-        class="mdi mdi-close closeRuleButton"
-        aria-hidden="true"
-        @click.stop="ruleDeselected(rule)"
-      />
-      {{ formatRuleId(rule.id) }}
-      <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
-      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
+    <p class="mt-0 mb-0"><strong>Open Controls</strong></p>
+    <div v-if="openRules.length === 0">
+      <em>No controls selected</em>
+    </div>
+    <div v-else>
+      <div
+        v-for="rule in openRules"
+        :key="`open-${rule.id}`"
+        :class="ruleRowClass(rule)"
+        @click="ruleSelected(rule)"
+      >
+        <i
+          class="mdi mdi-close closeRuleButton"
+          aria-hidden="true"
+          @click.stop="ruleDeselected(rule)"
+        />
+        {{ formatRuleId(rule.id) }}
+        <i
+          v-if="rule.review_requestor_id"
+          class="mdi mdi-file-find float-right"
+          aria-hidden="true"
+        />
+        <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
+      </div>
     </div>
 
+    <hr class="mt-2 mb-2" />
+
     <!-- All project controls -->
-    <p class="mt-3 mb-0">
+    <p class="mt-0 mb-0">
       <strong>All Controls</strong>
       <template v-if="!readOnly">
         <i v-b-modal.create-rule-modal class="text-primary mdi mdi-plus clickable float-right" />
@@ -436,6 +449,7 @@ export default {
     },
     // Helper to clear all filters
     clearFilters: function () {
+      this.$refs.ruleSearch.value = "";
       this.filters = {
         search: "",
         acFilterChecked: true, // Applicable - Configurable
