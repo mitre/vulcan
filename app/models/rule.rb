@@ -4,6 +4,7 @@
 # Benchmark XCCDF.
 class Rule < ApplicationRecord
   include RuleConstants
+  include CciMap
 
   amoeba do
     include_association :rule_descriptions
@@ -149,23 +150,24 @@ class Rule < ApplicationRecord
 
   def csv_attributes
     [
-      nil,
+      CCI_TO_NIST_CONSTANT[ident],
       ident,
       version,
       "#{component.prefix}-#{id}",
-      nil,
+      rule_severity,
+      nil, #original srg title
       title,
-      nil,
+      nil, #original srg vuln discussion
       disa_rule_descriptions.first.vuln_discussion,
       status,
-      nil,
+      nil, #original SRG check content
       checks.first.content,
-      nil,
+      nil, #original SRG fix text
       fixtext,
-      rule_severity,
-      disa_rule_descriptions.first.mitigation_control,
-      nil,
-      status_justification
+      status_justification,
+      disa_rule_descriptions.first.mitigation_control, #should be another field
+      artifact_description,
+      vendor_comments
     ]
   end
 
