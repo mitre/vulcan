@@ -66,6 +66,9 @@ export default {
     disabled: function () {
       return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
     },
+    disabledStatus: function () {
+      return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
+    },
     // The fields to show need to be dynamic based on the rule status
     ruleFormFields: function () {
       if (this.rule.status == "Applicable - Configurable") {
