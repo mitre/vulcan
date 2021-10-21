@@ -2,13 +2,15 @@
 
 # rubocop:disable Metrics/ModuleLength
 module CciMap
-  CCI_TO_NIST_CONSTANT = {
-  <% @cci_to_nist_mapping.each_key do |key| -%>
-    <% if @last.eql?(key) -%>
-      '<%= key %>': '<%= @cci_to_nist_mapping[key] %>'
-    <% else -%>
-'<%= key %>': '<%= @cci_to_nist_mapping[key] %>',
-    <% end -%>
-  <% end -%>}.freeze
+  module Constants
+    CCI_TO_NIST_CONSTANT = {
+    <% @cci_to_nist_mapping.each_key do |key| -%>
+      <% if @last.eql?(key) -%>
+        '<%= key %>': '<%= @cci_to_nist_mapping[key] %>'
+      <% else -%>
+        '<%= key %>': '<%= @cci_to_nist_mapping[key] %>',
+      <% end -%>
+    <% end -%>}.freeze
+  end
 end
 # rubocop:enable Metrics/ModuleLength

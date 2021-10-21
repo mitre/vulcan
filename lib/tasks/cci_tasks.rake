@@ -24,8 +24,8 @@ namespace :cci do
       @cci_to_nist_mapping[cci_number.to_sym] = nist_control
     end
     @last = @cci_to_nist_mapping.keys.last
-    File.write(Rails.root.join('app', 'lib', 'cci_map', 'cci_to_nist_constant.rb'), template.result)
-    puts('Running `bundle exec rubocop -a app/lib/cci_map/cci_to_nist_constant.rb` to finish.')
-    system('bundle exec rubocop -a app/lib/cci_map/cci_to_nist_constant.rb')
+    File.write(Rails.root.join('app', 'lib', 'cci_map', 'constants.rb'), template.result)
+    puts('Running `bundle exec rubocop -a app/lib/cci_map/constants.rb` to finish.')
+    system('bundle exec rubocop -a app/lib/cci_map/constants.rb')
   end
 end
