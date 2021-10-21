@@ -51,6 +51,19 @@
               </b-button>
             </span>
 
+            <b-form-checkbox
+              v-if="role_gte_to(effective_permissions, 'admin')"
+              v-model="component.advanced_fields"
+              name="editor-selector-check-button"
+              class="m-2 d-inline-block"
+              switch
+              @change="toggleAdvancedFields"
+            >
+              Advanced Fields
+            </b-form-checkbox>
+
+            <div class="m-3" />
+
             <RulesReadOnlyView
               :effective-permissions="effective_permissions"
               :current-user-id="current_user_id"
@@ -234,9 +247,28 @@ export default {
   },
   methods: {
     refreshComponent: function () {
-      axios.get(`/components/${this.components.id}`).then((response) => {
-        this.components = response.data;
+      axios.get(`/components/${this.component.id}`).then((response) => {
+        this.component = response.data;
       });
+    },
+    toggleAdvancedFields: function (advanced_fields) {
+      if (
+        confirm(
+          `Are you sure you want to ${advanced_fields ? "enable" : "disable"} advanced fields?`
+        )
+      ) {
+        let payload = {
+          component: {
+            advanced_fields: advanced_fields,
+          },
+        };
+        axios
+          .patch(`/components/${this.component.id}`, payload)
+          .then(this.addComponentSuccess)
+          .catch(this.alertOrNotifyResponse);
+      } else {
+        this.component.advanced_fields = !advanced_fields;
+      }
     },
   },
 };
