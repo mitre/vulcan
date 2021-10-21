@@ -1,35 +1,37 @@
 <template>
   <b-form>
     <!-- status -->
-    <b-form-group :id="`ruleEditor-status-group-${mod}`">
-      <label :for="`ruleEditor-status-${mod}`">
-        Status
-        <i
-          v-if="tooltips['status']"
-          v-b-tooltip.hover.html
-          class="mdi mdi-information"
-          aria-hidden="true"
-          :title="tooltips['status']"
+    <template v-if="fields.displayed.includes('status')">
+      <b-form-group :id="`ruleEditor-status-group-${mod}`">
+        <label :for="`ruleEditor-status-${mod}`">
+          Status
+          <i
+            v-if="tooltips['status']"
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            :title="tooltips['status']"
+          />
+        </label>
+        <b-form-select
+          :id="`ruleEditor-status-${mod}`"
+          :value="rule.status"
+          :class="inputClass('status')"
+          :options="statuses"
+          :disabled="disabled || fields.disabled.includes('status')"
+          @input="$root.$emit('update:rule', { ...rule, status: $event })"
         />
-      </label>
-      <b-form-select
-        :id="`ruleEditor-status-${mod}`"
-        :value="rule.status"
-        :class="inputClass('status')"
-        :options="statuses"
-        :disabled="disabledStatus"
-        @input="$root.$emit('update:rule', { ...rule, status: $event })"
-      />
-      <b-form-valid-feedback v-if="hasValidFeedback('status')">
-        {{ validFeedback["status"] }}
-      </b-form-valid-feedback>
-      <b-form-invalid-feedback v-if="hasInvalidFeedback('status')">
-        {{ invalidFeedback["status"] }}
-      </b-form-invalid-feedback>
-    </b-form-group>
+        <b-form-valid-feedback v-if="hasValidFeedback('status')">
+          {{ validFeedback["status"] }}
+        </b-form-valid-feedback>
+        <b-form-invalid-feedback v-if="hasInvalidFeedback('status')">
+          {{ invalidFeedback["status"] }}
+        </b-form-invalid-feedback>
+      </b-form-group>
+    </template>
 
     <!-- status_justification -->
-    <template v-if="rule.status != 'Not Yet Determined'">
+    <template v-if="fields.displayed.includes('status_justification')">
       <b-form-group :id="`ruleEditor-status_justification-group-${mod}`">
         <label :for="`ruleEditor-status_justification-${mod}`">
           Status Justification
@@ -46,7 +48,7 @@
           :value="rule.status_justification"
           :class="inputClass('status_justification')"
           placeholder=""
-          :disabled="disabled"
+          :disabled="disabled || fields.disabled.includes('status_justification')"
           rows="1"
           max-rows="99"
           @input="$root.$emit('update:rule', { ...rule, status_justification: $event })"
@@ -60,11 +62,9 @@
       </b-form-group>
     </template>
 
-    <template
-      v-if="rule.status == 'Applicable - Configurable' || rule.status == 'Not Yet Determined'"
-    >
+    <template v-if="fields.displayed.includes('title')">
       <!-- title -->
-      <b-form-group v-if="showFields.includes('title')" :id="`ruleEditor-title-group-${mod}`">
+      <b-form-group v-if="fields.displayed.includes('title')" :id="`ruleEditor-title-group-${mod}`">
         <label :for="`ruleEditor-title-${mod}`">
           Title
           <i
@@ -80,7 +80,7 @@
           :value="rule.title"
           :class="inputClass('title')"
           placeholder=""
-          :disabled="disabled || rule.status == 'Not Yet Determined'"
+          :disabled="disabled || fields.disabled.includes('title')"
           @input="$root.$emit('update:rule', { ...rule, title: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('title')">
@@ -94,7 +94,10 @@
 
     <template v-if="rule.status == 'Applicable - Configurable'">
       <!-- version -->
-      <b-form-group v-if="showFields.includes('version')" :id="`ruleEditor-version-group-${mod}`">
+      <b-form-group
+        v-if="fields.displayed.includes('version')"
+        :id="`ruleEditor-version-group-${mod}`"
+      >
         <label :for="`ruleEditor-version-${mod}`">
           Version
           <i
@@ -110,7 +113,7 @@
           :value="rule.version"
           :class="inputClass('version')"
           placeholder=""
-          :disabled="disabled"
+          :disabled="disabled || fields.disabled.includes('version')"
           @input="$root.$emit('update:rule', { ...rule, version: $event })"
         />
         <b-form-valid-feedback v-if="hasValidFeedback('version')">
@@ -124,7 +127,7 @@
       <div class="row">
         <!-- rule_severity -->
         <b-form-group
-          v-if="showFields.includes('rule_severity')"
+          v-if="fields.displayed.includes('rule_severity')"
           :id="`ruleEditor-rule_severity-group-${mod}`"
           class="col-6"
         >
@@ -143,7 +146,7 @@
             :value="rule.rule_severity"
             :class="inputClass('rule_severity')"
             :options="severities"
-            :disabled="disabled"
+            :disabled="disabled || fields.disabled.includes('rule_severity')"
             @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
@@ -156,7 +159,7 @@
 
         <!-- rule_weight -->
         <b-form-group
-          v-if="showFields.includes('rule_weight')"
+          v-if="fields.displayed.includes('rule_weight')"
           :id="`ruleEditor-rule_weight-group-${mod}`"
           class="col-6"
         >
@@ -175,7 +178,7 @@
             :value="rule.rule_weight"
             :class="inputClass('rule_weight')"
             placeholder=""
-            :disabled="disabled"
+            :disabled="disabled || fields.disabled.includes('rule_weight').disabled"
             @input="$root.$emit('update:rule', { ...rule, rule_weight: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('rule_weight')">
@@ -189,7 +192,7 @@
 
       <!-- artifact_description -->
       <b-form-group
-        v-if="showFields.includes('artifact_description')"
+        v-if="fields.displayed.includes('artifact_description')"
         :id="`ruleEditor-artifact_description-group-${mod}`"
       >
         <label :for="`ruleEditor-artifact_description-${mod}`">
@@ -207,7 +210,7 @@
           :value="rule.artifact_description"
           :class="inputClass('artifact_description')"
           placeholder=""
-          :disabled="disabled"
+          :disabled="disabled || fields.disabled.includes('artifact_description')"
           rows="1"
           max-rows="99"
           @input="$root.$emit('update:rule', { ...rule, artifact_description: $event })"
@@ -223,7 +226,7 @@
       <div class="row">
         <!-- fix_id -->
         <b-form-group
-          v-if="showFields.includes('fix_id')"
+          v-if="fields.displayed.includes('fix_id')"
           :id="`ruleEditor-fix_id-group-${mod}`"
           class="col-6"
         >
@@ -242,7 +245,7 @@
             :value="rule.fix_id"
             :class="inputClass('fix_id')"
             placeholder=""
-            :disabled="disabled"
+            :disabled="disabled || fields.disabled.includes('fix_id')"
             @input="$root.$emit('update:rule', { ...rule, fix_id: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('fix_id')">
@@ -255,7 +258,7 @@
 
         <!-- fixtext_fixref -->
         <b-form-group
-          v-if="showFields.includes('fixtext_fixref')"
+          v-if="fields.displayed.includes('fixtext_fixref')"
           :id="`ruleEditor-fixtext_fixref-group-${mod}`"
           class="col-6"
         >
@@ -274,7 +277,7 @@
             :value="rule.fixtext_fixref"
             :class="inputClass('fixtext_fixref')"
             placeholder=""
-            :disabled="disabled"
+            :disabled="disabled || fields.disabled.includes('fixtext_fixref')"
             @input="$root.$emit('update:rule', { ...rule, fixtext_fixref: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('fixtext_fixref')">
@@ -287,7 +290,10 @@
       </div>
 
       <!-- fixtext -->
-      <b-form-group v-if="showFields.includes('fixtext')" :id="`ruleEditor-fixtext-group-${mod}`">
+      <b-form-group
+        v-if="fields.displayed.includes('fixtext')"
+        :id="`ruleEditor-fixtext-group-${mod}`"
+      >
         <label :for="`ruleEditor-fixtext-${mod}`">
           Fix Text
           <i
@@ -303,7 +309,7 @@
           :value="rule.fixtext"
           :class="inputClass('fixtext')"
           placeholder=""
-          :disabled="disabled"
+          :disabled="disabled || fields.disabled.includes('fixtext')"
           rows="1"
           max-rows="99"
           @input="$root.$emit('update:rule', { ...rule, fixtext: $event })"
@@ -319,7 +325,7 @@
       <div class="row">
         <!-- ident -->
         <b-form-group
-          v-if="showFields.includes('ident')"
+          v-if="fields.displayed.includes('ident')"
           :id="`ruleEditor-ident-group-${mod}`"
           class="col-4"
         >
@@ -338,7 +344,7 @@
             :value="rule.ident"
             :class="inputClass('ident')"
             placeholder=""
-            :disabled="disabled"
+            :disabled="disabled || fields.disabled.includes('ident')"
             @input="$root.$emit('update:rule', { ...rule, ident: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('ident')">
@@ -351,7 +357,7 @@
 
         <!-- ident_system -->
         <b-form-group
-          v-if="showFields.includes('ident_system')"
+          v-if="fields.displayed.includes('ident_system')"
           :id="`ruleEditor-ident_system-group-${mod}`"
           class="col-8"
         >
@@ -370,7 +376,7 @@
             :value="rule.ident_system"
             :class="inputClass('ident_system')"
             placeholder=""
-            :disabled="disabled"
+            :disabled="disabled || fields.disabled.includes('ident_system')"
             @input="$root.$emit('update:rule', { ...rule, ident_system: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('ident_system')">
@@ -384,7 +390,7 @@
 
       <!-- vendor_comments -->
       <b-form-group
-        v-if="showFields.includes('vendor_comments')"
+        v-if="fields.displayed.includes('vendor_comments')"
         :id="`ruleEditor-vendor_comments-group-${mod}`"
       >
         <label :for="`ruleEditor-vendor_comments-${mod}`">
@@ -402,7 +408,7 @@
           :value="rule.vendor_comments"
           :class="inputClass('vendor_comments')"
           placeholder=""
-          :disabled="disabled"
+          :disabled="disabled || fields.disabled.includes('vendor_comments')"
           rows="1"
           max-rows="99"
           @input="$root.$emit('update:rule', { ...rule, vendor_comments: $event })"
@@ -441,27 +447,28 @@ export default {
       type: Boolean,
       required: true,
     },
-    disabledStatus: {
-      type: Boolean,
-      required: true,
-    },
-    showFields: {
-      type: Array,
-      default: () => [
-        "status",
-        "status_justification",
-        "title",
-        "version",
-        "rule_severity",
-        "rule_weight",
-        "artifact_description",
-        "fix_id",
-        "fixtext_fixref",
-        "fixtext",
-        "ident",
-        "ident_system",
-        "vendor_comments",
-      ],
+    fields: {
+      type: Object,
+      default: () => {
+        return {
+          displayed: [
+            "status",
+            "status_justification",
+            "title",
+            "version",
+            "rule_severity",
+            "rule_weight",
+            "artifact_description",
+            "fix_id",
+            "fixtext_fixref",
+            "fixtext",
+            "ident",
+            "ident_system",
+            "vendor_comments",
+          ],
+          disabled: [],
+        };
+      },
     },
   },
   data: function () {

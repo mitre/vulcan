@@ -5,8 +5,8 @@
         :rule="rule"
         :statuses="statuses"
         :severities="severities"
-        :disabled="disabledForm"
-        :show-fields="ruleFormFields"
+        :disabled="disabled"
+        :fields="ruleFormFields"
       />
 
       <!-- disa_rule_description -->
@@ -15,8 +15,8 @@
         :rule="rule"
         :index="0"
         :description="rule.disa_rule_descriptions_attributes[0]"
-        :disabled="disabledForm"
-        :show-fields="disaDescriptionFormFields"
+        :disabled="disabled"
+        :fields="disaDescriptionFormFields"
       />
 
       <!-- checks -->
@@ -25,8 +25,8 @@
         :rule="rule"
         :index="0"
         :check="rule.checks_attributes[0]"
-        :disabled="disabledForm"
-        :show-fields="checkFormFields"
+        :disabled="disabled"
+        :fields="checkFormFields"
       />
     </b-form>
     <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
@@ -62,43 +62,57 @@ export default {
       default: false,
     },
   },
-  data: function () {
-    return {
-      ruleFormFields: [
-        "status",
-        "status_justification",
-        "title",
-        // "version",
-        "rule_severity",
-        // "rule_weight",
-        // "artifact_description",
-        // "fix_id",
-        // "fixtext_fixref",
-        "fixtext",
-        // "ident",
-        // "ident_system",
-        "vendor_comments",
-      ],
-      checkFormFields: [
-        // "system",
-        // "content_ref_name",
-        // "content_ref_href",
-        "content",
-      ],
-    };
-  },
   computed: {
-    disabledForm: function () {
+    disabled: function () {
       return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
     },
     // The fields to show need to be dynamic based on the rule status
+    ruleFormFields: function () {
+      if (this.rule.status == "Applicable - Configurable") {
+        return {
+          displayed: [
+            "status",
+            "status_justification",
+            "title",
+            "rule_severity",
+            "fixtext",
+            "vendor_comments",
+          ],
+          disabled: [],
+        };
+      } else if (this.rule.status == "Not Yet Determined") {
+        return {
+          displayed: ["status", "title"],
+          disabled: ["title"],
+        };
+      } else {
+        return {
+          displayed: ["status", "status_justification"],
+          disabled: [],
+        };
+      }
+    },
     disaDescriptionFormFields: function () {
       if (this.rule.status == "Applicable - Configurable") {
-        return ["vuln_discussion"];
+        return { displayed: ["vuln_discussion"], disabled: [] };
       } else if (this.rule.status == "Applicable - Does Not Meet") {
-        return ["mitigation_control"];
+        return { displayed: ["mitigation_control"], disabled: [] };
+      } else if (this.rule.status == "Not Yet Determined") {
+        return { displayed: ["vuln_discussion"], disabled: ["vuln_discussion"] };
+      } else {
+        return { displayed: [], disabled: [] };
       }
-      return [];
+    },
+    checkFormFields: function () {
+      return {
+        displayed: [
+          // "system",
+          // "content_ref_name",
+          // "content_ref_href",
+          "content",
+        ],
+        disabled: [],
+      };
     },
   },
 };
