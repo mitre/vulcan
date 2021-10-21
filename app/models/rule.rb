@@ -4,7 +4,7 @@
 # Benchmark XCCDF.
 class Rule < ApplicationRecord
   include RuleConstants
-  include CciMap
+  include CciMap::Constants
 
   amoeba do
     include_association :rule_descriptions
@@ -150,7 +150,7 @@ class Rule < ApplicationRecord
 
   def csv_attributes
     [
-      CCI_TO_NIST_CONSTANT[ident],
+      CCI_TO_NIST_CONSTANT[ident.to_sym],
       ident,
       version,
       "#{component.prefix}-#{id}",
