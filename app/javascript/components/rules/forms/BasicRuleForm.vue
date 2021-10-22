@@ -88,18 +88,29 @@ export default {
           displayed: ["status", "title"],
           disabled: ["title"],
         };
-      } else {
+      } else if (this.rule.status == "Applicable - Inherently Meets") {
         return {
-          displayed: ["status", "status_justification"],
+          displayed: ["status", "status_justification", "artifact_description", "vendor_comments"],
+          disabled: [],
+        };
+      } else if (this.rule.status == "Applicable - Does Not Meet") {
+        return {
+          displayed: ["status", "status_justification", "vendor_comments"],
+          disabled: [],
+        };
+      } else if (this.rule.status == "Not Applicable") {
+        return {
+          displayed: ["status", "status_justification", "artifact_description", "vendor_comments"],
           disabled: [],
         };
       }
+      return { displayed: [], disabled: [] };
     },
     disaDescriptionFormFields: function () {
       if (this.rule.status == "Applicable - Configurable") {
         return { displayed: ["vuln_discussion"], disabled: [] };
       } else if (this.rule.status == "Applicable - Does Not Meet") {
-        return { displayed: ["mitigation_control"], disabled: [] };
+        return { displayed: ["mitigations"], disabled: [] };
       } else if (this.rule.status == "Not Yet Determined") {
         return { displayed: ["vuln_discussion"], disabled: ["vuln_discussion"] };
       } else {
