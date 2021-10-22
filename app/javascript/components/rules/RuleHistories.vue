@@ -3,7 +3,9 @@
     <!-- Collapsable header -->
     <div class="clickable" @click="showHistories = !showHistories">
       <h2 class="m-0 d-inline-block">Histories</h2>
-      <b-badge pill class="superVerticalAlign">{{ rule.histories.length }}</b-badge>
+      <b-badge v-if="rule.histories" pill class="superVerticalAlign">{{
+        rule.histories.length
+      }}</b-badge>
 
       <i v-if="showHistories" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
       <i v-if="!showHistories" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />

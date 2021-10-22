@@ -319,6 +319,9 @@ export default {
     }, 500),
     // Event handler for when a rule is selected
     ruleSelected: function (rule) {
+      if (!rule.histories) {
+        this.$root.$emit("refresh:rule", rule.id);
+      }
       this.$emit("ruleSelected", rule.id);
     },
     ruleDeselected: function (rule) {

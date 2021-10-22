@@ -58,12 +58,12 @@ export default {
       this.selectedRuleId = null;
       return null;
     },
-    handleRuleSelected: function (event) {
-      this.addOpenRule(event);
-      this.selectedRuleId = event;
+    handleRuleSelected: function (ruleId) {
+      this.addOpenRule(ruleId);
+      this.selectedRuleId = ruleId;
     },
-    handleRuleDeselected: function (event) {
-      this.removeOpenRule(event);
+    handleRuleDeselected: function (ruleId) {
+      this.removeOpenRule(ruleId);
     },
     // Adds a rule to the `openRules` array
     addOpenRule: function (ruleId) {

@@ -51,7 +51,7 @@ export default {
   props: {
     histories: {
       type: Array,
-      required: true,
+      default: () => [],
     },
     rule: {
       type: Object,
