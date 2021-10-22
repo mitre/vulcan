@@ -59,7 +59,7 @@
               switch
               @change="toggleAdvancedFields"
             >
-              Advanced Fields
+              Advanced Fields Enabled
             </b-form-checkbox>
 
             <div class="m-3" />
