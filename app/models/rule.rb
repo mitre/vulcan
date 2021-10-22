@@ -165,7 +165,7 @@ class Rule < ApplicationRecord
       nil, # original SRG fix text
       fixtext,
       status_justification,
-      disa_rule_descriptions.first.mitigation_control, # should be another field
+      disa_rule_descriptions.first.mitigations,
       artifact_description,
       vendor_comments
     ]
