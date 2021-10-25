@@ -37,7 +37,7 @@
 
     <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
     <div v-if="rule.status != 'Applicable - Configurable'">
-      <hr/>
+      <hr />
       <p>
         <small>Some fields are hidden due to the control's status.</small>
       </p>
@@ -49,11 +49,16 @@
 import RuleForm from "./RuleForm.vue";
 import CheckForm from "./CheckForm.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm.vue";
-import RuleSecurityRequirementsGuideInformation from "../RuleSecurityRequirementsGuideInformation.vue"
+import RuleSecurityRequirementsGuideInformation from "../RuleSecurityRequirementsGuideInformation.vue";
 
 export default {
   name: "BasicRuleForm",
-  components: { RuleForm, CheckForm, DisaRuleDescriptionForm, RuleSecurityRequirementsGuideInformation },
+  components: {
+    RuleForm,
+    CheckForm,
+    DisaRuleDescriptionForm,
+    RuleSecurityRequirementsGuideInformation,
+  },
   props: {
     rule: {
       type: Object,
@@ -90,7 +95,7 @@ export default {
             "rule_severity",
             "fixtext",
             "vendor_comments",
-            "nist_control"
+            "nist_control",
           ],
           disabled: [],
         };

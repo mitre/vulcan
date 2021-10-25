@@ -65,7 +65,10 @@
 
       <template v-if="fields.displayed.includes('title')">
         <!-- title -->
-        <b-form-group v-if="fields.displayed.includes('title')" :id="`ruleEditor-title-group-${mod}`">
+        <b-form-group
+          v-if="fields.displayed.includes('title')"
+          :id="`ruleEditor-title-group-${mod}`"
+        >
           <label :for="`ruleEditor-title-${mod}`">
             Title
             <i

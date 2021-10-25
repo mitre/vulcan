@@ -2,14 +2,8 @@
   <div>
     <div class="clickable mb-2" @click="showSrgInformation = !showSrgInformation">
       <h2 class="m-0 d-inline-block">Security Requirements Guide Information</h2>
-      <i
-        v-if="showSrgInformation"
-        class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-      />
-      <i
-        v-if="!showSrgInformation"
-        class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-      />
+      <i v-if="showSrgInformation" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
+      <i v-if="!showSrgInformation" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
     </div>
     <b-collapse v-model="showSrgInformation">
       <div class="row">
@@ -56,9 +50,7 @@
             :title="tooltips['srg_requirement']"
           />
         </div>
-        <div class="col-8">
-          SRG Requirement Placeholder
-        </div>
+        <div class="col-8">SRG Requirement Placeholder</div>
       </div>
       <div class="row">
         <div class="col-4">
@@ -72,9 +64,7 @@
             :title="tooltips['srg_vuln_discussion']"
           />
         </div>
-        <div class="col-8">
-          SRG VulnDiscussion Placeholder
-        </div>
+        <div class="col-8">SRG VulnDiscussion Placeholder</div>
       </div>
       <div class="row">
         <div class="col-4">
@@ -88,9 +78,7 @@
             :title="tooltips['srg_check_text']"
           />
         </div>
-        <div class="col-8">
-          SRG Check Text Placeholder
-        </div>
+        <div class="col-8">SRG Check Text Placeholder</div>
       </div>
       <div class="row">
         <div class="col-4">
@@ -104,9 +92,7 @@
             :title="tooltips['srg_fix_text']"
           />
         </div>
-        <div class="col-8">
-          SRG Check Fix Placeholder
-        </div>
+        <div class="col-8">SRG Check Fix Placeholder</div>
       </div>
     </b-collapse>
   </div>
@@ -117,21 +103,22 @@ export default {
   props: {
     nist_control_family: {
       type: String,
-      required: true
+      required: true,
     },
     cci: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   data: function () {
     return {
       tooltips: {
-        nist_control: "The NIST SP 800-53 Revision 4 Control Family that maps to the Common Control Indicator (CCI)",
+        nist_control:
+          "The NIST SP 800-53 Revision 4 Control Family that maps to the Common Control Indicator (CCI)",
       },
       showSrgInformation: false,
-    }
-  }
-}
+    };
+  },
+};
 </script>
 <style scoped></style>
