@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="mb-3 font-weight-bold">
+    <div v-if="advanced_fields" class="mb-3 font-weight-bold">
       <b-form-checkbox
         v-model="advancedEditor"
         name="editor-selector-check-button"
@@ -50,6 +50,10 @@ export default {
       required: true,
     },
     readOnly: {
+      type: Boolean,
+      default: false,
+    },
+    advanced_fields: {
       type: Boolean,
       default: false,
     },

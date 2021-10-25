@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Rule search -->
-    <p class="mt-3">
+    <p class="mb-2 ml-2">
       <strong>Filter &amp; Search</strong>
       <span class="text-primary clickable float-right" @click="clearFilters">reset</span>
     </p>
