@@ -139,10 +139,19 @@
         </b-collapse>
       </template>
     </b-form>
+
+    <RuleSecurityRequirementsGuideInformation
+      :nist_control_family="rule.nist_control_family"
+      :cci="rule.ident"
+    />
+
     <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
-    <p v-if="rule.status != 'Applicable - Configurable'">
-      <small>Some fields are hidden due to the control's status.</small>
-    </p>
+    <div v-if="rule.status != 'Applicable - Configurable'">
+      <hr/>
+      <p>
+        <small>Some fields are hidden due to the control's status.</small>
+      </p>
+    </div>
   </div>
 </template>
 
@@ -150,10 +159,12 @@
 import RuleForm from "./RuleForm.vue";
 import CheckForm from "./CheckForm.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm.vue";
+import RuleSecurityRequirementsGuideInformation from "../RuleSecurityRequirementsGuideInformation.vue"
+
 
 export default {
   name: "AdvancedRuleForm",
-  components: { RuleForm, CheckForm, DisaRuleDescriptionForm },
+  components: { RuleForm, CheckForm, DisaRuleDescriptionForm, RuleSecurityRequirementsGuideInformation },
   props: {
     rule: {
       type: Object,

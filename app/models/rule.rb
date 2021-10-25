@@ -150,7 +150,7 @@ class Rule < ApplicationRecord
 
   def csv_attributes
     [
-      CCI_TO_NIST_CONSTANT[ident.to_sym],
+      nist_control_family,
       ident,
       version,
       "#{component.prefix}-#{id}",
@@ -169,6 +169,10 @@ class Rule < ApplicationRecord
       artifact_description,
       vendor_comments
     ]
+  end
+
+  def nist_control_family
+    CCI_TO_NIST_CONSTANT[ident.to_sym]
   end
 
   private
