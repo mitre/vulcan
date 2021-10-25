@@ -28,6 +28,7 @@
           :statuses="statuses"
           :severities="severities"
           :read-only="true"
+          :advanced_fields="component.advanced_fields"
         />
       </div>
     </template>
