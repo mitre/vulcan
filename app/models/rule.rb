@@ -189,7 +189,7 @@ class Rule < ApplicationRecord
   # Check to ensure that "review fields" are not changed
   # in the same `.save` action as any "non-review fields"
   def review_fields_cannot_change_with_other_fields
-    review_fields = Set.new(%w[review_requestor_id locked])
+    review_fields = Set.new(%w[review_requestor_id locked changes_requested])
     ignored_fields = %w[updated_at created_at]
     changed_filtered = changed.reject { |f| ignored_fields.include? f }
     any_review_fields_changed = changed_filtered.any? { |field| review_fields.include? field }
