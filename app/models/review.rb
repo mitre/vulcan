@@ -129,17 +129,20 @@ class Review < ApplicationRecord
   def take_review_action
     case action
     when 'request_review'
-      rule.review_requestor_id = user.id
-      rule.locked = false
-      rule.save!
-    when 'revoke_review_request', 'request_changes', 'unlock_control'
-      rule.review_requestor_id = nil
-      rule.locked = false
-      rule.save!
+      set_rule_review_params(requestor_id: user.id, locked: false, changes_requested: false)
+    when 'request_changes'
+      set_rule_review_params(requestor_id: nil, locked: false, changes_requested: true)
+    when 'revoke_review_request', 'unlock_control'
+      set_rule_review_params(requestor_id: nil, locked: false, changes_requested: false)
     when 'approve', 'lock_control'
-      rule.review_requestor_id = nil
-      rule.locked = true
-      rule.save!
+      set_rule_review_params(requestor_id: nil, locked: true, changes_requested: false)
     end
+  end
+
+  def set_rule_review_params(requestor_id:, locked:, changes_requested:)
+    rule.review_requestor_id = requestor_id
+    rule.locked = locked
+    rule.changes_requested = changes_requested
+    rule.save!
   end
 end
