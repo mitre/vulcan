@@ -107,6 +107,13 @@ export default {
       required: true,
     },
   },
+  mounted() {
+    if (this.selectedRuleId) {
+      setTimeout(() => {
+        this.$root.$emit("refresh:rule", this.selectedRuleId);
+      }, 1);
+    }
+  },
 };
 </script>
 

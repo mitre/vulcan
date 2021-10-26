@@ -19,7 +19,7 @@
       <div v-if="!readOnly">
         <!-- Rule info -->
         <!-- <p>Based on ...</p> -->
-        <p v-if="rule.histories.length > 0">
+        <p v-if="rule.histories && rule.histories.length > 0">
           Last updated on {{ friendlyDateTime(rule.updated_at) }} by
           {{ lastEditor }}
         </p>
@@ -130,8 +130,8 @@ export default {
   computed: {
     lastEditor: function () {
       const histories = this.rule.histories;
-      if (histories.length > 0) {
-        return histories[histories.length - 1].name;
+      if (histories?.length > 0) {
+        return histories[0].name || "Unknown User";
       }
       return "Unknown User";
     },
