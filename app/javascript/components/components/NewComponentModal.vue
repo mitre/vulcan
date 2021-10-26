@@ -10,9 +10,10 @@
     <!-- Add component modal -->
     <b-modal
       ref="AddComponentModal"
-      title="Create a New Component"
+      :title="newComponent ? 'Create a New Component' : 'Duplicate Component'"
       size="lg"
-      ok-title="Create Component"
+      :ok-title="loading ? 'Loading...' : submitText"
+      :ok-disabled="loading"
       @show="fetchSrgs"
       @ok="createComponent"
     >
@@ -43,7 +44,7 @@
               />
             </b-form-group>
             <!-- Name the component -->
-            <b-form-group label="Component Version">
+            <b-form-group label="Name and Version">
               <b-form-input
                 v-model="version"
                 placeholder="Component V1R1"
@@ -84,6 +85,10 @@ export default {
   },
   mixins: [AlertMixinVue, FormMixinVue],
   props: {
+    component_to_duplicate: {
+      type: Number,
+      required: false,
+    },
     project_id: {
       type: Number,
       required: true,
@@ -98,20 +103,23 @@ export default {
       required: false,
       default: null,
     },
-    predetermined_component_id: {
-      type: Number,
-      required: false,
-      default: null,
-    },
   },
   data: function () {
     return {
+      loading: false,
       prefix: this.predetermined_prefix,
       security_requirements_guide_id: this.predetermined_security_requirements_guide_id,
-      component_id: this.predetermined_component_id,
       version: "",
       srgs: [],
     };
+  },
+  computed: {
+    newComponent: function () {
+      return !this.component_to_duplicate;
+    },
+    submitText: function () {
+      return this.newComponent ? "Create Component" : "Duplicate Component";
+    },
   },
   methods: {
     fetchSrgs: function (_bvModalEvt) {
@@ -124,6 +132,7 @@ export default {
       this.$refs["AddComponentModal"].show();
     },
     createComponent: function (bvModalEvt) {
+      this.loading = true;
       bvModalEvt.preventDefault();
 
       // Guard before POST
@@ -157,14 +166,19 @@ export default {
           prefix: this.prefix,
           security_requirements_guide_id: this.security_requirements_guide_id,
           version: this.version,
-          component_id: this.component_id,
+          duplicate: !this.newComponent,
+          id: this.component_to_duplicate,
         },
       };
 
       axios
         .post(`/projects/${this.project_id}/components`, payload)
         .then(this.addComponentSuccess)
-        .catch(this.alertOrNotifyResponse);
+        .catch(this.alertOrNotifyResponse)
+        .finally(this.completeLoading);
+    },
+    completeLoading: function () {
+      this.loading = false;
     },
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);

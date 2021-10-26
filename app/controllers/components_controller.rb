@@ -33,7 +33,7 @@ class ComponentsController < ApplicationController
   end
 
   def create
-    component = Component.new(component_create_params.merge({ project: @project }))
+    component = create_or_duplicate
     if component.save
       render json: { toast: 'Successfully added component to project.' }
     else
@@ -91,6 +91,15 @@ class ComponentsController < ApplicationController
 
   private
 
+  def create_or_duplicate
+    if component_create_params[:duplicate]
+      @project.components.find(component_create_params[:id]).duplicate(new_version: component_create_params[:version],
+                                                                       new_prefix: component_create_params[:prefix])
+    else
+      Component.new(component_create_params.except(:id, :duplicate).merge({ project: @project }))
+    end
+  end
+
   def set_component
     @component = Component.eager_load(
       rules: %i[reviews disa_rule_descriptions rule_descriptions checks]
@@ -111,7 +120,8 @@ class ComponentsController < ApplicationController
 
   def component_create_params
     params.require(:component).permit(
-      :component_id,
+      :id,
+      :duplicate,
       :prefix,
       :security_requirements_guide_id,
       :version

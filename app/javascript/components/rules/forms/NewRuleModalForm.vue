@@ -1,13 +1,6 @@
 <template>
   <div>
-    <b-modal
-      :id="`${idPrefix}-rule-modal`"
-      ref="modal"
-      :title="title"
-      centered
-      @shown="$refs.newRuleIdInput.focus()"
-      @ok="handleSubmit"
-    >
+    <b-modal :id="`${idPrefix}-rule-modal`" ref="modal" :title="title" centered @ok="handleSubmit">
       <form ref="form" method="post">
         <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
         <div v-if="forDuplicate">Duplicate control {{ selectedRuleText }}?</div>
@@ -42,12 +35,6 @@ export default {
       type: String,
       required: false,
     },
-  },
-  data: function () {
-    return {};
-  },
-  mounted: function () {
-    this.ruleFormRuleId = this.generateRuleId();
   },
   methods: {
     handleSubmit: function () {

@@ -16,7 +16,7 @@ class RulesController < ApplicationController
   end
 
   def show
-    render json: @rule.to_json(methods: %i[histories])
+    render json: @rule.to_json(methods: %i[histories nist_control_family])
   end
 
   def create
@@ -80,8 +80,9 @@ class RulesController < ApplicationController
 
   def create_or_duplicate
     if authorize_author_project.nil? && rule_create_params[:duplicate]
-      Rule.find(rule_create_params[:id]).amoeba_dup
-
+      rule = Rule.find(rule_create_params[:id]).amoeba_dup
+      rule.rule_id = nil
+      rule
     elsif authorize_admin_project.nil?
       Rule.new(rule_create_params.except(:duplicate).merge({
                                                              component: @component,

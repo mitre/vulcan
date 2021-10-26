@@ -56,6 +56,7 @@
           <!-- Duplicate component -->
           <span v-if="actionable && effectivePermissions == 'admin'" class="float-right mr-2">
             <NewComponentModal
+              :component_to_duplicate="component.id"
               :project_id="component.project_id"
               :predetermined_prefix="component.prefix"
               :predetermined_security_requirements_guide_id="

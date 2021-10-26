@@ -13,8 +13,6 @@ class Rule < ApplicationRecord
     include_association :references
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
-    # Nullify the rule id so a new one is generated in the before actions below
-    nullify :rule_id
     set locked: false
   end
 
