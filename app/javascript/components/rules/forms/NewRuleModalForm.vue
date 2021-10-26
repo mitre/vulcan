@@ -10,31 +10,8 @@
     >
       <form ref="form" method="post">
         <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
-        <div v-if="forDuplicate">Duplicate control {{ selectedRuleId }}?</div>
-        <b-form-group
-          id="rule-id-input-group"
-          label-for="rule-id-input"
-          description="This must be unique for the project. It will not appear in the sidebar and is hidden."
-          :hidden="forDuplicate"
-        >
-          <label :for="`rule-id-input`">
-            Control ID
-            <i
-              v-if="tooltips['control_id']"
-              v-b-tooltip.hover.html
-              class="mdi mdi-information"
-              aria-hidden="true"
-              :title="tooltips['control_id']"
-            />
-          </label>
-          <b-form-input
-            id="rule-id-input"
-            ref="newRuleIdInput"
-            v-model="ruleFormRuleId"
-            autocomplete="off"
-            required
-          />
-        </b-form-group>
+        <div v-if="forDuplicate">Duplicate control {{ selectedRuleText }}?</div>
+        <div v-else>Create a new control in this project?</div>
       </form>
     </b-modal>
   </div>
@@ -61,27 +38,22 @@ export default {
       type: Number,
       required: false,
     },
+    selectedRuleText: {
+      type: String,
+      required: false,
+    },
   },
   data: function () {
-    return {
-      ruleFormRuleId: "",
-      tooltips: {
-        control_id: "This will be equivalent to the SV-#",
-      },
-    };
+    return {};
   },
   mounted: function () {
     this.ruleFormRuleId = this.generateRuleId();
   },
   methods: {
-    generateRuleId: function () {
-      return `VULCAN-${Math.ceil(Math.random() * 1000000)}`;
-    },
     handleSubmit: function () {
-      this.ruleFormRuleId = this.generateRuleId();
       this.$root.$emit(
         "create:rule",
-        { rule_id: this.ruleFormRuleId, duplicate: this.forDuplicate, id: this.selectedRuleId },
+        { duplicate: this.forDuplicate, id: this.selectedRuleId },
         (response) => {
           this.$emit("ruleSelected", response.data.data);
         }
