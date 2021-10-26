@@ -115,8 +115,8 @@ class Component < ApplicationRecord
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
   def from_mapping(benchmark)
     benchmark = Xccdf::Benchmark.parse(benchmark.xml)
-    rule_models = benchmark.rule.map do |rule|
-      Rule.from_mapping(rule, id)
+    rule_models = benchmark.rule.each_with_index.map do |rule, idx|
+      Rule.from_mapping(rule, id, idx + 1)
     end
     # Examine import results for failures
     success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
@@ -132,6 +132,11 @@ class Component < ApplicationRecord
     message += '...' if e.message.size >= 50
     errors.add(:base, "Encountered an error when importing rules from the SRG: #{message}")
     false
+  end
+
+  def largest_rule_id
+    # rule_id is a string, convert it to a number and then extract the current highest number.
+    rules.select("MAX(TO_NUMBER(rule_id, '999999')) as max_rule_id").group(:id).last.max_rule_id.to_i
   end
 
   def prefix=(val)

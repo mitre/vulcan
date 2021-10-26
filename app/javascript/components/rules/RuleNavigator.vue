@@ -121,7 +121,7 @@
           aria-hidden="true"
           @click.stop="ruleDeselected(rule)"
         />
-        {{ formatRuleId(rule.id) }}
+        {{ formatRuleId(rule.rule_id) }}
         <i
           v-if="rule.review_requestor_id"
           class="mdi mdi-file-find float-right"
@@ -145,9 +145,9 @@
 
     <!-- New rule modal -->
     <NewRuleModalForm
-      :title="'Create New Control'"
+      title="Create New Control"
       :for-duplicate="false"
-      :id-prefix="'create'"
+      id-prefix="create"
       @ruleSelected="ruleSelected($event)"
     />
 
@@ -158,7 +158,7 @@
       :class="ruleRowClass(rule)"
       @click="ruleSelected(rule)"
     >
-      {{ formatRuleId(rule.id) }}
+      {{ formatRuleId(rule.rule_id) }}
       <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
       <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
@@ -419,7 +419,7 @@ export default {
         "vuln_discussion",
       ];
       // Start with the rule ID as searchable
-      let searchText = this.formatRuleId(rule.id);
+      let searchText = this.formatRuleId(rule.rule_id);
       // The `|| ''` statements below prevent the literal string 'undefined' from being part of the searchable text
       // Add all rule attrs for rule
       for (var attrIndex = 0; attrIndex < ruleSearchAttrs.length; attrIndex++) {

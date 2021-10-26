@@ -13,12 +13,15 @@ class Rule < ApplicationRecord
     include_association :references
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
+    # Nullify the rule id so a new one is generated in the before actions below
+    nullify :rule_id
     set locked: false
   end
 
   audited except: %i[component_id review_requestor_id created_at updated_at locked], max_audits: 1000
   has_associated_audits
 
+  before_validation :set_rule_id
   before_save :apply_audit_comment
   before_create :ensure_disa_description_exists
   before_create :ensure_check_exists
@@ -48,17 +51,19 @@ class Rule < ApplicationRecord
     message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.reject(&:blank?).join("', '")}'"
   }
 
-  validates :rule_id, allow_blank: false, presence: true
+  validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
   # In all cases of has_many, it is very unlikely (based on past releases of SRGs
   # that there will be multiple of these fields. Just take the first one.
   # Extend the model if required
 
   # Reject legacy idents for the same reason, array of idents not established
-  def self.from_mapping(rule_mapping, component_id)
+  def self.from_mapping(rule_mapping, component_id, idx = nil)
     rule = Rule.new(
       component_id: component_id,
-      rule_id: rule_mapping.id,
+      # Default to rule_id, allow overriding. This is what is
+      # appended to the component prefix in the UI
+      rule_id: idx.to_s.rjust(6, '0') || rule_mapping.id,
       status: rule_mapping.status.first&.status || 'Not Yet Determined',
       rule_severity: rule_mapping.severity || nil,
       rule_weight: rule_mapping.weight || nil,
@@ -153,7 +158,7 @@ class Rule < ApplicationRecord
       nist_control_family,
       ident,
       version,
-      "#{component.prefix}-#{id}",
+      "#{component.prefix}-#{rule_id}",
       rule_severity,
       nil, # original srg title
       title,
@@ -172,10 +177,14 @@ class Rule < ApplicationRecord
   end
 
   def nist_control_family
-    CCI_TO_NIST_CONSTANT[ident.to_sym]
+    CCI_TO_NIST_CONSTANT[ident&.to_sym]
   end
 
   private
+
+  def set_rule_id
+    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') unless rule_id
+  end
 
   def component_must_not_be_released
     return unless component.released
