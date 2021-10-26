@@ -6,7 +6,7 @@
         <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
         <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
         <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
-        {{ `${projectPrefix}-${rule.id}` }} // {{ rule.version }}
+        {{ `${projectPrefix}-${rule.rule_id}` }} // {{ rule.version }}
       </h2>
 
       <p v-if="!readOnly && rule.locked" class="text-danger font-weight-bold">
@@ -32,6 +32,7 @@
           :id-prefix="'duplicate'"
           :for-duplicate="true"
           :selected-rule-id="rule.id"
+          :selected-rule-text="`${projectPrefix}-${rule.rule_id}`"
           @ruleSelected="$emit('ruleSelected', $event.id)"
         />
         <b-button v-b-modal.duplicate-rule-modal variant="primary">Duplicate Control</b-button>

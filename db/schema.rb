@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_25_174911) do
+ActiveRecord::Schema.define(version: 2021_10_26_210423) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -178,6 +178,7 @@ ActiveRecord::Schema.define(version: 2021_10_25_174911) do
     t.boolean "changes_requested", default: false
     t.index ["component_id"], name: "index_rules_on_component_id"
     t.index ["review_requestor_id"], name: "index_rules_on_review_requestor_id"
+    t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
   end
 
   create_table "security_requirements_guides", force: :cascade do |t|
