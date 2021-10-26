@@ -22,7 +22,8 @@ class RulesController < ApplicationController
   def create
     rule = create_or_duplicate
     if rule.save
-      render json: { toast: 'Successfully created control.', data: rule.to_json(methods: %i[histories]) }
+      render json: { toast: 'Successfully created control.',
+                     data: rule.to_json(methods: %i[histories nist_control_family]) }
     else
       render json: {
         toast: {
@@ -79,9 +80,8 @@ class RulesController < ApplicationController
 
   def create_or_duplicate
     if authorize_author_project.nil? && rule_create_params[:duplicate]
-      rule = Rule.find(rule_create_params[:id]).amoeba_dup
-      rule.rule_id = rule_create_params[:rule_id]
-      rule
+      Rule.find(rule_create_params[:id]).amoeba_dup
+
     elsif authorize_admin_project.nil?
       Rule.new(rule_create_params.except(:duplicate).merge({
                                                              component: @component,
@@ -92,7 +92,7 @@ class RulesController < ApplicationController
   end
 
   def rule_create_params
-    params.require(:rule).permit(:rule_id, :duplicate, :id)
+    params.require(:rule).permit(:duplicate, :id)
   end
 
   def rule_update_params
