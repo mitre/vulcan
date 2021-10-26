@@ -23,6 +23,8 @@ Rails.application.routes.draw do
   get '/components/:component_id/controls', to: 'rules#index'
   # Make components#index not a child of project
   get '/components', to: 'components#index'
+  # Export component
+  get '/components/:id/export', to: 'components#export'
 
   root to: 'projects#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html

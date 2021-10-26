@@ -4,7 +4,7 @@
 # Components for project relationships.
 #
 class ComponentsController < ApplicationController
-  before_action :set_component, only: %i[show update destroy]
+  before_action :set_component, only: %i[show update destroy export]
   before_action :set_project, only: %i[show create]
   before_action :set_component_permissions, only: %i[show]
 
@@ -72,6 +72,20 @@ class ComponentsController < ApplicationController
           variant: 'danger'
         }
       }, status: :unprocessable_entity
+    end
+  end
+
+  def export
+    if @component.released
+      send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
+    else
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: 'Cannot export a component that is not released',
+          variant: 'danger'
+        }
+      }, status: :bad_request
     end
   end
 
