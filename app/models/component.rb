@@ -105,9 +105,10 @@ class Component < ApplicationRecord
     rules.where(locked: false).size.zero?
   end
 
-  def duplicate(new_version: nil)
+  def duplicate(new_version: nil, new_prefix: nil)
     new_component = amoeba_dup
     new_component.version = new_version if new_version
+    new_component.prefix = new_prefix if new_prefix
     new_component.skip_import_srg_rules = true
     new_component
   end
@@ -136,7 +137,8 @@ class Component < ApplicationRecord
 
   def largest_rule_id
     # rule_id is a string, convert it to a number and then extract the current highest number.
-    rules.select("MAX(TO_NUMBER(rule_id, '999999')) as max_rule_id").group(:id).last.max_rule_id.to_i
+    Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM rules
+                             WHERE component_id = #{id}")&.values&.flatten&.first&.to_i || 0
   end
 
   def prefix=(val)
