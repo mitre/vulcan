@@ -137,7 +137,8 @@ class Component < ApplicationRecord
 
   def largest_rule_id
     # rule_id is a string, convert it to a number and then extract the current highest number.
-    rules.select("MAX(TO_NUMBER(rule_id, '999999')) as max_rule_id").group(:id)&.last&.max_rule_id&.to_i || 0
+    Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM rules
+                             WHERE component_id = #{id}")&.values&.flatten&.first&.to_i || 0
   end
 
   def prefix=(val)
