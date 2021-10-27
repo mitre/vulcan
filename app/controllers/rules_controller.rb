@@ -16,14 +16,14 @@ class RulesController < ApplicationController
   end
 
   def show
-    render json: @rule.to_json(methods: %i[histories nist_control_family])
+    render json: @rule.to_json(methods: %i[histories])
   end
 
   def create
     rule = create_or_duplicate
     if rule.save
       render json: { toast: 'Successfully created control.',
-                     data: rule.to_json(methods: %i[histories nist_control_family]) }
+                     data: rule.to_json(methods: %i[histories]) }
     else
       render json: {
         toast: {

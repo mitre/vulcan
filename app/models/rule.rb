@@ -146,7 +146,8 @@ class Rule < ApplicationRecord
         reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
         rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
+        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) },
+        nist_control_family: nist_control_family
       }
     )
   end
