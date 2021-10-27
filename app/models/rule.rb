@@ -13,8 +13,6 @@ class Rule < ApplicationRecord
     include_association :references
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
-    # Nullify the rule id so a new one is generated in the before actions below
-    nullify :rule_id
     set locked: false
   end
 
@@ -148,7 +146,8 @@ class Rule < ApplicationRecord
         reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
         rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) }
+        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) },
+        nist_control_family: nist_control_family
       }
     )
   end
