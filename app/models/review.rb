@@ -113,11 +113,8 @@ class Review < ApplicationRecord
   # should only be able to unlock a control if
   # - current user is admin
   # - control is locked
-  # - component is not released
   def can_unlock_control
-    if component.released
-      errors.add(:base, 'Cannot unlock a control on a component that has been released')
-    elsif project_permissions != 'admin'
+    if project_permissions != 'admin'
       errors.add(:base, 'Only an admin can unlock')
     elsif !rule.review_requestor_id.nil?
       errors.add(:base, 'Cannot unlock a control that is currently under review')
