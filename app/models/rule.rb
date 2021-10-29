@@ -35,8 +35,7 @@ class Rule < ApplicationRecord
 
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
-  validate :cannot_be_locked_and_under_review,
-           :component_must_not_be_released
+  validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
   validates :status, inclusion: {
@@ -183,12 +182,6 @@ class Rule < ApplicationRecord
 
   def set_rule_id
     self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') unless rule_id
-  end
-
-  def component_must_not_be_released
-    return unless component.released
-
-    errors.add(:base, 'Cannot make modifications to a component that has been released')
   end
 
   def cannot_be_locked_and_under_review

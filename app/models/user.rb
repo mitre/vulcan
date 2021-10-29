@@ -61,7 +61,7 @@ class User < ApplicationRecord
   end
 
   def can_author_component?(component)
-    admin || PROJECT_MEMBER_AUTHORS.include?(effective_permissions(component))
+    admin || (PROJECT_MEMBER_AUTHORS.include?(effective_permissions(component)) unless component.released)
   end
 
   def can_review_component?(component)
