@@ -50,7 +50,7 @@
             :title="tooltips['srg_requirement']"
           />
         </div>
-        <div class="col-8">SRG Requirement Placeholder</div>
+        <div class="col-8">{{ srg_rule.title }}</div>
       </div>
       <div class="row">
         <div class="col-4">
@@ -64,7 +64,7 @@
             :title="tooltips['srg_vuln_discussion']"
           />
         </div>
-        <div class="col-8">SRG VulnDiscussion Placeholder</div>
+        <div class="col-8">{{ srg_rule.disa_rule_descriptions_attributes[0].vuln_discussion }}</div>
       </div>
       <div class="row">
         <div class="col-4">
@@ -78,7 +78,7 @@
             :title="tooltips['srg_check_text']"
           />
         </div>
-        <div class="col-8">SRG Check Text Placeholder</div>
+        <div class="col-8">{{ srg_rule.checks_attributes[0].content }}</div>
       </div>
       <div class="row">
         <div class="col-4">
@@ -92,7 +92,7 @@
             :title="tooltips['srg_fix_text']"
           />
         </div>
-        <div class="col-8">SRG Check Fix Placeholder</div>
+        <div class="col-8">{{ srg_rule.fixtext }}</div>
       </div>
     </b-collapse>
   </div>
@@ -103,6 +103,10 @@ export default {
   props: {
     nist_control_family: {
       type: String,
+      required: true,
+    },
+    srg_rule: {
+      type: Object,
       required: true,
     },
     cci: {

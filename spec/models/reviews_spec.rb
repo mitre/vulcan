@@ -34,7 +34,8 @@ RSpec.describe Review, type: :model do
       component: @p1_c1,
       rule_id: 'P1-R1',
       status: 'Applicable - Configurable',
-      rule_severity: 'medium'
+      rule_severity: 'medium',
+      srg_rule: srg.srg_rules.first
     )
   end
 

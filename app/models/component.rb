@@ -21,7 +21,7 @@ class Component < ApplicationRecord
              },
              class_name: :SecurityRequirementsGuide,
              foreign_key: 'security_requirements_guide_id',
-             inverse_of: 'projects'
+             inverse_of: 'components'
   has_many :rules, dependent: :destroy
   belongs_to :component, class_name: 'Component', inverse_of: :child_components, optional: true
   has_many :child_components, class_name: 'Component', inverse_of: :component, dependent: :destroy
@@ -120,10 +120,11 @@ class Component < ApplicationRecord
   end
 
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
-  def from_mapping(benchmark)
-    benchmark = Xccdf::Benchmark.parse(benchmark.xml)
+  def from_mapping(srg)
+    benchmark = srg.parsed_benchmark
+    srg_rules = srg.srg_rules.select(:id, :rule_id).map { |rule| [rule.rule_id, rule.id] }.to_h
     rule_models = benchmark.rule.each_with_index.map do |rule, idx|
-      Rule.from_mapping(rule, id, idx + 1)
+      Rule.from_mapping(rule, id, idx + 1, srg_rules)
     end
     # Examine import results for failures
     success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
@@ -143,7 +144,7 @@ class Component < ApplicationRecord
 
   def largest_rule_id
     # rule_id is a string, convert it to a number and then extract the current highest number.
-    Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM rules
+    Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
                              WHERE component_id = #{id}")&.values&.flatten&.first&.to_i || 0
   end
 

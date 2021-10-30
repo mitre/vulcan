@@ -18,6 +18,7 @@ class SecurityRequirementsGuidesController < ApplicationController
     parsed_benchmark = Xccdf::Benchmark.parse(file.read)
     srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
     file.tempfile.seek(0)
+    srg.parsed_benchmark = parsed_benchmark
     srg.xml = file.read
     if srg.save
       render(json: { toast: 'Successfully created SRG.' }, status: :ok)
