@@ -24,12 +24,16 @@ class ComponentsController < ApplicationController
   def show
     @component_json = if @effective_permissions
                         @component.to_json(
-                          methods: %i[histories memberships inherited_memberships available_members rules]
+                          methods: %i[histories memberships metadata inherited_memberships available_members rules]
                         )
                       else
                         @component.to_json(methods: %i[rules])
                       end
     @project_json = @component.project.to_json
+    respond_to do |format|
+      format.html
+      format.json { render json: @component_json }
+    end
   end
 
   def create
@@ -114,7 +118,8 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :released,
       :version,
-      :advanced_fields
+      :advanced_fields,
+      component_metadata_attributes: { data: {} }
     )
   end
 
