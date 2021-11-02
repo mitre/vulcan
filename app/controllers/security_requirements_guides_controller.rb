@@ -38,7 +38,7 @@ class SecurityRequirementsGuidesController < ApplicationController
     if @srg.destroy
       flash.notice = 'Successfully removed SRG.'
     else
-      flash.alert = "Unable to remove SRG. #{@project_member.errors.full_messages.join(', ')}"
+      flash.alert = "Unable to remove SRG. #{@srg.errors.full_messages.join(', ')}"
     end
     redirect_to action: 'index'
   end
