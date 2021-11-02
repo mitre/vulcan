@@ -77,8 +77,7 @@ class SecurityRequirementsGuide < ApplicationRecord
     end
     success
   rescue StandardError => e
-    message = e.message[0, 50]
-    message += '...' if e.message.size >= 50
+    message = e.message.truncate(50)
     errors.add(:base, "Encountered an error when importing rules to the SRG: #{message}")
     false
   end
