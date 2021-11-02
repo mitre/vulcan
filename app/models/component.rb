@@ -26,8 +26,9 @@ class Component < ApplicationRecord
   belongs_to :component, class_name: 'Component', inverse_of: :child_components, optional: true
   has_many :child_components, class_name: 'Component', inverse_of: :component, dependent: :destroy
   has_many :memberships, -> { includes :user }, inverse_of: :membership, as: :membership, dependent: :destroy
+  has_one :component_metadata, dependent: :destroy
 
-  accepts_nested_attributes_for :rules
+  accepts_nested_attributes_for :rules, :component_metadata
 
   after_create :import_srg_rules
 
@@ -46,6 +47,11 @@ class Component < ApplicationRecord
         based_on_version: based_on.version
       }
     )
+  end
+
+  # Helper method to extract data from Component Metadata
+  def metadata
+    component_metadata&.data
   end
 
   ##
