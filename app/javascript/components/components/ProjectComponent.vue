@@ -104,6 +104,27 @@
         </b-tabs>
       </b-col>
       <b-col v-if="effective_permissions" md="2">
+        <b-row class="pb-4">
+          <b-col>
+            <div class="clickable" @click="showMetadata = !showMetadata">
+              <h5 class="m-0 d-inline-block">Component Metadata</h5>
+
+              <i
+                v-if="showMetadata"
+                class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+              />
+              <i v-if="!showMetadata" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+            </div>
+            <b-collapse id="collapse-metadata" v-model="showMetadata">
+              <div v-for="(value, propertyName) in component.metadata" :key="propertyName">
+                <p v-linkified class="ml-2 mb-0 mt-2">
+                  <strong>{{ propertyName }}: </strong>{{ value }}
+                </p>
+              </div>
+              <UpdateMetadataModal :component="component" @componentUpdated="refreshComponent" />
+            </b-collapse>
+          </b-col>
+        </b-row>
         <b-row>
           <b-col>
             <div class="clickable" @click="showHistory = !showHistory">
@@ -133,6 +154,7 @@ import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMi
 import History from "../shared/History.vue";
 import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
 import MembershipsTable from "../memberships/MembershipsTable.vue";
+import UpdateMetadataModal from "./UpdateMetadataModal.vue";
 
 export default {
   name: "Projectcomponent",
@@ -140,6 +162,7 @@ export default {
     History,
     RulesReadOnlyView,
     MembershipsTable,
+    UpdateMetadataModal,
   },
   mixins: [
     DateFormatMixinVue,
