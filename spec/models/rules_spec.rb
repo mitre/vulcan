@@ -34,7 +34,8 @@ RSpec.describe Review, type: :model do
       component: @p1_c1,
       rule_id: 'P1-R1',
       status: 'Applicable - Configurable',
-      rule_severity: 'medium'
+      rule_severity: 'medium',
+      srg_rule: srg.srg_rules.first
     )
   end
 
@@ -77,14 +78,14 @@ RSpec.describe Review, type: :model do
 
       # Add some checks
       Check.create(
-        rule: original_rule,
+        base_rule: original_rule,
         system: 'this is a test',
         content_ref_name: 'this is a test',
         content_ref_href: 'this is a test',
         content: 'this is a test'
       )
       Check.create(
-        rule: original_rule,
+        base_rule: original_rule,
         system: 'this is a test',
         content_ref_name: 'this is a test',
         content_ref_href: 'this is a test',
@@ -92,7 +93,7 @@ RSpec.describe Review, type: :model do
       )
       # Add some descriptions
       DisaRuleDescription.create(
-        rule: original_rule,
+        base_rule: original_rule,
         vuln_discussion: 'this is a test',
         false_positives: 'this is a test',
         false_negatives: 'this is a test',
@@ -106,7 +107,7 @@ RSpec.describe Review, type: :model do
         ia_controls: 'this is a test'
       )
       DisaRuleDescription.create(
-        rule: original_rule,
+        base_rule: original_rule,
         vuln_discussion: 'this is a test',
         false_positives: 'this is a test',
         false_negatives: 'this is a test',
@@ -119,7 +120,7 @@ RSpec.describe Review, type: :model do
         responsibility: 'this is a test',
         ia_controls: 'this is a test'
       )
-      RuleDescription.create(rule: original_rule, description: 'this is a test')
+      RuleDescription.create(base_rule: original_rule, description: 'this is a test')
 
       # Add some reviews
       Review.create(rule: original_rule, user: @p_admin, action: 'request_review', comment: '...')
@@ -136,8 +137,7 @@ RSpec.describe Review, type: :model do
         original_rule.update(original_rule_update_attributes)
         original_rule.reload
         new_rule = original_rule.amoeba_dup
-        # Normally we would epect rule_id to be set outside of amoeba_dup (e.g., in a controller)
-        new_rule.rule_id = SecureRandom.hex(3)
+        new_rule.rule_id = nil
         new_rule.save
         new_rule.reload
 
@@ -157,7 +157,7 @@ RSpec.describe Review, type: :model do
         expect(new_rule.review_requestor_id).to eq(nil)
         expect(new_rule.locked).to eq(false)
 
-        rejectable_attrs = %w[id rule_id updated_at created_at]
+        rejectable_attrs = %w[id base_rule_id updated_at created_at]
         # Expect all check fields on the rule except id, rule_id, updated_at, created_at to be the same
         expect(new_rule.checks.size).to eq(original_rule.checks.size)
         new_rule.checks.each_with_index do |new_check, index|

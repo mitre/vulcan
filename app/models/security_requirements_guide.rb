@@ -3,7 +3,10 @@
 # SecurityRequirementsGuides (abbreviated SRGs) are XCCDF documents that contain a
 # benchmark that describes how to evaluate generic IT systems.
 class SecurityRequirementsGuide < ApplicationRecord
-  has_many :projects, dependent: :restrict_with_error
+  has_many :components, dependent: :restrict_with_error
+  has_many :srg_rules, dependent: :destroy
+
+  after_create :import_srg_rules
 
   validates :srg_id, :title, :version, :xml, presence: true
   validates :srg_id, uniqueness: {
@@ -50,5 +53,32 @@ class SecurityRequirementsGuide < ApplicationRecord
 
   def full_title
     "#{title} #{version}"
+  end
+
+  def parsed_benchmark
+    @parsed_benchmark ||= Xccdf::Benchmark.parse(xml)
+  end
+
+  attr_writer :parsed_benchmark
+
+  private
+
+  def import_srg_rules
+    srg_rules = parsed_benchmark.rule.map do |rule|
+      SrgRule.from_mapping(rule, id)
+    end
+
+    # Examine import results for failures
+    success = SrgRule.import(srg_rules, all_or_none: true, recursive: true).failed_instances.blank?
+    if success
+      reload
+    else
+      errors.add(:base, 'Some rules failed to import successfully for the SRG.')
+    end
+    success
+  rescue StandardError => e
+    message = e.message.truncate(50)
+    errors.add(:base, "Encountered an error when importing rules to the SRG: #{message}")
+    false
   end
 end

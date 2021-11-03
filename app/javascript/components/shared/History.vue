@@ -72,7 +72,10 @@ export default {
   },
   methods: {
     userIdentifier: function (history) {
-      return history.audited_name || `${history.auditable_type} ${history.auditable_id}`;
+      return (
+        this.humanizedType(history.audited_name) ||
+        `${this.humanizedType(history.auditable_type)} ${history.auditable_id}`
+      );
     },
     computeCreationText: function (history) {
       if (history.auditable_type == "Membership") {

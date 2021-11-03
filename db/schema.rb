@@ -39,15 +39,46 @@ ActiveRecord::Schema.define(version: 2021_11_01_152514) do
     t.index ["user_id", "user_type"], name: "user_index"
   end
 
+  create_table "base_rules", force: :cascade do |t|
+    t.boolean "locked", default: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "status", default: "Not Yet Determined"
+    t.text "status_justification"
+    t.text "artifact_description"
+    t.text "vendor_comments"
+    t.string "rule_id", null: false
+    t.string "rule_severity"
+    t.string "rule_weight"
+    t.string "version"
+    t.string "title"
+    t.string "ident"
+    t.string "ident_system", default: "http://iase.disa.mil/cci"
+    t.text "fixtext"
+    t.string "fixtext_fixref"
+    t.string "fix_id"
+    t.bigint "review_requestor_id"
+    t.bigint "component_id"
+    t.boolean "changes_requested", default: false
+    t.string "type"
+    t.bigint "srg_rule_id"
+    t.bigint "security_requirements_guide_id"
+    t.index ["component_id"], name: "index_base_rules_on_component_id"
+    t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
+    t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
+    t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
+    t.index ["srg_rule_id"], name: "index_base_rules_on_srg_rule_id"
+  end
+
   create_table "checks", force: :cascade do |t|
-    t.bigint "rule_id"
+    t.bigint "base_rule_id"
     t.string "system"
     t.string "content_ref_name"
     t.string "content_ref_href"
     t.text "content"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["rule_id"], name: "index_checks_on_rule_id"
+    t.index ["base_rule_id"], name: "index_checks_on_base_rule_id"
   end
 
   create_table "component_metadata", force: :cascade do |t|
@@ -77,7 +108,7 @@ ActiveRecord::Schema.define(version: 2021_11_01_152514) do
   end
 
   create_table "disa_rule_descriptions", force: :cascade do |t|
-    t.bigint "rule_id"
+    t.bigint "base_rule_id"
     t.text "vuln_discussion"
     t.text "false_positives"
     t.text "false_negatives"
@@ -91,7 +122,7 @@ ActiveRecord::Schema.define(version: 2021_11_01_152514) do
     t.text "ia_controls"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["rule_id"], name: "index_disa_rule_descriptions_on_rule_id"
+    t.index ["base_rule_id"], name: "index_disa_rule_descriptions_on_base_rule_id"
   end
 
   create_table "memberships", force: :cascade do |t|
@@ -141,7 +172,7 @@ ActiveRecord::Schema.define(version: 2021_11_01_152514) do
     t.string "reference_type"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.bigint "rule_id"
+    t.bigint "base_rule_id"
   end
 
   create_table "reviews", force: :cascade do |t|
@@ -156,37 +187,11 @@ ActiveRecord::Schema.define(version: 2021_11_01_152514) do
   end
 
   create_table "rule_descriptions", force: :cascade do |t|
-    t.bigint "rule_id"
+    t.bigint "base_rule_id"
     t.text "description"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["rule_id"], name: "index_rule_descriptions_on_rule_id"
-  end
-
-  create_table "rules", force: :cascade do |t|
-    t.boolean "locked", default: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.string "status", default: "Not Yet Determined"
-    t.text "status_justification"
-    t.text "artifact_description"
-    t.text "vendor_comments"
-    t.string "rule_id", null: false
-    t.string "rule_severity"
-    t.string "rule_weight"
-    t.string "version"
-    t.string "title"
-    t.string "ident"
-    t.string "ident_system", default: "http://iase.disa.mil/cci"
-    t.text "fixtext"
-    t.string "fixtext_fixref"
-    t.string "fix_id"
-    t.bigint "review_requestor_id"
-    t.bigint "component_id"
-    t.boolean "changes_requested", default: false
-    t.index ["component_id"], name: "index_rules_on_component_id"
-    t.index ["review_requestor_id"], name: "index_rules_on_review_requestor_id"
-    t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
+    t.index ["base_rule_id"], name: "index_rule_descriptions_on_base_rule_id"
   end
 
   create_table "security_requirements_guides", force: :cascade do |t|
@@ -225,8 +230,10 @@ ActiveRecord::Schema.define(version: 2021_11_01_152514) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "base_rules", "base_rules", column: "srg_rule_id"
+  add_foreign_key "base_rules", "components"
+  add_foreign_key "base_rules", "security_requirements_guides"
+  add_foreign_key "base_rules", "users", column: "review_requestor_id"
   add_foreign_key "components", "components"
   add_foreign_key "memberships", "users"
-  add_foreign_key "rules", "components"
-  add_foreign_key "rules", "users", column: "review_requestor_id"
 end

@@ -2,7 +2,7 @@
 
 # A Reference maps to the XCCDF RuleReference element type
 class Reference < ApplicationRecord
-  belongs_to :rule
+  belongs_to :base_rule
 
   # Because from_mappings take advantage of accepts_nested_attributes, these methods
   # must return Hashes instead of an actual object to be properly created and associated

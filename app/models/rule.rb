@@ -2,10 +2,7 @@
 
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
-class Rule < ApplicationRecord
-  include RuleConstants
-  include CciMap::Constants
-
+class Rule < BaseRule
   amoeba do
     include_association :rule_descriptions
     include_association :disa_rule_descriptions
@@ -19,64 +16,45 @@ class Rule < ApplicationRecord
   audited except: %i[component_id review_requestor_id created_at updated_at locked], max_audits: 1000
   has_associated_audits
 
+  belongs_to :component, counter_cache: true
+  belongs_to :srg_rule
+  belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
+  has_many :reviews, dependent: :destroy
+
   before_validation :set_rule_id
   before_save :apply_audit_comment
-  before_create :ensure_disa_description_exists
-  before_create :ensure_check_exists
   before_destroy :prevent_destroy_if_under_review_or_locked
-
-  has_many :reviews, dependent: :destroy
-  has_many :rule_descriptions, dependent: :destroy
-  has_many :disa_rule_descriptions, dependent: :destroy
-  has_many :checks, dependent: :destroy
-  has_many :references, dependent: :destroy
-  belongs_to :component, counter_cache: true
-  belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
-
-  accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
   validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
-  validates :status, inclusion: {
-    in: STATUSES,
-    message: "is not an acceptable value, acceptable values are: '#{STATUSES.reject(&:blank?).join("', '")}'"
-  }
-
-  validates :rule_severity, inclusion: {
-    in: SEVERITIES,
-    message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.reject(&:blank?).join("', '")}'"
-  }
-
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
-  # In all cases of has_many, it is very unlikely (based on past releases of SRGs
-  # that there will be multiple of these fields. Just take the first one.
-  # Extend the model if required
-
-  # Reject legacy idents for the same reason, array of idents not established
-  def self.from_mapping(rule_mapping, component_id, idx = nil)
-    rule = Rule.new(
-      component_id: component_id,
-      # Default to rule_id, allow overriding. This is what is
-      # appended to the component prefix in the UI
-      rule_id: idx.to_s.rjust(6, '0') || rule_mapping.id,
-      status: rule_mapping.status.first&.status || 'Not Yet Determined',
-      rule_severity: rule_mapping.severity || nil,
-      rule_weight: rule_mapping.weight || nil,
-      version: rule_mapping.version.first&.version,
-      title: rule_mapping.title.first || nil,
-      ident: rule_mapping.ident.reject(&:legacy).first.ident,
-      ident_system: rule_mapping.ident.reject(&:legacy).first.system,
-      fixtext: rule_mapping.fixtext.first&.fixtext,
-      fixtext_fixref: rule_mapping.fixtext.first&.fixref,
-      fix_id: rule_mapping.fix.first&.id
-    )
-    rule.references.build(Reference.from_mapping(rule_mapping.reference.first))
-    rule.disa_rule_descriptions.build(DisaRuleDescription.from_mapping(rule_mapping.description.first))
-    rule.checks.build(Check.from_mapping(rule_mapping.check.first))
+  def self.from_mapping(rule_mapping, component_id, idx, srg_rules)
+    rule = super(self, rule_mapping)
     rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(component_id))
+    rule.component_id = component_id
+    rule.srg_rule_id = srg_rules[rule.rule_id]
+    # This is what is appended to the component prefix in the UI
+    rule.rule_id = idx&.to_s&.rjust(6, '0')
+
     rule
+  end
+
+  ##
+  # Override `as_json` to include parent SRG information
+  #
+  def as_json(options = {})
+    super.merge(
+      {
+        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
+        srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
+                                                     'status_justification', 'artifact_description',
+                                                     'vendor_comments', 'rule_id', 'review_requestor_id',
+                                                     'component_id', 'changes_requested', 'srg_rule_id',
+                                                     'security_requirements_guide_id')
+      }
+    )
   end
 
   ##
@@ -136,21 +114,6 @@ class Rule < ApplicationRecord
     end
   end
 
-  ##
-  # Override `as_json` to include dependent records
-  #
-  def as_json(options = {})
-    super.merge(
-      {
-        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-        rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) },
-        nist_control_family: nist_control_family
-      }
-    )
-  end
-
   def csv_attributes
     [
       nist_control_family,
@@ -158,14 +121,14 @@ class Rule < ApplicationRecord
       version,
       "#{component.prefix}-#{rule_id}",
       rule_severity,
-      nil, # original srg title
+      srg_rule.title, # original srg title
       title,
-      nil, # original srg vuln discussion
+      srg_rule.disa_rule_descriptions.first.vuln_discussion, # original srg vuln discussion
       disa_rule_descriptions.first.vuln_discussion,
       status,
-      nil, # original SRG check content
+      srg_rule.checks.first.content, # original SRG check content
       checks.first.content,
-      nil, # original SRG fix text
+      srg_rule.fixtext, # original SRG fix text
       fixtext,
       status_justification,
       disa_rule_descriptions.first.mitigations,
@@ -174,15 +137,7 @@ class Rule < ApplicationRecord
     ]
   end
 
-  def nist_control_family
-    CCI_TO_NIST_CONSTANT[ident&.to_sym]
-  end
-
   private
-
-  def set_rule_id
-    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') unless rule_id
-  end
 
   def cannot_be_locked_and_under_review
     return unless locked && review_requestor_id.present?
@@ -205,6 +160,10 @@ class Rule < ApplicationRecord
     errors.add(:base, 'Cannot update review-related attributes with other non-review-related attributes')
   end
 
+  def set_rule_id
+    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') unless rule_id
+  end
+
   ##
   # Rules should never be deleted if they are under review or locked
   # This checks *_was to cover the case where an attrubute was changed before attempting to destroy
@@ -220,18 +179,6 @@ class Rule < ApplicationRecord
 
     errors.add(:base, 'Control is locked and cannot be destroyed')
     throw(:abort)
-  end
-
-  def ensure_disa_description_exists
-    return unless disa_rule_descriptions.size.zero?
-
-    disa_rule_descriptions << DisaRuleDescription.new(rule: self)
-  end
-
-  def ensure_check_exists
-    return unless checks.size.zero?
-
-    checks << Check.new(rule: self)
   end
 
   ##

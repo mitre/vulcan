@@ -32,6 +32,7 @@
 
     <RuleSecurityRequirementsGuideInformation
       :nist_control_family="rule.nist_control_family"
+      :srg_rule="rule.srg_rule_attributes"
       :cci="rule.ident"
     />
 
