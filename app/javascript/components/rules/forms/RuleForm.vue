@@ -96,6 +96,18 @@
         </b-form-group>
       </template>
 
+      <template v-if="disa_fields">
+        <!-- disa_rule_description -->
+        <DisaRuleDescriptionForm
+          v-if="rule.disa_rule_descriptions_attributes.length >= 1"
+          :rule="rule"
+          :index="0"
+          :description="rule.disa_rule_descriptions_attributes[0]"
+          :disabled="disabled"
+          :fields="disa_fields"
+        />
+      </template>
+
       <!-- version -->
       <b-form-group
         v-if="fields.displayed.includes('version')"
@@ -126,72 +138,6 @@
           {{ invalidFeedback["version"] }}
         </b-form-invalid-feedback>
       </b-form-group>
-
-      <div class="row">
-        <!-- rule_severity -->
-        <b-form-group
-          v-if="fields.displayed.includes('rule_severity')"
-          :id="`ruleEditor-rule_severity-group-${mod}`"
-          class="col-6"
-        >
-          <label :for="`ruleEditor-rule_severity-${mod}`">
-            Control Severity
-            <i
-              v-if="tooltips['rule_severity']"
-              v-b-tooltip.hover.html
-              class="mdi mdi-information"
-              aria-hidden="true"
-              :title="tooltips['rule_severity']"
-            />
-          </label>
-          <b-form-select
-            :id="`ruleEditor-rule_severity-${mod}`"
-            :value="rule.rule_severity"
-            :class="inputClass('rule_severity')"
-            :options="severities"
-            :disabled="disabled || fields.disabled.includes('rule_severity')"
-            @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
-          />
-          <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
-            {{ validFeedback["rule_severity"] }}
-          </b-form-valid-feedback>
-          <b-form-invalid-feedback v-if="hasInvalidFeedback('rule_severity')">
-            {{ invalidFeedback["rule_severity"] }}
-          </b-form-invalid-feedback>
-        </b-form-group>
-
-        <!-- rule_weight -->
-        <b-form-group
-          v-if="fields.displayed.includes('rule_weight')"
-          :id="`ruleEditor-rule_weight-group-${mod}`"
-          class="col-6"
-        >
-          <label :for="`ruleEditor-rule_weight-${mod}`">
-            Rule Weight
-            <i
-              v-if="tooltips['rule_weight']"
-              v-b-tooltip.hover.html
-              class="mdi mdi-information"
-              aria-hidden="true"
-              :title="tooltips['rule_weight']"
-            />
-          </label>
-          <b-form-input
-            :id="`ruleEditor-rule_weight-${mod}`"
-            :value="rule.rule_weight"
-            :class="inputClass('rule_weight')"
-            placeholder=""
-            :disabled="disabled || fields.disabled.includes('rule_weight').disabled"
-            @input="$root.$emit('update:rule', { ...rule, rule_weight: $event })"
-          />
-          <b-form-valid-feedback v-if="hasValidFeedback('rule_weight')">
-            {{ validFeedback["rule_weight"] }}
-          </b-form-valid-feedback>
-          <b-form-invalid-feedback v-if="hasInvalidFeedback('rule_weight')">
-            {{ invalidFeedback["rule_weight"] }}
-          </b-form-invalid-feedback>
-        </b-form-group>
-      </div>
 
       <!-- artifact_description -->
       <b-form-group
@@ -225,6 +171,18 @@
           {{ invalidFeedback["artifact_description"] }}
         </b-form-invalid-feedback>
       </b-form-group>
+
+      <template v-if="check_fields">
+        <!-- checks -->
+        <CheckForm
+          v-if="rule.status == 'Applicable - Configurable' && rule.checks_attributes.length >= 1"
+          :rule="rule"
+          :index="0"
+          :check="rule.checks_attributes[0]"
+          :disabled="disabled"
+          :fields="check_fields"
+        />
+      </template>
 
       <div class="row">
         <!-- fix_id -->
@@ -298,7 +256,7 @@
         :id="`ruleEditor-fixtext-group-${mod}`"
       >
         <label :for="`ruleEditor-fixtext-${mod}`">
-          Fix Text
+          Fix
           <i
             v-if="tooltips['fixtext']"
             v-b-tooltip.hover.html
@@ -324,6 +282,72 @@
           {{ invalidFeedback["fixtext"] }}
         </b-form-invalid-feedback>
       </b-form-group>
+
+      <div class="row">
+        <!-- rule_severity -->
+        <b-form-group
+          v-if="fields.displayed.includes('rule_severity')"
+          :id="`ruleEditor-rule_severity-group-${mod}`"
+          class="col-6"
+        >
+          <label :for="`ruleEditor-rule_severity-${mod}`">
+            Severity
+            <i
+              v-if="tooltips['rule_severity']"
+              v-b-tooltip.hover.html
+              class="mdi mdi-information"
+              aria-hidden="true"
+              :title="tooltips['rule_severity']"
+            />
+          </label>
+          <b-form-select
+            :id="`ruleEditor-rule_severity-${mod}`"
+            :value="rule.rule_severity"
+            :class="inputClass('rule_severity')"
+            :options="severities"
+            :disabled="disabled || fields.disabled.includes('rule_severity')"
+            @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
+          />
+          <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
+            {{ validFeedback["rule_severity"] }}
+          </b-form-valid-feedback>
+          <b-form-invalid-feedback v-if="hasInvalidFeedback('rule_severity')">
+            {{ invalidFeedback["rule_severity"] }}
+          </b-form-invalid-feedback>
+        </b-form-group>
+
+        <!-- rule_weight -->
+        <b-form-group
+          v-if="fields.displayed.includes('rule_weight')"
+          :id="`ruleEditor-rule_weight-group-${mod}`"
+          class="col-6"
+        >
+          <label :for="`ruleEditor-rule_weight-${mod}`">
+            Rule Weight
+            <i
+              v-if="tooltips['rule_weight']"
+              v-b-tooltip.hover.html
+              class="mdi mdi-information"
+              aria-hidden="true"
+              :title="tooltips['rule_weight']"
+            />
+          </label>
+          <b-form-input
+            :id="`ruleEditor-rule_weight-${mod}`"
+            :value="rule.rule_weight"
+            :class="inputClass('rule_weight')"
+            placeholder=""
+            :disabled="disabled || fields.disabled.includes('rule_weight').disabled"
+            @input="$root.$emit('update:rule', { ...rule, rule_weight: $event })"
+          />
+          <b-form-valid-feedback v-if="hasValidFeedback('rule_weight')">
+            {{ validFeedback["rule_weight"] }}
+          </b-form-valid-feedback>
+          <b-form-invalid-feedback v-if="hasInvalidFeedback('rule_weight')">
+            {{ invalidFeedback["rule_weight"] }}
+          </b-form-invalid-feedback>
+        </b-form-group>
+      </div>
 
       <div class="row">
         <!-- ident -->
@@ -429,9 +453,12 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
+import CheckForm from "./CheckForm";
 
 export default {
   name: "RuleForm",
+  components: { DisaRuleDescriptionForm, CheckForm },
   mixins: [FormFeedbackMixinVue],
   props: {
     rule: {
@@ -449,6 +476,12 @@ export default {
     disabled: {
       type: Boolean,
       required: true,
+    },
+    disa_fields: {
+      type: Object,
+    },
+    check_fields: {
+      type: Object,
     },
     fields: {
       type: Object,
