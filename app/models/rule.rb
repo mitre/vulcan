@@ -121,14 +121,14 @@ class Rule < BaseRule
       version,
       "#{component.prefix}-#{rule_id}",
       rule_severity,
-      nil, # original srg title
+      srg_rule.title, # original srg title
       title,
-      nil, # original srg vuln discussion
+      srg_rule.disa_rule_descriptions.first.vuln_discussion, # original srg vuln discussion
       disa_rule_descriptions.first.vuln_discussion,
       status,
-      nil, # original SRG check content
+      srg_rule.checks.first.content, # original SRG check content
       checks.first.content,
-      nil, # original SRG fix text
+      srg_rule.fixtext, # original SRG fix text
       fixtext,
       status_justification,
       disa_rule_descriptions.first.mitigations,
