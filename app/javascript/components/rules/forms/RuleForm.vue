@@ -516,7 +516,7 @@ export default {
         title: "Describe the vulnerability for this control",
         version: null,
         rule_severity:
-          "Unknown: severity not defined, Info: rule is informational only, Low: not a serious problem, Medium: fairly serious problem, High: a grave or critical problem",
+          "Unknown: severity not defined, Info: rule is informational only, CAT I (Low): not a serious problem, CAT II (Medium): fairly serious problem, CAT III (High): a grave or critical problem",
         rule_weight: null,
         artifact_description: null,
         fix_id: null,
