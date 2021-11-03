@@ -18,6 +18,7 @@ class SecurityRequirementsGuidesController < ApplicationController
     parsed_benchmark = Xccdf::Benchmark.parse(file.read)
     srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
     file.tempfile.seek(0)
+    srg.parsed_benchmark = parsed_benchmark
     srg.xml = file.read
     if srg.save
       render(json: { toast: 'Successfully created SRG.' }, status: :ok)
@@ -37,7 +38,7 @@ class SecurityRequirementsGuidesController < ApplicationController
     if @srg.destroy
       flash.notice = 'Successfully removed SRG.'
     else
-      flash.alert = "Unable to remove SRG. #{@project_member.errors.full_messages.join(', ')}"
+      flash.alert = "Unable to remove SRG. #{@srg.errors.full_messages.join(', ')}"
     end
     redirect_to action: 'index'
   end

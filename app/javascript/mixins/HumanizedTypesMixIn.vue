@@ -4,6 +4,7 @@ export default {
   data: function () {
     return {
       humanizedTypes: {
+        BaseRule: "Rule",
         RuleDescription: "Rule Description",
         DisaRuleDescription: "Rule Description",
         created_at: "Created At",
