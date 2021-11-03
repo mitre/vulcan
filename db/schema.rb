@@ -195,10 +195,10 @@ ActiveRecord::Schema.define(version: 2021_11_03_190520) do
   end
 
   create_table "rule_satisfactions", id: false, force: :cascade do |t|
-    t.bigint "base_rule_id"
-    t.bigint "satisfied_by_base_rule_id"
-    t.index ["base_rule_id", "satisfied_by_base_rule_id"], name: "index_rule_satisfactions_1", unique: true
-    t.index ["satisfied_by_base_rule_id", "base_rule_id"], name: "index_rule_satisfactions_2", unique: true
+    t.bigint "rule_id"
+    t.bigint "satisfied_by_rule_id"
+    t.index ["rule_id", "satisfied_by_rule_id"], name: "index_rule_satisfactions_on_rule_id_and_satisfied_by_rule_id", unique: true
+    t.index ["satisfied_by_rule_id", "rule_id"], name: "index_rule_satisfactions_on_satisfied_by_rule_id_and_rule_id", unique: true
   end
 
   create_table "security_requirements_guides", force: :cascade do |t|

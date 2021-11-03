@@ -21,6 +21,17 @@ class Rule < BaseRule
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
   has_many :reviews, dependent: :destroy
 
+  has_and_belongs_to_many :satisfied_by,
+                          class_name: 'Rule',
+                          join_table: :rule_satisfactions,
+                          association_foreign_key: :satisfied_by_rule_id
+
+  has_and_belongs_to_many :satisfies,
+                          class_name: 'Rule',
+                          join_table: :rule_satisfactions,
+                          foreign_key: :satisfied_by_rule_id,
+                          association_foreign_key: :rule_id
+
   before_validation :set_rule_id
   before_save :apply_audit_comment
   before_destroy :prevent_destroy_if_under_review_or_locked
