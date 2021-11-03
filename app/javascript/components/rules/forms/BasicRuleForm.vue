@@ -7,26 +7,8 @@
         :severities="severities"
         :disabled="disabled"
         :fields="ruleFormFields"
-      />
-
-      <!-- disa_rule_description -->
-      <DisaRuleDescriptionForm
-        v-if="rule.disa_rule_descriptions_attributes.length >= 1"
-        :rule="rule"
-        :index="0"
-        :description="rule.disa_rule_descriptions_attributes[0]"
-        :disabled="disabled"
-        :fields="disaDescriptionFormFields"
-      />
-
-      <!-- checks -->
-      <CheckForm
-        v-if="rule.status == 'Applicable - Configurable' && rule.checks_attributes.length >= 1"
-        :rule="rule"
-        :index="0"
-        :check="rule.checks_attributes[0]"
-        :disabled="disabled"
-        :fields="checkFormFields"
+        :disa_fields="disaDescriptionFormFields"
+        :check_fields="checkFormFields"
       />
     </b-form>
 
@@ -48,16 +30,12 @@
 
 <script>
 import RuleForm from "./RuleForm.vue";
-import CheckForm from "./CheckForm.vue";
-import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm.vue";
 import RuleSecurityRequirementsGuideInformation from "../RuleSecurityRequirementsGuideInformation.vue";
 
 export default {
   name: "BasicRuleForm",
   components: {
     RuleForm,
-    CheckForm,
-    DisaRuleDescriptionForm,
     RuleSecurityRequirementsGuideInformation,
   },
   props: {
@@ -91,7 +69,6 @@ export default {
         return {
           displayed: [
             "status",
-            "status_justification",
             "title",
             "rule_severity",
             "fixtext",
