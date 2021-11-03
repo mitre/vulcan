@@ -10,6 +10,12 @@ module RuleConstants
     'Not Applicable'
   ].freeze
 
+  SEVERITIES_MAP = {
+    'low' => 'CAT I',
+    'medium' => 'CAT II',
+    'high' => 'CAT III'
+  }.freeze
+
   SEVERITIES = %w[
     unknown
     info

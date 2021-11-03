@@ -470,7 +470,7 @@ export default {
       required: true,
     },
     severities: {
-      type: Array,
+      type: [Array, Object],
       required: true,
     },
     disabled: {

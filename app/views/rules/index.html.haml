@@ -9,6 +9,7 @@
     'v-bind:rules': @rules.to_json,                                                 |
     'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |
     'v-bind:severities': RuleConstants::SEVERITIES.to_json,                         |
+    'v-bind:severities_map': RuleConstants::SEVERITIES_MAP.to_json,                 |
     'v-bind:effective_permissions': @effective_permissions.to_json,                 |
     'v-bind:current_user_id': current_user.id.to_json                               |
   }
