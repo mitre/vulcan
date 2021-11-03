@@ -14,6 +14,18 @@ class BaseRule < ApplicationRecord
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
 
+  has_and_belongs_to_many :satisfied_by,
+                          class_name: "BaseRule",
+                          join_table: :rule_satisfactions,
+                          foreign_key: :base_rule_id,
+                          association_foreign_key: :satisfied_by_base_rule_id
+
+  has_and_belongs_to_many :satisfies,
+                          class_name: "BaseRule",
+                          join_table: :rule_satisfactions,
+                          foreign_key: :satisfied_by_base_rule_id,
+                          association_foreign_key: :base_rule_id
+
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
   validates :status, inclusion: {
