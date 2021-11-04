@@ -307,7 +307,13 @@
             :options="severities"
             :disabled="disabled || fields.disabled.includes('rule_severity')"
             @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
-          />
+          >
+            <template v-if="!Array.isArray(severities) && !severities[rule.rule_severity]" #first>
+              <b-form-select-option :value="rule.rule_severity" disabled>{{
+                rule.rule_severity
+              }}</b-form-select-option>
+            </template>
+          </b-form-select>
           <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
             {{ validFeedback["rule_severity"] }}
           </b-form-valid-feedback>
