@@ -23,7 +23,7 @@
       v-else
       :rule="rule"
       :statuses="statuses"
-      :severities="severities"
+      :severities_map="severities_map"
       :read-only="readOnly"
     />
   </div>
@@ -47,6 +47,10 @@ export default {
     },
     severities: {
       type: Array,
+      required: true,
+    },
+    severities_map: {
+      type: Object,
       required: true,
     },
     readOnly: {

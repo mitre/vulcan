@@ -31,6 +31,7 @@
               :rule="selectedRule()"
               :statuses="statuses"
               :severities="severities"
+              :severities_map="severities_map"
               :advanced_fields="component.advanced_fields"
             />
           </div>
@@ -104,6 +105,10 @@ export default {
     },
     severities: {
       type: Array,
+      required: true,
+    },
+    severities_map: {
+      type: Object,
       required: true,
     },
   },
