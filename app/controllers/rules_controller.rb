@@ -12,19 +12,30 @@ class RulesController < ApplicationController
   before_action :authorize_admin_component, only: %i[destroy]
 
   def index
-    @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-                                         srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+                                        srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+                      .map { |r| [r[:id], r.as_json.merge({ satisfies: [], satisfied_by: [] })] }.to_h
+
+    RuleSatisfaction.where(rule_id: rules.keys).each do |rs|
+      rules[rs[:rule_id]][:satisfied_by] << rs[:satisfied_by_rule_id]
+    end
+
+    RuleSatisfaction.where(satisfied_by_rule_id: rules.keys).each do |rs|
+      rules[rs[:satisfied_by_rule_id]][:satisfies] << rs[:rule_id]
+    end
+
+    @rules = rules.values
   end
 
   def show
-    render json: @rule.to_json(methods: %i[histories])
+    render json: @rule.to_json(methods: %i[histories satisfies satisfied_by])
   end
 
   def create
     rule = create_or_duplicate
     if rule.save
       render json: { toast: 'Successfully created control.',
-                     data: rule.to_json(methods: %i[histories]) }
+                     data: rule.to_json(methods: %i[histories satisfies satisfied_by]) }
     else
       render json: {
         toast: {

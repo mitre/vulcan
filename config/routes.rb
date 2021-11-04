@@ -19,6 +19,7 @@ Rails.application.routes.draw do
       end
     end
   end
+  resources :rule_satisfactions, only: %i[create destroy]
   # Alias rules#index to controls for convenience
   get '/components/:component_id/controls', to: 'rules#index'
   # Make components#index not a child of project

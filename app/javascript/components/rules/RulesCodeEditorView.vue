@@ -17,6 +17,7 @@
       <div class="col-10">
         <RuleEditorHeader
           :rule="selectedRule()"
+          :rules="rules"
           :project-prefix="component.prefix"
           :effective-permissions="effectivePermissions"
           @ruleSelected="handleRuleSelected($event)"
@@ -45,6 +46,12 @@
             />
             <br />
             <RuleHistories :rule="selectedRule()" :statuses="statuses" :severities="severities" />
+            <RuleSatisfactions
+              :component="component"
+              :rule="selectedRule()"
+              :selected-rule-id="selectedRule().id"
+              :project-prefix="component.prefix"
+            />
           </div>
         </div>
       </div>
@@ -66,6 +73,7 @@ import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
 import RuleHistories from "./RuleHistories.vue";
 import RuleReviews from "./RuleReviews.vue";
+import RuleSatisfactions from "./RuleSatisfactions.vue";
 import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
 
 export default {
@@ -76,6 +84,7 @@ export default {
     RuleEditorHeader,
     RuleHistories,
     RuleReviews,
+    RuleSatisfactions,
   },
   mixins: [SelectedRulesMixin],
   props: {

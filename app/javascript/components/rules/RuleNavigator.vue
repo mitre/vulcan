@@ -102,6 +102,19 @@
       </b-form-checkbox>
     </b-form-group>
 
+    <!-- Show/hide duplicates -->
+    <b-form-group class="ml-2 mt-3" label="Filter by Duplicate Status">
+      <b-form-checkbox
+        id="showDuplicatesChecked"
+        v-model="filters.showDuplicatesChecked"
+        class="mb-1 unselectable"
+        switch
+        name="showDuplicatesChecked-fitler"
+      >
+        Show Duplicates
+      </b-form-checkbox>
+    </b-form-group>
+
     <hr class="mt-2 mb-2" />
 
     <!-- Currently opened controls -->
@@ -223,6 +236,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
+        showDuplicatesChecked: false, // Show duplicates
       },
     };
   },
@@ -368,6 +382,9 @@ export default {
         (this.filters.lckFilterChecked && rule.locked == true)
       );
     },
+    isDuplicate: function (rule) {
+      return this.filters.showDuplicatesChecked || rule.satisfied_by.length === 0;
+    },
     // Helper to filter & search a group of rules
     filterRules: function (rules) {
       let downcaseSearch = this.filters.search.toLowerCase();
@@ -375,7 +392,8 @@ export default {
         return (
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
-          this.doesRuleHaveFilteredReviewStatus(rule)
+          this.doesRuleHaveFilteredReviewStatus(rule) &&
+          this.isDuplicate(rule)
         );
       });
     },
@@ -465,6 +483,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
+        showDuplicatesChecked: false, // Show duplicates
       };
     },
   },

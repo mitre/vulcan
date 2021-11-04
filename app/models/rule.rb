@@ -36,6 +36,7 @@ class Rule < BaseRule
   before_save :apply_audit_comment
   before_destroy :prevent_destroy_if_under_review_or_locked
 
+  validates_with RuleSatisfactionValidator
   validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
