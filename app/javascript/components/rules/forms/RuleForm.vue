@@ -307,7 +307,13 @@
             :options="severities"
             :disabled="disabled || fields.disabled.includes('rule_severity')"
             @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
-          />
+          >
+            <template v-if="!Array.isArray(severities) && !severities[rule.rule_severity]" #first>
+              <b-form-select-option :value="rule.rule_severity" disabled>{{
+                rule.rule_severity
+              }}</b-form-select-option>
+            </template>
+          </b-form-select>
           <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
             {{ validFeedback["rule_severity"] }}
           </b-form-valid-feedback>
@@ -470,7 +476,7 @@ export default {
       required: true,
     },
     severities: {
-      type: Array,
+      type: [Array, Object],
       required: true,
     },
     disabled: {
@@ -516,7 +522,7 @@ export default {
         title: "Describe the vulnerability for this control",
         version: null,
         rule_severity:
-          "Unknown: severity not defined, Info: rule is informational only, Low: not a serious problem, Medium: fairly serious problem, High: a grave or critical problem",
+          "Unknown: severity not defined, Info: rule is informational only, CAT I (Low): not a serious problem, CAT II (Medium): fairly serious problem, CAT III (High): a grave or critical problem",
         rule_weight: null,
         artifact_description: null,
         fix_id: null,

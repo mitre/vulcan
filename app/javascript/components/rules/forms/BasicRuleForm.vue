@@ -4,7 +4,7 @@
       <RuleForm
         :rule="rule"
         :statuses="statuses"
-        :severities="severities"
+        :severities="severities_map"
         :disabled="disabled"
         :fields="ruleFormFields"
         :disa_fields="disaDescriptionFormFields"
@@ -47,8 +47,8 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: Array,
+    severities_map: {
+      type: Object,
       required: true,
     },
     readOnly: {

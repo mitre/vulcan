@@ -71,6 +71,7 @@
               :rules="component.rules"
               :statuses="statuses"
               :severities="severities"
+              :severities_map="severities_map"
             />
           </b-tab>
 
@@ -192,6 +193,10 @@ export default {
     },
     severities: {
       type: Array,
+      required: true,
+    },
+    severities_map: {
+      type: Object,
       required: true,
     },
     available_roles: {

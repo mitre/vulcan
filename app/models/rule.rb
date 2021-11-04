@@ -120,7 +120,7 @@ class Rule < BaseRule
       ident,
       version,
       "#{component.prefix}-#{rule_id}",
-      rule_severity,
+      SEVERITIES_MAP[rule_severity] || rule_severity,
       srg_rule.title, # original srg title
       title,
       srg_rule.disa_rule_descriptions.first.vuln_discussion, # original srg vuln discussion
