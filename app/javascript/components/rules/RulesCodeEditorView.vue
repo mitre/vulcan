@@ -49,8 +49,9 @@
             <RuleSatisfactions
               :component="component"
               :rule="selectedRule()"
-              :selected-rule-id="selectedRule().id"
+              :selected-rule-id="selectedRuleId"
               :project-prefix="component.prefix"
+              @ruleSelected="handleRuleSelected($event)"
             />
           </div>
         </div>

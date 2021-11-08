@@ -20,7 +20,7 @@
           v-for="satisfies in rule.satisfies"
           :key="satisfies.id"
           :class="ruleRowClass(satisfies)"
-          @click="handleRuleSelected(satisfies.id)"
+          @click="ruleSelected(satisfies)"
         >
           <i
             v-b-modal.unmark-satisfies-modal
@@ -70,7 +70,7 @@
           v-for="satisfied_by in rule.satisfied_by"
           :key="satisfied_by.id"
           :class="ruleRowClass(satisfied_by)"
-          @click="handleRuleSelected(satisfied_by.id)"
+          @click="ruleSelected(satisfied_by)"
         >
           <i
             v-b-modal.unmark-satisfied-by-modal
@@ -103,22 +103,31 @@
 </template>
 
 <script>
-import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
-
+//
+// Expect component to emit `ruleSelected` event when
+// a rule is selected from the list. This event means that
+// the user wants to edit that specific rule.
+// this.$emit('ruleSelected', rule)
+//
+// <RuleSatisfactions @ruleSelected="handleRuleSelected($event)" ... />
+//
 export default {
   name: "RuleSatisfactions",
-  mixins: [SelectedRulesMixin],
   props: {
-    projectPrefix: {
-      type: String,
-      required: true,
-    },
     component: {
       type: Object,
       required: true,
     },
     rule: {
       type: Object,
+      required: true,
+    },
+    selectedRuleId: {
+      type: Number,
+      required: false,
+    },
+    projectPrefix: {
+      type: String,
       required: true,
     },
   },
@@ -131,6 +140,13 @@ export default {
     };
   },
   methods: {
+    // Event handler for when a rule is selected
+    ruleSelected: function (rule) {
+      if (!rule.histories) {
+        this.$root.$emit("refresh:rule", rule.id);
+      }
+      this.$emit("ruleSelected", rule.id);
+    },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
     },
