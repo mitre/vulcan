@@ -9,7 +9,7 @@ class RuleSatisfactionsController < ApplicationController
   before_action :set_rules
 
   def create
-    if @rule.satisfied_by << @satisfied_by_rule
+    if @rule.satisfies.empty? && (@rule.satisfied_by << @satisfied_by_rule)
       render json: { toast: 'Successfully marked rule as duplicate.' }
     else
       render json: {

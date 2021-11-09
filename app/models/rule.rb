@@ -145,11 +145,26 @@ class Rule < BaseRule
       status_justification,
       disa_rule_descriptions.first.mitigations,
       artifact_description,
-      vendor_comments
+      vendor_comments_with_satisfactions
     ]
   end
 
   private
+
+  def vendor_comments_with_satisfactions
+    comments = []
+    comments << vendor_comments if vendor_comments.present?
+
+    if satisfied_by.present?
+      comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
+    end
+
+    if satisfies.present?
+      comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
+    end
+
+    comments.join('. ')
+  end
 
   def cannot_be_locked_and_under_review
     return unless locked && review_requestor_id.present?

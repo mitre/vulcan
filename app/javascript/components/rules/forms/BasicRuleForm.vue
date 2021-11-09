@@ -3,6 +3,7 @@
     <b-form>
       <RuleForm
         :rule="rule"
+        :project-prefix="projectPrefix"
         :statuses="statuses"
         :severities="severities_map"
         :disabled="disabled"
@@ -43,6 +44,10 @@ export default {
       type: Object,
       required: true,
     },
+    projectPrefix: {
+      type: String,
+      required: true,
+    },
     statuses: {
       type: Array,
       required: true,
@@ -58,14 +63,16 @@ export default {
   },
   computed: {
     disabled: function () {
-      return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
-    },
-    disabledStatus: function () {
-      return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
+      return this.readOnly ||
+        this.rule.locked ||
+        this.rule.satisfied_by.length > 0 ||
+        this.rule.review_requestor_id
+        ? true
+        : false;
     },
     // The fields to show need to be dynamic based on the rule status
     ruleFormFields: function () {
-      if (this.rule.status == "Applicable - Configurable") {
+      if (this.rule.satisfied_by || this.rule.status == "Applicable - Configurable") {
         return {
           displayed: [
             "status",
@@ -75,7 +82,7 @@ export default {
             "vendor_comments",
             "nist_control",
           ],
-          disabled: [],
+          disabled: this.rule.satisfied_by ? ["title", "fixtext"] : [],
         };
       } else if (this.rule.status == "Not Yet Determined") {
         return {
