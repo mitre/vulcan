@@ -438,7 +438,7 @@
         </label>
         <b-form-textarea
           :id="`ruleEditor-vendor_comments-${mod}`"
-          :value="formatVendorComments(rule)"
+          :value="rule.vendor_comments"
           :class="inputClass('vendor_comments')"
           placeholder=""
           :disabled="disabled || fields.disabled.includes('vendor_comments')"
@@ -469,10 +469,6 @@ export default {
   props: {
     rule: {
       type: Object,
-      required: true,
-    },
-    projectPrefix: {
-      type: String,
       required: true,
     },
     statuses: {
@@ -538,28 +534,6 @@ export default {
         vendor_comments: "Provide context to a reviewing authority; not a published field",
       },
     };
-  },
-  methods: {
-    formatRuleId: function (id) {
-      return `${this.projectPrefix}-${id}`;
-    },
-    formatVendorComments: function (rule) {
-      let comments = [];
-      if (rule.vendor_comments) {
-        comments.push(rule.vendor_comments);
-      }
-      if (rule.satisfied_by && rule.satisfied_by.length > 0) {
-        comments.push(
-          `Satisfied By: ${rule.satisfied_by.map((r) => this.formatRuleId(r.rule_id)).join(", ")}.`
-        );
-      }
-      if (rule.satisfies && rule.satisfies.length > 0) {
-        comments.push(
-          `Satisfies: ${rule.satisfies.map((r) => this.formatRuleId(r.rule_id)).join(", ")}.`
-        );
-      }
-      return comments.join(". ");
-    },
   },
 };
 </script>

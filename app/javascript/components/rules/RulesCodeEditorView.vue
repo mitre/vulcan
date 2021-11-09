@@ -30,7 +30,6 @@
           <div class="col-7 border-right">
             <RuleEditor
               :rule="selectedRule()"
-              :project-prefix="component.prefix"
               :statuses="statuses"
               :severities="severities"
               :severities_map="severities_map"

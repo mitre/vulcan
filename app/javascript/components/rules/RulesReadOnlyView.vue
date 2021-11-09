@@ -26,7 +26,6 @@
         <hr />
         <RuleEditor
           :rule="selectedRule()"
-          :project-prefix="component.prefix"
           :statuses="statuses"
           :severities="severities"
           :severities_map="severities_map"

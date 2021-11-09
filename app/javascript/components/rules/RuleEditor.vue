@@ -14,7 +14,6 @@
     <AdvancedRuleForm
       v-if="advancedEditor"
       :rule="rule"
-      :project-prefix="projectPrefix"
       :statuses="statuses"
       :severities="severities"
       :read-only="readOnly"
@@ -23,7 +22,6 @@
     <BasicRuleForm
       v-else
       :rule="rule"
-      :project-prefix="projectPrefix"
       :statuses="statuses"
       :severities_map="severities_map"
       :read-only="readOnly"
@@ -41,10 +39,6 @@ export default {
   props: {
     rule: {
       type: Object,
-      required: true,
-    },
-    projectPrefix: {
-      type: String,
       required: true,
     },
     statuses: {

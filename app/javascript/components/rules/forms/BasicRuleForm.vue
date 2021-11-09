@@ -3,7 +3,6 @@
     <b-form>
       <RuleForm
         :rule="rule"
-        :project-prefix="projectPrefix"
         :statuses="statuses"
         :severities="severities_map"
         :disabled="disabled"
@@ -42,10 +41,6 @@ export default {
   props: {
     rule: {
       type: Object,
-      required: true,
-    },
-    projectPrefix: {
-      type: String,
       required: true,
     },
     statuses: {
