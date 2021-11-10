@@ -10,10 +10,24 @@ class ProjectsController < ApplicationController
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_viewer_project, only: %i[show]
-  before_action :authorize_logged_in, only: %i[index new create]
+  before_action :authorize_logged_in, only: %i[index new create search]
 
   def index
     @projects = current_user.available_projects.alphabetical
+  end
+
+  def search
+    text = params[:text]
+    rules = Rule.joins(component: [{ project: [{ memberships: :user }] }], srg_rule: :security_requirements_guide)
+                 .where({ user: { id: current_user.id } })
+                 .and(
+                   SecurityRequirementsGuide.where({ srg_id: text })
+                 )
+                 .limit(10)
+                 .pluck(:id, :version)
+    render json: {
+      rules: rules
+    }
   end
 
   def show

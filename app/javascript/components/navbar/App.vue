@@ -16,42 +16,22 @@
             </div>
           </b-navbar-nav>
         </div>
-        <!-- Right aligned nav items -->
-        <b-navbar-nav v-if="signed_in" class="ml-auto">
-          <b-input-group>
-            <b-input-group-prepend>
-              <b-input-group-text class="form-control">
-                <i class="mdi mdi-magnify" aria-hidden="true" />
-              </b-input-group-text>
-            </b-input-group-prepend>
-            <b-form-input
-              id="srg-id-search"
-              v-model="searchText"
-              debounce="500"
-              placeholder="Search by SRG ID"
-            />
-          </b-input-group>
-          <b-popover
-            disabled
-            :show.sync="show"
-            target="srg-id-search"
-            placement="bottom"
-            custom-class="srg-id-search-results"
-          >
-            <b-list-group-item href="#some-link">Awesome link</b-list-group-item>
-            <b-list-group-item href="#" active>Link with active state</b-list-group-item>
-            <b-list-group-item href="#">Action links are easy</b-list-group-item>
-            <b-list-group-item href="#foobar" disabled>Disabled link</b-list-group-item>
-          </b-popover>
-          <b-nav-item-dropdown right>
-            <template #button-content>
-              <i class="mdi mdi-account-circle" aria-hidden="true" />
-            </template>
-            <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
-            <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
-            <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
-          </b-nav-item-dropdown>
-        </b-navbar-nav>
+
+        <div v-if="signed_in" class="d-flex justify-content-between right-container">
+          <SrgIdSearch />
+
+          <!-- Right aligned nav items -->
+          <b-navbar-nav class="ml-auto">
+            <b-nav-item-dropdown right>
+              <template #button-content>
+                <i class="mdi mdi-account-circle" aria-hidden="true" />
+              </template>
+              <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
+              <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
+              <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
+            </b-nav-item-dropdown>
+          </b-navbar-nav>
+        </div>
       </b-collapse>
     </b-navbar>
   </div>
@@ -59,10 +39,11 @@
 
 <script>
 import NavbarItem from "./NavbarItem.vue";
+import SrgIdSearch from "./SrgIdSearch.vue";
 
 export default {
   name: "Navbar",
-  components: { NavbarItem },
+  components: { NavbarItem, SrgIdSearch },
   props: {
     navigation: {
       type: Array,
@@ -85,34 +66,8 @@ export default {
       required: false,
     },
   },
-  data() {
-    return {
-      show: false,
-      searchText: "",
-    };
-  },
-  watch: {
-    searchText: function (value) {
-      this.show = !!value;
-    },
-  },
 };
 </script>
-
-<style>
-.srg-id-search-results {
-  font-size: large;
-  margin-top: 0;
-}
-
-.srg-id-search-results > .arrow {
-  display: none;
-}
-
-.srg-id-search-results > .popover-body {
-  padding: 0;
-}
-</style>
 
 <style scoped>
 #heading {
@@ -120,8 +75,7 @@ export default {
   font-weight: 700;
   letter-spacing: 1px;
 }
-
-#srg-id-search {
-  margin-right: 16px;
+.right-container {
+  gap: 64px;
 }
 </style>
