@@ -23,13 +23,37 @@
       custom-class="srg-id-search-results"
     >
       <b-card no-body class="search-card overflow-auto shadow border-light">
+        <b-card-header class="sticky-top bg-light">Projects</b-card-header>
+        <b-list-group flush>
+          <b-list-group-item
+            v-for="project in projects"
+            :key="project[0]"
+            class="text-truncate"
+            :href="`/projects/${project[0]}`"
+            >{{ project[1] }}</b-list-group-item
+          >
+        </b-list-group>
+      </b-card>
+      <b-card no-body class="search-card overflow-auto shadow border-light">
+        <b-card-header class="sticky-top bg-light">Components</b-card-header>
+        <b-list-group flush>
+          <b-list-group-item
+            v-for="component in components"
+            :key="component[0]"
+            class="text-truncate"
+            :href="`/components/${component[0]}`"
+            >{{ component[1] }}</b-list-group-item
+          >
+        </b-list-group>
+      </b-card>
+      <b-card no-body class="search-card overflow-auto shadow border-light">
         <b-card-header class="sticky-top bg-light">Rules</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="rule in rules"
             :key="rule[0]"
             class="text-truncate"
-            href="/components"
+            :href="`/components/${rule[2]}`"
             >{{ rule[1] }}</b-list-group-item
           >
         </b-list-group>
@@ -48,6 +72,8 @@ export default {
       focus: false,
       loading: false,
       searchText: "",
+      projects: [],
+      components: [],
       rules: [],
     };
   },
@@ -59,6 +85,8 @@ export default {
   watch: {
     searchText: async function (text) {
       const resp = await axios.get("/search", { params: { text } });
+      this.projects = resp.data.projects;
+      this.components = resp.data.components;
       this.rules = resp.data.rules;
     },
   },

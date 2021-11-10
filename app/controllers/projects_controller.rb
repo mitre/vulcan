@@ -19,14 +19,30 @@ class ProjectsController < ApplicationController
   def search
     text = params[:text]
     rules = Rule.joins(component: [{ project: [{ memberships: :user }] }], srg_rule: :security_requirements_guide)
-                 .where({ user: { id: current_user.id } })
-                 .and(
-                   SecurityRequirementsGuide.where({ srg_id: text })
-                 )
-                 .limit(10)
-                 .pluck(:id, :version)
+                .where({ user: {id: current_user.id }})
+                .and(SecurityRequirementsGuide.where(srg_id: text))
+                .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: text)))
+                .limit(10)
+                .distinct
+                .pluck(:id, :version, Component.arel_table[:id])
+    components = Component.joins(project: [{ memberships: :user }], rules: [{ srg_rule: :security_requirements_guide }])
+                          .where({ user: {id: current_user.id }})
+                          .and(SecurityRequirementsGuide.where(srg_id: text))
+                          .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: text)))
+                          .limit(10)
+                          .distinct
+                          .pluck(:id, :version)
+    projects = Project.joins(memberships: :user, components: [{ rules: [{ srg_rule: :security_requirements_guide }] }])
+                          .where({ user: {id: current_user.id }})
+                          .and(SecurityRequirementsGuide.where(srg_id: text))
+                          .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: text)))
+                          .limit(10)
+                          .distinct
+                          .pluck(:id, :name)
     render json: {
-      rules: rules
+      rules: rules,
+      components: components,
+      projects: projects
     }
   end
 
