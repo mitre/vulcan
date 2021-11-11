@@ -9,7 +9,7 @@ class AdditionalQuestion < ApplicationRecord
 
   audited except: %i[component_id created_at updated_at], associated_with: :component, max_audits: 1000
 
-  FIELD_TYPES = %w[dropdown freeform]
+  FIELD_TYPES = %w[dropdown freeform].freeze
 
   enum question_type: FIELD_TYPES.zip(FIELD_TYPES).to_h
 

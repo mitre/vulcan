@@ -61,9 +61,7 @@ class VulcanAudit < ::Audited::Audit
   # AdditionalAnswers are a special case where the field value is not the field
   # that changed but rather the name of the associated additional_question.
   def format_audited_field(field)
-    if auditable_type.eql?('AdditionalAnswer') && field.eql?('answer')
-      return auditable.additional_question.name
-    end
+    return auditable.additional_question.name if auditable_type.eql?('AdditionalAnswer') && field.eql?('answer')
 
     field
   end

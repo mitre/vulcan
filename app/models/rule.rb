@@ -56,7 +56,9 @@ class Rule < BaseRule
                                                      'vendor_comments', 'rule_id', 'review_requestor_id',
                                                      'component_id', 'changes_requested', 'srg_rule_id',
                                                      'security_requirements_guide_id'),
-        additional_answers_attributes: additional_answers.as_json.map { |c| c.except('rule_id', 'created_at', 'updated_at') },
+        additional_answers_attributes: additional_answers.as_json.map do |c|
+                                         c.except('rule_id', 'created_at', 'updated_at')
+                                       end
       }
     )
   end
@@ -83,29 +85,26 @@ class Rule < BaseRule
 
       fields.each do |field|
         # The only field we can revert on AdditionalAnswers is answer
-        field = 'answer' if audit.auditable_type.eql?("AdditionalAnswer")
+        field = 'answer' if audit.auditable_type.eql?('AdditionalAnswer')
 
         unless audit.audited_changes.include?(field)
           raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.")
         end
 
-
-
         # The audited change can either be an array `[prev_val, new_val]`
         # or just the `val`
         value = if audit.audited_changes[field].is_a?(Array)
-                          audit.audited_changes[field][0]
-                        else
-                          audit.audited_changes[field]
-                        end
+                  audit.audited_changes[field][0]
+                else
+                  audit.audited_changes[field]
+                end
 
         # Special case for AdditionalAnswer since it stores in the 'answer' field always
-        if audit.auditable_type.eql?("AdditionalAnswer")
+        if audit.auditable_type.eql?('AdditionalAnswer')
           record.answer = value
         else
           record[field] = value
         end
-
       end
       record.audit_comment = audit_comment if record.changed?
       record.save

@@ -14,7 +14,7 @@ class Component < ApplicationRecord
 
     # There is unfortunately no way to do this at a lower level since the new component isn't
     # accessible until amoeba is processing at this level
-    customize(lambda { |original_component, new_component|
+    customize(lambda { |_original_component, new_component|
       new_component.additional_questions.each do |question|
         question.additional_answers.each do |answer|
           answer.rule = new_component.rules.find { |r| r.rule_id == answer.rule.rule_id }

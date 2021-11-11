@@ -32,6 +32,7 @@ ActiveRecord::Schema.define(version: 2021_11_09_212911) do
     t.bigint "component_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.index ["component_id", "name"], name: "index_additional_questions_on_component_id_and_name", unique: true
     t.index ["component_id"], name: "index_additional_questions_on_component_id"
   end
 
