@@ -8,8 +8,19 @@ class Component < ApplicationRecord
 
   amoeba do
     include_association :rules
+    include_association :additional_questions
     set released: false
     set rules_count: 0
+
+    # There is unfortunately no way to do this at a lower level since the new component isn't
+    # accessible until amoeba is processing at this level
+    customize(lambda { |original_component, new_component|
+      new_component.additional_questions.each do |question|
+        question.additional_answers.each do |answer|
+          answer.rule = new_component.rules.find { |r| r.rule_id == answer.rule.rule_id }
+        end
+      end
+    })
   end
 
   audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000

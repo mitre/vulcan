@@ -3,6 +3,10 @@
 # These are additional questions on a component which users must fill out
 # for rules on that component
 class AdditionalQuestion < ApplicationRecord
+  amoeba do
+    include_association :additional_answers
+  end
+
   audited except: %i[component_id created_at updated_at], associated_with: :component, max_audits: 1000
 
   FIELD_TYPES = %w[dropdown freeform]

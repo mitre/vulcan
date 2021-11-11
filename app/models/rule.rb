@@ -5,7 +5,6 @@
 class Rule < BaseRule
   amoeba do
     include_association :rule_descriptions
-    include_association :additional_answers
     include_association :disa_rule_descriptions
     include_association :checks
     include_association :references
