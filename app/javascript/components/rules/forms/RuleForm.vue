@@ -453,6 +453,8 @@
           {{ invalidFeedback["vendor_comments"] }}
         </b-form-invalid-feedback>
       </b-form-group>
+
+      <AdditionalQuestions :additional_questions="additional_questions" :disabled="disabled" :rule="rule" />
     </b-form>
   </div>
 </template>
@@ -460,11 +462,12 @@
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
+import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
 
 export default {
   name: "RuleForm",
-  components: { DisaRuleDescriptionForm, CheckForm },
+  components: { DisaRuleDescriptionForm, CheckForm, AdditionalQuestions },
   mixins: [FormFeedbackMixinVue],
   props: {
     rule: {
@@ -488,6 +491,10 @@ export default {
     },
     check_fields: {
       type: Object,
+    },
+    additional_questions: {
+      type: Array,
+      default: [],
     },
     fields: {
       type: Object,

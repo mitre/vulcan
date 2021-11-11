@@ -127,6 +127,15 @@
             />
             <p v-else>Check does not exist.</p>
           </template>
+
+          <template v-else-if="history.auditable_type == 'AdditionalAnswer'">
+            <AdditionalQuestions
+              :disabled="true"
+              :rule="currentState"
+              :additional_questions="component.additional_questions"
+              :invalid-feedback="formFeedback"
+            />
+          </template>
         </div>
 
         <!-- STATE AFTER REVERT -->
@@ -165,6 +174,14 @@
             :valid-feedback="formFeedback"
           />
 
+          <AdditionalQuestions
+            v-else-if="history.auditable_type == 'AdditionalAnswer'"
+            :disabled="true"
+            :rule="afterState"
+            :additional_questions="component.additional_questions"
+            :valid-feedback="formFeedback"
+          />
+
           <p v-else>Could not determine resulting state.</p>
         </div>
       </div>
@@ -183,6 +200,7 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
 
+import AdditionalQuestions from "./forms/AdditionalQuestions";
 import RuleForm from "./forms/RuleForm";
 import RuleDescriptionForm from "./forms/RuleDescriptionForm";
 import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm";
@@ -197,6 +215,7 @@ export default {
     DisaRuleDescriptionForm,
     CheckForm,
     CommentModal,
+    AdditionalQuestions
   },
   mixins: [
     AlertMixinVue,
@@ -221,6 +240,10 @@ export default {
     severities: {
       type: Array,
       required: true,
+    },
+    component: {
+      type: Object,
+      required: true
     },
   },
   data: function () {
@@ -270,6 +293,10 @@ export default {
         dependentRecord = this.rule.checks_attributes.find(
           (e) => e.id == this.history.auditable_id
         );
+      } else if (this.history.auditable_type == "AdditionalAnswer") {
+        dependentRecord["additional_answers_attributes"] = this.rule.additional_answers_attributes.filter(
+          (e) => e.id == this.history.auditable_id
+        )
       }
 
       let curState = _.cloneDeep(dependentRecord);
@@ -288,12 +315,19 @@ export default {
       let afterState = _.cloneDeep(this.currentState);
 
       // For each audited_change, check if it is one of the selected properties to revert.
-      for (let i = 0; i < this.history.audited_changes.length; i++) {
-        const audited_field = this.history.audited_changes[i].field;
+      this.history.audited_changes.forEach((audited_change) => {
+        const audited_field = audited_change.field;
         if (this.selectedRevertFields.includes(audited_field)) {
-          afterState[audited_field] = this.history.audited_changes[i].prev_value;
+          if(this.history.auditable_type === 'AdditionalAnswer') {
+            let id = this.rule.additional_answers_attributes.findIndex(
+              (e) => e.id == this.history.auditable_id
+            )
+            afterState.additional_answers_attributes[id].answer = audited_change.prev_value;
+          } else {
+            afterState[audited_field] = audited_change.prev_value;
+          }
         }
-      }
+      });
 
       return afterState;
     },

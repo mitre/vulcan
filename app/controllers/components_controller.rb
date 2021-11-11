@@ -106,7 +106,7 @@ class ComponentsController < ApplicationController
 
   def set_component
     @component = Component.eager_load(
-      rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, {
+      rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers, {
         srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
       }]
     ).find(params[:id])
@@ -121,6 +121,7 @@ class ComponentsController < ApplicationController
       :released,
       :version,
       :advanced_fields,
+      additional_questions_attributes: [ :id, :name, :question_type, :_destroy, options: [] ],
       component_metadata_attributes: { data: {} }
     )
   end

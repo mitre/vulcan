@@ -9,6 +9,7 @@
         :fields="ruleFormFields"
         :disa_fields="disaDescriptionFormFields"
         :check_fields="checkFormFields"
+        :additional_questions="additional_questions"
       />
     </b-form>
 
@@ -54,6 +55,10 @@ export default {
     readOnly: {
       type: Boolean,
       default: false,
+    },
+    additional_questions: {
+      type: Array,
+      default: [],
     },
   },
   computed: {

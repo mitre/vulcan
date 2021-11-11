@@ -33,6 +33,7 @@
               :severities="severities"
               :severities_map="severities_map"
               :advanced_fields="component.advanced_fields"
+              :additional_questions="component.additional_questions"
             />
           </div>
 
@@ -44,7 +45,7 @@
               :current-user-id="currentUserId"
             />
             <br />
-            <RuleHistories :rule="selectedRule()" :statuses="statuses" :severities="severities" />
+            <RuleHistories :rule="selectedRule()" :component="component" :statuses="statuses" :severities="severities" />
           </div>
         </div>
       </div>

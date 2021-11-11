@@ -7,6 +7,7 @@
         :severities="severities"
         :disabled="disabled"
         :fields="ruleFormFields"
+        :additional_questions="additional_questions"
       />
 
       <!-- rule_descriptions -->
@@ -186,6 +187,10 @@ export default {
     readOnly: {
       type: Boolean,
       default: false,
+    },
+    additional_questions: {
+      type: Array,
+      default: [],
     },
   },
   data: function () {

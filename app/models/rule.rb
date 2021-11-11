@@ -5,6 +5,7 @@
 class Rule < BaseRule
   amoeba do
     include_association :rule_descriptions
+    include_association :additional_answers
     include_association :disa_rule_descriptions
     include_association :checks
     include_association :references
@@ -20,6 +21,9 @@ class Rule < BaseRule
   belongs_to :srg_rule
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
   has_many :reviews, dependent: :destroy
+  has_many :additional_answers, dependent: :destroy
+
+  accepts_nested_attributes_for :additional_answers
 
   before_validation :set_rule_id
   before_save :apply_audit_comment
@@ -52,7 +56,8 @@ class Rule < BaseRule
                                                      'status_justification', 'artifact_description',
                                                      'vendor_comments', 'rule_id', 'review_requestor_id',
                                                      'component_id', 'changes_requested', 'srg_rule_id',
-                                                     'security_requirements_guide_id')
+                                                     'security_requirements_guide_id'),
+        additional_answers_attributes: additional_answers.as_json.map { |c| c.except('rule_id', 'created_at', 'updated_at') },
       }
     )
   end
@@ -78,17 +83,30 @@ class Rule < BaseRule
       raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
 
       fields.each do |field|
+        # The only field we can revert on AdditionalAnswers is answer
+        field = 'answer' if audit.auditable_type.eql?("AdditionalAnswer")
+
         unless audit.audited_changes.include?(field)
           raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.")
         end
 
+
+
         # The audited change can either be an array `[prev_val, new_val]`
         # or just the `val`
-        record[field] = if audit.audited_changes[field].is_a?(Array)
+        value = if audit.audited_changes[field].is_a?(Array)
                           audit.audited_changes[field][0]
                         else
                           audit.audited_changes[field]
                         end
+
+        # Special case for AdditionalAnswer since it stores in the 'answer' field always
+        if audit.auditable_type.eql?("AdditionalAnswer")
+          record.answer = value
+        else
+          record[field] = value
+        end
+
       end
       record.audit_comment = audit_comment if record.changed?
       record.save
@@ -196,7 +214,7 @@ class Rule < BaseRule
 
     self.audit_comment = nil unless new_record? || changed?
 
-    (rule_descriptions + disa_rule_descriptions + checks).each do |record|
+    (rule_descriptions + disa_rule_descriptions + checks + additional_answers).each do |record|
       record.audit_comment = comment if record.new_record? || record.changed? || record._destroy
     end
   end

@@ -13,6 +13,7 @@ class Component < ApplicationRecord
   end
 
   audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
+  has_associated_audits
 
   belongs_to :project, inverse_of: :components
   belongs_to :based_on,
@@ -28,7 +29,9 @@ class Component < ApplicationRecord
   has_many :memberships, -> { includes :user }, inverse_of: :membership, as: :membership, dependent: :destroy
   has_one :component_metadata, dependent: :destroy
 
-  accepts_nested_attributes_for :rules, :component_metadata
+  has_many :additional_questions, dependent: :destroy
+
+  accepts_nested_attributes_for :rules, :component_metadata, :additional_questions, allow_destroy: true
 
   after_create :import_srg_rules
 
@@ -40,7 +43,7 @@ class Component < ApplicationRecord
            :cannot_overlay_self
 
   def as_json(options = {})
-    methods = (options[:methods] || []) + %i[releasable]
+    methods = (options[:methods] || []) + %i[releasable additional_questions]
     super(options.merge(methods: methods)).merge(
       {
         based_on_title: based_on.title,

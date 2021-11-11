@@ -17,6 +17,7 @@
       :statuses="statuses"
       :severities="severities"
       :read-only="readOnly"
+      :additional_questions="additional_questions"
     />
 
     <BasicRuleForm
@@ -25,6 +26,7 @@
       :statuses="statuses"
       :severities_map="severities_map"
       :read-only="readOnly"
+      :additional_questions="additional_questions"
     />
   </div>
 </template>
@@ -60,6 +62,10 @@ export default {
     advanced_fields: {
       type: Boolean,
       default: false,
+    },
+    additional_questions: {
+      type: Array,
+      default: [],
     },
   },
   data: function () {

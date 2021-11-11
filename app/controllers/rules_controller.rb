@@ -12,7 +12,7 @@ class RulesController < ApplicationController
   before_action :authorize_admin_component, only: %i[destroy]
 
   def index
-    @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+    @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers,
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
   end
 
@@ -104,6 +104,7 @@ class RulesController < ApplicationController
       :fix_id, :fixtext_fixref, :audit_comment,
       checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
       rule_descriptions_attributes: %i[id description _destroy],
+      additional_answers_attributes: %i[id additional_question_id answer],
       disa_rule_descriptions_attributes: %i[
         id vuln_discussion false_positives false_negatives documentable mitigations
         severity_override_guidance potential_impacts third_party_tools mitigation_control
@@ -136,7 +137,7 @@ class RulesController < ApplicationController
     @project = if @component
                  @component.project
                else
-                 Project.includes({ rules: %i[reviews checks disa_rule_descriptions rule_descriptions] })
+                 Project.includes({ rules: %i[reviews checks disa_rule_descriptions rule_descriptions additional_answers] })
                         .find(@component.project_id || params[:project_id] || params.dig(:rule, :project_id))
                end
   end

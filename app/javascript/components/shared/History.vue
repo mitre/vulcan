@@ -14,6 +14,7 @@
         <template v-if="revertable">
           <RuleRevertModal
             :rule="rule"
+            :component="component"
             :history="history"
             :statuses="statuses"
             :severities="severities"
@@ -69,6 +70,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    component: {
+      type: Object,
+      required: false
+    }
   },
   methods: {
     userIdentifier: function (history) {
@@ -90,7 +95,16 @@ export default {
       if (changes.field == "admin") {
         return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
       } else {
-        return `${changes.field} was updated from ${changes.prev_value} to ${changes.new_value}`;
+        return `${changes.field} was updated from ${this.prettifyObjects(
+          changes.prev_value
+        )} to ${this.prettifyObjects(changes.new_value)}`;
+      }
+    },
+    prettifyObjects: function (value) {
+      if (typeof value === "object") {
+        return JSON.stringify(value, null, 4);
+      } else {
+        return value;
       }
     },
     computeDeletionText: function (history) {

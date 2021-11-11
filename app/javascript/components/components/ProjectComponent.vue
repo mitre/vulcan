@@ -139,6 +139,37 @@
             </b-collapse>
           </b-col>
         </b-row>
+        <b-row>
+          <b-col>
+            <div class="clickable" @click="showAdditionalQuestions = !showAdditionalQuestions">
+              <h5 class="m-0 d-inline-block">Component Additional Questions</h5>
+
+              <i
+                v-if="showAdditionalQuestions"
+                class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+              />
+              <i
+                v-if="!showAdditionalQuestions"
+                class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+              />
+            </div>
+            <b-collapse id="collapse-metadata" v-model="showAdditionalQuestions">
+              <div
+                v-for="value in component.additional_questions"
+                :key="value.id + value.question_type + value.name"
+              >
+                <p v-linkified class="ml-2 mb-0 mt-2">
+                  <strong>{{ value.name }}: </strong>
+                  <template v-if="value.question_type === 'dropdown'">
+                    Options: {{ value.options.join(", ") }}
+                  </template>
+                  <template v-else> Freeform Text </template>
+                </p>
+              </div>
+              <AddQuestionsModal :component="component" @componentUpdated="refreshComponent" />
+            </b-collapse>
+          </b-col>
+        </b-row>
       </b-col>
     </b-row>
   </div>
@@ -156,6 +187,7 @@ import History from "../shared/History.vue";
 import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
 import MembershipsTable from "../memberships/MembershipsTable.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
+import AddQuestionsModal from "./AddQuestionsModal.vue";
 
 export default {
   name: "Projectcomponent",
@@ -164,6 +196,7 @@ export default {
     RulesReadOnlyView,
     MembershipsTable,
     UpdateMetadataModal,
+    AddQuestionsModal,
   },
   mixins: [
     DateFormatMixinVue,
@@ -208,6 +241,7 @@ export default {
     return {
       showMetadata: true,
       showHistory: true,
+      showAdditionalQuestions: true,
       component: this.initialComponentState,
       componentTabIndex: 0,
     };
