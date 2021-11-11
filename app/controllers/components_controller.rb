@@ -15,10 +15,26 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(:advanced_fields)[:advanced_fields].present?
   }
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
+  before_action :authorize_logged_in, only: %i[search]
   before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
 
   def index
     @components_json = Component.eager_load(:based_on).where(released: true).to_json
+  end
+
+  def search
+    query = params[:q]
+    components = Component.joins(:project, rules: [{ srg_rule: :security_requirements_guide }])
+                          .left_joins(project: :memberships)
+                          .where({ memberships: { user_id: current_user.id } })
+                          .and(SecurityRequirementsGuide.where(srg_id: query))
+                          .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: query)))
+                          .limit(10)
+                          .distinct
+                          .pluck(:id, :version)
+    render json: {
+      components: components
+    }
   end
 
   def show

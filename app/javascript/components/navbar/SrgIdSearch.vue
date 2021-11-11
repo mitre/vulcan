@@ -22,7 +22,11 @@
       placement="bottom"
       custom-class="srg-id-search-results"
     >
-      <b-card no-body class="search-card overflow-auto shadow border-light">
+      <b-card
+        v-if="projects && projects.length > 0"
+        no-body
+        class="search-card overflow-auto shadow border-light"
+      >
         <b-card-header class="sticky-top bg-light">Projects</b-card-header>
         <b-list-group flush>
           <b-list-group-item
@@ -34,7 +38,11 @@
           >
         </b-list-group>
       </b-card>
-      <b-card no-body class="search-card overflow-auto shadow border-light">
+      <b-card
+        v-if="components && components.length > 0"
+        no-body
+        class="search-card overflow-auto shadow border-light"
+      >
         <b-card-header class="sticky-top bg-light">Components</b-card-header>
         <b-list-group flush>
           <b-list-group-item
@@ -46,7 +54,11 @@
           >
         </b-list-group>
       </b-card>
-      <b-card no-body class="search-card overflow-auto shadow border-light">
+      <b-card
+        v-if="rules && rules.length > 0"
+        no-body
+        class="search-card overflow-auto shadow border-light"
+      >
         <b-card-header class="sticky-top bg-light">Rules</b-card-header>
         <b-list-group flush>
           <b-list-group-item
@@ -79,21 +91,29 @@ export default {
   },
   computed: {
     show: function () {
-      return this.rules?.length > 0 && this.focus;
+      return (
+        (this.projects?.length > 0 || this.components?.projects > 0 || this.rules?.length > 0) &&
+        this.focus
+      );
     },
   },
   watch: {
-    searchText: async function (text) {
-      const resp = await axios.get("/search", { params: { text } });
-      this.projects = resp.data.projects;
-      this.components = resp.data.components;
-      this.rules = resp.data.rules;
+    searchText: async function (query) {
+      const [projectResp, componentResp, ruleResp] = await Promise.all([
+        axios.get("projects", { params: { q: query } }),
+        axios.get("components", { params: { q: query } }),
+        axios.get("rules", { params: { q: query } }),
+      ]);
+      this.projects = projectResp.data.projects;
+      this.components = componentResp.data.components;
+      this.rules = ruleResp.data.rules;
     },
   },
 };
 </script>
 
 <style>
+/* popover's custom-class doesn't allow these to be scoped */
 .srg-id-search-results {
   margin-top: 0;
   border: none;

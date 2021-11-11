@@ -26,8 +26,10 @@ Rails.application.routes.draw do
   get '/components', to: 'components#index'
   # Export component
   get '/components/:id/export', to: 'components#export'
-  # SRG ID search
-  get '/search', to: 'projects#search'
+  # SRG ID Search
+  get '/projects/search', to: 'projects#search'
+  get '/components/search', to: 'components#search'
+  get '/rules/search', to: 'rules#search'
 
   root to: 'projects#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
