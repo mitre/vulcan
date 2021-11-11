@@ -115,6 +115,7 @@ export default {
 <style>
 /* popover's custom-class doesn't allow these to be scoped */
 .srg-id-search-results {
+  min-width: 448px;
   margin-top: 0;
   border: none;
 }
@@ -130,6 +131,6 @@ export default {
 
 <style scoped>
 .search-card {
-  max-height: 256px;
+  max-height: 192px;
 }
 </style>
