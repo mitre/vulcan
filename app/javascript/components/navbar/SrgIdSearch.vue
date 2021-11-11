@@ -100,9 +100,9 @@ export default {
   watch: {
     searchText: async function (query) {
       const [projectResp, componentResp, ruleResp] = await Promise.all([
-        axios.get("projects", { params: { q: query } }),
-        axios.get("components", { params: { q: query } }),
-        axios.get("rules", { params: { q: query } }),
+        axios.get("/search/projects", { params: { q: query } }),
+        axios.get("/search/components", { params: { q: query } }),
+        axios.get("/search/rules", { params: { q: query } }),
       ]);
       this.projects = projectResp.data.projects;
       this.components = componentResp.data.components;

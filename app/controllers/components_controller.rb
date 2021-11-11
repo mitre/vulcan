@@ -26,10 +26,10 @@ class ComponentsController < ApplicationController
     query = params[:q]
     components = Component.joins(:project, rules: [{ srg_rule: :security_requirements_guide }])
                           .left_joins(project: :memberships)
-                          .where({ memberships: { user_id: current_user.id } })
+                          .tap{|o|o.where({ memberships: { user_id: current_user.id } }) unless current_user.admin}
                           .and(SecurityRequirementsGuide.where(srg_id: query))
                           .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: query)))
-                          .limit(10)
+                          .limit(100)
                           .distinct
                           .pluck(:id, :version)
     render json: {
