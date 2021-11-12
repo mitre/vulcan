@@ -61,6 +61,10 @@ class Rule < BaseRule
     satisfied_by.size.positive? ? 'Applicable - Configurable' : self[:status]
   end
 
+  def status=(value)
+    super(value) unless satisfied_by.size.positive?
+  end
+
   ##
   # Override `as_json` to include parent SRG information
   #
