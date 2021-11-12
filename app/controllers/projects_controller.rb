@@ -21,6 +21,7 @@ class ProjectsController < ApplicationController
     projects = current_user.available_projects
                            .joins(components: [{ rules: [{ srg_rule: :security_requirements_guide }] }])
                            .where({ security_requirements_guide: { srg_id: query } })
+                           .or(Rule.where(rule_id: query))
                            .limit(10)
                            .distinct
                            .pluck(:id, :name)
