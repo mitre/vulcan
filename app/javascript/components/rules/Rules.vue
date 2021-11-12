@@ -22,12 +22,13 @@ import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import _ from "lodash";
 
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
-  mixins: [AlertMixinVue, FormMixinVue],
+  mixins: [AlertMixinVue, FormMixinVue, SortRulesMixin],
   props: {
     effective_permissions: {
       type: String,
@@ -64,7 +65,7 @@ export default {
   },
   data: function () {
     return {
-      reactiveRules: _.cloneDeep(this.rules),
+      reactiveRules: _.cloneDeep(this.rules).sort(this.compareRules),
     };
   },
   computed: {
@@ -100,8 +101,48 @@ export default {
     this.$root.$on("add:disaDescription", this.addDisaRuleDescription);
     this.$root.$on("create:rule", this.createRule);
     this.$root.$on("delete:rule", this.deleteRule);
+    this.$root.$on("markDuplicate:rule", this.markDuplicateRule);
+    this.$root.$on("unmarkDuplicate:rule", this.unmarkDuplicateRule);
   },
   methods: {
+    /**
+     * Event handler for @markDuplicate:rule
+     */
+    markDuplicateRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
+      axios
+        .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.refreshRule(rule_id);
+          this.refreshRule(satisfied_by_rule_id);
+
+          if (successCallback) {
+            try {
+              successCallback(response);
+            } catch (_) {}
+          }
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    /**
+     * Event handler for @markDuplicate:rule
+     */
+    unmarkDuplicateRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
+      axios
+        .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.refreshRule(rule_id);
+          this.refreshRule(satisfied_by_rule_id);
+
+          if (successCallback) {
+            try {
+              successCallback(response);
+            } catch (_) {}
+          }
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
     /**
      * Event handler for @delete:rule
      */

@@ -3,7 +3,7 @@
     <!-- Collapsable header -->
     <div class="clickable" @click="showReviews = !showReviews">
       <h2 class="m-0 d-inline-block">Reviews &amp; Comments</h2>
-      <b-badge pill class="superVerticalAlign">{{ rule.reviews.length }}</b-badge>
+      <b-badge pill class="ml-1 superVerticalAlign">{{ rule.reviews.length }}</b-badge>
 
       <i v-if="showReviews" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
       <i v-if="!showReviews" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
