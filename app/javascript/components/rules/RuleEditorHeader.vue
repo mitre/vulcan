@@ -134,7 +134,7 @@
               :options="
                 rules
                   .filter((r) => {
-                    return r.id !== rule.id && (!r.satisfies || r.satisfies.length === 0);
+                    return r.id !== rule.id && (!r.satisfied_by || r.satisfied_by.length === 0);
                   })
                   .map((r) => {
                     return { value: r.id, text: formatRuleId(r.rule_id) };

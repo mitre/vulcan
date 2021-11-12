@@ -305,13 +305,12 @@ export default {
     },
     // Filters down to all rules that apply to search & applied filters
     filteredRules: function () {
-      return this.filterRules(this.rules).sort(this.compareRules);
+      return this.filterRules(this.rules);
     },
     // Filters down to open rules that also apply to search & applied filters
     openRules: function () {
       const openRules = this.rules
-        .filter((rule) => this.openRuleIds.includes(rule.id))
-        .sort(this.compareRules);
+        .filter((rule) => this.openRuleIds.includes(rule.id));
       return openRules;
     },
   },
@@ -350,18 +349,6 @@ export default {
     },
     ruleDeselected: function (rule) {
       this.$emit("ruleDeselected", rule.id);
-    },
-    // Helper to sort rules by ID
-    compareRules(rule1, rule2) {
-      let rule1Comp = rule1.rule_id;
-      let rule2Comp = rule2.rule_id;
-      if (rule1Comp < rule2Comp) {
-        return -1;
-      }
-      if (rule1Comp > rule2Comp) {
-        return 1;
-      }
-      return 0;
     },
     // Dynamically set the class of each rule row
     ruleRowClass: function (rule) {
