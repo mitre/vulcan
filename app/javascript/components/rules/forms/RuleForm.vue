@@ -176,9 +176,8 @@
         <!-- checks -->
         <CheckForm
           v-if="rule.status == 'Applicable - Configurable' && rule.checks_attributes.length >= 1"
-          :rule="rule.satisfied_by.length > 0 ? rule.satisfied_by[0] : rule"
+          :rule="rule"
           :index="0"
-          :check="rule.checks_attributes[0]"
           :disabled="disabled"
           :fields="check_fields"
         />
@@ -453,6 +452,12 @@
           {{ invalidFeedback["vendor_comments"] }}
         </b-form-invalid-feedback>
       </b-form-group>
+
+      <AdditionalQuestions
+        :additional_questions="additional_questions"
+        :disabled="disabled && !force_enable_additional_questions"
+        :rule="rule"
+      />
     </b-form>
   </div>
 </template>
@@ -460,11 +465,12 @@
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
+import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
 
 export default {
   name: "RuleForm",
-  components: { DisaRuleDescriptionForm, CheckForm },
+  components: { DisaRuleDescriptionForm, CheckForm, AdditionalQuestions },
   mixins: [FormFeedbackMixinVue],
   props: {
     rule: {
@@ -483,11 +489,19 @@ export default {
       type: Boolean,
       required: true,
     },
+    force_enable_additional_questions: {
+      type: Boolean,
+      default: false,
+    },
     disa_fields: {
       type: Object,
     },
     check_fields: {
       type: Object,
+    },
+    additional_questions: {
+      type: Array,
+      default: () => [],
     },
     fields: {
       type: Object,

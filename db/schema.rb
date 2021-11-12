@@ -10,10 +10,32 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_03_190520) do
+ActiveRecord::Schema.define(version: 2021_11_09_212911) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "additional_answers", force: :cascade do |t|
+    t.bigint "rule_id", null: false
+    t.bigint "additional_question_id", null: false
+    t.text "answer"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["additional_question_id"], name: "index_additional_answers_on_additional_question_id"
+    t.index ["rule_id", "additional_question_id"], name: "index_additional_answers_on_rule_id_and_additional_question_id", unique: true
+    t.index ["rule_id"], name: "index_additional_answers_on_rule_id"
+  end
+
+  create_table "additional_questions", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "question_type", null: false
+    t.string "options", default: [], array: true
+    t.bigint "component_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["component_id", "name"], name: "index_additional_questions_on_component_id_and_name", unique: true
+    t.index ["component_id"], name: "index_additional_questions_on_component_id"
+  end
 
   create_table "audits", force: :cascade do |t|
     t.integer "auditable_id"
@@ -237,6 +259,8 @@ ActiveRecord::Schema.define(version: 2021_11_03_190520) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "additional_answers", "additional_questions"
+  add_foreign_key "additional_answers", "base_rules", column: "rule_id"
   add_foreign_key "base_rules", "base_rules", column: "srg_rule_id"
   add_foreign_key "base_rules", "components"
   add_foreign_key "base_rules", "security_requirements_guides"

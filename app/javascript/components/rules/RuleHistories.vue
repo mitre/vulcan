@@ -15,6 +15,7 @@
     <b-collapse id="collapse-histories" v-model="showHistories">
       <History
         :histories="rule.histories"
+        :component="component"
         :rule="rule"
         :statuses="statuses"
         :severities="severities"
@@ -43,6 +44,10 @@ export default {
     },
     severities: {
       type: Array,
+      required: true,
+    },
+    component: {
+      type: Object,
       required: true,
     },
   },
