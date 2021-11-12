@@ -66,6 +66,7 @@
             :key="rule[0]"
             class="text-truncate"
             :href="`/components/${rule[2]}`"
+            @click="navigateToRule(rule[2], rule[0])"
             >{{ rule[1] }}</b-list-group-item
           >
         </b-list-group>
@@ -76,9 +77,11 @@
 
 <script>
 import axios from "axios";
+import SelectedRulesMixin from "../../mixins/SelectedRulesMixin";
 
 export default {
   name: "SrgIdSearch",
+  mixins: [SelectedRulesMixin],
   data() {
     return {
       focus: false,
@@ -86,8 +89,15 @@ export default {
       searchText: "",
       projects: [],
       components: [],
+      component: {}, // This will be set when navigating to a rule
       rules: [],
     };
+  },
+  methods: {
+    navigateToRule: function (componentId, ruleId) {
+      this.component = { id: componentId };
+      this.handleRuleSelected(ruleId);
+    },
   },
   computed: {
     show: function () {
