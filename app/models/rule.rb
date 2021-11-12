@@ -20,6 +20,9 @@ class Rule < BaseRule
   belongs_to :srg_rule
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
   has_many :reviews, dependent: :destroy
+  has_many :additional_answers, dependent: :destroy
+
+  accepts_nested_attributes_for :additional_answers
 
   has_and_belongs_to_many :satisfied_by,
                           class_name: 'Rule',
@@ -53,6 +56,15 @@ class Rule < BaseRule
     rule
   end
 
+  # Overrides for satisfied controls
+  def status
+    satisfied_by.size.positive? ? 'Applicable - Configurable' : self[:status]
+  end
+
+  def status=(value)
+    super(value) unless satisfied_by.size.positive?
+  end
+
   ##
   # Override `as_json` to include parent SRG information
   #
@@ -68,7 +80,10 @@ class Rule < BaseRule
                                                        'component_id', 'changes_requested', 'srg_rule_id',
                                                        'security_requirements_guide_id'),
           satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
-          satisfied_by: satisfied_by.as_json(only: %i[id rule_id], skip_merge: true)
+          satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
+          additional_answers_attributes: additional_answers.as_json.map do |c|
+                                           c.except('rule_id', 'created_at', 'updated_at')
+                                         end
         }
       )
     end
@@ -97,17 +112,27 @@ class Rule < BaseRule
       raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
 
       fields.each do |field|
+        # The only field we can revert on AdditionalAnswers is answer
+        field = 'answer' if audit.auditable_type.eql?('AdditionalAnswer')
+
         unless audit.audited_changes.include?(field)
           raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.")
         end
 
         # The audited change can either be an array `[prev_val, new_val]`
         # or just the `val`
-        record[field] = if audit.audited_changes[field].is_a?(Array)
-                          audit.audited_changes[field][0]
-                        else
-                          audit.audited_changes[field]
-                        end
+        value = if audit.audited_changes[field].is_a?(Array)
+                  audit.audited_changes[field][0]
+                else
+                  audit.audited_changes[field]
+                end
+
+        # Special case for AdditionalAnswer since it stores in the 'answer' field always
+        if audit.auditable_type.eql?('AdditionalAnswer')
+          record.answer = value
+        else
+          record[field] = value
+        end
       end
       record.audit_comment = audit_comment if record.changed?
       record.save
@@ -146,9 +171,9 @@ class Rule < BaseRule
       disa_rule_descriptions.first.vuln_discussion,
       status,
       srg_rule.checks.first.content, # original SRG check content
-      checks.first.content,
+      export_checktext,
       srg_rule.fixtext, # original SRG fix text
-      fixtext,
+      export_fixtext,
       status_justification,
       disa_rule_descriptions.first.mitigations,
       artifact_description,
@@ -157,6 +182,14 @@ class Rule < BaseRule
   end
 
   private
+
+  def export_fixtext
+    satisfied_by.size.positive? ? satisfied_by.first.fixtext : fixtext
+  end
+
+  def export_checktext
+    satisfied_by.size.positive? ? satisfied_by.first.checks.first.content : checks.first.content
+  end
 
   def vendor_comments_with_satisfactions
     comments = []
@@ -230,7 +263,7 @@ class Rule < BaseRule
 
     self.audit_comment = nil unless new_record? || changed?
 
-    (rule_descriptions + disa_rule_descriptions + checks).each do |record|
+    (rule_descriptions + disa_rule_descriptions + checks + additional_answers).each do |record|
       record.audit_comment = comment if record.new_record? || record.changed? || record._destroy
     end
   end

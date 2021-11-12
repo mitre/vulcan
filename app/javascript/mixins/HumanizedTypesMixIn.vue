@@ -4,6 +4,8 @@ export default {
   data: function () {
     return {
       humanizedTypes: {
+        AdditionalAnswer: "Additional Answer",
+        AdditionalQuestion: "Additional Question",
         BaseRule: "Rule",
         RuleDescription: "Rule Description",
         DisaRuleDescription: "Rule Description",

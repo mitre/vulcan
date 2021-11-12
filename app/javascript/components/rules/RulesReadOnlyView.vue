@@ -31,6 +31,7 @@
           :severities_map="severities_map"
           :read-only="true"
           :advanced_fields="component.advanced_fields"
+          :additional_questions="component.additional_questions"
         />
       </div>
     </template>

@@ -48,11 +48,21 @@ class VulcanAudit < ::Audited::Audit
         # On creation, the `audited_value` will be a single value (i.e. not an Array)
         # After an edit, the `audited_value` will be an Array where `[0]` is prev and `[1]` is new
         {
-          field: audited_field,
+          field: format_audited_field(audited_field),
           prev_value: (audited_value.is_a?(Array) ? audited_value[0] : nil),
           new_value: (audited_value.is_a?(Array) ? audited_value[1] : audited_value)
         }
       end
     }
+  end
+
+  private
+
+  # AdditionalAnswers are a special case where the field value is not the field
+  # that changed but rather the name of the associated additional_question.
+  def format_audited_field(field)
+    return auditable.additional_question.name if auditable_type.eql?('AdditionalAnswer') && field.eql?('answer')
+
+    field
   end
 end
