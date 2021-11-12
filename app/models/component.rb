@@ -10,6 +10,20 @@ class Component < ApplicationRecord
     include_association :rules
     set released: false
     set rules_count: 0
+
+    customize(lambda { |original_component, new_component|
+      # Cloning the habtm relationship just doesn't work here since it tries to create a new rule
+      # and doesn't intelligently link to the existing rule. This code loops over every rules satisfies
+      # and uses the "rule_id" to recreate the same linking relationships that existed on the original_component.
+      original_component.rules.each do |orig_rule|
+        orig_rule.satisfies.each do |orig_satisfies|
+          # By waiting until the loop to find the new rule it helps eliminte unnecessary finds.
+          new_rule = new_component.rules.find { |r| r.rule_id == orig_rule.rule_id }
+          new_rule_satisfies = new_component.rules.find { |r| r.rule_id == orig_satisfies.rule_id }
+          new_rule.satisfies << new_rule_satisfies
+        end
+      end
+    })
   end
 
   audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000

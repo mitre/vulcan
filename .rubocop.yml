@@ -10,7 +10,7 @@ AllCops:
     - db/migrate/*
     # - config/initializers/*
     - node_modules/**/*
-    - 'vendor/**/*'
+    - "vendor/**/*"
 Layout/LineLength:
   Max: 120
 Metrics/PerceivedComplexity:
@@ -34,6 +34,8 @@ Metrics/BlockLength:
 Rails/ContentTag:
   Enabled: true
   Exclude:
-    - 'app/lib/**/*'
+    - "app/lib/**/*"
 Rails/FilePath:
-  EnforcedStyle: 'arguments'
+  EnforcedStyle: "arguments"
+Rails/HasAndBelongsToMany:
+  Enabled: false

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_01_152514) do
+ActiveRecord::Schema.define(version: 2021_11_03_190520) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -192,6 +192,13 @@ ActiveRecord::Schema.define(version: 2021_11_01_152514) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["base_rule_id"], name: "index_rule_descriptions_on_base_rule_id"
+  end
+
+  create_table "rule_satisfactions", id: false, force: :cascade do |t|
+    t.bigint "rule_id"
+    t.bigint "satisfied_by_rule_id"
+    t.index ["rule_id", "satisfied_by_rule_id"], name: "index_rule_satisfactions_on_rule_id_and_satisfied_by_rule_id", unique: true
+    t.index ["satisfied_by_rule_id", "rule_id"], name: "index_rule_satisfactions_on_satisfied_by_rule_id_and_rule_id", unique: true
   end
 
   create_table "security_requirements_guides", force: :cascade do |t|
