@@ -68,7 +68,7 @@
               :effective-permissions="effective_permissions"
               :current-user-id="current_user_id"
               :component="component"
-              :rules="component.rules"
+              :rules="rules"
               :statuses="statuses"
               :severities="severities"
               :severities_map="severities_map"
@@ -182,6 +182,7 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import History from "../shared/History.vue";
 import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
@@ -204,6 +205,7 @@ export default {
     FormMixinVue,
     RoleComparisonMixin,
     ConfirmComponentReleaseMixin,
+    SortRulesMixin,
   ],
   props: {
     effective_permissions: {
@@ -247,6 +249,9 @@ export default {
     };
   },
   computed: {
+    rules: function () {
+      return [...this.component.rules].sort(this.compareRules);
+    },
     lastAudit: function () {
       return this.component.histories?.slice(0, 1)?.pop();
     },

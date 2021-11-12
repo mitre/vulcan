@@ -24,10 +24,22 @@ class Rule < BaseRule
 
   accepts_nested_attributes_for :additional_answers
 
+  has_and_belongs_to_many :satisfied_by,
+                          class_name: 'Rule',
+                          join_table: :rule_satisfactions,
+                          association_foreign_key: :satisfied_by_rule_id
+
+  has_and_belongs_to_many :satisfies,
+                          class_name: 'Rule',
+                          join_table: :rule_satisfactions,
+                          foreign_key: :satisfied_by_rule_id,
+                          association_foreign_key: :rule_id
+
   before_validation :set_rule_id
   before_save :apply_audit_comment
   before_destroy :prevent_destroy_if_under_review_or_locked
 
+  validates_with RuleSatisfactionValidator
   validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
@@ -48,19 +60,26 @@ class Rule < BaseRule
   # Override `as_json` to include parent SRG information
   #
   def as_json(options = {})
-    super.merge(
-      {
-        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-        srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
-                                                     'status_justification', 'artifact_description',
-                                                     'vendor_comments', 'rule_id', 'review_requestor_id',
-                                                     'component_id', 'changes_requested', 'srg_rule_id',
-                                                     'security_requirements_guide_id'),
-        additional_answers_attributes: additional_answers.as_json.map do |c|
-                                         c.except('rule_id', 'created_at', 'updated_at')
-                                       end
-      }
-    )
+    result = super(options)
+    unless options[:skip_merge].eql?(true)
+      result = result.merge(
+        {
+          reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
+          srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
+                                                       'status_justification', 'artifact_description',
+                                                       'vendor_comments', 'rule_id', 'review_requestor_id',
+                                                       'component_id', 'changes_requested', 'srg_rule_id',
+                                                       'security_requirements_guide_id'),
+          satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
+          satisfied_by: satisfied_by.as_json(only: %i[id rule_id], skip_merge: true),
+          additional_answers_attributes: additional_answers.as_json.map do |c|
+                                           c.except('rule_id', 'created_at', 'updated_at')
+                                         end
+        }
+      )
+    end
+
+    result
   end
 
   ##
@@ -149,11 +168,26 @@ class Rule < BaseRule
       status_justification,
       disa_rule_descriptions.first.mitigations,
       artifact_description,
-      vendor_comments
+      vendor_comments_with_satisfactions
     ]
   end
 
   private
+
+  def vendor_comments_with_satisfactions
+    comments = []
+    comments << vendor_comments if vendor_comments.present?
+
+    if satisfied_by.present?
+      comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
+    end
+
+    if satisfies.present?
+      comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
+    end
+
+    comments.join('. ')
+  end
 
   def cannot_be_locked_and_under_review
     return unless locked && review_requestor_id.present?

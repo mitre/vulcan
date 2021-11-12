@@ -18,6 +18,7 @@
       <div class="col-9">
         <RuleEditorHeader
           :rule="selectedRule()"
+          :rules="rules"
           :effective-permissions="effectivePermissions"
           :project-prefix="component.prefix"
           :read-only="true"

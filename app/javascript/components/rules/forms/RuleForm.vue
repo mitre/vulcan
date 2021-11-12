@@ -16,7 +16,7 @@
           </label>
           <b-form-select
             :id="`ruleEditor-status-${mod}`"
-            :value="rule.status"
+            :value="status_text"
             :class="inputClass('status')"
             :options="statuses"
             :disabled="disabled || fields.disabled.includes('status')"
@@ -176,7 +176,7 @@
         <!-- checks -->
         <CheckForm
           v-if="rule.status == 'Applicable - Configurable' && rule.checks_attributes.length >= 1"
-          :rule="rule"
+          :rule="rule.satisfied_by.length > 0 ? rule.satisfied_by[0] : rule"
           :index="0"
           :check="rule.checks_attributes[0]"
           :disabled="disabled"
@@ -267,7 +267,7 @@
         </label>
         <b-form-textarea
           :id="`ruleEditor-fixtext-${mod}`"
-          :value="rule.fixtext"
+          :value="rule.satisfied_by.length > 0 ? rule.satisfied_by[0].fixtext : rule.fixtext"
           :class="inputClass('fixtext')"
           placeholder=""
           :disabled="disabled || fields.disabled.includes('fixtext')"
@@ -545,6 +545,11 @@ export default {
         vendor_comments: "Provide context to a reviewing authority; not a published field",
       },
     };
+  },
+  computed: {
+    status_text: function () {
+      return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
+    },
   },
 };
 </script>

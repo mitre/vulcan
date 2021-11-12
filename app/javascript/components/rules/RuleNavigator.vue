@@ -1,11 +1,11 @@
 <template>
   <div>
     <!-- Rule search -->
-    <p class="mb-2 ml-2">
+    <p class="mb-2">
       <strong>Filter &amp; Search</strong>
       <span class="text-primary clickable float-right" @click="clearFilters">reset</span>
     </p>
-    <div class="input-group ml-2">
+    <div class="input-group">
       <input
         id="ruleSearch"
         ref="ruleSearch"
@@ -17,7 +17,7 @@
     </div>
 
     <!-- Filter by rule status -->
-    <b-form-group class="ml-2 mt-3" label="Filter by Control Status">
+    <b-form-group class="mt-3" label="Filter by Control Status">
       <b-form-checkbox
         id="acFilterChecked-filter"
         v-model="filters.acFilterChecked"
@@ -70,7 +70,7 @@
     </b-form-group>
 
     <!-- Filter by review status -->
-    <b-form-group class="ml-2 mt-3" label="Filter by Review Status">
+    <b-form-group class="mt-3" label="Filter by Review Status">
       <b-form-checkbox
         id="nurFilterChecked-filter"
         v-model="filters.nurFilterChecked"
@@ -102,6 +102,19 @@
       </b-form-checkbox>
     </b-form-group>
 
+    <!-- Show/hide duplicates -->
+    <b-form-group class="mt-3" label="Filter by Duplicate Status">
+      <b-form-checkbox
+        id="showDuplicatesChecked"
+        v-model="filters.showDuplicatesChecked"
+        class="mb-1 unselectable"
+        switch
+        name="showDuplicatesChecked-fitler"
+      >
+        Show Duplicates
+      </b-form-checkbox>
+    </b-form-group>
+
     <hr class="mt-2 mb-2" />
 
     <!-- Currently opened controls -->
@@ -129,6 +142,11 @@
         />
         <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
         <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
+        <i
+          v-if="rule.satisfied_by.length > 0"
+          class="mdi mdi-content-copy float-right"
+          aria-hidden="true"
+        />
       </div>
     </div>
 
@@ -162,6 +180,11 @@
       <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
       <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
       <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
+      <i
+        v-if="rule.satisfied_by.length > 0"
+        class="mdi mdi-content-copy float-right"
+        aria-hidden="true"
+      />
     </div>
   </div>
 </template>
@@ -223,6 +246,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
+        showDuplicatesChecked: false, // Show duplicates
       },
     };
   },
@@ -281,13 +305,11 @@ export default {
     },
     // Filters down to all rules that apply to search & applied filters
     filteredRules: function () {
-      return this.filterRules(this.rules).sort(this.compareRules);
+      return this.filterRules(this.rules);
     },
     // Filters down to open rules that also apply to search & applied filters
     openRules: function () {
-      const openRules = this.rules
-        .filter((rule) => this.openRuleIds.includes(rule.id))
-        .sort(this.compareRules);
+      const openRules = this.rules.filter((rule) => this.openRuleIds.includes(rule.id));
       return openRules;
     },
   },
@@ -327,18 +349,6 @@ export default {
     ruleDeselected: function (rule) {
       this.$emit("ruleDeselected", rule.id);
     },
-    // Helper to sort rules by ID
-    compareRules(rule1, rule2) {
-      let rule1Comp = rule1.rule_id;
-      let rule2Comp = rule2.rule_id;
-      if (rule1Comp < rule2Comp) {
-        return -1;
-      }
-      if (rule1Comp > rule2Comp) {
-        return 1;
-      }
-      return 0;
-    },
     // Dynamically set the class of each rule row
     ruleRowClass: function (rule) {
       return {
@@ -368,6 +378,9 @@ export default {
         (this.filters.lckFilterChecked && rule.locked == true)
       );
     },
+    isDuplicate: function (rule) {
+      return this.filters.showDuplicatesChecked || rule.satisfied_by.length === 0;
+    },
     // Helper to filter & search a group of rules
     filterRules: function (rules) {
       let downcaseSearch = this.filters.search.toLowerCase();
@@ -375,7 +388,8 @@ export default {
         return (
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
-          this.doesRuleHaveFilteredReviewStatus(rule)
+          this.doesRuleHaveFilteredReviewStatus(rule) &&
+          this.isDuplicate(rule)
         );
       });
     },
@@ -465,6 +479,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
+        showDuplicatesChecked: false, // Show duplicates
       };
     },
   },

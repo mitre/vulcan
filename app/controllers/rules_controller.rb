@@ -13,19 +13,19 @@ class RulesController < ApplicationController
 
   def index
     @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-                                         :additional_answers,
+                                         :additional_answers, :satisfies, :satisfied_by,
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
   end
 
   def show
-    render json: @rule.to_json(methods: %i[histories])
+    render json: @rule.to_json(methods: %i[histories satisfies satisfied_by])
   end
 
   def create
     rule = create_or_duplicate
     if rule.save
       render json: { toast: 'Successfully created control.',
-                     data: rule.to_json(methods: %i[histories]) }
+                     data: rule.to_json(methods: %i[histories satisfies satisfied_by]) }
     else
       render json: {
         toast: {
