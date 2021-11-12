@@ -136,10 +136,6 @@ export default {
   mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {
-    check: {
-      type: Object,
-      required: true,
-    },
     rule: {
       type: Object,
     },
@@ -171,6 +167,12 @@ export default {
         content: "Describe how to check for the presence of the vulnerability",
       },
     };
+  },
+  computed: {
+    check: function () {
+      return (this.rule.satisfied_by.length > 0 ? this.rule.satisfied_by[0] : this.rule)
+        .checks_attributes[0];
+    },
   },
 };
 </script>

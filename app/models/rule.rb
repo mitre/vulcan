@@ -56,6 +56,11 @@ class Rule < BaseRule
     rule
   end
 
+  # Overrides for satisfied controls
+  def status
+    satisfied_by.size.positive? ? 'Applicable - Configurable' : self[:status]
+  end
+
   ##
   # Override `as_json` to include parent SRG information
   #
@@ -71,7 +76,7 @@ class Rule < BaseRule
                                                        'component_id', 'changes_requested', 'srg_rule_id',
                                                        'security_requirements_guide_id'),
           satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
-          satisfied_by: satisfied_by.as_json(only: %i[id rule_id], skip_merge: true),
+          satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
           additional_answers_attributes: additional_answers.as_json.map do |c|
                                            c.except('rule_id', 'created_at', 'updated_at')
                                          end
@@ -162,9 +167,9 @@ class Rule < BaseRule
       disa_rule_descriptions.first.vuln_discussion,
       status,
       srg_rule.checks.first.content, # original SRG check content
-      checks.first.content,
+      export_checktext,
       srg_rule.fixtext, # original SRG fix text
-      fixtext,
+      export_fixtext,
       status_justification,
       disa_rule_descriptions.first.mitigations,
       artifact_description,
@@ -173,6 +178,14 @@ class Rule < BaseRule
   end
 
   private
+
+  def export_fixtext
+    satisfied_by.size.positive? ? satisfied_by.first.fixtext : fixtext
+  end
+
+  def export_checktext
+    satisfied_by.size.positive? ? satisfied_by.first.checks.first.content : checks.first.content
+  end
 
   def vendor_comments_with_satisfactions
     comments = []

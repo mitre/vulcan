@@ -176,9 +176,8 @@
         <!-- checks -->
         <CheckForm
           v-if="rule.status == 'Applicable - Configurable' && rule.checks_attributes.length >= 1"
-          :rule="rule.satisfied_by.length > 0 ? rule.satisfied_by[0] : rule"
+          :rule="rule"
           :index="0"
-          :check="rule.checks_attributes[0]"
           :disabled="disabled"
           :fields="check_fields"
         />
@@ -456,7 +455,7 @@
 
       <AdditionalQuestions
         :additional_questions="additional_questions"
-        :disabled="disabled"
+        :disabled="disabled && !force_enable_additional_questions"
         :rule="rule"
       />
     </b-form>
@@ -489,6 +488,10 @@ export default {
     disabled: {
       type: Boolean,
       required: true,
+    },
+    force_enable_additional_questions: {
+      type: Boolean,
+      default: false,
     },
     disa_fields: {
       type: Object,

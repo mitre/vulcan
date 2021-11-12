@@ -9,6 +9,7 @@
         :fields="ruleFormFields"
         :disa_fields="disaDescriptionFormFields"
         :check_fields="checkFormFields"
+        :force_enable_additional_questions="forceEnableAdditionalQuestions"
         :additional_questions="additional_questions"
       />
     </b-form>
@@ -69,6 +70,11 @@ export default {
         this.rule.review_requestor_id
         ? true
         : false;
+    },
+    // Still allow additional questions to be edited except when the control is actually
+    // locked, or if a review is requested or this is a read only view.
+    forceEnableAdditionalQuestions: function () {
+      return !this.readOnly && !this.rule.locked && !this.rule.review_requestor_id;
     },
     // The fields to show need to be dynamic based on the rule status
     ruleFormFields: function () {
