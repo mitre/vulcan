@@ -39,11 +39,11 @@
         <b-card-header class="sticky-top bg-light">Components</b-card-header>
         <b-list-group flush>
           <b-list-group-item
-            v-for="component in components"
-            :key="component[0]"
+            v-for="comp in components"
+            :key="comp[0]"
             class="text-truncate"
-            :href="`/components/${component[0]}`"
-            >{{ component[1] }}</b-list-group-item
+            :href="`/components/${comp[0]}`"
+            >{{ comp[1] }}</b-list-group-item
           >
         </b-list-group>
       </b-card>
