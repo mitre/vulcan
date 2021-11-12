@@ -20,14 +20,18 @@ class RulesController < ApplicationController
 
   def search
     query = params[:q]
-    rules = Rule.joins(component: :project, srg_rule: :security_requirements_guide)
-                .left_joins(component: [{ project: :memberships }])
-                .tap { |o| o.where({ memberships: { user_id: current_user.id } }) unless current_user.admin }
-                .and(SecurityRequirementsGuide.where(srg_id: query))
-                .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: query)))
+    rules = Rule.joins(component: :project)
+                .tap do |o|
+      unless current_user.admin
+        o.left_joins(component: [{ project: :memberships }])
+         .where({ memberships: { user_id: current_user.id } })
+      end
+    end
+                .and(Rule.where(rule_id: query))
+                .or(Component.where(released: true).and(Rule.where(rule_id: query)))
                 .limit(100)
                 .distinct
-                .pluck(:id, :version, Component.arel_table[:id])
+                .pluck(:id, :rule_id, Component.arel_table[:id], Component.arel_table[:prefix])
     render json: {
       rules: rules
     }

@@ -67,7 +67,7 @@
             class="text-truncate"
             :href="`/components/${rule[2]}`"
             @click="navigateToRule(rule[2], rule[0])"
-            >{{ rule[1] }}</b-list-group-item
+            >{{ `${rule[3]}-${rule[1]}` }}</b-list-group-item
           >
         </b-list-group>
       </b-card>
@@ -95,14 +95,14 @@ export default {
   },
   methods: {
     navigateToRule: function (componentId, ruleId) {
-      this.component = { id: componentId };
+      this.component = { id: componentId }; // Needs to be set for SelectedRulesMixin
       this.handleRuleSelected(ruleId);
     },
   },
   computed: {
     show: function () {
       return (
-        (this.projects?.length > 0 || this.components?.projects > 0 || this.rules?.length > 0) &&
+        (this.projects?.length > 0 || this.components?.length > 0 || this.rules?.length > 0) &&
         this.focus
       );
     },
