@@ -16,7 +16,7 @@
           </label>
           <b-form-select
             :id="`ruleEditor-status-${mod}`"
-            :value="rule.satisfied_by ? 'Applicable - Configurable' : rule.status"
+            :value="status_text"
             :class="inputClass('status')"
             :options="statuses"
             :disabled="disabled || fields.disabled.includes('status')"
@@ -534,6 +534,11 @@ export default {
         vendor_comments: "Provide context to a reviewing authority; not a published field",
       },
     };
+  },
+  computed: {
+    status_text: function () {
+      return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
+    },
   },
 };
 </script>

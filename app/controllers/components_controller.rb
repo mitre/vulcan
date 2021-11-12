@@ -29,7 +29,6 @@ class ComponentsController < ApplicationController
                       else
                         @component.to_json(methods: %i[rules])
                       end
-
     @project_json = @component.project.to_json
     respond_to do |format|
       format.html

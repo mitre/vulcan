@@ -309,8 +309,7 @@ export default {
     },
     // Filters down to open rules that also apply to search & applied filters
     openRules: function () {
-      const openRules = this.rules
-        .filter((rule) => this.openRuleIds.includes(rule.id));
+      const openRules = this.rules.filter((rule) => this.openRuleIds.includes(rule.id));
       return openRules;
     },
   },

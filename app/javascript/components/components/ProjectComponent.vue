@@ -172,7 +172,7 @@ export default {
     FormMixinVue,
     RoleComparisonMixin,
     ConfirmComponentReleaseMixin,
-    SortRulesMixin
+    SortRulesMixin,
   ],
   props: {
     effective_permissions: {

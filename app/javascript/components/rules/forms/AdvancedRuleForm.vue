@@ -201,7 +201,7 @@ export default {
     },
     // The fields to show need to be dynamic based on the rule status
     ruleFormFields: function () {
-      if (this.rule.satisfied_by || this.rule.status == "Applicable - Configurable") {
+      if (this.rule.satisfied_by.length > 0 || this.rule.status == "Applicable - Configurable") {
         return {
           displayed: [
             "status",
@@ -218,7 +218,7 @@ export default {
             "ident_system",
             "vendor_comments",
           ],
-          disabled: this.rule.satisfied_by ? ["title", "fixtext"] : [],
+          disabled: this.rule.satisfied_by.length > 0 ? ["title", "fixtext"] : [],
         };
       } else if (this.rule.status == "Not Yet Determined") {
         return {
