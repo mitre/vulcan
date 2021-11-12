@@ -57,16 +57,23 @@ class Rule < BaseRule
   # Override `as_json` to include parent SRG information
   #
   def as_json(options = {})
-    super.merge(
-      {
-        reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-        srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
-                                                     'status_justification', 'artifact_description',
-                                                     'vendor_comments', 'rule_id', 'review_requestor_id',
-                                                     'component_id', 'changes_requested', 'srg_rule_id',
-                                                     'security_requirements_guide_id')
-      }
-    )
+    result = super(options)
+    unless options[:skip_merge].eql?(true)
+      result = result.merge(
+        {
+          reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
+          srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
+                                                       'status_justification', 'artifact_description',
+                                                       'vendor_comments', 'rule_id', 'review_requestor_id',
+                                                       'component_id', 'changes_requested', 'srg_rule_id',
+                                                       'security_requirements_guide_id'),
+          satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
+          satisfied_by: satisfied_by.as_json(only: %i[id rule_id], skip_merge: true)
+        }
+      )
+    end
+
+    result
   end
 
   ##

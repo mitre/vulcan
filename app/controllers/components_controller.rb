@@ -22,28 +22,13 @@ class ComponentsController < ApplicationController
   end
 
   def show
-    if @effective_permissions
-      @component_json = @component.as_json(
-        methods: %i[histories memberships metadata inherited_memberships available_members]
-      )
-
-      rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
-                        .map { |r| [r[:id], r.as_json.merge({ satisfies: [], satisfied_by: [] })] }.to_h
-
-      RuleSatisfaction.where(rule_id: rules.keys).each do |rs|
-        rules[rs[:rule_id]][:satisfied_by] << rs[:satisfied_by_rule_id]
-      end
-
-      RuleSatisfaction.where(satisfied_by_rule_id: rules.keys).each do |rs|
-        rules[rs[:satisfied_by_rule_id]][:satisfies] << rs[:rule_id]
-      end
-
-      @component_json[:rules] = rules.values
-      @component_json = @component_json.to_json
-    else
-      @component_json = @component.to_json(methods: %i[rules])
-    end
+    @component_json = if @effective_permissions
+                        @component.to_json(
+                          methods: %i[histories memberships metadata inherited_memberships available_members rules]
+                        )
+                      else
+                        @component.to_json(methods: %i[rules])
+                      end
 
     @project_json = @component.project.to_json
     respond_to do |format|
@@ -122,7 +107,7 @@ class ComponentsController < ApplicationController
 
   def set_component
     @component = Component.eager_load(
-      rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, {
+      rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, :satisfies, :satisfied_by, {
         srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
       }]
     ).find(params[:id])
