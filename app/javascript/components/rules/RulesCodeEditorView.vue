@@ -45,7 +45,12 @@
               :current-user-id="currentUserId"
             />
             <br />
-            <RuleHistories :rule="selectedRule()" :component="component" :statuses="statuses" :severities="severities" />
+            <RuleHistories
+              :rule="selectedRule()"
+              :component="component"
+              :statuses="statuses"
+              :severities="severities"
+            />
           </div>
         </div>
       </div>

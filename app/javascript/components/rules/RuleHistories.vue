@@ -48,8 +48,8 @@ export default {
     },
     component: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
   data: function () {
     return {

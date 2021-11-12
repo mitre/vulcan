@@ -454,7 +454,11 @@
         </b-form-invalid-feedback>
       </b-form-group>
 
-      <AdditionalQuestions :additional_questions="additional_questions" :disabled="disabled" :rule="rule" />
+      <AdditionalQuestions
+        :additional_questions="additional_questions"
+        :disabled="disabled"
+        :rule="rule"
+      />
     </b-form>
   </div>
 </template>
@@ -494,7 +498,7 @@ export default {
     },
     additional_questions: {
       type: Array,
-      default: [],
+      default: () => [],
     },
     fields: {
       type: Object,

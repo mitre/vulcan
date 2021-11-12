@@ -58,7 +58,7 @@ export default {
     },
     additional_questions: {
       type: Array,
-      default: [],
+      default: () => [],
     },
   },
   computed: {

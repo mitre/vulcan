@@ -44,23 +44,25 @@ export default {
     disabled: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   methods: {
-    addOrUpdateAnswer: function(event, question_id) {
-      let all_answers = this.rule.additional_answers_attributes
-      let index = all_answers.findIndex(answer => answer.additional_question_id === question_id);
-      if(index !== -1) {
+    addOrUpdateAnswer: function (event, question_id) {
+      let all_answers = this.rule.additional_answers_attributes;
+      let index = all_answers.findIndex((answer) => answer.additional_question_id === question_id);
+      if (index !== -1) {
         all_answers[index].answer = event;
       } else {
-        all_answers.push({additional_question_id: question_id, answer: event});
+        all_answers.push({ additional_question_id: question_id, answer: event });
       }
 
-      this.$root.$emit('update:rule', { ...this.rule, additional_answers_attributes: all_answers })
+      this.$root.$emit("update:rule", { ...this.rule, additional_answers_attributes: all_answers });
     },
-    findAnswerText: function(question_id) {
-      return this.rule.additional_answers_attributes.find(element => element.additional_question_id == question_id)?.answer;
-    }
-  }
+    findAnswerText: function (question_id) {
+      return this.rule.additional_answers_attributes.find(
+        (element) => element.additional_question_id == question_id
+      )?.answer;
+    },
+  },
 };
 </script>

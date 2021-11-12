@@ -72,8 +72,8 @@ export default {
     },
     component: {
       type: Object,
-      required: false
-    }
+      required: false,
+    },
   },
   methods: {
     userIdentifier: function (history) {

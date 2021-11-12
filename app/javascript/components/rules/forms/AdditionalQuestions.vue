@@ -4,13 +4,19 @@
       v-for="question in additional_questions"
       :key="`additional-question-${question.id}`"
     >
-      <AdditionalAnswerForm :rule="rule" :question="question" :disabled="disabled" :invalidFeedback="invalidFeedback" :validFeedback="validFeedback" />
+      <AdditionalAnswerForm
+        :rule="rule"
+        :question="question"
+        :disabled="disabled"
+        :invalid-feedback="invalidFeedback"
+        :valid-feedback="validFeedback"
+      />
     </b-form-group>
   </div>
 </template>
 
 <script>
-import AdditionalAnswerForm from "./AdditionalAnswerForm"
+import AdditionalAnswerForm from "./AdditionalAnswerForm";
 
 export default {
   name: "AdditionalQuestions",
@@ -22,7 +28,7 @@ export default {
     },
     additional_questions: {
       type: Array,
-      default: [],
+      default: () => [],
     },
     disabled: {
       type: Boolean,
@@ -37,7 +43,6 @@ export default {
       required: false,
     },
   },
-  methods: {
-  }
+  methods: {},
 };
 </script>

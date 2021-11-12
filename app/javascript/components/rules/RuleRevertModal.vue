@@ -215,7 +215,7 @@ export default {
     DisaRuleDescriptionForm,
     CheckForm,
     CommentModal,
-    AdditionalQuestions
+    AdditionalQuestions,
   },
   mixins: [
     AlertMixinVue,
@@ -243,7 +243,7 @@ export default {
     },
     component: {
       type: Object,
-      required: true
+      required: true,
     },
   },
   data: function () {
@@ -294,9 +294,8 @@ export default {
           (e) => e.id == this.history.auditable_id
         );
       } else if (this.history.auditable_type == "AdditionalAnswer") {
-        dependentRecord["additional_answers_attributes"] = this.rule.additional_answers_attributes.filter(
-          (e) => e.id == this.history.auditable_id
-        )
+        dependentRecord["additional_answers_attributes"] =
+          this.rule.additional_answers_attributes.filter((e) => e.id == this.history.auditable_id);
       }
 
       let curState = _.cloneDeep(dependentRecord);
@@ -318,10 +317,10 @@ export default {
       this.history.audited_changes.forEach((audited_change) => {
         const audited_field = audited_change.field;
         if (this.selectedRevertFields.includes(audited_field)) {
-          if(this.history.auditable_type === 'AdditionalAnswer') {
+          if (this.history.auditable_type === "AdditionalAnswer") {
             let id = this.rule.additional_answers_attributes.findIndex(
               (e) => e.id == this.history.auditable_id
-            )
+            );
             afterState.additional_answers_attributes[id].answer = audited_change.prev_value;
           } else {
             afterState[audited_field] = audited_change.prev_value;

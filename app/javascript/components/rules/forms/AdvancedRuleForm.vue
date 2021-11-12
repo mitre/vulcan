@@ -190,7 +190,7 @@ export default {
     },
     additional_questions: {
       type: Array,
-      default: [],
+      default: () => [],
     },
   },
   data: function () {
