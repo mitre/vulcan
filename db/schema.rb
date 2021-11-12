@@ -22,6 +22,7 @@ ActiveRecord::Schema.define(version: 2021_11_09_212911) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["additional_question_id"], name: "index_additional_answers_on_additional_question_id"
+    t.index ["rule_id", "additional_question_id"], name: "index_additional_answers_on_rule_id_and_additional_question_id", unique: true
     t.index ["rule_id"], name: "index_additional_answers_on_rule_id"
   end
 
