@@ -9,24 +9,21 @@
       <b-form-input
         id="srg-id-search"
         v-model="searchText"
-        debounce="500"
+        debounce="250"
         placeholder="Search by SRG ID"
         @focus="focus = true"
         @blur="focus = false"
       />
     </b-input-group>
     <b-popover
-      disabled
-      :show="show"
+      triggers="focus"
       target="srg-id-search"
       placement="bottom"
       custom-class="srg-id-search-results"
     >
-      <b-card
-        v-if="projects && projects.length > 0"
-        no-body
-        class="search-card overflow-auto shadow border-light"
-      >
+      <!-- Render an empty div so that the popover detects the first focus (when there are not yet search results) -->
+      <div />
+      <b-card v-if="showProjects" no-body class="search-card overflow-auto shadow border-light">
         <b-card-header class="sticky-top bg-light">Projects</b-card-header>
         <b-list-group flush>
           <b-list-group-item
@@ -38,11 +35,7 @@
           >
         </b-list-group>
       </b-card>
-      <b-card
-        v-if="components && components.length > 0"
-        no-body
-        class="search-card overflow-auto shadow border-light"
-      >
+      <b-card v-if="showComponents" no-body class="search-card overflow-auto shadow border-light">
         <b-card-header class="sticky-top bg-light">Components</b-card-header>
         <b-list-group flush>
           <b-list-group-item
@@ -54,11 +47,7 @@
           >
         </b-list-group>
       </b-card>
-      <b-card
-        v-if="rules && rules.length > 0"
-        no-body
-        class="search-card overflow-auto shadow border-light"
-      >
+      <b-card v-if="showRules" no-body class="search-card overflow-auto shadow border-light">
         <b-card-header class="sticky-top bg-light">Rules</b-card-header>
         <b-list-group flush>
           <b-list-group-item
@@ -66,7 +55,7 @@
             :key="rule[0]"
             class="text-truncate"
             :href="`/components/${rule[2]}`"
-            @click="navigateToRule(rule[2], rule[0])"
+            @click="selectRule(rule[2], rule[0])"
             >{{ `${rule[3]}-${rule[1]}` }}</b-list-group-item
           >
         </b-list-group>
@@ -87,24 +76,24 @@ export default {
       focus: false,
       loading: false,
       searchText: "",
+      component: {}, // This will be set when navigating to a rule
       projects: [],
       components: [],
-      component: {}, // This will be set when navigating to a rule
       rules: [],
     };
   },
-  methods: {
-    navigateToRule: function (componentId, ruleId) {
-      this.component = { id: componentId }; // Needs to be set for SelectedRulesMixin
-      this.handleRuleSelected(ruleId);
-    },
-  },
   computed: {
     show: function () {
-      return (
-        (this.projects?.length > 0 || this.components?.length > 0 || this.rules?.length > 0) &&
-        this.focus
-      );
+      return (this.showProjects || this.showComponents || this.showRules) && this.focus;
+    },
+    showProjects: function () {
+      return this.projects?.length > 0;
+    },
+    showComponents: function () {
+      return this.components?.length > 0;
+    },
+    showRules: function () {
+      return this.rules?.length > 0;
     },
   },
   watch: {
@@ -117,6 +106,12 @@ export default {
       this.projects = projectResp.data.projects;
       this.components = componentResp.data.components;
       this.rules = ruleResp.data.rules;
+    },
+  },
+  methods: {
+    selectRule: function (componentId, ruleId) {
+      this.component = { id: componentId }; // Needs to be set for SelectedRulesMixin
+      this.handleRuleSelected(ruleId);
     },
   },
 };
