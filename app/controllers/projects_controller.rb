@@ -10,10 +10,23 @@ class ProjectsController < ApplicationController
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_viewer_project, only: %i[show]
-  before_action :authorize_logged_in, only: %i[index new create]
+  before_action :authorize_logged_in, only: %i[index new create search]
 
   def index
     @projects = current_user.available_projects.alphabetical
+  end
+
+  def search
+    query = params[:q]
+    projects = current_user.available_projects
+                           .joins(components: :based_on)
+                           .and(SecurityRequirementsGuide.where(srg_id: query))
+                           .limit(10)
+                           .distinct
+                           .pluck(:id, :name)
+    render json: {
+      projects: projects
+    }
   end
 
   def show

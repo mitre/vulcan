@@ -10,11 +10,31 @@ class RulesController < ApplicationController
   before_action :set_project_permissions, only: %i[index]
   before_action :authorize_author_component, only: %i[index show create update revert]
   before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_logged_in, only: %i[search]
 
   def index
     @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
                                          :additional_answers, :satisfies, :satisfied_by,
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+  end
+
+  def search
+    query = params[:q]
+    rules = Rule.joins(:srg_rule, component: :project)
+                .tap do |o|
+      unless current_user.admin
+        o.left_joins(component: [{ project: :memberships }])
+         .where({ memberships: { user_id: current_user.id } })
+      end
+    end
+                .and(Rule.where('srg_rule.rule_id': query))
+                .or(Component.where(released: true).and(Rule.where('srg_rule.rule_id': query)))
+                .limit(100)
+                .distinct
+                .pluck(:id, :rule_id, Component.arel_table[:id], Component.arel_table[:prefix])
+    render json: {
+      rules: rules
+    }
   end
 
   def show
