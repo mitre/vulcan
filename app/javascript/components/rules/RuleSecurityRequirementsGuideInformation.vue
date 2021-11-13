@@ -94,6 +94,20 @@
         </div>
         <div class="col-8">{{ srg_rule.fixtext }}</div>
       </div>
+      <div class="row">
+        <div class="col-4">
+          <!-- srg_rule_id -->
+          <strong>SRG Rule ID</strong>
+          <i
+            v-if="tooltips['srg_rule_id']"
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            :title="tooltips['srg_rule_id']"
+          />
+        </div>
+        <div class="col-8">{{ srg_rule.rule_id }}</div>
+      </div>
     </b-collapse>
   </div>
 </template>
