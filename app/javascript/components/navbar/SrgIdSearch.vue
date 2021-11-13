@@ -60,6 +60,13 @@
           >
         </b-list-group>
       </b-card>
+      <b-card
+        v-if="!showRules && !showComponents && !showProjects"
+        no-body
+        class="search-card overflow-auto shadow border-light"
+      >
+        <b-card-header class="sticky-top bg-light">No Results</b-card-header>
+      </b-card>
     </b-popover>
   </div>
 </template>

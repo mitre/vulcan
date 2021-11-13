@@ -20,15 +20,15 @@ class RulesController < ApplicationController
 
   def search
     query = params[:q]
-    rules = Rule.joins(component: :project)
+    rules = Rule.joins(:srg_rule, component: :project)
                 .tap do |o|
       unless current_user.admin
         o.left_joins(component: [{ project: :memberships }])
          .where({ memberships: { user_id: current_user.id } })
       end
     end
-                .and(Rule.where(rule_id: query))
-                .or(Component.where(released: true).and(Rule.where(rule_id: query)))
+                .and(Rule.where('srg_rule.rule_id': query))
+                .or(Component.where(released: true).and(Rule.where('srg_rule.rule_id': query)))
                 .limit(100)
                 .distinct
                 .pluck(:id, :rule_id, Component.arel_table[:id], Component.arel_table[:prefix])

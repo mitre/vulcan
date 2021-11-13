@@ -97,7 +97,7 @@
       <div class="row">
         <div class="col-4">
           <!-- srg_rule_id -->
-          <strong>SRG ID</strong>
+          <strong>SRG Rule ID</strong>
           <i
             v-if="tooltips['srg_rule_id']"
             v-b-tooltip.hover.html
@@ -106,7 +106,7 @@
             :title="tooltips['srg_rule_id']"
           />
         </div>
-        <div class="col-8">{{ rule_id }}</div>
+        <div class="col-8">{{ srg_rule.rule_id }}</div>
       </div>
     </b-collapse>
   </div>
@@ -124,10 +124,6 @@ export default {
       required: true,
     },
     cci: {
-      type: String,
-      required: true,
-    },
-    rule_id: {
       type: String,
       required: true,
     },

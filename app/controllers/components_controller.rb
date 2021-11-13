@@ -24,17 +24,15 @@ class ComponentsController < ApplicationController
 
   def search
     query = params[:q]
-    components = Component.joins(:project, rules: [{ srg_rule: :security_requirements_guide }])
+    components = Component.joins(:project, :based_on)
                           .tap do |o|
       unless current_user.admin
         o.left_joins(project: :memberships)
          .where({ memberships: { user_id: current_user.id } })
       end
     end
-                          .and(Rule.where(rule_id: query).or(SecurityRequirementsGuide.where(srg_id: query)))
-                          .or(Component.where(released: true)
-                                       .and(Rule.where(rule_id: query)
-                                       .or(SecurityRequirementsGuide.where(srg_id: query))))
+                          .and(SecurityRequirementsGuide.where(srg_id: query))
+                          .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: query)))
                           .limit(100)
                           .distinct
                           .pluck(:id, :version)

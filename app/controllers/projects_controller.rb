@@ -19,8 +19,8 @@ class ProjectsController < ApplicationController
   def search
     query = params[:q]
     projects = current_user.available_projects
-                           .joins(components: [{ rules: [{ srg_rule: :security_requirements_guide }] }])
-                           .and(SecurityRequirementsGuide.where(srg_id: query).or(Rule.where(rule_id: query)))
+                           .joins(components: :based_on)
+                           .and(SecurityRequirementsGuide.where(srg_id: query))
                            .limit(10)
                            .distinct
                            .pluck(:id, :name)
