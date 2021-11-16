@@ -76,6 +76,6 @@ export default {
   letter-spacing: 1px;
 }
 .right-container {
-  gap: 64px;
+  gap: 32px;
 }
 </style>

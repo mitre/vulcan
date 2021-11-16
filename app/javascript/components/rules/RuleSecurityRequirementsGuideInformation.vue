@@ -96,17 +96,17 @@
       </div>
       <div class="row">
         <div class="col-4">
-          <!-- srg_rule_id -->
-          <strong>SRG Rule ID</strong>
+          <!-- srg_version -->
+          <strong>SRG Version</strong>
           <i
-            v-if="tooltips['srg_rule_id']"
+            v-if="tooltips['srg_version']"
             v-b-tooltip.hover.html
             class="mdi mdi-information"
             aria-hidden="true"
-            :title="tooltips['srg_rule_id']"
+            :title="tooltips['srg_version']"
           />
         </div>
-        <div class="col-8">{{ srg_rule.rule_id }}</div>
+        <div class="col-8">{{ srg_rule.version }}</div>
       </div>
     </b-collapse>
   </div>
