@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-input-group>
+    <b-input-group class="search-input">
       <b-input-group-prepend>
         <b-input-group-text class="form-control">
           <i class="mdi mdi-magnify" aria-hidden="true" />
@@ -10,7 +10,7 @@
         id="srg-id-search"
         v-model="searchText"
         debounce="250"
-        placeholder="Search by SRG ID"
+        placeholder="Search by SRG Version"
         @focus="focus = true"
         @blur="focus = false"
       />
@@ -144,5 +144,9 @@ export default {
 <style scoped>
 .search-card {
   max-height: 192px;
+}
+
+.search-input {
+  min-width: 320px;
 }
 </style>
