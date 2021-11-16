@@ -74,7 +74,7 @@ RSpec.describe Component, type: :model do
       expect(@p1_c1.valid?).to eq(true)
 
       @p1_c1.prefix = '1111-AA'
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to eq(true)
 
       @p1_c1.prefix = 'AAAA00'
       expect(@p1_c1.valid?).to eq(false)

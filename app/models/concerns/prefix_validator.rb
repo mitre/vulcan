@@ -10,10 +10,10 @@ class PrefixValidator < ActiveModel::Validator
 
   private
 
-  # Prefixes are 4 letters, followed by a dash, followed by 3 numbers.
+  # Prefixes are 4 alphanumeric characters, followed by a dash, followed by 2 alphanumeric characters.
   # Ex. abcd-01
   def validate_prefix(prefix)
-    return true if prefix.match?(/^\w{4}-\d{2}$/)
+    return true if prefix.match?(/^\w{4}-\w{2}$/)
 
     false
   end
