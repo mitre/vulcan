@@ -9,11 +9,11 @@ ENV RAILS_ENV production
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
-RUN gem install bundler:2.1.4
+RUN gem install bundler:2.2.31
 ADD Gemfile* $APP_HOME/
-RUN bundle install
+RUN bundle install --without development test
 
 ADD . $APP_HOME
-RUN yarn install --check-files
+RUN yarn install --check-files --production
 RUN SECRET_KEY_BASE=none NODE_ENV=production bundle exec rake assets:precompile
 CMD ["rails","server","-b","0.0.0.0"]
