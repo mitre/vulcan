@@ -88,7 +88,7 @@ class ProjectsController < ApplicationController
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[excel].include?(export_type)
+    unless %i[excel xccdf].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -112,8 +112,13 @@ class ProjectsController < ApplicationController
 
     respond_to do |format|
       format.html do
-        workbook = export_excel(@project)
-        send_data workbook.read_string, filename: "#{@project.name}.xlsx"
+        case export_type
+        when :excel
+          workbook = export_excel(@project)
+          send_data workbook.read_string, filename: "#{@project.name}.xlsx"
+        when :xccdf
+          send_data export_xccdf(@project).string, filename: "#{@project.name}.zip"
+        end
       end
       # JSON responses are just used to validate ahead of time that this
       # component can actually be exported

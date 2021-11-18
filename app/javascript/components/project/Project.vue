@@ -44,6 +44,13 @@
               <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport">
                 Download Excel Export
               </b-button>
+              <b-button
+                class="px-2 m-2"
+                variant="secondary"
+                :href="`/projects/${project.id}/export/xccdf`"
+              >
+                Download Xccdf Export
+              </b-button>
             </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
