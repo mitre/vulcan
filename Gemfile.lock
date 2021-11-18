@@ -121,6 +121,8 @@ GEM
     faraday-net_http_persistent (1.2.0)
     faraday-patron (1.0.0)
     faraday-rack (1.0.0)
+    fast_excel (0.4.0)
+      ffi (> 1.9, < 2)
     ffaker (2.19.0)
     ffi (1.15.4)
     gitlab_omniauth-ldap (2.1.1)
@@ -366,6 +368,7 @@ DEPENDENCIES
   capybara (>= 2.15)
   devise
   factory_bot_rails (~> 5.2.0)
+  fast_excel
   ffaker (~> 2.10)
   gitlab_omniauth-ldap (~> 2.1.1)
   haml-rails (~> 2.0)

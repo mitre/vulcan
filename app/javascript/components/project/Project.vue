@@ -29,11 +29,16 @@
           <!-- Project components -->
           <b-tab :title="`Components (${project.components.length})`">
             <h2>Project Components</h2>
-            <NewComponentModal
-              v-if="role_gte_to(effective_permissions, 'admin')"
-              :project_id="project.id"
-              @projectUpdated="refreshProject"
-            />
+            <div>
+              <NewComponentModal
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                :project_id="project.id"
+                @projectUpdated="refreshProject"
+              />
+              <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport()">
+                Download Excel Export
+              </b-button>
+            </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
                 <ComponentCard
@@ -121,6 +126,8 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
+import FileDownload from "js-file-download";
+import base64StringToBlob from "base64toblob";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -245,6 +252,17 @@ export default {
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    downloadExcelExport: function () {
+      axios
+        .get(`/projects/${this.project.id}/export/excel`)
+        .then((response) => {
+          FileDownload(
+            base64StringToBlob(response.data.replace(/(\r\n|\n|\r)/gm, ""), "application/xlsx"),
+            `${this.project.name}.xlsx`
+          );
         })
         .catch(this.alertOrNotifyResponse);
     },

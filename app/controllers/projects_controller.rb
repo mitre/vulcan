@@ -4,9 +4,10 @@
 # Controller for application projects.
 #
 class ProjectsController < ApplicationController
+  include ExportHelper
   include ProjectMemberConstants
 
-  before_action :set_project, only: %i[show update destroy]
+  before_action :set_project, only: %i[show update destroy export]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_viewer_project, only: %i[show]
@@ -81,6 +82,36 @@ class ProjectsController < ApplicationController
       flash.alert = "Unable to remove project. #{@project.errors.full_messages}"
     end
     redirect_to action: 'index'
+  end
+
+  def export
+    export_type = params[:type]&.to_sym
+
+    # Other export types will be included in the future
+    unless %i[excel].include?(export_type)
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: "Unsupported export type: #{export_type}",
+          variant: 'danger'
+        }
+      }, status: :bad_request
+    end
+
+    if @project.components.where(released: true).size.zero?
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: "Project does not include any released components",
+          variant: 'danger'
+        }
+      }, status: :bad_request
+    end
+
+    if export_type == :excel
+      workbook = export_excel(@project)
+      send_data Base64.encode64(workbook.read_string)
+    end
   end
 
   private

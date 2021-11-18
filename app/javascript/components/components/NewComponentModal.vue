@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <span>
     <!-- Modal trigger button -->
     <span @click="showModal()">
       <slot name="opener">
@@ -68,7 +68,7 @@
         </b-row>
       </b-form>
     </b-modal>
-  </div>
+  </span>
 </template>
 
 <script>
