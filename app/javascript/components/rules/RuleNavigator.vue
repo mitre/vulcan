@@ -118,7 +118,12 @@
     <hr class="mt-2 mb-2" />
 
     <!-- Currently opened controls -->
-    <p class="mt-0 mb-0"><strong>Open Controls</strong></p>
+    <p class="mt-0 mb-0">
+      <strong>Open Controls</strong>
+      <a v-if="openRuleIds.length > 0" href="#" @click.stop="rulesDeselected(openRules)">
+        &nbsp;<u>(Close All)</u>
+      </a>
+    </p>
     <div v-if="openRules.length === 0">
       <em>No controls selected</em>
     </div>
@@ -348,6 +353,11 @@ export default {
     },
     ruleDeselected: function (rule) {
       this.$emit("ruleDeselected", rule.id);
+    },
+    rulesDeselected: function (rules) {
+      rules.forEach((rule) => {
+        this.$emit("ruleDeselected", rule.id);
+      });
     },
     // Dynamically set the class of each rule row
     ruleRowClass: function (rule) {
