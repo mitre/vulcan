@@ -100,17 +100,7 @@ class ComponentsController < ApplicationController
   end
 
   def export
-    if @component.released
-      send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
-    else
-      render json: {
-        toast: {
-          title: 'Export error',
-          message: 'Cannot export a component that is not released',
-          variant: 'danger'
-        }
-      }, status: :bad_request
-    end
+    send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
   end
 
   private
