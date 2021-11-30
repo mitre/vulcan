@@ -35,7 +35,11 @@
                 :project_id="project.id"
                 @projectUpdated="refreshProject"
               />
-              <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport()">
+              <b-button
+                class="px-2 m-2"
+                variant="secondary"
+                :href="`/projects/${project.id}/export/excel`"
+              >
                 Download Excel Export
               </b-button>
             </div>
@@ -252,17 +256,6 @@ export default {
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
-        })
-        .catch(this.alertOrNotifyResponse);
-    },
-    downloadExcelExport: function () {
-      axios
-        .get(`/projects/${this.project.id}/export/excel`)
-        .then((response) => {
-          FileDownload(
-            base64StringToBlob(response.data.replace(/(\r\n|\n|\r)/gm, ""), "application/xlsx"),
-            `${this.project.name}.xlsx`
-          );
         })
         .catch(this.alertOrNotifyResponse);
     },

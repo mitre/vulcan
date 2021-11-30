@@ -111,7 +111,7 @@ class ProjectsController < ApplicationController
     return unless export_type == :excel
 
     workbook = export_excel(@project)
-    send_data Base64.encode64(workbook.read_string)
+    send_data workbook.read_string, filename: "#{@project.name}.xlsx"
   end
 
   private
