@@ -120,9 +120,15 @@
     <!-- Currently opened controls -->
     <p class="mt-0 mb-0">
       <strong>Open Controls</strong>
-      <a v-if="openRuleIds.length > 0" href="#" @click.stop="rulesDeselected(openRules)">
-        &nbsp;<u>(Close All)</u>
-      </a>
+      <template v-if="openRuleIds.length > 0" href="#">
+        <i
+          class="text-primary mdi mdi-close clickable float-right"
+          @click="rulesDeselected(openRules)"
+        />
+        <span class="text-primary float-right clickable" @click="rulesDeselected(openRules)">
+          close all
+        </span>
+      </template>
     </p>
     <div v-if="openRules.length === 0">
       <em>No controls selected</em>
