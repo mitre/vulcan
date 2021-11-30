@@ -102,16 +102,16 @@ class ProjectsController < ApplicationController
       render json: {
         toast: {
           title: 'Export error',
-          message: "Project does not include any released components",
+          message: 'Project does not include any released components',
           variant: 'danger'
         }
       }, status: :bad_request
     end
 
-    if export_type == :excel
-      workbook = export_excel(@project)
-      send_data Base64.encode64(workbook.read_string)
-    end
+    return unless export_type == :excel
+
+    workbook = export_excel(@project)
+    send_data Base64.encode64(workbook.read_string)
   end
 
   private
