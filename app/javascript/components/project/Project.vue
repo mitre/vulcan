@@ -130,8 +130,6 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
-import FileDownload from "js-file-download";
-import base64StringToBlob from "base64toblob";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
