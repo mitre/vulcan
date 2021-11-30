@@ -2,7 +2,7 @@
   <div>
     <!-- Collapsable header -->
     <div class="clickable" @click="showHistories = !showHistories">
-      <h2 class="m-0 d-inline-block">Histories</h2>
+      <h2 class="m-0 d-inline-block">Revision History</h2>
       <b-badge v-if="rule.histories" pill class="ml-1 superVerticalAlign">{{
         rule.histories.length
       }}</b-badge>
