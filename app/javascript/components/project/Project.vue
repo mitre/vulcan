@@ -29,11 +29,20 @@
           <!-- Project components -->
           <b-tab :title="`Components (${project.components.length})`">
             <h2>Project Components</h2>
-            <NewComponentModal
-              v-if="role_gte_to(effective_permissions, 'admin')"
-              :project_id="project.id"
-              @projectUpdated="refreshProject"
-            />
+            <div>
+              <NewComponentModal
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                :project_id="project.id"
+                @projectUpdated="refreshProject"
+              />
+              <b-button
+                class="px-2 m-2"
+                variant="secondary"
+                :href="`/projects/${project.id}/export/excel`"
+              >
+                Download Excel Export
+              </b-button>
+            </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
                 <ComponentCard

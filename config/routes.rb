@@ -26,6 +26,8 @@ Rails.application.routes.draw do
   get '/components', to: 'components#index'
   # Export component
   get '/components/:id/export', to: 'components#export'
+  # Export project
+  get '/projects/:id/export/:type', to: 'projects#export'
   # SRG ID Search
   get '/search/projects', to: 'projects#search'
   get '/search/components', to: 'components#search'
