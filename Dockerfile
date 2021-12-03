@@ -9,7 +9,7 @@ ENV RAILS_ENV production
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
-RUN gem install bundler:2.2.31
+RUN gem install bundler:2.2.32
 ADD Gemfile* $APP_HOME/
 RUN bundle install --without development test
 
