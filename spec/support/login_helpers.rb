@@ -16,6 +16,7 @@ module LoginHelpers
   def mock_omniauth_response(user)
     # This sets up an object that is similar to what LDAP and GitHub return to
     # the User.from_omniauth method
+    # rubocop:disable Style/OpenStructUse
     JSON.parse({
       info: {
         name: user.name,
@@ -24,6 +25,7 @@ module LoginHelpers
       provider: 'ldap',
       uid: FFaker::Random.rand(0...1_000_000)
     }.to_json, object_class: OpenStruct)
+    # rubocop:enable Style/OpenStructUse
   end
 
   def vulcan_sign_in_with(login_type, login_fields = {})
