@@ -72,6 +72,8 @@
               :statuses="statuses"
               :severities="severities"
               :severities_map="severities_map"
+              :component-selected-rule-id="componentSelectedRuleId"
+              @ruleSelected="updateSelectedRule"
             />
           </b-tab>
 
@@ -104,7 +106,7 @@
           </b-tab>
         </b-tabs>
       </b-col>
-      <b-col v-if="effective_permissions" md="2">
+      <b-col v-if="effective_permissions" md="4">
         <b-row class="pb-4">
           <b-col>
             <div class="clickable" @click="showMetadata = !showMetadata">
@@ -170,6 +172,27 @@
             </b-collapse>
           </b-col>
         </b-row>
+        <b-row v-if="selectedRule.reviews">
+          <b-col>
+            <br />
+            <RuleReviews :rule="selectedRule" :read-only="true" />
+            <br />
+            <RuleHistories
+              :rule="selectedRule"
+              :component="component"
+              :statuses="statuses"
+              :severities="severities"
+            />
+            <RuleSatisfactions
+              :component="component"
+              :rule="selectedRule"
+              :selected-rule-id="selectedRule.id"
+              :project-prefix="component.prefix"
+              :read-only="true"
+              @ruleSelected="handleRuleSelected($event)"
+            />
+          </b-col>
+        </b-row>
       </b-col>
     </b-row>
   </div>
@@ -186,6 +209,9 @@ import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import History from "../shared/History.vue";
 import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
+import RuleReviews from "../rules/RuleReviews.vue";
+import RuleHistories from "../rules/RuleHistories.vue";
+import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
 import MembershipsTable from "../memberships/MembershipsTable.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
 import AddQuestionsModal from "./AddQuestionsModal.vue";
@@ -198,6 +224,9 @@ export default {
     MembershipsTable,
     UpdateMetadataModal,
     AddQuestionsModal,
+    RuleReviews,
+    RuleHistories,
+    RuleSatisfactions,
   },
   mixins: [
     DateFormatMixinVue,
@@ -241,11 +270,13 @@ export default {
   },
   data: function () {
     return {
+      selectedRule: {},
       showMetadata: true,
       showHistory: true,
       showAdditionalQuestions: true,
       component: this.initialComponentState,
       componentTabIndex: 0,
+      componentSelectedRuleId: null,
     };
   },
   computed: {
@@ -273,7 +304,7 @@ export default {
     },
     tabsColumns: function () {
       if (this.effective_permissions) {
-        return "10";
+        return "8";
       }
       return "12";
     },
@@ -336,6 +367,17 @@ export default {
       } else {
         this.component.advanced_fields = !advanced_fields;
       }
+    },
+    updateSelectedRule: function (rule) {
+      axios
+        .get(`/rules/${rule.id}`)
+        .then((response) => {
+          this.selectedRule = response.data;
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    handleRuleSelected: function (ruleId) {
+      this.componentSelectedRuleId = ruleId;
     },
   },
 };

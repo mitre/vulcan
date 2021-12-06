@@ -23,6 +23,7 @@
           @click="ruleSelected(satisfies)"
         >
           <i
+            v-if="!readOnly"
             v-b-modal.unmark-satisfies-modal
             class="mdi mdi-close closeRuleButton"
             aria-hidden="true"
@@ -73,6 +74,7 @@
           @click="ruleSelected(satisfied_by)"
         >
           <i
+            v-if="!readOnly"
             v-b-modal.unmark-satisfied-by-modal
             class="mdi mdi-close closeRuleButton"
             aria-hidden="true"
@@ -129,6 +131,10 @@ export default {
     projectPrefix: {
       type: String,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
     },
   },
   data: function () {
