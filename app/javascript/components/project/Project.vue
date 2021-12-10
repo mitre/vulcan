@@ -35,11 +35,7 @@
                 :project_id="project.id"
                 @projectUpdated="refreshProject"
               />
-              <b-button
-                class="px-2 m-2"
-                variant="secondary"
-                :href="`/projects/${project.id}/export/excel`"
-              >
+              <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport">
                 Download Excel Export
               </b-button>
             </div>
@@ -130,6 +126,8 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
+import FileDownload from "js-file-download";
+import base64StringToBlob from "base64toblob";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -254,6 +252,17 @@ export default {
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    downloadExcelExport: function () {
+      axios
+        .get(`/projects/${this.project.id}/export/excel`)
+        .then((response) => {
+          FileDownload(
+            base64StringToBlob(response.data.replace(/(\r\n|\n|\r)/gm, ""), "application/xlsx"),
+            `${this.project.name}.xlsx`
+          );
         })
         .catch(this.alertOrNotifyResponse);
     },
