@@ -106,7 +106,7 @@
           </b-tab>
         </b-tabs>
       </b-col>
-      <b-col v-if="effective_permissions" md="4">
+      <b-col v-if="effective_permissions" md="3">
         <b-row class="pb-4">
           <b-col>
             <div class="clickable" @click="showMetadata = !showMetadata">
@@ -304,7 +304,7 @@ export default {
     },
     tabsColumns: function () {
       if (this.effective_permissions) {
-        return "8";
+        return "9";
       }
       return "12";
     },
