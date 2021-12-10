@@ -96,6 +96,7 @@ class ProjectsController < ApplicationController
           variant: 'danger'
         }
       }, status: :bad_request
+      return
     end
 
     if @project.components.where(released: true).size.zero?
@@ -106,12 +107,13 @@ class ProjectsController < ApplicationController
           variant: 'danger'
         }
       }, status: :bad_request
+      return
     end
 
     return unless export_type == :excel
 
     workbook = export_excel(@project)
-    send_data workbook.read_string, filename: "#{@project.name}.xlsx"
+    send_data Base64.encode64(workbook.read_string)
   end
 
   private
