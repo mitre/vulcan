@@ -199,7 +199,9 @@ class Component < ApplicationRecord
   def csv_export
     ::CSV.generate(headers: true) do |csv|
       csv << ExportConstants::DISA_EXPORT_HEADERS
-      rules.each do |rule|
+      rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers, :satisfies,
+                       :satisfied_by, srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+           .order(:version, :rule_id).each do |rule|
         csv << rule.csv_attributes
       end
     end
