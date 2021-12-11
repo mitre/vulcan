@@ -12,6 +12,7 @@
     <b-collapse id="collapse-reviews" v-model="showReviews">
       <!-- New review action -->
       <b-button
+        v-if="!readOnly"
         class="dropdown-toggle m-2"
         variant="primary"
         size="sm"
@@ -110,15 +111,19 @@ export default {
   props: {
     effectivePermissions: {
       type: String,
-      required: true,
+      required: false,
     },
     currentUserId: {
       type: Number,
-      required: true,
+      required: false,
     },
     rule: {
       type: Object,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
     },
   },
   data: function () {
@@ -190,10 +195,10 @@ export default {
       ];
 
       // Set some helper variables for readability
-      const isRequestor = this.currentUserId == this.rule.review_requestor_id;
-      const isAdmin = this.effectivePermissions == "admin";
+      const isAdmin = !this.readOnly && this.effectivePermissions == "admin";
+      const isReviewer = !this.readOnly && this.effectivePermissions == "reviewer";
+      const isRequestor = !this.readOnly && this.currentUserId == this.rule.review_requestor_id;
       const isUnderReview = this.rule.review_requestor_id != null;
-      const isReviewer = this.effectivePermissions == "reviewer";
 
       // should only be able to request review if
       // - not currently under review

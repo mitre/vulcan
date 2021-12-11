@@ -89,6 +89,18 @@ export default {
       type: Object,
       required: true,
     },
+    componentSelectedRuleId: {
+      type: Number,
+      required: false,
+    },
+  },
+  watch: {
+    selectedRuleId: function () {
+      this.$emit("ruleSelected", this.selectedRule());
+    },
+    componentSelectedRuleId: function (ruleId) {
+      this.handleRuleSelected(ruleId);
+    },
   },
 };
 </script>
