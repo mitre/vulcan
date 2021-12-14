@@ -37,6 +37,14 @@ class ProjectsController < ApplicationController
     @project_json = @project.to_json(
       methods: %i[histories memberships metadata components available_components available_members]
     )
+    project = JSON.parse(@project_json)
+    project[:details] = {
+      locked: @project.rules.where(locked: true).size,
+      review: @project.rules.where(changes_requested: true).size,
+      completed: @project.rules.where(locked: true).size,
+      total: @project.rules.size
+    }
+    @project_json = project.to_json
     respond_to do |format|
       format.html
       format.json { render json: @project_json }
