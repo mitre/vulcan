@@ -126,8 +126,6 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
-import FileDownload from "js-file-download";
-import base64StringToBlob from "base64toblob";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -258,11 +256,10 @@ export default {
     downloadExcelExport: function () {
       axios
         .get(`/projects/${this.project.id}/export/excel`)
-        .then((response) => {
-          FileDownload(
-            base64StringToBlob(response.data.replace(/(\r\n|\n|\r)/gm, ""), "application/xlsx"),
-            `${this.project.name}.xlsx`
-          );
+        .then((_res) => {
+          // Once it is validated that there is content to download, prompt
+          // the user to save the file
+          window.open(`/projects/${this.project.id}/export/excel`);
         })
         .catch(this.alertOrNotifyResponse);
     },
