@@ -110,10 +110,15 @@ class ProjectsController < ApplicationController
       return
     end
 
-    return unless export_type == :excel
-
-    workbook = export_excel(@project)
-    send_data Base64.encode64(workbook.read_string)
+    respond_to do |format|
+      format.html do
+        workbook = export_excel(@project)
+        send_data workbook.read_string, filename: "#{@project.name}.xlsx"
+      end
+      # JSON responses are just used to validate ahead of time that this
+      # component can actually be exported
+      format.json { render json: { status: :ok } }
+    end
   end
 
   private
