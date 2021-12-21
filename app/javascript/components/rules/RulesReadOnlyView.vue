@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <div class="col-3">
+    <div id="sidebar-wrapper" class="col-3">
       <RuleNavigator
         :component-id="component.id"
         :rules="rules"
@@ -15,7 +15,7 @@
     </div>
 
     <template v-if="selectedRule()">
-      <div class="col-9">
+      <div class="col-9 mb-5">
         <RuleEditorHeader
           :rule="selectedRule()"
           :rules="rules"

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="scrolling-sidebar" ref="sidebar" :style="sidebarStyle">
     <!-- Rule search -->
     <p class="mb-2">
       <strong>Filter &amp; Search</strong>
@@ -247,6 +247,7 @@ export default {
   data: function () {
     return {
       rule_form_rule_id: "",
+      sidebarOffset: 0, // How far the sidebar is from the top of the screen
       filters: {
         search: "",
         acFilterChecked: true, // Applicable - Configurable
@@ -262,6 +263,11 @@ export default {
     };
   },
   computed: {
+    sidebarStyle: function () {
+      return {
+        "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
+      };
+    },
     // generates the options for the status checkboxes
     ruleStatusCounts: function () {
       // status counts
@@ -345,6 +351,11 @@ export default {
         localStorage.removeItem(`ruleNavigatorFilters-${this.componentId}`);
       }
     }
+    window.addEventListener("scroll", this.handleScroll);
+    this.handleScroll();
+  },
+  destroyed() {
+    window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
     searchUpdated: _.debounce(function (newSearch) {
@@ -498,6 +509,15 @@ export default {
         showDuplicatesChecked: false, // Show duplicates
       };
     },
+    handleScroll: function () {
+      this.$nextTick(() => {
+        // Get the distance from the top of the sidebar to the top of the page
+        let top = this.$refs.sidebar?.getBoundingClientRect().top;
+        // if top is set and greater than 0 then set the sidebar offset to keep
+        // the scrollbar from going off the page
+        this.sidebarOffset = top > 0 ? top : 0;
+      });
+    },
   },
 };
 </script>
@@ -525,5 +545,10 @@ export default {
 .closeRuleButton:hover {
   border: 1px solid red;
   border-radius: 0.2em;
+}
+
+#scrolling-sidebar {
+  display: block;
+  overflow-y: auto;
 }
 </style>
