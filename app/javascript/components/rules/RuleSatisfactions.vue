@@ -156,7 +156,7 @@ export default {
       this.$emit("ruleSelected", rule.id);
     },
     formatRuleForDisplay: function (rule) {
-      return `${this.projectPrefix}-${rule?.id} // ${rule?.version}`;
+      return `${this.projectPrefix}-${rule?.rule_id} // ${rule?.version}`;
     },
     // Dynamically set the class of each rule row
     ruleRowClass: function (rule) {
