@@ -27,3 +27,10 @@ $mdi-font-path: '~@mdi/font/fonts/';
 .collapsableArrow {
   font-size: 1.5rem;
 }
+
+#sidebar-wrapper {
+  position: sticky;
+  height: 100vh;
+  top: 0rem;
+  bottom: 0rem;
+}
