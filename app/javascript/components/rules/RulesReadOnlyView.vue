@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <div id="sidebar-wrapper" class="col-3">
+    <div id="sidebar-wrapper" class="col-3 pr-0">
       <RuleNavigator
         :component-id="component.id"
         :rules="rules"

@@ -1,150 +1,193 @@
 <template>
   <div id="scrolling-sidebar" ref="sidebar" :style="sidebarStyle">
-    <!-- Rule search -->
-    <p class="mb-2">
-      <strong>Filter &amp; Search</strong>
-      <span class="text-primary clickable float-right" @click="clearFilters">reset</span>
-    </p>
-    <div class="input-group">
-      <input
-        id="ruleSearch"
-        ref="ruleSearch"
-        type="text"
-        class="form-control"
-        placeholder="Search controls..."
-        @input="searchUpdated($event.target.value)"
-      />
-    </div>
-
-    <!-- Filter by rule status -->
-    <b-form-group class="mt-3" label="Filter by Control Status">
-      <b-form-checkbox
-        id="acFilterChecked-filter"
-        v-model="filters.acFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="acFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
-      </b-form-checkbox>
-
-      <b-form-checkbox
-        id="aimFilterChecked-filter"
-        v-model="filters.aimFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="aimFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.aim }})</strong> Applicable - Inherently Meets
-      </b-form-checkbox>
-
-      <b-form-checkbox
-        id="adnmFilterChecked-filter"
-        v-model="filters.adnmFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="adnmFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.adnm }})</strong> Applicable - Does Not Meet
-      </b-form-checkbox>
-
-      <b-form-checkbox
-        id="naFilterChecked-filter"
-        v-model="filters.naFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="naFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.na }})</strong> Not Applicable
-      </b-form-checkbox>
-
-      <b-form-checkbox
-        id="nydFilterChecked-filter"
-        v-model="filters.nydFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="nydFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.nyd }})</strong> Not Yet Determined
-      </b-form-checkbox>
-    </b-form-group>
-
-    <!-- Filter by review status -->
-    <b-form-group class="mt-3" label="Filter by Review Status">
-      <b-form-checkbox
-        id="nurFilterChecked-filter"
-        v-model="filters.nurFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="nurFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.nur }})</strong> Not Under Review
-      </b-form-checkbox>
-
-      <b-form-checkbox
-        id="urFilterChecked-filter"
-        v-model="filters.urFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="urFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.ur }})</strong> Under Review
-      </b-form-checkbox>
-
-      <b-form-checkbox
-        id="lckFilterChecked-filter"
-        v-model="filters.lckFilterChecked"
-        size="sm"
-        class="mb-1 unselectable"
-        name="lckFilterChecked-filter"
-      >
-        <strong>({{ ruleStatusCounts.lck }})</strong> Locked
-      </b-form-checkbox>
-    </b-form-group>
-
-    <!-- Show/hide duplicates -->
-    <b-form-group class="mt-3" label="Filter by Duplicate Status">
-      <b-form-checkbox
-        id="showDuplicatesChecked"
-        v-model="filters.showDuplicatesChecked"
-        class="mb-1 unselectable"
-        switch
-        name="showDuplicatesChecked-fitler"
-      >
-        Show Duplicates
-      </b-form-checkbox>
-    </b-form-group>
-
-    <hr class="mt-2 mb-2" />
-
-    <!-- Currently opened controls -->
-    <p class="mt-0 mb-0">
-      <strong>Open Controls</strong>
-      <template v-if="openRuleIds.length > 0" href="#">
-        <i
-          class="text-primary mdi mdi-close clickable float-right"
-          @click="rulesDeselected(openRules)"
+    <div class="mr-2">
+      <!-- Rule search -->
+      <p class="mb-2">
+        <strong>Filter &amp; Search</strong>
+        <span class="text-primary clickable float-right" @click="clearFilters">reset</span>
+      </p>
+      <div class="input-group">
+        <input
+          id="ruleSearch"
+          ref="ruleSearch"
+          type="text"
+          class="form-control"
+          placeholder="Search controls..."
+          @input="searchUpdated($event.target.value)"
         />
-        <span class="text-primary float-right clickable" @click="rulesDeselected(openRules)">
-          close all
-        </span>
-      </template>
-    </p>
-    <div v-if="openRules.length === 0">
-      <em>No controls selected</em>
-    </div>
-    <div v-else>
+      </div>
+
+      <!-- Filter by rule status -->
+      <b-form-group class="mt-3" label="Filter by Control Status">
+        <b-form-checkbox
+          id="acFilterChecked-filter"
+          v-model="filters.acFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="acFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
+        </b-form-checkbox>
+
+        <b-form-checkbox
+          id="aimFilterChecked-filter"
+          v-model="filters.aimFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="aimFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.aim }})</strong> Applicable - Inherently Meets
+        </b-form-checkbox>
+
+        <b-form-checkbox
+          id="adnmFilterChecked-filter"
+          v-model="filters.adnmFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="adnmFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.adnm }})</strong> Applicable - Does Not Meet
+        </b-form-checkbox>
+
+        <b-form-checkbox
+          id="naFilterChecked-filter"
+          v-model="filters.naFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="naFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.na }})</strong> Not Applicable
+        </b-form-checkbox>
+
+        <b-form-checkbox
+          id="nydFilterChecked-filter"
+          v-model="filters.nydFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="nydFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.nyd }})</strong> Not Yet Determined
+        </b-form-checkbox>
+      </b-form-group>
+
+      <!-- Filter by review status -->
+      <b-form-group class="mt-3" label="Filter by Review Status">
+        <b-form-checkbox
+          id="nurFilterChecked-filter"
+          v-model="filters.nurFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="nurFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.nur }})</strong> Not Under Review
+        </b-form-checkbox>
+
+        <b-form-checkbox
+          id="urFilterChecked-filter"
+          v-model="filters.urFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="urFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.ur }})</strong> Under Review
+        </b-form-checkbox>
+
+        <b-form-checkbox
+          id="lckFilterChecked-filter"
+          v-model="filters.lckFilterChecked"
+          size="sm"
+          class="mb-1 unselectable"
+          name="lckFilterChecked-filter"
+        >
+          <strong>({{ ruleStatusCounts.lck }})</strong> Locked
+        </b-form-checkbox>
+      </b-form-group>
+
+      <!-- Show/hide duplicates -->
+      <b-form-group class="mt-3" label="Filter by Duplicate Status">
+        <b-form-checkbox
+          id="showDuplicatesChecked"
+          v-model="filters.showDuplicatesChecked"
+          class="mb-1 unselectable"
+          switch
+          name="showDuplicatesChecked-fitler"
+        >
+          Show Duplicates
+        </b-form-checkbox>
+      </b-form-group>
+
+      <hr class="mt-2 mb-2" />
+
+      <!-- Currently opened controls -->
+      <p class="mt-0 mb-0">
+        <strong>Open Controls</strong>
+        <template v-if="openRuleIds.length > 0" href="#">
+          <i
+            class="text-primary mdi mdi-close clickable float-right"
+            @click="rulesDeselected(openRules)"
+          />
+          <span class="text-primary float-right clickable" @click="rulesDeselected(openRules)">
+            close all
+          </span>
+        </template>
+      </p>
+      <div v-if="openRules.length === 0">
+        <em>No controls selected</em>
+      </div>
+      <div v-else>
+        <div
+          v-for="rule in openRules"
+          :key="`open-${rule.id}`"
+          :class="ruleRowClass(rule)"
+          @click="ruleSelected(rule)"
+        >
+          <i
+            class="mdi mdi-close closeRuleButton"
+            aria-hidden="true"
+            @click.stop="ruleDeselected(rule)"
+          />
+          {{ formatRuleId(rule.rule_id) }}
+          <i
+            v-if="rule.review_requestor_id"
+            class="mdi mdi-file-find float-right"
+            aria-hidden="true"
+          />
+          <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
+          <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
+          <i
+            v-if="rule.satisfied_by.length > 0"
+            class="mdi mdi-content-copy float-right"
+            aria-hidden="true"
+          />
+        </div>
+      </div>
+
+      <hr class="mt-2 mb-2" />
+
+      <!-- All project controls -->
+      <p class="mt-0 mb-0">
+        <strong>All Controls</strong>
+        <template v-if="!readOnly">
+          <i v-b-modal.create-rule-modal class="text-primary mdi mdi-plus clickable float-right" />
+          <span v-b-modal.create-rule-modal class="text-primary float-right clickable">add </span>
+        </template>
+      </p>
+
+      <!-- New rule modal -->
+      <NewRuleModalForm
+        title="Create New Control"
+        :for-duplicate="false"
+        id-prefix="create"
+        @ruleSelected="ruleSelected($event)"
+      />
+
+      <!-- All rules list -->
       <div
-        v-for="rule in openRules"
-        :key="`open-${rule.id}`"
+        v-for="rule in filteredRules"
+        :key="`rule-${rule.id}`"
         :class="ruleRowClass(rule)"
         @click="ruleSelected(rule)"
       >
-        <i
-          class="mdi mdi-close closeRuleButton"
-          aria-hidden="true"
-          @click.stop="ruleDeselected(rule)"
-        />
         {{ formatRuleId(rule.rule_id) }}
         <i
           v-if="rule.review_requestor_id"
@@ -159,43 +202,6 @@
           aria-hidden="true"
         />
       </div>
-    </div>
-
-    <hr class="mt-2 mb-2" />
-
-    <!-- All project controls -->
-    <p class="mt-0 mb-0">
-      <strong>All Controls</strong>
-      <template v-if="!readOnly">
-        <i v-b-modal.create-rule-modal class="text-primary mdi mdi-plus clickable float-right" />
-        <span v-b-modal.create-rule-modal class="text-primary float-right clickable">add </span>
-      </template>
-    </p>
-
-    <!-- New rule modal -->
-    <NewRuleModalForm
-      title="Create New Control"
-      :for-duplicate="false"
-      id-prefix="create"
-      @ruleSelected="ruleSelected($event)"
-    />
-
-    <!-- All rules list -->
-    <div
-      v-for="rule in filteredRules"
-      :key="`rule-${rule.id}`"
-      :class="ruleRowClass(rule)"
-      @click="ruleSelected(rule)"
-    >
-      {{ formatRuleId(rule.rule_id) }}
-      <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
-      <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-      <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-      <i
-        v-if="rule.satisfied_by.length > 0"
-        class="mdi mdi-content-copy float-right"
-        aria-hidden="true"
-      />
     </div>
   </div>
 </template>
