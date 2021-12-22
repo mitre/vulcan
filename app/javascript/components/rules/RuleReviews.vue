@@ -291,14 +291,9 @@ export default {
 
 <style scoped>
 .reviewDropdownCard {
-  /* position: fixed;
-  width: 33vw;
-  right: 1rem;
-  bottom: 1rem; */
-
-  position: sticky;
-  position: -webkit-sticky;
-  top: 1rem;
+  position: absolute;
+  top: 0;
+  right: 0;
   height: 0;
   width: 33vw;
 }
@@ -306,6 +301,7 @@ export default {
 .reviewDropdownForm {
   position: absolute;
   height: 100%;
+  right: 1rem;
   width: 0;
 }
 </style>
