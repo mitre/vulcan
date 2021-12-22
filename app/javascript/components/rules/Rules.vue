@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-5">
+  <div>
     <b-breadcrumb :items="breadcrumbs" />
 
     <h1>{{ component.version }} - Controls</h1>
