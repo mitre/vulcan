@@ -35,11 +35,7 @@
                 :project_id="project.id"
                 @projectUpdated="refreshProject"
               />
-              <b-button
-                class="px-2 m-2"
-                variant="secondary"
-                :href="`/projects/${project.id}/export/excel`"
-              >
+              <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport">
                 Download Excel Export
               </b-button>
             </div>
@@ -254,6 +250,16 @@ export default {
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    downloadExcelExport: function () {
+      axios
+        .get(`/projects/${this.project.id}/export/excel`)
+        .then((_res) => {
+          // Once it is validated that there is content to download, prompt
+          // the user to save the file
+          window.open(`/projects/${this.project.id}/export/excel`);
         })
         .catch(this.alertOrNotifyResponse);
     },
