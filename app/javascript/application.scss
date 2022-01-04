@@ -2,9 +2,8 @@
 @import "~bootstrap-vue";
 
 // The default font path is '../fonts', which fails with Webpacker.
-$mdi-font-path: '~@mdi/font/fonts/';
+$mdi-font-path: "~@mdi/font/fonts/";
 @import "~@mdi/font/scss/materialdesignicons";
-
 
 .clickable {
   cursor: pointer;
@@ -33,4 +32,8 @@ $mdi-font-path: '~@mdi/font/fonts/';
   height: 100vh;
   top: 0rem;
   bottom: 0rem;
+}
+
+.white-space-pre-wrap {
+  white-space: pre-wrap;
 }
