@@ -93,7 +93,7 @@
         <p class="ml-2 mb-0">
           <small>{{ friendlyDateTime(review.created_at) }}</small>
         </p>
-        <p class="ml-3 mb-3">{{ review.comment }}</p>
+        <p class="ml-3 mb-3 white-space-pre-wrap">{{ review.comment }}</p>
       </div>
     </b-collapse>
   </div>

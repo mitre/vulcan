@@ -7,7 +7,7 @@
       <p class="ml-2 mb-0">
         <small>{{ friendlyDateTime(history.created_at) }}</small>
       </p>
-      <p v-if="history.comment" class="ml-3 mb-0">{{ history.comment }}</p>
+      <p v-if="history.comment" class="ml-3 mb-0 white-space-pre-wrap">{{ history.comment }}</p>
 
       <!-- Edit or Delete action -->
       <template v-if="history.action == 'update' || history.action == 'destroy'">
