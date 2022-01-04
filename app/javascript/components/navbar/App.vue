@@ -28,7 +28,7 @@
               </template>
               <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
               <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
-              <b-dropdown-item @click="signOut">Sign Out</b-dropdown-item>
+              <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
             </b-nav-item-dropdown>
           </b-navbar-nav>
         </div>
@@ -38,7 +38,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import NavbarItem from "./NavbarItem.vue";
 import SrgIdSearch from "./SrgIdSearch.vue";
 
@@ -65,13 +64,6 @@ export default {
     sign_out_path: {
       type: String,
       required: false,
-    },
-  },
-  methods: {
-    signOut: function () {
-      axios.get(this.sign_out_path).then(() => {
-        window.location.href = "/users/sign_in";
-      });
     },
   },
 };
