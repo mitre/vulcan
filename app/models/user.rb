@@ -3,6 +3,8 @@
 # This is our main user model, local, LDAP, and omniauth users are all stored here.
 # We store provider and UID from the Omniauth provider that is logging a user in.
 class User < ApplicationRecord
+  devise :timeoutable
+
   audited only: %i[admin name email], max_audits: 1000
 
   include ProjectMemberConstants
