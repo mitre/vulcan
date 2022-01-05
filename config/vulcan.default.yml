@@ -25,6 +25,7 @@ defaults: &defaults
   local_login:
     enabled: <%= ENV['VULCAN_ENABLE_LOCAL_LOGIN'] || true %>
     email_confirmation: <%= ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION'] || false %>
+    session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
   ldap:
     enabled: <%= ENV['VULCAN_ENABLE_LDAP'] || false %>
     servers:
