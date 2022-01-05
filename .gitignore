@@ -23,6 +23,9 @@
 /public/assets
 .byebug_history
 
+# Ignore database backups
+vulcan_database_*
+
 # Do not commit settings file.
 /config/vulcan.yml
 
