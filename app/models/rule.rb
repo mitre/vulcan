@@ -4,10 +4,6 @@
 # Benchmark XCCDF.
 class Rule < BaseRule
   amoeba do
-    include_association :rule_descriptions
-    include_association :disa_rule_descriptions
-    include_association :checks
-    include_association :references
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
     set locked: false
