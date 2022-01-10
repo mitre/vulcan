@@ -39,6 +39,7 @@
                 value-attribute="id"
                 placeholder="Search for an SRG..."
                 :min-length="0"
+                :max-suggestions="0"
                 :number="0"
                 @select="setSelectedSrg($refs.srgSearch.selected)"
               />
