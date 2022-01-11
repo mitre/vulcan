@@ -124,7 +124,7 @@ class Component < ApplicationRecord
       r.status_justification = row[IMPORT_MAPPING[:status_justification]]
       r.vendor_comments = row[IMPORT_MAPPING[:vendor_comments]]
       # Get status with the case ignored. If none is found then fall back to the default status
-      status_index = STATUSES.find_index { |item| item.casecmp(row[IMPORT_MAPPING[:status]]).zero? }
+      status_index = STATUSES.find_index { |item| item.casecmp(row[IMPORT_MAPPING[:status]])&.zero? }
       r.status = status_index ? STATUSES[status_index] : STATUSES[0]
       # Severities are provided in the spreadsheet in the form CAT I II or III, however they are
       # stored in vulcan in 'low', 'medium', 'high'. If the spreadsheet value cannot be mapped then
