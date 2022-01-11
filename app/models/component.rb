@@ -87,7 +87,7 @@ class Component < ApplicationRecord
     # Since the component isn't saved yet, calling `based_on` here returns the wrong information
     srg_rules = SecurityRequirementsGuide.find(security_requirements_guide_id).srg_rules
 
-    missing_headers = IMPORT_MAPPING.values - parsed.first.keys
+    missing_headers = REQUIRED_MAPPING_CONSTANTS.values - parsed.first.keys
     unless missing_headers.empty?
       errors.add(:base, "The following required headers were missing #{missing_headers.join(', ')}")
       return
@@ -102,7 +102,14 @@ class Component < ApplicationRecord
     end
 
     # Calculate the prefix (which will need to be removed from each row)
-    self.prefix = parsed.first[IMPORT_MAPPING[:stig_id]][0, 7]
+    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.reject(&:blank?)
+    if possible_prefixes.empty?
+      errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID '\
+                        'in the file and try again.')
+      return
+    else
+      self.prefix = possible_prefixes.first[0, 7]
+    end
 
     self.rules = parsed.map do |row|
       srg_rule = srg_rules.find { |rule| rule.version == row[IMPORT_MAPPING[:srg_id]] }
@@ -121,9 +128,9 @@ class Component < ApplicationRecord
       r.status = status_index ? STATUSES[status_index] : STATUSES[0]
       # Severities are provided in the spreadsheet in the form CAT I II or III, however they are
       # stored in vulcan in 'low', 'medium', 'high'. If the spreadsheet value cannot be mapped then
-      # fall back to just storing the spreadsheet value.
+      # fall back to the default from the SRG
       severity = SEVERITIES_MAP.invert[row[IMPORT_MAPPING[:rule_severity]].upcase]
-      r.rule_severity = severity || row[IMPORT_MAPPING[:rule_severity]]
+      r.rule_severity = severity if severity
       r.srg_rule_id = srg_rule.id
 
       disa_rule_description = r.disa_rule_descriptions.first

@@ -1,17 +1,22 @@
 # frozen_string_literal: true
 
 module ImportConstants
-  IMPORT_MAPPING = {
+  REQUIRED_MAPPING_CONSTANTS = {
     srg_id: 'SRGID',
-    stig_id: 'STIG ID',
+    stig_id: 'STIGID',
     rule_severity: 'Severity',
     title: 'Requirement',
     vuln_discussion: 'VulDiscussion',
     status: 'Status',
     check_content: 'Check',
     fixtext: 'Fix',
-    vendor_comments: 'Vendor Comments',
     status_justification: 'Status Justification',
     artifact_description: 'Artifact Description'
   }.freeze
+
+  OPTIONAL_MAPPING_CONSTANTS = {
+    vendor_comments: 'Vendor Comments'
+  }.freeze
+
+  IMPORT_MAPPING = REQUIRED_MAPPING_CONSTANTS.merge(OPTIONAL_MAPPING_CONSTANTS)
 end

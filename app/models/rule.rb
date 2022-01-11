@@ -224,7 +224,7 @@ class Rule < BaseRule
   end
 
   def set_rule_id
-    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') unless rule_id
+    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') if rule_id.blank?
   end
 
   ##
