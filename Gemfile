@@ -54,7 +54,10 @@ gem 'nokogiri-happymapper'
 
 gem 'amoeba'
 
+# For reading excel files
 gem 'fast_excel'
+# For writing excel files
+gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
 group :development do
   gem 'listen', '~> 3.1.5'

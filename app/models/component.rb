@@ -2,7 +2,10 @@
 
 # Components are home to a collection of Rules.
 class Component < ApplicationRecord
+  include RuleConstants
+  include ImportConstants
   include ExportConstants
+  include ActionView::Helpers::TextHelper
 
   attr_accessor :skip_import_srg_rules
 
@@ -73,6 +76,71 @@ class Component < ApplicationRecord
         based_on_version: based_on.version
       }
     )
+  end
+
+  # Fill out component based on spreadsheet
+  def from_spreadsheet(spreadsheet)
+    self.skip_import_srg_rules = true
+    # Parse the spreadsheet and extract data from the first sheet. Include headers so data is of the form
+    # {VulDiscussion: 'Value', SRG ID: 'Value', etc...}
+    parsed = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
+    # Since the component isn't saved yet, calling `based_on` here returns the wrong information
+    srg_rules = SecurityRequirementsGuide.find(security_requirements_guide_id).srg_rules
+
+    missing_headers = REQUIRED_MAPPING_CONSTANTS.values - parsed.first.keys
+    unless missing_headers.empty?
+      errors.add(:base, "The following required headers were missing #{missing_headers.join(', ')}")
+      return
+    end
+
+    missing_srg_ids = parsed.map { |row| row[IMPORT_MAPPING[:srg_id]] } - srg_rules.map(&:version)
+    unless missing_srg_ids.empty?
+      errors.add(:base, 'The following required SRG IDs were missing from the selected SRG '\
+                        "#{truncate(missing_srg_ids.join(', '), length: 300)}. "\
+                        'Please remove these rows or select a different SRG and try again.')
+      return
+    end
+
+    # Calculate the prefix (which will need to be removed from each row)
+    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.reject(&:blank?)
+    if possible_prefixes.empty?
+      errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID '\
+                        'in the file and try again.')
+      return
+    else
+      self.prefix = possible_prefixes.first[0, 7]
+    end
+
+    self.rules = parsed.map do |row|
+      srg_rule = srg_rules.find { |rule| rule.version == row[IMPORT_MAPPING[:srg_id]] }
+      # Clone existing SRGRule. This is setup in srg_rule.rb to automatically create a Rule from the result of a dup.
+      r = srg_rule.amoeba_dup
+
+      # Remove the prefix and remove any non-digits
+      r.rule_id = row[IMPORT_MAPPING[:stig_id]]&.sub(prefix, '')&.delete('^0-9')
+      r.title = row[IMPORT_MAPPING[:title]]
+      r.fixtext = row[IMPORT_MAPPING[:fixtext]]
+      r.artifact_description = row[IMPORT_MAPPING[:artifact_description]]
+      r.status_justification = row[IMPORT_MAPPING[:status_justification]]
+      r.vendor_comments = row[IMPORT_MAPPING[:vendor_comments]]
+      # Get status with the case ignored. If none is found then fall back to the default status
+      status_index = STATUSES.find_index { |item| item.casecmp(row[IMPORT_MAPPING[:status]]).zero? }
+      r.status = status_index ? STATUSES[status_index] : STATUSES[0]
+      # Severities are provided in the spreadsheet in the form CAT I II or III, however they are
+      # stored in vulcan in 'low', 'medium', 'high'. If the spreadsheet value cannot be mapped then
+      # fall back to the default from the SRG
+      severity = SEVERITIES_MAP.invert[row[IMPORT_MAPPING[:rule_severity]].upcase]
+      r.rule_severity = severity if severity
+      r.srg_rule_id = srg_rule.id
+
+      disa_rule_description = r.disa_rule_descriptions.first
+      disa_rule_description.vuln_discussion = row[IMPORT_MAPPING[:vuln_discussion]]
+
+      check = r.checks.first
+      check.content = row[IMPORT_MAPPING[:check_content]]
+
+      r
+    end
   end
 
   # Helper method to extract data from Component Metadata
@@ -170,8 +238,12 @@ class Component < ApplicationRecord
 
   def largest_rule_id
     # rule_id is a string, convert it to a number and then extract the current highest number.
-    Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
-                             WHERE component_id = #{id}")&.values&.flatten&.first&.to_i || 0
+    if id.nil?
+      rules.collect { |rule| rule.rule_id.to_i }.max
+    else
+      Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
+                              WHERE component_id = #{id}")&.values&.flatten&.first&.to_i || 0
+    end
   end
 
   def prefix=(val)
