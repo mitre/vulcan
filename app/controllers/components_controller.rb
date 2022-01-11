@@ -58,7 +58,10 @@ class ComponentsController < ApplicationController
 
   def create
     component = create_or_duplicate
-    if component.save
+    # When importing from an existing spreadsheet, some errors are set before
+    # save, this makes sure those errors are shown and not overwritten by the
+    # component validators.
+    if component.errors.empty? && component.save
       render json: { toast: 'Successfully added component to project.' }
     else
       render json: {
@@ -109,8 +112,14 @@ class ComponentsController < ApplicationController
     if component_create_params[:duplicate]
       @project.components.find(component_create_params[:id]).duplicate(new_version: component_create_params[:version],
                                                                        new_prefix: component_create_params[:prefix])
+    elsif component_create_params[:file]
+      # Create a new component from the provided parameters and then pass the spreadsheet
+      # to the component for further parsing
+      component = @project.components.new(component_create_params.except(:id, :duplicate, :file))
+      component.from_spreadsheet(component_create_params[:file])
+      component
     else
-      Component.new(component_create_params.except(:id, :duplicate).merge({ project: @project }))
+      Component.new(component_create_params.except(:id, :duplicate, :file).merge({ project: @project }))
     end
   end
 
@@ -143,7 +152,9 @@ class ComponentsController < ApplicationController
       :duplicate,
       :prefix,
       :security_requirements_guide_id,
-      :version
+      :version,
+      :file,
+      file: {}
     )
   end
 end

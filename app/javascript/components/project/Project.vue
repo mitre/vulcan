@@ -35,6 +35,12 @@
                 :project_id="project.id"
                 @projectUpdated="refreshProject"
               />
+              <NewComponentModal
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                :project_id="project.id"
+                :spreadsheet_import="true"
+                @projectUpdated="refreshProject"
+              />
               <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport">
                 Download Excel Export
               </b-button>

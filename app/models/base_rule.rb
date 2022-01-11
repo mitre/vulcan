@@ -3,6 +3,14 @@
 # The BaseRule class is a simple class shared between SRG Rules and regular Component Rules.
 # SRG Rules belong to an SRG, Component rules belong to a component and a SRG Rule
 class BaseRule < ApplicationRecord
+  amoeba do
+    include_association :rule_descriptions
+    include_association :disa_rule_descriptions
+    include_association :checks
+    include_association :references
+    propagate
+  end
+
   include RuleConstants
   include CciMap::Constants
 
