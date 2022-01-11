@@ -43,8 +43,8 @@ class BaseRule < ApplicationRecord
     rule = rule_class.new(
       rule_id: rule_mapping.id,
       status: rule_mapping.status.first&.status || 'Not Yet Determined',
-      rule_severity: rule_mapping.severity || nil,
-      rule_weight: rule_mapping.weight || nil,
+      rule_severity: rule_mapping.severity || 'medium',
+      rule_weight: rule_mapping.weight || '10.0',
       version: rule_mapping.version.first&.version,
       title: rule_mapping.title.first || nil,
       ident: rule_mapping.ident.reject(&:legacy).first.ident,
