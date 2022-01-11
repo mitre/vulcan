@@ -56,21 +56,38 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
       # Root Benchmark element
       benchmark = Ox::Element.new('Benchmark')
-      benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
+      benchmark['xmlns:dc'] = 'http://purl.org/dc/elements/1.1/'
       benchmark['xmlns:xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
       benchmark['xmlns:cpe'] = 'http://cpe.mitre.org/language/2.0'
       benchmark['xmlns:xhtml'] = 'http://www.w3.org/1999/xhtml'
-      benchmark['xmlns:dc'] = 'http://purl.org/dc/elements/1.1/'
-      benchmark['id'] = 'Active_Directory_Domain'
-      benchmark['xml:lang'] = 'en'
+      benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
       benchmark['xsi:schemaLocation'] = 'http://checklists.nist.gov/xccdf/1.1 ' \
                                         'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
                                         'http://cpe.mitre.org/dictionary/2.0 '\
                                         'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
+      benchmark['id'] = 'Active_Directory_Domain'
+      benchmark['xml:lang'] = 'en'
       benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
 
+      ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
+      ox_el_helper(benchmark, 'title', project[:name])
+      ox_el_helper(benchmark, 'description', nil)
+      ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
+      ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
+      ox_el_helper(benchmark, 'rear-matter', nil, { 'xml:lang': 'en' })
+
+      reference = Ox::Element.new('reference')
+      reference['href'] = nil
+      ox_el_helper(reference, 'dc:publisher', nil)
+      ox_el_helper(reference, 'dc:source', nil)
+      benchmark << reference
+
+      ox_el_helper(benchmark, 'plain-text', nil, { id: 'release-info' })
+      ox_el_helper(benchmark, 'plain-text', nil, { id: 'generator' })
+      ox_el_helper(benchmark, 'plain-text', nil, { id: 'conventionsVersion' })
+      ox_el_helper(benchmark, 'version', nil)
+
       components = project.components.eager_load(rules: %i[disa_rule_descriptions references checks])
-      profiles_helper(components, benchmark)
       groups_helper(components, benchmark)
 
       doc << benchmark
@@ -82,49 +99,32 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
   private
 
-  def profiles_helper(components, benchmark)
-    components.each do |component|
-      pf = Ox::Element.new('Profile')
-      pf['id'] = component[:prefix]
-
-      ox_el_helper(pf, 'title', component[:version])
-
-      component.rules.each do |rule|
-        ox_el_helper(pf, 'select', nil, { idref: "V-#{rule[:rule_id]}", selected: true })
-      end
-
-      benchmark << pf
-    end
-  end
-
   def groups_helper(components, benchmark)
     components.each do |component|
       component.rules.each do |rule|
         group = Ox::Element.new('Group')
-        group['id'] = "V-#{rule[:rule_id]}"
+        group['id'] = "#{component[:version]}-#{rule[:rule_id]}"
 
-        ox_el_helper(group, 'title', rule[:title])
-        group_rule_helper(group, rule)
+        ox_el_helper(group, 'title', rule[:version])
+        group_rule = Ox::Element.new('Rule')
+        group_rule['id'] = "r_#{component[:version]}-#{rule[:rule_id]}"
+        group_rule['severity'] = rule[:severity] if rule[:severity].present?
+        group_rule['weight'] = rule[:weight] if rule[:weight].present?
+
+        ox_el_helper(group_rule, 'version', rule[:version])
+        ox_el_helper(group_rule, 'title', rule[:title])
+        descriptions_helper(group_rule, rule)
+        references_helper(group_rule, rule)
+        ox_el_helper(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
+        ox_el_helper(group_rule, 'fixtext', rule[:fixtext], { fixref: rule[:fixtext_fixref] })
+        ox_el_helper(group_rule, 'fix', nil, { id: rule[:fix_id] })
+        checks_helper(group_rule, rule)
+
+        group << group_rule
 
         benchmark << group
       end
     end
-  end
-
-  def group_rule_helper(group, rule)
-    group_rule = Ox::Element.new('Rule')
-    group_rule['severity'] = rule[:severity] if rule[:severity].present?
-    group_rule['weight'] = rule[:weight] if rule[:weight].present?
-
-    ox_el_helper(group_rule, 'title', rule[:title])
-    descriptions_helper(group_rule, rule)
-    references_helper(group_rule, rule)
-    ox_el_helper(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
-    ox_el_helper(group_rule, 'fixtext', rule[:fixtext], { fixref: rule[:fixtext_fixref] })
-    ox_el_helper(group_rule, 'fix', nil, { id: rule[:fix_id] })
-    checks_helper(group_rule, rule)
-
-    group << group_rule
   end
 
   def descriptions_helper(group_rule, rule)
