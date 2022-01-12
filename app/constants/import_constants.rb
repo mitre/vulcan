@@ -15,7 +15,8 @@ module ImportConstants
   }.freeze
 
   OPTIONAL_MAPPING_CONSTANTS = {
-    vendor_comments: 'Vendor Comments'
+    vendor_comments: 'Vendor Comments',
+    mitigation: 'Mitigation'
   }.freeze
 
   IMPORT_MAPPING = REQUIRED_MAPPING_CONSTANTS.merge(OPTIONAL_MAPPING_CONSTANTS)
