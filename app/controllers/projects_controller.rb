@@ -34,7 +34,9 @@ class ProjectsController < ApplicationController
     # Setting current_user allows `available_components` to be filtered down only to the
     # projects that a user has permissions to access
     @project.current_user = current_user
-    @project_json = @project.stats
+    @project_json = @project.to_json(
+      methods: %i[histories memberships metadata components available_components available_members details]
+    )
     respond_to do |format|
       format.html
       format.json { render json: @project_json }
