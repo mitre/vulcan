@@ -84,21 +84,34 @@ class Component < ApplicationRecord
     # Parse the spreadsheet and extract data from the first sheet. Include headers so data is of the form
     # {VulDiscussion: 'Value', SRG ID: 'Value', etc...}
     parsed = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
+    file_headers = parsed.first.keys
     # Since the component isn't saved yet, calling `based_on` here returns the wrong information
     srg_rules = SecurityRequirementsGuide.find(security_requirements_guide_id).srg_rules
 
-    missing_headers = REQUIRED_MAPPING_CONSTANTS.values - parsed.first.keys
+    missing_headers = REQUIRED_MAPPING_CONSTANTS.values - file_headers
     unless missing_headers.empty?
       errors.add(:base, "The following required headers were missing #{missing_headers.join(', ')}")
       return
     end
 
-    missing_srg_ids = parsed.map { |row| row[IMPORT_MAPPING[:srg_id]] } - srg_rules.map(&:version)
-    unless missing_srg_ids.empty?
+    spreadsheet_srg_ids = parsed.map { |row| row[IMPORT_MAPPING[:srg_id]] }
+    database_srg_ids = srg_rules.map(&:version)
+
+    missing_from_srg = spreadsheet_srg_ids - database_srg_ids
+    unless missing_from_srg.empty?
       errors.add(:base, 'The following required SRG IDs were missing from the selected SRG '\
-                        "#{truncate(missing_srg_ids.join(', '), length: 300)}. "\
+                        "#{truncate(missing_from_srg.join(', '), length: 300)}. "\
                         'Please remove these rows or select a different SRG and try again.')
       return
+    end
+
+    missing_from_spreadsheet = database_srg_ids - spreadsheet_srg_ids
+
+    # Missing rows from the spreadsheet should still be present in the database
+    missing_from_spreadsheet.each do |missing|
+      row = file_headers.index_with { |_key| '' }
+      row[IMPORT_MAPPING[:srg_id]] = missing
+      parsed << row
     end
 
     # Calculate the prefix (which will need to be removed from each row)
