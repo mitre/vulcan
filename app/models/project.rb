@@ -22,19 +22,6 @@ class Project < ApplicationRecord
     project_metadata&.data
   end
 
-  def stats
-    project = JSON.parse(to_json(
-      methods: %i[histories memberships metadata components available_components available_members]
-    ))
-    project[:details] = {
-      locked: rules.where(locked: true).size,
-      review: rules.where(changes_requested: true).size,
-      completed: rules.where(locked: true).size,
-      total: rules.size
-    }
-    project.to_json
-  end
-
   def admins
     memberships.where(
       role: 'admin'
@@ -59,6 +46,15 @@ class Project < ApplicationRecord
   #
   def available_members
     (User.all.select(:id, :name, :email) - users.select(:id, :name, :email))
+  end
+
+  def details
+    {
+      locked: rules.where(locked: true).size,
+      review: rules.where(changes_requested: true).size,
+      completed: rules.where(locked: true).size,
+      total: rules.size
+    }
   end
 
   ##
