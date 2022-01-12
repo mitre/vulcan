@@ -69,16 +69,12 @@ class SecurityRequirementsGuide < ApplicationRecord
     end
 
     # Examine import results for failures
-    success = SrgRule.import(srg_rules, all_or_none: true, recursive: true).failed_instances.blank?
-    if success
+    failures = SrgRule.import(srg_rules, all_or_none: true, recursive: true).failed_instances
+    if failures.empty?
       reload
     else
       errors.add(:base, 'Some rules failed to import successfully for the SRG.')
+      raise ActiveRecord::Rollback
     end
-    success
-  rescue StandardError => e
-    message = e.message.truncate(50)
-    errors.add(:base, "Encountered an error when importing rules to the SRG: #{message}")
-    false
   end
 end

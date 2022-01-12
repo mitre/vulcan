@@ -124,17 +124,19 @@ class Component < ApplicationRecord
       r.status_justification = row[IMPORT_MAPPING[:status_justification]]
       r.vendor_comments = row[IMPORT_MAPPING[:vendor_comments]]
       # Get status with the case ignored. If none is found then fall back to the default status
-      status_index = STATUSES.find_index { |item| item.casecmp(row[IMPORT_MAPPING[:status]]).zero? }
+      status_index = STATUSES.find_index { |item| item.casecmp(row[IMPORT_MAPPING[:status]])&.zero? }
       r.status = status_index ? STATUSES[status_index] : STATUSES[0]
       # Severities are provided in the spreadsheet in the form CAT I II or III, however they are
       # stored in vulcan in 'low', 'medium', 'high'. If the spreadsheet value cannot be mapped then
-      # fall back to the default from the SRG
-      severity = SEVERITIES_MAP.invert[row[IMPORT_MAPPING[:rule_severity]].upcase]
+      # fall back to the default from the SRG. Since this is a clone of an SRGRule, by not setting
+      # anything the value from the SRGRule will be propagated to this rule.
+      severity = SEVERITIES_MAP.invert[row[IMPORT_MAPPING[:rule_severity]]&.upcase]
       r.rule_severity = severity if severity
       r.srg_rule_id = srg_rule.id
 
       disa_rule_description = r.disa_rule_descriptions.first
       disa_rule_description.vuln_discussion = row[IMPORT_MAPPING[:vuln_discussion]]
+      disa_rule_description.mitigations = row[IMPORT_MAPPING[:mitigation]]
 
       check = r.checks.first
       check.content = row[IMPORT_MAPPING[:check_content]]

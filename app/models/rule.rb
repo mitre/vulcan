@@ -231,6 +231,9 @@ class Rule < BaseRule
   # Rules should never be deleted if they are under review or locked
   # This checks *_was to cover the case where an attrubute was changed before attempting to destroy
   def prevent_destroy_if_under_review_or_locked
+    # Allow deletion if it is due to the parent being deleted
+    return if destroyed_by_association.present?
+
     # Abort if under review and trying to delete
     if review_requestor_id_was.present?
       errors.add(:base, 'Control is under review and cannot be destroyed')
