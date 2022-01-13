@@ -91,12 +91,7 @@
           </span>
 
           <!-- Export component -->
-          <a
-            v-if="component.released"
-            :href="`/components/${component.id}/export`"
-            target="_blank"
-            class="text-body"
-          >
+          <a :href="`/components/${component.id}/export`" target="_blank" class="text-body">
             <i
               v-b-tooltip.hover
               class="mdi mdi-download h5 float-right mr-2 clickable"
@@ -104,13 +99,6 @@
               title="Export Component"
             />
           </a>
-          <i
-            v-else
-            v-b-tooltip.hover
-            class="mdi mdi-download h5 float-right mr-2 text-muted"
-            aria-hidden="true"
-            title="Component must be released before it can be exported"
-          />
         </span>
       </p>
     </b-card>

@@ -29,11 +29,22 @@
           <!-- Project components -->
           <b-tab :title="`Components (${project.components.length})`">
             <h2>Project Components</h2>
-            <NewComponentModal
-              v-if="role_gte_to(effective_permissions, 'admin')"
-              :project_id="project.id"
-              @projectUpdated="refreshProject"
-            />
+            <div>
+              <NewComponentModal
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                :project_id="project.id"
+                @projectUpdated="refreshProject"
+              />
+              <NewComponentModal
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                :project_id="project.id"
+                :spreadsheet_import="true"
+                @projectUpdated="refreshProject"
+              />
+              <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport">
+                Download Excel Export
+              </b-button>
+            </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
                 <ComponentCard
@@ -245,6 +256,16 @@ export default {
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    downloadExcelExport: function () {
+      axios
+        .get(`/projects/${this.project.id}/export/excel`)
+        .then((_res) => {
+          // Once it is validated that there is content to download, prompt
+          // the user to save the file
+          window.open(`/projects/${this.project.id}/export/excel`);
         })
         .catch(this.alertOrNotifyResponse);
     },

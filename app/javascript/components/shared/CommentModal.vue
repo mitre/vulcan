@@ -24,18 +24,8 @@
       <p v-if="message">{{ message }}</p>
 
       <form ref="form" @submit.stop.prevent="handleSubmit">
-        <b-form-group
-          label="Comment"
-          label-for="comment-input"
-          :invalid-feedback="invalidFeedback"
-          :state="commentValidState"
-        >
-          <b-form-textarea
-            id="comment-input"
-            v-model="comment"
-            :state="commentValidState"
-            :required="requireNonEmpty"
-          />
+        <b-form-group label="Comment" label-for="comment-input">
+          <b-form-textarea id="comment-input" v-model="comment" />
         </b-form-group>
       </form>
     </b-modal>
@@ -56,11 +46,6 @@ export default {
     message: {
       type: String,
       default: "",
-    },
-    // Message will be validated to be non-empty
-    requireNonEmpty: {
-      type: Boolean,
-      default: true,
     },
     buttonText: {
       type: String,
@@ -91,19 +76,11 @@ export default {
     return {
       mod: Math.floor(Math.random() * 1000),
       comment: "",
-      commentValidState: null,
     };
   },
-  computed: {
-    invalidFeedback: function () {
-      return this.requireNonEmpty ? "Must not be blank" : "";
-    },
-  },
-  mounted() {},
   methods: {
     resetModal() {
       this.comment = "";
-      this.commentValidState = null;
     },
     handleOk(bvModalEvt) {
       // Prevent modal from closing
@@ -112,21 +89,12 @@ export default {
       this.handleSubmit();
     },
     handleSubmit() {
-      // Exit when the form isn't valid
-      if (!this.checkFormValidity()) {
-        return;
-      }
-
       this.$emit("comment", this.comment);
 
       // Hide the modal manually
       this.$nextTick(() => {
         this.$bvModal.hide(`comment-modal-${this.mod}`);
       });
-    },
-    checkFormValidity() {
-      this.commentValidState = this.$refs.form.checkValidity();
-      return this.commentValidState;
     },
   },
 };

@@ -14,6 +14,7 @@ export default {
     // - If object -> generate a toast using 'title', 'variant', and 'message' parameters
     //   - 'message' is required and can be a string or array of strings
     //   - 'title', and 'variant' are optional and will default to 'Success' and 'sucess'
+    // - If no response is provided -> show 'message' as an alert on the screen
     alertOrNotifyResponse: function (response) {
       let toast = response["data"] && response["data"]["toast"] ? response["data"]["toast"] : null;
       if (
@@ -47,6 +48,16 @@ export default {
         this.$bvToast.toast(message, {
           title: title,
           variant: variant,
+          solid: true,
+        });
+        return;
+      }
+
+      // At this point in the code it is likely an error has occurred
+      if (response.message) {
+        this.$bvToast.toast(response.message, {
+          title: "Error",
+          variant: "danger",
           solid: true,
         });
         return;

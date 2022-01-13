@@ -12,6 +12,7 @@
     <b-collapse id="collapse-reviews" v-model="showReviews">
       <!-- New review action -->
       <b-button
+        v-if="!readOnly"
         class="dropdown-toggle m-2"
         variant="primary"
         size="sm"
@@ -92,7 +93,7 @@
         <p class="ml-2 mb-0">
           <small>{{ friendlyDateTime(review.created_at) }}</small>
         </p>
-        <p class="ml-3 mb-3">{{ review.comment }}</p>
+        <p class="ml-3 mb-3 white-space-pre-wrap">{{ review.comment }}</p>
       </div>
     </b-collapse>
   </div>
@@ -110,15 +111,19 @@ export default {
   props: {
     effectivePermissions: {
       type: String,
-      required: true,
+      required: false,
     },
     currentUserId: {
       type: Number,
-      required: true,
+      required: false,
     },
     rule: {
       type: Object,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
     },
   },
   data: function () {
@@ -190,10 +195,10 @@ export default {
       ];
 
       // Set some helper variables for readability
-      const isRequestor = this.currentUserId == this.rule.review_requestor_id;
-      const isAdmin = this.effectivePermissions == "admin";
+      const isAdmin = !this.readOnly && this.effectivePermissions == "admin";
+      const isReviewer = !this.readOnly && this.effectivePermissions == "reviewer";
+      const isRequestor = !this.readOnly && this.currentUserId == this.rule.review_requestor_id;
       const isUnderReview = this.rule.review_requestor_id != null;
-      const isReviewer = this.effectivePermissions == "reviewer";
 
       // should only be able to request review if
       // - not currently under review
@@ -286,14 +291,9 @@ export default {
 
 <style scoped>
 .reviewDropdownCard {
-  /* position: fixed;
-  width: 33vw;
-  right: 1rem;
-  bottom: 1rem; */
-
-  position: sticky;
-  position: -webkit-sticky;
-  top: 1rem;
+  position: absolute;
+  top: 0;
+  right: 0;
   height: 0;
   width: 33vw;
 }
@@ -301,6 +301,7 @@ export default {
 .reviewDropdownForm {
   position: absolute;
   height: 100%;
+  right: 1rem;
   width: 0;
 }
 </style>

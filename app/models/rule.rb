@@ -4,10 +4,6 @@
 # Benchmark XCCDF.
 class Rule < BaseRule
   amoeba do
-    include_association :rule_descriptions
-    include_association :disa_rule_descriptions
-    include_association :checks
-    include_association :references
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
     set locked: false
@@ -228,13 +224,16 @@ class Rule < BaseRule
   end
 
   def set_rule_id
-    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') unless rule_id
+    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') if rule_id.blank?
   end
 
   ##
   # Rules should never be deleted if they are under review or locked
   # This checks *_was to cover the case where an attrubute was changed before attempting to destroy
   def prevent_destroy_if_under_review_or_locked
+    # Allow deletion if it is due to the parent being deleted
+    return if destroyed_by_association.present?
+
     # Abort if under review and trying to delete
     if review_requestor_id_was.present?
       errors.add(:base, 'Control is under review and cannot be destroyed')

@@ -9,6 +9,8 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
+  rescue_from StandardError, with: :helpful_errors
+
   def set_project_permissions
     @effective_permissions = current_user&.effective_permissions(@project)
   end
@@ -80,6 +82,31 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def helpful_errors(exception)
+    # Based on the accepted response type, either send a JSON response with the
+    # alert message, or redirect to home and display the alert.
+    message = if current_user&.admin?
+                exception.message
+              else
+                'Please contact an administrator if you believe this message is in error'
+              end
+    respond_to do |format|
+      format.html do
+        flash.alert = message
+        redirect_back(fallback_location: root_path)
+      end
+      format.json do
+        render json: {
+          toast: {
+            title: 'An error occurred processing your request.',
+            message: message,
+            variant: 'danger'
+          }
+        }, status: :internal_server_error
+      end
+    end
+  end
 
   def not_authorized(exception)
     # Based on the accepted response type, either send a JSON response with the

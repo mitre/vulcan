@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <div class="col-2">
+    <div id="sidebar-wrapper" class="col-2 pr-0">
       <RuleNavigator
         :component-id="component.id"
         :rules="rules"
@@ -14,7 +14,7 @@
     </div>
 
     <template v-if="selectedRule()">
-      <div class="col-10">
+      <div class="col-10 mb-5">
         <RuleEditorHeader
           :rule="selectedRule()"
           :rules="rules"
@@ -27,7 +27,7 @@
 
         <div class="row">
           <!-- Main editor column -->
-          <div class="col-7 border-right">
+          <div class="col-8 border-right">
             <RuleEditor
               :rule="selectedRule()"
               :statuses="statuses"
@@ -39,7 +39,7 @@
           </div>
 
           <!-- Additional info column -->
-          <div class="col-5">
+          <div class="col-4">
             <RuleReviews
               :rule="selectedRule()"
               :effective-permissions="effectivePermissions"

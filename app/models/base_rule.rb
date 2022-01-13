@@ -3,6 +3,14 @@
 # The BaseRule class is a simple class shared between SRG Rules and regular Component Rules.
 # SRG Rules belong to an SRG, Component rules belong to a component and a SRG Rule
 class BaseRule < ApplicationRecord
+  amoeba do
+    include_association :rule_descriptions
+    include_association :disa_rule_descriptions
+    include_association :checks
+    include_association :references
+    propagate
+  end
+
   include RuleConstants
   include CciMap::Constants
 
@@ -35,8 +43,8 @@ class BaseRule < ApplicationRecord
     rule = rule_class.new(
       rule_id: rule_mapping.id,
       status: rule_mapping.status.first&.status || 'Not Yet Determined',
-      rule_severity: rule_mapping.severity || nil,
-      rule_weight: rule_mapping.weight || nil,
+      rule_severity: rule_mapping.severity || 'medium',
+      rule_weight: rule_mapping.weight || '10.0',
       version: rule_mapping.version.first&.version,
       title: rule_mapping.title.first || nil,
       ident: rule_mapping.ident.reject(&:legacy).first.ident,
@@ -61,7 +69,8 @@ class BaseRule < ApplicationRecord
         rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) },
-        nist_control_family: nist_control_family
+        nist_control_family: nist_control_family,
+        version: version
       }
     )
   end

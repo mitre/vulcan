@@ -20,15 +20,17 @@
           v-for="satisfies in rule.satisfies"
           :key="satisfies.id"
           :class="ruleRowClass(satisfies)"
-          @click="ruleSelected(satisfies)"
         >
           <i
+            v-if="!readOnly"
             v-b-modal.unmark-satisfies-modal
             class="mdi mdi-close closeRuleButton"
             aria-hidden="true"
-            @click="satisfies_rule_id = satisfies.id"
+            @click="satisfies_rule = satisfies"
           />
-          {{ formatRuleId(satisfies.rule_id) }}
+          <span @click="ruleSelected(satisfies)">
+            {{ formatRuleForDisplay(satisfies) }}
+          </span>
         </div>
       </b-collapse>
 
@@ -36,11 +38,11 @@
         id="unmark-satisfies-modal"
         title="Unmark as Duplicate"
         centered
-        @ok="$root.$emit('unmarkDuplicate:rule', satisfies_rule_id, rule.id)"
+        @ok="$root.$emit('unmarkDuplicate:rule', satisfies_rule.id, rule.id)"
       >
         <p>
-          Are you sure you want to unmark {{ formatRuleId(satisfies_rule_id) }} as a duplicate of
-          this control?
+          Are you sure you want to unmark {{ formatRuleForDisplay(satisfies_rule) }} as a duplicate
+          of this control?
         </p>
         <template #modal-footer="{ cancel, ok }">
           <!-- Emulate built in modal footer ok and cancel button actions -->
@@ -70,15 +72,17 @@
           v-for="satisfied_by in rule.satisfied_by"
           :key="satisfied_by.id"
           :class="ruleRowClass(satisfied_by)"
-          @click="ruleSelected(satisfied_by)"
         >
           <i
+            v-if="!readOnly"
             v-b-modal.unmark-satisfied-by-modal
             class="mdi mdi-close closeRuleButton"
             aria-hidden="true"
-            @click="satisfied_by_rule_id = satisfied_by.id"
+            @click="satisfied_by_rule = satisfied_by"
           />
-          {{ formatRuleId(satisfied_by.rule_id) }}
+          <span @click="ruleSelected(satisfied_by)">
+            {{ formatRuleForDisplay(satisfied_by) }}
+          </span>
         </div>
       </b-collapse>
 
@@ -86,11 +90,11 @@
         id="unmark-satisfied-by-modal"
         title="Unmark as Duplicate"
         centered
-        @ok="$root.$emit('unmarkDuplicate:rule', rule.id, satisfied_by_rule_id)"
+        @ok="$root.$emit('unmarkDuplicate:rule', rule.id, satisfied_by_rule.id)"
       >
         <p>
           Are you sure you want to unmark this control as a duplicate of
-          {{ formatRuleId(satisfied_by_rule_id) }}
+          {{ formatRuleForDisplay(satisfied_by_rule) }}
         </p>
         <template #modal-footer="{ cancel, ok }">
           <!-- Emulate built in modal footer ok and cancel button actions -->
@@ -130,13 +134,17 @@ export default {
       type: String,
       required: true,
     },
+    readOnly: {
+      type: Boolean,
+      required: false,
+    },
   },
   data: function () {
     return {
       showAlsoSatisfies: false,
       showSatisfiedBy: false,
-      satisfies_rule_id: null,
-      satisfied_by_rule_id: null,
+      satisfies_rule: null,
+      satisfied_by_rule: null,
     };
   },
   methods: {
@@ -147,8 +155,8 @@ export default {
       }
       this.$emit("ruleSelected", rule.id);
     },
-    formatRuleId: function (id) {
-      return `${this.projectPrefix}-${id}`;
+    formatRuleForDisplay: function (rule) {
+      return `${this.projectPrefix}-${rule?.rule_id} // ${rule?.version}`;
     },
     // Dynamically set the class of each rule row
     ruleRowClass: function (rule) {
