@@ -231,8 +231,9 @@ class Component < ApplicationRecord
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
   def from_mapping(srg)
     benchmark = srg.parsed_benchmark
-    srg_rules = srg.srg_rules.select(:id, :rule_id).map { |rule| [rule.rule_id, rule.id] }.to_h
-    rule_models = benchmark.rule.each_with_index.map do |rule, idx|
+    srg_rules = srg.srg_rules.pluck(:rule_id, :id).to_h
+    srg_rule_versions = srg.srg_rules.pluck(:rule_id, :version).to_h
+    rule_models = benchmark.rule.sort_by { |r| srg_rule_versions[r.id] }.each_with_index.map do |rule, idx|
       Rule.from_mapping(rule, id, idx + 1, srg_rules)
     end
     # Examine import results for failures

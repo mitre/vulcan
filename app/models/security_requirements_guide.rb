@@ -64,9 +64,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   private
 
   def import_srg_rules
-    srg_rules = parsed_benchmark.rule.map do |rule|
-      SrgRule.from_mapping(rule, id)
-    end
+    srg_rules = parsed_benchmark.rule.map { |rule| SrgRule.from_mapping(rule, id) }.sort_by(&:version)
 
     # Examine import results for failures
     failures = SrgRule.import(srg_rules, all_or_none: true, recursive: true).failed_instances
