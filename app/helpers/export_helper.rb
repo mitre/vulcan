@@ -103,11 +103,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     components.each do |component|
       component.rules.each do |rule|
         group = Ox::Element.new('Group')
-        group['id'] = "#{component[:version]}-#{rule[:rule_id]}"
+        group['id'] = "V-#{rule[:rule_id]}"
 
-        ox_el_helper(group, 'title', rule[:version])
+        ox_el_helper(group, 'title', rule[:version].split('-')[0..-3].join('-'))
         group_rule = Ox::Element.new('Rule')
-        group_rule['id'] = "r_#{component[:version]}-#{rule[:rule_id]}"
+        group_rule['id'] = "SV-#{rule[:rule_id]}r#{rule[:rule_id]}rule"
         group_rule['severity'] = rule[:severity] if rule[:severity].present?
         group_rule['weight'] = rule[:weight] if rule[:weight].present?
 
@@ -131,17 +131,20 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     rule.disa_rule_descriptions.each do |drd|
       desc = Ox::Element.new('description')
 
-      ox_el_helper(desc, 'VulnDiscussion', drd[:vuln_discussion])
-      ox_el_helper(desc, 'FalsePositives', drd[:false_positives])
-      ox_el_helper(desc, 'FalseNegatives', drd[:false_negatives])
-      ox_el_helper(desc, 'Documentable', drd[:documentable])
-      ox_el_helper(desc, 'Mitigations', drd[:mitigations])
-      ox_el_helper(desc, 'SecurityOverrideGuidance', drd[:severity_override_guidance])
-      ox_el_helper(desc, 'PotentialImpacts', drd[:potential_impacts])
-      ox_el_helper(desc, 'ThirdPartyTools', drd[:third_party_tools])
-      ox_el_helper(desc, 'MitigationControl', drd[:mitigation_control])
-      ox_el_helper(desc, 'Responsibility', drd[:responsibility])
-      ox_el_helper(desc, 'IAControls', drd[:ia_controls])
+      desc_str = []
+      desc_str << ox_el_helper_ascii_str('VulnDiscussion', drd[:vuln_discussion])
+      desc_str << ox_el_helper_ascii_str('FalsePositives', drd[:false_positives])
+      desc_str << ox_el_helper_ascii_str('FalseNegatives', drd[:false_negatives])
+      desc_str << ox_el_helper_ascii_str('Documentable', drd[:documentable])
+      desc_str << ox_el_helper_ascii_str('Mitigations', drd[:mitigations])
+      desc_str << ox_el_helper_ascii_str('SecurityOverrideGuidance', drd[:severity_override_guidance])
+      desc_str << ox_el_helper_ascii_str('PotentialImpacts', drd[:potential_impacts])
+      desc_str << ox_el_helper_ascii_str('ThirdPartyTools', drd[:third_party_tools])
+      desc_str << ox_el_helper_ascii_str('MitigationControl', drd[:mitigation_control])
+      desc_str << ox_el_helper_ascii_str('Responsibility', drd[:responsibility])
+      desc_str << ox_el_helper_ascii_str('IAControls', drd[:ia_controls])
+
+      desc << desc_str.join
 
       group_rule << desc
     end
@@ -178,5 +181,9 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     attributes&.each { |k, v| el[k] = v }
     el << child if child.present?
     parent << el
+  end
+
+  def ox_el_helper_ascii_str(name, value)
+    "<#{name}>#{value}</#{name}>"
   end
 end
