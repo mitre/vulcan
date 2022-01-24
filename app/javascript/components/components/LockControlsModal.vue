@@ -64,7 +64,7 @@ export default {
   },
   methods: {
     showModal: function () {
-      this.version = "";
+      this.comment = "";
       this.$refs["LockControlsModal"].show();
     },
     lockControls: function (bvModalEvt) {
