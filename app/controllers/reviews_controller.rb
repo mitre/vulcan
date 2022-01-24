@@ -28,6 +28,18 @@ class ReviewsController < ApplicationController
   def lock_controls
     unlocked = @component.rules.where(locked: false)
 
+    if unlocked.exists?(status: 'Not Yet Determined')
+      not_determined_controls = unlocked.where(status: 'Not Yet Determined').map(&:displayed_name).join(', ')
+      render json: {
+        toast: {
+          title: 'Could not lock controls.',
+          message: "The following controls are 'Not Yet Determined': #{not_determined_controls}",
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
+      return
+    end
+
     Review.transaction do
       unlocked.each do |rule|
         review = Review.new(review_params.merge({ user: current_user, rule: rule }))
@@ -43,7 +55,13 @@ class ReviewsController < ApplicationController
       end
     end
 
-    render json: { toast: "Successfully locked #{unlocked.size} controls." }
+    render json: {
+      toast: {
+        title: "Successfully locked #{unlocked.size} #{'control'.pluralize(unlocked.size)}.",
+        message: "The following controls were locked: #{unlocked.map(&:displayed_name).join(', ')}",
+        variant: 'success'
+      }
+    }
   end
 
   private
