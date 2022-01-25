@@ -5,6 +5,7 @@
 #
 class ReviewsController < ApplicationController
   before_action :set_rule
+  before_action :set_project
   before_action :authorize_author_project
 
   def create
@@ -26,6 +27,10 @@ class ReviewsController < ApplicationController
 
   def set_rule
     @rule = Rule.find(params[:rule_id])
+  end
+
+  def set_project
+    @project = @rule&.component&.project
   end
 
   def review_params
