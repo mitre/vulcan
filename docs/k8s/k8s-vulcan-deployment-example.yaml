@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vulcan-web
+  labels:
+    app: vulcan-web
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: vulcan-web
+  strategy:
+    type: RollingUpdate   # Upgrade this application with a rolling strategy
+    rollingUpdate:
+      maxSurge: 1         # maximum number of pods that can be scheduled above the desired number of pods (replicas)
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: vulcan-web
+    spec:
+      containers:
+      - name: vulcan-web
+        image: mitre/vulcan:latest
+        imagePullPolicy: "Always"
+        ports:
+        - containerPort: 3000
+          name: vulcan-web
+        resources:
+          limits:
+            cpu: "500m"
+            memory: 1Gi
+          requests:
+            cpu: "500m"
+            memory: 1Gi
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config/vulcan.yml
+          subPath: ara-dev-vulcan-config.yml
+        env:
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: vulcansecrets
+                key: postgresql-password
+          - name: SECRET_KEY_BASE
+            valueFrom:
+              secretKeyRef:
+                name: vulcansecrets
+                key: key-base
+          - name: CIPHER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: vulcansecrets
+                key: cipher-password
+          - name: CIPHER_SALT
+            valueFrom:
+              secretKeyRef:
+                name: vulcansecrets
+                key: cipher-salt
+          - name: DATABASE_URL
+            value: postgres://postgres:$(DATABASE_PASSWORD)@postgresql/vulcan_postgres_production
+          - name: RAILS_SERVE_STATIC_FILES
+            value: "true"
+          - name: RAILS_ENV
+            value: production
+          - name: VULCAN_WELCOME_TEXT
+            value: "Custom text on login screen"
+          - name: VULCAN_CONTACT_EMAIL
+            value: "example@email.com"
+          - name: VULCAN_ENABLE_LDAP
+            value: "true"
+          - name: VULCAN_LDAP_HOST
+            value: "ldap.host.example.com"
+          - name: VULCAN_LDAP_PORT
+            value: "636"             
+          - name: VULCAN_LDAP_TITLE
+            value: "LDAP Login"
+          - name: VULCAN_LDAP_ATTRIBUTE # LDAP attribute name for the user name in the login form. typically AD would be 'sAMAccountName' or 'UserPrincipalName', while OpenLDAP is 'uid'.
+            value: "sAMAccountName"
+          - name: VULCAN_LDAP_ENCRYPTION # plain start_tls simple_tls
+            value: "simple_tls"
+          - name: VULCAN_LDAP_BIND_DN
+            value: "CN=vulcan.svcacct,OU=Users,DC=example,DC=com"
+          - name: VULCAN_LDAP_ADMIN_PASS
+            valueFrom:
+              secretKeyRef:
+                name: vulcansecrets
+                key: ldap-password
+          - name: VULCAN_LDAP_BASE
+            value: "DC=example,DC=com"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: vulcan-config
