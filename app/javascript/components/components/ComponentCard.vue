@@ -99,6 +99,27 @@
               title="Export Component"
             />
           </a>
+
+          <!-- Lock all controls in component -->
+          <span
+            v-if="actionable && role_gte_to(effectivePermissions, 'reviewer')"
+            class="float-right mr-2"
+          >
+            <LockControlsModal
+              :component_id="component.id"
+              @projectUpdated="$emit('projectUpdated')"
+            >
+              <template #opener>
+                <i
+                  v-if="component.id"
+                  v-b-tooltip.hover
+                  class="mdi mdi-lock h5 clickable"
+                  aria-hidden="true"
+                  title="Lock component controls"
+                />
+              </template>
+            </LockControlsModal>
+          </span>
         </span>
       </p>
     </b-card>
@@ -109,14 +130,17 @@
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 
 export default {
   name: "ComponentCard",
   components: {
+    LockControlsModal,
     NewComponentModal,
   },
-  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin],
+  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin, RoleComparisonMixin],
   props: {
     // Indicate if the card is for "read-only" or can take actions against it
     actionable: {
