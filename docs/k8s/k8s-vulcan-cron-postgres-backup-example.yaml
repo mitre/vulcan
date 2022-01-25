@@ -1,0 +1,57 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: backup-vulcan
+spec:
+  # Backup the database every day at 5AM UTC "0 5 * * *"
+  schedule: "0 5 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          containers:
+          - name: postgres-backup
+            image: postgres:12
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/sh", "-c"]
+            args: 
+              - echo "Starting Vulcan backup job...";
+                mkdir -p /var/backups/vulcan_backups;
+                echo "Listing current Vulcan backups...";
+                ls -lh /var/backups/vulcan_backups;
+                echo "Starting Vulcan PostgreSQL Backups...";
+                echo "$PGHOST:$PGDB:$PGUSER:$PGPASS" > /root/.pgpass && chmod 600 /root/.pgpass && pg_dump -U $PGUSER -h postgresql $PGDB > /var/backups/vulcan_backups/vulcan-db-backup-$(date +"%m-%d-%Y-%H-%M").sql;
+                echo "Finding Vulcan backups older than 30 days to delete...";
+                find /var/backups/vulcan_backups/vulcan-db-backup*.sql -type f -mtime +30 -exec ls -lh {} \; ;
+                echo "Deleting Vulcan backups older than 30 days...";
+                find /var/backups/vulcan_backups/vulcan-db-backup*.sql -type f -mtime +30 -exec rm -f {} \; ;
+                echo "Listing remaining Vulcan backups...";
+                ls -lh /var/backups/vulcan_backups;
+                rm -f /root/.pgpass;
+                echo "Backup job complete...";
+            env:
+            - name: PGPASS
+              valueFrom:
+                secretKeyRef:
+                  name: vulcansecrets
+                  key: postgresql-password
+            - name: PGDB
+              value: vulcan_postgres_production
+            - name: PGHOST
+              value: postgresql:5432
+            - name: PGUSER
+              value: postgres
+              #This is needed to get the postgres container running but isn't used otherwise
+            - name: POSTGRES_PASSWORD
+              value: mypostgreSpassword
+            volumeMounts:
+            - mountPath: /var/backups
+              name: backup-pvc
+          restartPolicy: Never
+          volumes:
+            - name:  backup-pvc
+              persistentVolumeClaim:
+                claimName: vulcan-backups
