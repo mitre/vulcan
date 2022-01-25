@@ -50,9 +50,14 @@ class Project < ApplicationRecord
 
   def details
     {
-      locked: rules.where(locked: true).size,
-      review: rules.where(changes_requested: true).size,
-      completed: rules.where(locked: true).size,
+      ac: rules.where(status: 'Applicable - Configurable').size,
+      aim: rules.where(status: 'Applicable - Inherently Meets').size,
+      adnm: rules.where(status: 'Applicable - Does Not Meet').size,
+      na: rules.where(status: 'Not Applicable').size,
+      nyd: rules.where(status: 'Not Yet Determined').size,
+      nur: rules.where(locked: false).where(review_requestor_id: nil).size,
+      ur: rules.where(locked: false).where.not(review_requestor_id: nil).size,
+      lck: rules.where(locked: true).size,
       total: rules.size
     }
   end

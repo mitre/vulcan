@@ -100,18 +100,43 @@
             </div>
             <b-collapse id="collapse-details" v-model="showDetails">
               <p class="ml-2 mb-0 mt-2">
+                <strong>Applicable - Configurable: </strong> {{ project.details.ac }} ({{
+                  (project.details.ac / project.details.total).toFixed(4) * 100
+                }}%)
+              </p>
+              <p class="ml-2 mb-0 mt-2">
+                <strong>Applicable - Inherently Meets: </strong> {{ project.details.aim }} ({{
+                  (project.details.ac / project.details.total).toFixed(4) * 100
+                }}%)
+              </p>
+              <p class="ml-2 mb-0 mt-2">
+                <strong>Applicable - Does Not Meet: </strong> {{ project.details.adnm }} ({{
+                  (project.details.ac / project.details.total).toFixed(4) * 100
+                }}%)
+              </p>
+              <p class="ml-2 mb-0 mt-2">
+                <strong>Not Applicable: </strong> {{ project.details.na }} ({{
+                  (project.details.ac / project.details.total).toFixed(4) * 100
+                }}%)
+              </p>
+              <p class="ml-2 mb-0 mt-2">
+                <strong>Not Yet Determined: </strong> {{ project.details.nyd }} ({{
+                  (project.details.ac / project.details.total).toFixed(4) * 100
+                }}%)
+              </p>
+              <p class="ml-2 mb-0 mt-2">
+                <strong>Not Under Review: </strong> {{ project.details.review }} ({{
+                  (project.details.nur / project.details.total).toFixed(4) * 100
+                }}%)
+              </p>
+              <p class="ml-2 mb-0 mt-2">
+                <strong>Under Review: </strong> {{ project.details.review }} ({{
+                  (project.details.ur / project.details.total).toFixed(4) * 100
+                }}%)
+              </p>
+              <p class="ml-2 mb-0 mt-2">
                 <strong>Locked: </strong> {{ project.details.locked }} ({{
-                  project.details.locked / project.details.total
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>In Review: </strong> {{ project.details.review }} ({{
-                  project.details.review / project.details.total
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Completed: </strong> {{ project.details.completed }} ({{
-                  project.details.completed / project.details.total
+                  (project.details.lck / project.details.total).toFixed(4) * 100
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2"><strong>Total: </strong> {{ project.details.total }}</p>
