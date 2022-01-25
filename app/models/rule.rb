@@ -177,6 +177,10 @@ class Rule < BaseRule
     ]
   end
 
+  def displayed_name
+    "#{component[:prefix]}-#{rule_id}"
+  end
+
   private
 
   def export_fixtext
