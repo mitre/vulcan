@@ -48,6 +48,20 @@ class Project < ApplicationRecord
     (User.all.select(:id, :name, :email) - users.select(:id, :name, :email))
   end
 
+  def details
+    {
+      ac: rules.where(status: 'Applicable - Configurable').size,
+      aim: rules.where(status: 'Applicable - Inherently Meets').size,
+      adnm: rules.where(status: 'Applicable - Does Not Meet').size,
+      na: rules.where(status: 'Not Applicable').size,
+      nyd: rules.where(status: 'Not Yet Determined').size,
+      nur: rules.where(locked: false).where(review_requestor_id: nil).size,
+      ur: rules.where(locked: false).where.not(review_requestor_id: nil).size,
+      lck: rules.where(locked: true).size,
+      total: rules.size
+    }
+  end
+
   ##
   # Get a list of projects that can be added as components to this project
   def available_components
