@@ -36,94 +36,100 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
   def export_xccdf(project)
     Zip::OutputStream.write_buffer do |zio|
-      cls = 'U'
-      prefix = project.components.first.prefix
-      file_name = "#{cls}_#{project.name}_#{prefix}_Manual_STIG/#{cls}_#{project.name}_STIG_#{prefix}_Manual-xccdf.xml"
-      zio.put_next_entry(file_name)
+      project.components.eager_load(rules: %i[disa_rule_descriptions references
+                                              checks satisfies satisfied_by]).each do |component|
+        name = component[:version].split
+        version = name.pop
+        file_name = "#{name.join('_')}_STIG_Readiness_Guide_#{version.downcase}-xccdf.xml"
+        zio.put_next_entry(file_name)
 
-      doc = Ox::Document.new
+        doc = Ox::Document.new
 
-      # Document Headers
-      instruct_xml = Ox::Instruct.new(:xml)
-      instruct_xml['version'] = '1.0'
-      instruct_xml['encoding'] = 'UTF-8'
-      doc << instruct_xml
+        # Document Headers
+        instruct_xml = Ox::Instruct.new(:xml)
+        instruct_xml['version'] = '1.0'
+        instruct_xml['encoding'] = 'UTF-8'
+        doc << instruct_xml
 
-      instruct_xml_s = Ox::Instruct.new(:'xml-stylesheet')
-      instruct_xml_s['type'] = 'text/xsl'
-      instruct_xml_s['href'] = 'STIG_unclass.xsl'
-      doc << instruct_xml_s
+        instruct_xml_s = Ox::Instruct.new(:'xml-stylesheet')
+        instruct_xml_s['type'] = 'text/xsl'
+        instruct_xml_s['href'] = 'STIG_unclass.xsl'
+        doc << instruct_xml_s
 
-      # Root Benchmark element
-      benchmark = Ox::Element.new('Benchmark')
-      benchmark['xmlns:dc'] = 'http://purl.org/dc/elements/1.1/'
-      benchmark['xmlns:xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
-      benchmark['xmlns:cpe'] = 'http://cpe.mitre.org/language/2.0'
-      benchmark['xmlns:xhtml'] = 'http://www.w3.org/1999/xhtml'
-      benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
-      benchmark['xsi:schemaLocation'] = 'http://checklists.nist.gov/xccdf/1.1 ' \
-                                        'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
-                                        'http://cpe.mitre.org/dictionary/2.0 '\
-                                        'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
-      benchmark['id'] = 'Active_Directory_Domain'
-      benchmark['xml:lang'] = 'en'
-      benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
+        # Root Benchmark element
+        benchmark = Ox::Element.new('Benchmark')
+        benchmark['xmlns:dc'] = 'http://purl.org/dc/elements/1.1/'
+        benchmark['xmlns:xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
+        benchmark['xmlns:cpe'] = 'http://cpe.mitre.org/language/2.0'
+        benchmark['xmlns:xhtml'] = 'http://www.w3.org/1999/xhtml'
+        benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
+        benchmark['xsi:schemaLocation'] = 'http://checklists.nist.gov/xccdf/1.1 ' \
+                                          'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
+                                          'http://cpe.mitre.org/dictionary/2.0 '\
+                                          'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
+        benchmark['id'] = 'Active_Directory_Domain'
+        benchmark['xml:lang'] = 'en'
+        benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
 
-      ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
-      ox_el_helper(benchmark, 'title', project[:name])
-      ox_el_helper(benchmark, 'description', nil)
-      ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
-      ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
-      ox_el_helper(benchmark, 'rear-matter', nil, { 'xml:lang': 'en' })
+        ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
+        ox_el_helper(benchmark, 'title', "#{name.join(' ')} STIG Readiness Guide")
+        ox_el_helper(benchmark, 'description', nil)
+        ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
+        ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
+        ox_el_helper(benchmark, 'rear-matter', nil, { 'xml:lang': 'en' })
 
-      reference = Ox::Element.new('reference')
-      reference['href'] = nil
-      ox_el_helper(reference, 'dc:publisher', nil)
-      ox_el_helper(reference, 'dc:source', nil)
-      benchmark << reference
+        reference = Ox::Element.new('reference')
+        reference['href'] = nil
+        ox_el_helper(reference, 'dc:publisher', nil)
+        ox_el_helper(reference, 'dc:source', nil)
+        benchmark << reference
 
-      ox_el_helper(benchmark, 'plain-text', nil, { id: 'release-info' })
-      ox_el_helper(benchmark, 'plain-text', nil, { id: 'generator' })
-      ox_el_helper(benchmark, 'plain-text', nil, { id: 'conventionsVersion' })
-      ox_el_helper(benchmark, 'version', nil)
+        _, version_num, release_num = version.downcase.split(Regexp.union(%w[v r]))
+        release_info = "Release: #{release_num} Benchmark Date: #{Time.zone.today.strftime('%-d %b %Y')}"
+        ox_el_helper(benchmark, 'plain-text', release_info, { id: 'release-info' })
+        ox_el_helper(benchmark, 'plain-text', '3.2.2.36079', { id: 'generator' })
+        ox_el_helper(benchmark, 'plain-text', '1.10.0', { id: 'conventionsVersion' })
+        ox_el_helper(benchmark, 'version', version_num)
 
-      components = project.components.eager_load(rules: %i[disa_rule_descriptions references checks])
-      groups_helper(components, benchmark)
+        groups_helper(component, benchmark)
 
-      doc << benchmark
+        doc << benchmark
 
-      # Write xml to file
-      zio.write Ox.dump(doc)
+        # Write xml to file
+        zio.write Ox.dump(doc)
+      end
     end
   end
 
   private
 
-  def groups_helper(components, benchmark)
-    components.each do |component|
-      component.rules.each do |rule|
-        group = Ox::Element.new('Group')
-        group['id'] = "V-#{rule[:rule_id]}"
+  def groups_helper(component, benchmark)
+    component.rules.each do |rule|
+      # Rules are filtered here to prevent n + 1 query
+      next unless rule[:status] == 'Applicable - Configurable'
+      next if rule.satisfied_by.present?
 
-        ox_el_helper(group, 'title', rule[:version].split('-')[0..-3].join('-'))
-        group_rule = Ox::Element.new('Rule')
-        group_rule['id'] = "SV-#{rule[:rule_id]}r#{rule[:rule_id]}rule"
-        group_rule['severity'] = rule[:severity] if rule[:severity].present?
-        group_rule['weight'] = rule[:weight] if rule[:weight].present?
+      group = Ox::Element.new('Group')
+      group['id'] = "#{component[:prefix]}-#{rule[:rule_id]}"
 
-        ox_el_helper(group_rule, 'version', rule[:version])
-        ox_el_helper(group_rule, 'title', rule[:title])
-        descriptions_helper(group_rule, rule)
-        references_helper(group_rule, rule)
-        ox_el_helper(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
-        ox_el_helper(group_rule, 'fixtext', rule[:fixtext], { fixref: rule[:fixtext_fixref] })
-        ox_el_helper(group_rule, 'fix', nil, { id: rule[:fix_id] })
-        checks_helper(group_rule, rule)
+      ox_el_helper(group, 'title', rule[:version])
+      group_rule = Ox::Element.new('Rule')
+      group_rule['id'] = "SV-#{component[:prefix]}-#{rule[:rule_id]}"
+      group_rule['severity'] = rule[:rule_severity] if rule[:rule_severity].present?
+      group_rule['weight'] = rule[:rule_weight] if rule[:rule_weight].present?
 
-        group << group_rule
+      ox_el_helper(group_rule, 'version', "#{component[:prefix]}-#{rule[:rule_id]}")
+      ox_el_helper(group_rule, 'title', rule[:title])
+      descriptions_helper(group_rule, rule)
+      references_helper(group_rule, rule)
+      ox_el_helper(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
+      ox_el_helper(group_rule, 'fixtext', rule[:fixtext], { fixref: rule[:fixtext_fixref] })
+      ox_el_helper(group_rule, 'fix', nil, { id: rule[:fix_id] })
+      checks_helper(group_rule, rule)
 
-        benchmark << group
-      end
+      group << group_rule
+
+      benchmark << group
     end
   end
 
@@ -132,7 +138,9 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       desc = Ox::Element.new('description')
 
       desc_str = []
-      desc_str << ox_el_helper_ascii_str('VulnDiscussion', drd[:vuln_discussion])
+      vuln_discussion = drd[:vuln_discussion]
+      vuln_discussion << "\n\nSatisfies: #{rule.satisfies.map(&:version).join(', ')}" if rule.satisfies.present?
+      desc_str << ox_el_helper_ascii_str('VulnDiscussion', vuln_discussion)
       desc_str << ox_el_helper_ascii_str('FalsePositives', drd[:false_positives])
       desc_str << ox_el_helper_ascii_str('FalseNegatives', drd[:false_negatives])
       desc_str << ox_el_helper_ascii_str('Documentable', drd[:documentable])
