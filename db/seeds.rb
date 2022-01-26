@@ -107,11 +107,32 @@ _vcenter_vami_v1r1 = Component.create!(
 )
 # Make a bunch of dummy released components
 20.times do
-  c = Component.create(version: SecureRandom.hex(3), prefix: 'zzzz-00', based_on: web_srg, project: dummy_project)
+  c = Component.create(
+    version: "#{SecureRandom.hex(3)} V#{rand(1..3)}R#{rand(1..3)}",
+    prefix: 'zzzz-00',
+    based_on: web_srg,
+    project: dummy_project
+  )
   # rubocop:disable Rails/SkipsModelValidations
   c.rules.update_all(locked: true)
-  # rubocop:enable Rails/SkipsModelValidations
   c.update(released: true)
+  c.rules.update_all(rule_severity: RuleConstants::SEVERITIES.sample)
+  c.rules.update_all(rule_weight: '10.0')
+  c.rules.order('RANDOM()').limit(c.rules.size * rand(25..35) / 100)
+   .update_all(status: 'Applicable - Configurable')
+
+  rule_satisfactions = []
+  rules_with_duplicates_ids = c.rules.order('RANDOM()').limit(c.rules.size * rand(5..10) / 100).pluck(:id)
+  c.rules.where.not(id: rules_with_duplicates_ids).order('RANDOM()')
+   .limit(c.rules.size * rand(10..15) / 100).pluck(:id).each do |rule_id|
+    rule_satisfactions << RuleSatisfaction.new(
+      rule_id: rule_id,
+      satisfied_by_rule_id: rules_with_duplicates_ids.sample
+    )
+  end
+  RuleSatisfaction.import! rule_satisfactions
+
+  # rubocop:enable Rails/SkipsModelValidations
 end
 puts 'Created Components'
 
