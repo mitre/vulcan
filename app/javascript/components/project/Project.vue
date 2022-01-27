@@ -106,36 +106,36 @@
               </p>
               <p class="ml-2 mb-0 mt-2">
                 <strong>Applicable - Inherently Meets: </strong> {{ project.details.aim }} ({{
-                  ((project.details.ac / project.details.total) * 100).toFixed(2)
+                  ((project.details.aim / project.details.total) * 100).toFixed(2)
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2">
                 <strong>Applicable - Does Not Meet: </strong> {{ project.details.adnm }} ({{
-                  ((project.details.ac / project.details.total) * 100).toFixed(2)
+                  ((project.details.adnm / project.details.total) * 100).toFixed(2)
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2">
                 <strong>Not Applicable: </strong> {{ project.details.na }} ({{
-                  ((project.details.ac / project.details.total) * 100).toFixed(2)
+                  ((project.details.na / project.details.total) * 100).toFixed(2)
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2">
                 <strong>Not Yet Determined: </strong> {{ project.details.nyd }} ({{
-                  ((project.details.ac / project.details.total) * 100).toFixed(2)
+                  ((project.details.nyd / project.details.total) * 100).toFixed(2)
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2">
-                <strong>Not Under Review: </strong> {{ project.details.review }} ({{
+                <strong>Not Under Review: </strong> {{ project.details.nur }} ({{
                   ((project.details.nur / project.details.total) * 100).toFixed(2)
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2">
-                <strong>Under Review: </strong> {{ project.details.review }} ({{
+                <strong>Under Review: </strong> {{ project.details.ur }} ({{
                   ((project.details.ur / project.details.total) * 100).toFixed(2)
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2">
-                <strong>Locked: </strong> {{ project.details.locked }} ({{
+                <strong>Locked: </strong> {{ project.details.lck }} ({{
                   ((project.details.lck / project.details.total) * 100).toFixed(2)
                 }}%)
               </p>
