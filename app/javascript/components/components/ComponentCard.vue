@@ -101,10 +101,7 @@
           </a>
 
           <!-- Lock all controls in component -->
-          <span
-            v-if="actionable && role_gte_to(effectivePermissions, 'reviewer')"
-            class="float-right mr-2"
-          >
+          <span v-if="actionable && effectivePermissions == 'admin'" class="float-right mr-2">
             <LockControlsModal
               :component_id="component.id"
               @projectUpdated="$emit('projectUpdated')"
@@ -130,7 +127,6 @@
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 
@@ -140,7 +136,7 @@ export default {
     LockControlsModal,
     NewComponentModal,
   },
-  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin, RoleComparisonMixin],
+  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin],
   props: {
     // Indicate if the card is for "read-only" or can take actions against it
     actionable: {
