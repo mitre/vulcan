@@ -73,42 +73,64 @@ puts 'Created SRGs'
 # Seeds for Project Components #
 # ---------------------------- #
 puts 'Creating Components...'
-photon3_v1r1 = Component.create!(project: photon3, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: gpos_srg)
+photon3_v1r1 = Component.create!(
+  project: photon3,
+  name: 'Photon OS 3',
+  release_version: 1,
+  release_revision: 1,
+  prefix: 'PHOS-03',
+  based_on: gpos_srg
+)
 photon3_v1r1.reload
 photon3_v1r1.rules.update(locked: true)
 photon3_v1r1.update(released: true)
-photon3_v1r1.duplicate(new_version: 'Photon OS 3 V1R2').save!
-photon4_v1r1 = Component.create!(project: photon4, version: 'Photon OS 3 V1R1', prefix: 'PHOS-04', based_on: gpos_srg)
+photon3_v1r1.duplicate(new_name: 'Photon OS 3', new_release_version: 1, new_release_revision: 2).save!
+photon4_v1r1 = Component.create!(
+  project: photon4,
+  name: 'Photon OS 3',
+  release_version: 1,
+  release_revision: 1,
+  prefix: 'PHOS-04',
+  based_on: gpos_srg
+)
 photon4_v1r1.reload
 _photon3_v1r1_overlay = Component.create!(
   project: vsphere,
   component_id: photon3_v1r1.id,
   prefix: photon3_v1r1.prefix,
   security_requirements_guide_id: photon3_v1r1.security_requirements_guide_id,
-  version: photon3_v1r1.version
+  name: photon3_v1r1.name
 )
 _vcenter_perf_v1r1 = Component.create!(
   project: vsphere,
-  version: 'vCenter Perf V1R1',
+  name: 'vCenter Perf',
+  release_version: 1,
+  release_revision: 1,
   prefix: 'VCPF-01',
   based_on: web_srg
 )
 _vcenter_sts_v1r1 = Component.create!(
   project: vsphere,
-  version: 'vCenter STS V1R1',
+  name: 'vCenter STS',
+  release_version: 1,
+  release_revision: 1,
   prefix: 'VSTS-01',
   based_on: web_srg
 )
 _vcenter_vami_v1r1 = Component.create!(
   project: vsphere,
-  version: 'vCenter VAMI V1R1',
+  name: 'vCenter VAMI',
+  release_version: 1,
+  release_revision: 1,
   prefix: 'VAMI-01',
   based_on: web_srg
 )
 # Make a bunch of dummy released components
 20.times do
   c = Component.create(
-    version: "#{SecureRandom.hex(3)} V#{rand(1..3)}R#{rand(1..3)}",
+    name: SecureRandom.hex(3),
+    release_version: rand(1..9),
+    release_revision: rand(1..99),
     prefix: 'zzzz-00',
     based_on: web_srg,
     project: dummy_project
