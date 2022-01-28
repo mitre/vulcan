@@ -15,7 +15,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
                 srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
               }]
     ).each do |component|
-      worksheet = workbook.add_worksheet(component[:version])
+      worksheet = workbook.add_worksheet(component[:name])
       worksheet.auto_width = true
       worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
       last_row_num = 0
@@ -36,11 +36,10 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
   def export_xccdf(project)
     Zip::OutputStream.write_buffer do |zio|
-      project.components.eager_load(rules: %i[disa_rule_descriptions references
-                                              checks satisfies satisfied_by]).each do |component|
-        name = component[:version].split
-        version = name.pop
-        file_name = "#{name.join('_')}_STIG_Readiness_Guide_#{version.downcase}-xccdf.xml"
+      project.components.eager_load(rules: %i[disa_rule_descriptions checks
+                                              satisfies satisfied_by]).each do |component|
+        version_revision = "V#{component[:release_version]}R#{component[:release_revision]}"
+        file_name = "U_#{component[:name]}_STIG_Readiness_Guide_#{version_revision}-xccdf.xml"
         zio.put_next_entry(file_name)
 
         doc = Ox::Document.new
@@ -72,8 +71,8 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
 
         ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
-        ox_el_helper(benchmark, 'title', "#{name.join(' ')} STIG Readiness Guide")
-        ox_el_helper(benchmark, 'description', nil)
+        ox_el_helper(benchmark, 'title', "#{component[:name]} STIG Readiness Guide")
+        ox_el_helper(benchmark, 'description', component[:description])
         ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
         ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
         ox_el_helper(benchmark, 'rear-matter', nil, { 'xml:lang': 'en' })
@@ -84,12 +83,12 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         ox_el_helper(reference, 'dc:source', nil)
         benchmark << reference
 
-        _, version_num, release_num = version.downcase.split(Regexp.union(%w[v r]))
-        release_info = "Release: #{release_num} Benchmark Date: #{Time.zone.today.strftime('%-d %b %Y')}"
+        ts = Time.zone.today.strftime('%-d %b %Y')
+        release_info = "Release: #{component[:release_revision]} Benchmark Date: #{ts}"
         ox_el_helper(benchmark, 'plain-text', release_info, { id: 'release-info' })
         ox_el_helper(benchmark, 'plain-text', '3.2.2.36079', { id: 'generator' })
         ox_el_helper(benchmark, 'plain-text', '1.10.0', { id: 'conventionsVersion' })
-        ox_el_helper(benchmark, 'version', version_num)
+        ox_el_helper(benchmark, 'version', component[:release_version])
 
         groups_helper(component, benchmark)
 
@@ -121,9 +120,8 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       ox_el_helper(group_rule, 'version', "#{component[:prefix]}-#{rule[:rule_id]}")
       ox_el_helper(group_rule, 'title', rule[:title])
       descriptions_helper(group_rule, rule)
-      references_helper(group_rule, rule)
       ox_el_helper(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
-      ox_el_helper(group_rule, 'fixtext', rule[:fixtext], { fixref: rule[:fixtext_fixref] })
+      ox_el_helper(group_rule, 'fixtext', rule[:fixtext])
       ox_el_helper(group_rule, 'fix', nil, { id: rule[:fix_id] })
       checks_helper(group_rule, rule)
 
@@ -141,16 +139,6 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       vuln_discussion = drd[:vuln_discussion]
       vuln_discussion << "\n\nSatisfies: #{rule.satisfies.map(&:version).join(', ')}" if rule.satisfies.present?
       desc_str << ox_el_helper_ascii_str('VulnDiscussion', vuln_discussion)
-      desc_str << ox_el_helper_ascii_str('FalsePositives', drd[:false_positives])
-      desc_str << ox_el_helper_ascii_str('FalseNegatives', drd[:false_negatives])
-      desc_str << ox_el_helper_ascii_str('Documentable', drd[:documentable])
-      desc_str << ox_el_helper_ascii_str('Mitigations', drd[:mitigations])
-      desc_str << ox_el_helper_ascii_str('SecurityOverrideGuidance', drd[:severity_override_guidance])
-      desc_str << ox_el_helper_ascii_str('PotentialImpacts', drd[:potential_impacts])
-      desc_str << ox_el_helper_ascii_str('ThirdPartyTools', drd[:third_party_tools])
-      desc_str << ox_el_helper_ascii_str('MitigationControl', drd[:mitigation_control])
-      desc_str << ox_el_helper_ascii_str('Responsibility', drd[:responsibility])
-      desc_str << ox_el_helper_ascii_str('IAControls', drd[:ia_controls])
 
       desc << desc_str.join
 
@@ -158,24 +146,10 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     end
   end
 
-  def references_helper(group_rule, rule)
-    rule.references.each do |reference|
-      ref = Ox::Element.new('reference')
-
-      ox_el_helper(ref, 'dc:title', reference[:title])
-      ox_el_helper(ref, 'dc:publisher', reference[:publisher])
-      ox_el_helper(ref, 'dc:type', reference[:reference_type])
-      ox_el_helper(ref, 'dc:subject', reference[:subject])
-      ox_el_helper(ref, 'dc:identifier', reference[:identifier])
-
-      group_rule << ref
-    end
-  end
-
   def checks_helper(group_rule, rule)
     rule.checks.each do |check|
       ch = Ox::Element.new('check')
-      ch['system'] = check[:system]
+      ch['system'] = 'N/A'
 
       ox_el_helper(ch, 'check-content-ref', nil, { name: check[:content_ref_name], href: check[:content_ref_href] })
       ox_el_helper(ch, 'check-content', check[:content])

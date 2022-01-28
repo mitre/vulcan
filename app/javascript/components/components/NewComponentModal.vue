@@ -35,7 +35,7 @@
               <vue-simple-suggest
                 ref="srgSearch"
                 :list="srgs"
-                display-attribute="title"
+                display-attribute="displayed"
                 value-attribute="id"
                 placeholder="Search for an SRG..."
                 :min-length="0"
@@ -45,14 +45,27 @@
               />
             </b-form-group>
             <!-- Name the component -->
-            <b-form-group label="Name and Version">
+            <b-form-group label="Name">
               <b-form-input
-                v-model="version"
-                placeholder="Component V1R1"
+                v-model="name"
+                placeholder="Component Name"
                 required
                 autocomplete="off"
               />
             </b-form-group>
+            <!-- Version and Revision -->
+            <b-form-row>
+              <b-col>
+                <b-form-group label="Version">
+                  <b-form-input v-model="release_version" autocomplete="off" />
+                </b-form-group>
+              </b-col>
+              <b-col>
+                <b-form-group label="Revision">
+                  <b-form-input v-model="release_revision" autocomplete="off" />
+                </b-form-group>
+              </b-col>
+            </b-form-row>
             <!-- Import from existing spreadsheet -->
             <b-form-group
               v-if="spreadsheet_import"
@@ -78,6 +91,10 @@
                 required
                 autocomplete="off"
               />
+            </b-form-group>
+            <!-- Description -->
+            <b-form-group label="Description">
+              <b-form-textarea v-model="description" placeholder="" rows="3" />
             </b-form-group>
           </b-col>
         </b-row>
@@ -128,7 +145,10 @@ export default {
       loading: false,
       prefix: this.predetermined_prefix,
       security_requirements_guide_id: this.predetermined_security_requirements_guide_id,
-      version: "",
+      name: "",
+      release_version: "",
+      release_revision: "",
+      description: "",
       srgs: [],
       file: null,
     };
@@ -160,10 +180,17 @@ export default {
     fetchSrgs: function (_bvModalEvt) {
       axios.get("/srgs").then((response) => {
         this.srgs = response.data;
+        this.srgs.forEach((srg) => {
+          srg.displayed = `${srg.title} (${srg.version})`;
+        });
       });
     },
     showModal: function () {
-      this.version = "";
+      this.name = "";
+      this.release_version = "";
+      this.release_revision = "";
+      this.description = "";
+      this.prefix = "";
       this.$refs["AddComponentModal"].show();
     },
     createComponent: function (bvModalEvt) {
@@ -196,8 +223,8 @@ export default {
         });
         failed = true;
       }
-      if (!this.version) {
-        this.$bvToast.toast("Please enter a version", {
+      if (!this.name) {
+        this.$bvToast.toast("Please enter a name", {
           title: "Error",
           variant: "danger",
           solid: true,
@@ -214,15 +241,24 @@ export default {
         "component[security_requirements_guide_id]",
         this.security_requirements_guide_id
       );
-      formData.append("component[version]", this.version);
+      formData.append("component[name]", this.name);
       if (!this.newComponent) {
         formData.append("component[duplicate]", !this.newComponent);
         formData.append("component[id]", this.component_to_duplicate);
+      }
+      if (this.release_version) {
+        formData.append("component[release_version]", this.release_version);
+      }
+      if (this.release_revision) {
+        formData.append("component[release_revision]", this.release_revision);
       }
       if (this.file) {
         formData.append("component[file]", this.file);
       } else {
         formData.append("component[prefix]", this.prefix);
+      }
+      if (this.description) {
+        formData.append("component[description", this.description);
       }
 
       axios
@@ -241,7 +277,7 @@ export default {
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);
       this.$refs["AddComponentModal"].hide();
-      this.$emit("projectUpdated");
+      // this.$emit("projectUpdated");
     },
     setSelectedSrg: function (srg) {
       this.security_requirements_guide_id = srg.id;

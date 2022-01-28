@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_09_212911) do
+ActiveRecord::Schema.define(version: 2022_01_27_212649) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -118,13 +118,16 @@ ActiveRecord::Schema.define(version: 2021_11_09_212911) do
     t.bigint "component_id"
     t.string "prefix"
     t.bigint "security_requirements_guide_id"
-    t.string "version"
+    t.string "name"
     t.boolean "released", default: false, null: false
     t.integer "memberships_count", default: 0
     t.integer "rules_count", default: 0
     t.string "admin_name"
     t.string "admin_email"
     t.boolean "advanced_fields", default: false
+    t.integer "release_version"
+    t.integer "release_revision"
+    t.text "description"
     t.index ["component_id"], name: "index_components_on_component_id"
     t.index ["project_id"], name: "index_components_on_project_id"
   end
