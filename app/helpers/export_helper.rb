@@ -66,7 +66,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
                                           'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
                                           'http://cpe.mitre.org/dictionary/2.0 '\
                                           'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
-        benchmark['id'] = 'Active_Directory_Domain'
+        benchmark['id'] = component[:name]
         benchmark['xml:lang'] = 'en'
         benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
 
@@ -122,7 +122,6 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       descriptions_helper(group_rule, rule)
       ox_el_helper(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
       ox_el_helper(group_rule, 'fixtext', rule[:fixtext])
-      ox_el_helper(group_rule, 'fix', nil, { id: rule[:fix_id] })
       checks_helper(group_rule, rule)
 
       group << group_rule
@@ -151,7 +150,6 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       ch = Ox::Element.new('check')
       ch['system'] = 'N/A'
 
-      ox_el_helper(ch, 'check-content-ref', nil, { name: check[:content_ref_name], href: check[:content_ref_href] })
       ox_el_helper(ch, 'check-content', check[:content])
 
       group_rule << ch
