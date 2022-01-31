@@ -76,20 +76,20 @@ puts 'Creating Components...'
 photon3_v1r1 = Component.create!(
   project: photon3,
   name: 'Photon OS 3',
-  release_version: 1,
-  release_revision: 1,
+  version: 1,
+  release: 1,
   prefix: 'PHOS-03',
   based_on: gpos_srg
 )
 photon3_v1r1.reload
 photon3_v1r1.rules.update(locked: true)
 photon3_v1r1.update(released: true)
-photon3_v1r1.duplicate(new_name: 'Photon OS 3', new_release_version: 1, new_release_revision: 2).save!
+photon3_v1r1.duplicate(new_name: 'Photon OS 3', new_version: 1, new_release: 2).save!
 photon4_v1r1 = Component.create!(
   project: photon4,
   name: 'Photon OS 3',
-  release_version: 1,
-  release_revision: 1,
+  version: 1,
+  release: 1,
   prefix: 'PHOS-04',
   based_on: gpos_srg
 )
@@ -104,24 +104,24 @@ _photon3_v1r1_overlay = Component.create!(
 _vcenter_perf_v1r1 = Component.create!(
   project: vsphere,
   name: 'vCenter Perf',
-  release_version: 1,
-  release_revision: 1,
+  version: 1,
+  release: 1,
   prefix: 'VCPF-01',
   based_on: web_srg
 )
 _vcenter_sts_v1r1 = Component.create!(
   project: vsphere,
   name: 'vCenter STS',
-  release_version: 1,
-  release_revision: 1,
+  version: 1,
+  release: 1,
   prefix: 'VSTS-01',
   based_on: web_srg
 )
 _vcenter_vami_v1r1 = Component.create!(
   project: vsphere,
   name: 'vCenter VAMI',
-  release_version: 1,
-  release_revision: 1,
+  version: 1,
+  release: 1,
   prefix: 'VAMI-01',
   based_on: web_srg
 )
@@ -129,8 +129,8 @@ _vcenter_vami_v1r1 = Component.create!(
 20.times do
   c = Component.create(
     name: SecureRandom.hex(3),
-    release_version: rand(1..9),
-    release_revision: rand(1..99),
+    version: rand(1..9),
+    release: rand(1..99),
     prefix: 'zzzz-00',
     based_on: web_srg,
     project: dummy_project

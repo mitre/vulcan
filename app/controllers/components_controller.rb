@@ -113,8 +113,8 @@ class ComponentsController < ApplicationController
       @project.components.find(component_create_params[:id])
               .duplicate(new_name: component_create_params[:name],
                          new_prefix: component_create_params[:prefix],
-                         new_release_version: component_create_params[:release_version],
-                         new_release_revision: component_create_params[:release_revision],
+                         new_version: component_create_params[:version],
+                         new_release: component_create_params[:release],
                          new_description: component_create_params[:description])
     elsif component_create_params[:file]
       # Create a new component from the provided parameters and then pass the spreadsheet
@@ -144,8 +144,8 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :released,
       :name,
-      :release_version,
-      :release_revision,
+      :version,
+      :release,
       :description,
       :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
@@ -160,8 +160,8 @@ class ComponentsController < ApplicationController
       :security_requirements_guide_id,
       :name,
       :prefix,
-      :release_version,
-      :release_revision,
+      :version,
+      :release,
       :description,
       :file,
       file: {}

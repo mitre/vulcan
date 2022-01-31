@@ -38,8 +38,8 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
                                               satisfies satisfied_by]).each do |component|
-        version_revision = "V#{component[:release_version]}R#{component[:release_revision]}"
-        file_name = "U_#{component[:name]}_STIG_Readiness_Guide_#{version_revision}-xccdf.xml"
+        version_release = "V#{component[:version]}R#{component[:release]}"
+        file_name = "U_#{component[:name]}_STIG_Readiness_Guide_#{version_release}-xccdf.xml"
         zio.put_next_entry(file_name)
 
         doc = Ox::Document.new
@@ -83,12 +83,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         ox_el_helper(reference, 'dc:source', nil)
         benchmark << reference
 
-        ts = Time.zone.today.strftime('%-d %b %Y')
-        release_info = "Release: #{component[:release_revision]} Benchmark Date: #{ts}"
+        release_info = "Release: #{component[:release]} Benchmark Date: #{Time.zone.today.strftime('%-d %b %Y')}"
         ox_el_helper(benchmark, 'plain-text', release_info, { id: 'release-info' })
         ox_el_helper(benchmark, 'plain-text', '3.2.2.36079', { id: 'generator' })
         ox_el_helper(benchmark, 'plain-text', '1.10.0', { id: 'conventionsVersion' })
-        ox_el_helper(benchmark, 'version', component[:release_version])
+        ox_el_helper(benchmark, 'version', component[:version].to_s)
 
         groups_helper(component, benchmark)
 
