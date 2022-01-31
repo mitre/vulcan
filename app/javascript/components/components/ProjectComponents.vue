@@ -59,11 +59,11 @@ export default {
     sortedFilteredComponents() {
       let downcaseSearch = this.search.toLowerCase();
       let filteredComponents = this.components.filter((component) =>
-        component.version.toLowerCase().includes(downcaseSearch)
+        component.name.toLowerCase().includes(downcaseSearch)
       );
 
       return filteredComponents.sort((c_1, c_2) => {
-        return c_1.version.toLowerCase().localeCompare(c_2.version.toLowerCase());
+        return c_1.name.toLowerCase().localeCompare(c_2.name.toLowerCase());
       });
     },
   },
