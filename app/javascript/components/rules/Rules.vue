@@ -2,7 +2,7 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
-    <h1>{{ component.version }} - Controls</h1>
+    <h1>{{ component.name }} - Controls</h1>
 
     <RulesCodeEditorView
       :project="project"
@@ -80,7 +80,7 @@ export default {
           href: "/projects/" + this.project.id,
         },
         {
-          text: this.component.version,
+          text: this.component.name,
           href: "/components/" + this.component.id,
         },
         {

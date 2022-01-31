@@ -30,7 +30,7 @@
                 :list="available_components"
                 :filter-by-query="true"
                 value-attribute="id"
-                display-attribute="version"
+                display-attribute="name"
                 placeholder="Search for a component by name..."
                 :styles="projectSearchStyles"
                 @select="setSelectedComponent($refs.componentSearch.selected)"
@@ -122,7 +122,10 @@ export default {
           component_id: this.selectedComponent.id,
           prefix: this.selectedComponent.prefix,
           security_requirements_guide_id: this.selectedComponent.security_requirements_guide_id,
+          name: this.selectedComponent.name,
           version: this.selectedComponent.version,
+          release: this.selectedComponent.release,
+          description: this.selectedComponent.description,
         },
       };
 
