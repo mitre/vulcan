@@ -53,16 +53,16 @@
                 autocomplete="off"
               />
             </b-form-group>
-            <!-- Version and Revision -->
+            <!-- Version and Release -->
             <b-form-row>
               <b-col>
                 <b-form-group label="Version">
-                  <b-form-input v-model="release_version" autocomplete="off" />
+                  <b-form-input v-model="version" autocomplete="off" />
                 </b-form-group>
               </b-col>
               <b-col>
-                <b-form-group label="Revision">
-                  <b-form-input v-model="release_revision" autocomplete="off" />
+                <b-form-group label="Release">
+                  <b-form-input v-model="release" autocomplete="off" />
                 </b-form-group>
               </b-col>
             </b-form-row>
@@ -146,8 +146,8 @@ export default {
       prefix: this.predetermined_prefix,
       security_requirements_guide_id: this.predetermined_security_requirements_guide_id,
       name: "",
-      release_version: "",
-      release_revision: "",
+      version: "",
+      release: "",
       description: "",
       srgs: [],
       file: null,
@@ -187,8 +187,8 @@ export default {
     },
     showModal: function () {
       this.name = "";
-      this.release_version = "";
-      this.release_revision = "";
+      this.version = "";
+      this.release = "";
       this.description = "";
       this.prefix = "";
       this.$refs["AddComponentModal"].show();
@@ -246,11 +246,11 @@ export default {
         formData.append("component[duplicate]", !this.newComponent);
         formData.append("component[id]", this.component_to_duplicate);
       }
-      if (this.release_version) {
-        formData.append("component[release_version]", this.release_version);
+      if (this.version) {
+        formData.append("component[version]", this.version);
       }
-      if (this.release_revision) {
-        formData.append("component[release_revision]", this.release_revision);
+      if (this.release) {
+        formData.append("component[release]", this.release);
       }
       if (this.file) {
         formData.append("component[file]", this.file);
@@ -277,7 +277,7 @@ export default {
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);
       this.$refs["AddComponentModal"].hide();
-      // this.$emit("projectUpdated");
+      this.$emit("projectUpdated");
     },
     setSelectedSrg: function (srg) {
       this.security_requirements_guide_id = srg.id;

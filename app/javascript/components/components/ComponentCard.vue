@@ -15,14 +15,10 @@
     <b-card class="shadow">
       <b-card-title>
         {{ component.name }}
-        <span v-if="component.release_version || component.release_revision">
+        <span v-if="component.version || component.release">
           &nbsp;-
-          <span v-if="component.release_version">
-            &nbsp;Version {{ component.release_version }}
-          </span>
-          <span v-if="component.release_revision">
-            &nbsp;Revision {{ component.release_revision }}
-          </span>
+          <span v-if="component.version"> &nbsp;Version {{ component.version }} </span>
+          <span v-if="component.release"> &nbsp;Release {{ component.release }} </span>
         </span>
         <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
         <!-- Rules count info -->

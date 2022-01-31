@@ -125,8 +125,8 @@ ActiveRecord::Schema.define(version: 2022_01_27_212649) do
     t.string "admin_name"
     t.string "admin_email"
     t.boolean "advanced_fields", default: false
-    t.integer "release_version"
-    t.integer "release_revision"
+    t.integer "version"
+    t.integer "release"
     t.text "description"
     t.index ["component_id"], name: "index_components_on_component_id"
     t.index ["project_id"], name: "index_components_on_project_id"
