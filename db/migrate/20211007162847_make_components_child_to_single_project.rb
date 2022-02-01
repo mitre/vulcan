@@ -4,7 +4,7 @@ class MakeComponentsChildToSingleProject < ActiveRecord::Migration[6.1]
     remove_index :components, name: :components_parent_child_id_index
     remove_column :components, :child_project_id, :bigint
 
-    # Allow a component to reference another component so that it can be overlayed
+    # Allow a component to reference another component so that it can be overlaid
     add_reference :components, :component, foreign_key: true
   end
 end

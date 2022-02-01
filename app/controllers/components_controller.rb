@@ -117,6 +117,8 @@ class ComponentsController < ApplicationController
                          new_release: component_create_params[:release],
                          new_title: component_create_params[:title],
                          new_description: component_create_params[:description])
+    elsif component_create_params[:component_id]
+      Component.find(component_create_params[:component_id]).overlay(@project.id)
     elsif component_create_params[:file]
       # Create a new component from the provided parameters and then pass the spreadsheet
       # to the component for further parsing
@@ -124,7 +126,7 @@ class ComponentsController < ApplicationController
       component.from_spreadsheet(component_create_params[:file])
       component
     else
-      Component.new(component_create_params.except(:id, :duplicate, :file).merge({ project: @project }))
+      Component.new(component_create_params.except(:id, :duplicate, :component_id, :file).merge({ project: @project }))
     end
   end
 
@@ -159,6 +161,7 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :id,
       :duplicate,
+      :component_id,
       :security_requirements_guide_id,
       :name,
       :prefix,
