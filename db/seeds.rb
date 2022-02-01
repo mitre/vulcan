@@ -127,10 +127,13 @@ _vcenter_vami_v1r1 = Component.create!(
 )
 # Make a bunch of dummy released components
 20.times do
+  name = SecureRandom.hex(3)
   c = Component.create(
-    name: SecureRandom.hex(3),
+    name: name,
     version: rand(1..9),
     release: rand(1..99),
+    title: "#{name} STIG Readiness Guide",
+    description: rand < 0.5 ? Faker::GreekPhilosophers.quote : nil,
     prefix: 'zzzz-00',
     based_on: web_srg,
     project: dummy_project

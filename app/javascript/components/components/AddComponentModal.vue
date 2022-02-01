@@ -125,6 +125,7 @@ export default {
           name: this.selectedComponent.name,
           version: this.selectedComponent.version,
           release: this.selectedComponent.release,
+          title: this.selectedComponent.title,
           description: this.selectedComponent.description,
         },
       };

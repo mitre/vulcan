@@ -27,6 +27,10 @@
             </b-form-group>
           </b-col>
         </b-form-row>
+        <!-- Title -->
+        <b-form-group label="Title">
+          <b-form-input v-model="title" placeholder="Component Title" required autocomplete="off" />
+        </b-form-group>
         <!-- Description -->
         <b-form-group label="Description">
           <b-form-textarea v-model="description" placeholder="" rows="3" />
@@ -57,6 +61,7 @@ export default {
       name: this.component.name,
       version: this.component.version,
       release: this.component.release,
+      title: this.component.title,
       description: this.component.description,
     };
   },
@@ -65,6 +70,7 @@ export default {
       this.name = this.component.name;
       this.version = this.component.version;
       this.release = this.component.release;
+      this.title = this.component.title;
       this.description = this.component.description;
     },
     showModal: function () {
@@ -73,7 +79,7 @@ export default {
     updateComponentDetails: function () {
       this.$refs["updateComponentDetailsModal"].hide();
       let payload = { component: {} };
-      ["name", "version", "release", "description"].forEach((attr) => {
+      ["name", "version", "release", "title", "description"].forEach((attr) => {
         if (payload.component[attr] !== this[attr]) {
           payload.component[attr] = this[attr];
         }

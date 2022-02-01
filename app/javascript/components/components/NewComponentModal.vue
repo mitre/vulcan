@@ -92,6 +92,15 @@
                 autocomplete="off"
               />
             </b-form-group>
+            <!-- Title -->
+            <b-form-group label="Title">
+              <b-form-input
+                v-model="title"
+                placeholder="Component Title"
+                required
+                autocomplete="off"
+              />
+            </b-form-group>
             <!-- Description -->
             <b-form-group label="Description">
               <b-form-textarea v-model="description" placeholder="" rows="3" />
@@ -148,6 +157,7 @@ export default {
       name: "",
       version: "",
       release: "",
+      title: "",
       description: "",
       srgs: [],
       file: null,
@@ -189,6 +199,7 @@ export default {
       this.name = "";
       this.version = "";
       this.release = "";
+      this.title = "";
       this.description = "";
       this.prefix = "";
       this.$refs["AddComponentModal"].show();
@@ -257,8 +268,11 @@ export default {
       } else {
         formData.append("component[prefix]", this.prefix);
       }
+      if (this.title) {
+        formData.append("component[title]", this.title);
+      }
       if (this.description) {
-        formData.append("component[description", this.description);
+        formData.append("component[description]", this.description);
       }
 
       axios

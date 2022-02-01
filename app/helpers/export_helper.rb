@@ -38,8 +38,10 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
                                               satisfies satisfied_by]).each do |component|
-        version_release = "V#{component[:version]}R#{component[:release]}"
-        file_name = "U_#{component[:name]}_STIG_Readiness_Guide_#{version_release}-xccdf.xml"
+        version = component[:version] ? "V#{component[:version]}" : ''
+        release = component[:release] ? "R#{component[:release]}" : ''
+        title = (component[:title] || "#{component[:name]} STIG Readiness Guide")
+        file_name = "U_#{title.tr(' ', '_')}_#{version}#{release}-xccdf.xml"
         zio.put_next_entry(file_name)
 
         doc = Ox::Document.new
@@ -71,7 +73,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
 
         ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
-        ox_el_helper(benchmark, 'title', "#{component[:name]} STIG Readiness Guide")
+        ox_el_helper(benchmark, 'title', title)
         ox_el_helper(benchmark, 'description', component[:description])
         ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
         ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
@@ -102,6 +104,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   private
 
   def groups_helper(component, benchmark)
+    groups = {}
     component.rules.each do |rule|
       # Rules are filtered here to prevent n + 1 query
       next unless rule[:status] == 'Applicable - Configurable'
@@ -124,9 +127,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       checks_helper(group_rule, rule)
 
       group << group_rule
-
-      benchmark << group
+      groups[rule[:id]] = group
     end
+
+    # Groups are sorted here to prevent n + 1 query
+    groups.keys.sort.each { |rule_id| benchmark << groups[rule_id] }
   end
 
   def descriptions_helper(group_rule, rule)
@@ -137,6 +142,16 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       vuln_discussion = drd[:vuln_discussion]
       vuln_discussion << "\n\nSatisfies: #{rule.satisfies.map(&:version).join(', ')}" if rule.satisfies.present?
       desc_str << ox_el_helper_ascii_str('VulnDiscussion', vuln_discussion)
+      desc_str << ox_el_helper_ascii_str('FalsePositives', drd[:false_positives])
+      desc_str << ox_el_helper_ascii_str('FalseNegatives', drd[:false_negatives])
+      desc_str << ox_el_helper_ascii_str('Documentable', drd[:documentable])
+      desc_str << ox_el_helper_ascii_str('Mitigations', drd[:mitigations])
+      desc_str << ox_el_helper_ascii_str('SecurityOverrideGuidance', drd[:severity_override_guidance])
+      desc_str << ox_el_helper_ascii_str('PotentialImpacts', drd[:potential_impacts])
+      desc_str << ox_el_helper_ascii_str('ThirdPartyTools', drd[:third_party_tools])
+      desc_str << ox_el_helper_ascii_str('MitigationControl', drd[:mitigation_control])
+      desc_str << ox_el_helper_ascii_str('Responsibility', drd[:responsibility])
+      desc_str << ox_el_helper_ascii_str('IAControls', drd[:ia_controls])
 
       desc << desc_str.join
 
