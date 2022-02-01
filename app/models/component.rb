@@ -220,10 +220,15 @@ class Component < ApplicationRecord
     rules.where(locked: false).size.zero?
   end
 
-  def duplicate(new_version: nil, new_prefix: nil)
+  def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
+                new_title: nil, new_description: nil)
     new_component = amoeba_dup
-    new_component.version = new_version if new_version
+    new_component.name = new_name if new_name
     new_component.prefix = new_prefix if new_prefix
+    new_component.version = new_version if new_version
+    new_component.release = new_release if new_release
+    new_component.title = new_title if new_title
+    new_component.description = new_description if new_description
     new_component.skip_import_srg_rules = true
     new_component
   end

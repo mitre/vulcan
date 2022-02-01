@@ -9,7 +9,7 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
-  rescue_from StandardError, with: :helpful_errors
+  rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
 
   def set_project_permissions
     @effective_permissions = current_user&.effective_permissions(@project)

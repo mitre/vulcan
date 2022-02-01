@@ -41,8 +41,11 @@
                 :spreadsheet_import="true"
                 @projectUpdated="refreshProject"
               />
-              <b-button class="px-2 m-2" variant="secondary" @click="downloadExcelExport">
+              <b-button class="px-2 m-2" variant="secondary" @click="downloadExport('excel')">
                 Download Excel Export
+              </b-button>
+              <b-button class="px-2 m-2" variant="secondary" @click="downloadExport('xccdf')">
+                Download Xccdf Export
               </b-button>
             </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
@@ -313,13 +316,13 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    downloadExcelExport: function () {
+    downloadExport: function (type) {
       axios
-        .get(`/projects/${this.project.id}/export/excel`)
+        .get(`/projects/${this.project.id}/export/${type}`)
         .then((_res) => {
           // Once it is validated that there is content to download, prompt
           // the user to save the file
-          window.open(`/projects/${this.project.id}/export/excel`);
+          window.open(`/projects/${this.project.id}/export/${type}`);
         })
         .catch(this.alertOrNotifyResponse);
     },

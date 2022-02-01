@@ -35,7 +35,7 @@ class ComponentsController < ApplicationController
                           .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: query)))
                           .limit(100)
                           .distinct
-                          .pluck(:id, :version)
+                          .pluck(:id, :name)
     render json: {
       components: components
     }
@@ -110,8 +110,13 @@ class ComponentsController < ApplicationController
 
   def create_or_duplicate
     if component_create_params[:duplicate]
-      @project.components.find(component_create_params[:id]).duplicate(new_version: component_create_params[:version],
-                                                                       new_prefix: component_create_params[:prefix])
+      @project.components.find(component_create_params[:id])
+              .duplicate(new_name: component_create_params[:name],
+                         new_prefix: component_create_params[:prefix],
+                         new_version: component_create_params[:version],
+                         new_release: component_create_params[:release],
+                         new_title: component_create_params[:title],
+                         new_description: component_create_params[:description])
     elsif component_create_params[:file]
       # Create a new component from the provided parameters and then pass the spreadsheet
       # to the component for further parsing
@@ -139,7 +144,11 @@ class ComponentsController < ApplicationController
   def component_update_params
     params.require(:component).permit(
       :released,
+      :name,
       :version,
+      :release,
+      :title,
+      :description,
       :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
       component_metadata_attributes: { data: {} }
@@ -150,9 +159,13 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :id,
       :duplicate,
-      :prefix,
       :security_requirements_guide_id,
+      :name,
+      :prefix,
       :version,
+      :release,
+      :title,
+      :description,
       :file,
       file: {}
     )

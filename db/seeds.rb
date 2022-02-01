@@ -73,45 +73,91 @@ puts 'Created SRGs'
 # Seeds for Project Components #
 # ---------------------------- #
 puts 'Creating Components...'
-photon3_v1r1 = Component.create!(project: photon3, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: gpos_srg)
+photon3_v1r1 = Component.create!(
+  project: photon3,
+  name: 'Photon OS 3',
+  version: 1,
+  release: 1,
+  prefix: 'PHOS-03',
+  based_on: gpos_srg
+)
 photon3_v1r1.reload
 photon3_v1r1.rules.update(locked: true)
 photon3_v1r1.update(released: true)
-photon3_v1r1.duplicate(new_version: 'Photon OS 3 V1R2').save!
-photon4_v1r1 = Component.create!(project: photon4, version: 'Photon OS 3 V1R1', prefix: 'PHOS-04', based_on: gpos_srg)
+photon3_v1r1.duplicate(new_name: 'Photon OS 3', new_version: 1, new_release: 2).save!
+photon4_v1r1 = Component.create!(
+  project: photon4,
+  name: 'Photon OS 3',
+  version: 1,
+  release: 1,
+  prefix: 'PHOS-04',
+  based_on: gpos_srg
+)
 photon4_v1r1.reload
 _photon3_v1r1_overlay = Component.create!(
   project: vsphere,
   component_id: photon3_v1r1.id,
   prefix: photon3_v1r1.prefix,
   security_requirements_guide_id: photon3_v1r1.security_requirements_guide_id,
-  version: photon3_v1r1.version
+  name: photon3_v1r1.name
 )
 _vcenter_perf_v1r1 = Component.create!(
   project: vsphere,
-  version: 'vCenter Perf V1R1',
+  name: 'vCenter Perf',
+  version: 1,
+  release: 1,
   prefix: 'VCPF-01',
   based_on: web_srg
 )
 _vcenter_sts_v1r1 = Component.create!(
   project: vsphere,
-  version: 'vCenter STS V1R1',
+  name: 'vCenter STS',
+  version: 1,
+  release: 1,
   prefix: 'VSTS-01',
   based_on: web_srg
 )
 _vcenter_vami_v1r1 = Component.create!(
   project: vsphere,
-  version: 'vCenter VAMI V1R1',
+  name: 'vCenter VAMI',
+  version: 1,
+  release: 1,
   prefix: 'VAMI-01',
   based_on: web_srg
 )
 # Make a bunch of dummy released components
 20.times do
-  c = Component.create(version: SecureRandom.hex(3), prefix: 'zzzz-00', based_on: web_srg, project: dummy_project)
+  name = SecureRandom.hex(3)
+  c = Component.create(
+    name: name,
+    version: rand(1..9),
+    release: rand(1..99),
+    title: "#{name} STIG Readiness Guide",
+    description: rand < 0.5 ? Faker::GreekPhilosophers.quote : nil,
+    prefix: 'zzzz-00',
+    based_on: web_srg,
+    project: dummy_project
+  )
   # rubocop:disable Rails/SkipsModelValidations
   c.rules.update_all(locked: true)
-  # rubocop:enable Rails/SkipsModelValidations
   c.update(released: true)
+  c.rules.update_all(rule_severity: RuleConstants::SEVERITIES.sample)
+  c.rules.update_all(rule_weight: '10.0')
+  c.rules.order('RANDOM()').limit(c.rules.size * rand(25..35) / 100)
+   .update_all(status: 'Applicable - Configurable')
+
+  rule_satisfactions = []
+  rules_with_duplicates_ids = c.rules.order('RANDOM()').limit(c.rules.size * rand(5..10) / 100).pluck(:id)
+  c.rules.where.not(id: rules_with_duplicates_ids).order('RANDOM()')
+   .limit(c.rules.size * rand(10..15) / 100).pluck(:id).each do |rule_id|
+    rule_satisfactions << RuleSatisfaction.new(
+      rule_id: rule_id,
+      satisfied_by_rule_id: rules_with_duplicates_ids.sample
+    )
+  end
+  RuleSatisfaction.import! rule_satisfactions
+
+  # rubocop:enable Rails/SkipsModelValidations
 end
 puts 'Created Components'
 

@@ -14,7 +14,12 @@
     <!-- Card -->
     <b-card class="shadow">
       <b-card-title>
-        {{ component.version }}
+        {{ component.name }}
+        <span v-if="component.version || component.release">
+          &nbsp;-
+          <span v-if="component.version"> &nbsp;Version {{ component.version }} </span>
+          <span v-if="component.release"> &nbsp;Release {{ component.release }} </span>
+        </span>
         <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
         <!-- Rules count info -->
         <span class="float-right h6">
@@ -23,6 +28,9 @@
       </b-card-title>
       <b-card-sub-title class="mb-2">
         Based on {{ component.based_on_title }} {{ component.based_on_version }}
+      </b-card-sub-title>
+      <b-card-sub-title v-if="component.description" class="my-2">
+        {{ component.description }}
       </b-card-sub-title>
       <p>
         <span v-if="component.admin_name">
