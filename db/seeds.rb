@@ -133,7 +133,7 @@ _vcenter_vami_v1r1 = Component.create!(
     version: rand(1..9),
     release: rand(1..99),
     title: "#{name} STIG Readiness Guide",
-    description: rand < 0.5 ? Faker::GreekPhilosophers.quote : nil,
+    description: rand < 0.5 ? FFaker::AWS.product_description : nil,
     prefix: 'zzzz-00',
     based_on: web_srg,
     project: dummy_project
