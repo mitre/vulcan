@@ -115,6 +115,7 @@ class ComponentsController < ApplicationController
                          new_prefix: component_create_params[:prefix],
                          new_version: component_create_params[:version],
                          new_release: component_create_params[:release],
+                         new_title: component_create_params[:title],
                          new_description: component_create_params[:description])
     elsif component_create_params[:file]
       # Create a new component from the provided parameters and then pass the spreadsheet
@@ -146,6 +147,7 @@ class ComponentsController < ApplicationController
       :name,
       :version,
       :release,
+      :title,
       :description,
       :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
@@ -162,6 +164,7 @@ class ComponentsController < ApplicationController
       :prefix,
       :version,
       :release,
+      :title,
       :description,
       :file,
       file: {}
