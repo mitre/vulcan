@@ -59,6 +59,10 @@ gem 'fast_excel'
 # For writing excel files
 gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
+gem 'ox'
+
+gem 'rubyzip'
+
 group :development do
   gem 'listen', '~> 3.1.5'
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
