@@ -126,14 +126,14 @@ _vcenter_vami_v1r1 = Component.create!(
   based_on: web_srg
 )
 # Make a bunch of dummy released components
-20.times do
+20.times do |n|
   name = SecureRandom.hex(3)
   c = Component.create(
     name: name,
     version: rand(1..9),
     release: rand(1..99),
     title: "#{name} STIG Readiness Guide",
-    description: rand < 0.5 ? FFaker::AWS.product_description : nil,
+    description: rand < 0.5 ? "Test description #{n + 1}" : nil,
     prefix: 'zzzz-00',
     based_on: web_srg,
     project: dummy_project
