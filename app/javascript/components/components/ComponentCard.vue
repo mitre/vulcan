@@ -23,7 +23,7 @@
         <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
         <!-- Rules count info -->
         <span class="float-right h6">
-          {{ component.rules_count }} {{ component.component_id ? "Overlayed" : "" }} Controls
+          {{ component.rules_count }} {{ component.component_id ? "Overlaid" : "" }} Controls
         </span>
       </b-card-title>
       <b-card-sub-title class="mb-2">

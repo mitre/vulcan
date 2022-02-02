@@ -16,6 +16,12 @@
     >
       <!-- Searchable projects -->
       <b-form v-if="!selectedComponent" @submit="addComponent()">
+        <input
+          id="AddComponentAuthenticityToken"
+          type="hidden"
+          name="authenticity_token"
+          :value="authenticityToken"
+        />
         <b-row>
           <b-col class="d-flex">
             <b-input-group>
@@ -120,13 +126,6 @@ export default {
       let payload = {
         component: {
           component_id: this.selectedComponent.id,
-          prefix: this.selectedComponent.prefix,
-          security_requirements_guide_id: this.selectedComponent.security_requirements_guide_id,
-          name: this.selectedComponent.name,
-          version: this.selectedComponent.version,
-          release: this.selectedComponent.release,
-          title: this.selectedComponent.title,
-          description: this.selectedComponent.description,
         },
       };
 

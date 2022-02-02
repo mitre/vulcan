@@ -10,6 +10,7 @@ class Component < ApplicationRecord
   attr_accessor :skip_import_srg_rules
 
   amoeba do
+    include_association :component_metadata
     include_association :rules
     include_association :additional_questions
     set released: false
@@ -230,6 +231,13 @@ class Component < ApplicationRecord
     new_component.title = new_title if new_title
     new_component.description = new_description if new_description
     new_component.skip_import_srg_rules = true
+    new_component
+  end
+
+  def overlay(project_id)
+    new_component = amoeba_dup
+    new_component.project_id = project_id
+    new_component.component_id = id
     new_component
   end
 
