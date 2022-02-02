@@ -7,6 +7,8 @@ class Rule < BaseRule
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
     set locked: false
+
+    include_association :additional_answers
   end
 
   audited except: %i[component_id review_requestor_id created_at updated_at locked], max_audits: 1000

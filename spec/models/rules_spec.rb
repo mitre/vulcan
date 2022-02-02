@@ -39,13 +39,13 @@ RSpec.describe Review, type: :model do
     )
   end
 
-  # context 'overlayed rules are delegated to overlayed components' do
+  # context 'overlaid rules are delegated to overlaid components' do
   #   it 'properly collects all rule information into one rule' do
   #     # Create a component overlay of `p2_c1 overlays p1_c1`
   #     @p2_c1 = Component.create(project: @p2, version: 'Photon OS 3.1 V1R1', prefix: 'PHOS-03')
   #     # Pick a rule to overlay
   #     rule_to_overlay = @p1_c1.rules.first
-  #     # Create the overlayed version - connected via rule_id
+  #     # Create the overlaid version - connected via rule_id
   #     new_rule = Rule.create(component: @p2_c1, rule_id: rule_to_overlay.rule_id)
   #     # Verify that a field we will modify is currently nil
   #     expect(new_rule.status).to eq(nil)
@@ -55,7 +55,7 @@ RSpec.describe Review, type: :model do
   #     # Verify that the new_rule has no checks or disa descriptions
   #     expect(new_rule.checks.size).to eq(0)
   #     expect(new_rule.disa_rule_descriptions.size).to eq(0)
-  #     # Verify that the overlayed rule has the right number of checks and disa descriptions
+  #     # Verify that the overlaid rule has the right number of checks and disa descriptions
   #     expect(new_rule.overlay_rule.checks.size).not_to eq(0)
   #     expect(new_rule.overlay_rule.disa_rule_descriptions.size).not_to eq(0)
   #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size)
