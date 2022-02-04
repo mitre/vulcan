@@ -35,6 +35,7 @@ class Rule < BaseRule
 
   before_validation :set_rule_id
   before_save :apply_audit_comment
+  before_update :update_inspec_code
   before_destroy :prevent_destroy_if_under_review_or_locked
 
   validates_with RuleSatisfactionValidator
@@ -271,5 +272,22 @@ class Rule < BaseRule
     (rule_descriptions + disa_rule_descriptions + checks + additional_answers).each do |record|
       record.audit_comment = comment if record.new_record? || record.changed? || record._destroy
     end
+  end
+
+  def update_inspec_code
+    inspec = +''
+    inspec << "# copyright: 2016, Chef Software, Inc.\n\n"
+    inspec << "title 'Example Title'\n\n"
+    inspec << "control '#{component[:prefix]}-#{rule_id}' do\n"
+    inspec << "  impact 'critical'\n"
+    inspec << "  title '#{title}'\n"
+    inspec << "  desc 'An optional description...'\n"
+    inspec << "  tag 'example'\n"
+    inspec << "  ref 'Example Requirements 1.0', uri: 'http://...'\n"
+    inspec << "\n"
+    inspec << code.split("\n").map { |l| "  #{l}" }.join("\n")
+    inspec << "\n"
+    inspec << 'end'
+    self.inspec = inspec
   end
 end
