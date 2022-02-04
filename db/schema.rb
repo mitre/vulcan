@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_01_27_212649) do
+ActiveRecord::Schema.define(version: 2022_02_04_072642) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -85,6 +85,8 @@ ActiveRecord::Schema.define(version: 2022_01_27_212649) do
     t.string "type"
     t.bigint "srg_rule_id"
     t.bigint "security_requirements_guide_id"
+    t.text "code"
+    t.text "inspec"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
