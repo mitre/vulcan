@@ -85,8 +85,8 @@ ActiveRecord::Schema.define(version: 2022_02_04_072642) do
     t.string "type"
     t.bigint "srg_rule_id"
     t.bigint "security_requirements_guide_id"
-    t.text "code"
-    t.text "inspec"
+    t.text "inspec_control_body"
+    t.text "inspec_control_file"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true

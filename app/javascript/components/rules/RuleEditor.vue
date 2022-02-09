@@ -31,22 +31,16 @@
           :additional_questions="additional_questions"
         />
       </b-tab>
-      <b-tab title="Code" class="pt-3">
+      <b-tab title="Inspec Control Body" class="pt-3">
         <MonacoEditor
-          :value="rule.code"
-          language="ruby"
-          width="auto"
-          height="800"
+          :value="rule.inspec_control_body"
           :options="monacoEditorOptions"
-          @input="$root.$emit('update:rule', { ...rule, code: $event })"
+          @input="$root.$emit('update:rule', { ...rule, inspec_control_body: $event })"
         />
       </b-tab>
-      <b-tab title="Inspec" class="pt-3">
+      <b-tab title="Inspec Control (Read-Only)" class="pt-3">
         <MonacoEditor
-          :value="rule.inspec"
-          language="ruby"
-          width="auto"
-          height="800"
+          :value="rule.inspec_control_file"
           :options="{ ...monacoEditorOptions, readOnly: true }"
         />
       </b-tab>
@@ -97,9 +91,16 @@ export default {
       advancedEditor: false,
       monacoEditorOptions: {
         automaticLayout: true,
+        heigh: "800",
+        language: "ruby",
         minimap: {
           enabled: false,
         },
+        readOnly: this.readOnly,
+        "semanticHighlighting.enabled": true,
+        tabSize: 2,
+        theme: "vs-dark",
+        width: "auto",
       },
     };
   },

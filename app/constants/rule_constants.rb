@@ -16,6 +16,12 @@ module RuleConstants
     'high' => 'CAT III'
   }.freeze
 
+  IMPACTS_MAP = {
+    'low' => 0.3,
+    'medium' => 0.5,
+    'high' => 0.7
+  }.freeze
+
   SEVERITIES = %w[
     unknown
     info
