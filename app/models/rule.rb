@@ -186,6 +186,33 @@ class Rule < BaseRule
     "#{component[:prefix]}-#{rule_id}"
   end
 
+  def update_inspec_code
+    desc = disa_rule_descriptions.first
+    control = Inspec::Object::Control.new
+    control.add_header('# -*- encoding : utf-8 -*-')
+    control.id = "#{component[:prefix]}-#{rule_id}"
+    control.title = title
+    control.descriptions[:default] = desc[:vuln_discussion]
+    control.descriptions[:rationale] = ''
+    control.descriptions[:check] = checks.first&.content
+    control.descriptions[:fix] = fixtext
+    control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
+    control.add_tag(Inspec::Object::Tag.new('gtitle', version))
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version))) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('gid', nil))
+    control.add_tag(Inspec::Object::Tag.new('rid', nil))
+    control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
+    control.add_tag(Inspec::Object::Tag.new('fix_id', fix_id)) if fix_id.present?
+    control.add_tag(Inspec::Object::Tag.new('cci', [ident])) if ident.present?
+    control.add_tag(Inspec::Object::Tag.new('nist', nil))
+    %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
+       third_party_tools mitigation_control responsibility ia_controls].each do |field|
+      control.add_tag(Inspec::Object::Tag.new(field.to_s, desc[field])) if desc[field].present?
+    end
+    control.add_post_body(inspec_control_body)
+    self.inspec_control_file = control.to_ruby
+  end
+
   private
 
   def export_fixtext
@@ -274,33 +301,5 @@ class Rule < BaseRule
     (rule_descriptions + disa_rule_descriptions + checks + additional_answers).each do |record|
       record.audit_comment = comment if record.new_record? || record.changed? || record._destroy
     end
-  end
-
-  def update_inspec_code
-    desc = disa_rule_descriptions.first
-    control = Inspec::Object::Control.new
-    control.add_header('# -*- encoding : utf-8 -*-')
-    control.id = "#{component[:prefix]}-#{rule_id}"
-    control.title = title
-    control.descriptions[:default] = desc[:vuln_discussion]
-    control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
-    control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version))) if satisfies.present?
-    # control.add_tag(Inspec::Object::Tag.new('gid', ''))
-    # control.add_tag(Inspec::Object::Tag.new('rid', ''))
-    control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('fix_id', fix_id)) if fix_id.present?
-    control.add_tag(Inspec::Object::Tag.new('cci', [ident])) if ident.present?
-    # control.add_tag(Inspec::Object::Tag.new('nist', ''))
-    %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
-       third_party_tools mitigation_control responsibility ia_controls].each do |field|
-      control.add_tag(Inspec::Object::Tag.new(field.to_s, desc[field])) if desc[field].present?
-    end
-    checks.each do |check|
-      control.add_tag(Inspec::Object::Tag.new('check', check[:content]))
-    end
-    control.add_tag(Inspec::Object::Tag.new('fix', fixtext))
-    control.add_post_body(inspec_control_body)
-    self.inspec_control_file = control.to_ruby
   end
 end

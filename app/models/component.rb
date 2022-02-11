@@ -116,7 +116,7 @@ class Component < ApplicationRecord
     end
 
     # Calculate the prefix (which will need to be removed from each row)
-    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.reject(&:blank?)
+    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.compact_blank
     if possible_prefixes.empty?
       errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID '\
                         'in the file and try again.')
