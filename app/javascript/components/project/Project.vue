@@ -47,6 +47,9 @@
               <b-button class="px-2 m-2" variant="secondary" @click="downloadExport('xccdf')">
                 Download Xccdf Export
               </b-button>
+              <b-button class="px-2 m-2" variant="secondary" @click="downloadExport('inspec')">
+                Download InSpec Profile
+              </b-button>
             </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">

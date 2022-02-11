@@ -26,12 +26,12 @@ class BaseRule < ApplicationRecord
 
   validates :status, inclusion: {
     in: STATUSES,
-    message: "is not an acceptable value, acceptable values are: '#{STATUSES.reject(&:blank?).join("', '")}'"
+    message: "is not an acceptable value, acceptable values are: '#{STATUSES.compact_blank.join("', '")}'"
   }
 
   validates :rule_severity, inclusion: {
     in: SEVERITIES,
-    message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.reject(&:blank?).join("', '")}'"
+    message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.compact_blank.join("', '")}'"
   }
 
   # In all cases of has_many, it is very unlikely (based on past releases of SRGs

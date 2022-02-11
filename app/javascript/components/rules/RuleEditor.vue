@@ -35,6 +35,8 @@
         <MonacoEditor
           :value="rule.inspec_control_body"
           :options="monacoEditorOptions"
+          width="auto"
+          height="800"
           @input="$root.$emit('update:rule', { ...rule, inspec_control_body: $event })"
         />
       </b-tab>
@@ -42,6 +44,8 @@
         <MonacoEditor
           :value="rule.inspec_control_file"
           :options="{ ...monacoEditorOptions, readOnly: true }"
+          width="auto"
+          height="800"
         />
       </b-tab>
     </b-tabs>
@@ -91,7 +95,6 @@ export default {
       advancedEditor: false,
       monacoEditorOptions: {
         automaticLayout: true,
-        heigh: "800",
         language: "ruby",
         minimap: {
           enabled: false,
@@ -100,7 +103,6 @@ export default {
         "semanticHighlighting.enabled": true,
         tabSize: 2,
         theme: "vs-dark",
-        width: "auto",
       },
     };
   },
