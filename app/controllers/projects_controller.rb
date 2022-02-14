@@ -119,7 +119,7 @@ class ProjectsController < ApplicationController
         when :xccdf
           send_data export_xccdf(@project).string, filename: "#{@project.name}.zip"
         when :inspec
-          send_data export_inspec(@project).string, filename: "#{@project.name}_inspec.zip"
+          send_data export_inspec_project(@project).string, filename: "#{@project.name}_inspec.zip"
         end
       end
       # JSON responses are just used to validate ahead of time that this

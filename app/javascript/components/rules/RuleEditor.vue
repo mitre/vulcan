@@ -96,9 +96,9 @@ export default {
       monacoEditorOptions: {
         automaticLayout: true,
         language: "ruby",
-        minimap: {
-          enabled: false,
-        },
+        // minimap: {
+        //   enabled: false,
+        // },
         readOnly: this.readOnly,
         "semanticHighlighting.enabled": true,
         tabSize: 2,
