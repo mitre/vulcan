@@ -41,15 +41,11 @@
                 :spreadsheet_import="true"
                 @projectUpdated="refreshProject"
               />
-              <b-button class="px-2 m-2" variant="secondary" @click="downloadExport('excel')">
-                Download Excel Export
-              </b-button>
-              <b-button class="px-2 m-2" variant="secondary" @click="downloadExport('xccdf')">
-                Download Xccdf Export
-              </b-button>
-              <b-button class="px-2 m-2" variant="secondary" @click="downloadExport('inspec')">
-                Download InSpec Profile
-              </b-button>
+              <b-dropdown right text="Download" variant="secondary" class="px-2 m2">
+                <b-dropdown-item @click="downloadExport('excel')">Excel Export</b-dropdown-item>
+                <b-dropdown-item @click="downloadExport('xccdf')">Xccdf Export</b-dropdown-item>
+                <b-dropdown-item @click="downloadExport('inspec')">InSpec Profile</b-dropdown-item>
+              </b-dropdown>
             </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">

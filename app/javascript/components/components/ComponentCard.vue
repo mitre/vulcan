@@ -99,14 +99,22 @@
           </span>
 
           <!-- Export component -->
-          <a :href="`/components/${component.id}/export`" target="_blank" class="text-body">
-            <i
-              v-b-tooltip.hover
-              class="mdi mdi-download h5 float-right mr-2 clickable"
-              aria-hidden="true"
-              title="Export Component"
-            />
-          </a>
+          <i
+            v-b-tooltip.hover
+            class="mdi mdi-download h5 float-right mr-2 clickable"
+            aria-hidden="true"
+            title="Export Component as CSV"
+            @click="downloadExport('csv')"
+          />
+
+          <!-- Download InSpec Profile -->
+          <i
+            v-b-tooltip.hover
+            class="mdi mdi-code-braces h5 float-right mr-2 clickable"
+            aria-hidden="true"
+            title="Download InSpec Profile"
+            @click="downloadExport('inspec')"
+          />
 
           <!-- Lock all controls in component -->
           <span
@@ -135,6 +143,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
@@ -187,6 +196,18 @@ export default {
       }
 
       return "All rules must be locked to release a component";
+    },
+  },
+  methods: {
+    downloadExport: function (type) {
+      axios
+        .get(`/components/${this.component.id}/export/${type}`)
+        .then((_res) => {
+          // Once it is validated that there is content to download, prompt
+          // the user to save the file
+          window.open(`/components/${this.component.id}/export/${type}`);
+        })
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };

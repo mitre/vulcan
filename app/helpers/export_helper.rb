@@ -101,30 +101,40 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     end
   end
 
-  def export_inspec(project)
+  def export_inspec_project(project)
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
                                               satisfies satisfied_by]).each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
-        dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline"
-        zio.put_next_entry("#{dir}/inspec.yml")
-        inspec_yml = {
-          name: component[:name],
-          title: component[:title],
-          maintainer: component[:admin_name],
-          summary: component[:description]
-        }
-        zio.write YAML.dump(inspec_yml)
-        component.rules.each do |rule|
-          zio.put_next_entry("#{dir}/controls/#{component[:prefix]}-#{rule[:rule_id]}.rb")
-          zio.write rule.inspec_control_file
-        end
+        dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline/"
+        inspec_helper(zio, component, dir)
       end
     end
   end
 
+  def export_inspec_component(component)
+    Zip::OutputStream.write_buffer do |zio|
+      inspec_helper(zio, component, '')
+    end
+  end
+
   private
+
+  def inspec_helper(zio, component, dir)
+    zio.put_next_entry("#{dir}inspec.yml")
+    inspec_yml = {
+      name: component[:name],
+      title: component[:title],
+      maintainer: component[:admin_name],
+      summary: component[:description]
+    }
+    zio.write YAML.dump(inspec_yml)
+    component.rules.each do |rule|
+      zio.put_next_entry("#{dir}controls/#{component[:prefix]}-#{rule[:rule_id]}.rb")
+      zio.write rule.inspec_control_file
+    end
+  end
 
   def groups_helper(component, benchmark)
     groups = {}
