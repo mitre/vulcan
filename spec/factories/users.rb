@@ -14,5 +14,13 @@ FactoryBot.define do
     end
 
     factory :ldap_user, traits: [:ldap_user]
+
+    factory :admin_user do
+      admin { true }
+    end
+
+    factory :non_admin_user do
+      admin { false }
+    end
   end
 end
