@@ -77,6 +77,11 @@
             </b-row>
           </b-tab>
 
+          <!-- Diff View -->
+          <b-tab title="Diff Viewer">
+            <DiffViewer :project="initialProjectState" />
+          </b-tab>
+
           <!-- Project members -->
           <b-tab :title="`Members (${project.memberships_count})`">
             <MembershipsTable
@@ -187,6 +192,7 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
+import MonacoEditor from "monaco-editor-vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -197,6 +203,7 @@ import UpdateMetadataModal from "./UpdateMetadataModal.vue";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
+import DiffViewer from "./DiffViewer.vue";
 
 export default {
   name: "Project",
@@ -207,6 +214,7 @@ export default {
     ComponentCard,
     AddComponentModal,
     NewComponentModal,
+    DiffViewer,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
