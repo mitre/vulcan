@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>Projects</h1>
-    <ProjectsTable :projects="projects" />
+    <ProjectsTable :projects="projects" :is_vulcan_admin="is_vulcan_admin"/>
   </div>
 </template>
 
@@ -14,6 +14,10 @@ export default {
   props: {
     projects: {
       type: Array,
+      required: true,
+    },
+    is_vulcan_admin: {
+      type: String,
       required: true,
     },
   },

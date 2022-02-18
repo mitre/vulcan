@@ -44,6 +44,28 @@
       <template #cell(updated_at)="data">
         {{ friendlyDateTime(data.item.updated_at) }}
       </template>
+
+      <template #cell(actions)="data">
+
+        <RenameProjectModal :project="data.item" style="float: right;" />
+        
+        <span>
+          <b-button
+            v-if="is_vulcan_admin"
+            class="px-2 m-2"
+            variant="danger"
+            :data-confirm="getLabel(data.item)"
+            data-method="delete"
+            :href="destroyAction(data.item)"
+            rel="nofollow"
+          >
+            <i class="mdi mdi-trash-can" aria-hidden="true" />
+            Remove
+          </b-button>
+        </span>
+
+      </template>
+
     </b-table>
 
     <!-- Pagination controls -->
@@ -58,12 +80,19 @@
 
 <script>
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import RenameProjectModal from "./RenameProjectModal.vue";
+
 export default {
   name: "ProjectsTable",
   mixins: [DateFormatMixinVue],
+  components: {RenameProjectModal,},
   props: {
     projects: {
       type: Array,
+      required: true,
+    },
+    is_vulcan_admin: {
+      type: String,
       required: true,
     },
   },
@@ -76,6 +105,12 @@ export default {
         { key: "name", sortable: true },
         { key: "memberships_count", label: "Members", sortable: true },
         { key: "updated_at", label: "Last Updated", sortable: true },
+        {
+          key: "actions",
+          label: "Actions",
+          thClass: "text-right",
+          tdClass: "p-0 text-right",
+        },
       ],
     };
   },
@@ -109,6 +144,12 @@ export default {
     },
     getProjectAction: function (project) {
       return "/projects/" + project.id;
+    },
+    destroyAction: function (project) {
+      return `/projects/${project.id}`;
+    },
+    getLabel: function(project) {
+      return "Are you sure you want to completely remove project " + project.name + " and all of its related data?";
     },
   },
 };
