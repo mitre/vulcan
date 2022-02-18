@@ -26,16 +26,17 @@
         <p v-else>Created on {{ friendlyDateTime(rule.created_at) }}</p>
 
         <!-- Action Buttons -->
-        <!-- Duplicate rule modal -->
+        <!-- Clone rule modal -->
         <NewRuleModalForm
-          :title="'Duplicate Control'"
+          :title="'Clone Control'"
           :id-prefix="'duplicate'"
           :for-duplicate="true"
           :selected-rule-id="rule.id"
           :selected-rule-text="`${projectPrefix}-${rule.rule_id}`"
           @ruleSelected="$emit('ruleSelected', $event.id)"
         />
-        <b-button v-b-modal.duplicate-rule-modal variant="primary">Duplicate Control</b-button>
+        <b-button v-b-modal.duplicate-rule-modal variant="primary">Clone Control</b-button>
+        <!-- Mark/Unmark as duplicate modal -->
         <span
           v-if="
             rule.satisfied_by &&
