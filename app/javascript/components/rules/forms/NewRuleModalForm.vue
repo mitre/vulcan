@@ -3,7 +3,7 @@
     <b-modal :id="`${idPrefix}-rule-modal`" ref="modal" :title="title" centered @ok="handleSubmit">
       <form ref="form" method="post">
         <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
-        <div v-if="forDuplicate">Duplicate control {{ selectedRuleText }}?</div>
+        <div v-if="forDuplicate">Clone control {{ selectedRuleText }}?</div>
         <div v-else>Create a new control in this project?</div>
       </form>
     </b-modal>
