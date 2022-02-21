@@ -63,7 +63,8 @@ class Component < ApplicationRecord
   after_create :import_srg_rules
 
   validates_with PrefixValidator
-  validates :prefix, :based_on, presence: true
+
+  validates :prefix, presence: true
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,

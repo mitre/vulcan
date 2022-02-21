@@ -209,7 +209,7 @@ class Rule < BaseRule
        third_party_tools mitigation_control responsibility ia_controls].each do |field|
       control.add_tag(Inspec::Object::Tag.new(field.to_s, desc[field])) if desc[field].present?
     end
-    control.add_post_body(inspec_control_body)
+    control.add_post_body(inspec_control_body) if inspec_control_body.present?
     self.inspec_control_file = control.to_ruby
   end
 
