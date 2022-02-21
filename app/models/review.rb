@@ -6,7 +6,7 @@ class Review < ApplicationRecord
   belongs_to :rule
   has_one :component, through: :rule
 
-  validates :user_id, :comment, :action, presence: true
+  validates :comment, :action, presence: true
 
   before_create :take_review_action
   validate :validate_project_permissions
