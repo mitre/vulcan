@@ -2,7 +2,8 @@
   <span>
     <b-button class="px-2 m-2" variant="primary" @click="showModal()">
       <i class="mdi mdi-wrench" aria-hidden="true" />
-          Rename</b-button>
+      Rename
+    </b-button>
     <b-modal
       ref="renameProjectModal"
       title="Rename"
@@ -52,9 +53,7 @@ export default {
     },
     renameProject: function () {
       this.$refs["renameProjectModal"].hide();
-      
       let payload = { project: { name: this["name"] } };
-           
       axios
         .put(`/projects/${this.project.id}`, payload)
         .then(this.renameProjectSuccess)

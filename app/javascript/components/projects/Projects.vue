@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>Projects</h1>
-    <ProjectsTable :projects="projects" :is_vulcan_admin="is_vulcan_admin"/>
+    <ProjectsTable :projects="projects" :is_vulcan_admin="is_vulcan_admin" />
   </div>
 </template>
 
