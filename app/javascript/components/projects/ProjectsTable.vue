@@ -46,7 +46,7 @@
       </template>
 
       <template #cell(actions)="data">
-        <RenameProjectModal :project="data.item" style="float: right;" />
+        <RenameProjectModal :project="data.item" style="float: right" />
         <span>
           <b-button
             v-if="is_vulcan_admin"
@@ -62,7 +62,6 @@
           </b-button>
         </span>
       </template>
-
     </b-table>
 
     <!-- Pagination controls -->
@@ -81,7 +80,7 @@ import RenameProjectModal from "./RenameProjectModal.vue";
 
 export default {
   name: "ProjectsTable",
-  components: { RenameProjectModal, },
+  components: { RenameProjectModal },
   mixins: [DateFormatMixinVue],
   props: {
     projects: {
@@ -146,12 +145,11 @@ export default {
       return `/projects/${project.id}`;
     },
     getLabel: function (project) {
-      return "Are you sure you want to completely remove project " + project.name + " and all of its related data?";
       return (
         "Are·you·sure·you·want·to·completely·remove·project·" +
         project.name +
         "·and·all·of·its·related·data?"
-      )
+      );
     },
   },
 };
