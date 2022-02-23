@@ -31,35 +31,24 @@
           :additional_questions="additional_questions"
         />
       </b-tab>
-      <b-tab title="Inspec Control Body" class="pt-3">
-        <MonacoEditor
-          :value="rule.inspec_control_body"
-          :options="monacoEditorOptions"
-          width="auto"
-          height="800"
-          @input="$root.$emit('update:rule', { ...rule, inspec_control_body: $event })"
-        />
+      <b-tab title="Inspec Control Body">
+        <InspecControlEditor :rule="rule" field="inspec_control_body" :read-only="readOnly" />
       </b-tab>
-      <b-tab title="Inspec Control (Read-Only)" class="pt-3">
-        <MonacoEditor
-          :value="rule.inspec_control_file"
-          :options="{ ...monacoEditorOptions, readOnly: true }"
-          width="auto"
-          height="800"
-        />
+      <b-tab title="Inspec Control (Read-Only)">
+        <InspecControlEditor :rule="rule" field="inspec_control_file" :read-only="true" />
       </b-tab>
     </b-tabs>
   </div>
 </template>
 
 <script>
-import MonacoEditor from "monaco-editor-vue";
 import BasicRuleForm from "./forms/BasicRuleForm.vue";
 import AdvancedRuleForm from "./forms/AdvancedRuleForm.vue";
+import InspecControlEditor from "./InspecControlEditor.vue";
 
 export default {
   name: "RuleEditor",
-  components: { MonacoEditor, BasicRuleForm, AdvancedRuleForm },
+  components: { BasicRuleForm, AdvancedRuleForm, InspecControlEditor },
   props: {
     rule: {
       type: Object,
@@ -93,17 +82,6 @@ export default {
   data: function () {
     return {
       advancedEditor: false,
-      monacoEditorOptions: {
-        automaticLayout: true,
-        language: "ruby",
-        // minimap: {
-        //   enabled: false,
-        // },
-        readOnly: this.readOnly,
-        "semanticHighlighting.enabled": true,
-        tabSize: 2,
-        theme: "vs-dark",
-      },
     };
   },
   watch: {
