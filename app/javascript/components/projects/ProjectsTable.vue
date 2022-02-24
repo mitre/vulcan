@@ -146,9 +146,9 @@ export default {
     },
     getLabel: function (project) {
       return (
-        "Are·you·sure·you·want·to·completely·remove·project·" +
+        "Are you sure you want to completely remove project " +
         project.name +
-        "·and·all·of·its·related·data?"
+        " and all of its related data?"
       );
     },
   },
