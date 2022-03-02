@@ -110,7 +110,7 @@
           <!-- Download InSpec Profile -->
           <i
             v-b-tooltip.hover
-            class="mdi mdi-code-braces h5 float-right mr-2 clickable"
+            class="inspec-icon h5 float-right mr-2 clickable"
             aria-hidden="true"
             title="Download InSpec Profile"
             @click="downloadExport('inspec')"
@@ -213,4 +213,13 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.inspec-icon {
+  background: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB3aWR0aD0iMzJweCIgaGVpZ2h0PSIzMnB4IiB2aWV3Qm94PSIwIDAgMzIgMzIiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8dGl0bGU+QXJ0Ym9hcmQ8L3RpdGxlPgogIDxkZXNjPkNyZWF0ZWQgd2l0aCBTa2V0Y2guPC9kZXNjPgogIDxnIGlkPSJBcnRib2FyZCIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICA8ZyBpZD0iR3JvdXAtMyIgZmlsbD0iIzQ0OUJCQiI+CiAgICAgIDxwYXRoIGQ9Ik02LjQ5MjkyNzkzLDI4Ljg3MDQ0OTUgTDExLjg5MTQzODcsMjQuMDA5NjA4NyBDMTMuMTIzMTM2NSwyNC42NDI2ODU4IDE0LjUxOTg0MDcsMjUgMTYsMjUgQzIwLjk3MDU2MjcsMjUgMjUsMjAuOTcwNTYyNyAyNSwxNiBDMjUsMTEuMDI5NDM3MyAyMC45NzA1NjI3LDcgMTYsNyBDMTEuMDI5NDM3Myw3IDcsMTEuMDI5NDM3MyA3LDE2IEM3LDE3LjY2Njg0NzYgNy40NTMxMzIzMiwxOS4yMjc4NjA0IDguMjQyOTMyODYsMjAuNTY2NTc0NCBMMi45ODE2NDIzNywyNS4zMDM4NjE2IEMxLjEwNDcxMzgzLDIyLjY4MjI2MDIgMCwxOS40NzAxNCAwLDE2IEMwLDcuMTYzNDQ0IDcuMTYzNDQ0LDAgMTYsMCBDMjQuODM2NTU2LDAgMzIsNy4xNjM0NDQgMzIsMTYgQzMyLDI0LjgzNjU1NiAyNC44MzY1NTYsMzIgMTYsMzIgQzEyLjQzOTY2ODEsMzIgOS4xNTA5NDI1NCwzMC44MzcxMTUgNi40OTI5Mjc5MywyOC44NzA0NDk1IFoiIGlkPSJDb21iaW5lZC1TaGFwZSIgc3R5bGU9ImZpbGw6IHJnYmEoMCwgMCwgMCwgMC44KTsiLz4KICAgICAgPGNpcmNsZSBpZD0iT3ZhbCIgY3g9IjE2IiBjeT0iMTYiIHI9IjUuMjUiIHN0eWxlPSJmaWxsOiByZ2JhKDAsIDAsIDAsIDAuOCk7Ii8+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4=");
+  background-size: 100%;
+  height: 1rem;
+  width: 1rem;
+  margin: 0.1875rem 0;
+  display: block;
+}
+</style>

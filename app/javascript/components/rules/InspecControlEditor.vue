@@ -94,9 +94,21 @@ export default {
       },
     };
   },
+  watch: {
+    rule: function (rule) {
+      if (this.readOnly) {
+        this.value = rule[this.field];
+      }
+    },
+  },
   methods: {
     copyText: function () {
       navigator.clipboard.writeText(this.value);
+      this.$bvToast.toast("Copied to clipboard", {
+        title: "Copy",
+        variant: "success",
+        solid: true,
+      });
     },
     updateSettings: function (setting, value) {
       this.monacoEditorOptions[setting] = value;
