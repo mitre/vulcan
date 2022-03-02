@@ -144,7 +144,7 @@ RSpec.describe Review, type: :model do
         # Expect all fields on the rule except id, locked, review_requestor_id, updated_at, created_at to be the same
         # Expect locked=false and review_requestor_id=nil
         # Expect rule_id to be changed because of uniqueness constraint
-        rejectable_attrs = %w[id rule_id locked review_requestor_id updated_at created_at]
+        rejectable_attrs = %w[id rule_id locked review_requestor_id updated_at created_at inspec_control_file]
         original_rule_attributes = original_rule.attributes.reject do |a|
           rejectable_attrs.include? a
         end

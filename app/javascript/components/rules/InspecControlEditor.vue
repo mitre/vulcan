@@ -40,7 +40,6 @@
       width="auto"
       height="800"
       :language="monacoEditorOptions.language"
-      :editor-mounted="colorize"
       @input="$root.$emit('update:rule', { ...rule, [field]: $event })"
     />
   </div>
@@ -73,9 +72,6 @@ export default {
       monacoEditorOptions: {
         automaticLayout: true,
         readOnly: this.readOnly,
-        // semanticHighlighting: {
-        //   enabled: true,
-        // },
         language: "ruby",
         tabSize: 2,
         theme: "vs-dark",
@@ -86,11 +82,7 @@ export default {
           { value: "vs-dark", label: "Visual Studio Dark" },
           { value: "hc-black", label: "High Contrast Dark" },
         ],
-        languages: [
-          { value: "javascript", label: "JavaScript" },
-          { value: "python", label: "Python" },
-          { value: "ruby", label: "Ruby" },
-        ],
+        languages: [{ value: "ruby", label: "Ruby" }],
       },
     };
   },
@@ -113,9 +105,6 @@ export default {
     updateSettings: function (setting, value) {
       this.monacoEditorOptions[setting] = value;
       this.editorKey += 1;
-    },
-    colorize: function (editor, monaco) {
-      // monaco.editor.colorizeElement(document.getElementById(this.field));
     },
   },
 };
