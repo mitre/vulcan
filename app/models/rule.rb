@@ -192,7 +192,7 @@ class Rule < BaseRule
     control.add_header('# -*- encoding : utf-8 -*-')
     control.id = "#{component[:prefix]}-#{rule_id}"
     control.title = title
-    control.descriptions[:default] = desc[:vuln_discussion]
+    control.descriptions[:default] = desc[:vuln_discussion] if desc.present?
     control.descriptions[:rationale] = ''
     control.descriptions[:check] = checks.first&.content
     control.descriptions[:fix] = fixtext
@@ -205,9 +205,11 @@ class Rule < BaseRule
     control.add_tag(Inspec::Object::Tag.new('fix_id', fix_id)) if fix_id.present?
     control.add_tag(Inspec::Object::Tag.new('cci', [ident])) if ident.present?
     control.add_tag(Inspec::Object::Tag.new('nist', nil))
-    %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
-       third_party_tools mitigation_control responsibility ia_controls].each do |field|
-      control.add_tag(Inspec::Object::Tag.new(field.to_s, desc[field])) if desc[field].present?
+    if desc.present?
+      %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
+         third_party_tools mitigation_control responsibility ia_controls].each do |field|
+        control.add_tag(Inspec::Object::Tag.new(field.to_s, desc[field])) if desc[field].present?
+      end
     end
     control.add_post_body(inspec_control_body) if inspec_control_body.present?
     self.inspec_control_file = control.to_ruby
