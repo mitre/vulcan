@@ -2,35 +2,6 @@
   <div class="my-1">
     <b-row class="my-1">
       <b-col md="2">
-        <div class="p-2">
-          <h5>Compare Components:</h5>
-        </div>
-      </b-col>
-      <b-col md="5">
-        <b-form-select v-model="baseComponent" class="rounded-0" @change="compareComponents">
-          <option
-            v-for="(selectOption, indexOpt) in project.components"
-            :key="indexOpt"
-            :value="selectOption"
-          >
-            {{ selectOption.name }}
-          </option>
-        </b-form-select>
-      </b-col>
-      <b-col md="5">
-        <b-form-select v-model="diffComponent" class="rounded-0" @change="compareComponents">
-          <option
-            v-for="(selectOption, indexOpt) in project.components"
-            :key="indexOpt"
-            :value="selectOption"
-          >
-            {{ selectOption.name }}
-          </option>
-        </b-form-select>
-      </b-col>
-    </b-row>
-    <b-row class="my-1">
-      <b-col md="2">
         <div
           v-for="rule_id in Object.keys(diffRules)"
           :key="`rule-${rule_id}`"
@@ -38,10 +9,75 @@
           @click="ruleSelected(rule_id)"
         >
           {{ baseComponent.prefix }}-{{ rule_id }}
+          <i
+            v-if="diffRules[rule_id].changed"
+            class="mdi mdi-file-document-edit-outline float-right diff-icon"
+            aria-hidden="true"
+          />
         </div>
       </b-col>
       <b-col md="10">
+        <b-input-group size="sm" class="mb-2">
+          <b-input-group-prepend>
+            <b-input-group-text class="rounded-0">Base</b-input-group-text>
+          </b-input-group-prepend>
+          <b-form-select
+            id="baseComponent"
+            v-model="baseComponent"
+            class="form-select-sm"
+            @change="compareComponents"
+          >
+            <option
+              v-for="(selectOption, indexOpt) in project.components"
+              :key="indexOpt"
+              :value="selectOption"
+            >
+              {{ selectOption.name }}
+              {{
+                selectOption.version || selectOption.release
+                  ? `(${[
+                      selectOption.version ? `Version ${selectOption.version}` : "",
+                      selectOption.release ? `Release ${selectOption.release}` : "",
+                    ].join(", ")})`
+                  : ""
+              }}
+            </option>
+          </b-form-select>
+          <b-input-group-prepend>
+            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
+          </b-input-group-prepend>
+          <b-form-select
+            id="diffComponent"
+            v-model="diffComponent"
+            class="form-select-sm"
+            @change="compareComponents"
+          >
+            <option
+              v-for="(selectOption, indexOpt) in project.components"
+              :key="indexOpt"
+              :value="selectOption"
+            >
+              {{ selectOption.name }}
+              {{
+                selectOption.version || selectOption.release
+                  ? `(${[
+                      selectOption.version ? `Version ${selectOption.version}` : "",
+                      selectOption.release ? `Release ${selectOption.release}` : "",
+                    ].join(", ")})`
+                  : ""
+              }}
+            </option>
+          </b-form-select>
+          <b-button
+            size="sm"
+            squared
+            @click="updateSettings('renderSideBySide', !monacoEditorOptions.renderSideBySide)"
+          >
+            {{ monacoEditorOptions.renderSideBySide ? "Inline View" : "Side-By-Side View" }}
+          </b-button>
+        </b-input-group>
         <MonacoEditor
+          v-if="Object.keys(diffRules).length > 0"
           :key="selectedRuleId"
           :diff-editor="true"
           :original="baseControl"
@@ -75,17 +111,18 @@ export default {
   },
   data: function () {
     return {
+      editorKey: 0,
       monacoEditorOptions: {
         automaticLayout: true,
         language: "ruby",
         readOnly: true,
-        "semanticHighlighting.enabled": true,
+        renderSideBySide: true,
         tabSize: 2,
         theme: "vs-dark",
       },
       baseComponent: null,
       diffComponent: null,
-      diffRules: [],
+      diffRules: {},
       selectedRuleId: null,
       baseControl: "",
       diffControl: "",
@@ -120,16 +157,28 @@ export default {
           .catch(this.alertOrNotifyResponse);
       }
     },
+    updateSettings: function (setting, value) {
+      this.monacoEditorOptions[setting] = value;
+      this.editorKey += 1;
+    },
   },
 };
 </script>
 
 <style scoped>
+.form-select-sm {
+  height: 2rem;
+}
+
 .ruleRow {
   padding: 0.25em;
 }
 
 .selectedRuleRow {
   background: rgba(66, 50, 50, 0.09);
+}
+
+.diff-icon {
+  color: red;
 }
 </style>

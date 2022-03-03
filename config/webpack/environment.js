@@ -1,13 +1,14 @@
 const { environment } = require("@rails/webpacker");
 const { VueLoaderPlugin } = require("vue-loader");
 const vue = require("./loaders/vue");
-const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
+// const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 
 environment.plugins.prepend("VueLoaderPlugin", new VueLoaderPlugin());
-environment.plugins.prepend(
-  "MonacoWebpackPlugin",
-  new MonacoWebpackPlugin({ languages: ["ruby"] })
-);
+// Loading this plugin causes the diff viewer to not be styled properly
+// environment.plugins.prepend(
+//   "MonacoWebpackPlugin",
+//   new MonacoWebpackPlugin({ languages: ["ruby"] })
+// );
 environment.loaders.prepend("vue", vue);
 
 const resolver = {

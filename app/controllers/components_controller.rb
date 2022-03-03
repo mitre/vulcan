@@ -140,7 +140,9 @@ class ComponentsController < ApplicationController
   def compare
     base = Component.find_by(id: params[:id]).rules.pluck(:rule_id, :inspec_control_file).to_h
     diff = Component.find_by(id: params[:diff_id]).rules.pluck(:rule_id, :inspec_control_file).to_h
-    render json: base.keys.union(diff.keys).sort.index_with { |rule_id| { base: base[rule_id], diff: diff[rule_id] } }
+    render json: base.keys.union(diff.keys).sort.index_with { |rule_id|
+      { base: base[rule_id], diff: diff[rule_id], changed: base[rule_id] != diff[rule_id] }
+    }
   end
 
   private
