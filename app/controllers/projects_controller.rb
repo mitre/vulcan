@@ -88,7 +88,7 @@ class ProjectsController < ApplicationController
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[excel xccdf].include?(export_type)
+    unless %i[excel xccdf inspec].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -118,6 +118,8 @@ class ProjectsController < ApplicationController
           send_data workbook.read_string, filename: "#{@project.name}.xlsx"
         when :xccdf
           send_data export_xccdf(@project).string, filename: "#{@project.name}.zip"
+        when :inspec
+          send_data export_inspec_project(@project).string, filename: "#{@project.name}_inspec.zip"
         end
       end
       # JSON responses are just used to validate ahead of time that this

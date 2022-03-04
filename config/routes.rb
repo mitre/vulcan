@@ -26,7 +26,7 @@ Rails.application.routes.draw do
   # Make components#index not a child of project
   get '/components', to: 'components#index'
   # Export component
-  get '/components/:id/export', to: 'components#export'
+  get '/components/:id/export/:type', to: 'components#export'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
   # SRG ID Search

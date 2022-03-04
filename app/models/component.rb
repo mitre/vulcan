@@ -63,7 +63,8 @@ class Component < ApplicationRecord
   after_create :import_srg_rules
 
   validates_with PrefixValidator
-  validates :prefix, :based_on, presence: true
+
+  validates :prefix, presence: true
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,
@@ -116,7 +117,7 @@ class Component < ApplicationRecord
     end
 
     # Calculate the prefix (which will need to be removed from each row)
-    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.reject(&:blank?)
+    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.compact_blank
     if possible_prefixes.empty?
       errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID '\
                         'in the file and try again.')
