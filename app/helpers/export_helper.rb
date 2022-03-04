@@ -130,7 +130,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       summary: component[:description]
     }
     zio.write YAML.dump(inspec_yml)
-    component.rules.each do |rule|
+    component.rules.where(status: 'Applicable - Configurable').each do |rule|
       zio.put_next_entry("#{dir}controls/#{component[:prefix]}-#{rule[:rule_id]}.rb")
       zio.write rule.inspec_control_file
     end
