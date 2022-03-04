@@ -203,8 +203,8 @@ class Rule < BaseRule
     control.add_tag(Inspec::Object::Tag.new('gid', nil))
     control.add_tag(Inspec::Object::Tag.new('rid', nil))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('cci', [ident])) if ident.present?
-    control.add_tag(Inspec::Object::Tag.new('nist', [nist_control_family]))
+    control.add_tag(Inspec::Object::Tag.new('cci', [ident] + satisfies.pluck(:ident))) if ident.present?
+    control.add_tag(Inspec::Object::Tag.new('nist', [nist_control_family] + satisfies.map(&:nist_control_family)))
     if desc.present?
       %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
          third_party_tools mitigation_control responsibility ia_controls].each do |field|
