@@ -84,24 +84,31 @@ photon3_v1r1 = Component.create!(
 photon3_v1r1.reload
 photon3_v1r1.rules.update(locked: true)
 photon3_v1r1.update(released: true)
+
 photon3_v1r1.duplicate(new_name: 'Photon OS 3', new_version: 1, new_release: 2).save!
+photon3_v1r1.rules.update(locked: true)
+
 photon4_v1r1 = Component.create!(
   project: photon4,
-  name: 'Photon OS 3',
+  name: 'Photon OS 4',
   version: 1,
   release: 1,
   prefix: 'PHOS-04',
   based_on: gpos_srg
 )
 photon4_v1r1.reload
-_photon3_v1r1_overlay = Component.create!(
+photon4_v1r1.rules.update(locked: false)
+
+photon3_v1r1_overlay = Component.create!(
   project: vsphere,
   component_id: photon3_v1r1.id,
   prefix: photon3_v1r1.prefix,
   security_requirements_guide_id: photon3_v1r1.security_requirements_guide_id,
   name: photon3_v1r1.name
 )
-_vcenter_perf_v1r1 = Component.create!(
+photon3_v1r1_overlay.rules.update(locked: false)
+
+vcenter_perf_v1r1 = Component.create!(
   project: vsphere,
   name: 'vCenter Perf',
   version: 1,
@@ -109,7 +116,9 @@ _vcenter_perf_v1r1 = Component.create!(
   prefix: 'VCPF-01',
   based_on: web_srg
 )
-_vcenter_sts_v1r1 = Component.create!(
+vcenter_perf_v1r1.rules.update(locked: false)
+
+vcenter_sts_v1r1 = Component.create!(
   project: vsphere,
   name: 'vCenter STS',
   version: 1,
@@ -117,7 +126,9 @@ _vcenter_sts_v1r1 = Component.create!(
   prefix: 'VSTS-01',
   based_on: web_srg
 )
-_vcenter_vami_v1r1 = Component.create!(
+vcenter_sts_v1r1.rules.update(locked: false)
+
+vcenter_vami_v1r1 = Component.create!(
   project: vsphere,
   name: 'vCenter VAMI',
   version: 1,
@@ -125,6 +136,8 @@ _vcenter_vami_v1r1 = Component.create!(
   prefix: 'VAMI-01',
   based_on: web_srg
 )
+vcenter_vami_v1r1.rules.update(locked: false)
+
 # Make a bunch of dummy released components
 20.times do |n|
   name = SecureRandom.hex(3)
@@ -138,13 +151,9 @@ _vcenter_vami_v1r1 = Component.create!(
     based_on: web_srg,
     project: dummy_project
   )
-  # rubocop:disable Rails/SkipsModelValidations
-  c.rules.update_all(locked: true)
-  c.update(released: true)
-  c.rules.update_all(rule_severity: RuleConstants::SEVERITIES.sample)
-  c.rules.update_all(rule_weight: '10.0')
+  c.update(released: rand < 0.7)
   c.rules.order('RANDOM()').limit(c.rules.size * rand(25..35) / 100)
-   .update_all(status: 'Applicable - Configurable')
+   .update(status: 'Applicable - Configurable')
 
   rule_satisfactions = []
   rules_with_duplicates_ids = c.rules.order('RANDOM()').limit(c.rules.size * rand(5..10) / 100).pluck(:id)
@@ -157,7 +166,8 @@ _vcenter_vami_v1r1 = Component.create!(
   end
   RuleSatisfaction.import! rule_satisfactions
 
-  # rubocop:enable Rails/SkipsModelValidations
+  # Call update last to trigger callbacks
+  c.rules.update(locked: true, rule_weight: '10.0', rule_severity: RuleConstants::SEVERITIES.sample)
 end
 puts 'Created Components'
 

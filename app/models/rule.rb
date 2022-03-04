@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'inspec/objects'
+
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < BaseRule
@@ -35,6 +37,7 @@ class Rule < BaseRule
 
   before_validation :set_rule_id
   before_save :apply_audit_comment
+  before_save :update_inspec_code
   before_destroy :prevent_destroy_if_under_review_or_locked
 
   validates_with RuleSatisfactionValidator
@@ -181,6 +184,35 @@ class Rule < BaseRule
 
   def displayed_name
     "#{component[:prefix]}-#{rule_id}"
+  end
+
+  def update_inspec_code
+    desc = disa_rule_descriptions.first
+    control = Inspec::Object::Control.new
+    control.add_header('# -*- encoding : utf-8 -*-')
+    control.id = "#{component[:prefix]}-#{rule_id}"
+    control.title = title
+    control.descriptions[:default] = desc[:vuln_discussion] if desc.present?
+    control.descriptions[:rationale] = ''
+    control.descriptions[:check] = checks.first&.content
+    control.descriptions[:fix] = fixtext
+    control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
+    control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
+    control.add_tag(Inspec::Object::Tag.new('gtitle', version))
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version))) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('gid', nil))
+    control.add_tag(Inspec::Object::Tag.new('rid', nil))
+    control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
+    control.add_tag(Inspec::Object::Tag.new('cci', [ident] + satisfies.pluck(:ident))) if ident.present?
+    control.add_tag(Inspec::Object::Tag.new('nist', [nist_control_family] + satisfies.map(&:nist_control_family)))
+    if desc.present?
+      %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
+         third_party_tools mitigation_control responsibility ia_controls].each do |field|
+        control.add_tag(Inspec::Object::Tag.new(field.to_s, desc[field])) if desc[field].present?
+      end
+    end
+    control.add_post_body(inspec_control_body) if inspec_control_body.present?
+    self.inspec_control_file = control.to_ruby
   end
 
   private

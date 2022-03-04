@@ -4,6 +4,8 @@
 # Components for project relationships.
 #
 class ComponentsController < ApplicationController
+  include ExportHelper
+
   before_action :set_component, only: %i[show update destroy export]
   before_action :set_project, only: %i[show create]
   before_action :set_component_permissions, only: %i[show]
@@ -103,7 +105,36 @@ class ComponentsController < ApplicationController
   end
 
   def export
-    send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
+    export_type = params[:type]&.to_sym
+
+    # Other export types will be included in the future
+    unless %i[csv inspec].include?(export_type)
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: "Unsupported export type: #{export_type}",
+          variant: 'danger'
+        }
+      }, status: :bad_request
+      return
+    end
+
+    respond_to do |format|
+      format.html do
+        case export_type
+        when :csv
+          send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
+        when :inspec
+          version = @component[:version] ? "V#{@component[:version]}" : ''
+          release = @component[:release] ? "R#{@component[:release]}" : ''
+          filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
+          send_data export_inspec_component(@component).string, filename: filename
+        end
+      end
+      # JSON responses are just used to validate ahead of time that this
+      # component can actually be exported
+      format.json { render json: { status: :ok } }
+    end
   end
 
   private
