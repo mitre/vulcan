@@ -88,9 +88,7 @@ export default {
   },
   watch: {
     rule: function (rule) {
-      if (this.readOnly) {
-        this.value = rule[this.field];
-      }
+      this.value = rule[this.field] || "";
     },
   },
   methods: {
