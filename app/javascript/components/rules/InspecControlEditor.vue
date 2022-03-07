@@ -37,16 +37,15 @@
       :key="editorKey"
       :value="value"
       :options="monacoEditorOptions"
-      width="auto"
-      height="800"
+      class="editor"
       :language="monacoEditorOptions.language"
-      @input="$root.$emit('update:rule', { ...rule, [field]: $event })"
+      @change="$root.$emit('update:rule', { ...rule, [field]: $event })"
     />
   </div>
 </template>
 
 <script>
-import MonacoEditor from "monaco-editor-vue";
+import MonacoEditor from "vue-monaco";
 
 export default {
   name: "InspecControlEditor",
@@ -111,5 +110,15 @@ export default {
 <style scoped>
 .form-select-sm {
   height: 2rem;
+}
+.editor {
+  width: auto;
+  height: 800px;
+}
+</style>
+
+<style>
+.suggest-widget {
+  border: none !important;
 }
 </style>
