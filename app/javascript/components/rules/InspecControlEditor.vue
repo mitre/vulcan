@@ -111,7 +111,6 @@ export default {
 .form-select-sm {
   height: 2rem;
 }
-.editor {
   width: auto;
   height: 800px;
 }
