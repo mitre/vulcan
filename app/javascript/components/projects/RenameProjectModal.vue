@@ -61,7 +61,7 @@ export default {
     },
     renameProjectSuccess: function (response) {
       this.alertOrNotifyResponse(response);
-      location.reload();
+      this.$emit("projectRenamed");
     },
   },
 };

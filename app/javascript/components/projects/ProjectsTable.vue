@@ -46,7 +46,11 @@
       </template>
 
       <template #cell(actions)="data">
-        <RenameProjectModal :project="data.item" style="float: right" />
+        <RenameProjectModal
+          :project="data.item"
+          class="floatright"
+          @projectRenamed="refreshProjects"
+        />
         <span>
           <b-button
             v-if="is_vulcan_admin"
@@ -88,8 +92,9 @@ export default {
       required: true,
     },
     is_vulcan_admin: {
-      type: String,
+      type: Boolean,
       required: true,
+      default: false,
     },
   },
   data: function () {
@@ -151,8 +156,15 @@ export default {
         " and all of its related data?"
       );
     },
+    refreshProjects: function () {
+      this.$emit("projectRenamed");
+    },
   },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.floatright {
+  float: right;
+}
+</style>
