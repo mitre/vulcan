@@ -148,6 +148,7 @@ class ProjectsController < ApplicationController
   def project_params
     params.require(:project).permit(
       :name,
-      project_metadata_attributes: { data: {} })
+      project_metadata_attributes: { data: {} }
+    )
   end
 end
