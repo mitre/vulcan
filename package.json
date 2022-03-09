@@ -13,12 +13,11 @@
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
     "monaco-editor": "0.32.1",
-    "monaco-editor-webpack-plugin": "7.0.1",
     "turbolinks": "^5.2.0",
     "vue": "^2.6.11",
     "vue-linkify": "^1.0.1",
     "vue-loader": "^15.9.2",
-    "vue-monaco": "1.2.2",
+    "vue-monaco": "^1.2.2",
     "vue-simple-suggest": "^1.11.1",
     "vue-template-compiler": "^2.6.11",
     "vue-turbolinks": "^2.1.0"
