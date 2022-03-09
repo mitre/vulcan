@@ -78,7 +78,7 @@
           </b-tab>
 
           <!-- Diff View -->
-          <b-tab title="Diff Viewer">
+          <b-tab title="Diff Viewer" lazy>
             <DiffViewer :project="initialProjectState" />
           </b-tab>
 
@@ -192,7 +192,7 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
-import MonacoEditor from "monaco-editor-vue";
+import MonacoEditor from "vue-monaco";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";

@@ -102,8 +102,8 @@
           :original="baseControl"
           :value="diffControl"
           :options="monacoEditorOptions"
-          width="auto"
-          height="1000"
+          :language="monacoEditorOptions.language"
+          class="editor"
         />
       </b-col>
     </b-row>
@@ -113,7 +113,7 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
-import MonacoEditor from "monaco-editor-vue";
+import MonacoEditor from "vue-monaco";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
@@ -274,5 +274,16 @@ export default {
 
 .diff-icon {
   color: red;
+}
+
+.editor {
+  width: auto;
+  height: 1000px;
+}
+</style>
+
+<style>
+.suggest-widget {
+  border: none !important;
 }
 </style>
