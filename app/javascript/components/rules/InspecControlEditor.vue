@@ -66,7 +66,7 @@ export default {
   },
   data: function () {
     return {
-      value: this.rule[this.field],
+      value: this.rule[this.field] || "",
       editorKey: 0,
       monacoEditorOptions: {
         automaticLayout: true,
