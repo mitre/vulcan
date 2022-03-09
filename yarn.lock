@@ -7457,7 +7457,7 @@ vue-loader@^15.9.2:
     vue-hot-reload-api "^2.3.0"
     vue-style-loader "^4.1.0"
 
-vue-monaco@^1.2.2:
+vue-monaco@1.2.2:
   version "1.2.2"
   resolved "https://registry.npmjs.org/vue-monaco/-/vue-monaco-1.2.2.tgz#5e88bd25bf013a32d8fb051acab7bc186c3753e4"
   integrity sha512-+BhCHeAuDmjtCUP9MUxan6OjGgOqDR7xHlNScZ8Cfq32iac76Fv7z6RfC+lSrp0YpCjEPl6bvpY21N11UBRmMg==
