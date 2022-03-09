@@ -192,7 +192,6 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
-import MonacoEditor from "vue-monaco";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
