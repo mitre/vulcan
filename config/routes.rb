@@ -27,6 +27,8 @@ Rails.application.routes.draw do
   get '/components', to: 'components#index'
   # Export component
   get '/components/:id/export/:type', to: 'components#export'
+  # Compare components
+  get '/components/:id/compare/:diff_id', to: 'components#compare'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
   # SRG ID Search
