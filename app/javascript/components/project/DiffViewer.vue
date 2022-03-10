@@ -69,10 +69,16 @@
             id="diffComponent"
             v-model="diffComponent"
             class="form-select-sm"
+            :disabled="!baseComponent"
             @change="compareComponents"
           >
             <option
-              v-for="(selectOption, indexOpt) in project.components"
+              v-for="(selectOption, indexOpt) in project.components.filter(
+                (c) =>
+                  baseComponent &&
+                  baseComponent.based_on_title === c.based_on_title &&
+                  baseComponent.id !== c.id
+              )"
               :key="indexOpt"
               :value="selectOption"
             >
