@@ -77,6 +77,11 @@
             </b-row>
           </b-tab>
 
+          <!-- Diff View -->
+          <b-tab title="Diff Viewer" lazy>
+            <DiffViewer :project="initialProjectState" />
+          </b-tab>
+
           <!-- Project members -->
           <b-tab :title="`Members (${project.memberships_count})`">
             <MembershipsTable
@@ -197,6 +202,7 @@ import UpdateMetadataModal from "./UpdateMetadataModal.vue";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
+import DiffViewer from "./DiffViewer.vue";
 
 export default {
   name: "Project",
@@ -207,6 +213,7 @@ export default {
     ComponentCard,
     AddComponentModal,
     NewComponentModal,
+    DiffViewer,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
