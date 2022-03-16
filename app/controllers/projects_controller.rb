@@ -23,9 +23,7 @@ class ProjectsController < ApplicationController
     respond_to do |format|
       format.html
       format.json do
-        render json: {
-          projects: @projects
-        }
+        render json: @projects
       end
     end
   end
