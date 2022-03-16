@@ -41,6 +41,13 @@
                 :spreadsheet_import="true"
                 @projectUpdated="refreshProject"
               />
+              <NewComponentModal
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                :project_id="project.id"
+                :project="project"
+                :copy_component="true"
+                @projectUpdated="refreshProject"
+              />
               <b-dropdown right text="Download" variant="secondary" class="px-2 m2">
                 <b-dropdown-item @click="downloadExport('excel')">Excel Export</b-dropdown-item>
                 <b-dropdown-item @click="downloadExport('xccdf')">Xccdf Export</b-dropdown-item>

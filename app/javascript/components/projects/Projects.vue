@@ -37,7 +37,7 @@ export default {
       axios
         .get("/projects")
         .then((response) => {
-          this.projectlist = response.data.projects;
+          this.projectlist = response.data;
         })
         .catch(this.alertOrNotifyResponse);
     },
