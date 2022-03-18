@@ -44,7 +44,7 @@
             id="baseComponent"
             v-model="baseComponent"
             class="form-select-sm"
-            @change="compareComponents"
+            @change="updateCompareList"
           >
             <option
               v-for="(selectOption, indexOpt) in project.components"
@@ -73,12 +73,7 @@
             @change="compareComponents"
           >
             <option
-              v-for="(selectOption, indexOpt) in project.components.filter(
-                (c) =>
-                  baseComponent &&
-                  baseComponent.based_on_title === c.based_on_title &&
-                  baseComponent.id !== c.id
-              )"
+              v-for="(selectOption, indexOpt) in compareList"
               :key="indexOpt"
               :value="selectOption"
             >
@@ -91,6 +86,7 @@
                     ].join(", ")})`
                   : ""
               }}
+              {{ selectOption.project_name && `- ${selectOption.project_name}` }}
             </option>
           </b-form-select>
           <b-button
@@ -151,6 +147,7 @@ export default {
       filters: {
         rcFilterChecked: true, // Rule Changed
       },
+      compareList: [],
       ruleDiffs: {},
       ruleDiffFilterCounts: {
         rc: 0,
@@ -224,6 +221,16 @@ export default {
       const control = this.ruleDiffs[rule_id];
       this.baseControl = control["base"];
       this.diffControl = control["diff"];
+    },
+    updateCompareList: function () {
+      if (this.baseComponent) {
+        axios
+          .get(`/components/${this.baseComponent.id}/based_on_same_srg`)
+          .then((response) => {
+            this.compareList = response.data;
+          })
+          .catch(this.alertOrNotifyResponse);
+      }
     },
     compareComponents: function () {
       if (
