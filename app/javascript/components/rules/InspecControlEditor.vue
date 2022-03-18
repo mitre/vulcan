@@ -81,7 +81,12 @@ export default {
           { value: "vs-dark", label: "Visual Studio Dark" },
           { value: "hc-black", label: "High Contrast Dark" },
         ],
-        languages: [{ value: "ruby", label: "Ruby" }],
+        languages: [
+          { value: "ruby", label: "Ruby" },
+          { value: "markdown", label: "Markdown" },
+          { value: "json", label: "JSON" },
+          { value: "yaml", label: "YAML" },
+        ],
       },
     };
   },
