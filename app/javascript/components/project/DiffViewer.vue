@@ -222,7 +222,13 @@ export default {
       this.baseControl = control["base"];
       this.diffControl = control["diff"];
     },
+    ruleDeselected: function () {
+      this.selectedRuleId = null;
+      this.baseControl = "";
+      this.diffControl = "";
+    },
     updateCompareList: function () {
+      this.ruleDeselected();
       if (this.baseComponent) {
         axios
           .get(`/components/${this.baseComponent.id}/based_on_same_srg`)
@@ -233,6 +239,7 @@ export default {
       }
     },
     compareComponents: function () {
+      this.ruleDeselected();
       if (
         this.baseComponent &&
         this.diffComponent &&
