@@ -27,6 +27,8 @@ Rails.application.routes.draw do
   get '/components', to: 'components#index'
   # Export component
   get '/components/:id/export/:type', to: 'components#export'
+  # Components based on same srg
+  get '/components/:id/based_on_same_srg', to: 'components#based_on_same_srg'
   # Compare components
   get '/components/:id/compare/:diff_id', to: 'components#compare'
   # Export project
