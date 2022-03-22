@@ -35,7 +35,7 @@ export default {
   methods: {
     refreshProjects: function () {
       axios
-        .get(`/reload/projects`)
+        .get(`/projects`)
         .then((response) => {
           this.projectlist = response.data.projects;
         })
