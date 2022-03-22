@@ -11,17 +11,18 @@ class ProjectsController < ApplicationController
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_viewer_project, only: %i[show]
-  before_action :authorize_logged_in, only: %i[index new create search reload]
+  before_action :authorize_logged_in, only: %i[index new create search]
 
   def index
     @projects = current_user.available_projects.alphabetical
-  end
-
-  def reload
-    @projects = current_user.available_projects.alphabetical
-    render json: {
-      projects: @projects
-    }
+    respond_to do |format|
+      format.html
+      format.json do
+        render json: {
+          projects: @projects
+        }
+      end
+    end
   end
 
   def search

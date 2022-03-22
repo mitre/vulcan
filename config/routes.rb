@@ -37,7 +37,6 @@ Rails.application.routes.draw do
   get '/search/projects', to: 'projects#search'
   get '/search/components', to: 'components#search'
   get '/search/rules', to: 'rules#search'
-  get '/reload/projects', to: 'projects#reload'
 
   root to: 'projects#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
