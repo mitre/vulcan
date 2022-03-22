@@ -8,7 +8,7 @@
         id="language"
         class="form-select-sm"
         :value="monacoEditorOptions.language"
-        @change="(value) => updateSettings('language', value)"
+        @change="(value) => updateLanguage(value)"
       >
         <option v-for="(option, idx) in options.languages" :key="idx" :value="option.value">
           {{ option.label }}
@@ -21,7 +21,7 @@
         id="theme"
         class="form-select-sm"
         :value="monacoEditorOptions.theme"
-        @change="(value) => updateSettings('theme', value)"
+        @change="(value) => updateTheme(value)"
       >
         <option v-for="(option, idx) in options.themes" :key="idx" :value="option.value">
           {{ option.label }}
@@ -71,7 +71,7 @@ export default {
       monacoEditorOptions: {
         automaticLayout: true,
         readOnly: this.readOnly,
-        language: "ruby",
+        language: this.rule[`${this.field}_lang`] || "ruby",
         tabSize: 2,
         theme: "vs-dark",
       },
@@ -93,7 +93,16 @@ export default {
   watch: {
     rule: function (rule) {
       this.value = rule[this.field] || "";
+      this.monacoEditorOptions.language = this.rule[`${this.field}_lang`] || "ruby";
     },
+  },
+  mounted: function () {
+    // Load saved theme
+    const savedTheme = localStorage.getItem("monacoEditorTheme");
+    if (savedTheme) {
+      this.monacoEditorOptions.theme = savedTheme;
+      this.editorKey += 1;
+    }
   },
   methods: {
     copyText: function () {
@@ -104,9 +113,17 @@ export default {
         solid: true,
       });
     },
-    updateSettings: function (setting, value) {
-      this.monacoEditorOptions[setting] = value;
+    updateLanguage: function (value) {
+      this.monacoEditorOptions.language = value;
       this.editorKey += 1;
+      const updatedRule = this.rule;
+      updatedRule[`${this.field}_lang`] = value;
+      this.$root.$emit("update:rule", updatedRule);
+    },
+    updateTheme: function (value) {
+      this.monacoEditorOptions.theme = value;
+      this.editorKey += 1;
+      localStorage.setItem("monacoEditorTheme", value);
     },
   },
 };

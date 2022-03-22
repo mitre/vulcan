@@ -124,6 +124,7 @@ class RulesController < ApplicationController
       :status, :status_justification, :artifact_description, :vendor_comments,
       :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
       :fix_id, :fixtext_fixref, :audit_comment, :inspec_control_body, :inspec_control_file,
+      :inspec_control_body_lang, :inspec_control_file_lang,
       checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
       rule_descriptions_attributes: %i[id description _destroy],
       additional_answers_attributes: %i[id additional_question_id answer],
