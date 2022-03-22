@@ -137,6 +137,17 @@ class ComponentsController < ApplicationController
     end
   end
 
+  def based_on_same_srg
+    srg_title = Component.find(params[:id]).based_on.title
+    render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
+                          .where.not(id: params[:id])
+                          .order(:project_id)
+                          .joins(:project)
+                          .select('components.id, components.name, components.version, '\
+                                  'components.release, projects.name AS project_name')
+                          .map(&:attributes)
+  end
+
   def compare
     base = Component.find_by(id: params[:id]).rules.pluck(:rule_id, :inspec_control_file).to_h
     diff = Component.find_by(id: params[:diff_id]).rules.pluck(:rule_id, :inspec_control_file).to_h
