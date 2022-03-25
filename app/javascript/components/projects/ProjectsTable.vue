@@ -133,28 +133,24 @@ export default {
   methods: {
     // Path to POST/DELETE to when updating/deleting a project
     formAction: function (project) {
-      return "/projects/" + project.id;
+      return `/projects/${project.id}`;
     },
     // Path to the manage project members page
     manageProjectMembersAction: function (project) {
-      return "/projects/" + project.id + "/project_members";
+      return `/projects/${project.id}/project_members`;
     },
     // Path to the project controls page
     projectControlsAction: function (project) {
-      return "/projects/" + project.id + "/controls";
+      return `/projects/${project.id}/controls`;
     },
     getProjectAction: function (project) {
-      return "/projects/" + project.id;
+      return `/projects/${project.id}`;
     },
     destroyAction: function (project) {
       return `/projects/${project.id}`;
     },
     getLabel: function (project) {
-      return (
-        "Are you sure you want to completely remove project " +
-        project.name +
-        " and all of its related data?"
-      );
+      return `Are you sure you want to completely remove project ${project.name} and all of its related data?`;
     },
     refreshProjects: function () {
       this.$emit("projectRenamed");
