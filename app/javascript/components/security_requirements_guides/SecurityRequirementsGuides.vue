@@ -7,14 +7,14 @@
           Use the following guides to start a new Project
         </h6>
       </b-col>
-      <b-col md="2" class="align-self-center">
+      <b-col v-if="is_vulcan_admin" md="2" class="align-self-center">
         <b-button href="#" class="float-right" @click="showUploadComponent = !showUploadComponent">
           <i class="mdi mdi-file-upload-outline" aria-hidden="true" />
           Upload SRG
         </b-button>
       </b-col>
     </b-row>
-    <SecurityRequirementsGuidesTable :srgs="srgs" />
+    <SecurityRequirementsGuidesTable :srgs="srgs" :is_vulcan_admin="is_vulcan_admin" />
     <SecurityRequirementsGuidesUpload v-model="showUploadComponent" @uploaded="loadSrgs" />
   </div>
 </template>
@@ -32,6 +32,10 @@ export default {
   props: {
     givensrgs: {
       type: Array,
+      required: true,
+    },
+    is_vulcan_admin: {
+      type: Boolean,
       required: true,
     },
   },

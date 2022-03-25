@@ -2,6 +2,7 @@
   = javascript_pack_tag 'security_requirements_guides'
 
 #SecurityRequirementsGuides
-  %SecurityRequirementsGuides{   |
-    'v-bind:givensrgs': @srgs.to_json |
+  %SecurityRequirementsGuides{                                          |
+    'v-bind:givensrgs': @srgs.to_json,                                  |
+    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" ) |
   }
