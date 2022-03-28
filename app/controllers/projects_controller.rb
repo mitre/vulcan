@@ -14,7 +14,20 @@ class ProjectsController < ApplicationController
   before_action :authorize_logged_in, only: %i[index new create search]
 
   def index
-    @projects = current_user.available_projects.alphabetical
+    @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])
+    @projects.each do |project|
+      project['admin'] = project['memberships'].any? do |m|
+        m['role'] == PROJECT_MEMBER_ADMINS && m['user_id'] == current_user.id
+      end
+    end
+    respond_to do |format|
+      format.html
+      format.json do
+        render json: {
+          projects: @projects
+        }
+      end
+    end
   end
 
   def search
@@ -139,6 +152,9 @@ class ProjectsController < ApplicationController
   end
 
   def project_params
-    params.require(:project).permit(project_metadata_attributes: { data: {} })
+    params.require(:project).permit(
+      :name,
+      project_metadata_attributes: { data: {} }
+    )
   end
 end

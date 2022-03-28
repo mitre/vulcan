@@ -44,6 +44,29 @@
       <template #cell(updated_at)="data">
         {{ friendlyDateTime(data.item.updated_at) }}
       </template>
+
+      <template #cell(actions)="data">
+        <RenameProjectModal
+          v-if="is_vulcan_admin || data.item.admin"
+          :project="data.item"
+          class="floatright"
+          @projectRenamed="refreshProjects"
+        />
+        <span>
+          <b-button
+            v-if="is_vulcan_admin"
+            class="px-2 m-2"
+            variant="danger"
+            :data-confirm="getLabel(data.item)"
+            data-method="delete"
+            :href="destroyAction(data.item)"
+            rel="nofollow"
+          >
+            <i class="mdi mdi-trash-can" aria-hidden="true" />
+            Remove
+          </b-button>
+        </span>
+      </template>
     </b-table>
 
     <!-- Pagination controls -->
@@ -58,13 +81,21 @@
 
 <script>
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import RenameProjectModal from "./RenameProjectModal.vue";
+
 export default {
   name: "ProjectsTable",
+  components: { RenameProjectModal },
   mixins: [DateFormatMixinVue],
   props: {
     projects: {
       type: Array,
       required: true,
+    },
+    is_vulcan_admin: {
+      type: Boolean,
+      required: true,
+      default: false,
     },
   },
   data: function () {
@@ -76,6 +107,12 @@ export default {
         { key: "name", sortable: true },
         { key: "memberships_count", label: "Members", sortable: true },
         { key: "updated_at", label: "Last Updated", sortable: true },
+        {
+          key: "actions",
+          label: "Actions",
+          thClass: "text-right",
+          tdClass: "p-0 text-right",
+        },
       ],
     };
   },
@@ -97,21 +134,34 @@ export default {
   methods: {
     // Path to POST/DELETE to when updating/deleting a project
     formAction: function (project) {
-      return "/projects/" + project.id;
+      return `/projects/${project.id}`;
     },
     // Path to the manage project members page
     manageProjectMembersAction: function (project) {
-      return "/projects/" + project.id + "/project_members";
+      return `/projects/${project.id}/project_members`;
     },
     // Path to the project controls page
     projectControlsAction: function (project) {
-      return "/projects/" + project.id + "/controls";
+      return `/projects/${project.id}/controls`;
     },
     getProjectAction: function (project) {
-      return "/projects/" + project.id;
+      return `/projects/${project.id}`;
+    },
+    destroyAction: function (project) {
+      return `/projects/${project.id}`;
+    },
+    getLabel: function (project) {
+      return `Are you sure you want to completely remove project ${project.name} and all of its related data?`;
+    },
+    refreshProjects: function () {
+      this.$emit("projectRenamed");
     },
   },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.floatright {
+  float: right;
+}
+</style>

@@ -3,6 +3,7 @@
   -# = stylesheet_pack_tag 'projects'
 
 #Projects
-  %Projects{                                                   |
-    'v-bind:projects': @projects.to_json,                      |
+  %Projects{                                                                 |
+    'v-bind:projects': @projects.to_json,                                    |
+    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" )      |
   }
