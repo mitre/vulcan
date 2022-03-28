@@ -131,6 +131,5 @@ class ApplicationController < ActionController::Base
   def setup_navigation
     @navigation = []
     @navigation += helpers.base_navigation if current_user
-    @navigation += helpers.admin_navigation if current_user&.admin?
   end
 end
