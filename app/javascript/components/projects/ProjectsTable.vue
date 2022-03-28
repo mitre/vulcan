@@ -47,6 +47,7 @@
 
       <template #cell(actions)="data">
         <RenameProjectModal
+          v-if="is_vulcan_admin || data.item.admin"
           :project="data.item"
           class="floatright"
           @projectRenamed="refreshProjects"
