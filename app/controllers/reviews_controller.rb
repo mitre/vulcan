@@ -26,7 +26,9 @@ class ReviewsController < ApplicationController
 
   def lock_controls
     unlocked = @component.rules.where(locked: false)
-    filtered_unlocked = unlocked.where(status: 'Not Yet Determined').as_json.filter { |u| u['satisfied_by'].nil? }
+    filtered_unlocked = unlocked.where(status: 'Not Yet Determined')
+    satisfied_rule_ids = RuleSatisfaction.where(rule_id: filtered_unlocked).pluck(:rule_id)
+    filtered_unlocked = filtered_unlocked.where.not(id: satisfied_rule_ids).order(:rule_id)
 
     if filtered_unlocked.any?
       not_determined_controls = filtered_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
