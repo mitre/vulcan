@@ -189,6 +189,12 @@ export default {
     }
     window.addEventListener("scroll", this.handleScroll);
     this.handleScroll();
+    // Load saved theme
+    const savedTheme = localStorage.getItem("monacoEditorTheme");
+    if (savedTheme) {
+      this.monacoEditorOptions.theme = savedTheme;
+      this.editorKey += 1;
+    }
   },
   destroyed() {
     window.removeEventListener("scroll", this.handleScroll);
