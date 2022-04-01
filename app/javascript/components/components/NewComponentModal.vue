@@ -68,7 +68,7 @@
               <vue-simple-suggest
                 ref="srgSearch"
                 :value="security_requirements_guide_displayed"
-                :list="displayedSrgs"
+                :list="copy_component ? displayedSrgs : srgs"
                 display-attribute="displayed"
                 value-attribute="id"
                 placeholder="Search for an SRG..."
@@ -194,7 +194,6 @@ export default {
   data: function () {
     return {
       loading: false,
-      prefix: this.predetermined_prefix,
       selected_project_id: this.project_id,
       selected_component_id: null,
       security_requirements_guide: null,
@@ -206,6 +205,7 @@ export default {
       release: "",
       title: "",
       description: "",
+      prefix: this.predetermined_prefix,
       projects: [],
       components: this.copy_component
         ? this.addDisplayNameToComponents(this.project.components)
@@ -245,12 +245,22 @@ export default {
   },
   methods: {
     showModal: function () {
+      this.selected_project_id = this.project_id;
+      this.selected_component_id = null;
+      this.security_requirements_guide = null;
+      this.security_requirements_guide_id =
+        !this.copy_component && this.predetermined_security_requirements_guide_id;
+      this.security_requirements_guide_displayed = "";
       this.name = "";
       this.version = "";
       this.release = "";
       this.title = "";
       this.description = "";
-      this.prefix = "";
+      this.prefix = this.predetermined_prefix;
+      this.components = this.copy_component
+        ? this.addDisplayNameToComponents(this.project.components)
+        : [];
+      this.displayedSrgs = [];
       this.$refs["AddComponentModal"].show();
     },
     fetchData: function (_bvModalEvt) {
@@ -359,6 +369,11 @@ export default {
       if (!this.newComponent) {
         formData.append("component[duplicate]", !this.newComponent);
         formData.append("component[id]", this.component_to_duplicate);
+      }
+      if (this.copy_component) {
+        formData.append("component[copy_component]", true);
+        formData.append("component[project_id]", this.project_id);
+        formData.append("component[id]", this.selected_component_id);
       }
       if (this.version) {
         formData.append("component[version]", this.version);
