@@ -143,7 +143,7 @@ class ComponentsController < ApplicationController
                           .where.not(id: params[:id])
                           .order(:project_id)
                           .joins(:project)
-                          .select('components.id, components.name, components.version, '\
+                          .select('components.id, components.name, components.version, components.prefix, '\
                                   'components.release, projects.name AS project_name')
                           .map(&:attributes)
   end
@@ -153,6 +153,19 @@ class ComponentsController < ApplicationController
     diff = Component.find_by(id: params[:diff_id]).rules.pluck(:rule_id, :inspec_control_file).to_h
     render json: base.keys.union(diff.keys).sort.index_with { |rule_id|
       { base: base[rule_id], diff: diff[rule_id], changed: base[rule_id] != diff[rule_id] }
+    }
+  end
+
+  def revision
+    base = Component.find_by(id: params[:id]).rules.index_by(&:rule_id)
+    diff = Component.find_by(id: params[:diff_id]).rules.index_by(&:rule_id)
+    updated = base.keys.intersection(diff.keys).sort.filter do |rule_id|
+      base[rule_id][:title] != diff[rule_id][:title]
+    end
+    render json: {
+      added: (diff.keys - base.keys).sort,
+      removed: (base.keys - diff.keys).sort,
+      updated: updated
     }
   end
 

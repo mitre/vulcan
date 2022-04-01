@@ -82,6 +82,11 @@
             <DiffViewer :project="initialProjectState" />
           </b-tab>
 
+          <!-- Revision History -->
+          <b-tab title="Revision History">
+            <RevisionHistory :project="initialProjectState" />
+          </b-tab>
+
           <!-- Project members -->
           <b-tab :title="`Members (${project.memberships_count})`">
             <MembershipsTable
@@ -203,6 +208,7 @@ import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 import DiffViewer from "./DiffViewer.vue";
+import RevisionHistory from "./RevisionHistory.vue";
 
 export default {
   name: "Project",
@@ -214,6 +220,7 @@ export default {
     AddComponentModal,
     NewComponentModal,
     DiffViewer,
+    RevisionHistory,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
