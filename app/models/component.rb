@@ -223,7 +223,7 @@ class Component < ApplicationRecord
   end
 
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
-                new_title: nil, new_description: nil)
+                new_title: nil, new_description: nil, new_project_id: nil, new_srg_id: nil)
     new_component = amoeba_dup
     new_component.name = new_name if new_name
     new_component.prefix = new_prefix if new_prefix
@@ -231,7 +231,28 @@ class Component < ApplicationRecord
     new_component.release = new_release if new_release
     new_component.title = new_title if new_title
     new_component.description = new_description if new_description
+    new_component.project_id = new_project_id if new_project_id
     new_component.skip_import_srg_rules = true
+    return new_component unless new_srg_id
+
+    new_srg = SecurityRequirementsGuide.find(new_srg_id)
+    return new_component if new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version
+
+    new_srg_rules = new_srg.srg_rules.index_by(&:version)
+    # update rules that haven't been configured
+    new_component.rules.where.not(status: 'Applicable - Configurable').find_each do |rule|
+      new_srg_rule = new_srg_rules[rule[:version]]
+      # delete rules that are no longer present
+      rule.destroy! && next if new_srg_rule.blank?
+
+      fields = %i[rule_severity rule_weight title ident ident_system fixtext fixtext_fixref fix_id]
+      fields.each { |field| rule[field] = new_srg_rule[field] }
+      rule.disa_rule_descriptions = new_srg_rule.disa_rule_description.dup
+      rule.rule_descriptions = new_srg_rule.rule_descriptions.dup
+      rule.checks = new_srg_rule.checks.dup
+      rule.srg_rule = new_srg_rule
+    end
+
     new_component
   end
 
