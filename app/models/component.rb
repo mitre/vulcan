@@ -256,6 +256,39 @@ class Component < ApplicationRecord
     new_component
   end
 
+  def duplicate_reviews_and_history(component_id)
+    return unless component_id
+
+    Component.find(component_id).rules.each do |orig_rule|
+      new_rule = rules.find { |r| r.rule_id == orig_rule.rule_id }
+
+      ActiveRecord::Base.connection.execute(
+        Arel.sql("UPDATE base_rules SET created_at = '#{orig_rule.created_at}', updated_at = '#{orig_rule.updated_at}'
+                  WHERE id = #{new_rule.id}")
+      )
+
+      ActiveRecord::Base.connection.execute(
+        Arel.sql("DELETE FROM audits WHERE auditable_type = 'BaseRule' AND auditable_id = #{new_rule.id}")
+      )
+
+      ActiveRecord::Base.connection.execute(
+        Arel.sql("INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, user_id, user_type,
+                                      username, action, audited_changes, version, comment, remote_address, request_uuid,
+                                      created_at, audited_user_id, audited_username)
+                  SELECT #{new_rule.id}, auditable_type, associated_id, associated_type, user_id, user_type, username,
+                         action, audited_changes, version, comment, remote_address, request_uuid, created_at,
+                         audited_user_id, audited_username
+                  FROM audits WHERE auditable_type = 'BaseRule' AND auditable_id = #{orig_rule.id}")
+      )
+
+      ActiveRecord::Base.connection.execute(
+        Arel.sql("INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
+                  SELECT user_id, #{new_rule.id}, action, comment, created_at, updated_at
+                  FROM reviews WHERE rule_id = #{orig_rule.id}")
+      )
+    end
+  end
+
   def overlay(project_id)
     new_component = amoeba_dup
     new_component.project_id = project_id
