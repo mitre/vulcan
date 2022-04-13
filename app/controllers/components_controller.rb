@@ -64,6 +64,7 @@ class ComponentsController < ApplicationController
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
     if component.errors.empty? && component.save
+      component.duplicate_reviews_and_history(component_create_params[:id])
       render json: { toast: 'Successfully added component to project.' }
     else
       render json: {
