@@ -84,7 +84,10 @@
 
           <!-- Revision History -->
           <b-tab title="Revision History">
-            <RevisionHistory :project="initialProjectState" />
+            <RevisionHistory
+              :project="initialProjectState"
+              :unique-component-names="uniqueComponentNames"
+            />
           </b-tab>
 
           <!-- Project members -->
@@ -260,6 +263,9 @@ export default {
     sortedAvailableComponents: function () {
       return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
     },
+    uniqueComponentNames: function () {
+      return _.uniq(this.sortedComponents().map((c) => c["name"]));
+    },
     adminList: function () {
       return this.project.admins.map((a) => `${a.name} <${a.email}>`).join(", ");
     },
@@ -304,7 +310,7 @@ export default {
   },
   methods: {
     sortedComponents: function () {
-      return _.sortBy(this.project.components, ["version"], ["asc"]);
+      return _.sortBy(this.project.components, ["name", "version", "release"], ["asc"]);
     },
     sortedOverlayComponents: function () {
       return this.sortedComponents().filter((e) => e.component_id != null);

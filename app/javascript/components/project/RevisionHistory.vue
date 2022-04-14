@@ -1,79 +1,54 @@
 <template>
-  <div class="my-1">
-    <b-row class="my-1">
-      <b-col md="2">
-        <div class="p-2">
-          <h6>Compare Components:</h6>
+  <div class="my-2">
+    <b-input-group size="sm" class="mb-3">
+      <b-input-group-prepend>
+        <b-input-group-text class="rounded-0">Component Name</b-input-group-text>
+      </b-input-group-prepend>
+      <b-form-select
+        id="componentName"
+        v-model="componentName"
+        class="form-select-sm"
+        :options="uniqueComponentNames"
+        @change="fetchRevisionHistory"
+      />
+    </b-input-group>
+    <div v-if="loading" class="mt-3">
+      <h6 class="m-3 text-center">Loading...</h6>
+    </div>
+    <div class="mt-3">
+      <div v-for="(history, index) in revisionHistory.slice().reverse()" :key="`history-${index}`">
+        <div v-if="history.component">
+          <h6>
+            {{ history.component.name }}
+            {{
+              history.component.version || history.component.release
+                ? `(${[
+                    history.component.version ? `Version ${history.component.version}` : "",
+                    history.component.release ? `Release ${history.component.release}` : "",
+                  ].join(", ")})`
+                : ""
+            }}
+          </h6>
         </div>
-      </b-col>
-      <b-col md="10">
-        <b-input-group size="sm" class="mb-2">
-          <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Base</b-input-group-text>
-          </b-input-group-prepend>
-          <b-form-select
-            id="baseComponent"
-            v-model="baseComponent"
-            class="form-select-sm"
-            @change="updateCompareList"
+        <div v-if="history.changes" class="pb-2">
+          <div
+            v-for="(rule_id, idx) in Object.keys(history.changes).sort()"
+            :key="`history-${index}-rule-${idx}`"
+            class="ml-3"
           >
-            <option
-              v-for="(selectOption, indexOpt) in project.components"
-              :key="indexOpt"
-              :value="selectOption"
-            >
-              {{ selectOption.name }}
-              {{
-                selectOption.version || selectOption.release
-                  ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
-                  : ""
-              }}
-            </option>
-          </b-form-select>
-          <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
-          </b-input-group-prepend>
-          <b-form-select
-            id="diffComponent"
-            v-model="diffComponent"
-            class="form-select-sm"
-            :disabled="!baseComponent"
-            @change="compareComponents"
-          >
-            <option
-              v-for="(selectOption, indexOpt) in compareList"
-              :key="indexOpt"
-              :value="selectOption"
-            >
-              {{ selectOption.name }}
-              {{
-                selectOption.version || selectOption.release
-                  ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
-                  : ""
-              }}
-              {{ selectOption.project_name && `- ${selectOption.project_name}` }}
-            </option>
-          </b-form-select>
-        </b-input-group>
-        <div v-if="revisionHistory" class="my-2">
-          <p v-for="(rule_id, idx) in revisionHistory.added" :key="idx" class="mb-1">
-            {{ diffComponent.prefix }}-{{ rule_id }} was added
-          </p>
-          <p v-for="(rule_id, idx) in revisionHistory.removed" :key="idx" class="mb-1">
-            {{ baseComponent.prefix }}-{{ rule_id }} was removed
-          </p>
-          <p v-for="(rule_id, idx) in revisionHistory.updated" :key="idx" class="mb-1">
-            {{ baseComponent.prefix }}-{{ rule_id }} was updated
-          </p>
+            <p v-if="history.changes[rule_id].change === 'added'" class="mb-1">
+              {{ history.diffComponent.prefix }}-{{ rule_id }} was added
+            </p>
+            <p v-if="history.changes[rule_id].change === 'removed'" class="mb-1">
+              {{ history.baseComponent.prefix }}-{{ rule_id }} was removed
+            </p>
+            <p v-if="history.changes[rule_id].change === 'updated'" class="mb-1">
+              {{ history.baseComponent.prefix }}-{{ rule_id }} was updated
+            </p>
+          </div>
         </div>
-      </b-col>
-    </b-row>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -92,38 +67,31 @@ export default {
       type: Object,
       required: true,
     },
+    uniqueComponentNames: {
+      type: Array,
+      required: true,
+    },
   },
   data: function () {
     return {
-      baseComponent: null,
-      diffComponent: null,
-      compareList: [],
-      revisionHistory: {},
+      componentName: "",
+      revisionHistory: [],
+      loading: false,
     };
   },
   methods: {
-    updateCompareList: function () {
-      if (this.baseComponent) {
+    fetchRevisionHistory: function () {
+      if (this.componentName) {
+        this.loading = true;
         axios
-          .get(`/components/${this.baseComponent.id}/based_on_same_srg`)
-          .then((response) => {
-            this.compareList = response.data;
-          })
-          .catch(this.alertOrNotifyResponse);
-      }
-    },
-    compareComponents: function () {
-      if (
-        this.baseComponent &&
-        this.diffComponent &&
-        this.baseComponent.id !== this.diffComponent.id
-      ) {
-        axios
-          .get(`/components/${this.baseComponent.id}/revision/${this.diffComponent.id}`)
+          .get(`/components/history/${this.componentName}`)
           .then((response) => {
             this.revisionHistory = response.data;
           })
-          .catch(this.alertOrNotifyResponse);
+          .catch(this.alertOrNotifyResponse)
+          .then(() => {
+            this.loading = false;
+          });
       }
     },
   },

@@ -215,6 +215,16 @@ class Rule < BaseRule
     self.inspec_control_file = control.to_ruby
   end
 
+  def basic_fields
+    {
+      rule_id: rule_id,
+      title: title,
+      vuln_discussion: disa_rule_descriptions.first.vuln_discussion,
+      check: export_checktext,
+      fix: export_fixtext
+    }
+  end
+
   private
 
   def export_fixtext
