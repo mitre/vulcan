@@ -156,17 +156,50 @@ class ComponentsController < ApplicationController
     }
   end
 
-  def revision
-    base = Component.find_by(id: params[:id]).rules.index_by(&:rule_id)
-    diff = Component.find_by(id: params[:diff_id]).rules.index_by(&:rule_id)
-    updated = base.keys.intersection(diff.keys).sort.filter do |rule_id|
-      base[rule_id][:title] != diff[rule_id][:title]
+  def history
+    history = []
+    components = Component.where(name: params[:name])
+                          .where.not(version: nil)
+                          .where.not(release: nil)
+                          .order(:version, :release)
+    components.each_with_index do |component, idx|
+      # nothing to compare first component to
+      unless idx.zero?
+        prev_component = components[idx - 1]
+        base = prev_component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
+                             .map(&:basic_fields).index_by { |r| r[:rule_id] }
+        diff = component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
+                        .map(&:basic_fields).index_by { |r| r[:rule_id] }
+        changes = {}
+
+        # added
+        (diff.keys - base.keys).each do |rule_id|
+          changes[rule_id] = { change: 'added', diff: diff[rule_id] }
+        end
+
+        # removed
+        (base.keys - diff.keys).each do |rule_id|
+          changes[rule_id] = { change: 'removed', base: base[rule_id] }
+        end
+
+        # updated
+        base.keys.intersection(diff.keys)
+            .filter { |rule_id| base[rule_id] != diff[rule_id] }
+            .each do |rule_id|
+              changes[rule_id] = { change: 'updated', base: base[rule_id], diff: diff[rule_id] }
+            end
+
+        history << {
+          baseComponent: prev_component,
+          diffComponent: component,
+          changes: changes
+        }
+      end
+
+      history << { component: component }
     end
-    render json: {
-      added: (diff.keys - base.keys).sort,
-      removed: (base.keys - diff.keys).sort,
-      updated: updated
-    }
+
+    render json: history
   end
 
   private
