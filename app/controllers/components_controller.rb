@@ -143,7 +143,7 @@ class ComponentsController < ApplicationController
                           .where.not(id: params[:id])
                           .order(:project_id)
                           .joins(:project)
-                          .select('components.id, components.name, components.version, '\
+                          .select('components.id, components.name, components.version, components.prefix, '\
                                   'components.release, projects.name AS project_name')
                           .map(&:attributes)
   end
@@ -154,6 +154,52 @@ class ComponentsController < ApplicationController
     render json: base.keys.union(diff.keys).sort.index_with { |rule_id|
       { base: base[rule_id], diff: diff[rule_id], changed: base[rule_id] != diff[rule_id] }
     }
+  end
+
+  def history
+    history = []
+    components = Component.where(name: params[:name])
+                          .where.not(version: nil)
+                          .where.not(release: nil)
+                          .order(:version, :release)
+    components.each_with_index do |component, idx|
+      # nothing to compare first component to
+      unless idx.zero?
+        prev_component = components[idx - 1]
+        base = prev_component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
+                             .map(&:basic_fields).index_by { |r| r[:rule_id] }
+        diff = component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
+                        .map(&:basic_fields).index_by { |r| r[:rule_id] }
+        changes = {}
+
+        # added
+        (diff.keys - base.keys).each do |rule_id|
+          changes[rule_id] = { change: 'added', diff: diff[rule_id] }
+        end
+
+        # removed
+        (base.keys - diff.keys).each do |rule_id|
+          changes[rule_id] = { change: 'removed', base: base[rule_id] }
+        end
+
+        # updated
+        base.keys.intersection(diff.keys)
+            .filter { |rule_id| base[rule_id] != diff[rule_id] }
+            .each do |rule_id|
+              changes[rule_id] = { change: 'updated', base: base[rule_id], diff: diff[rule_id] }
+            end
+
+        history << {
+          baseComponent: prev_component,
+          diffComponent: component,
+          changes: changes
+        }
+      end
+
+      history << { component: component }
+    end
+
+    render json: history
   end
 
   private
