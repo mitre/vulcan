@@ -9,33 +9,50 @@
       </p>
       <p v-if="history.comment" class="ml-3 mb-0 white-space-pre-wrap">{{ history.comment }}</p>
 
-      <!-- Edit or Delete action -->
-      <template v-if="history.action == 'update' || history.action == 'destroy'">
-        <template v-if="revertable">
-          <RuleRevertModal
-            :rule="rule"
-            :component="component"
-            :history="history"
-            :statuses="statuses"
-            :severities="severities"
-          />
-        </template>
-        <template v-else>
-          <div v-for="changes in history.audited_changes" :key="changes.id">
-            <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
-              {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
-            </p>
-          </div>
-          <p v-if="history.action == 'destroy'" class="ml-3 mb-0 text-danger">
-            {{ userIdentifier(history) }} was {{ computeDeletionText(history) }}
+      <!-- Associated audits are abbreviated -->
+      <template v-if="abbreviateType">
+        <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
+          {{ userIdentifier(history) }} was created
+        </p>
+        <template v-if="history.action == 'update'">
+          <p
+            v-if="history.audited_changes.map((c) => c.field).includes('deleted_at')"
+            class="ml-3 mb-0 text-danger"
+          >
+            {{ userIdentifier(history) }} was deleted
           </p>
+          <p v-else class="ml-3 mb-0 text-info">{{ userIdentifier(history) }} was updated</p>
         </template>
       </template>
+      <template v-else>
+        <!-- Edit or Delete action -->
+        <template v-if="history.action == 'update' || history.action == 'destroy'">
+          <template v-if="revertable">
+            <RuleRevertModal
+              :rule="rule"
+              :component="component"
+              :history="history"
+              :statuses="statuses"
+              :severities="severities"
+            />
+          </template>
+          <template v-else>
+            <div v-for="changes in history.audited_changes" :key="changes.id">
+              <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
+                {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
+              </p>
+            </div>
+            <p v-if="history.action == 'destroy'" class="ml-3 mb-0 text-danger">
+              {{ userIdentifier(history) }} was {{ computeDeletionText(history) }}
+            </p>
+          </template>
+        </template>
 
-      <!-- Create action -->
-      <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
-        {{ userIdentifier(history) }} was {{ computeCreationText(history) }}
-      </p>
+        <!-- Create action -->
+        <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
+          {{ userIdentifier(history) }} was {{ computeCreationText(history) }}
+        </p>
+      </template>
     </div>
   </div>
 </template>
@@ -74,6 +91,10 @@ export default {
       type: Object,
       required: false,
     },
+    abbreviateType: {
+      type: String,
+      required: false,
+    },
   },
   methods: {
     userIdentifier: function (history) {
@@ -91,7 +112,7 @@ export default {
         return "Created";
       }
     },
-    computeUpdateText: function (changes) {
+    computeUpdateText: function (changes, abbreviated) {
       if (changes.field == "admin") {
         return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
       } else {

@@ -178,7 +178,11 @@
               <i v-if="!showHistory" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
             </div>
             <b-collapse id="collapse-metadata" v-model="showHistory">
-              <History :histories="component.histories" :revertable="false" />
+              <History
+                :histories="component.histories"
+                :revertable="false"
+                abbreviate-type="BaseRule"
+              />
             </b-collapse>
           </b-col>
         </b-row>

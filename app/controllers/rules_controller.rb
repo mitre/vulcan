@@ -73,7 +73,7 @@ class RulesController < ApplicationController
   end
 
   def destroy
-    if @rule.destroy
+    if @rule.update(deleted_at: Time.zone.now)
       render json: { toast: 'Successfully deleted control.' }
     else
       render json: {
