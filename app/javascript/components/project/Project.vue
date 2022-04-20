@@ -82,6 +82,14 @@
             <DiffViewer :project="initialProjectState" />
           </b-tab>
 
+          <!-- Revision History -->
+          <b-tab title="Revision History">
+            <RevisionHistory
+              :project="initialProjectState"
+              :unique-component-names="uniqueComponentNames"
+            />
+          </b-tab>
+
           <!-- Project members -->
           <b-tab :title="`Members (${project.memberships_count})`">
             <MembershipsTable
@@ -203,6 +211,7 @@ import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 import DiffViewer from "./DiffViewer.vue";
+import RevisionHistory from "./RevisionHistory.vue";
 
 export default {
   name: "Project",
@@ -214,6 +223,7 @@ export default {
     AddComponentModal,
     NewComponentModal,
     DiffViewer,
+    RevisionHistory,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
@@ -252,6 +262,9 @@ export default {
   computed: {
     sortedAvailableComponents: function () {
       return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
+    },
+    uniqueComponentNames: function () {
+      return _.uniq(this.sortedComponents().map((c) => c["name"]));
     },
     adminList: function () {
       return this.project.admins.map((a) => `${a.name} <${a.email}>`).join(", ");
@@ -297,7 +310,7 @@ export default {
   },
   methods: {
     sortedComponents: function () {
-      return _.sortBy(this.project.components, ["version"], ["asc"]);
+      return _.sortBy(this.project.components, ["name", "version", "release"], ["asc"]);
     },
     sortedOverlayComponents: function () {
       return this.sortedComponents().filter((e) => e.component_id != null);
