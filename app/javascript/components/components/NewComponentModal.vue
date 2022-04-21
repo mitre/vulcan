@@ -13,8 +13,8 @@
       :title="submitText"
       size="lg"
       :ok-title="loading ? 'Loading...' : submitText"
-      :ok-disabled="loading"
-      @show="fetchSrgs"
+      :ok-disabled="loading || !(security_requirements_guide_id || component_to_duplicate)"
+      @show="fetchData"
       @ok="createComponent"
     >
       <!-- Searchable projects -->
@@ -28,13 +28,47 @@
         <b-row>
           <b-col>
             <!-- Select a SRG -->
+            <b-form-group v-if="copy_component" label="Select an existing Project to copy from">
+              <vue-simple-suggest
+                ref="projectSearch"
+                :value="project.name"
+                :list="projects"
+                display-attribute="name"
+                value-attribute="id"
+                placeholder="Search for an existing Project..."
+                :min-length="0"
+                :max-suggestions="0"
+                :number="0"
+                @select="setSelectedProject($refs.projectSearch.selected)"
+              />
+            </b-form-group>
+
+            <!-- Select a Component -->
+            <b-form-group v-if="copy_component" label="Select an existing Component to copy from">
+              <vue-simple-suggest
+                :key="componentKey"
+                ref="componentSearch"
+                :list="components"
+                display-attribute="displayed"
+                value-attribute="id"
+                placeholder="Search for an existing Component..."
+                :disabled="!selected_project_id"
+                :min-length="0"
+                :max-suggestions="0"
+                :number="0"
+                @select="setSelectedComponent($refs.componentSearch.selected)"
+              />
+            </b-form-group>
+
+            <!-- Select a SRG -->
             <b-form-group
               v-if="predetermined_security_requirements_guide_id == null"
               label="Select a Security Requirements Guide"
             >
               <vue-simple-suggest
                 ref="srgSearch"
-                :list="srgs"
+                :value="security_requirements_guide_displayed"
+                :list="copy_component ? displayedSrgs : srgs"
                 display-attribute="displayed"
                 value-attribute="id"
                 placeholder="Search for an SRG..."
@@ -130,6 +164,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    copy_component: {
+      type: Boolean,
+      default: false,
+    },
     component_to_duplicate: {
       type: Number,
       required: false,
@@ -137,6 +175,10 @@ export default {
     project_id: {
       type: Number,
       required: true,
+    },
+    project: {
+      type: Object,
+      required: false,
     },
     predetermined_prefix: {
       type: String,
@@ -152,21 +194,34 @@ export default {
   data: function () {
     return {
       loading: false,
-      prefix: this.predetermined_prefix,
-      security_requirements_guide_id: this.predetermined_security_requirements_guide_id,
+      selected_project_id: this.project_id,
+      selected_component_id: null,
+      security_requirements_guide: null,
+      security_requirements_guide_id:
+        !this.copy_component && this.predetermined_security_requirements_guide_id,
+      security_requirements_guide_displayed: "",
       name: "",
       version: "",
       release: "",
       title: "",
       description: "",
+      prefix: this.predetermined_prefix,
+      projects: [],
+      components: this.copy_component
+        ? this.addDisplayNameToComponents(this.project.components)
+        : [],
       srgs: [],
+      displayedSrgs: [],
       file: null,
+      componentKey: 0,
     };
   },
   computed: {
     buttonText: function () {
       if (this.spreadsheet_import) {
         return "Import From Spreadsheet";
+      } else if (this.copy_component) {
+        return "Copy Component";
       } else if (this.newComponent) {
         return "Create a New Component";
       } else {
@@ -179,6 +234,8 @@ export default {
     submitText: function () {
       if (this.spreadsheet_import) {
         return "Import Component";
+      } else if (this.copy_component) {
+        return "Copy Component";
       } else if (this.newComponent) {
         return "Create Component";
       } else {
@@ -187,22 +244,78 @@ export default {
     },
   },
   methods: {
-    fetchSrgs: function (_bvModalEvt) {
+    showModal: function () {
+      this.selected_project_id = this.project_id;
+      this.selected_component_id = null;
+      this.security_requirements_guide = null;
+      this.security_requirements_guide_id =
+        !this.copy_component && this.predetermined_security_requirements_guide_id;
+      this.security_requirements_guide_displayed = "";
+      this.name = "";
+      this.version = "";
+      this.release = "";
+      this.title = "";
+      this.description = "";
+      this.prefix = this.predetermined_prefix;
+      this.components = this.copy_component
+        ? this.addDisplayNameToComponents(this.project.components)
+        : [];
+      this.displayedSrgs = [];
+      this.$refs["AddComponentModal"].show();
+    },
+    fetchData: function (_bvModalEvt) {
       axios.get("/srgs").then((response) => {
         this.srgs = response.data;
         this.srgs.forEach((srg) => {
           srg.displayed = `${srg.title} (${srg.version})`;
         });
       });
+      axios.get("/projects").then((response) => {
+        this.projects = response.data;
+      });
     },
-    showModal: function () {
-      this.name = "";
-      this.version = "";
-      this.release = "";
-      this.title = "";
-      this.description = "";
-      this.prefix = "";
-      this.$refs["AddComponentModal"].show();
+    setSelectedProject: function (project) {
+      if (!this.selected_project_id || this.selected_project_id !== project.id) {
+        this.selected_component_id = null;
+        this.security_requirements_guide_id = null;
+        this.security_requirements_guide_displayed = null;
+        axios.get(`/projects/${project.id}`).then((response) => {
+          this.components = this.addDisplayNameToComponents(response.data.components);
+          this.componentKey += 1;
+        });
+      }
+      this.selected_project_id = project.id;
+    },
+    addDisplayNameToComponents: function (components) {
+      return components.map((component) => {
+        component.displayed = `${component.name} ${
+          component.version || component.release
+            ? `(${[
+                component.version ? `Version ${component.version}` : "",
+                component.release ? `Release ${component.release}` : "",
+              ].join(", ")})`
+            : ""
+        }`;
+        return component;
+      });
+    },
+    setSelectedComponent: function (component) {
+      this.selected_component_id = component.id;
+      this.security_requirements_guide_id = component.security_requirements_guide_id;
+      this.security_requirements_guide_displayed = this.srgs.find(
+        (srg) => srg.id === component.security_requirements_guide_id
+      ).displayed;
+      this.name = component.name;
+      this.version = component.version;
+      this.release = component.release;
+      this.prefix = component.prefix;
+      this.title = component.title;
+      this.description = component.description;
+      // only display srgs the selected component is based on
+      this.displayedSrgs = this.srgs.filter((srg) => srg.title === component.based_on_title);
+    },
+    setSelectedSrg: function (srg) {
+      this.security_requirements_guide_id = srg.id;
     },
     createComponent: function (bvModalEvt) {
       this.loading = true;
@@ -257,6 +370,11 @@ export default {
         formData.append("component[duplicate]", !this.newComponent);
         formData.append("component[id]", this.component_to_duplicate);
       }
+      if (this.copy_component) {
+        formData.append("component[copy_component]", true);
+        formData.append("component[project_id]", this.project_id);
+        formData.append("component[id]", this.selected_component_id);
+      }
       if (this.version) {
         formData.append("component[version]", this.version);
       }
@@ -292,9 +410,6 @@ export default {
       this.alertOrNotifyResponse(response);
       this.$refs["AddComponentModal"].hide();
       this.$emit("projectUpdated");
-    },
-    setSelectedSrg: function (srg) {
-      this.security_requirements_guide_id = srg.id;
     },
   },
 };
