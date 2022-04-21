@@ -64,6 +64,7 @@ class ComponentsController < ApplicationController
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
     if component.errors.empty? && component.save
+      component.duplicate_reviews_and_history(component_create_params[:id])
       render json: { toast: 'Successfully added component to project.' }
     else
       render json: {
@@ -205,14 +206,16 @@ class ComponentsController < ApplicationController
   private
 
   def create_or_duplicate
-    if component_create_params[:duplicate]
-      @project.components.find(component_create_params[:id])
-              .duplicate(new_name: component_create_params[:name],
-                         new_prefix: component_create_params[:prefix],
-                         new_version: component_create_params[:version],
-                         new_release: component_create_params[:release],
-                         new_title: component_create_params[:title],
-                         new_description: component_create_params[:description])
+    if component_create_params[:duplicate] || component_create_params[:copy_component]
+      Component.find(component_create_params[:id])
+               .duplicate(new_name: component_create_params[:name],
+                          new_prefix: component_create_params[:prefix],
+                          new_version: component_create_params[:version],
+                          new_release: component_create_params[:release],
+                          new_title: component_create_params[:title],
+                          new_description: component_create_params[:description],
+                          new_project_id: component_create_params[:project_id],
+                          new_srg_id: component_create_params[:security_requirements_guide_id])
     elsif component_create_params[:component_id]
       Component.find(component_create_params[:component_id]).overlay(@project.id)
     elsif component_create_params[:file]
@@ -257,7 +260,9 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :id,
       :duplicate,
+      :copy_component,
       :component_id,
+      :project_id,
       :security_requirements_guide_id,
       :name,
       :prefix,
