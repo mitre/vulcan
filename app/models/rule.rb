@@ -219,7 +219,7 @@ class Rule < BaseRule
     {
       rule_id: rule_id,
       title: title,
-      vuln_discussion: disa_rule_descriptions.first.vuln_discussion,
+      vuln_discussion: disa_rule_descriptions.first&.vuln_discussion,
       check: export_checktext,
       fix: export_fixtext
     }
@@ -232,7 +232,7 @@ class Rule < BaseRule
   end
 
   def export_checktext
-    satisfied_by.size.positive? ? satisfied_by.first.checks.first.content : checks.first.content
+    satisfied_by.size.positive? ? satisfied_by.first.checks.first&.content : checks.first&.content
   end
 
   def vendor_comments_with_satisfactions
