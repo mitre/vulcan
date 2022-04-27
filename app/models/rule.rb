@@ -13,7 +13,9 @@ class Rule < BaseRule
     include_association :additional_answers
   end
 
-  audited except: %i[component_id review_requestor_id created_at updated_at locked], max_audits: 1000
+  audited except: %i[component_id review_requestor_id created_at updated_at locked inspec_control_file],
+          max_audits: 1000,
+          associated_with: :component
   has_associated_audits
 
   belongs_to :component, counter_cache: true
@@ -45,6 +47,8 @@ class Rule < BaseRule
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
+
+  default_scope { where(deleted_at: nil) }
 
   def self.from_mapping(rule_mapping, component_id, idx, srg_rules)
     rule = super(self, rule_mapping)
