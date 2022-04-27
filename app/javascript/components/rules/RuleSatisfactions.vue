@@ -1,8 +1,6 @@
 <template>
   <div>
     <div v-if="rule.satisfies && rule.satisfies.length > 0">
-      <br />
-
       <!-- Collapsable header -->
       <div class="clickable" @click="showAlsoSatisfies = !showAlsoSatisfies">
         <h2 class="m-0 d-inline-block">Also Satisfies</h2>
@@ -53,8 +51,6 @@
     </div>
 
     <div v-if="rule.satisfied_by && rule.satisfied_by.length > 0">
-      <br />
-
       <!-- Collapsable header -->
       <div class="clickable" @click="showSatisfiedBy = !showSatisfiedBy">
         <h2 class="m-0 d-inline-block">Satisfied By</h2>

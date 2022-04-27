@@ -298,6 +298,14 @@ class Component < ApplicationRecord
     User.where.not(id: exclude_user_ids).select(:id, :name, :email)
   end
 
+  def reviews
+    rule_ids = rules.to_h { |r| [r.id, r.displayed_name] }
+    Review.where(rule: rules).order(created_at: :desc).limit(20).as_json.map do |review|
+      review['displayed_rule_name'] = rule_ids[review['rule_id'].to_i]
+      review
+    end
+  end
+
   def csv_export
     ::CSV.generate(headers: true) do |csv|
       csv << ExportConstants::DISA_EXPORT_HEADERS
