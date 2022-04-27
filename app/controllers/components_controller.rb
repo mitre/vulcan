@@ -160,10 +160,8 @@ class ComponentsController < ApplicationController
 
   def history
     history = []
-    components = Component.where(name: params[:name])
-                          .where.not(version: nil)
-                          .where.not(release: nil)
-                          .order(:version, :release)
+    components = Project.find_by(id: params[:project_id]).components.where(name: params[:name])
+                        .where.not(version: nil).where.not(release: nil).order(:version, :release)
     components.each_with_index do |component, idx|
       # nothing to compare first component to
       unless idx.zero?
