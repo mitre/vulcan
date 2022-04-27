@@ -3,7 +3,7 @@
 # Custom Audited class for Vulcan-specific methods for interacting with audits.
 class VulcanAudit < ::Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
-  before_create :set_username, :find_and_save_audited_user
+  before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
 
   def self.create_initial_rule_audit_from_mapping(project_id)
     {
@@ -31,6 +31,13 @@ class VulcanAudit < ::Audited::Audit
       self.audited_user = auditable
     end
     self.audited_username = audited_user&.name
+  end
+
+  def find_and_save_associated_rule
+    return unless auditable_type == 'BaseRule' && associated_type == 'Component'
+
+    rule = Rule.find_by(id: auditable_id)
+    self.audited_username = "Control #{rule&.displayed_name}" if rule.present?
   end
 
   def format

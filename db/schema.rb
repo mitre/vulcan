@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_03_21_182207) do
+ActiveRecord::Schema.define(version: 2022_04_20_164249) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -89,7 +89,9 @@ ActiveRecord::Schema.define(version: 2022_03_21_182207) do
     t.text "inspec_control_file"
     t.text "inspec_control_body_lang", default: "ruby"
     t.text "inspec_control_file_lang", default: "ruby"
+    t.datetime "deleted_at"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
+    t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
     t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
