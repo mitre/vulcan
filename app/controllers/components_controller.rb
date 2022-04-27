@@ -46,10 +46,11 @@ class ComponentsController < ApplicationController
   def show
     @component_json = if @effective_permissions
                         @component.to_json(
-                          methods: %i[histories memberships metadata inherited_memberships available_members rules]
+                          methods: %i[histories memberships metadata inherited_memberships available_members rules
+                                      reviews]
                         )
                       else
-                        @component.to_json(methods: %i[rules])
+                        @component.to_json(methods: %i[rules reviews])
                       end
     @project_json = @component.project.to_json
     respond_to do |format|

@@ -107,11 +107,10 @@
         </b-tabs>
       </b-col>
       <b-col v-if="effective_permissions" md="3">
-        <b-row class="pb-4">
+        <b-row class="pb-2">
           <b-col>
             <div class="clickable" @click="showDetails = !showDetails">
               <h5 class="m-0 d-inline-block">Component Details</h5>
-
               <i v-if="showDetails" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
               <i v-if="!showDetails" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
             </div>
@@ -148,11 +147,10 @@
             </b-collapse>
           </b-col>
         </b-row>
-        <b-row class="pb-4">
+        <b-row class="pb-2">
           <b-col>
             <div class="clickable" @click="showMetadata = !showMetadata">
               <h5 class="m-0 d-inline-block">Component Metadata</h5>
-
               <i
                 v-if="showMetadata"
                 class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
@@ -169,11 +167,10 @@
             </b-collapse>
           </b-col>
         </b-row>
-        <b-row>
+        <b-row class="pb-2">
           <b-col>
             <div class="clickable" @click="showHistory = !showHistory">
               <h5 class="m-0 d-inline-block">Component History</h5>
-
               <i v-if="showHistory" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
               <i v-if="!showHistory" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
             </div>
@@ -186,11 +183,10 @@
             </b-collapse>
           </b-col>
         </b-row>
-        <b-row>
+        <b-row class="pb-2">
           <b-col>
             <div class="clickable" @click="showAdditionalQuestions = !showAdditionalQuestions">
               <h5 class="m-0 d-inline-block">Component Additional Questions</h5>
-
               <i
                 v-if="showAdditionalQuestions"
                 class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
@@ -217,17 +213,47 @@
             </b-collapse>
           </b-col>
         </b-row>
-        <b-row v-if="selectedRule.reviews">
+        <b-row class="pb-2">
           <b-col>
-            <br />
-            <RuleReviews :rule="selectedRule" :read-only="true" />
-            <br />
-            <RuleHistories
-              :rule="selectedRule"
-              :component="component"
-              :statuses="statuses"
-              :severities="severities"
-            />
+            <div class="clickable" @click="showReviews = !showReviews">
+              <h5 class="m-0 d-inline-block">Component Reviews</h5>
+              <i v-if="showReviews" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
+              <i v-if="!showReviews" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+            </div>
+            <b-collapse id="collapse-metadata" v-model="showReviews">
+              <div v-for="review in component.reviews" :key="review.id">
+                <p class="ml-2 mb-0 mt-2">
+                  <strong>
+                    {{ review.displayed_rule_name }}
+                  </strong>
+                </p>
+                <p class="ml-2 mb-0 mt-0">
+                  <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
+                </p>
+                <p class="ml-2 mb-0">
+                  <small>{{ friendlyDateTime(review.created_at) }}</small>
+                </p>
+                <p class="ml-3 mb-3 white-space-pre-wrap">{{ review.comment }}</p>
+              </div>
+            </b-collapse>
+          </b-col>
+        </b-row>
+        <hr />
+        <b-row>
+          <b-col>
+            <div v-if="selectedRule.reviews">
+              <RuleReviews :rule="selectedRule" :read-only="true" />
+              <br />
+            </div>
+            <div v-if="selectedRule.histories">
+              <RuleHistories
+                :rule="selectedRule"
+                :component="component"
+                :statuses="statuses"
+                :severities="severities"
+              />
+              <br />
+            </div>
             <RuleSatisfactions
               :component="component"
               :rule="selectedRule"
@@ -322,9 +348,19 @@ export default {
       showMetadata: true,
       showHistory: true,
       showAdditionalQuestions: true,
+      showReviews: true,
       component: this.initialComponentState,
       componentTabIndex: 0,
       componentSelectedRuleId: null,
+      actionDescriptions: {
+        comment: "Commented",
+        request_review: "Requested Review",
+        revoke_review_request: "Revoked Request for Review",
+        request_changes: "Requested Changes",
+        approve: "Approved",
+        lock_control: "Locked",
+        unlock_control: "Unlocked",
+      },
     };
   },
   computed: {

@@ -52,6 +52,7 @@
               :statuses="statuses"
               :severities="severities"
             />
+            <br />
             <RuleSatisfactions
               :component="component"
               :rule="selectedRule()"
