@@ -84,7 +84,10 @@ export default {
       if (this.componentName) {
         this.loading = true;
         axios
-          .get(`/components/history/${this.componentName}`)
+          .post(`/components/history`, {
+            project_id: this.project.id,
+            name: this.componentName,
+          })
           .then((response) => {
             this.revisionHistory = response.data;
           })
