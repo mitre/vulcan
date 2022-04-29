@@ -11,9 +11,9 @@ module RuleConstants
   ].freeze
 
   SEVERITIES_MAP = {
-    'low' => 'CAT I',
+    'low' => 'CAT III',
     'medium' => 'CAT II',
-    'high' => 'CAT III'
+    'high' => 'CAT I'
   }.freeze
 
   IMPACTS_MAP = {
