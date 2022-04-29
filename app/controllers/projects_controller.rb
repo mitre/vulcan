@@ -110,17 +110,6 @@ class ProjectsController < ApplicationController
       return
     end
 
-    if @project.components.where(released: true).size.zero?
-      render json: {
-        toast: {
-          title: 'Export error',
-          message: 'Project does not include any released components',
-          variant: 'danger'
-        }
-      }, status: :bad_request
-      return
-    end
-
     respond_to do |format|
       format.html do
         case export_type
