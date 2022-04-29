@@ -235,8 +235,8 @@ class Component < ApplicationRecord
     new_component.skip_import_srg_rules = true
     return new_component unless new_srg_id
 
-    new_srg = SecurityRequirementsGuide.find(new_srg_id)
-    return new_component if new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version
+    new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
+    return new_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
 
     new_rules = new_srg.srg_rules.index_by(&:version)
     # update rules that haven't been configured
