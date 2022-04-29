@@ -33,7 +33,7 @@ export default {
         content_ref_name: "Content Reference Name",
         content_ref_href: "Content Reference Link",
         system: "System",
-        content: "Content",
+        content: "Check",
         documentable: "Documentable",
         mitigations: "Mitigations",
         locked: "Locked",
