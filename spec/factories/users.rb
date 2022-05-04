@@ -13,14 +13,12 @@ FactoryBot.define do
       uid { '123456' }
     end
 
-    factory :ldap_user, traits: [:ldap_user]
-
-    factory :admin_user do
+    trait :admin_user do
       admin { true }
     end
 
-    factory :non_admin_user do
-      admin { false }
-    end
+    factory :ldap_user, traits: [:ldap_user]
+
+    factory :admin_user, traits: [:admin_user]
   end
 end
