@@ -36,6 +36,9 @@ class VulcanAudit < ::Audited::Audit
   def find_and_save_associated_rule
     return unless auditable_type == 'BaseRule' && associated_type == 'Component'
 
+    # No auditing for hard deletes
+    return if action == 'destroy'
+
     rule = Rule.find_by(id: auditable_id)
     self.audited_username = "Control #{rule&.displayed_name}" if rule.present? & rule.component.present?
   end
