@@ -93,17 +93,20 @@ class ComponentsController < ApplicationController
   end
 
   def destroy
-    if @component.destroy
+    ActiveRecord::Base.transaction do
+      # Soft deleted rules must be destroyed in order for component to be destroyed
+      Rule.unscoped.where(component_id: @component.id).destroy_all
+      @component.destroy!
       render json: { toast: 'Successfully removed component from project.' }
-    else
-      render json: {
-        toast: {
-          title: 'Could not remove component from project.',
-          message: @component.errors.full_messages,
-          variant: 'danger'
-        }
-      }, status: :unprocessable_entity
     end
+  rescue StandardError
+    render json: {
+      toast: {
+        title: 'Error',
+        message: 'Could not remove component from project.',
+        variant: 'danger'
+      }
+    }, status: :unprocessable_entity
   end
 
   def export
