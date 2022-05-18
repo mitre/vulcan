@@ -317,7 +317,11 @@ export default {
   },
   methods: {
     sortedComponents: function () {
-      return _.sortBy(this.project.components, ["name", "version", "release"], ["asc"]);
+      return _.orderBy(
+        this.project.components,
+        [(component) => component.name.toLowerCase(), "version", "release"],
+        ["asc"]
+      );
     },
     sortedOverlayComponents: function () {
       return this.sortedComponents().filter((e) => e.component_id != null);
