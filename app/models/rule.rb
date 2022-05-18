@@ -43,6 +43,7 @@ class Rule < BaseRule
   before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
   after_save :update_component_rules_count
+  after_save :update_satisfied_by_inspec_code
 
   validates_with RuleSatisfactionValidator
   validate :cannot_be_locked_and_under_review
@@ -205,12 +206,13 @@ class Rule < BaseRule
     control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
     control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
     control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version))) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version).sort)) if satisfies.present?
     control.add_tag(Inspec::Object::Tag.new('gid', nil))
     control.add_tag(Inspec::Object::Tag.new('rid', nil))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('cci', [ident] + satisfies.pluck(:ident))) if ident.present?
-    control.add_tag(Inspec::Object::Tag.new('nist', [nist_control_family] + satisfies.map(&:nist_control_family)))
+    control.add_tag(Inspec::Object::Tag.new('cci', ([ident] + satisfies.pluck(:ident)).uniq.sort)) if ident.present?
+    control.add_tag(Inspec::Object::Tag.new('nist', ([nist_control_family] +
+                                                      satisfies.map(&:nist_control_family)).uniq.sort))
     if desc.present?
       %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
          third_party_tools mitigation_control responsibility ia_controls].each do |field|
@@ -219,6 +221,14 @@ class Rule < BaseRule
     end
     control.add_post_body(inspec_control_body) if inspec_control_body.present?
     self.inspec_control_file = control.to_ruby
+  end
+
+  def update_satisfied_by_inspec_code
+    sb = satisfied_by.first
+    return if sb.nil?
+
+    # trigger update_inspec_code callback
+    sb.save
   end
 
   def basic_fields
