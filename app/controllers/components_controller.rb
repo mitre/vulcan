@@ -66,6 +66,8 @@ class ComponentsController < ApplicationController
     # component validators.
     if component.errors.empty? && component.save
       component.duplicate_reviews_and_history(component_create_params[:id])
+      component.rules_count = component.rules.where(deleted_at: nil).size
+      component.save
       render json: { toast: 'Successfully added component to project.' }
     else
       render json: {
