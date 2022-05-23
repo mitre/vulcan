@@ -39,7 +39,7 @@ class Component < ApplicationRecord
     })
   end
 
-  audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
+  audited except: %i[id admin_name admin_email rules_count memberships_count created_at updated_at], max_audits: 1000
   has_associated_audits
 
   belongs_to :project, inverse_of: :components
@@ -320,7 +320,6 @@ class Component < ApplicationRecord
     # Examine import results for failures
     success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
     if success
-      Component.reset_counters(id, :rules_count)
       reload
     else
       errors.add(:base, 'Some rules failed to import successfully for the component.')
