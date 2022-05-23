@@ -22,10 +22,10 @@
             <b-button
               variant="primary"
               class="float-right"
-              :disabled="!file"
+              :disabled="!file || loading"
               @click="submitUpload()"
             >
-              Upload
+              {{ loading ? "Loading..." : "Upload" }}
             </b-button>
             <b-button variant="primary" class="float-right mr-2" @click="clearFile()">
               Clear
@@ -55,6 +55,7 @@ export default {
   data: function () {
     return {
       file: null,
+      loading: false,
     };
   },
   computed: {
@@ -72,6 +73,7 @@ export default {
       this.file = null;
     },
     submitUpload: function () {
+      this.loading = true;
       let formData = new FormData();
       formData.append("file", this.file);
 
@@ -82,7 +84,11 @@ export default {
           },
         })
         .then(this.srgUploadSuccess)
-        .catch(this.srgUploadError);
+        .catch(this.srgUploadError)
+        .finally(this.completeLoading);
+    },
+    completeLoading: function () {
+      this.loading = false;
     },
     srgUploadError: function (response) {
       this.alertOrNotifyResponse(response.response);
