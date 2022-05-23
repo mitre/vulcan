@@ -18,7 +18,7 @@ class Rule < BaseRule
           associated_with: :component
   has_associated_audits
 
-  belongs_to :component, counter_cache: true
+  belongs_to :component
   belongs_to :srg_rule
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
   has_many :reviews, dependent: :destroy
@@ -41,6 +41,8 @@ class Rule < BaseRule
   before_save :apply_audit_comment
   before_save :update_inspec_code
   before_destroy :prevent_destroy_if_under_review_or_locked
+  after_destroy :update_component_rules_count
+  after_save :update_component_rules_count
 
   validates_with RuleSatisfactionValidator
   validate :cannot_be_locked_and_under_review
@@ -317,5 +319,10 @@ class Rule < BaseRule
     (rule_descriptions + disa_rule_descriptions + checks + additional_answers).each do |record|
       record.audit_comment = comment if record.new_record? || record.changed? || record._destroy
     end
+  end
+
+  def update_component_rules_count
+    component.rules_count = component.rules.where(deleted_at: nil).size
+    component.save
   end
 end
