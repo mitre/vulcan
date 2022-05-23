@@ -39,6 +39,7 @@ export default {
       { key: "srg_id", label: "SRG ID" },
       { key: "title", label: "Title" },
       { key: "version", label: "Version" },
+      { key: "release_date", label: "Release Date" },
     ];
     if (this.is_vulcan_admin) {
       fields.push({
