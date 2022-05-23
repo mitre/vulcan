@@ -23,9 +23,10 @@ class SecurityRequirementsGuide < ApplicationRecord
     title = benchmark_mapping.title.first rescue nil
     version = "V#{benchmark_mapping.version.version}" \
               "#{SecurityRequirementsGuide.revision(benchmark_mapping.plaintext.first)}" rescue nil
+    release_date = SecurityRequirementsGuide.release_date(benchmark_mapping.plaintext.first)
     # rubocop:enable Style/RescueModifier
 
-    SecurityRequirementsGuide.new(srg_id: id, title: title, version: version)
+    SecurityRequirementsGuide.new(srg_id: id, title: title, version: version, release_date: release_date)
   end
 
   # If the SRGs do not conform nicely and this function gets complex, remove the version parse logic
@@ -36,6 +37,17 @@ class SecurityRequirementsGuide < ApplicationRecord
     return '' if revision_string.nil?
 
     "R#{revision_string.match(/^\d+/)[0]}"
+  end
+
+  def self.release_date(plaintext_mapping)
+    release_date_string = plaintext_mapping.plaintext.split('Benchmark Date: ')[1]
+    return '' if release_date_string.nil?
+
+    begin
+      Date.parse(release_date_string)
+    rescue Date::Error
+      ''
+    end
   end
 
   def self.latest

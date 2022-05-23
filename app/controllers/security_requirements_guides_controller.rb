@@ -6,7 +6,7 @@ class SecurityRequirementsGuidesController < ApplicationController
   before_action :security_requirements_guide, only: %i[destroy]
 
   def index
-    @srgs = SecurityRequirementsGuide.all.order(:title, :version).select(:id, :srg_id, :title, :version)
+    @srgs = SecurityRequirementsGuide.all.order(:srg_id, :version).select(:id, :srg_id, :title, :version, :release_date)
     respond_to do |format|
       format.html
       format.json { render json: @srgs }
