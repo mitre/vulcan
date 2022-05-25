@@ -4,8 +4,9 @@ class AddInspecCodeToRules < ActiveRecord::Migration[6.1]
     add_column :base_rules, :inspec_control_file, :text
 
     ActiveRecord::Base.transaction do
-      Rule.unscoped.each do |rule|
-        rule.update_inspec_code
+      Rule.all.each do |rule|
+        # Trigger update_inspec_code callback
+        rule.save
       end
     end
   end
