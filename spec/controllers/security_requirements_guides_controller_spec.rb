@@ -15,7 +15,7 @@ RSpec.describe SecurityRequirementsGuidesController, type: :controller do
         get :index, format: :json
         expect(response).to have_http_status(:success)
         expect(response.body).to eq SecurityRequirementsGuide.all.order(:title, :version)
-                                                             .select(:id, :srg_id, :title, :version).to_json
+                                                             .select(:id, :srg_id, :title, :version, :release_date).to_json
       end
     end
   end
