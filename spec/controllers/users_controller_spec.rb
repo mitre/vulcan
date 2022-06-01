@@ -24,15 +24,15 @@ RSpec.describe UsersController, type: :controller do
   describe 'removing users' do
     it 'when admin' do
       sign_in admin_user
-      user_1 = FactoryBot.create(:user)
-      delete :destroy, params: { id: user_1.id }
+      user1 = FactoryBot.create(:user)
+      delete :destroy, params: { id: user1.id }
       expect(flash[:notice]).to eq 'Successfully removed user.'
     end
 
     it 'when not admin' do
       sign_in user
-      user_2 = FactoryBot.create(:user)
-      delete :destroy, params: { id: user_2.id }
+      user2 = FactoryBot.create(:user)
+      delete :destroy, params: { id: user2.id }
       expect(response).to have_http_status(:found)
     end
   end
