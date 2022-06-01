@@ -8,6 +8,6 @@ FactoryBot.define do
     title { FFaker::Name.name }
     version { "V#{rand(0..9)}R#{rand(0..9)}" }
     xml { XML_FILE }
-    release_date { Date.today }
+    release_date { Time.zone.today }
   end
 end

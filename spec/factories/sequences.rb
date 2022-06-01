@@ -4,4 +4,6 @@ FactoryBot.define do
   sequence(:name) { |n| "John Doe#{n}" }
   sequence(:email) { |n| "user#{n}@example.org" }
   sequence(:password) { |n| "12345678#{n}" }
+  sequence(:version) { |n| n }
+  sequence(:release) { |n| n }
 end
