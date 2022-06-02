@@ -6,4 +6,5 @@ FactoryBot.define do
   sequence(:password) { |n| "12345678#{n}" }
   sequence(:version) { |n| n }
   sequence(:release) { |n| n }
+  sequence(:rule_id) { |n| n.to_s.rjust(6, '0') }
 end
