@@ -17,12 +17,14 @@ RSpec.describe RulesController, type: :controller do
       rule.save!
       sign_in @admin_user
       get :search, params: { q: rule.version }
+
       expect(response).to have_http_status(:success)
       expect(JSON.parse(response.body)['rules'].map(&:first)).to eq [rule.id]
     end
 
     it 'should ensure the user is logged in' do
       get :search, params: { q: {} }
+
       expect(response).to have_http_status(:found)
     end
   end
