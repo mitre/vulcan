@@ -13,9 +13,6 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
-  before_action :authorize_admin_component, only: %i[update], if: lambda {
-    params.require(:component).permit(:advanced_fields)[:advanced_fields].present?
-  }
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
   before_action :authorize_logged_in, only: %i[search]
   before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
@@ -82,6 +79,8 @@ class ComponentsController < ApplicationController
   end
 
   def update
+    authorize_admin_component if params.require(:component).permit(:advanced_fields)[:advanced_fields].present?
+
     if @component.update(component_update_params)
       render json: { toast: 'Successfully updated component.' }
     else
@@ -96,6 +95,7 @@ class ComponentsController < ApplicationController
   end
 
   def destroy
+    # authorize_admin_component
     ActiveRecord::Base.transaction do
       # Soft deleted rules must be destroyed in order for component to be destroyed
       Rule.unscoped.where(component_id: @component.id).destroy_all
