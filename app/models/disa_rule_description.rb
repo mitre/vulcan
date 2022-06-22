@@ -17,12 +17,17 @@ class DisaRuleDescription < ApplicationRecord
     # insert is a 'destructive' operation that needs to take place outside the begin/rescue
     # in case there is a retry
     disa_rule_description_mapping.insert(0, '<root>').insert(-1, '</root>')
+    tags = %w[Subject SubjectConfirmation Conditions OneTimeUse]
+    disa_rule_description_mapping = replace_tags_in_xccdf(tags, disa_rule_description_mapping)
+    disa_rule_description_mapping.gsub!('"<"', '(literal less-than)')
     # retry once
     retried = false
     begin
       parsed_mapping = Hash.from_xml(disa_rule_description_mapping)
     rescue ::REXML::ParseException => e
-      unless e.continued_exception.is_a?(RuntimeError) && !retried && e.continued_exception.message.include?('"&"')
+      unless e.continued_exception.is_a?(RuntimeError) && !retried && (
+        e.continued_exception.message.include?('"&"') || e.continued_exception.message.include?('"<"')
+      )
         raise
       end
 
@@ -47,5 +52,12 @@ class DisaRuleDescription < ApplicationRecord
       responsibility: parsed_mapping['Responsibility'],
       ia_controls: parsed_mapping['IAControls']
     }
+  end
+
+  def self.replace_tags_in_xccdf(replace_tags, xccdf_xml)
+    replace_tags.each do |tag|
+      xccdf_xml = xccdf_xml.gsub(/(&lt;|<)#{tag}(&gt;|>)/, "$#{tag}")
+    end
+    xccdf_xml
   end
 end
