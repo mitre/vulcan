@@ -107,11 +107,18 @@ class RulesController < ApplicationController
       rule.rule_id = nil
       rule
     elsif authorize_admin_project.nil?
-      Rule.new(rule_create_params.except(:duplicate).merge({
-                                                             component: @component,
-                                                             status: 'Not Yet Determined',
-                                                             rule_severity: 'unknown'
-                                                           }))
+      srg = SecurityRequirementsGuide.find_by(id: @component.security_requirements_guide_id)
+      srg_rule = srg.parsed_benchmark.rule.find { |r| r.ident.reject(&:legacy).first.ident == 'CCI-000366' }
+
+      rule = BaseRule.from_mapping(Rule, srg_rule)
+      rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(@component.id))
+      rule.component = @component
+      rule.srg_rule = srg.srg_rules.find_by(ident: 'CCI-000366')
+      rule.rule_id = (@component.rules.order(:rule_id).pluck(:rule_id).last.to_i + 1)&.to_s&.rjust(6, '0')
+      rule.status = 'Not Yet Determined'
+      rule.rule_severity = 'unknown'
+
+      rule
     end
   end
 
