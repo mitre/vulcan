@@ -25,14 +25,18 @@ Rails.application.routes.draw do
   get '/components/:component_id/controls', to: 'rules#index'
   # Make components#index not a child of project
   get '/components', to: 'components#index'
+  # Revision history between components
+  post '/components/history', to: 'components#history'
   # Export component
   get '/components/:id/export/:type', to: 'components#export'
   # Components based on same srg
   get '/components/:id/based_on_same_srg', to: 'components#based_on_same_srg'
   # Compare components
   get '/components/:id/compare/:diff_id', to: 'components#compare'
-  # Revision history between components
-  post '/components/history', to: 'components#history'
+  # Find
+  post '/components/:id/find', to: 'components#find'
+  # Replace
+  post '/components/:id/replace', to: 'components#replace'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
   # SRG ID Search
