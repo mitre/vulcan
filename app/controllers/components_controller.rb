@@ -208,6 +208,31 @@ class ComponentsController < ApplicationController
     render json: history
   end
 
+  def find
+    find = params.require(:find)
+    component_id = params.require(:id)
+
+    rules = Component.find_by(id: component_id).rules
+    checks = Check.where(base_rule: rules).where('content like ?', "%#{find.downcase}%")
+    descriptions = DisaRuleDescription.where(base_rule: rules).where('vuln_discussion like ?', "%#{find.downcase}%")
+    rules = rules.where('title like ?', "%#{find.downcase}%").or(
+              rules.where('fixtext LIKE ?', "%#{find.downcase}%").or(
+                rules.where('vendor_comments LIKE ?', "%#{find.downcase}%").or(
+                  rules.where(id: checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
+                )
+              )
+            )
+
+    render json: rules
+  end
+
+  def replace
+    find = params.require(:find)
+    replace = params.require(:replace)
+
+    render json: {}
+  end
+
   private
 
   def create_or_duplicate
