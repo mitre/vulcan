@@ -117,28 +117,7 @@
       </b-form-group>
 
       <!-- Find & Replace -->
-      <a v-b-modal.find-replace-modal class="">Find &amp; Replace</a>
-      <b-modal id="find-replace-modal" size="lg" title="Find & Replace">
-        <b-form-group label="Find">
-          <b-form-input v-model="fr.find" autocomplete="off" />
-        </b-form-group>
-        <b-form-group label="Replace">
-          <b-form-input v-model="fr.replace" autocomplete="off" />
-        </b-form-group>
-        <div v-for="(rule, idx) in find_results" :key="idx">
-          <b-card :title="formatRuleId(rule.rule_id)" class="mb-2">
-            <b-card-text>
-              {{ rule.title }}
-            </b-card-text>
-          </b-card>
-        </div>
-        <template #modal-footer>
-          <b-button variant="primary" :disabled="fr.find == ''" @click="find">Find</b-button>
-          <b-button variant="primary" :disabled="fr.find == ''" @click="replace">
-            Replace All
-          </b-button>
-        </template>
-      </b-modal>
+      <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" />
 
       <hr class="mt-2 mb-2" />
 
@@ -241,10 +220,11 @@
 //
 import _ from "lodash";
 import axios from "axios";
+import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 export default {
   name: "RuleNavigator",
-  components: { NewRuleModalForm },
+  components: { FindAndReplace, NewRuleModalForm },
   props: {
     effectivePermissions: {
       type: String,
@@ -291,11 +271,6 @@ export default {
         lckFilterChecked: true, // Locked
         showDuplicatesChecked: false, // Show duplicates
       },
-      fr: {
-        find: "",
-        replace: "",
-      },
-      find_results: [],
     };
   },
   computed: {
@@ -394,18 +369,6 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
-    find: function () {
-      axios
-        .post(`/components/${this.componentId}/find`, { find: this.fr.find })
-        .then((response) => {
-          this.find_results = response.data;
-        });
-    },
-    replace: function () {
-      axios.post(`/components/${this.componentId}/replace`, this.fr).then((response) => {
-        console.log(response);
-      });
-    },
     searchUpdated: _.debounce(function (newSearch) {
       this.filters.search = newSearch;
     }, 500),

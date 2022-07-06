@@ -221,7 +221,7 @@ class ComponentsController < ApplicationController
                   rules.where(id: checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
                 )
               )
-            )
+            ).order(:rule_id)
 
     render json: rules
   end
