@@ -1,7 +1,7 @@
 <template>
   <div>
     <a v-b-modal.find-replace-modal class="">Find &amp; Replace</a>
-    <b-modal id="find-replace-modal" size="lg" title="Find & Replace">
+    <b-modal id="find-replace-modal" size="xl" title="Find & Replace">
       <b-form-group label="Find">
         <b-form-input v-model="fr.find" autocomplete="off" />
       </b-form-group>
@@ -22,7 +22,12 @@
               }"
               :key="index"
             >
-              <FindAndReplaceResult :attr="attr" :value="value" />
+              <FindAndReplaceResult
+                v-if="value && value.toLowerCase().includes(find_text.toLowerCase())"
+                :find="find_text"
+                :attr="attr"
+                :value="value"
+              />
             </div>
           </b-card-text>
         </b-card>
@@ -59,13 +64,15 @@ export default {
         find: "",
         replace: "",
       },
+      find_text: "",
       find_results: [],
     };
   },
   methods: {
     find: function () {
+      this.find_text = this.fr.find;
       axios
-        .post(`/components/${this.componentId}/find`, { find: this.fr.find })
+        .post(`/components/${this.componentId}/find`, { find: this.find_text })
         .then((response) => {
           this.find_results = response.data;
         });
