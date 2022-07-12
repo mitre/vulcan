@@ -226,9 +226,20 @@ class ComponentsController < ApplicationController
     render json: rules
   end
 
-  def replace
+  def replace_all
     find = params.require(:find)
     replace = params.require(:replace)
+
+    # rules = Component.find_by(id: component_id).rules
+    # rules.update({})
+
+    # ActiveRecord::Base.connection.execute(Arel.sql(ActiveRecord::Sanitation.sanitize_sql([
+    #   "UPDATE rules SET title = REPLACE(title, ?, ?)",
+    # ])))
+
+    puts find
+    puts replace
+
 
     render json: {}
   end

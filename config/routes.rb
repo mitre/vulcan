@@ -36,7 +36,7 @@ Rails.application.routes.draw do
   # Find
   post '/components/:id/find', to: 'components#find'
   # Replace
-  post '/components/:id/replace', to: 'components#replace'
+  post '/components/:id/replace_all', to: 'components#replace_all'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
   # SRG ID Search
