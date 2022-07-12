@@ -8,33 +8,18 @@
       <b-form-group label="Replace">
         <b-form-input v-model="fr.replace" autocomplete="off" />
       </b-form-group>
-      <div v-for="(rule, idx) in find_results" :key="idx">
-        <b-card :title="formatRuleId(rule.rule_id)" class="mb-2">
+      <div v-for="[id, result] in Object.entries(find_results)" :key="id">
+        <b-card :title="formatRuleId(id)" class="mb-2">
           <b-card-text>
-            <div
-              v-for="(value, attr, index) in {
-                Title: rule.title,
-                'Vulnerability Discussion':
-                  rule.disa_rule_descriptions_attributes[0].vuln_discussion,
-                Check: rule.checks_attributes[0].content,
-                Fix: rule.fixtext,
-                'Vendor Comments': rule.vendor_comments,
-              }"
-              :key="index"
-            >
-              <FindAndReplaceResult
-                v-if="value && value.toLowerCase().includes(find_text.toLowerCase())"
-                :find="find_text"
-                :attr="attr"
-                :value="value"
-              />
+            <div v-for="(field, index) in result" :key="index">
+              <FindAndReplaceResult :find="find_text" :attr="field.attr" :value="field.value" />
             </div>
           </b-card-text>
         </b-card>
       </div>
       <template #modal-footer>
         <b-button variant="primary" :disabled="fr.find == ''" @click="find">Find</b-button>
-        <b-button variant="primary" :disabled="fr.find == ''" @click="replace">
+        <b-button variant="primary" :disabled="fr.find == ''" @click="replace_all">
           Replace All
         </b-button>
       </template>
@@ -45,6 +30,7 @@
 <script>
 import axios from "axios";
 import FindAndReplaceResult from "./FindAndReplaceResult.vue";
+
 export default {
   name: "FindAndReplace",
   components: { FindAndReplaceResult },
@@ -74,12 +60,30 @@ export default {
       axios
         .post(`/components/${this.componentId}/find`, { find: this.find_text })
         .then((response) => {
-          this.find_results = response.data;
+          this.find_results = {};
+          response.data.forEach((rule) => {
+            Object.entries({
+              Title: rule.title,
+              "Vulnerability Discussion": rule.disa_rule_descriptions_attributes[0].vuln_discussion,
+              Check: rule.checks_attributes[0].content,
+              Fix: rule.fixtext,
+              "Vendor Comments": rule.vendor_comments,
+            }).forEach(([key, value]) => {
+              if (value && value.toLowerCase().includes(this.find_text.toLowerCase())) {
+                const result = { attr: key, value: value };
+                if (rule.id in this.find_results) {
+                  this.find_results[rule.id].push(result);
+                } else {
+                  this.find_results[rule.id] = [result];
+                }
+              }
+            });
+          });
         });
     },
-    replace: function () {
-      axios.post(`/components/${this.componentId}/replace`, this.fr).then((response) => {
-        console.log(response);
+    replace_all: function () {
+      axios.post(`/components/${this.componentId}/replace_all`, this.fr).then((response) => {
+        // location.reload();
       });
     },
     formatRuleId: function (id) {
