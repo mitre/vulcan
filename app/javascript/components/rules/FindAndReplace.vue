@@ -8,11 +8,16 @@
       <b-form-group label="Replace">
         <b-form-input v-model="fr.replace" autocomplete="off" />
       </b-form-group>
-      <div v-for="[id, result] in Object.entries(find_results)" :key="id">
-        <b-card :title="formatRuleId(id)" class="mb-2">
+      <div v-for="[id, find_result] in Object.entries(find_results)" :key="id">
+        <b-card :title="formatRuleId(find_result.rule_id)" class="mb-3">
           <b-card-text>
-            <div v-for="(field, index) in result" :key="index">
-              <FindAndReplaceResult :find="find_text" :attr="field.attr" :value="field.value" />
+            <div v-for="(field, index) in find_result.results" :key="index">
+              <FindAndReplaceResult
+                :field="field.field"
+                :value="field.value"
+                :find="find_text"
+                @replace_one="replace_one(id, field)"
+              />
             </div>
           </b-card-text>
         </b-card>
@@ -70,16 +75,30 @@ export default {
               "Vendor Comments": rule.vendor_comments,
             }).forEach(([key, value]) => {
               if (value && value.toLowerCase().includes(this.find_text.toLowerCase())) {
-                const result = { attr: key, value: value };
+                const result = { field: key, value: value };
                 if (rule.id in this.find_results) {
-                  this.find_results[rule.id].push(result);
+                  this.find_results[rule.id].results.push(result);
                 } else {
-                  this.find_results[rule.id] = [result];
+                  this.find_results[rule.id] = {
+                    rule_id: rule.rule_id,
+                    results: [result],
+                  };
                 }
               }
             });
           });
         });
+    },
+    replace_one: function (rule_id, field) {
+      const body = {
+        rule_id,
+        field,
+        find: this.find_text,
+        replace: this.fr.replace,
+      };
+      axios.post(`/components/${this.componentId}/replace_one`, body).then((response) => {
+        // location.reload();
+      });
     },
     replace_all: function () {
       axios.post(`/components/${this.componentId}/replace_all`, this.fr).then((response) => {
@@ -93,4 +112,12 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+@media (min-width: 992px) .modal-xl {
+  max-width: auto !important;
+}
+
+@media (min-width: 576px) .modal-dialog {
+  max-width: auto !important;
+}
+</style>
