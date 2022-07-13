@@ -1,11 +1,22 @@
 <template>
-  <p>
-    <b>{{ attr }}:</b>
-    <span v-for="(segment, index) in segments" :key="index">
-      <mark v-if="segment.highlighted" class="highlighted-text">{{ segment.text }}</mark>
-      <span v-else>{{ segment.text }}</span>
-    </span>
-  </p>
+  <div class="mb-3">
+    <b-row>
+      <b-col lg="2" class="mb-2">
+        <h6 class="mb-0">{{ field }}</h6>
+      </b-col>
+      <b-col lg="8" class="mb-2">
+        <span v-for="(segment, index) in segments" :key="index">
+          <mark v-if="segment.highlighted" class="highlighted-text">
+            <del>{{ segment.text }}</del>
+          </mark>
+          <span v-else>{{ segment.text }}</span>
+        </span>
+      </b-col>
+      <b-col lg="2" class="text-right">
+        <b-btn size="sm" @click="$emit('replace_one')">Replace</b-btn>
+      </b-col>
+    </b-row>
+  </div>
 </template>
 
 <script>
@@ -13,17 +24,17 @@ import axios from "axios";
 export default {
   name: "FindAndReplaceResult",
   props: {
-    find: {
-      type: String,
-      required: true,
-    },
-    attr: {
+    field: {
       type: String,
       required: true,
     },
     value: {
       type: String,
       required: false,
+    },
+    find: {
+      type: String,
+      required: true,
     },
   },
   data: function () {
