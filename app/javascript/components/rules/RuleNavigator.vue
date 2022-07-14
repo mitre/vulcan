@@ -117,7 +117,7 @@
       </b-form-group>
 
       <!-- Find & Replace -->
-      <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" />
+      <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" :rules="rules" />
 
       <hr class="mt-2 mb-2" />
 
