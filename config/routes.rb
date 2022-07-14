@@ -33,10 +33,8 @@ Rails.application.routes.draw do
   get '/components/:id/based_on_same_srg', to: 'components#based_on_same_srg'
   # Compare components
   get '/components/:id/compare/:diff_id', to: 'components#compare'
-  # Find and Replace
+  # Find
   post '/components/:id/find', to: 'components#find'
-  post '/components/:id/replace_one', to: 'components#replace_one'
-  post '/components/:id/replace_all', to: 'components#replace_all'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
   # SRG ID Search

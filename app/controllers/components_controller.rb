@@ -226,23 +226,6 @@ class ComponentsController < ApplicationController
     render json: rules
   end
 
-  def replace_one
-    rule_id = params.require(:rule_id)
-    field = params.require(:field)
-    find = params.require(:find)
-    replace = params['replace']
-
-    render json: {}
-
-  end
-
-  def replace_all
-    find = params.require(:find)
-    replace = params.require(:replace)
-
-    render json: {}
-  end
-
   private
 
   def create_or_duplicate

@@ -6,9 +6,11 @@
       </b-col>
       <b-col lg="8" class="mb-2">
         <span v-for="(segment, index) in segments" :key="index">
-          <mark v-if="segment.highlighted" class="highlighted-text">
-            <del>{{ segment.text }}</del>
-          </mark>
+          <span v-if="segment.highlighted">
+            <del
+              ><span class="text-highlighted-red">{{ segment.text }}</span></del
+            ><span class="text-highlighted-green">{{ replace }}</span>
+          </span>
           <span v-else>{{ segment.text }}</span>
         </span>
       </b-col>
@@ -33,6 +35,10 @@ export default {
       required: false,
     },
     find: {
+      type: String,
+      required: true,
+    },
+    replace: {
       type: String,
       required: true,
     },
@@ -68,7 +74,11 @@ export default {
 </script>
 
 <style scoped>
-.highlighted-text {
-  background-color: #f0dc76;
+.text-highlighted-red {
+  background-color: #e39d9b;
+}
+
+.text-highlighted-green {
+  background-color: #abd5ac;
 }
 </style>
