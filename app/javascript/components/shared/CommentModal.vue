@@ -3,6 +3,7 @@
     <b-button
       :variant="buttonVariant"
       :class="buttonClass"
+      :size="buttonSize"
       :disabled="buttonDisabled"
       @click="$bvModal.show(`comment-modal-${mod}`)"
     >
@@ -58,6 +59,10 @@ export default {
     buttonClass: {
       type: [Object, Array],
       default: () => [],
+    },
+    buttonSize: {
+      type: String,
+      default: "medium",
     },
     buttonDisabled: {
       type: Boolean,

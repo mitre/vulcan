@@ -1,7 +1,13 @@
 <template>
   <div>
     <a v-b-modal.find-replace-modal class="">Find &amp; Replace</a>
-    <b-modal id="find-replace-modal" size="xl" title="Find & Replace">
+    <b-modal
+      id="find-replace-modal"
+      size="xl"
+      title="Find & Replace"
+      @show="resetModal"
+      @hidden="resetModal"
+    >
       <b-form-group label="Find">
         <b-form-input v-model="fr.find" autocomplete="off" />
       </b-form-group>
@@ -17,7 +23,7 @@
                 :value="result.value"
                 :find="find_text"
                 :replace="fr.replace"
-                @replace_one="replace_one(id, result)"
+                @replace_one="replace_one(id, result, $event)"
               />
             </div>
           </b-card-text>
@@ -76,6 +82,14 @@ export default {
     };
   },
   methods: {
+    resetModal: function () {
+      this.fr = {
+        find: "",
+        replace: "",
+      };
+      this.find_text = "";
+      this.find_results = [];
+    },
     find: function () {
       this.find_text = this.fr.find;
       axios
@@ -100,7 +114,7 @@ export default {
           });
         });
     },
-    replace_one: function (rule_id, result) {
+    replace_one: function (rule_id, result, comment) {
       const original_rule = this.rules.find((rule) => rule.id == rule_id);
       const new_value = result.value.replace(
         new RegExp("\\b" + this.find_text + "\\b"),
@@ -111,7 +125,7 @@ export default {
       const payload = {
         rule: {
           ...original_rule,
-          audit_comment: "Find and Replace",
+          audit_comment: comment,
         },
       };
       axios
