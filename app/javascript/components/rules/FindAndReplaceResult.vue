@@ -15,7 +15,18 @@
         </span>
       </b-col>
       <b-col lg="2" class="text-right">
-        <b-btn size="sm" @click="$emit('replace_one')">Replace</b-btn>
+        <!-- <b-btn size="sm" @click="$emit('replace_one')">Replace</b-btn> -->
+        <CommentModal
+          title="Replace"
+          message="Provide a comment that summarizes your changes to this control."
+          :require-non-empty="false"
+          button-text="Replace"
+          button-variant="secondary"
+          button-size="sm"
+          :button-disabled="false"
+          wrapper-class="d-inline-block"
+          @comment="$emit('replace_one', $event)"
+        />
       </b-col>
     </b-row>
   </div>
@@ -23,8 +34,11 @@
 
 <script>
 import axios from "axios";
+import CommentModal from "../shared/CommentModal.vue";
+
 export default {
   name: "FindAndReplaceResult",
+  components: { CommentModal },
   props: {
     field: {
       type: String,
