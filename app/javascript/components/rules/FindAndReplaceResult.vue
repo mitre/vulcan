@@ -15,7 +15,6 @@
         </span>
       </b-col>
       <b-col lg="2" class="text-right">
-        <!-- <b-btn size="sm" @click="$emit('replace_one')">Replace</b-btn> -->
         <CommentModal
           title="Replace"
           message="Provide a comment that summarizes your changes to this control."
@@ -23,7 +22,7 @@
           button-text="Replace"
           button-variant="secondary"
           button-size="sm"
-          :button-disabled="false"
+          :button-disabled="disabled"
           wrapper-class="d-inline-block"
           @comment="$emit('replace_one', $event)"
         />
@@ -54,6 +53,10 @@ export default {
     },
     replace: {
       type: String,
+      required: true,
+    },
+    disabled: {
+      type: Boolean,
       required: true,
     },
   },

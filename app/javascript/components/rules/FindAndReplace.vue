@@ -12,9 +12,16 @@
         <b-form-input v-model="fr.find" autocomplete="off" />
       </b-form-group>
       <b-form-group label="Replace">
-        <b-form-input v-model="fr.replace" autocomplete="off" />
+        <b-form-input
+          v-model="fr.replace"
+          :disabled="fr.find == '' || Object.keys(find_results).length == 0"
+          autocomplete="off"
+        />
       </b-form-group>
-      <div v-for="[id, find_result] in Object.entries(find_results)" :key="id">
+      <div
+        v-for="[id, find_result] in Object.entries(find_results)"
+        :key="`${find_results_ver}-${id}`"
+      >
         <b-card :title="formatRuleId(find_result.rule_id)" class="mb-3">
           <b-card-text>
             <div v-for="(result, index) in find_result.results" :key="index">
@@ -23,17 +30,26 @@
                 :value="result.value"
                 :find="find_text"
                 :replace="fr.replace"
-                @replace_one="replace_one(id, result, $event)"
+                :disabled="loading"
+                @replace_one="replace_one(id, result, $event, false)"
               />
             </div>
           </b-card-text>
         </b-card>
       </div>
       <template #modal-footer>
-        <b-button variant="primary" :disabled="fr.find == ''" @click="find">Find</b-button>
-        <b-button variant="primary" :disabled="fr.find == ''" @click="replace_all">
-          Replace All
-        </b-button>
+        <b-button variant="primary" :disabled="fr.find == '' || loading" @click="find"
+          >Find</b-button
+        >
+        <CommentModal
+          title="Replace All"
+          message="Provide a comment that summarizes your changes to these controls."
+          :require-non-empty="false"
+          button-text="Replace All"
+          button-variant="primary"
+          :button-disabled="fr.find == '' || Object.keys(find_results).length == 0 || loading"
+          @comment="replace_all($event)"
+        />
       </template>
     </b-modal>
   </div>
@@ -43,6 +59,7 @@
 import _ from "lodash";
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import CommentModal from "../shared/CommentModal.vue";
 import FindAndReplaceResult from "./FindAndReplaceResult.vue";
 
 const FIND_AND_REPLACE_FIELDS = {
@@ -55,7 +72,7 @@ const FIND_AND_REPLACE_FIELDS = {
 
 export default {
   name: "FindAndReplace",
-  components: { FindAndReplaceResult },
+  components: { CommentModal, FindAndReplaceResult },
   mixins: [AlertMixinVue],
   props: {
     componentId: {
@@ -73,24 +90,29 @@ export default {
   },
   data: function () {
     return {
+      loading: false,
       fr: {
         find: "",
         replace: "",
       },
       find_text: "",
-      find_results: [],
+      find_results: {},
+      find_results_ver: 0,
     };
   },
   methods: {
     resetModal: function () {
+      this.loading = false;
       this.fr = {
         find: "",
         replace: "",
       };
       this.find_text = "";
-      this.find_results = [];
+      this.find_results = {};
+      this.find_results_ver = 0;
     },
     find: function () {
+      this.loading = true;
       this.find_text = this.fr.find;
       axios
         .post(`/components/${this.componentId}/find`, { find: this.find_text })
@@ -112,15 +134,24 @@ export default {
               }
             });
           });
+          this.find_results_ver += 1;
+          this.loading = false;
         });
     },
-    replace_one: function (rule_id, result, comment) {
+    replace_one: function (rule_id, result, comment, stillLoading) {
+      this.loading = true;
       const original_rule = this.rules.find((rule) => rule.id == rule_id);
       const new_value = result.value.replace(
         new RegExp("\\b" + this.find_text + "\\b"),
         this.fr.replace
       );
+      console.log(rule_id);
+      console.log(result.value);
+      console.log(this.find_text);
+      console.log(this.fr.replace);
+      console.log(new_value);
       _.set(original_rule, FIND_AND_REPLACE_FIELDS[result.field], new_value);
+      console.log(original_rule);
 
       const payload = {
         rule: {
@@ -128,17 +159,29 @@ export default {
           audit_comment: comment,
         },
       };
-      axios
+      return axios
         .put(`/rules/${rule_id}`, payload)
         .then((response) => {
           this.saveRuleSuccess(response, rule_id);
         })
-        .catch(this.alertOrNotifyResponse);
+        .catch(this.alertOrNotifyResponse)
+        .then(() => {
+          if (!stillLoading) {
+            this.find();
+          }
+        });
     },
-    replace_all: function () {
-      // axios.post(`/components/${this.componentId}/replace_all`, this.fr).then((response) => {
-      //   // location.reload();
-      // });
+    replace_all: function (comment) {
+      this.loading = true;
+      const promises = [];
+      Object.values(this.find_results).forEach(function (find_results) {
+        find_results.results.forEach(function (result) {
+          promises.append(this.replace_one(find_results.rule_id, result, comment, true));
+        });
+      });
+      Promise.all(promises).then(function () {
+        this.find();
+      });
     },
     saveRuleSuccess: function (response, rule_id) {
       this.alertOrNotifyResponse(response);
