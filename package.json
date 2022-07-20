@@ -11,7 +11,7 @@
     "bootstrap": "^4.4.1",
     "bootstrap-vue": "^2.13.0",
     "lodash": "^4.17.21",
-    "moment": "^2.29.2",
+    "moment": "^2.29.4",
     "monaco-editor": "0.32.1",
     "turbolinks": "^5.2.0",
     "vue": "^2.6.11",
