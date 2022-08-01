@@ -27,11 +27,10 @@
             <div v-for="(result, index) in find_result.results" :key="index">
               <FindAndReplaceResult
                 :field="result.field"
-                :value="result.value"
-                :find="find_text"
+                :segments="result.segments"
                 :replace="fr.replace"
                 :disabled="loading"
-                @replace_one="replace_one(id, result, $event, false)"
+                @replace_one="replace_one(id, result, $event)"
               />
             </div>
           </b-card-text>
@@ -56,24 +55,16 @@
 </template>
 
 <script>
-import _ from "lodash";
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import FindAndReplaceMixinVue from "../../mixins/FindAndReplaceMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import FindAndReplaceResult from "./FindAndReplaceResult.vue";
-
-const FIND_AND_REPLACE_FIELDS = {
-  Title: ["title"],
-  "Vulnerability Discussion": ["disa_rule_descriptions_attributes", 0, "vuln_discussion"],
-  Check: ["checks_attributes", 0, "content"],
-  Fix: ["fixtext"],
-  "Vendor Comments": ["vendor_comments"],
-};
 
 export default {
   name: "FindAndReplace",
   components: { CommentModal, FindAndReplaceResult },
-  mixins: [AlertMixinVue],
+  mixins: [AlertMixinVue, FindAndReplaceMixinVue],
   props: {
     componentId: {
       type: Number,
@@ -117,42 +108,15 @@ export default {
       axios
         .post(`/components/${this.componentId}/find`, { find: this.find_text })
         .then((response) => {
-          this.find_results = {};
-          response.data.forEach((rule) => {
-            Object.entries(FIND_AND_REPLACE_FIELDS).forEach(([key, path]) => {
-              const value = _.get(rule, path);
-              if (value && value.toLowerCase().includes(this.find_text.toLowerCase())) {
-                const result = { field: key, value: value };
-                if (rule.id in this.find_results) {
-                  this.find_results[rule.id].results.push(result);
-                } else {
-                  this.find_results[rule.id] = {
-                    rule_id: rule.rule_id,
-                    results: [result],
-                  };
-                }
-              }
-            });
-          });
+          this.find_results = this.groupFindResults(response.data, this.find_text);
           this.find_results_ver += 1;
           this.loading = false;
         });
     },
-    replace_one: function (rule_id, result, comment, stillLoading) {
+    replace_one: function (rule_id, result, comment) {
       this.loading = true;
       const original_rule = this.rules.find((rule) => rule.id == rule_id);
-      const new_value = result.value.replace(
-        new RegExp("\\b" + this.find_text + "\\b"),
-        this.fr.replace
-      );
-      console.log(rule_id);
-      console.log(result.value);
-      console.log(this.find_text);
-      console.log(this.fr.replace);
-      console.log(new_value);
-      _.set(original_rule, FIND_AND_REPLACE_FIELDS[result.field], new_value);
-      console.log(original_rule);
-
+      this.replaceTextInRule(original_rule, result.field, result.segments, this.fr.replace);
       const payload = {
         rule: {
           ...original_rule,
@@ -166,21 +130,35 @@ export default {
         })
         .catch(this.alertOrNotifyResponse)
         .then(() => {
-          if (!stillLoading) {
-            this.find();
-          }
+          this.find();
         });
     },
     replace_all: function (comment) {
+      const self = this;
       this.loading = true;
       const promises = [];
-      Object.values(this.find_results).forEach(function (find_results) {
+      Object.entries(this.find_results).forEach(function ([rule_id, find_results]) {
+        const original_rule = self.rules.find((rule) => rule.id == rule_id);
         find_results.results.forEach(function (result) {
-          promises.append(this.replace_one(find_results.rule_id, result, comment, true));
+          self.replaceTextInRule(original_rule, result.field, result.segments, self.fr.replace);
         });
+        const payload = {
+          rule: {
+            ...original_rule,
+            audit_comment: comment,
+          },
+        };
+        promises.push(
+          axios
+            .put(`/rules/${rule_id}`, payload)
+            .then((response) => {
+              self.saveRuleSuccess(response, rule_id);
+            })
+            .catch(self.alertOrNotifyResponse)
+        );
       });
       Promise.all(promises).then(function () {
-        this.find();
+        self.find();
       });
     },
     saveRuleSuccess: function (response, rule_id) {
