@@ -116,6 +116,9 @@
         </b-form-checkbox>
       </b-form-group>
 
+      <!-- Find & Replace -->
+      <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" :rules="rules" />
+
       <hr class="mt-2 mb-2" />
 
       <!-- Currently opened controls -->
@@ -216,10 +219,12 @@
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
 //
 import _ from "lodash";
+import axios from "axios";
+import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 export default {
   name: "RuleNavigator",
-  components: { NewRuleModalForm },
+  components: { FindAndReplace, NewRuleModalForm },
   props: {
     effectivePermissions: {
       type: String,
