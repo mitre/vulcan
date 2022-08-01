@@ -216,12 +216,12 @@ class ComponentsController < ApplicationController
     checks = Check.where(base_rule: rules).where('content like ?', "%#{find.downcase}%")
     descriptions = DisaRuleDescription.where(base_rule: rules).where('vuln_discussion like ?', "%#{find.downcase}%")
     rules = rules.where('title like ?', "%#{find.downcase}%").or(
-              rules.where('fixtext LIKE ?', "%#{find.downcase}%").or(
-                rules.where('vendor_comments LIKE ?', "%#{find.downcase}%").or(
-                  rules.where(id: checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
-                )
-              )
-            ).order(:rule_id)
+      rules.where('fixtext LIKE ?', "%#{find.downcase}%").or(
+        rules.where('vendor_comments LIKE ?', "%#{find.downcase}%").or(
+          rules.where(id: checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
+        )
+      )
+    ).order(:rule_id)
 
     render json: rules
   end
