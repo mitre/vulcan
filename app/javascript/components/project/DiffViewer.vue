@@ -41,31 +41,6 @@
             <b-input-group-text class="rounded-0">Base</b-input-group-text>
           </b-input-group-prepend>
           <b-form-select
-            id="baseComponent"
-            v-model="baseComponent"
-            class="form-select-sm"
-            @change="updateCompareList"
-          >
-            <option
-              v-for="(selectOption, indexOpt) in project.components"
-              :key="indexOpt"
-              :value="selectOption"
-            >
-              {{ selectOption.name }}
-              {{
-                selectOption.version || selectOption.release
-                  ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
-                  : ""
-              }}
-            </option>
-          </b-form-select>
-          <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
-          </b-input-group-prepend>
-          <b-form-select
             id="diffComponent"
             v-model="diffComponent"
             class="form-select-sm"
@@ -89,6 +64,31 @@
               {{ selectOption.project_name && `- ${selectOption.project_name}` }}
             </option>
           </b-form-select>
+          <b-input-group-prepend>
+            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
+          </b-input-group-prepend>
+          <b-form-select
+            id="baseComponent"
+            v-model="baseComponent"
+            class="form-select-sm"
+            @change="updateCompareList"
+          >
+            <option
+              v-for="(selectOption, indexOpt) in project.components"
+              :key="indexOpt"
+              :value="selectOption"
+            >
+              {{ selectOption.name }}
+              {{
+                selectOption.version || selectOption.release
+                  ? `(${[
+                      selectOption.version ? `Version ${selectOption.version}` : "",
+                      selectOption.release ? `Release ${selectOption.release}` : "",
+                    ].join(", ")})`
+                  : ""
+              }}
+            </option>
+          </b-form-select>
           <b-button
             size="sm"
             squared
@@ -98,11 +98,11 @@
           </b-button>
         </b-input-group>
         <MonacoEditor
-          v-if="baseControl || diffControl"
+          v-if="diffControl || baseControl"
           :key="selectedRuleId"
           :diff-editor="true"
-          :original="baseControl"
-          :value="diffControl"
+          :original="diffControl"
+          :value="baseControl"
           :options="monacoEditorOptions"
           :language="monacoEditorOptions.language"
           class="editor"
