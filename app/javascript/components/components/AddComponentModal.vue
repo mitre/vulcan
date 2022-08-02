@@ -33,10 +33,10 @@
               <vue-simple-suggest
                 ref="componentSearch"
                 v-model="search"
-                :list="available_components"
+                :list="addDisplayNameToComponents(available_components)"
                 :filter-by-query="true"
                 value-attribute="id"
-                display-attribute="name"
+                display-attribute="displayed"
                 placeholder="Search for a component by name..."
                 :styles="projectSearchStyles"
                 @select="setSelectedComponent($refs.componentSearch.selected)"
@@ -64,6 +64,7 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
 import ComponentCard from "../components/ComponentCard.vue";
 import VueSimpleSuggest from "vue-simple-suggest";
 import "vue-simple-suggest/dist/styles.css";
@@ -88,7 +89,7 @@ export default {
     VueSimpleSuggest,
     ComponentCard,
   },
-  mixins: [AlertMixinVue, FormMixinVue],
+  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
   props: {
     project_id: {
       type: Number,

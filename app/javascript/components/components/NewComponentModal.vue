@@ -150,6 +150,7 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
 import VueSimpleSuggest from "vue-simple-suggest";
 import "vue-simple-suggest/dist/styles.css";
 
@@ -158,7 +159,7 @@ export default {
   components: {
     VueSimpleSuggest,
   },
-  mixins: [AlertMixinVue, FormMixinVue],
+  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
   props: {
     spreadsheet_import: {
       type: Boolean,
@@ -285,19 +286,6 @@ export default {
         });
       }
       this.selected_project_id = project.id;
-    },
-    addDisplayNameToComponents: function (components) {
-      return components.map((component) => {
-        component.displayed = `${component.name} ${
-          component.version || component.release
-            ? `(${[
-                component.version ? `Version ${component.version}` : "",
-                component.release ? `Release ${component.release}` : "",
-              ].join(", ")})`
-            : ""
-        }`;
-        return component;
-      });
     },
     setSelectedComponent: function (component) {
       this.selected_component_id = component.id;
