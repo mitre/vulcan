@@ -79,12 +79,14 @@
               :title="tooltips['title']"
             />
           </label>
-          <b-form-input
+          <b-form-textarea
             :id="`ruleEditor-title-${mod}`"
             :value="rule.title"
             :class="inputClass('title')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('title')"
+            rows="1"
+            max-rows="99"
             @input="$root.$emit('update:rule', { ...rule, title: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('title')">
