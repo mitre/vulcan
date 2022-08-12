@@ -51,23 +51,27 @@
             >Mark as Duplicate</b-button
           >
         </span>
-        <b-button
-          v-if="
-            rule.satisfied_by &&
-            rule.satisfies &&
-            rule.satisfied_by.length === 0 &&
-            rule.satisfies.length === 0
-          "
-          v-b-modal.mark-rule-as-duplicate-modal
-          variant="info"
-          >Mark as Duplicate</b-button
-        >
-        <b-button
-          v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
-          v-b-modal.unmark-rule-as-duplicate-modal
-          variant="info"
-          >Unmark as Duplicate</b-button
-        >
+        <span v-b-tooltip.hover title="Merge requirement">
+          <b-button
+            v-if="
+              rule.satisfied_by &&
+              rule.satisfies &&
+              rule.satisfied_by.length === 0 &&
+              rule.satisfies.length === 0
+            "
+            v-b-modal.mark-rule-as-duplicate-modal
+            variant="info"
+            >Mark as Duplicate</b-button
+          >
+        </span>
+        <span v-b-tooltip.hover title="Unmerge requirement">
+          <b-button
+            v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
+            v-b-modal.unmark-rule-as-duplicate-modal
+            variant="info"
+            >Unmark as Duplicate</b-button
+          >
+        </span>
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
