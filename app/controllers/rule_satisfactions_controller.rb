@@ -4,9 +4,8 @@
 # Controller for rule satisfactions.
 #
 class RuleSatisfactionsController < ApplicationController
+  before_action :set_component_and_rules
   before_action :authorize_author_component
-  before_action :authorize_admin_component
-  before_action :set_rules
 
   def create
     if @rule.satisfies.empty? && (@rule.satisfied_by << @satisfied_by_rule)
@@ -36,8 +35,9 @@ class RuleSatisfactionsController < ApplicationController
     end
   end
 
-  def set_rules
+  def set_component_and_rules
     @rule = Rule.find(params[:rule_id])
     @satisfied_by_rule = Rule.find(params[:satisfied_by_rule_id])
+    @component = @rule.component
   end
 end
