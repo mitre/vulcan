@@ -160,18 +160,29 @@ export default {
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
-      tooltips: {
-        system: null,
-        content_ref_name: null,
-        content_ref_href: null,
-        content: "Describe how to check for the presence of the vulnerability",
-      },
     };
   },
   computed: {
     check: function () {
       return (this.rule.satisfied_by.length > 0 ? this.rule.satisfied_by[0] : this.rule)
         .checks_attributes[0];
+    },
+    tooltips: function () {
+      return {
+        system: null,
+        content_ref_name: null,
+        content_ref_href: null,
+        content:
+          this.rule.status === "Applicable - Configurable"
+            ? "Describe how to validate that the remediation has been properly implemented"
+            : [
+                "Applicable - Does Not Meet",
+                "Applicable - Inherently Meets",
+                "Not Applicable",
+              ].includes(this.rule.status)
+            ? null
+            : "Describe how to check for the presence of the vulnerability",
+      };
     },
   },
 };

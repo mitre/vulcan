@@ -478,13 +478,23 @@ export default {
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
-      tooltips: {
+    };
+  },
+  computed: {
+    tooltips: function () {
+      return {
         documentable: null,
         vuln_discussion: "Discuss, in detail, the rationale for this control's vulnerability",
         false_positives: "List any likely false-positives associated with evaluating this control",
         false_negatives: "List any likely false-negatives associated with evaluating this control",
-        mitigations:
-          "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
+        mitigations: [
+          "Not Yet Determined",
+          "Applicable - Configurable",
+          "Applicable - Inherently Meets",
+          "Not Applicable",
+        ].includes(this.rule.status)
+          ? null
+          : "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
         severity_override_guidance: null,
         potential_impacts:
           "List the potential operational impacts on a system when applying fix discussed in this control",
@@ -492,8 +502,8 @@ export default {
         mitigation_control: null,
         responsibility: null,
         ia_controls: "The Common Control Indicator (CCI) that applies to this vulnerability",
-      },
-    };
+      };
+    },
   },
 };
 </script>

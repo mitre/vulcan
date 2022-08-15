@@ -532,28 +532,52 @@ export default {
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
-      tooltips: {
-        status: null,
-        status_justification: "Explain the rationale behind selecting one of the above statuses",
-        title: "Describe the vulnerability for this control",
-        version: null,
-        rule_severity:
-          "Unknown: severity not defined, Info: rule is informational only, CAT III (Low): not a serious problem, CAT II (Medium): fairly serious problem, CAT I (High): a grave or critical problem",
-        rule_weight: null,
-        artifact_description: null,
-        fix_id: null,
-        fixtext_fixref: null,
-        fixtext: "Explain how to fix the vulnerability discussed",
-        ident:
-          "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",
-        ident_system: null,
-        vendor_comments: "Provide context to a reviewing authority; not a published field",
-      },
     };
   },
   computed: {
     status_text: function () {
       return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
+    },
+    tooltips: function () {
+      return {
+        status: null,
+        status_justification: ["Applicable - Configurable", "Not Yet Determined"].includes(
+          this.rule.status
+        )
+          ? null
+          : "Explain the rationale behind selecting one of the above statuses",
+        title: "Describe the vulnerability for this control",
+        version: null,
+        rule_severity:
+          "Unknown: severity not defined, Info: rule is informational only, CAT III (Low): not a serious problem, CAT II (Medium): fairly serious problem, CAT I (High): a grave or critical problem",
+        rule_weight: null,
+        artifact_description:
+          this.rule.status === "Not Applicable"
+            ? "Provide evidence that the control is not applicable to the system - code files, documentation, screenshots, etc."
+            : [
+                "Not Yet Determined",
+                "Applicable - Configurable",
+                "Applicable - Does Not Meet",
+              ].includes(this.rule.status)
+            ? null
+            : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
+        fix_id: null,
+        fixtext_fixref: null,
+        fixtext:
+          this.rule.status === "Applicable - Configurable"
+            ? "Describe how to correctly configure the requirement to remediate the system vulnerability"
+            : [
+                "Applicable - Does Not Meet",
+                "Applicable - Inherently Meets",
+                "Not Applicable",
+              ].includes(this.rule.status)
+            ? null
+            : "Explain how to fix the vulnerability discussed",
+        ident:
+          "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",
+        ident_system: null,
+        vendor_comments: "Provide context to a reviewing authority; not a published field",
+      };
     },
   },
 };
