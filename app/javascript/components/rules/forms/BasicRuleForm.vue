@@ -117,7 +117,10 @@ export default {
       if (this.rule.status == "Applicable - Configurable") {
         return { displayed: ["vuln_discussion"], disabled: [] };
       } else if (this.rule.status == "Applicable - Does Not Meet") {
-        return { displayed: ["mitigations"], disabled: [] };
+        return {
+          displayed: ["mitigations_available", "mitigations", "poam_available", "poam"],
+          disabled: [],
+        };
       } else if (this.rule.status == "Not Yet Determined") {
         return { displayed: ["vuln_discussion"], disabled: ["vuln_discussion"] };
       } else {
