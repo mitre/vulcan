@@ -136,9 +136,9 @@ class RulesController < ApplicationController
       rule_descriptions_attributes: %i[id description _destroy],
       additional_answers_attributes: %i[id additional_question_id answer],
       disa_rule_descriptions_attributes: %i[
-        id vuln_discussion false_positives false_negatives documentable mitigations
-        severity_override_guidance potential_impacts third_party_tools mitigation_control
-        responsibility ia_controls _destroy
+        id vuln_discussion false_positives false_negatives documentable mitigations_available
+        mitigations poam_available poam severity_override_guidance potential_impacts
+        third_party_tools mitigation_control responsibility ia_controls _destroy
       ]
     )
   end
