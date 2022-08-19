@@ -149,9 +149,31 @@
       </b-form-invalid-feedback>
     </b-form-group>
 
+    <!-- mitigations available -->
+    <b-form-group
+      v-if="fields.displayed.includes('mitigations_available')"
+      :id="`ruleEditor-disa_rule_description-mitigations-available-group-${mod}`"
+    >
+      <b-form-checkbox
+        :id="`ruleEditor-disa_rule_description-mitigations-available-${mod}`"
+        :checked="description.mitigations_available"
+        switch
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, mitigations_available: $event },
+            index
+          )
+        "
+      >
+        Mitigations Available
+      </b-form-checkbox>
+    </b-form-group>
+
     <!-- mitigations -->
     <b-form-group
-      v-if="fields.displayed.includes('mitigations')"
+      v-if="fields.displayed.includes('mitigations') && description.mitigations_available"
       :id="`ruleEditor-disa_rule_description-mitigations-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-mitigations-${mod}`">
@@ -186,6 +208,63 @@
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('mitigations')">
         {{ invalidFeedback["mitigations"] }}
+      </b-form-invalid-feedback>
+    </b-form-group>
+
+    <!-- poam available -->
+    <b-form-group
+      v-if="fields.displayed.includes('poam_available') && !description.mitigations_available"
+      :id="`ruleEditor-disa_rule_description-poam-available-group-${mod}`"
+    >
+      <b-form-checkbox
+        :id="`ruleEditor-disa_rule_description-poam-available-${mod}`"
+        :checked="description.poam_available"
+        switch
+        @input="
+          $root.$emit(
+            'update:disaDescription',
+            rule,
+            { ...description, poam_available: $event },
+            index
+          )
+        "
+      >
+        POA&amp;M Available
+      </b-form-checkbox>
+    </b-form-group>
+
+    <!-- poam -->
+    <b-form-group
+      v-if="fields.displayed.includes('poam') && description.poam_available"
+      :id="`ruleEditor-disa_rule_description-poam-group-${mod}`"
+    >
+      <label :for="`ruleEditor-disa_rule_description-poam-${mod}`">
+        POA&amp;M
+        <i
+          v-if="tooltips['poam']"
+          v-b-tooltip.hover.html
+          class="mdi mdi-information"
+          aria-hidden="true"
+          :title="tooltips['poam']"
+        />
+      </label>
+      <b-form-textarea
+        :id="`ruleEditor-disa_rule_description-poam-${mod}`"
+        :value="description.poam"
+        :class="inputClass('poam')"
+        placeholder=""
+        :disabled="disabled || fields.disabled.includes('poam')"
+        rows="1"
+        max-rows="99"
+        @input="
+          $root.$emit('update:disaDescription', rule, { ...description, poam: $event }, index)
+        "
+      />
+      <b-form-valid-feedback v-if="hasValidFeedback('poam')">
+        {{ validFeedback["poam"] }}
+      </b-form-valid-feedback>
+      <b-form-invalid-feedback v-if="hasInvalidFeedback('poam')">
+        {{ invalidFeedback["poam"] }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -462,7 +541,10 @@ export default {
             "vuln_discussion",
             "false_positives",
             "false_negatives",
+            "mitigations_available",
             "mitigations",
+            "poam_available",
+            "poam",
             "severity_override_guidance",
             "potential_impacts",
             "third_party_tools",
@@ -495,6 +577,10 @@ export default {
         ].includes(this.rule.status)
           ? null
           : "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
+        poam:
+          this.rule.status === "Applicable - Does Not Meet"
+            ? "Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action"
+            : null,
         severity_override_guidance: null,
         potential_impacts:
           "List the potential operational impacts on a system when applying fix discussed in this control",

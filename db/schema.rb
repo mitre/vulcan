@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_05_18_053923) do
+ActiveRecord::Schema.define(version: 2022_08_15_180252) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -154,6 +154,9 @@ ActiveRecord::Schema.define(version: 2022_05_18_053923) do
     t.text "ia_controls"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.boolean "mitigations_available"
+    t.boolean "poam_available"
+    t.text "poam"
     t.index ["base_rule_id"], name: "index_disa_rule_descriptions_on_base_rule_id"
   end
 
