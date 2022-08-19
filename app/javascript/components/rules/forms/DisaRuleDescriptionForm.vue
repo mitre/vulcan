@@ -577,6 +577,10 @@ export default {
         ].includes(this.rule.status)
           ? null
           : "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
+        poam:
+          this.rule.status === "Applicable - Does Not Meet"
+            ? "Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action"
+            : null,
         severity_override_guidance: null,
         potential_impacts:
           "List the potential operational impacts on a system when applying fix discussed in this control",
