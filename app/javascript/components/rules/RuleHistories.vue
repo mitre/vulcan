@@ -53,7 +53,7 @@ export default {
   },
   data: function () {
     return {
-      showHistories: false,
+      showHistories: true,
     };
   },
 };
