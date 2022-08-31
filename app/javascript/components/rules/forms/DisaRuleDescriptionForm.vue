@@ -173,7 +173,7 @@
 
     <!-- mitigations -->
     <b-form-group
-      v-if="fields.displayed.includes('mitigations') && description.mitigations_available"
+      v-if="fields.displayed.includes('mitigations')"
       :id="`ruleEditor-disa_rule_description-mitigations-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-mitigations-${mod}`">
