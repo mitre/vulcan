@@ -242,7 +242,7 @@
         <b-row>
           <b-col>
             <div v-if="selectedRule.reviews">
-              <RuleReviews :rule="selectedRule" :read-only="true" />
+              <RuleReviews :rule="selectedRule" />
               <br />
             </div>
             <div v-if="selectedRule.histories">
