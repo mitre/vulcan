@@ -137,8 +137,8 @@ export default {
   },
   data: function () {
     return {
-      showAlsoSatisfies: false,
-      showSatisfiedBy: false,
+      showAlsoSatisfies: true,
+      showSatisfiedBy: true,
       satisfies_rule: null,
       satisfied_by_rule: null,
     };
