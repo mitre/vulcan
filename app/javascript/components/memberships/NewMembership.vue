@@ -151,7 +151,7 @@ export default {
       selectedUser: null,
       selectedRole: null,
       roleDescriptions: [
-        "Read only access tot he Project or Component",
+        "Read only access to the Project or Component",
         "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
         "Author and approve changes to a Control.",
         "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
