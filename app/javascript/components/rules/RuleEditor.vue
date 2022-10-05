@@ -31,10 +31,10 @@
           :additional_questions="additional_questions"
         />
       </b-tab>
-      <b-tab title="Inspec Control Body" lazy>
+      <b-tab title="InSpec Control Body" lazy>
         <InspecControlEditor :rule="rule" field="inspec_control_body" :read-only="readOnly" />
       </b-tab>
-      <b-tab title="Inspec Control (Read-Only)" lazy>
+      <b-tab title="InSpec Control (Read-Only)" lazy>
         <InspecControlEditor :rule="rule" field="inspec_control_file" :read-only="true" />
       </b-tab>
     </b-tabs>
