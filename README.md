@@ -15,7 +15,14 @@ the process of aligning security controls from SRG items into actual STIG securi
 * Authenticate via the local server, through github, and through configuring an LDAP server.
 
 ## Deploy Vulcan
-[Deploying Vulcan in Production](https://vulcan.mitre.org/docs/)
+[Deploying Vulcan in Production](https://vulcan.mitre.org/docs/)&nbsp;&nbsp;
+<a href="https://pages.github.com/">
+<picture>
+   <source media="(prefers-color-scheme: dark)" srcset="public/GitHub-Mark-Light-64px.png">
+   <source media="(prefers-color-scheme: light)" srcset="public/GitHub-Mark-64px.png">
+    <img alt="Github Logo" src="public/GitHub-Mark-64px.png" height="25">
+</picture>
+</a>
 
 ## Deployment Dependencies:
 For Ruby (on Ubuntu):
