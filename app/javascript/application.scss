@@ -37,3 +37,9 @@ $mdi-font-path: "~@mdi/font/fonts/";
 .white-space-pre-wrap {
   white-space: pre-wrap;
 }
+
+// Button background custum variant
+.btn-orange {
+  background-color: rgb(198, 106, 13) !important;
+  color: white !important;
+}
