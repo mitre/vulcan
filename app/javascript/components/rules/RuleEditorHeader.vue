@@ -283,6 +283,10 @@ export default {
       type: String,
       default: "",
     },
+    currentUserId: {
+      type: Number,
+      required: true,
+    },
     rule: {
       type: Object,
       required: true,
