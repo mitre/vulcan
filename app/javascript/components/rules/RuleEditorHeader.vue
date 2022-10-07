@@ -47,7 +47,7 @@
           v-b-tooltip.hover
           title="This control cannot be marked as duplicate because it satisfies other controls"
         >
-          <b-button v-b-modal.mark-as-duplicate-modal disabled variant="warning"
+          <b-button v-b-modal.mark-as-duplicate-modal disabled variant="orange"
             >Mark as Duplicate</b-button
           >
         </span>
@@ -60,7 +60,7 @@
               rule.satisfies.length === 0
             "
             v-b-modal.mark-rule-as-duplicate-modal
-            variant="warning"
+            variant="orange"
             >Mark as Duplicate</b-button
           >
         </span>
@@ -68,7 +68,7 @@
           <b-button
             v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
             v-b-modal.unmark-rule-as-duplicate-modal
-            variant="warning"
+            variant="orange"
             >Unmark as Duplicate</b-button
           >
         </span>
