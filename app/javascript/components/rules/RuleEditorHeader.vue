@@ -20,6 +20,7 @@
         <!-- Rule info -->
         <!-- <p>Based on ...</p> -->
         <p v-if="rule.histories && rule.histories.length > 0">
+          <!-- eslint-disable-next-line vue/no-undef-properties -->
           Last updated on {{ friendlyDateTime(rule.updated_at) }} by
           {{ lastEditor }}
         </p>
@@ -428,6 +429,7 @@ export default {
       axios
         .put(`/rules/${this.rule.id}`, payload)
         .then(this.saveRuleSuccess)
+        // eslint-disable-next-line vue/no-undef-properties
         .catch(this.alertOrNotifyResponse);
     },
     saveRuleSuccess: function (response) {
