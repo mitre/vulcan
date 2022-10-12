@@ -2,9 +2,9 @@
   <div>
     <b-modal :id="`${idPrefix}-rule-modal`" ref="modal" :title="title" centered @ok="handleSubmit">
       <form ref="form" method="post">
-        <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
-        <div v-if="forDuplicate">Clone control {{ selectedRuleText }}?</div>
-        <div v-else>Create a new control in this project?</div>
+        <!-- Hide the rule_id (SV-#) input when duplicating the requirement and show a confirmation -->
+        <div v-if="forDuplicate">Clone requirement {{ selectedRuleText }}?</div>
+        <div v-else>Create a new requirement in this project?</div>
       </form>
     </b-modal>
   </div>

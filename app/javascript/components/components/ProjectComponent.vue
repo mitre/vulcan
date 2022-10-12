@@ -30,14 +30,14 @@
         <!-- Tab view for project information -->
         <b-tabs v-model="componentTabIndex" content-class="mt-3" justified>
           <!-- Component rules -->
-          <b-tab :title="`Controls (${component.rules.length})`">
+          <b-tab :title="`Requirements (${component.rules.length})`">
             <b-button
               v-if="role_gte_to(effective_permissions, 'author')"
               class="m-2"
               variant="primary"
               :href="`/components/${component.id}/controls`"
             >
-              Edit Component Controls
+              Edit Component Requirements
             </b-button>
             <span v-b-tooltip.hover :title="releaseComponentTooltip">
               <b-button

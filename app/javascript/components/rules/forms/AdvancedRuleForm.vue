@@ -151,7 +151,7 @@
     <div v-if="rule.status != 'Applicable - Configurable'">
       <hr />
       <p>
-        <small>Some fields are hidden due to the control's status.</small>
+        <small>Some fields are hidden due to the requirement's status.</small>
       </p>
     </div>
   </div>
@@ -204,7 +204,7 @@ export default {
     disabled: function () {
       return this.readOnly || this.rule.locked || this.rule.review_requestor_id ? true : false;
     },
-    // Still allow additional questions to be edited except when the control is actually
+    // Still allow additional questions to be edited except when the requirement is actually
     // locked, or if a review is requested or this is a read only view.
     forceEnableAdditionalQuestions: function () {
       return !this.readOnly && !this.rule.locked && !this.rule.review_requestor_id;

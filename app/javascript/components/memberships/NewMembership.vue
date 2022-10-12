@@ -152,9 +152,9 @@ export default {
       selectedRole: null,
       roleDescriptions: [
         "Read only access to the Project or Component",
-        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
-        "Author and approve changes to a Control.",
-        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
+        "Edit, comment, and mark Requirements as requiring review. Cannot sign-off or approve changes to a Requirement. Great for individual contributors.",
+        "Author and approve changes to a Requirement.",
+        "Full control of a Project or Component. Lock Requirements, revert requirements, and manage members.",
       ],
       userSearchStyles: {
         vueSimpleSuggest: "userSearchVueSimpleSuggest",

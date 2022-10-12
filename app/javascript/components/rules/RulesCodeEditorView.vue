@@ -68,7 +68,7 @@
     <template v-else>
       <div class="col-10">
         <p class="text-center">
-          No control currently selected. Select a control on the left to view or edit.
+          No requirement currently selected. Select a requirement on the left to view or edit.
         </p>
       </div>
     </template>

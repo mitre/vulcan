@@ -546,21 +546,21 @@ export default {
         )
           ? null
           : "Explain the rationale behind selecting one of the above statuses",
-        title: "Describe the vulnerability for this control",
+        title: "Describe the vulnerability for this requirement",
         version: null,
         rule_severity:
           "Unknown: severity not defined, Info: rule is informational only, CAT III (Low): not a serious problem, CAT II (Medium): fairly serious problem, CAT I (High): a grave or critical problem",
         rule_weight: null,
         artifact_description:
           this.rule.status === "Not Applicable"
-            ? "Provide evidence that the control is not applicable to the system - code files, documentation, screenshots, etc."
+            ? "Provide evidence that the requirement is not applicable to the system - code files, documentation, screenshots, etc."
             : [
                 "Not Yet Determined",
                 "Applicable - Configurable",
                 "Applicable - Does Not Meet",
               ].includes(this.rule.status)
             ? null
-            : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
+            : "Provide evidence that the requirement is inherently met by the system - code files, documentation, screenshots, etc.",
         fix_id: null,
         fixtext_fixref: null,
         fixtext:

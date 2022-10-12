@@ -10,10 +10,10 @@
       </h2>
 
       <p v-if="!readOnly && rule.locked" class="text-danger font-weight-bold">
-        This control is locked and must first be unlocked if changes or deletion are required.
+        This requirement is locked and must first be unlocked if changes or deletion are required.
       </p>
       <p v-if="!readOnly && rule.review_requestor_id" class="text-danger font-weight-bold">
-        This control is under review and cannot be edited at this time.
+        This requirement is under review and cannot be edited at this time.
       </p>
 
       <div v-if="!readOnly">
@@ -28,14 +28,14 @@
         <!-- Action Buttons -->
         <!-- Clone rule modal -->
         <NewRuleModalForm
-          :title="'Clone Control'"
+          :title="'Clone Requirement'"
           :id-prefix="'duplicate'"
           :for-duplicate="true"
           :selected-rule-id="rule.id"
           :selected-rule-text="`${projectPrefix}-${rule.rule_id}`"
           @ruleSelected="$emit('ruleSelected', $event.id)"
         />
-        <b-button v-b-modal.duplicate-rule-modal variant="info">Clone Control</b-button>
+        <b-button v-b-modal.duplicate-rule-modal variant="info">Clone Requirement</b-button>
         <!-- Mark/Unmark as duplicate modal -->
         <span
           v-if="
@@ -45,7 +45,7 @@
             rule.satisfies.length > 0
           "
           v-b-tooltip.hover
-          title="This control cannot be marked as duplicate because it satisfies other controls"
+          title="This requirement cannot be marked as duplicate because it satisfies other requirements"
         >
           <b-button v-b-modal.mark-as-duplicate-modal disabled variant="orange"
             >Mark as Duplicate</b-button
@@ -78,16 +78,16 @@
             v-if="effectivePermissions == 'admin'"
             v-b-tooltip.hover
             class="d-inline-block"
-            title="Cannot delete a control that is locked or under review"
+            title="Cannot delete a requirement that is locked or under review"
           >
-            <b-button variant="danger" disabled>Delete Control</b-button>
+            <b-button variant="danger" disabled>Delete Requirement</b-button>
           </span>
           <span
             v-b-tooltip.hover
             class="d-inline-block"
-            title="Cannot save a control that is locked or under review."
+            title="Cannot save a requirement that is locked or under review."
           >
-            <b-button variant="success" disabled>Save Control</b-button>
+            <b-button variant="success" disabled>Save Requirement</b-button>
           </span>
         </template>
         <template v-else>
@@ -97,15 +97,15 @@
             v-b-modal.delete-rule-modal
             variant="danger"
           >
-            Delete Control
+            Delete Requirement
           </b-button>
 
           <!-- Save rule -->
           <CommentModal
-            title="Save Control"
-            message="Provide a comment that summarizes your changes to this control."
+            title="Save Requirement"
+            message="Provide a comment that summarizes your changes to this requirement."
             :require-non-empty="true"
-            button-text="Save Control"
+            button-text="Save Requirement"
             button-variant="success"
             :button-disabled="false"
             wrapper-class="d-inline-block"
@@ -116,7 +116,7 @@
         <!-- Comment -->
         <CommentModal
           title="Comment"
-          message="Submit general feedback on the control"
+          message="Submit general feedback on the requirement"
           :require-non-empty="true"
           button-text="Comment"
           button-variant="secondary"
@@ -199,18 +199,18 @@
 
         <b-modal
           id="delete-rule-modal"
-          title="Delete Control"
+          title="Delete Requirement"
           centered
           @ok="$root.$emit('delete:rule', rule.id)"
         >
           <p class="my-2">
-            Are you sure you want to delete this control?<br />This cannot be undone.
+            Are you sure you want to delete this requirement?<br />This cannot be undone.
           </p>
 
           <template #modal-footer="{ cancel, ok }">
             <!-- Emulate built in modal footer ok and cancel button actions -->
             <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="danger" @click="ok()"> Permanently Delete Control </b-button>
+            <b-button variant="danger" @click="ok()"> Permanently Delete Requirement </b-button>
           </template>
         </b-modal>
         <b-modal
@@ -219,7 +219,7 @@
           centered
           @ok="$root.$emit('markDuplicate:rule', rule.id, satisfied_by_rule_id)"
         >
-          <p>Mark control as duplicate of:</p>
+          <p>Mark requirement as duplicate of:</p>
           <b-form-select
             v-model="satisfied_by_rule_id"
             :options="
@@ -244,7 +244,7 @@
           centered
           @ok="$root.$emit('unmarkDuplicate:rule', rule.id, satisfied_by_rule_id)"
         >
-          <p>Unmark control as duplicate of:</p>
+          <p>Unmark requirement as duplicate of:</p>
           <b-form-select
             v-model="satisfied_by_rule_id"
             :options="
@@ -330,11 +330,11 @@ export default {
         {
           value: "request_review",
           name: "Request Review",
-          description: "control will not be editable during the review process",
+          description: "requirement will not be editable during the review process",
           disabledTooltip: isUnderReview
-            ? "Control is already under review"
+            ? "Requirement is already under review"
             : this.rule.locked
-            ? "Control is currently locked"
+            ? "Requirement is currently locked"
             : null,
         },
 
@@ -344,70 +344,70 @@ export default {
         {
           value: "revoke_review_request",
           name: "Revoke Review Request",
-          description: "revoke your request for review - control will be editable again",
+          description: "revoke your request for review - requirement will be editable again",
           disabledTooltip: !(isAdmin || isRequestor)
             ? "Only an admin or the review requestor can revoke the current review request"
             : !isUnderReview
-            ? "Control is not currently under review"
+            ? "Requirement is not currently under review"
             : null,
         },
 
         // should only be able to request changes if
         // - current user is a reviewer or admin
-        // - control is currently under review
+        // - requirement is currently under review
         {
           value: "request_changes",
           name: "Request Changes",
-          description: "request changes on the control - control will be editable again",
+          description: "request changes on the requirement - requirement will be editable again",
           disabledTooltip: !(isAdmin || isReviewer)
             ? "Only an admin or reviewer can request changes"
             : !isUnderReview
-            ? "Control is not currently under review"
+            ? "Requirement is not currently under review"
             : null,
         },
 
         // should only be able to approve if
         // - current user is a reviewer or admin
-        // - control is currently under review
+        // - requirement is currently under review
         {
           value: "approve",
           name: "Approve",
-          description: "approve the control - control will become locked",
+          description: "approve the requirement - requirement will become locked",
           disabledTooltip: !(isAdmin || isReviewer)
             ? "Only an admin or reviewer can approve"
             : !isUnderReview
-            ? "Control is not currently under review"
+            ? "Requirement is not currently under review"
             : null,
         },
 
-        // should only be able to lock control if
+        // should only be able to lock requirement if
         // - current user is admin
-        // - control is not under review
-        // - control is not locked
+        // - requirement is not under review
+        // - requirement is not locked
         {
           value: "lock_control",
-          name: "Lock Control",
-          description: "skip the review process - control will be immediately locked",
+          name: "Lock Requirement",
+          description: "skip the review process - requirement will be immediately locked",
           disabledTooltip: !isAdmin
-            ? "Only an admin can directly lock a control"
+            ? "Only an admin can directly lock a requirement"
             : isUnderReview
-            ? "Cannot lock a control that is currently under review"
+            ? "Cannot lock a requirement that is currently under review"
             : this.rule.locked
-            ? "Cannot lock a control that is already locked"
+            ? "Cannot lock a requirement that is already locked"
             : null,
         },
 
-        // should only be able to unlock a control if
+        // should only be able to unlock a requirement if
         // - current user is admin
-        // - control is locked
+        // - requirement is locked
         {
           value: "unlock_control",
-          name: "Unlock Control",
-          description: "unlock the control - control will be editable again",
+          name: "Unlock Requirement",
+          description: "unlock the requirement - requirement will be editable again",
           disabledTooltip: !isAdmin
-            ? "Only an admin can unlock a control"
+            ? "Only an admin can unlock a requirement"
             : !this.rule.locked
-            ? "Cannot unlock a control that is not locked"
+            ? "Cannot unlock a requirement that is not locked"
             : null,
         },
       ];

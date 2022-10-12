@@ -12,13 +12,13 @@
           ref="ruleSearch"
           type="text"
           class="form-control"
-          placeholder="Search controls..."
+          placeholder="Search requirements..."
           @input="searchUpdated($event.target.value)"
         />
       </div>
 
       <!-- Filter by rule status -->
-      <b-form-group class="mt-3" label="Filter by Control Status">
+      <b-form-group class="mt-3" label="Filter by Requirement Status">
         <b-form-checkbox
           id="acFilterChecked-filter"
           v-model="filters.acFilterChecked"
@@ -123,7 +123,8 @@
 
       <!-- Currently opened controls -->
       <p class="mt-0 mb-0">
-        <strong>Open Controls</strong>
+        <strong>Open Requirements</strong>
+        <!-- eslint-disable-next-line vue/no-useless-template-attributes -->
         <template v-if="openRuleIds.length > 0" href="#">
           <i
             class="text-primary mdi mdi-close clickable float-right"
@@ -135,7 +136,7 @@
         </template>
       </p>
       <div v-if="openRules.length === 0">
-        <em>No controls selected</em>
+        <em>No requirements selected</em>
       </div>
       <div v-else>
         <div
@@ -169,7 +170,7 @@
 
       <!-- All project controls -->
       <p class="mt-0 mb-0">
-        <strong>All Controls</strong>
+        <strong>All Requirements</strong>
         <template v-if="!readOnly">
           <i v-b-modal.create-rule-modal class="text-primary mdi mdi-plus clickable float-right" />
           <span v-b-modal.create-rule-modal class="text-primary float-right clickable">add </span>
@@ -178,7 +179,7 @@
 
       <!-- New rule modal -->
       <NewRuleModalForm
-        title="Create New Control"
+        title="Create New Requirement"
         :for-duplicate="false"
         id-prefix="create"
         @ruleSelected="ruleSelected($event)"

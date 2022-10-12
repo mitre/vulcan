@@ -40,7 +40,7 @@
       >
         <p>
           Are you sure you want to unmark {{ formatRuleForDisplay(satisfies_rule) }} as a duplicate
-          of this control?
+          of this requirement?
         </p>
         <template #modal-footer="{ cancel, ok }">
           <!-- Emulate built in modal footer ok and cancel button actions -->
@@ -89,7 +89,7 @@
         @ok="$root.$emit('unmarkDuplicate:rule', rule.id, satisfied_by_rule.id)"
       >
         <p>
-          Are you sure you want to unmark this control as a duplicate of
+          Are you sure you want to unmark this requirement as a duplicate of
           {{ formatRuleForDisplay(satisfied_by_rule) }}
         </p>
         <template #modal-footer="{ cancel, ok }">

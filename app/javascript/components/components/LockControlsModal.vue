@@ -3,16 +3,16 @@
     <!-- Modal trigger button -->
     <span @click="showModal()">
       <slot name="opener">
-        <b-button class="px-2 m-2" variant="primary"> Lock Component Controls </b-button>
+        <b-button class="px-2 m-2" variant="primary"> Lock Component Requirements </b-button>
       </slot>
     </span>
 
     <!-- Add component modal -->
     <b-modal
       ref="LockControlsModal"
-      title="Lock Component Controls"
+      title="Lock Component Requirements"
       size="lg"
-      :ok-title="loading ? 'Loading...' : 'Lock Controls'"
+      :ok-title="loading ? 'Loading...' : 'Lock Requirements'"
       :ok-disabled="loading"
       @ok="lockControls"
     >

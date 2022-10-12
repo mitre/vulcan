@@ -117,7 +117,7 @@
             <b-form-group
               v-else
               label="STIG ID Prefix"
-              description="STIG IDs for each control will be automatically generated based on this prefix value"
+              description="STIG IDs for each requirement will be automatically generated based on this prefix value"
             >
               <b-form-input
                 v-model="prefix"

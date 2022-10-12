@@ -42,7 +42,7 @@
         >
         <CommentModal
           title="Replace All"
-          message="Provide a comment that summarizes your changes to these controls."
+          message="Provide a comment that summarizes your changes to these requirements."
           :require-non-empty="false"
           button-text="Replace All"
           button-variant="primary"

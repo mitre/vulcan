@@ -566,9 +566,11 @@ export default {
     tooltips: function () {
       return {
         documentable: null,
-        vuln_discussion: "Discuss, in detail, the rationale for this control's vulnerability",
-        false_positives: "List any likely false-positives associated with evaluating this control",
-        false_negatives: "List any likely false-negatives associated with evaluating this control",
+        vuln_discussion: "Discuss, in detail, the rationale for this requirement's vulnerability",
+        false_positives:
+          "List any likely false-positives associated with evaluating this requirement",
+        false_negatives:
+          "List any likely false-negatives associated with evaluating this requirement",
         mitigations: [
           "Not Yet Determined",
           "Applicable - Configurable",
@@ -583,7 +585,7 @@ export default {
             : null,
         severity_override_guidance: null,
         potential_impacts:
-          "List the potential operational impacts on a system when applying fix discussed in this control",
+          "List the potential operational impacts on a system when applying fix discussed in this requirement",
         third_party_tools: null,
         mitigation_control: null,
         responsibility: null,

@@ -17,7 +17,7 @@
       <b-col lg="2" class="text-right">
         <CommentModal
           title="Replace"
-          message="Provide a comment that summarizes your changes to this control."
+          message="Provide a comment that summarizes your changes to this requirement."
           :require-non-empty="false"
           button-text="Replace"
           button-variant="secondary"

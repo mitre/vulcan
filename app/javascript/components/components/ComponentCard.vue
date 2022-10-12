@@ -23,7 +23,7 @@
         <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
         <!-- Rules count info -->
         <span class="float-right h6">
-          {{ component.rules_count }} {{ component.component_id ? "Overlaid" : "" }} Controls
+          {{ component.rules_count }} {{ component.component_id ? "Overlaid" : "" }} Requirements
         </span>
       </b-card-title>
       <b-card-sub-title class="mb-2">
@@ -131,7 +131,7 @@
                   v-b-tooltip.hover
                   class="mdi mdi-lock h5 clickable"
                   aria-hidden="true"
-                  title="Lock component controls"
+                  title="Lock component requirements"
                 />
               </template>
             </LockControlsModal>
