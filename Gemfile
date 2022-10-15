@@ -21,7 +21,7 @@ gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
 gem 'devise'
 # Use Omniauth to support additional login providers
-gem 'omniauth', '~> 1.8'
+gem 'omniauth', '~> 1.9'
 # LDAP Auth
 # GitLab fork with several improvements to original library. For full list of changes
 # see https://github.com/intridea/omniauth-ldap/compare/master...gitlabhq:master
