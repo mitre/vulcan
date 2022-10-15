@@ -20,6 +20,7 @@
           :rule="selectedRule()"
           :rules="rules"
           :effective-permissions="effectivePermissions"
+          :current-user-id="currentUserId"
           :project-prefix="component.prefix"
           :read-only="true"
         />

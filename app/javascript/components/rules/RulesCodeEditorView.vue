@@ -20,6 +20,7 @@
           :rules="rules"
           :project-prefix="component.prefix"
           :effective-permissions="effectivePermissions"
+          :current-user-id="currentUserId"
           @ruleSelected="handleRuleSelected($event)"
         />
 
