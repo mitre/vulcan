@@ -124,7 +124,7 @@
       <!-- Currently opened controls -->
       <p class="mt-0 mb-0">
         <strong>Open Controls</strong>
-        <template v-if="openRuleIds.length > 0" href="#">
+        <template v-if="openRuleIds.length > 0">
           <i
             class="text-primary mdi mdi-close clickable float-right"
             @click="rulesDeselected(openRules)"
