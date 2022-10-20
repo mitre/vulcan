@@ -61,7 +61,8 @@ RSpec.describe ProjectsController, type: :controller do
       expect(response).to have_http_status(:success)
       expect(JSON.parse(response.body)['projects'].map(&:first)).to eq @admin_user.available_projects
                                                                                   .joins(components: :based_on)
-                                                                                  .and(SecurityRequirementsGuide.where(srg_id: srg_id))
+                                                                                  .and(SecurityRequirementsGuide
+                                                                                        .where(srg_id: srg_id))
                                                                                   .distinct
                                                                                   .pluck(:id)
     end
