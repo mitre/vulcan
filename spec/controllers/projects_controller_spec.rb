@@ -58,13 +58,14 @@ RSpec.describe ProjectsController, type: :controller do
       srg_id = SecurityRequirementsGuide.last.srg_id
       sign_in @admin_user
       get :search, params: { q: srg_id }
+
       expect(response).to have_http_status(:success)
-      expect(JSON.parse(response.body)['projects'].map(&:first)).to eq @admin_user.available_projects
-                                                                                  .joins(components: :based_on)
-                                                                                  .and(SecurityRequirementsGuide
-                                                                                        .where(srg_id: srg_id))
-                                                                                  .distinct
-                                                                                  .pluck(:id)
+      expected_projects = @admin_user.available_projects
+                                     .joins(components: :based_on)
+                                     .and(SecurityRequirementsGuide.where(srg_id: srg_id))
+                                     .distinct
+                                     .pluck(:id)
+      expect(JSON.parse(response.body)['projects'].map(&:first)).to eq(expected_projects)
     end
   end
 
