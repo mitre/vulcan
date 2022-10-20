@@ -5,15 +5,15 @@ FactoryBot.define do
     project { create(:project) }
     based_on { create(:security_requirements_guide) }
 
-    prefix { "ABCD-00" }
+    prefix { 'ABCD-00' }
     name { FFaker::Name.name }
     admin_name { generate(:name) }
     admin_email { generate(:email) }
     advanced_fields { false }
     version { generate(:version) }
     release { generate(:release) }
-    title { "Fake title" }
-    description { "Fake description" }
+    title { 'Fake title' }
+    description { 'Fake description' }
 
     trait :released_component do
       released { true }
