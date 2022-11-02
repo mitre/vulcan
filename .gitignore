@@ -30,6 +30,9 @@
 /.env
 /.env-prod
 
+# Ignore Mac OS .DS_Store file
+.DS_Store
+
 # Do not commit coverage
 /coverage
 
