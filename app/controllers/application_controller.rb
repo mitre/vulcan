@@ -3,6 +3,7 @@
 # This is the base controller for the application. Things should only be
 # placed here if they are shared between multiple controllers
 class ApplicationController < ActionController::Base
+  protect_from_forgery prepend: true
   helper :all
 
   before_action :setup_navigation, :authenticate_user!
@@ -79,6 +80,11 @@ class ApplicationController < ActionController::Base
     return if current_user&.can_view_component?(@component)
 
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
+  end
+
+  def after_sign_out_path_for(resource_or_scope)
+    super
+    new_user_session_path
   end
 
   private
