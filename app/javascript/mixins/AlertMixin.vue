@@ -59,9 +59,6 @@ export default {
 
       // At this point in the code it is likely an error has occurred
       if (response.message) {
-        // if (response.response && response.response.status === 401) {
-        //   window.location.reload();
-        // }
         this.$bvToast.toast(response.message, {
           title: "Error",
           variant: "danger",
