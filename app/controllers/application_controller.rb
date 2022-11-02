@@ -129,7 +129,7 @@ class ApplicationController < ActionController::Base
             message: exception.message,
             variant: 'danger'
           }
-        }, status: :unauthorized
+        }, status: :forbidden
       end
     end
   end
