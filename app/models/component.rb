@@ -238,24 +238,33 @@ class Component < ApplicationRecord
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
     return new_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
 
+    # update the based_on field
+    new_component.based_on = new_srg
     new_rules = new_srg.srg_rules.index_by(&:version)
     # update rules that haven't been configured
-    new_component.rules.where.not(status: 'Applicable - Configurable').find_each do |old_rule|
+    new_component.rules.select { |r| r.status != 'Applicable - Configurable' }.each do |old_rule|
       new_rule = new_rules[old_rule[:version]]
       # delete rules that are no longer present
-      old_rule.destroy! && next if new_rule.blank?
+      old_rule.destroy! && next if new_rule.blank? # calling destroy here will also persist new_component in the DB
 
       fields = %i[rule_severity rule_weight title ident ident_system fixtext fixtext_fixref fix_id]
       fields.each { |field| old_rule[field] = new_rule[field] }
-      old_rule.disa_rule_descriptions = new_rule.disa_rule_description.dup
+      old_rule.disa_rule_descriptions = new_rule.disa_rule_descriptions.dup
       old_rule.rule_descriptions = new_rule.rule_descriptions.dup
       old_rule.checks = new_rule.checks.dup
       old_rule.srg_rule = new_rule
     end
 
-    # import any new rules
-    new_rule_versions = (new_rules.keys - new_component.rules.pluck(:version))
-    raise ActiveRecord::RecordInvalid, self unless from_mapping(new_srg, new_rule_versions, new_component.rules.size)
+    if new_component.save
+      # import any new rules
+      new_rule_versions = (new_rules.keys - new_component.rules.map(&:version))
+      return new_component if new_component.from_mapping(new_srg, new_rule_versions, new_component.largest_rule_id)
+
+      error_messages = new_component.errors.full_messages
+      # unpersist the saved new_component & reclone if unable to import all new rules
+      new_component = new_component.destroy.amoeba_dup
+      error_messages.each { |e| new_component.errors.add(:base, e)  }
+    end
 
     new_component
   end
@@ -319,18 +328,19 @@ class Component < ApplicationRecord
   def from_mapping(srg, new_rule_versions = nil, starting_idx = 0)
     benchmark = srg.parsed_benchmark
 
-    filtered_srg_rules = new_rule_versions.present? ? srg.srg_rules.where(version: new_rule_versions) : srg.srg_rules
+    filtered_srg_rules = new_rule_versions.nil? ? srg.srg_rules : srg.srg_rules.where(version: new_rule_versions)
     srg_rules = filtered_srg_rules.pluck(:rule_id, :id).to_h
     srg_rule_versions = filtered_srg_rules.pluck(:rule_id, :version).to_h
 
-    filtered_benchmark_rules = if new_rule_versions.present?
-                                 benchmark.rule.filter { |r| new_rule_versions.include?(r.version.first.version) }
+    filtered_benchmark_rules = if new_rule_versions.nil?
+                                benchmark.rule
                                else
-                                 benchmark.rule
+                                benchmark.rule.filter { |r| new_rule_versions.include?(r.version.first.version) }
                                end
     rule_models = filtered_benchmark_rules.sort_by { |r| srg_rule_versions[r.id] }.each_with_index.map do |rule, idx|
       Rule.from_mapping(rule, id, starting_idx + idx + 1, srg_rules)
     end
+
     # Examine import results for failures
     success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
     if success
