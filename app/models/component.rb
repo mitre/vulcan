@@ -242,7 +242,7 @@ class Component < ApplicationRecord
     new_component.based_on = new_srg
     new_rules = new_srg.srg_rules.index_by(&:version)
     # update rules that haven't been configured
-    new_component.rules.select { |r| r.status != 'Applicable - Configurable' }.each do |old_rule|
+    new_component.rules.reject { |r| r.status == 'Applicable - Configurable' }.each do |old_rule|
       new_rule = new_rules[old_rule[:version]]
       # delete rules that are no longer present
       old_rule.destroy! && next if new_rule.blank? # calling destroy here will also persist new_component in the DB
@@ -263,7 +263,7 @@ class Component < ApplicationRecord
       error_messages = new_component.errors.full_messages
       # unpersist the saved new_component & reclone if unable to import all new rules
       new_component = new_component.destroy.amoeba_dup
-      error_messages.each { |e| new_component.errors.add(:base, e)  }
+      error_messages.each { |e| new_component.errors.add(:base, e) }
     end
 
     new_component
@@ -333,9 +333,9 @@ class Component < ApplicationRecord
     srg_rule_versions = filtered_srg_rules.pluck(:rule_id, :version).to_h
 
     filtered_benchmark_rules = if new_rule_versions.nil?
-                                benchmark.rule
+                                 benchmark.rule
                                else
-                                benchmark.rule.filter { |r| new_rule_versions.include?(r.version.first.version) }
+                                 benchmark.rule.filter { |r| new_rule_versions.include?(r.version.first.version) }
                                end
     rule_models = filtered_benchmark_rules.sort_by { |r| srg_rule_versions[r.id] }.each_with_index.map do |rule, idx|
       Rule.from_mapping(rule, id, starting_idx + idx + 1, srg_rules)
