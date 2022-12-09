@@ -15,7 +15,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
                 srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
               }]
     ).each do |component|
-      worksheet = workbook.add_worksheet(component[:name])
+      worksheet = workbook.add_worksheet("#{component[:name]} V#{component[:version]}R#{component[:release]}")
       worksheet.auto_width = true
       worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
       last_row_num = 0
