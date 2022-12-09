@@ -95,6 +95,7 @@ group :development, :test do
   gem 'factory_bot_rails', '~> 5.2.0'
   gem 'rspec-mocks'
   gem 'rspec-rails', '~> 4.0.0'
+  gem 'shoulda-matchers', '~> 5.0'
 end
 
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem
