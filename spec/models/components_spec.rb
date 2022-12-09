@@ -269,7 +269,7 @@ RSpec.describe Component, type: :model do
           comp.rules.push(rule)
         end
         comp.save!
-        comp.rules.last.destroy!
+        comp.rules.first.destroy!
         comp_rules_count = comp.rules.size
         new_comp = comp.duplicate(new_name: 'Test OS 3', new_version: 1, new_release: 2, new_title: 'test title',
                                   new_description: 'test desc', new_srg_id: new_srg.id)
