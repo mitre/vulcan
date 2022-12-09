@@ -175,15 +175,15 @@ class Rule < BaseRule
       SEVERITIES_MAP[rule_severity] || rule_severity,
       srg_rule.title, # original srg title
       title,
-      srg_rule.disa_rule_descriptions.first.vuln_discussion, # original srg vuln discussion
-      disa_rule_descriptions.first.vuln_discussion,
+      srg_rule.disa_rule_descriptions.first&.vuln_discussion, # original srg vuln discussion
+      disa_rule_descriptions.first&.vuln_discussion,
       status,
-      srg_rule.checks.first.content, # original SRG check content
+      srg_rule.checks.first&.content, # original SRG check content
       export_checktext,
       srg_rule.fixtext, # original SRG fix text
       export_fixtext,
       status_justification,
-      disa_rule_descriptions.first.mitigations,
+      disa_rule_descriptions.first&.mitigations,
       artifact_description,
       vendor_comments_with_satisfactions
     ]
