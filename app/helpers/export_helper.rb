@@ -35,7 +35,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     workbook
   end
 
-  def export_xccdf(project)
+  def export_xccdf_project(project)
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
                                               satisfies satisfied_by]).each do |component|
@@ -45,56 +45,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         file_name = "U_#{title.tr(' ', '_')}_#{version}#{release}-xccdf.xml"
         zio.put_next_entry(file_name)
 
-        doc = Ox::Document.new
-
-        # Document Headers
-        instruct_xml = Ox::Instruct.new(:xml)
-        instruct_xml['version'] = '1.0'
-        instruct_xml['encoding'] = 'UTF-8'
-        doc << instruct_xml
-
-        instruct_xml_s = Ox::Instruct.new(:'xml-stylesheet')
-        instruct_xml_s['type'] = 'text/xsl'
-        instruct_xml_s['href'] = 'STIG_unclass.xsl'
-        doc << instruct_xml_s
-
-        # Root Benchmark element
-        benchmark = Ox::Element.new('Benchmark')
-        benchmark['xmlns:dc'] = 'http://purl.org/dc/elements/1.1/'
-        benchmark['xmlns:xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
-        benchmark['xmlns:cpe'] = 'http://cpe.mitre.org/language/2.0'
-        benchmark['xmlns:xhtml'] = 'http://www.w3.org/1999/xhtml'
-        benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
-        benchmark['xsi:schemaLocation'] = 'http://checklists.nist.gov/xccdf/1.1 ' \
-                                          'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
-                                          'http://cpe.mitre.org/dictionary/2.0 '\
-                                          'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
-        benchmark['id'] = component[:name]
-        benchmark['xml:lang'] = 'en'
-        benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
-
-        ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
-        ox_el_helper(benchmark, 'title', title)
-        ox_el_helper(benchmark, 'description', component[:description])
-        ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
-        ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
-        ox_el_helper(benchmark, 'rear-matter', nil, { 'xml:lang': 'en' })
-
-        reference = Ox::Element.new('reference')
-        reference['href'] = nil
-        ox_el_helper(reference, 'dc:publisher', nil)
-        ox_el_helper(reference, 'dc:source', nil)
-        benchmark << reference
-
-        release_info = "Release: #{component[:release]} Benchmark Date: #{Time.zone.today.strftime('%-d %b %Y')}"
-        ox_el_helper(benchmark, 'plain-text', release_info, { id: 'release-info' })
-        ox_el_helper(benchmark, 'plain-text', '3.2.2.36079', { id: 'generator' })
-        ox_el_helper(benchmark, 'plain-text', '1.10.0', { id: 'conventionsVersion' })
-        ox_el_helper(benchmark, 'version', component[:version].to_s)
-
-        groups_helper(component, benchmark)
-
-        doc << benchmark
+        doc = xccdf_helper(component)
 
         # Write xml to file
         zio.write Ox.dump(doc)
@@ -112,6 +63,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         inspec_helper(zio, component, dir)
       end
     end
+  end
+
+  def export_xccdf_component(component)
+    doc = xccdf_helper(component)
+    Ox.dump(doc)
   end
 
   def export_inspec_component(component)
@@ -139,6 +95,60 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       zio.put_next_entry("#{dir}controls/#{component[:prefix]}-#{rule[:rule_id]}.rb")
       zio.write rule.inspec_control_file
     end
+  end
+
+  def xccdf_helper(component)
+    doc = Ox::Document.new
+
+    # Document Headers
+    instruct_xml = Ox::Instruct.new(:xml)
+    instruct_xml['version'] = '1.0'
+    instruct_xml['encoding'] = 'UTF-8'
+    doc << instruct_xml
+
+    instruct_xml_s = Ox::Instruct.new(:'xml-stylesheet')
+    instruct_xml_s['type'] = 'text/xsl'
+    instruct_xml_s['href'] = 'STIG_unclass.xsl'
+    doc << instruct_xml_s
+
+    # Root Benchmark element
+    benchmark = Ox::Element.new('Benchmark')
+    benchmark['xmlns:dc'] = 'http://purl.org/dc/elements/1.1/'
+    benchmark['xmlns:xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
+    benchmark['xmlns:cpe'] = 'http://cpe.mitre.org/language/2.0'
+    benchmark['xmlns:xhtml'] = 'http://www.w3.org/1999/xhtml'
+    benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
+    benchmark['xsi:schemaLocation'] = 'http://checklists.nist.gov/xccdf/1.1 ' \
+                                      'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
+                                      'http://cpe.mitre.org/dictionary/2.0 '\
+                                      'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
+    benchmark['id'] = component[:name]
+    benchmark['xml:lang'] = 'en'
+    benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
+
+    ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
+    title = (component[:title] || "#{component[:name]} STIG Readiness Guide")
+    ox_el_helper(benchmark, 'title', title)
+    ox_el_helper(benchmark, 'description', component[:description])
+    ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
+    ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
+    ox_el_helper(benchmark, 'rear-matter', nil, { 'xml:lang': 'en' })
+
+    reference = Ox::Element.new('reference')
+    reference['href'] = nil
+    ox_el_helper(reference, 'dc:publisher', nil)
+    ox_el_helper(reference, 'dc:source', nil)
+    benchmark << reference
+
+    release_info = "Release: #{component[:release]} Benchmark Date: #{Time.zone.today.strftime('%-d %b %Y')}"
+    ox_el_helper(benchmark, 'plain-text', release_info, { id: 'release-info' })
+    ox_el_helper(benchmark, 'plain-text', '3.2.2.36079', { id: 'generator' })
+    ox_el_helper(benchmark, 'plain-text', '1.10.0', { id: 'conventionsVersion' })
+    ox_el_helper(benchmark, 'version', component[:version].to_s)
+
+    groups_helper(component, benchmark)
+
+    doc << benchmark
   end
 
   def groups_helper(component, benchmark)

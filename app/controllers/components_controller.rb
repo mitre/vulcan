@@ -116,7 +116,7 @@ class ComponentsController < ApplicationController
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[csv inspec].include?(export_type)
+    unless %i[csv inspec xccdf].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -129,14 +129,18 @@ class ComponentsController < ApplicationController
 
     respond_to do |format|
       format.html do
+        version = @component[:version] ? "V#{@component[:version]}" : ''
+        release = @component[:release] ? "R#{@component[:release]}" : ''
+
         case export_type
         when :csv
           send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
         when :inspec
-          version = @component[:version] ? "V#{@component[:version]}" : ''
-          release = @component[:release] ? "R#{@component[:release]}" : ''
           filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
           send_data export_inspec_component(@component).string, filename: filename
+        when :xccdf
+          filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml"
+          send_data export_xccdf_component(@component), filename: filename
         end
       end
       # JSON responses are just used to validate ahead of time that this

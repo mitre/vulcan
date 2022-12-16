@@ -59,10 +59,10 @@ RSpec.describe ExportHelper, type: :helper do
     end
   end
 
-  describe '#export_xccdf' do
+  describe '#export_xccdf_project' do
     before(:all) do
       @file_name = "./#{@project.name}.zip"
-      File.binwrite(@file_name, export_xccdf(@project).string)
+      File.binwrite(@file_name, export_xccdf_project(@project).string)
       @zip = Zip::File.open(@file_name)
     end
 
