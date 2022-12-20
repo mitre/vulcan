@@ -23,7 +23,7 @@ class SecurityRequirementsGuide < ApplicationRecord
     title = benchmark_mapping.title.first rescue nil
     version = "V#{benchmark_mapping.version.version}" \
               "#{SecurityRequirementsGuide.revision(benchmark_mapping.plaintext.first)}" rescue nil
-    release_date = SecurityRequirementsGuide.release_date(benchmark_mapping.plaintext.first)
+    release_date = SecurityRequirementsGuide.release_date(benchmark_mapping.plaintext.first) rescue nil
     # rubocop:enable Style/RescueModifier
 
     SecurityRequirementsGuide.new(srg_id: id, title: title, version: version, release_date: release_date)

@@ -9,9 +9,9 @@
     >
       <b-form-file
         v-model="file"
-        placeholder="Choose or drop an SRG XML here..."
-        drop-placeholder="Drop SRG XML here..."
-        accept="text/xml, application/xml"
+        placeholder="Choose or drop an SRG XML or zip of multi XML here..."
+        drop-placeholder="Drop SRG XML or zip XML here..."
+        accept="text/xml, application/xml, application/zip"
       />
       <template #modal-footer>
         <div class="row w-100">
