@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Component, type: :model do
-  before(:each) do
+  before(:all) do
     xml_files = ['U_NDM_SRG_V2R14_Manual-xccdf.xml', 'U_NDM_SRG_V4R1_Manual-xccdf.xml']
 
     xml_files.each_with_index do |f, idx|
@@ -15,21 +15,14 @@ RSpec.describe Component, type: :model do
       instance_variable_set("@srg#{idx + 1}", srg)
     end
 
-    @p1 = Project.create!(name: 'Photon OS 3')
+    @p1 = FactoryBot.create(:project)
+  end
+
+  before(:each) do
     @comp = described_class.create!(project: @p1, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: @srg1)
     @comp_with_locked_rules = described_class.create!(project: @p1, version: 'Photos OS 3 V1R1', prefix: 'PHOT-03',
                                                       based_on: @srg2)
     @comp_with_locked_rules.rules.update(locked: true)
-    @released_comp = described_class.create!(project: @p1, version: 'Phot OS 3 V1R1', prefix: 'PHOS-03',
-                                             based_on: @srg1)
-    @released_comp.rules.update(locked: true)
-    @released_comp.update(released: true)
-  end
-
-  after(:each) do
-    SecurityRequirementsGuide.destroy_all
-    Project.destroy_all
-    Component.destroy_all
   end
 
   describe 'Validations:' do
@@ -197,19 +190,16 @@ RSpec.describe Component, type: :model do
         expect(srg.srg_rules.pluck(:version)).to include(*comp.rules.pluck(:version))
       end
     end
-
-    # TODO
-    # context 'When passing valid attributes and providing an SRG spreadsheet' do
-
-    # it 'can be created from a provided SRG spreadsheet' do
-    # end
-
-    # it 'cannot be created from a provided SRG file that's not a spreadsheet' do
-    # end
-    # end
   end
 
   describe 'Duplicate a component under the same project' do
+    before(:all) do
+      @released_comp = described_class.create!(project: @p1, version: 'Phot OS 3 V1R1', prefix: 'PHOS-03',
+                                               based_on: @srg1)
+      @released_comp.rules.update(locked: true)
+      @released_comp.update(released: true)
+    end
+
     let(:comp) { @released_comp }
 
     context 'When using the same SRG version/release' do
@@ -269,7 +259,7 @@ RSpec.describe Component, type: :model do
           comp.rules.push(rule)
         end
         comp.save!
-        comp.rules.first.destroy!
+        comp.rules.first.update!(deleted_at: Time.zone.now)
         comp_rules_count = comp.rules.size
         new_comp = comp.duplicate(new_name: 'Test OS 3', new_version: 1, new_release: 2, new_title: 'test title',
                                   new_description: 'test desc', new_srg_id: new_srg.id)
