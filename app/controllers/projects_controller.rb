@@ -117,7 +117,7 @@ class ProjectsController < ApplicationController
           workbook = export_excel(@project)
           send_data workbook.read_string, filename: "#{@project.name}.xlsx"
         when :xccdf
-          send_data export_xccdf(@project).string, filename: "#{@project.name}.zip"
+          send_data export_xccdf_project(@project).string, filename: "#{@project.name}.zip"
         when :inspec
           send_data export_inspec_project(@project).string, filename: "#{@project.name}_inspec.zip"
         end
