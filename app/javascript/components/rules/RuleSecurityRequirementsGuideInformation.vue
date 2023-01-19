@@ -108,6 +108,19 @@
         </div>
         <div class="col-8">{{ srg_rule.version }}</div>
       </div>
+      <div class="row">
+        <div class="col-4">
+          <strong>SRG Version</strong>
+          <i
+            v-if="tooltips['srg_version']"
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            :title="tooltips['srg_version']"
+          />
+        </div>
+        <div class="col-8">{{ srg_info.version }}</div>
+      </div>
     </b-collapse>
   </div>
 </template>
@@ -125,6 +138,10 @@ export default {
     },
     cci: {
       type: String,
+      required: true,
+    },
+    srg_info: {
+      type: Object,
       required: true,
     },
   },
@@ -145,6 +162,8 @@ export default {
           "The SRG Fix Text provides a broad method of how to correct a system. The STIG developer can use this information to determine what areas to address in the STIG.",
         srg_id:
           "This is the ID for the SRG requirement. It may also contain identification information for a parent SRG document. May not be unique for a given STIG",
+        srg_version:
+          "Version and Release of SRG requirement.",
       },
       showSrgInformation: false,
     };

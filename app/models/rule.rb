@@ -91,7 +91,8 @@ class Rule < BaseRule
           satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
           additional_answers_attributes: additional_answers.as_json.map do |c|
                                            c.except('rule_id', 'created_at', 'updated_at')
-                                         end
+                                         end,
+          srg_info: { 'version': SecurityRequirementsGuide.find(srg_rule.security_requirements_guide_id).version },
         }
       )
     end
