@@ -116,6 +116,19 @@
         </b-form-checkbox>
       </b-form-group>
 
+      <!-- Toggle STIG ID/SRG ID -->
+      <b-form-group class="mt-3">
+        <b-form-checkbox
+          id="showSRGIdChecked"
+          v-model="filters.showSRGIdChecked"
+          class="mb-1 unselectable"
+          switch
+          name="showSRGIdChecked-fitler"
+        >
+          Show SRG ID
+        </b-form-checkbox>
+      </b-form-group>
+
       <!-- Find & Replace -->
       <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" :rules="rules" />
 
@@ -144,24 +157,46 @@
           :class="ruleRowClass(rule)"
           @click="ruleSelected(rule)"
         >
-          <i
-            class="mdi mdi-close closeRuleButton"
-            aria-hidden="true"
-            @click.stop="ruleDeselected(rule)"
-          />
-          {{ formatRuleId(rule.rule_id) }}
-          <i
-            v-if="rule.review_requestor_id"
-            class="mdi mdi-file-find float-right"
-            aria-hidden="true"
-          />
-          <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-          <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-          <i
-            v-if="rule.satisfied_by.length > 0"
-            class="mdi mdi-content-copy float-right"
-            aria-hidden="true"
-          />
+          <div v-if="filters.showSRGIdChecked">
+            <i
+              class="mdi mdi-close closeRuleButton"
+              aria-hidden="true"
+              @click.stop="ruleDeselected(rule)"
+            />
+            {{ rule.version }}
+            <i
+              v-if="rule.review_requestor_id"
+              class="mdi mdi-file-find float-right"
+              aria-hidden="true"
+            />
+            <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
+            <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
+            <i
+              v-if="rule.satisfied_by.length > 0"
+              class="mdi mdi-content-copy float-right"
+              aria-hidden="true"
+            />
+          </div>
+          <div v-else>
+            <i
+              class="mdi mdi-close closeRuleButton"
+              aria-hidden="true"
+              @click.stop="ruleDeselected(rule)"
+            />
+            {{ formatRuleId(rule.rule_id) }}
+            <i
+              v-if="rule.review_requestor_id"
+              class="mdi mdi-file-find float-right"
+              aria-hidden="true"
+            />
+            <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
+            <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
+            <i
+              v-if="rule.satisfied_by.length > 0"
+              class="mdi mdi-content-copy float-right"
+              aria-hidden="true"
+            />
+          </div>
         </div>
       </div>
 
@@ -191,19 +226,36 @@
         :class="ruleRowClass(rule)"
         @click="ruleSelected(rule)"
       >
-        {{ formatRuleId(rule.rule_id) }}
-        <i
-          v-if="rule.review_requestor_id"
-          class="mdi mdi-file-find float-right"
-          aria-hidden="true"
-        />
-        <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-        <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-        <i
-          v-if="rule.satisfied_by.length > 0"
-          class="mdi mdi-content-copy float-right"
-          aria-hidden="true"
-        />
+        <div v-if="filters.showSRGIdChecked">
+          {{ rule.version }}
+          <i
+            v-if="rule.review_requestor_id"
+            class="mdi mdi-file-find float-right"
+            aria-hidden="true"
+          />
+          <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
+          <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
+          <i
+            v-if="rule.satisfied_by.length > 0"
+            class="mdi mdi-content-copy float-right"
+            aria-hidden="true"
+          />
+        </div>
+        <div v-else>
+          {{ formatRuleId(rule.rule_id) }}
+          <i
+            v-if="rule.review_requestor_id"
+            class="mdi mdi-file-find float-right"
+            aria-hidden="true"
+          />
+          <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
+          <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
+          <i
+            v-if="rule.satisfied_by.length > 0"
+            class="mdi mdi-content-copy float-right"
+            aria-hidden="true"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -270,6 +322,7 @@ export default {
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
         showDuplicatesChecked: false, // Show duplicates
+        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
       },
     };
   },
@@ -518,6 +571,7 @@ export default {
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
         showDuplicatesChecked: false, // Show duplicates
+        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
       };
     },
     handleScroll: function () {
