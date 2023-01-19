@@ -145,6 +145,7 @@
       :nist_control_family="rule.nist_control_family"
       :srg_rule="rule.srg_rule_attributes"
       :cci="rule.ident"
+      :srg_info="rule.srg_info"
     />
 
     <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
