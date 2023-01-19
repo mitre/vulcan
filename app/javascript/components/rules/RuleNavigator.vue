@@ -125,7 +125,7 @@
           switch
           name="showSRGIdChecked-fitler"
         >
-        Show SRG ID
+          Show SRG ID
         </b-form-checkbox>
       </b-form-group>
 
@@ -158,20 +158,44 @@
           @click="ruleSelected(rule)"
         >
           <div v-if="filters.showSRGIdChecked">
-            <i class="mdi mdi-close closeRuleButton" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
+            <i
+              class="mdi mdi-close closeRuleButton"
+              aria-hidden="true"
+              @click.stop="ruleDeselected(rule)"
+            />
             {{ rule.version }}
-            <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
+            <i
+              v-if="rule.review_requestor_id"
+              class="mdi mdi-file-find float-right"
+              aria-hidden="true"
+            />
             <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
             <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-            <i v-if="rule.satisfied_by.length > 0" class="mdi mdi-content-copy float-right" aria-hidden="true" />
+            <i
+              v-if="rule.satisfied_by.length > 0"
+              class="mdi mdi-content-copy float-right"
+              aria-hidden="true"
+            />
           </div>
           <div v-else>
-            <i class="mdi mdi-close closeRuleButton" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
+            <i
+              class="mdi mdi-close closeRuleButton"
+              aria-hidden="true"
+              @click.stop="ruleDeselected(rule)"
+            />
             {{ formatRuleId(rule.rule_id) }}
-            <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
+            <i
+              v-if="rule.review_requestor_id"
+              class="mdi mdi-file-find float-right"
+              aria-hidden="true"
+            />
             <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
             <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-            <i v-if="rule.satisfied_by.length > 0" class="mdi mdi-content-copy float-right" aria-hidden="true" />
+            <i
+              v-if="rule.satisfied_by.length > 0"
+              class="mdi mdi-content-copy float-right"
+              aria-hidden="true"
+            />
           </div>
         </div>
       </div>
@@ -204,17 +228,33 @@
       >
         <div v-if="filters.showSRGIdChecked">
           {{ rule.version }}
-          <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
+          <i
+            v-if="rule.review_requestor_id"
+            class="mdi mdi-file-find float-right"
+            aria-hidden="true"
+          />
           <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
           <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-          <i v-if="rule.satisfied_by.length > 0" class="mdi mdi-content-copy float-right" aria-hidden="true" />
+          <i
+            v-if="rule.satisfied_by.length > 0"
+            class="mdi mdi-content-copy float-right"
+            aria-hidden="true"
+          />
         </div>
         <div v-else>
           {{ formatRuleId(rule.rule_id) }}
-          <i v-if="rule.review_requestor_id" class="mdi mdi-file-find float-right" aria-hidden="true" />
+          <i
+            v-if="rule.review_requestor_id"
+            class="mdi mdi-file-find float-right"
+            aria-hidden="true"
+          />
           <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
           <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-          <i v-if="rule.satisfied_by.length > 0" class="mdi mdi-content-copy float-right" aria-hidden="true" />
+          <i
+            v-if="rule.satisfied_by.length > 0"
+            class="mdi mdi-content-copy float-right"
+            aria-hidden="true"
+          />
         </div>
       </div>
     </div>
