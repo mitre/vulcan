@@ -99,7 +99,7 @@ GEM
       concurrent-ruby
     childprocess (4.1.0)
     coderay (1.1.3)
-    concurrent-ruby (1.1.9)
+    concurrent-ruby (1.1.10)
     crass (1.0.6)
     database_cleaner-active_record (2.0.1)
       activerecord (>= 5.a)
@@ -135,7 +135,7 @@ GEM
       omniauth (~> 1.3)
       pyu-ruby-sasl (>= 0.0.3.3, < 0.1)
       rubyntlm (~> 0.5)
-    globalid (1.0.0)
+    globalid (1.0.1)
       activesupport (>= 5.0)
     haml (5.2.2)
       temple (>= 0.8.0)
@@ -153,7 +153,7 @@ GEM
       haml (>= 4.0, < 6)
       nokogiri (>= 1.6.0)
       ruby_parser (~> 3.5)
-    i18n (1.10.0)
+    i18n (1.12.0)
       concurrent-ruby (~> 1.0)
     inspec-core (4.24.32)
       addressable (~> 2.4)
@@ -205,7 +205,7 @@ GEM
     method_source (1.0.0)
     mini_mime (1.1.2)
     mini_portile2 (2.8.0)
-    minitest (5.15.0)
+    minitest (5.17.0)
     mitre-inspec-objects (0.3.3)
       inspec-core
     mixlib-config (3.0.9)
@@ -422,7 +422,7 @@ GEM
     turbolinks (5.2.1)
       turbolinks-source (~> 5.2)
     turbolinks-source (5.2.0)
-    tzinfo (2.0.4)
+    tzinfo (2.0.5)
       concurrent-ruby (~> 1.0)
     tzinfo-data (1.2021.5)
       tzinfo (>= 1.0.0)
@@ -450,7 +450,7 @@ GEM
     wisper (2.0.1)
     xpath (3.2.0)
       nokogiri (~> 1.8)
-    zeitwerk (2.5.4)
+    zeitwerk (2.6.6)
 
 PLATFORMS
   ruby
