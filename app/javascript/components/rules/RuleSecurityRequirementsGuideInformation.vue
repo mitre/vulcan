@@ -96,7 +96,20 @@
       </div>
       <div class="row">
         <div class="col-4">
-          <!-- srg_version -->
+          <!-- srg_version aka ID -->
+          <strong>SRG ID</strong>
+          <i
+            v-if="tooltips['srg_id']"
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            :title="tooltips['srg_id']"
+          />
+        </div>
+        <div class="col-8">{{ srg_rule.version }}</div>
+      </div>
+      <div class="row">
+        <div class="col-4">
           <strong>SRG Version</strong>
           <i
             v-if="tooltips['srg_version']"
@@ -106,7 +119,7 @@
             :title="tooltips['srg_version']"
           />
         </div>
-        <div class="col-8">{{ srg_rule.version }}</div>
+        <div class="col-8">{{ srg_info.version }}</div>
       </div>
     </b-collapse>
   </div>
@@ -127,12 +140,28 @@ export default {
       type: String,
       required: true,
     },
+    srg_info: {
+      type: Object,
+      required: true,
+    },
   },
   data: function () {
     return {
       tooltips: {
         nist_control:
           "The NIST SP 800-53 Revision 4 Control Family that maps to the Common Control Indicator (CCI)",
+        cci: "The Control Correlation Identifier (CCI) enables DoD organizations to trace STIG compliance to Information Assurance controls specified by the National Institutes of Standards and Technology (NIST) and mandated for Federal government agencies.",
+        srg_requirement:
+          "This is a sentence stating the requirement and is pre-populated from the Technology SRG.",
+        srg_vuln_discussion:
+          "The vulnerability discussion describes the risk of not complying with the requirement that is pre-populated from the Technology SRG.",
+        srg_check_text:
+          "The SRG Check Content provides a broad method of review and inspection. The STIG developer can use this information to determine what areas to inspect in the STIG.",
+        srg_fix_text:
+          "The SRG Fix Text provides a broad method of how to correct a system. The STIG developer can use this information to determine what areas to address in the STIG.",
+        srg_id:
+          "This is the ID for the SRG requirement. It may also contain identification information for a parent SRG document. May not be unique for a given STIG",
+        srg_version: "Version and Release of SRG requirement.",
       },
       showSrgInformation: false,
     };
