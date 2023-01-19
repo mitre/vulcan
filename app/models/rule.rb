@@ -92,7 +92,7 @@ class Rule < BaseRule
           additional_answers_attributes: additional_answers.as_json.map do |c|
                                            c.except('rule_id', 'created_at', 'updated_at')
                                          end,
-          srg_info: { 'version': SecurityRequirementsGuide.find(srg_rule.security_requirements_guide_id).version },
+          srg_info: { version: SecurityRequirementsGuide.find(srg_rule.security_requirements_guide_id).version }
         }
       )
     end
