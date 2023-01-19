@@ -150,8 +150,7 @@ export default {
       tooltips: {
         nist_control:
           "The NIST SP 800-53 Revision 4 Control Family that maps to the Common Control Indicator (CCI)",
-        cci:
-          "The Control Correlation Identifier (CCI) enables DoD organizations to trace STIG compliance to Information Assurance controls specified by the National Institutes of Standards and Technology (NIST) and mandated for Federal government agencies.",
+        cci: "The Control Correlation Identifier (CCI) enables DoD organizations to trace STIG compliance to Information Assurance controls specified by the National Institutes of Standards and Technology (NIST) and mandated for Federal government agencies.",
         srg_requirement:
           "This is a sentence stating the requirement and is pre-populated from the Technology SRG.",
         srg_vuln_discussion:
@@ -162,8 +161,7 @@ export default {
           "The SRG Fix Text provides a broad method of how to correct a system. The STIG developer can use this information to determine what areas to address in the STIG.",
         srg_id:
           "This is the ID for the SRG requirement. It may also contain identification information for a parent SRG document. May not be unique for a given STIG",
-        srg_version:
-          "Version and Release of SRG requirement.",
+        srg_version: "Version and Release of SRG requirement.",
       },
       showSrgInformation: false,
     };
