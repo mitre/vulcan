@@ -249,9 +249,9 @@ class Component < ApplicationRecord
 
       fields = %i[rule_severity rule_weight title ident ident_system fixtext fixtext_fixref fix_id]
       fields.each { |field| old_rule[field] = new_rule[field] }
-      old_rule.disa_rule_descriptions = new_rule.disa_rule_descriptions.dup
-      old_rule.rule_descriptions = new_rule.rule_descriptions.dup
-      old_rule.checks = new_rule.checks.dup
+      old_rule.disa_rule_descriptions = new_rule.disa_rule_descriptions.map(&:dup)
+      old_rule.rule_descriptions = new_rule.rule_descriptions.map(&:dup)
+      old_rule.checks = new_rule.checks.map(&:dup)
       old_rule.srg_rule = new_rule
     end
 
