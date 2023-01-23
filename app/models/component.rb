@@ -224,49 +224,77 @@ class Component < ApplicationRecord
 
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
                 new_title: nil, new_description: nil, new_project_id: nil, new_srg_id: nil)
-    new_component = amoeba_dup
-    new_component.name = new_name if new_name
-    new_component.prefix = new_prefix if new_prefix
-    new_component.version = new_version if new_version
-    new_component.release = new_release if new_release
-    new_component.title = new_title if new_title
-    new_component.description = new_description if new_description
-    new_component.project_id = new_project_id if new_project_id
-    new_component.skip_import_srg_rules = true
-    return new_component unless new_srg_id
+    copied_component = amoeba_dup
+    copied_component.name = new_name if new_name
+    copied_component.prefix = new_prefix if new_prefix
+    copied_component.version = new_version if new_version
+    copied_component.release = new_release if new_release
+    copied_component.title = new_title if new_title
+    copied_component.description = new_description if new_description
+    copied_component.project_id = new_project_id if new_project_id
+    copied_component.skip_import_srg_rules = true
+    return copied_component unless new_srg_id
+
+    # If moving to new SRG:
+    #  - remove deleted requirements
+    #  - add new requirements
+    #  - update each rule srg requirement association
+    #  - update each non-configurable rules fields (title, discussion, check, and fix) with new SRG requirement data
+    # Manual Updates required for any 'configurable' requirements with updated underlying SRG requirements
 
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
-    return new_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
-
-    # update the based_on field
-    new_component.based_on = new_srg
-    new_rules = new_srg.srg_rules.index_by(&:version)
-    # update rules that haven't been configured
-    new_component.rules.reject { |r| r.status == 'Applicable - Configurable' }.each do |old_rule|
-      new_rule = new_rules[old_rule[:version]]
-      # delete rules that are no longer present
-      old_rule.destroy! && next if new_rule.blank? # calling destroy here will also persist new_component in the DB
-
-      fields = %i[rule_severity rule_weight title ident ident_system fixtext fixtext_fixref fix_id]
-      fields.each { |field| old_rule[field] = new_rule[field] }
-      old_rule.disa_rule_descriptions = new_rule.disa_rule_descriptions.dup
-      old_rule.rule_descriptions = new_rule.rule_descriptions.dup
-      old_rule.checks = new_rule.checks.dup
-      old_rule.srg_rule = new_rule
+    if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
+      return copied_component
     end
 
-    if new_component.save
+    # update the based_on field to the new srg
+    copied_component.based_on = new_srg
+
+    new_srg_rules = new_srg.srg_rules.index_by(&:version)
+
+    copied_component.rules.each do |copied_rule|
+      # Check if current copied rule exists in new SRG ruleset (by SRG Rule "Version")
+      new_srg_rule = new_srg_rules[copied_rule[:version]]
+
+      # delete rules that are no longer present - calling destroy here will also persist new_component in the DB
+      copied_rule.destroy! if new_srg_rule.blank? && copied_rule.status != 'Applicable - Configurable'
+
+      # skip if not in new SRG (leave old SRG rule references on it) - only for "non-Configurable" rules
+      next if new_srg_rule.blank?
+
+      # Otherwise update "srg" fields accordingly.
+      fields = %i[rule_severity rule_weight ident ident_system fixtext_fixref fix_id]
+      fields.each { |field| copied_rule[field] = new_srg_rule[field] }
+
+      # ensure each rule also has the new associated srg rule id
+      copied_rule.srg_rule = new_srg_rule
+
+      # don't touch the "Applicable - Configurable" rules, leave original content in place (title,check,fix,discussion)
+      next if copied_rule.status == 'Applicable - Configurable'
+
+      # Update fields for "non-Configurable" - reset to new SRG rule info for title, check, fix, discussion
+      copied_rule.title = new_srg_rule.title
+      copied_rule.fixtext = new_srg_rule.fixtext
+
+      # Update associated tables (checks, disa_rule_descriptions) with new SRG rule data
+      copied_rule.disa_rule_descriptions = new_srg_rule.disa_rule_descriptions.map(&:dup)
+      copied_rule.rule_descriptions = new_srg_rule.rule_descriptions.map(&:dup)
+      copied_rule.checks = new_srg_rule.checks.map(&:dup)
+    end
+
+    if copied_component.save
       # import any new rules
-      new_rule_versions = (new_rules.keys - new_component.rules.map(&:version))
-      return new_component if new_component.from_mapping(new_srg, new_rule_versions, new_component.largest_rule_id)
+      new_rule_versions = (new_srg_rules.keys - copied_component.rules.map(&:version))
+      return copied_component if copied_component.from_mapping(new_srg, new_rule_versions,
+                                                               copied_component.largest_rule_id)
 
-      error_messages = new_component.errors.full_messages
+      error_messages = copied_component.errors.full_messages
       # unpersist the saved new_component & reclone if unable to import all new rules
-      new_component = new_component.destroy.amoeba_dup
-      error_messages.each { |e| new_component.errors.add(:base, e) }
+      copied_component = copied_component.destroy.amoeba_dup
+      error_messages.each { |e| copied_component.errors.add(:base, e) }
     end
 
-    new_component
+    copied_component
   end
 
   def duplicate_reviews_and_history(component_id)
