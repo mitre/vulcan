@@ -223,7 +223,7 @@ class Component < ApplicationRecord
   end
 
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
-    new_title: nil, new_description: nil, new_project_id: nil, new_srg_id: nil)
+                new_title: nil, new_description: nil, new_project_id: nil, new_srg_id: nil)
     copied_component = amoeba_dup
     copied_component.name = new_name if new_name
     copied_component.prefix = new_prefix if new_prefix
@@ -243,7 +243,9 @@ class Component < ApplicationRecord
     # Manual Updates required for any 'configurable' requirements with updated underlying SRG requirements
 
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
-    return copied_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
+    if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
+      return copied_component
+    end
 
     # update the based_on field to the new srg
     copied_component.based_on = new_srg
@@ -265,9 +267,9 @@ class Component < ApplicationRecord
       fields.each { |field| copied_rule[field] = new_srg_rule[field] }
 
       # ensure each rule also has the new associated srg rule id
-      copied_rule.srg_rule = new_srg_rule 
+      copied_rule.srg_rule = new_srg_rule
 
-      # don't touch the "Applicable - Configurable" rules, leave original content in place (title, check, fix, discussion)
+      # don't touch the "Applicable - Configurable" rules, leave original content in place (title,check,fix,discussion)
       next if copied_rule.status == 'Applicable - Configurable'
 
       # Update fields for "non-Configurable" - reset to new SRG rule info for title, check, fix, discussion
@@ -283,7 +285,8 @@ class Component < ApplicationRecord
     if copied_component.save
       # import any new rules
       new_rule_versions = (new_srg_rules.keys - copied_component.rules.map(&:version))
-      return copied_component if copied_component.from_mapping(new_srg, new_rule_versions, copied_component.largest_rule_id)
+      return copied_component if copied_component.from_mapping(new_srg, new_rule_versions,
+                                                               copied_component.largest_rule_id)
 
       error_messages = copied_component.errors.full_messages
       # unpersist the saved new_component & reclone if unable to import all new rules
