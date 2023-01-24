@@ -14,10 +14,11 @@ RSpec.describe ExportHelper, type: :helper do
 
   describe '#export_excel' do
     before(:all) do
-      @workbook = export_excel(@project)
-      @workbook_release = export_excel(@project_with_realeased_comp)
+      @workbook = export_excel(@project, 'released')
+      @workbook_release_only = export_excel(@project_with_realeased_comp, 'relased')
+      @workbook_release_all = export_excel(@project_with_realeased_comp, 'all')
 
-      [@workbook, @workbook_release].each_with_index do |item, index|
+      [@workbook, @workbook_release_only, @workbook_release_all].each_with_index do |item, index|
         file_name = ''
         if index == 0
           file_name = "./#{@project.name}.xlsx"
@@ -26,7 +27,8 @@ RSpec.describe ExportHelper, type: :helper do
         else
           file_name = "./#{@project_with_realeased_comp.name}.xlsx"
           File.binwrite(file_name, item.read_string)
-          @xlsx_release = Roo::Spreadsheet.open(file_name)
+          @xlsx_release_only = Roo::Spreadsheet.open(file_name) if index == 1
+          @xlsx_release_all = Roo::Spreadsheet.open(file_name) if index == 2
         end
         File.delete(file_name)
       end
@@ -39,19 +41,25 @@ RSpec.describe ExportHelper, type: :helper do
       end
     end
 
-    context 'when project has released component' do
+    context 'when project has released component(s) and user requested only released components' do
       it 'creates an excel file with the # of sheets == # of released components' do
-        expect(@xlsx_release.sheets.size).to eq @project_with_realeased_comp.components.where(released: true).size
+        expect(@xlsx_release_only.sheets.size).to eq @project_with_realeased_comp.components.where(released: true).size
       end
 
       it 'creates an excel file with correct format for worksheet name' do
         sheet_name = "#{@released_component.name}-V#{@released_component.version}"
         sheet_name += "R#{@released_component.release}-#{@released_component.id}"
-        expect(@xlsx_release.sheets).to include(sheet_name)
+        expect(@xlsx_release_only.sheets).to include(sheet_name)
       end
     end
 
-    context 'when project has no released component' do
+    context 'When project has released component(s) and user requested to download all componenta' do
+      it 'creates an excel file with the # of sheets == total # of components' do
+        expect(@xlsx_release_all.sheets.size).to eq @project_with_realeased_comp.components.size
+      end
+    end
+
+    context 'when project has no released component and user requested only released components' do
       it 'creates an empty spreadsheet' do
         expect(@xlsx.sheets.size).to eq 1
         expect(@xlsx.sheets.first).to eq 'Sheet1'

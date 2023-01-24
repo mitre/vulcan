@@ -6,10 +6,11 @@ require 'zip'
 module ExportHelper # rubocop:todo Metrics/ModuleLength
   include ExportConstants
 
-  def export_excel(project)
+  def export_excel(project, components_type)
     # One file for all data types, each data type in a different tab
     workbook = FastExcel.open(constant_memory: true)
-    project.components.where(released: true).eager_load(
+    components_to_export = components_type == 'all' ? project.components : project.components.where(released: true)
+    components_to_export.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers, :satisfies, :satisfied_by, {
                 srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
