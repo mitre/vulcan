@@ -103,9 +103,11 @@ class RulesController < ApplicationController
 
   def create_or_duplicate
     if authorize_author_project.nil? && rule_create_params[:duplicate]
-      rule = Rule.find(rule_create_params[:id]).amoeba_dup
-      rule.rule_id = nil
-      rule
+      rule = Rule.find(rule_create_params[:id])
+      rule.update_single_rule_clone(true)
+      new_rule = rule.amoeba_dup
+      new_rule.rule_id = nil
+      new_rule
     elsif authorize_admin_project.nil?
       srg = SecurityRequirementsGuide.find_by(id: @component.security_requirements_guide_id)
       srg_rule = srg.parsed_benchmark.rule.find { |r| r.ident.reject(&:legacy).first.ident == 'CCI-000366' }
