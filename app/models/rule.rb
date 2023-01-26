@@ -10,7 +10,7 @@ class Rule < BaseRule
     nullify :review_requestor_id
     set locked: false
 
-    include_association :additional_answers
+    include_association :additional_answers, if: :single_rule_clone?
   end
 
   audited except: %i[component_id review_requestor_id created_at updated_at locked inspec_control_file],
@@ -52,6 +52,13 @@ class Rule < BaseRule
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
   default_scope { where(deleted_at: nil) }
+
+  @single_rule_clone = false
+
+  # If rule clone not coming from a "copy component" action, allow "answers" to be also cloned
+  def update_single_rule_clone(rule_clone)
+    @single_rule_clone = rule_clone
+  end
 
   def self.from_mapping(rule_mapping, component_id, idx, srg_rules)
     rule = super(self, rule_mapping)
@@ -244,6 +251,10 @@ class Rule < BaseRule
 
   private
 
+  def single_rule_clone?
+    @single_rule_clone
+  end
+
   def export_fixtext
     satisfied_by.size.positive? ? satisfied_by.first.fixtext : fixtext
   end
@@ -333,6 +344,9 @@ class Rule < BaseRule
   end
 
   def update_component_rules_count
+    # don't update component rules count for copy or duplicate component actions
+    return unless @single_rule_clone
+
     component.rules_count = component.rules.where(deleted_at: nil).size
     component.save
   end
