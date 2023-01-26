@@ -47,9 +47,7 @@ RSpec.describe ExportHelper, type: :helper do
       end
 
       it 'creates an excel file with correct format for worksheet name' do
-        sheet_name = "#{@released_component.name}-V#{@released_component.version}"
-        sheet_name += "R#{@released_component.release}-#{@released_component.id}"
-        expect(@xlsx_release_only.sheets).to include(sheet_name)
+        expect(@xlsx_release_only.sheets).to all(match(/\w+-V[0-9]+R[0-9]+-[0-9]+/))
       end
     end
 

@@ -16,7 +16,9 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
                 srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
               }]
     ).each do |component|
-      worksheet_name = "#{component[:name]}-V#{component[:version]}R#{component[:release]}-#{component[:id]}"
+      name_ending = "-V#{component[:version]}R#{component[:release]}-#{component[:id]}"
+      # excel worksheet name has a limit of 31 characters
+      worksheet_name = component[:name].gsub(/\s+/, '').first(31 - name_ending.length) + name_ending
       worksheet = workbook.add_worksheet(worksheet_name)
       worksheet.auto_width = true
       worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
