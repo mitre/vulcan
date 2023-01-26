@@ -49,10 +49,30 @@
                 @projectUpdated="refreshProject"
               />
               <b-dropdown right text="Download" variant="secondary" class="px-2 m2">
-                <b-dropdown-item @click="downloadExport('excel')">Excel Export</b-dropdown-item>
+                <b-dropdown-item v-b-modal.excel-export-modal> Excel Export </b-dropdown-item>
                 <b-dropdown-item @click="downloadExport('xccdf')">Xccdf Export</b-dropdown-item>
                 <b-dropdown-item @click="downloadExport('inspec')">InSpec Profile</b-dropdown-item>
               </b-dropdown>
+
+              <b-modal
+                id="excel-export-modal"
+                ref="excel-export-modal"
+                title="Excel Export"
+                centered
+              >
+                <p class="my-2">
+                  Would you like to export all components in this project or just the released
+                  components?
+                </p>
+                <template #modal-footer>
+                  <b-button @click="downloadExport('excel', 'all')">
+                    Export all components
+                  </b-button>
+                  <b-button @click="downloadExport('excel', 'released')">
+                    Export released Components
+                  </b-button>
+                </template>
+              </b-modal>
             </div>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
@@ -346,9 +366,11 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    downloadExport: function (type) {
+    downloadExport: function (type, componentsToExport) {
+      this.$refs["excel-export-modal"].hide();
+
       axios
-        .get(`/projects/${this.project.id}/export/${type}`)
+        .get(`/projects/${this.project.id}/export/${type}?components_type=${componentsToExport}`)
         .then((_res) => {
           // Once it is validated that there is content to download, prompt
           // the user to save the file
