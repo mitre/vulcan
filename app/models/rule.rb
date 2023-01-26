@@ -345,9 +345,9 @@ class Rule < BaseRule
 
   def update_component_rules_count
     # don't update component rules count for copy or duplicate component actions
-    if @single_rule_clone
-      component.rules_count = component.rules.where(deleted_at: nil).size
-      component.save
-    end
+    return unless @single_rule_clone
+
+    component.rules_count = component.rules.where(deleted_at: nil).size
+    component.save
   end
 end
