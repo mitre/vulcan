@@ -72,6 +72,7 @@
                 display-attribute="displayed"
                 value-attribute="id"
                 placeholder="Search for an SRG..."
+                :filter-by-query="copy_component ? false : true"
                 :min-length="0"
                 :max-suggestions="0"
                 :number="0"
