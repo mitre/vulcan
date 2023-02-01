@@ -6,7 +6,32 @@ require 'zip'
 module ExportHelper # rubocop:todo Metrics/ModuleLength
   include ExportConstants
 
-  def export_excel(project, components_type)
+  DISA_STATUS_TEXTS = {
+    'Not Applicable' => [
+      'This requirement is NA for this technology.',
+      'The requirement is NA. No fix is required.'
+    ],
+    'Applicable - Inherently Meets' => [
+      'The technology supports this requirement and cannot be configured to be out of compliance.
+       The technology inherently meets this requirement.',
+      'This technology inherently meets this requirement. No fix is required.'
+    ],
+    'Applicable - Does Not Meet' => [
+      'The technology supports this requirement. This is an applicable-does not meet finding.',
+      'This requirement is a permanent finding and cannot be fixed.
+       An appropriate mitigation for the system must be implemented, but this finding cannot be considered fixed.'
+    ]
+  }.freeze
+
+  CSV_ATTRIBUTE_MAP = {
+    export_checktext: 11,
+    export_fixtext: 13,
+    status_justification: 14,
+    mitigation: 15,
+    artifact_description: 16
+  }.freeze
+
+  def export_excel(project, components_type, is_disa_export)
     # One file for all data types, each data type in a different tab
     workbook = FastExcel.open(constant_memory: true)
     components_to_export = components_type == 'all' ? project.components : project.components.where(released: true)
@@ -26,8 +51,32 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       component.rules.each do |rule|
         # fast_excel unfortunately does not provide a method to modify the @last_row_number class variable
         # so it needs to be manually kept track of
+        csv_attributes = rule.csv_attributes
+        if is_disa_export
+          check_text, fix_text = get_check_and_fix_text(rule.status)
+          if rule.status != 'Applicable - Configurable'
+            csv_attributes[CSV_ATTRIBUTE_MAP[:export_checktext]] = check_text
+            csv_attributes[CSV_ATTRIBUTE_MAP[:export_fixtext]] = fix_text
+          end
+          # For "Applicable - Configurable" controls remove any text
+          # in the "Status Justification", "Mitigation",and "Artifact Description" fields for the export.
+          # For "Applicable - Inherently Meets" and "Not Applicable" controls.
+          # remove any text in the "Mitigation" field for the export.
+          case rule.status
+          when 'Applicable - Configurable'
+            csv_attributes[CSV_ATTRIBUTE_MAP[:status_justification]] = nil
+            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
+            csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
+          when 'Applicable - Inherently Meets'
+            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
+          when 'Not Applicable'
+            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
+            csv_attributes[CSV_ATTRIBUTE_MAP[:status_justification]] = nil
+          end
+        end
+
         last_row_num += 1
-        rule.csv_attributes.each_with_index do |value, col_index|
+        csv_attributes.each_with_index do |value, col_index|
           worksheet.write_string(last_row_num, col_index, value.to_s, nil)
         end
       end
@@ -36,6 +85,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     workbook.close if workbook.is_open
 
     workbook
+  end
+
+  def get_check_and_fix_text(status)
+    # this following helps in modifying check_text and fix_text when the user has opted for DISA Excel Export
+    DISA_STATUS_TEXTS[status]
   end
 
   def export_xccdf_project(project)

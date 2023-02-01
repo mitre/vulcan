@@ -107,7 +107,7 @@ class ProjectsController < ApplicationController
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[excel xccdf inspec].include?(export_type)
+    unless %i[disa_excel excel xccdf inspec].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -121,8 +121,13 @@ class ProjectsController < ApplicationController
     respond_to do |format|
       format.html do
         case export_type
+        when :disa_excel
+          is_disa_export = true
+          workbook = export_excel(@project, @@components_to_export, is_disa_export)
+          send_data workbook.read_string, filename: "#{@project.name}_DISA.xlsx"
         when :excel
-          workbook = export_excel(@project, @@components_to_export)
+          is_disa_export = false
+          workbook = export_excel(@project, @@components_to_export, is_disa_export)
           send_data workbook.read_string, filename: "#{@project.name}.xlsx"
         when :xccdf
           send_data export_xccdf_project(@project).string, filename: "#{@project.name}.zip"
