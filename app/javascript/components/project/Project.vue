@@ -49,9 +49,12 @@
                 @projectUpdated="refreshProject"
               />
               <b-dropdown right text="Download" variant="secondary" class="px-2 m2">
-                <b-dropdown-item v-b-modal.excel-export-modal> Excel Export </b-dropdown-item>
-                <b-dropdown-item @click="downloadExport('xccdf')">Xccdf Export</b-dropdown-item>
+                <b-dropdown-item v-b-modal.disa-excel-export-modal>
+                  DISA Excel Export
+                </b-dropdown-item>
+                <b-dropdown-item v-b-modal.excel-export-modal>Excel Export</b-dropdown-item>
                 <b-dropdown-item @click="downloadExport('inspec')">InSpec Profile</b-dropdown-item>
+                <b-dropdown-item @click="downloadExport('xccdf')">Xccdf Export</b-dropdown-item>
               </b-dropdown>
 
               <b-modal
@@ -69,6 +72,26 @@
                     Export all components
                   </b-button>
                   <b-button @click="downloadExport('excel', 'released')">
+                    Export released Components
+                  </b-button>
+                </template>
+              </b-modal>
+
+              <b-modal
+                id="disa-excel-export-modal"
+                ref="disa-excel-export-modal"
+                title="DISA Excel Export"
+                centered
+              >
+                <p class="my-2">
+                  Would you like to export all components in this project or just the released
+                  components?
+                </p>
+                <template #modal-footer>
+                  <b-button @click="downloadExport('disa_excel', 'all')">
+                    Export all components
+                  </b-button>
+                  <b-button @click="downloadExport('disa_excel', 'released')">
                     Export released Components
                   </b-button>
                 </template>
@@ -367,8 +390,11 @@ export default {
         .catch(this.alertOrNotifyResponse);
     },
     downloadExport: function (type, componentsToExport) {
-      this.$refs["excel-export-modal"].hide();
-
+      if (type === "excel") {
+        this.$refs["excel-export-modal"].hide();
+      } else if (type === "disa_excel") {
+        this.$refs["disa-excel-export-modal"].hide();
+      }
       axios
         .get(`/projects/${this.project.id}/export/${type}?components_type=${componentsToExport}`)
         .then((_res) => {

@@ -9,23 +9,29 @@ RSpec.describe ExportHelper, type: :helper do
     @component = FactoryBot.create(:component)
     @released_component = FactoryBot.create(:released_component)
     @project = @component.project
-    @project_with_realeased_comp = @released_component.project
+    @project_with_released_comp = @released_component.project
   end
 
   describe '#export_excel' do
     before(:all) do
-      @workbook = export_excel(@project, 'released')
-      @workbook_release_only = export_excel(@project_with_realeased_comp, 'relased')
-      @workbook_release_all = export_excel(@project_with_realeased_comp, 'all')
+      @workbook = export_excel(@project, 'released', false)
+      @workbook_release_only = export_excel(@project_with_released_comp, 'released', false)
+      @workbook_release_all = export_excel(@project_with_released_comp, 'all', false)
 
-      [@workbook, @workbook_release_only, @workbook_release_all].each_with_index do |item, index|
+      @workbook_disa_export = export_excel(@project, 'released', true)
+      @workbook_disa_export_release_only = export_excel(@project_with_released_comp, 'released', true)
+      @workbook_disa_export_release_all = export_excel(@project_with_released_comp, 'all', true)
+
+      [@workbook, @workbook_release_only, @workbook_release_all,
+       @workbook_disa_export, @workbook_disa_export_release_only,
+       @workbook_disa_export_release_all].each_with_index do |item, index|
         file_name = ''
         if index == 0
           file_name = "./#{@project.name}.xlsx"
           File.binwrite(file_name, item.read_string)
           @xlsx = Roo::Spreadsheet.open(file_name)
         else
-          file_name = "./#{@project_with_realeased_comp.name}.xlsx"
+          file_name = "./#{@project_with_released_comp.name}.xlsx"
           File.binwrite(file_name, item.read_string)
           @xlsx_release_only = Roo::Spreadsheet.open(file_name) if index == 1
           @xlsx_release_all = Roo::Spreadsheet.open(file_name) if index == 2
@@ -43,7 +49,7 @@ RSpec.describe ExportHelper, type: :helper do
 
     context 'when project has released component(s) and user requested only released components' do
       it 'creates an excel file with the # of sheets == # of released components' do
-        expect(@xlsx_release_only.sheets.size).to eq @project_with_realeased_comp.components.where(released: true).size
+        expect(@xlsx_release_only.sheets.size).to eq @project_with_released_comp.components.where(released: true).size
       end
 
       it 'creates an excel file with correct format for worksheet name' do
@@ -51,9 +57,9 @@ RSpec.describe ExportHelper, type: :helper do
       end
     end
 
-    context 'When project has released component(s) and user requested to download all componenta' do
+    context 'When project has released component(s) and user requested to download all components' do
       it 'creates an excel file with the # of sheets == total # of components' do
-        expect(@xlsx_release_all.sheets.size).to eq @project_with_realeased_comp.components.size
+        expect(@xlsx_release_all.sheets.size).to eq @project_with_released_comp.components.size
       end
     end
 
