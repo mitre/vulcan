@@ -68,7 +68,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         # so it needs to be manually kept track of
         csv_attributes = rule.csv_attributes
         if is_disa_export
-          check_text, fix_text = get_check_and_fix_text(rule.status)
+          check_text, fix_text = get_check_and_fix_text(rule.status).values_at('check_text', 'fix_text')
           if rule.status != 'Applicable - Configurable'
             csv_attributes[CSV_ATTRIBUTE_MAP[:export_checktext]] = check_text
             csv_attributes[CSV_ATTRIBUTE_MAP[:export_fixtext]] = fix_text
