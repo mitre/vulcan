@@ -1,7 +1,15 @@
 <template>
   <div>
     <label :for="`ruleEditor-additional-question-${question.name}`">
-      {{ question.name }}
+      <template v-if="question.question_type === 'url'">
+        {{ question.name }}:
+        <b-link :href="findAnswerText(question.id)" target="_blank">
+          {{ findAnswerText(question.id) }}
+        </b-link>
+      </template>
+      <template v-else>
+        {{ question.name }}
+      </template>
     </label>
     <b-form-select
       v-if="question.question_type === 'dropdown'"
@@ -12,6 +20,15 @@
       :class="inputClass(question.name)"
       @input="addOrUpdateAnswer($event, question.id)"
     />
+    <template v-else-if="question.question_type === 'url'">
+      <b-input
+        v-if="!disabled"
+        :id="`ruleEditor-additional-field-${question.id}`"
+        :value="findAnswerText(question.id)"
+        :class="inputClass(question.name)"
+        @input="addOrUpdateAnswer($event, question.id)"
+      />
+    </template>
     <b-form-textarea
       v-else
       :id="`ruleEditor-additional-field-${question.id}`"
