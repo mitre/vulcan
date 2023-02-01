@@ -7,35 +7,20 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   include ExportConstants
 
   DISA_STATUS_TEXTS = {
-    DISA_STATUS_TEXTS = {
     'Not Applicable' => {
       'check_text' => 'This requirement is NA for this technology.',
       'fix_text' => 'The requirement is NA. No fix is required.'
     },
     'Applicable - Inherently Meets' => {
-      'check_text' => 'The technology supports this requirement and cannot be configured to be out of compliance. 
-      The technology inherently meets this requirement.',
+      'check_text' => 'The technology supports this requirement and cannot be configured to be out of compliance.
+       The technology inherently meets this requirement.',
       'fix_text' => 'This technology inherently meets this requirement. No fix is required.'
-    ],
-    'Applicable - Does Not Meet' => [
-      'check_text' => 'The technology supports this requirement. This is an applicable-does not meet finding.',
+    },
+    'Applicable - Does Not Meet' => {
+      'check_text' => 'The technology does not support this requirement. This is an applicable-does not meet finding.',
       'fix_text' => 'This requirement is a permanent finding and cannot be fixed.
        An appropriate mitigation for the system must be implemented, but this finding cannot be considered fixed.'
-    ]
-  }.freeze
-      'This requirement is NA for this technology.',
-      'The requirement is NA. No fix is required.'
-    ],
-    'Applicable - Inherently Meets' => [
-      'The technology supports this requirement and cannot be configured to be out of compliance.
-       The technology inherently meets this requirement.',
-      'This technology inherently meets this requirement. No fix is required.'
-    ],
-    'Applicable - Does Not Meet' => [
-      'The technology supports this requirement. This is an applicable-does not meet finding.',
-      'This requirement is a permanent finding and cannot be fixed.
-       An appropriate mitigation for the system must be implemented, but this finding cannot be considered fixed.'
-    ]
+    }
   }.freeze
 
   CSV_ATTRIBUTE_MAP = {
