@@ -216,7 +216,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       next if rule.satisfied_by.present?
 
       group = Ox::Element.new('Group')
-      group['id'] = "#{component[:prefix]}-#{rule[:rule_id]}"
+      group['id'] = "V-#{component[:prefix]}-#{rule[:rule_id]}"
 
       ox_el_helper(group, 'title', rule[:version])
       group_rule = Ox::Element.new('Rule')
