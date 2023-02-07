@@ -2,17 +2,18 @@
 
 ## Description
 
-Vulcan is a tool to help streamline the process of creating STIGs and InSpec security compliance profiles. It models the STIG intent form and
-the process of aligning security controls from SRG items into actual STIG security controls.  Vulcan also gives the option while aligning the security controls to insert inspec code and test across any type of system supported by InSpec.
+Vulcan is a tool to help streamline the process of creating STIG-ready securiy guidance documentation and InSpec automated validation profiles.
+
+Vulcan models the STIG intent form and the process of aligning security controls from high-level DISA Security Requirements Guides (SRGs) into [Security Technical Implementation Guides](public.cyber.mil/stigs) (STIGs) tailored to a particular system component. STIG-ready content developed with Vulcan can be provided to DISA for peer review and formal publishing as a STIG.  Vulcan allows the guidance author to develop both human-readable instructions and machine-readable automated validation code at the same time.
 
 ## Features
 
-* Model the STIG creation process between the creator(vendor) and the approver(sponsor)
-* Write and test InSpec code on a local system, or across SSH, AWS, and Docker
-* Easily view the progress on what the status is of each control
-* Communicate through the application to make the best decisions on controls
+* Model the STIG creation process between the creator (vendor) and the approver (sponsor)
+* Write and test InSpec code on a local system, or across SSH, AWS, and Docker targets
+* Easily view control status and revision history
+* Enable distributed authorship with multiple authors working on sets of controls and reviewing each others' work
 * Confidential data in the database is encrypted using symmetric encryption
-* Authenticate via the local server, through github, and through configuring an LDAP server.
+* Authenticate via the local server, through GitHub, and through configuring an LDAP server.
 
 ## Deploy Vulcan
 [Deploying Vulcan in Production](https://vulcan.mitre.org/docs/)&nbsp;&nbsp;&nbsp;[<img src="public/GitHub-Mark-Light-64px.png#gh-dark-mode-only" width="20"/>](https://pages.github.com/)[<img src="public/GitHub-Mark-64px.png#gh-light-mode-only" width="20"/>](https://pages.github.com/)
