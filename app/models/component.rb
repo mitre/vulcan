@@ -277,7 +277,8 @@ class Component < ApplicationRecord
       copied_rule.fixtext = new_srg_rule.fixtext
 
       # Update associated tables (checks, disa_rule_descriptions) with new SRG rule data
-      copied_rule.disa_rule_descriptions = new_srg_rule.disa_rule_descriptions.map(&:dup)
+      copied_rule.disa_rule_descriptions.first.vuln_discussion =
+        new_srg_rule.disa_rule_descriptions.first.vuln_discussion
       copied_rule.rule_descriptions = new_srg_rule.rule_descriptions.map(&:dup)
       copied_rule.checks = new_srg_rule.checks.map(&:dup)
     end
