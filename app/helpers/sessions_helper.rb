@@ -16,6 +16,10 @@ module SessionsHelper
     Settings.local_login.enabled
   end
 
+  def user_registration_enabled?
+    Settings.user_registration.enabled
+  end
+
   def non_ldap_oauth_providers
     resource_class.omniauth_providers.reject { |p| p.eql?(:ldap) }
   end
