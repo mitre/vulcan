@@ -37,6 +37,9 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **email_confirmation:** Turns on email confirmation for local registration. `(ENV: VULCAN_ENABLE_EMAIL_CONFIRMATION)(default: false)`
 - **session_timeout:** Automatically logs user out after a period of time of inactivity in minutes. `(ENV: VULCAN_SESSION_TIMEOUT)(default: 60)`
 
+## Configure User Registration
+- **enabled:** Allows users to register themselves on the Vulcan app. `(ENV: VULCAN_ENABLE_USER_REGISTRATION)(default: true)`
+
 ## Configure LDAP
 
 - **enabled:** `(ENV: ENABLE_LDAP)(default: false)`
