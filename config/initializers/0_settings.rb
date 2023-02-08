@@ -11,6 +11,9 @@ Settings.ldap['enabled'] = false if Settings.ldap['enabled'].nil?
 Settings['local_login'] ||= Settingslogic.new({})
 Settings.local_login['enabled'] = false if Settings.local_login['enabled'].nil?
 
+Settings['user_registration'] ||= Settingslogic.new({})
+Settings.user_registration['enabled'] = false if Settings.user_registration['enabled'].nil?
+
 Settings['smtp'] ||= Settingslogic.new({})
 Settings.smtp['enabled'] = false if Settings.smtp['enabled'].nil?
 
