@@ -19,7 +19,8 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     'Applicable - Does Not Meet' => {
       'check_text' => 'The technology does not support this requirement. This is an applicable-does not meet finding.',
       'fix_text' => 'This requirement is a permanent finding and cannot be fixed. ' \
-                    'An appropriate mitigation for the system must be implemented, but this finding cannot be considered fixed.'
+                    'An appropriate mitigation for the system must be implemented, ' \
+                    'but this finding cannot be considered fixed.'
     }
   }.freeze
 
