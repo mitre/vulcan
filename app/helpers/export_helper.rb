@@ -12,14 +12,14 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       'fix_text' => 'The requirement is NA. No fix is required.'
     },
     'Applicable - Inherently Meets' => {
-      'check_text' => 'The technology supports this requirement and cannot be configured to be out of compliance.
-       The technology inherently meets this requirement.',
+      'check_text' => 'The technology supports this requirement and cannot be configured to be out of compliance. ' \
+                      'The technology inherently meets this requirement.',
       'fix_text' => 'This technology inherently meets this requirement. No fix is required.'
     },
     'Applicable - Does Not Meet' => {
       'check_text' => 'The technology does not support this requirement. This is an applicable-does not meet finding.',
-      'fix_text' => 'This requirement is a permanent finding and cannot be fixed.
-       An appropriate mitigation for the system must be implemented, but this finding cannot be considered fixed.'
+      'fix_text' => 'This requirement is a permanent finding and cannot be fixed. ' \
+                    'An appropriate mitigation for the system must be implemented, but this finding cannot be considered fixed.'
     }
   }.freeze
 
@@ -48,7 +48,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       worksheet.auto_width = true
       worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
       last_row_num = 0
-      component.rules.each do |rule|
+      component.rules.order(:version, :rule_id).each do |rule|
         # fast_excel unfortunately does not provide a method to modify the @last_row_number class variable
         # so it needs to be manually kept track of
         csv_attributes = rule.csv_attributes
@@ -71,7 +71,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
             csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
           when 'Not Applicable'
             csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-            csv_attributes[CSV_ATTRIBUTE_MAP[:status_justification]] = nil
+            csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
           end
         end
 
