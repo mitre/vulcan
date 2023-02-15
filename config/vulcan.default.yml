@@ -28,6 +28,8 @@ defaults: &defaults
     session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
   user_registration:
     enabled: <%= ENV['VULCAN_ENABLE_USER_REGISTRATION'] || true %>
+  project:
+    create_permission_enabled: <%= ENV['VULCAN_PROJECT_CREATE_PERMISSION_ENABLED'] || false %>
   ldap:
     enabled: <%= ENV['VULCAN_ENABLE_LDAP'] || false %>
     servers:
