@@ -43,7 +43,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **enabled:** Allows users to register themselves on the Vulcan app. `(ENV: VULCAN_ENABLE_USER_REGISTRATION)(default: true)`
 
 ## Configure Project Create Permissions
-- **create_permission_enabled:** Allows logged-in users to create new projects on the Vulcan app. `(ENV: VULCAN_PROJECT_CREATE_PERMISSION_ENABLED)(default: false)`
+- **create_permission_enabled:** Allows any logged-in users to create new projects in Vulcan if enabled, otherwise only Vulcan Admins are allowed to create projects. `(ENV: VULCAN_PROJECT_CREATE_PERMISSION_ENABLED)(default: true)`
 
 ## Configure LDAP
 
