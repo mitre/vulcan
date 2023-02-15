@@ -8,11 +8,16 @@ module ApplicationHelper
 
   # Build the links shown to users in the navigation bar
   def base_navigation
-    [
+    nav_links = [
       { icon: 'mdi-folder-open-outline', name: 'Projects', link: projects_path },
-      { icon: 'mdi-timer-sand', name: 'Start New Project', link: new_project_path },
       { icon: 'mdi-stamper', name: 'Released Components', link: components_path },
       { icon: 'mdi-folder', name: 'SRGs', link: srgs_path }
     ]
+
+    if current_user&.admin? || Settings.project.create_permission_enabled
+      nav_links.insert(1, { icon: 'mdi-timer-sand', name: 'Start New Project', link: new_project_path })
+    end
+
+    nav_links
   end
 end
