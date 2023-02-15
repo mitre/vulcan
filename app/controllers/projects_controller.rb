@@ -11,7 +11,8 @@ class ProjectsController < ApplicationController
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_viewer_project, only: %i[show]
-  before_action :authorize_logged_in, only: %i[index new create search]
+  before_action :authorize_logged_in, only: %i[index new search]
+  before_action :authorize_admin_or_create_permission_enabled, only: %i[create]
 
   def index
     @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])

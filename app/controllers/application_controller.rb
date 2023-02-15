@@ -31,6 +31,13 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform administrator actions.')
   end
 
+  def authorize_admin_or_create_permission_enabled
+    return if current_user&.admin? || Settings.project.create_permission_enabled
+
+    flash.alert = 'You are not authorized to create new projects.'
+    redirect_to root_path
+  end
+
   #  Project permssions checking
   def authorize_admin_project
     return if current_user&.can_admin_project?(@project)
