@@ -64,7 +64,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 
 - **enabled:** `(ENV: VULCAN_ENABLE_OIDC)(default: false)`
 - **strategy:** :openid_connect `Omniauth Strategy for working with OIDC providers`
-- **title:** : Description or Title for the OIDC Provider `(ENV: VULCAN_OIDC_ISSUER_URL)`
+- **title:** : Description or Title for the OIDC Provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
 - **args:** 
   - **name:** Name of the OIDC provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
   - **scope:** Which OpenID scope to include (:openid is always required) `default: [:openid]`
