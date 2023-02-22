@@ -289,4 +289,10 @@ Devise.setup do |config|
   # When set to false, does not sign a user in automatically after their password is
   # changed. Defaults to true, so a user is signed in automatically after changing a password.
   # config.sign_in_after_change_password = true
+
+  # ==> omniauth_openid_connect configuration
+  # We are defining OmniAuth strategy authenticating with OpenID Connect providers.
+  # With the configuration below users can sign in with an OpenID Connect provider to
+  # access protected resources in the vulcan app.
+  config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled
 end
