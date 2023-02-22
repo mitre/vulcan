@@ -8,6 +8,9 @@ require_relative '../settings'
 Settings['ldap'] ||= Settingslogic.new({})
 Settings.ldap['enabled'] = false if Settings.ldap['enabled'].nil?
 
+Settings['oidc'] ||= Settingslogic.new({})
+Settings.oidc['enabled'] = false if Settings.oidc['enabled'].nil?
+
 Settings['local_login'] ||= Settingslogic.new({})
 Settings.local_login['enabled'] = false if Settings.local_login['enabled'].nil?
 

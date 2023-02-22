@@ -44,7 +44,7 @@
 
       <!-- Column template for Type -->
       <template #cell(provider)="data">
-        {{ ldapColumn(data.item) }}
+        {{ typeColumn(data.item) }}
       </template>
 
       <!-- Column template for Role -->
@@ -139,8 +139,8 @@ export default {
       document.getElementById(this.formId(user)).submit();
     },
     // The text that should appear in the 'Type' column
-    ldapColumn: function (user) {
-      return user.provider === null ? "Local User" : "LDAP User";
+    typeColumn: function (user) {
+      return user.provider === null ? "Local User" : user.provider.toUpperCase() + " User";
     },
     // Generator for a unique form id for the user role dropdown
     formId: function (user) {

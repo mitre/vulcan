@@ -12,6 +12,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure User Registration:](#configure-user-registration) Enables user sign-ups
 - [Configure Project Create Permissions:](#configure-project-create-permissions) Logged-In users can create projects
 - [Configure LDAP:](#configure-ldap)
+- [Configure OIDC:](#configure-oidc)
 - [Configure Providers:](#configure-providers)
 
 ## Configure Welcome Text and Contact Email:
@@ -59,6 +60,33 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
     - **password:** Password to log into the LDAP server `(ENV: VULCAN_LDAP_ADMIN_PASS)`
     - **base:** The point where a server will search for users `(ENV: VULCAN_LDAP_BASE)`
 
+## Configure OIDC
+
+- **enabled:** `(ENV: VULCAN_ENABLE_OIDC)(default: false)`
+- **strategy:** :openid_connect `Omniauth Strategy for working with OIDC providers`
+- **title:** : Description or Title for the OIDC Provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
+- **args:** 
+  - **name:** Name of the OIDC provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
+  - **scope:** Which OpenID scope to include (:openid is always required) `default: [:openid]`
+  - **uid_field:** The field of the user info response to be used as a unique id
+  - **response_type:** Which OAuth2 response type to use with the authorization request `default: [:code]`
+  - **issuer:** Root url for the authorization server `(ENV: VULCAN_OIDC_ISSUER_URL)`
+  - **client_auth_method:** Which authentication method to use to authenticate your app with the authorization server `default: :secret`
+  - **client_signing_alg:** Signing algorithms, specify the base64-encoded secret used to sign the JWT token `(ENV: VULCAN_OIDC_CLIENT_SIGNING_ALG)`
+  - **nonce:** 
+  - **client_options:**
+      - **port:** The port for the authorization server `(ENV: VULCAN_OIDC_PORT)(default: 443)`
+      - **scheme:** The http scheme to use `(ENV: VULCAN_OIDC_SCHEME)(default: https)`
+      - **host:** The host for the authorization server	 `(ENV: VULCAN_OIDC_HOST)`
+      - **identifier:** The OIDC client_id `(ENV: VULCAN_OIDC_CLIENT_ID)`
+      - **secret:** The OIDC client secret `(ENV: VULCAN_OIDC_CLIENT_SECRET)`
+      - **redirect_uri:** The OIDC authorization callback url in vulcan app. `(ENV: VULCAN_OIDC_REDIRECT_URI)`
+      - **authorization_endpoint:** The authorize endpoint on the authorization server `(ENV: VULCAN_OIDC_AUTHORIZATION_URL)`
+      - **token_endpoint:** The token endpoint on the authorization server `(ENV: VULCAN_OIDC_TOKEN_URL)`
+      - **userinfo_endpoint:** The user info endpoint on the authorization server `(ENV: VULCAN_OIDC_USERINFO_URL)`
+      - **jwks_uri:** The jwks_uri on the authorization server `(ENV: VULCAN_OIDC_JWKS_URI)`
+      - **post_logout_redirect_uri:** '/'
+
 ## Example Vulcan.yml
 
 ```
@@ -92,6 +120,31 @@ defaults: &defaults
         bind_dn:
         password:
         base:
+  oidc:
+    enabled: 
+    strategy:
+    title:
+    args:
+      name: 
+      scope:
+      uid_field: 
+      response_type:
+      issuer: 
+      client_auth_method:
+      client_signing_alg:
+      nonce:
+      client_options:
+        port:
+        scheme:
+        host:
+        identifier:
+        secret:
+        redirect_uri:
+        authorization_endpoint:
+        token_endpoint:
+        userinfo_endpoint:
+        jwks_uri:
+        post_logout_redirect_uri:
   providers:
     # - { name: 'github',
     #     app_id: '<APP_ID>',
