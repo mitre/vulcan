@@ -260,7 +260,7 @@ GEM
     omniauth-oauth2 (1.7.2)
       oauth2 (~> 1.4)
       omniauth (>= 1.9, < 3)
-    omniauth-rails_csrf_protection (0.1.2)
+    omniauth-rails_csrf_protection (1.0.1)
       actionpack (>= 4.2)
       omniauth (>= 1.3.1)
     omniauth_openid_connect (0.6.1)
@@ -532,7 +532,7 @@ DEPENDENCIES
   nokogiri-happymapper
   omniauth (~> 2.1)
   omniauth-github
-  omniauth-rails_csrf_protection (~> 0.1)
+  omniauth-rails_csrf_protection (~> 1.0)
   omniauth_openid_connect (~> 0.6.0)
   ox
   pg (>= 0.18, < 2.0)
