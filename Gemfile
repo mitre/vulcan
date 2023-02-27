@@ -29,7 +29,7 @@ gem 'gitlab_omniauth-ldap', '~> 2.2.0', require: 'omniauth-ldap'
 # Allow users to sign in with GitHub
 gem 'omniauth-github'
 # https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
-gem 'omniauth-rails_csrf_protection', '~> 0.1'
+gem 'omniauth-rails_csrf_protection', '~> 1.0'
 # Allow users to sign in with OIDC providers
 gem 'omniauth_openid_connect', '~> 0.6.0'
 # Vulcan settings
