@@ -1,0 +1,16 @@
+- content_for :assets do
+  = javascript_pack_tag 'rule'
+  = stylesheet_pack_tag 'rule'
+
+#Rule
+  %Rule{                                                                            |
+    'v-bind:project': @project.to_json,                                             |
+    'v-bind:component': @component.to_json,                                         |
+    'v-bind:rules': @rules_json,                                                 |
+    'v-bind:selected_rule': @rule_json,                                             |
+    'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |
+    'v-bind:severities': RuleConstants::SEVERITIES.to_json,                         |
+    'v-bind:severities_map': RuleConstants::SEVERITIES_MAP.to_json,                 |
+    'v-bind:effective_permissions': @effective_permissions.to_json,                 |
+    'v-bind:current_user_id': @current_user.id.to_json                              |
+  }

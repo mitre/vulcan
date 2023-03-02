@@ -13,6 +13,11 @@
       :severities_map="severities_map"
       :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
+      :selected-rule="selectedRule"
+      :selected-rule-id="selectedRuleId"
+      :open-rule-ids="openRuleIds"
+      :handle-rule-selected="handleRuleSelected"
+      :handle-rule-deselected="handleRuleDeselected"
     />
   </div>
 </template>
@@ -23,12 +28,13 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
+import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
 import _ from "lodash";
 
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
-  mixins: [AlertMixinVue, FormMixinVue, SortRulesMixin],
+  mixins: [AlertMixinVue, FormMixinVue, SortRulesMixin, SelectedRulesMixin],
   props: {
     effective_permissions: {
       type: String,
@@ -50,6 +56,10 @@ export default {
       type: Array,
       required: true,
     },
+    rule: {
+      type: Object,
+      required: false,
+    },
     statuses: {
       type: Array,
       required: true,
@@ -66,6 +76,7 @@ export default {
   data: function () {
     return {
       reactiveRules: _.cloneDeep(this.rules).sort(this.compareRules),
+      selected_rule: this.rule,
     };
   },
   computed: {
@@ -81,10 +92,16 @@ export default {
         },
         {
           text: this.component.name,
-          href: "/components/" + this.component.id,
+          href: `/components/${this.component.id}`,
         },
         {
           text: "Controls",
+          href: `/components/${this.component.id}/controls`,
+        },
+        {
+          text: `${
+            this.selected_rule ? `${this.component.prefix}-${this.selected_rule.rule_id}` : ""
+          }`,
           active: true,
         },
       ];
@@ -101,8 +118,13 @@ export default {
     this.$root.$on("add:disaDescription", this.addDisaRuleDescription);
     this.$root.$on("create:rule", this.createRule);
     this.$root.$on("delete:rule", this.deleteRule);
+    this.$root.$on("deselect:rule", this.deselectRule);
+    this.$root.$on("select:rule", this.selectRule);
     this.$root.$on("markDuplicate:rule", this.markDuplicateRule);
     this.$root.$on("unmarkDuplicate:rule", this.unmarkDuplicateRule);
+    if (this.selected_rule) {
+      this.handleRuleSelected(this.selected_rule.id);
+    }
   },
   methods: {
     /**
@@ -182,6 +204,27 @@ export default {
           }
         })
         .catch(this.alertOrNotifyResponse);
+    },
+    /**
+     * Event handler for @select:rule
+     */
+    selectRule: function (rule) {
+      this.selected_rule = rule;
+      window.history.pushState(
+        {},
+        "",
+        `/components/${this.component.id}/controls/${this.component.prefix}-${rule.rule_id}`
+      );
+    },
+    /**
+     * Event handler for @deselect:rule
+     */
+    deselectRule: function (ruleId) {
+      // this.handleRuleDeselected(ruleId);
+      if (this.selected_rule && this.selected_rule.id == ruleId) {
+        this.selected_rule = null;
+        window.history.pushState({}, "", `/components/${this.component.id}/controls`);
+      }
     },
     /**
      * Event handler for @add:description
@@ -324,7 +367,6 @@ export default {
         response.data.data = JSON.parse(response.data.data);
       }
       const ruleIndex = this.reactiveRules.findIndex((r) => r.id == response.data.id);
-
       // If the rule is not in the reactive rules then add it and return early
       if (ruleIndex < 0) {
         this.reactiveRules.push(response.data.data);
