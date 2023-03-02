@@ -436,6 +436,7 @@ export default {
     if (this.queriedRule) {
       this.componentSelectedRuleId = this.queriedRule.id;
       this.selectedRule = this.queriedRule;
+      window.history.pushState({}, "", `/components/${this.component.id}`);
     }
   },
   methods: {
