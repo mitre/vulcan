@@ -7,7 +7,7 @@ class RulesController < ApplicationController
   before_action :set_rule, only: %i[show update destroy revert]
   before_action :set_component, only: %i[index show create update revert]
   before_action :set_project, only: %i[index show create update revert]
-  before_action :set_project_permissions, only: %i[index]
+  before_action :set_project_permissions, only: %i[index show]
   before_action :authorize_viewer_component, only: %i[index show]
   before_action :authorize_author_component, only: %i[create update revert]
   before_action :authorize_admin_component, only: %i[destroy]
@@ -17,6 +17,9 @@ class RulesController < ApplicationController
     @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
                                          :additional_answers, :satisfies, :satisfied_by,
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+
+    # Adding histories, satiesfies and satisfied_by methods to each rule
+    @rules = @rules.map { |r| JSON.parse(r.to_json(methods: %i[histories satisfies satisfied_by])) }
   end
 
   def search
@@ -39,7 +42,48 @@ class RulesController < ApplicationController
   end
 
   def show
-    render json: @rule.to_json(methods: %i[histories satisfies satisfied_by])
+    if @rule
+      if params[:rule_id] && !edit_permissions?
+        # Check if the user has edit permissions, return if they don't
+        return
+      end
+
+      # Generate @rule_json object as JSON with methods for histories, satisfies, and satisfied_by
+      @rule_json = @rule.to_json(methods: %i[histories satisfies satisfied_by])
+
+      # Return an array of rules using eager loading for better querying performance
+      @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+                                           :additional_answers, :satisfies, :satisfied_by,
+                                           srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+
+      @rules_json = @rules.map { |r| JSON.parse(r.to_json(methods: %i[histories satisfies satisfied_by])) }.to_json
+
+      # Respond to do different actions depending on format
+      respond_to do |format|
+        # byebug
+        format.html
+        format.json { render json: @rule_json }
+      end
+    else
+      # If the rule does not exist, set flash message and redirect
+      message = 'The requested control does not exist. You are either querying a nonexistent component or control'
+      respond_to do |format|
+        format.html do
+          flash.alert = message
+          redirect_back(fallback_location: root_path)
+        end
+        format.json do
+          # Render danger toast with information about the error
+          render json: {
+            toast: {
+              title: 'Control not found',
+              message: message,
+              variant: 'danger'
+            }
+          }, status: :not_found
+        end
+      end
+    end
   end
 
   def create
@@ -157,7 +201,12 @@ class RulesController < ApplicationController
   end
 
   def set_rule
-    @rule = Rule.find(params[:id])
+    if params[:component_id] && params[:rule_id]
+      rule_id = params[:rule_id].last(6)
+      @rule = Rule.where(component_id: params[:component_id], rule_id: rule_id).first
+    else
+      @rule = Rule.find_by(id: params[:id])
+    end
   end
 
   def set_component
@@ -176,5 +225,15 @@ class RulesController < ApplicationController
                                               additional_answers] })
                         .find(@component.project_id || params[:project_id] || params.dig(:rule, :project_id))
                end
+  end
+
+  # The method checks if the user has editing permissions and redirects them
+  # to component view (readonly) if they do not.
+  def edit_permissions?
+    unless %w[author reviewer admin].include?(@effective_permissions)
+      redirect_to component_path(@component, rule_id: @rule.id) and return
+    end
+
+    true
   end
 end

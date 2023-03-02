@@ -83,7 +83,6 @@ import RuleNavigator from "./RuleNavigator.vue";
 import RuleHistories from "./RuleHistories.vue";
 import RuleReviews from "./RuleReviews.vue";
 import RuleSatisfactions from "./RuleSatisfactions.vue";
-import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
 
 export default {
   name: "RulesCodeEditorView",
@@ -95,7 +94,6 @@ export default {
     RuleReviews,
     RuleSatisfactions,
   },
-  mixins: [SelectedRulesMixin],
   props: {
     effectivePermissions: {
       type: String,
@@ -127,6 +125,26 @@ export default {
     },
     severities_map: {
       type: Object,
+      required: true,
+    },
+    selectedRuleId: {
+      type: Number,
+      required: false,
+    },
+    openRuleIds: {
+      type: Array,
+      required: true,
+    },
+    selectedRule: {
+      type: Function,
+      required: true,
+    },
+    handleRuleSelected: {
+      type: Function,
+      required: true,
+    },
+    handleRuleDeselected: {
+      type: Function,
       required: true,
     },
   },

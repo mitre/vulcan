@@ -227,7 +227,13 @@
         @click="ruleSelected(rule)"
       >
         <div v-if="filters.showSRGIdChecked">
-          {{ rule.version }}
+          <a
+            :href="`/components/${componentId}/controls/${formatRuleId(rule.rule_id)}`"
+            target="_blank"
+            class="text-body"
+          >
+            {{ rule.version }}
+          </a>
           <i
             v-if="rule.review_requestor_id"
             class="mdi mdi-file-find float-right"
@@ -242,7 +248,13 @@
           />
         </div>
         <div v-else>
-          {{ formatRuleId(rule.rule_id) }}
+          <a
+            :href="`/components/${componentId}/controls/${formatRuleId(rule.rule_id)}`"
+            target="_blank"
+            class="text-body"
+          >
+            {{ formatRuleId(rule.rule_id) }}
+          </a>
           <i
             v-if="rule.review_requestor_id"
             class="mdi mdi-file-find float-right"
@@ -431,13 +443,16 @@ export default {
         this.$root.$emit("refresh:rule", rule.id);
       }
       this.$emit("ruleSelected", rule.id);
+      this.$root.$emit("select:rule", rule);
     },
     ruleDeselected: function (rule) {
       this.$emit("ruleDeselected", rule.id);
+      this.$root.$emit("deselect:rule", rule.id);
     },
     rulesDeselected: function (rules) {
       rules.forEach((rule) => {
         this.$emit("ruleDeselected", rule.id);
+        this.$root.$emit("deselect:rule", rule.id);
       });
     },
     // Dynamically set the class of each rule row
