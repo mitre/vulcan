@@ -21,8 +21,9 @@ Rails.application.routes.draw do
     end
   end
   resources :rule_satisfactions, only: %i[create destroy]
-  # Alias rules#index to controls for convenience
+  # Alias rules#index and rules#show to controls for convenience
   get '/components/:component_id/controls', to: 'rules#index'
+  get '/components/:component_id/controls/:rule_id', to: 'rules#show'
   # Make components#index not a child of project
   get '/components', to: 'components#index'
   # Revision history between components
