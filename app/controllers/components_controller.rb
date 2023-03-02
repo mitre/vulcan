@@ -8,6 +8,7 @@ class ComponentsController < ApplicationController
 
   before_action :set_component, only: %i[show update destroy export]
   before_action :set_project, only: %i[show create]
+  before_action :set_rule, only: %i[show]
   before_action :set_component_permissions, only: %i[show]
 
   before_action :authorize_admin_project, only: %i[create]
@@ -53,6 +54,7 @@ class ComponentsController < ApplicationController
                         @component.to_json(methods: %i[rules reviews])
                       end
     @project_json = @component.project.to_json
+    @rule_json = @rule.to_json(methods: %i[histories satisfies satisfied_by])
     respond_to do |format|
       format.html
       format.json { render json: @component_json }
@@ -267,6 +269,11 @@ class ComponentsController < ApplicationController
 
   def set_project
     @project = Project.find(params[:project_id] || @component.project_id)
+  end
+
+  def set_rule
+    # byebug
+    @rule = Rule.find_by(id: params[:rule_id]) if params[:rule_id]
   end
 
   def component_update_params

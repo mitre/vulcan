@@ -7,6 +7,7 @@
     'v-bind:effective_permissions': @effective_permissions.to_json,                 |
     'v-bind:initial-component-state': @component_json,                              |
     'v-bind:project': @project_json,                                                |
+    'v-bind:queried-rule': @rule_json,                                                |
     'v-bind:current_user_id': current_user.id.to_json,                              |
     'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |
     'v-bind:severities': RuleConstants::SEVERITIES.to_json,                         |
