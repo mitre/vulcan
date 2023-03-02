@@ -321,6 +321,12 @@ export default {
       type: Object,
       required: true,
     },
+    queriedRule: {
+      type: Object,
+      default() {
+        return {};
+      },
+    },
     current_user_id: {
       type: Number,
     },
@@ -382,6 +388,14 @@ export default {
         },
         {
           text: this.component.name,
+          href: `/components/${this.component.id}`,
+        },
+        {
+          text: `${
+            this.selectedRule.id
+              ? `Controls / ${this.component.prefix}-${this.selectedRule.rule_id}`
+              : ""
+          }`,
           active: true,
         },
       ];
@@ -411,6 +425,16 @@ export default {
         JSON.stringify(this.componentTabIndex)
       );
     },
+    selectedRule: function (_) {
+      const ruleId = this.selectedRule.rule_id;
+      window.history.pushState(
+        {},
+        "",
+        `/components/${this.component.id}/controls/${
+          ruleId ? `${this.component.prefix}-${ruleId}` : ""
+        }`
+      );
+    },
   },
   mounted: function () {
     // Persist `currentTab` across page loads
@@ -425,6 +449,10 @@ export default {
       } catch (e) {
         localStorage.removeItem(`componentTabIndex-${this.component.id}`);
       }
+    }
+    // Set selectedRule to the queried rule if present
+    if (this.queriedRule) {
+      this.componentSelectedRuleId = this.queriedRule.id;
     }
   },
   methods: {
@@ -454,12 +482,18 @@ export default {
       }
     },
     updateSelectedRule: function (rule) {
-      axios
-        .get(`/rules/${rule.id}`)
-        .then((response) => {
-          this.selectedRule = response.data;
-        })
-        .catch(this.alertOrNotifyResponse);
+      if (rule) {
+        axios
+          .get(`/rules/${rule.id}`)
+          .then((response) => {
+            this.selectedRule = response.data;
+            this.componentSelectedRuleId = this.selectedRule.id;
+          })
+          .catch(this.alertOrNotifyResponse);
+      } else {
+        this.selectedRule = {};
+        this.componentSelectedRuleId = this.selectedRule.id;
+      }
     },
     handleRuleSelected: function (ruleId) {
       this.componentSelectedRuleId = ruleId;
