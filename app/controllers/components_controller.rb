@@ -10,6 +10,7 @@ class ComponentsController < ApplicationController
   before_action :set_project, only: %i[show create]
   before_action :set_component_permissions, only: %i[show]
 
+  before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
@@ -23,6 +24,35 @@ class ComponentsController < ApplicationController
   def index
     @components_json = Component.eager_load(:based_on).where(released: true).to_json
   end
+
+  def set_rule
+    if (params[:stig_id])
+      stig_id = params[:stig_id].last(6)
+      byebug
+      @rule = Rule.where(component_id: params[:id], rule_id: stig_id).first
+      @rule_json = @rule.to_json
+
+      if @rule.nil?
+        message = 'The requested component and control combination could not be found.'
+        respond_to do |format|
+          format.html do
+            flash.alert = message
+            redirect_back(fallback_location: root_path)
+          end
+          format.json do
+            # Render danger toast with information about the error
+            render json: {
+              toast: {
+                title: 'Control not found',
+                message: message,
+                variant: 'danger'
+              }
+            }, status: :not_found
+          end
+        end
+      end
+    end
+  end  
 
   def search
     query = params[:q]
@@ -257,12 +287,32 @@ class ComponentsController < ApplicationController
   end
 
   def set_component
-    @component = Component.eager_load(
-      rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-              :additional_answers, :satisfies, :satisfied_by, {
-                srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
-              }]
-    ).find(params[:id])
+    begin
+      @component = Component.eager_load(
+        rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+                :additional_answers, :satisfies, :satisfied_by, {
+                  srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
+                }]
+      ).find(params[:id])
+    rescue ActiveRecord::RecordNotFound
+      message = 'The requested component could not be found.'
+      respond_to do |format|
+        format.html do
+          flash.alert = message
+          redirect_back(fallback_location: root_path)
+        end
+        format.json do
+          # Render danger toast with information about the error
+          render json: {
+            toast: {
+              title: 'Control not found',
+              message: message,
+              variant: 'danger'
+            }
+          }, status: :not_found
+        end
+      end
+    end
   end
 
   def set_project
