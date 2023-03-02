@@ -13,8 +13,11 @@ export default {
       return `selectedRuleId-${this.component.id}`;
     },
     lastEditor: function () {
+      if (!this.selectedRule()) {
+        return;
+      }
       const histories = this.selectedRule().histories;
-      if (histories.length > 0) {
+      if (histories && histories.length > 0) {
         return histories[histories.length - 1].name;
       }
       return "Unknown User";
