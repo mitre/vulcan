@@ -28,7 +28,6 @@ class ComponentsController < ApplicationController
   def set_rule
     if (params[:stig_id])
       stig_id = params[:stig_id].last(6)
-      byebug
       @rule = Rule.where(component_id: params[:id], rule_id: stig_id).first
       @rule_json = @rule.to_json
 
