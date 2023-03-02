@@ -34,6 +34,7 @@
           :advanced_fields="component.advanced_fields"
           :additional_questions="component.additional_questions"
         />
+        <a :href="`/components/${selectedRule().component_id}/${component.prefix}-${selectedRule().rule_id}`">Rule Direct Link</a>
       </div>
     </template>
 

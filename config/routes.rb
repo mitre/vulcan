@@ -23,6 +23,10 @@ Rails.application.routes.draw do
   resources :rule_satisfactions, only: %i[create destroy]
   # Alias rules#index to controls for convenience
   get '/components/:component_id/controls', to: 'rules#index'
+
+  # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
+  get '/components/:id/:stig_id', to: 'components#show'
+
   # Make components#index not a child of project
   get '/components', to: 'components#index'
   # Revision history between components
