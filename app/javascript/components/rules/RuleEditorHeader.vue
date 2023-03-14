@@ -6,8 +6,10 @@
         <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
         <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
         <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
-        <a class="headerLink"
-          :href="`/components/${rule.component_id}/${projectPrefix}-${rule.rule_id}`">
+        <a
+          class="headerLink"
+          :href="`/components/${rule.component_id}/${projectPrefix}-${rule.rule_id}`"
+        >
           {{ `${projectPrefix}-${rule.rule_id}` }} // {{ rule.version }}
         </a>
       </h2>
