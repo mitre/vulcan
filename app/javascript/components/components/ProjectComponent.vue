@@ -433,9 +433,9 @@ export default {
       }
     }
     // Set selectedRule to the queried rule if present
-    if (this.queriedRule) {
-      this.componentSelectedRuleId = this.queriedRule.id;
+    if (this.queriedRule.id) {
       this.selectedRule = this.queriedRule;
+      this.componentSelectedRuleId = this.selectedRule.id;
       window.history.pushState({}, "", `/components/${this.component.id}`);
     }
   },
@@ -466,7 +466,7 @@ export default {
       }
     },
     updateSelectedRule: function (rule) {
-      if (this.queriedRule) {
+      if (this.queriedRule.id) {
         return;
       }
       if (rule) {
@@ -479,7 +479,7 @@ export default {
           .catch(this.alertOrNotifyResponse);
       } else {
         this.selectedRule = {};
-        this.componentSelectedRuleId = this.selectedRule.id;
+        this.componentSelectedRuleId = null;
       }
     },
     handleRuleSelected: function (ruleId) {
