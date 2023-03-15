@@ -10,6 +10,7 @@ class ComponentsController < ApplicationController
   before_action :set_project, only: %i[show create]
   before_action :set_component_permissions, only: %i[show]
 
+  before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
@@ -256,13 +257,78 @@ class ComponentsController < ApplicationController
     end
   end
 
+  # Defines the set_component method.
   def set_component
+    # Loads a Component object with associated rules, reviews,
+    # descriptions, checks and additional answers where ID is equal to params id.
     @component = Component.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers, :satisfies, :satisfied_by, {
                 srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
               }]
-    ).find(params[:id])
+    ).find_by(id: params[:id])
+
+    # Returns out of the method If the Component instance variable does exist.
+    return if @component.present?
+
+    message = 'The requested component could not be found.'
+    respond_to do |format|
+      # Return an HTML response with an alert flash message if request format is HTML.
+      format.html do
+        flash.alert = message
+        redirect_back(fallback_location: root_path)
+      end
+      # Return a JSON response with a toast message if request formt is JSON.
+      format.json do
+        render json: {
+          toast: {
+            title: 'Control not found',
+            message: message,
+            variant: 'danger'
+          }
+        }, status: :not_found
+      end
+    end
+  end
+
+  # This function sets the rule based on the specified parameters
+  def set_rule
+    # Extracts the last 6 digits from the stig_id parameter
+    stig_id = params[:stig_id]&.last(6)
+
+    # Returns out of the function if stig ID is blank or empty
+    return if stig_id.blank?
+
+    # Queries the Rule model with component_id and rule_id as arguments to find a specific rule.
+    @rule = Rule.find_by(component_id: params[:id], rule_id: stig_id)
+
+    # If a record for the rule exists, set the instance variable @rule_json to the rule's JSON attribute
+    if @rule.present?
+      @rule_json = @rule.to_json
+
+    # Else, create an error message and respond to either HTML or JSON requests
+    else
+      message = 'The requested component and control combination could not be found.'
+      respond_to do |format|
+        flash.alert = message
+
+        # If html format is requested, redirect back to default page
+        format.html do
+          redirect_back(fallback_location: root_path)
+        end
+        format.json do
+          # Render a json response in a toast message format
+          # as well as setting status code of the response to not_found (404)
+          render json: {
+            toast: {
+              title: 'Control not found',
+              message: message,
+              variant: 'danger'
+            }
+          }, status: :not_found
+        end
+      end
+    end
   end
 
   def set_project
