@@ -6,7 +6,7 @@
 class ProjectsController < ApplicationController
   include ExportHelper
   include ProjectMemberConstants
-
+  include SlackNotificationsHelper
   before_action :set_project, only: %i[show update destroy export]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
@@ -65,6 +65,12 @@ class ProjectsController < ApplicationController
 
     # First save ensures base Project is acceptable.
     if project.save
+      if Settings.slack.enabled
+        send_notification(
+          Settings.slack.channel_id,
+          slack_notification_params(:create_project, project)
+        )
+      end
       redirect_to project
     else
       flash.alert = "Unable to create project. #{project.errors.full_messages}"
@@ -74,8 +80,15 @@ class ProjectsController < ApplicationController
 
   # Update project and response with json
   def update
+    old_project_name = @project.name
     if @project.update(project_params)
       render json: { toast: 'Project updated successfully' }
+      if Settings.slack.enabled
+        send_notification(
+          Settings.slack.channel_id,
+          slack_notification_params(:rename_project, @project, old_project_name)
+        )
+      end
     else
       render json: {
         toast: {
@@ -89,6 +102,12 @@ class ProjectsController < ApplicationController
 
   def destroy
     if @project.destroy
+      if Settings.slack.enabled
+        send_notification(
+          Settings.slack.channel_id,
+          slack_notification_params(:remove_project, @project)
+        )
+      end
       flash.notice = 'Successfully removed project.'
     else
       flash.alert = "Unable to remove project. #{@project.errors.full_messages}"
@@ -157,5 +176,40 @@ class ProjectsController < ApplicationController
       :name,
       project_metadata_attributes: { data: {} }
     )
+  end
+
+  def slack_notification_params(notification_type, project, old_project_name = nil)
+    notification_type_prefix = notification_type.to_s.match(/^(create|rename|remove)/)[1]
+    fields = [
+      GENERAL_NOTIFICATION_FIELDS[:generate_app_label],
+      PROJECT_NOTIFICATION_FIELDS[:generate_project_label],
+      PROJECT_NOTIFICATION_FIELDS[:generate_initiated_by_label]
+    ]
+    fields << PROJECT_NOTIFICATION_FIELDS[:generate_old_project_name_label] if notification_type == :rename_project
+    headers = {
+      create_project: 'Vulcan New Project Creation',
+      rename_project: 'Vulcan Project Renaming',
+      remove_project: 'Vulcan Project Removal'
+    }
+    icons = {
+      create_project: ':white_check_mark:',
+      rename_project: ':loudspeaker:',
+      remove_project: ':x:'
+    }
+    header = headers[notification_type]
+    {
+      icon: icons[notification_type],
+      header: header,
+      fields: fields.map do |field|
+        label, value = field.values_at(:label, :value)
+        label_content = label.respond_to?(:call) ? label.call(notification_type_prefix) : label
+        value_content = if value.respond_to?(:call)
+                          value.call(notification_type_prefix, project, old_project_name, current_user)
+                        else
+                          value
+                        end
+        { label: label_content, value: value_content }
+      end
+    }
   end
 end
