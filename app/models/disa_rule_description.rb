@@ -23,11 +23,17 @@ class DisaRuleDescription < ApplicationRecord
     # retry once
     retried = false
     begin
-      parsed_mapping = Hash.from_xml(disa_rule_description_mapping)
+      # Customize the Nokogiri parser options to attempt to recover from syntax errors while
+      # also disabling character entity parsing.
+      options = Nokogiri::XML::ParseOptions::RECOVER | Nokogiri::XML::ParseOptions::NOENT
+      # Parse the XML with custom options
+      doc = Nokogiri::XML(disa_rule_description_mapping, nil, nil, options)
+      # Convert the Nokogiri document to a Ruby Hash
+      parsed_mapping = Hash.from_xml(doc.to_xml)
+      # parsed_mapping = Hash.from_xml(disa_rule_description_mapping)
     rescue ::REXML::ParseException => e
-      unless e.continued_exception.is_a?(RuntimeError) && !retried && (
-        e.continued_exception.message.include?('"&"') || e.continued_exception.message.include?('"<"')
-      )
+      unless e.continued_exception.is_a?(RuntimeError) && !retried &&
+             (e.continued_exception.message.include?('"&"') || e.continued_exception.message.include?('"<"'))
         raise
       end
 
