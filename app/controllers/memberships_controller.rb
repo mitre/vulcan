@@ -29,15 +29,11 @@ class MembershipsController < ApplicationController
     membership = Membership.new(membership_create_params)
     if membership.save
       flash.notice = 'Successfully created membership.'
-      if Settings.slack.enabled && membership.membership_type == 'Project'
-        send_notification(
-          Settings.slack.channel_id, slack_notification_params(:create_project_membership, membership)
-        )
-      end
-      if Settings.slack.enabled && membership.membership_type == 'Component'
-        send_notification(
-          Settings.slack.channel_id, slack_notification_params(:create_component_membership, membership)
-        )
+      case membership.membership_type
+      when 'Project'
+        send_membership_notification(:create_project_membership, membership)
+      when 'Component'
+        send_membership_notification(:create_component_membership, membership)
       end
       redirect_to membership.membership
     else
@@ -49,17 +45,11 @@ class MembershipsController < ApplicationController
   def update
     if @membership.update(membership_update_params)
       flash.notice = 'Successfully updated membership.'
-      if Settings.slack.enabled && @membership.membership_type == 'Project'
-        send_notification(
-          Settings.slack.channel_id,
-          slack_notification_params(:update_project_membership, @membership)
-        )
-      end
-      if Settings.slack.enabled && @membership.membership_type == 'Component'
-        send_notification(
-          Settings.slack.channel_id,
-          slack_notification_params(:update_component_membership, @membership)
-        )
+      case @membership.membership_type
+      when 'Project'
+        send_membership_notification(:update_project_membership, @membership)
+      when 'Component'
+        send_membership_notification(:update_component_membership, @membership)
       end
     else
       flash.alert = "Unable to updated membership. #{@membership.errors.full_messages}"
@@ -70,17 +60,11 @@ class MembershipsController < ApplicationController
   def destroy
     if @membership.destroy
       flash.notice = 'Successfully removed membership.'
-      if Settings.slack.enabled && @membership.membership_type == 'Project'
-        send_notification(
-          Settings.slack.channel_id,
-          slack_notification_params(:remove_project_membership, @membership)
-        )
-      end
-      if Settings.slack.enabled && @membership.membership_type == 'Component'
-        send_notification(
-          Settings.slack.channel_id,
-          slack_notification_params(:remove_component_membership, @membership)
-        )
+      case @membership.membership_type
+      when 'Project'
+        send_membership_notification(:remove_project_membership, @membership)
+      when 'Component'
+        send_membership_notification(:remove_component_membership, @membership)
       end
     else
       flash.alert = "Unable to remove membership. #{@membership.errors.full_messages}"
@@ -115,45 +99,9 @@ class MembershipsController < ApplicationController
     params.require(:membership).permit(:role)
   end
 
-  def slack_notification_params(notification_type, membership)
-    notification_type_prefix = notification_type.to_s.match(/^(create|update|remove)/)[1]
-    membership_types = %i[create_project_membership update_project_membership remove_project_membership]
-    fields = [
-      GENERAL_NOTIFICATION_FIELDS[:generate_app_label],
-      if membership_types.include?(notification_type)
-        MEMBERSHIP_NOTIFICATION_FIELDS[:generate_project_label]
-      else
-        MEMBERSHIP_NOTIFICATION_FIELDS[:generate_component_label]
-      end,
-      MEMBERSHIP_NOTIFICATION_FIELDS[:generate_member_action_label],
-      MEMBERSHIP_NOTIFICATION_FIELDS[:generate_role_action_label],
-      MEMBERSHIP_NOTIFICATION_FIELDS[:generate_initiated_by_label]
-    ]
-    headers = {
-      create_project_membership: 'New Members Added to the Project',
-      update_project_membership: 'Membership Updated on the Project',
-      remove_project_membership: 'Members Removed from the Project',
-      create_component_membership: 'New Members Added to the Component',
-      update_component_membership: 'Membership Updated on the Component',
-      remove_component_membership: 'Members Removed from the Component'
-    }
-    header = headers[notification_type]
-    {
-      icon: case notification_type
-            when :create_project_membership, :create_component_membership
-              ':white_check_mark:'
-            when :update_project_membership, :update_component_membership
-              ':loudspeaker:'
-            when :remove_project_membership, :remove_component_membership
-              ':x:'
-            end,
-      header: header,
-      fields: fields.map do |field|
-        label, value = field.values_at(:label, :value)
-        label_content = label.respond_to?(:call) ? label.call(notification_type_prefix) : label
-        value_content = value.respond_to?(:call) ? value.call(membership, current_user) : value
-        { label: label_content, value: value_content }
-      end
-    }
+  def send_membership_notification(notification_type, membership)
+    return unless Settings.slack.enabled
+
+    send_slack_notification(notification_type, membership)
   end
 end

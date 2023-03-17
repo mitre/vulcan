@@ -68,12 +68,7 @@ class ComponentsController < ApplicationController
       component.create_rule_satisfactions if component_create_params[:file]
       component.rules_count = component.rules.where(deleted_at: nil).size
       component.save
-      if Settings.slack.enabled
-        send_notification(
-          Settings.slack.channel_id,
-          slack_notification_params(:create_component, component)
-        )
-      end
+      send_slack_notification(:create_component, component) if Settings.slack.enabled
       render json: { toast: 'Successfully added component to project.' }
     else
       render json: {
@@ -105,12 +100,7 @@ class ComponentsController < ApplicationController
       # Soft deleted rules must be destroyed in order for component to be destroyed
       Rule.unscoped.where(component_id: @component.id).destroy_all
       @component.destroy!
-      if Settings.slack.enabled
-        send_notification(
-          Settings.slack.channel_id,
-          slack_notification_params(:remove_component, @component)
-        )
-      end
+      send_slack_notification(:remove_component, @component) if Settings.slack.enabled
       render json: { toast: 'Successfully removed component from project.' }
     end
   rescue StandardError
@@ -311,36 +301,5 @@ class ComponentsController < ApplicationController
       :file,
       file: {}
     )
-  end
-
-  def slack_notification_params(notification_type, component)
-    notification_type_prefix = notification_type.to_s.match(/^(create|remove)/)[1]
-    fields = [
-      GENERAL_NOTIFICATION_FIELDS[:generate_app_label],
-      COMPONENT_NOTIFICATION_FIELDS[:generate_project_label],
-      COMPONENT_NOTIFICATION_FIELDS[:generate_component_label],
-      COMPONENT_NOTIFICATION_FIELDS[:generate_initiated_by_label]
-    ]
-    header = case notification_type
-             when :create_component
-               'Vulcan New Component Creation'
-             when :remove_component
-               'Vulcan Component Removal'
-             end
-    {
-      icon: case notification_type
-            when :create_component
-              ':white_check_mark:'
-            when :remove_component
-              ':x:'
-            end,
-      header: header,
-      fields: fields.map do |field|
-        label, value = field.values_at(:label, :value)
-        label_content = label.respond_to?(:call) ? label.call(notification_type_prefix) : label
-        value_content = value.respond_to?(:call) ? value.call(notification_type_prefix, component, current_user) : value
-        { label: label_content, value: value_content }
-      end
-    }
   end
 end
