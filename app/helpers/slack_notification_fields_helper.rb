@@ -5,35 +5,35 @@ module SlackNotificationFields
   MEMBERSHIP_NOTIFICATION_FIELDS = {
     generate_project_label: {
       label: 'Project',
-      value: ->(_notif_prefix, membership, _current_user) { generate_proj_or_comp_value(membership, Project) }
+      value: ->(_notif_prefix, membership, _current_user) { SNFH.generate_proj_or_comp_value(membership, Project) }
     },
     generate_component_label: {
       label: 'Component',
-      value: ->(_notif_prefix, membership, _current_user) { generate_proj_or_comp_value(membership, Component) }
+      value: ->(_notif_prefix, membership, _current_user) { SNFH.generate_proj_or_comp_value(membership, Component) }
     },
     generate_member_action_label: {
-      label: ->(notif_prefix) { generate_action_label(notif_prefix, 'Member') },
+      label: ->(notif_prefix) { SNFH.generate_action_label(notif_prefix, 'Member') },
       value: lambda do |_notif_prefix, membership, _current_user|
         "#{User.find(membership.user_id).name} (#{User.find(membership.user_id).email})"
       end
     },
     generate_role_action_label: {
-      label: ->(notif_prefix) { generate_action_label(notif_prefix, 'Role') },
+      label: ->(notif_prefix) { SNFH.generate_action_label(notif_prefix, 'Role') },
       value: ->(_notif_prefix, membership, _current_user) { membership.role.to_s }
     },
     generate_initiated_by_label: {
-      label: ->(notif_prefix) { generate_action_label(notif_prefix, 'By') },
+      label: ->(notif_prefix) { SNFH.generate_action_label(notif_prefix, 'By') },
       value: ->(_notification_type_prefix, _membership, current_user) { "#{current_user.name} (#{current_user.email})" }
     }
   }.freeze
 
   USER_NOTIFICATION_FIELDS = {
     generate_admin_role_action_label: {
-      label: ->(notif_prefix) { generate_action_label(notif_prefix, 'User') },
+      label: ->(notif_prefix) { SNFH.generate_action_label(notif_prefix, 'User') },
       value: ->(_notif_prefix, user, _current_user) { "#{user.name} (#{user.email})" }
     },
     generate_initiated_by_label: {
-      label: ->(notif_prefix) { generate_action_label(notif_prefix, 'By') },
+      label: ->(notif_prefix) { SNFH.generate_action_label(notif_prefix, 'By') },
       value: ->(_notification_type_prefix, _user, current_user) { "#{current_user.name} (#{current_user.email})" }
     }
   }.freeze
@@ -48,7 +48,7 @@ module SlackNotificationFields
       value: ->(_notif_prefix, srg, _current_user) { srg.version.to_s }
     },
     generate_initiated_by_label: {
-      label: ->(notification_type_prefix) { generate_action_label(notification_type_prefix, 'By') },
+      label: ->(notification_type_prefix) { SNFH.generate_action_label(notification_type_prefix, 'By') },
       value: ->(_notif_prefix, _srg, current_user) { "#{current_user.name} (#{current_user.email})" }
     }
   }.freeze
@@ -65,7 +65,7 @@ module SlackNotificationFields
       end
     },
     generate_component_label: {
-      label: ->(notif_prefix) { generate_proj_comp_action_label(notif_prefix, 'Component') },
+      label: ->(notif_prefix) { SNFH.generate_proj_comp_action_label(notif_prefix, 'Component') },
       value: lambda do |notif_prefix, component, _current_user|
         return component.name.to_s if notif_prefix == 'remove'
 
@@ -78,7 +78,7 @@ module SlackNotificationFields
     },
     generate_initiated_by_label:
     {
-      label: ->(notif_prefix) { generate_proj_comp_action_label(notif_prefix, 'By') },
+      label: ->(notif_prefix) { SNFH.generate_proj_comp_action_label(notif_prefix, 'By') },
       value: lambda do |_notif_prefix, _component, current_user|
         "#{current_user.name} (#{current_user.email})"
       end
@@ -87,7 +87,7 @@ module SlackNotificationFields
 
   PROJECT_NOTIFICATION_FIELDS = {
     generate_project_label: {
-      label: ->(notif_prefix) { generate_proj_comp_action_label(notif_prefix, 'Project') },
+      label: ->(notif_prefix) { SNFH.generate_proj_comp_action_label(notif_prefix, 'Project') },
       value: lambda do |notif_prefix, project, _current_user|
         return project.name.to_s if notif_prefix == 'remove'
 
@@ -99,7 +99,7 @@ module SlackNotificationFields
       end
     },
     generate_initiated_by_label: {
-      label: ->(notif_prefix) { generate_proj_comp_action_label(notif_prefix, 'By') },
+      label: ->(notif_prefix) { SNFH.generate_proj_comp_action_label(notif_prefix, 'By') },
       value: lambda do |_notif_prefix, _project, current_user|
         "#{current_user.name} (#{current_user.email})"
       end
@@ -198,3 +198,6 @@ module SlackNotificationFieldsHelper
     end
   end
 end
+
+# Defining an alias for SlackNotificationFieldsHelper
+SNFH = SlackNotificationFieldsHelper

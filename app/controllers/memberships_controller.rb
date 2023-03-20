@@ -4,7 +4,6 @@
 # Controller for managing members of a specific project.
 #
 class MembershipsController < ApplicationController
-  include SlackNotificationsHelper
   before_action :set_membership, only: %i[update destroy]
   before_action :authorize_admin_membership, only: %i[update destroy]
 

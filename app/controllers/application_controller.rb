@@ -4,6 +4,7 @@
 # placed here if they are shared between multiple controllers
 class ApplicationController < ActionController::Base
   helper :all
+  include SlackNotificationsHelper
 
   before_action :setup_navigation, :authenticate_user!
 

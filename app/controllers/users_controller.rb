@@ -4,7 +4,6 @@
 # Controller for application users.
 #
 class UsersController < ApplicationController
-  include SlackNotificationsHelper
   before_action :authorize_admin
   before_action :set_user, only: %i[update destroy]
 

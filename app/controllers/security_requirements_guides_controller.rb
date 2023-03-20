@@ -2,7 +2,6 @@
 
 # Controller for SecurityRequirementsGuides
 class SecurityRequirementsGuidesController < ApplicationController
-  include SlackNotificationsHelper
   before_action :authorize_admin, except: %i[index]
   before_action :security_requirements_guide, only: %i[destroy]
 

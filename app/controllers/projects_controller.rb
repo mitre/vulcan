@@ -6,7 +6,6 @@
 class ProjectsController < ApplicationController
   include ExportHelper
   include ProjectMemberConstants
-  include SlackNotificationsHelper
   before_action :set_project, only: %i[show update destroy export]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]

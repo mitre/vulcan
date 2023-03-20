@@ -5,7 +5,6 @@
 #
 class ComponentsController < ApplicationController
   include ExportHelper
-  include SlackNotificationsHelper
   before_action :set_component, only: %i[show update destroy export]
   before_action :set_project, only: %i[show create]
   before_action :set_component_permissions, only: %i[show]
