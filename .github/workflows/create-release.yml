@@ -17,7 +17,7 @@ jobs:
 
       - name: Get current release version
         id: current_version
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -46,7 +46,7 @@ jobs:
       - name: Read Release Notes
         id: release_notes
         run: |
-          echo "::set-output name=notes::$(cat RELEASE_NOTES.md)"
+          echo "notes=$(cat RELEASE_NOTES.md)" >> $GITHUB_ENV
 
       - name: Download source code as .zip and .tar.gz
         run: |
@@ -55,17 +55,18 @@ jobs:
 
       - name: Create release draft
         id: create_release
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const repo = context.repo;
             const newVersion = process.env.NEW_VERSION;
+            const releaseNotes = ${{ steps.release_notes.outputs.notes }};
             const response = await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
               name: `vulcan ${newVersion}`,
-              body: ${{ steps.release_notes.outputs.notes }},
+              body: releaseNotes,
               draft: true,
             });
             return { id: response.data.id, upload_url: response.data.upload_url };
