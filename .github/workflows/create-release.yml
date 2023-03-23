@@ -65,12 +65,12 @@ jobs:
               ...repo,
               tag_name: newVersion,
               name: `vulcan ${newVersion}`,
-              body: releaseNotes,
+              body: ${{ steps.release_notes.outputs.notes }},
               draft: true,
             });
             return { id: response.data.id, upload_url: response.data.upload_url };
 
-       - name: Upload source code .zip to release draft
+      - name: Upload source code .zip to release draft
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
