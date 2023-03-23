@@ -41,12 +41,12 @@ jobs:
           export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
           export NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = ($NF + 1) % 10; if ($NF == 0) {$(NF-1) = ($(NF-1) + 1) % 10; if ($(NF-1) == 0) {$(NF-2)++;}} printf "v%d.%d.%d", $1, $2, $3}')
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
-          echo "{next_version}={${NEW_VERSION}}" >> $GITHUB_OUTPUT
 
       - name: Read Release Notes
         id: release_notes
         run: |
-          echo "{notes}={$(cat RELEASE_NOTES.md | base64)}" >> $GITHUB_OUTPUT
+          export RELEASE_NOTES=$(cat RELEASE_NOTES.md)
+          echo "RELEASE_NOTES=${RELEASE_NOTES}" >> $GITHUB_ENV
 
       - name: Download source code as .zip and .tar.gz
         run: |
@@ -55,8 +55,7 @@ jobs:
 
       - name: Print Release Notes
         run: |
-          RELEASE_NOTES=$(echo "${{ steps.release_notes.outputs.notes }}" | base64 --decode)
-          echo "Release Notes: $RELEASE_NOTES"
+          echo "Release Notes: ${process.env.RELEASE_NOTES}"
 
       - name: Create release draft
         id: create_release
