@@ -1,17 +1,13 @@
 name: Update or Create Release Notes
 
-# on:
-#   pull_request:
-#     types: [closed]
-#     branches: [master]
 on:
-  push:
-    branches:
-      - release_actions
+  pull_request:
+    types: [closed]
+    branches: [master]
 
 jobs:
   update_release_notes:
-    # if: ${{ github.event.pull_request.merged == true }}
+    if: ${{ github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the Vulcan Repository
