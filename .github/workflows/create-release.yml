@@ -1,12 +1,12 @@
 name: Create release draft
 
-on:
-  schedule:
-    - cron: "0 0 * * 2" # Every Tuesday at midnight (format: "`min(0 - 59)` `hr(0 - 23)` `day of month(1 - 31)` `month(1 - 12) ` `day of week(0 - 6)`")
 # on:
-#   push:
-#     branches:
-#       - release_actions
+#   schedule:
+#     - cron: "0 0 * * 2" # Every Tuesday at midnight (format: "`min(0 - 59)` `hr(0 - 23)` `day of month(1 - 31)` `month(1 - 12) ` `day of week(0 - 6)`")
+on:
+  push:
+    branches:
+      - release_actions
 
 jobs:
   create_release_draft:
