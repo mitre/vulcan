@@ -67,12 +67,12 @@ jobs:
               name: `vulcan ${newVersion}`,
               draft: true,
             });
-            console.log({ response });
+            console.log({ id: response.data.id, upload_url: response.data.upload_url });
             return { id: response.data.id, upload_url: response.data.upload_url };
 
       - name: Print upload URL
         run: |
-          echo "Upload URL: ${{ steps.create_release.outputs.result.upload_url }}"
+          echo "Upload URL: ${{ fromJson(steps.create_release.outputs.result).upload_url }}"
 
       - name: Upload source code .zip to release draft
         uses: actions/upload-release-asset@v1
