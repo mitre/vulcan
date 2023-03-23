@@ -22,9 +22,18 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const repo = context.repo;
-            const releases = await github.rest.repos.listReleases(repo);
-            const latestRelease = releases.data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at))[0];
-            return latestRelease.tag_name;
+            try {
+              const latestRelease = await github.rest.repos.getLatestRelease(repo);
+              return latestRelease.data.tag_name;
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('No releases found');
+                return 'v0.0.0'; // Default value if there are no releases
+              } else {
+                console.error(error);
+                throw error;
+              }
+            }
 
       - name: Calculate next release version
         id: next_version
@@ -37,8 +46,12 @@ jobs:
       - name: Read Release Notes
         id: release_notes
         run: |
-          RELEASE_NOTES=$(cat RELEASE_NOTES.md)
-          echo "::set-output name=notes::${RELEASE_NOTES}"
+          echo "::set-output name=notes::$(cat RELEASE_NOTES.md)"
+
+      - name: Download source code as .zip and .tar.gz
+        run: |
+          wget -O source.zip https://github.com/mitre/vulcan/archive/refs/heads/master.zip
+          wget -O source.tar.gz https://github.com/mitre/vulcan/archive/refs/heads/master.tar.gz
 
       - name: Create release draft
         id: create_release
@@ -52,6 +65,27 @@ jobs:
               ...repo,
               tag_name: newVersion,
               name: `vulcan ${newVersion}`,
+              body: releaseNotes,
               draft: true,
             });
-            return response.data.id;
+            return { id: response.data.id, upload_url: response.data.upload_url };
+
+       - name: Upload source code .zip to release draft
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: source.zip
+          asset_name: source.zip
+          asset_content_type: application/zip
+
+      - name: Upload source code .tar.gz to release draft
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: source.tar.gz
+          asset_name: source.tar.gz
+          asset_content_type: application/gzip
