@@ -1,12 +1,12 @@
 name: Create release draft
 
-# on:
-#   schedule:
-#     - cron: "0 0 * * 2" # Every Tuesday at midnight
 on:
-  push:
-    branches:
-      - release_actions
+  schedule:
+    - cron: "0 0 * * 2" # Every Tuesday at midnight (format: "`min(0 - 59)` `hr(0 - 23)` `day of month(1 - 31)` `month(1 - 12) ` `day of week(0 - 6)`")
+# on:
+#   push:
+#     branches:
+#       - release_actions
 
 jobs:
   create_release_draft:
@@ -15,8 +15,18 @@ jobs:
       - name: Checkout the Vulcan Repository
         uses: actions/checkout@v3
 
+      - name: Check if release notes are empty and set environment variable
+        id: check_release_notes
+        run: |
+          if [[ -s RELEASE_NOTES.md ]]; then
+            echo "RELEASE_NOTES_EMPTY=false" >> $GITHUB_ENV
+          else
+            echo "RELEASE_NOTES_EMPTY=true" >> $GITHUB_ENV
+          fi
+
       - name: Get current release version
         id: current_version
+        if: ${{ env.RELEASE_NOTES_EMPTY == 'false' }}
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -38,6 +48,7 @@ jobs:
 
       - name: Calculate next release version
         id: next_version
+        if: ${{ env.RELEASE_NOTES_EMPTY == 'false' }}
         run: |
           export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
           CURRENT_VERSION=$(echo $CURRENT_VERSION | tr -d '"') # Remove extra quotes
@@ -62,17 +73,20 @@ jobs:
 
       - name: Read Release Notes
         id: release_notes
+        if: ${{ env.RELEASE_NOTES_EMPTY == 'false' }}
         run: |
           export RELEASE_NOTES=$(cat RELEASE_NOTES.md | base64)
           echo "RELEASE_NOTES=${RELEASE_NOTES}" >> $GITHUB_ENV
 
       - name: Download source code as .zip and .tar.gz
+        if: ${{ env.RELEASE_NOTES_EMPTY == 'false' }}
         run: |
           wget -O source.zip https://github.com/mitre/vulcan/archive/refs/heads/master.zip
           wget -O source.tar.gz https://github.com/mitre/vulcan/archive/refs/heads/master.tar.gz
 
       - name: Create release draft
         id: create_release
+        if: ${{ env.RELEASE_NOTES_EMPTY == 'false' }}
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -90,6 +104,7 @@ jobs:
             return { id: response.data.id, upload_url: response.data.upload_url };
 
       - name: Upload source code .zip to release draft
+        if: ${{ env.RELEASE_NOTES_EMPTY == 'false' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -100,6 +115,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload source code .tar.gz to release draft
+        if: ${{ env.RELEASE_NOTES_EMPTY == 'false' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
