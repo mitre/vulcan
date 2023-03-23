@@ -28,7 +28,7 @@ jobs:
             } catch (error) {
               if (error.status === 404) {
                 console.log('No releases found');
-                return 'v0.0.0'; // Default value if there are no releases
+                return 'v2.0.0'; // Default value if there are no releases
               } else {
                 console.error(error);
                 throw error;
@@ -46,7 +46,7 @@ jobs:
       - name: Read Release Notes
         id: release_notes
         run: |
-          echo "notes=$(cat RELEASE_NOTES.md)" >> $GITHUB_ENV
+          echo "::set-output name=notes::$(cat RELEASE_NOTES.md)"
 
       - name: Download source code as .zip and .tar.gz
         run: |
