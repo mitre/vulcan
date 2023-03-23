@@ -66,10 +66,12 @@ jobs:
             const repo = context.repo;
             const newVersion = process.env.NEW_VERSION;
             const releaseNotes = Buffer.from(process.env.RELEASE_NOTES, 'base64').toString('utf-8');
+            console.log({ releaseNotes});
             const response = await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
               name: `vulcan ${newVersion}`,
+              body: releaseNotes,
               draft: true,
             });
             return { id: response.data.id, upload_url: response.data.upload_url };
