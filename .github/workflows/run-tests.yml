@@ -1,16 +1,21 @@
-name: Run Test Suite on Release Creation, Push, and Pull Request
+name: Run Test Suite on Draft Release Creation, Push, and Pull Request to master
 
 on:
-  release:
-    types: [created]
+  workflow_run:
+    workflows: ["Create release draft"]
+    types:
+      - completed
   push:
-    branches: [release_actions] #[master]
+    branches: [master]
   pull_request:
     branches: [master]
 
 jobs:
   test:
+    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    outputs:
+      triggered_event: ${{ github.event_name }}
 
     services:
       db:
