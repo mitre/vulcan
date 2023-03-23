@@ -25,11 +25,7 @@ jobs:
             const default_tag = 'v2.0.0';
             try {
               const latestRelease = await github.rest.repos.getLatestRelease(repo);
-              const tag = latestRelease.data.tag_name;
-              if (tag == 'v0.0.0') {
-                return default_tag;
-              }
-              return tag;
+              return latestRelease.data.tag_name;
             } catch (error) {
               if (error.status === 404) {
                 console.log('No releases found');
@@ -44,6 +40,7 @@ jobs:
         id: next_version
         run: |
           export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
+          CURRENT_VERSION=$(echo $CURRENT_VERSION | tr -d '"') # Remove extra quotes
           export NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = ($NF + 1) % 10; if ($NF == 0) {$(NF-1) = ($(NF-1) + 1) % 10; if ($(NF-1) == 0) {$(NF-2)++;}} printf "v%d.%d.%d", $1, $2, $3}')
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
 
