@@ -41,7 +41,23 @@ jobs:
         run: |
           export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
           CURRENT_VERSION=$(echo $CURRENT_VERSION | tr -d '"') # Remove extra quotes
-          export NEW_VERSION=$(echo $CURRENT_VERSION | python -c "import sys; version = sys.stdin.readline().strip()[1:].split('.'); version[2] = str((int(version[2]) + 1) % 10); if version[2] == '0': version[1] = str((int(version[1]) + 1) % 10); if version[1] == '0': version[0] = str(int(version[0]) + 1); sys.stdout.write('v' + '.'.join(version))")
+          IFS='.' read -ra VERSION_PARTS <<< "${CURRENT_VERSION:1}"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+
+          PATCH=$((PATCH + 1))
+          if [ $PATCH -eq 10 ]; then
+            PATCH=0
+            MINOR=$((MINOR + 1))
+          fi
+
+          if [ $MINOR -eq 10 ]; then
+            MINOR=0
+            MAJOR=$((MAJOR + 1))
+          fi
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
 
       - name: Read Release Notes
