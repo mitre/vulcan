@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "14"
+          node-version: "16"
 
       - name: Install required packages
         run: npm install moment
@@ -26,16 +26,17 @@ jobs:
           PR_NUMBER=${{ github.event.pull_request.number }}
           PR_TITLE="${{ github.event.pull_request.title }}"
           PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_DESCRIPTION="${{ github.event.pull_request.body }}"
           DATE=$(node -e "console.log(require('moment')().format('YYYY-MM-DD'))")
 
           RELEASE_NOTES_FILE="RELEASE_NOTES.md"
 
-          echo -e "## [PR-${PR_NUMBER}] ${PR_TITLE} (${DATE})\n\n### Merged by: ${PR_AUTHOR}\n\n---\n" >> ${RELEASE_NOTES_FILE}
+          echo -e "## [PR-${PR_NUMBER}] ${PR_TITLE} (${DATE})\n\n${PR_DESCRIPTION}\n\n### Merged by: ${PR_AUTHOR}\n\n---\n" >> ${RELEASE_NOTES_FILE}
 
       - name: Commit and push the changes
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add RELEASE_NOTES.md
           git commit -m "Update RELEASE_NOTES.md with PR-${{ github.event.pull_request.number }} details"
