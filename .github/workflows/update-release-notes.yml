@@ -1,0 +1,37 @@
+name: Update or Create Release Notes
+
+# on:
+#   pull_request:
+#     branches: [master]
+#     types: [closed]
+on:
+  push:
+    branches:
+      - release_actions
+
+jobs:
+  update_release_notes:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the Vulcan Repository
+        uses: actions/checkout@v3
+
+      - name: Generate Changelog
+        id: changelog
+        uses: peterjgrainger/action-create-changelog@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: true
+          branch: origin/${{ github.base_ref }}
+          output: RELEASE_NOTES.md
+          append: true
+          no_categories: true
+
+      - name: Commit and Push Release Notes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add RELEASE_NOTES.md
+          git commit -m "Update RELEASE_NOTES.md"
+          git push
