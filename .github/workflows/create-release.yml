@@ -72,7 +72,7 @@ jobs:
 
       - name: Print upload URL
         run: |
-          echo "Upload URL: ${{ steps.create_release.outputs.upload_url }}"
+          echo "Upload URL: ${{ steps.create_release.outputs.result }}"
 
       - name: Upload source code .zip to release draft
         uses: actions/upload-release-asset@v1
