@@ -61,12 +61,10 @@ jobs:
           script: |
             const repo = context.repo;
             const newVersion = process.env.NEW_VERSION;
-            const releaseNotes = ${{ steps.release_notes.outputs.notes }};
             const response = await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
               name: `vulcan ${newVersion}`,
-              body: `${releaseNotes}`,
               draft: true,
             });
             return response.data.id;
