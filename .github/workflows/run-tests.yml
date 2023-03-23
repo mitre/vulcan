@@ -1,14 +1,15 @@
-name: Run Test Suite on PR or push to master
+name: Run Test Suite on Release Creation, Push, and Pull Request
 
 on:
+  release:
+    types: [created]
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   test:
-
     runs-on: ubuntu-latest
 
     services:
@@ -35,7 +36,7 @@ jobs:
         uses: ruby/setup-ruby@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: '14'
+          node-version: "14"
       - name: Cache ruby gems
         uses: actions/cache@v1
         with:
