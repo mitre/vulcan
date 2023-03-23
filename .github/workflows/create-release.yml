@@ -22,13 +22,18 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const repo = context.repo;
+            const default_tag = 'v2.0.0';
             try {
               const latestRelease = await github.rest.repos.getLatestRelease(repo);
-              return latestRelease.data.tag_name;
+              const tag = latestRelease.data.tag_name;
+              if (tag == 'v0.0.0') {
+                return default_tag;
+              }
+              return tag;
             } catch (error) {
               if (error.status === 404) {
                 console.log('No releases found');
-                return 'v2.0.0'; // Default value if there are no releases
+                return default_tag; // Default value if there are no releases
               } else {
                 console.error(error);
                 throw error;
@@ -53,10 +58,6 @@ jobs:
           wget -O source.zip https://github.com/mitre/vulcan/archive/refs/heads/master.zip
           wget -O source.tar.gz https://github.com/mitre/vulcan/archive/refs/heads/master.tar.gz
 
-      - name: Print Release Notes
-        run: |
-          echo "Release Notes: $(echo $RELEASE_NOTES | base64 --decode)"
-
       - name: Create release draft
         id: create_release
         uses: actions/github-script@v6
@@ -66,7 +67,6 @@ jobs:
             const repo = context.repo;
             const newVersion = process.env.NEW_VERSION;
             const releaseNotes = Buffer.from(process.env.RELEASE_NOTES, 'base64').toString('utf-8');
-            console.log({ releaseNotes});
             const response = await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
@@ -83,7 +83,7 @@ jobs:
         with:
           upload_url: ${{ fromJson(steps.create_release.outputs.result).upload_url }}
           asset_path: source.zip
-          asset_name: source.zip
+          asset_name: source code(zip)
           asset_content_type: application/zip
 
       - name: Upload source code .tar.gz to release draft
@@ -93,5 +93,5 @@ jobs:
         with:
           upload_url: ${{ fromJson(steps.create_release.outputs.result).upload_url }}
           asset_path: source.tar.gz
-          asset_name: source.tar.gz
+          asset_name: source code(tar.gz)
           asset_content_type: application/gzip
