@@ -2,14 +2,13 @@ name: Push Vulcan to Docker Hub on successful test suite run
 
 on:
   workflow_run:
-    workflows: ["Run Test Suite on Release Creation, Push, and Pull Request"]
-    branches: [release_actions] #[master]
+    workflows: ["Run Test Suite on Draft Release Creation, Push, and Pull Request to master"]
     types:
       - completed
 
 jobs:
   docker:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && (github.event.workflow_run.event == 'release' || github.event.workflow_run.event == 'push') }}
+    if: ${{ github.event.workflow_run.head_branch == 'master' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
@@ -22,18 +21,39 @@ jobs:
       - name: Checkout the Vulcan Repository
         uses: actions/checkout@v3
       - name: Set tag based on event type
-        run: |
-          if [ "${{ github.event.workflow_run.event }}" == "release" ]; then
-            echo "TAG=${{ github.event.workflow_run.event_data.release.tag_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.event.workflow_run.event }}" == "push" ]; then
-            echo "TAG=latest" >> $GITHUB_ENV
-          fi
+        id: set_tag
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const repo = context.repo;
+            const payload = context.payload;
+            const triggeredEvent = payload.workflow_run.outputs.triggered_event;
+
+            let tag = "latest";
+            // checking what event triggered the workflow that triggered this workflow
+            if (triggeredEvent === "workflow_run") {
+              const { data: releases } = await github.rest.repos.listReleases({
+                ...repo,
+                per_page: 1,
+                page: 1
+              });
+
+              const draftRelease = releases.find(release => release.draft);
+
+              if (draftRelease) {
+                tag = draftRelease.tag_name;
+              }
+            }
+            console.log(`Using tag: ${tag}`);
+            return tag;
+
       - name: Build and push with tag
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          tags: mitre/vulcan:${{ env.TAG }}
+          tags: mitre/vulcan:${{ steps.set_tag.outputs.result }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=none
           cache-to: type=none
