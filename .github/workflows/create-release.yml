@@ -1,0 +1,57 @@
+name: Create release draft
+
+# on:
+#   schedule:
+#     - cron: "0 0 * * 2" # Every Tuesday at midnight
+on:
+  push:
+    branches:
+      - release_actions
+
+jobs:
+  create_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the Vulcan Repository
+        uses: actions/checkout@v3
+
+      - name: Get current release version
+        id: current_version
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const repo = context.repo;
+            const releases = await github.rest.repos.listReleases(repo);
+            const latestRelease = releases.data[0];
+            return latestRelease.tag_name;
+
+      - name: Calculate next release version
+        id: next_version
+        run: |
+          export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
+          export NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = ($NF + 1) % 10; if ($NF == 0) {$(NF-1) = ($(NF-1) + 1) % 10; if ($(NF-1) == 0) {$(NF-2)++;}} printf "v%d.%d.%d", $1, $2, $3}')
+          echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
+          echo "::set-output name=next_version::${NEW_VERSION}"
+
+      - name: Read Release Notes
+        id: release_notes
+        run: |
+          RELEASE_NOTES=$(cat RELEASE_NOTES.md)
+          echo "::set-output name=notes::${RELEASE_NOTES}"
+
+      - name: Create release draft
+        id: create_release
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const repo = context.repo;
+            const newVersion = process.env.NEW_VERSION;
+            const response = await github.rest.repos.createRelease({
+              ...repo,
+              tag_name: newVersion,
+              name: `vulcan ${newVersion}`,
+              draft: true,
+            });
+            return response.data.id;
