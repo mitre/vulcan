@@ -65,14 +65,13 @@ jobs:
           script: |
             const repo = context.repo;
             const newVersion = process.env.NEW_VERSION;
-            const releaseNotes = `${{ steps.release_notes.outputs.notes }}`;
+            const releaseNotes = Buffer.from(process.env.RELEASE_NOTES, 'base64').toString('utf-8');
             const response = await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
               name: `vulcan ${newVersion}`,
               draft: true,
             });
-            console.log({ id: response.data.id, upload_url: response.data.upload_url });
             return { id: response.data.id, upload_url: response.data.upload_url };
 
       - name: Upload source code .zip to release draft
