@@ -70,6 +70,9 @@ jobs:
             console.log({ response });
             return { id: response.data.id, upload_url: response.data.upload_url };
 
+      - name: Print upload URL
+        run: echo "Upload URL: ${{ steps.create_release.outputs.upload_url }}"
+
       - name: Upload source code .zip to release draft
         uses: actions/upload-release-asset@v1
         env:
