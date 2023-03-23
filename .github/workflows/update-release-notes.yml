@@ -2,36 +2,45 @@ name: Update or Create Release Notes
 
 # on:
 #   pull_request:
-#     branches: [master]
 #     types: [closed]
+#     branches: [master]
 on:
   push:
     branches:
-      - release_actions
+      - test-workflows
 
 jobs:
   update_release_notes:
-    if: github.event.pull_request.merged == true
+    # if: ${{ github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the Vulcan Repository
         uses: actions/checkout@v3
 
-      - name: Generate Changelog
-        id: changelog
-        uses: peterjgrainger/action-create-changelog@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit: true
-          branch: origin/${{ github.base_ref }}
-          output: RELEASE_NOTES.md
-          append: true
-          no_categories: true
+          node-version: "14"
 
-      - name: Commit and Push Release Notes
+      - name: Install required packages
+        run: npm install moment
+
+      - name: Append PR details to the release notes
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          DATE=$(node -e "console.log(require('moment')().format('YYYY-MM-DD'))")
+
+          RELEASE_NOTES_FILE="RELEASE_NOTES.md"
+
+          echo -e "## [PR-${PR_NUMBER}] ${PR_TITLE} (${DATE})\n\n### Merged by: ${PR_AUTHOR}\n\n---\n" >> ${RELEASE_NOTES_FILE}
+
+      - name: Commit and push the changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
           git add RELEASE_NOTES.md
-          git commit -m "Update RELEASE_NOTES.md"
+          git commit -m "Update RELEASE_NOTES.md with PR-${{ github.event.pull_request.number }} details"
           git push
