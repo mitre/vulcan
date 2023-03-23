@@ -41,17 +41,21 @@ jobs:
           export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
           export NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = ($NF + 1) % 10; if ($NF == 0) {$(NF-1) = ($(NF-1) + 1) % 10; if ($(NF-1) == 0) {$(NF-2)++;}} printf "v%d.%d.%d", $1, $2, $3}')
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
-          echo "::set-output name=next_version::${NEW_VERSION}"
+          echo "{next_version}={${NEW_VERSION}}" >> $GITHUB_OUTPUT
 
       - name: Read Release Notes
         id: release_notes
         run: |
-          echo "::set-output name=notes::$(cat RELEASE_NOTES.md)"
+          echo "{notes}={$(cat RELEASE_NOTES.md)}" >> $GITHUB_OUTPUT
 
       - name: Download source code as .zip and .tar.gz
         run: |
           wget -O source.zip https://github.com/mitre/vulcan/archive/refs/heads/master.zip
           wget -O source.tar.gz https://github.com/mitre/vulcan/archive/refs/heads/master.tar.gz
+
+      - name: Print Release Notes
+        run: |
+          echo "Release Notes: ${{ steps.release_notes.outputs.notes }}"
 
       - name: Create release draft
         id: create_release
@@ -61,6 +65,7 @@ jobs:
           script: |
             const repo = context.repo;
             const newVersion = process.env.NEW_VERSION;
+            const releaseNotes = `${{ steps.release_notes.outputs.notes }}`;
             const response = await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
@@ -69,10 +74,6 @@ jobs:
             });
             console.log({ id: response.data.id, upload_url: response.data.upload_url });
             return { id: response.data.id, upload_url: response.data.upload_url };
-
-      - name: Print upload URL
-        run: |
-          echo "Upload URL: ${{ fromJson(steps.create_release.outputs.result).upload_url }}"
 
       - name: Upload source code .zip to release draft
         uses: actions/upload-release-asset@v1
