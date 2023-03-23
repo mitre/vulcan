@@ -41,7 +41,7 @@ jobs:
         run: |
           export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
           CURRENT_VERSION=$(echo $CURRENT_VERSION | tr -d '"') # Remove extra quotes
-          export NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = ($NF + 1) % 10; if ($NF == 0) {$(NF-1) = ($(NF-1) + 1) % 10; if ($(NF-1) == 0) {$(NF-2)++;}} printf "v%d.%d.%d", $1, $2, $3}')
+          export NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = ($NF + 1) % 10; if ($NF == 0) {$(NF-1) = ($(NF-1) + 1) % 10; if ($(NF-1) == 0) {$(NF-2)++;}} printf "v%d.%d.%d", $1, $2, $3}' | tr -d v)
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
 
       - name: Read Release Notes
