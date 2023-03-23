@@ -55,7 +55,7 @@ jobs:
 
       - name: Print Release Notes
         run: |
-          echo "Release Notes: ${{ steps.release_notes.outputs }}"
+          echo "Release Notes: $(echo $RELEASE_NOTES | base64 --decode)"
 
       - name: Create release draft
         id: create_release
