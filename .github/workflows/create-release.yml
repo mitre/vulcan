@@ -45,7 +45,7 @@ jobs:
       - name: Read Release Notes
         id: release_notes
         run: |
-          export RELEASE_NOTES=$(cat RELEASE_NOTES.md)
+          export RELEASE_NOTES=$(cat RELEASE_NOTES.md | base64)
           echo "RELEASE_NOTES=${RELEASE_NOTES}" >> $GITHUB_ENV
 
       - name: Download source code as .zip and .tar.gz
@@ -55,7 +55,8 @@ jobs:
 
       - name: Print Release Notes
         run: |
-          echo "Release Notes: ${process.env.RELEASE_NOTES}"
+          RELEASE_NOTES=$(echo "${{ process.env.RELEASE_NOTES }}" | base64 --decode)
+          echo "Release Notes: $RELEASE_NOTES"
 
       - name: Create release draft
         id: create_release
