@@ -7,7 +7,7 @@ name: Update or Create Release Notes
 on:
   push:
     branches:
-      - test-workflows
+      - release_actions
 
 jobs:
   update_release_notes:
