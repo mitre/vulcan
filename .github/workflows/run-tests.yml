@@ -14,8 +14,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push' || github.event_name == 'pull_request' }}
-    outputs:
-      triggered_event: ${{ github.event_name }}
+    # outputs:
+    #   triggered_event: ${{ github.event_name }}
 
     services:
       db:
@@ -77,3 +77,13 @@ jobs:
         with:
           name: coverage-report
           path: coverage
+
+       - name: Save triggered_event as artifact
+        run: |
+          echo ${{ github.event_name }} > triggered_event.txt
+          echo "triggered_event=$(cat triggered_event.txt)" >> $GITHUB_ENV
+      - name: Upload triggered_event artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: triggered_event
+          path: triggered_event.txt
