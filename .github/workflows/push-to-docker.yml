@@ -30,6 +30,7 @@ jobs:
           script: |
             const repo = context.repo;
             const payload = context.payload;
+            console.log({ payload})
             const triggeredEvent = payload.workflow_run.event;
 
             let tag = "latest";
