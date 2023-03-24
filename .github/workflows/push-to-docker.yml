@@ -19,10 +19,15 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: triggered_event
+        continue-on-error: true
 
       - name: Set orchestrator_triggered_event and create artifact
         run: |
-          triggered_event=$(cat triggered_event.txt)
+          if [ -f triggered_event.txt ]; then
+            triggered_event=$(cat triggered_event.txt)
+          else
+            triggered_event='push'
+          fi
           echo "orchestrator_triggered_event=$triggered_event" >> $GITHUB_ENV
           echo $triggered_event > orchestrator_triggered_event.txt
 
