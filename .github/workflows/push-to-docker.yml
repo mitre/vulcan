@@ -2,14 +2,14 @@ name: Push Vulcan to Docker Hub on successful test suite run
 
 on:
   workflow_run:
-    workflows: ["Run Test Suite on Draft Release Creation, Push, and Pull Request to master"]
-    types:
-      - completed
+    workflows: [Run Test Suite on Draft Release Creation, Push, and Pull Request to master]
+    types: [completed]
+    branches: [release_actions, master]
 
 jobs:
   docker:
-    if: ${{ github.event.workflow_run.head_branch == 'master' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.head_branch == 'master' && github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -28,7 +28,7 @@ jobs:
           script: |
             const repo = context.repo;
             const payload = context.payload;
-            const triggeredEvent = payload.workflow_run.outputs.triggered_event;
+            const triggeredEvent = payload.workflow_run.event;
 
             let tag = "latest";
             // checking what event triggered the workflow that triggered this workflow
