@@ -2,13 +2,14 @@ name: Run Test Suite on Draft Release Creation, Push, and Pull Request to master
 
 on:
   workflow_run:
-    workflows: [Create release draft]
+    workflows: [Create Release Draft]
     types: [completed]
     branches: [release_actions, master]
   push:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   test:
