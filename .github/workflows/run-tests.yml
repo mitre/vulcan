@@ -6,10 +6,9 @@ on:
     types: [completed]
     branches: [release_actions, master]
   push:
-    branches: [master]
+    branches: [release_actions, master]
   pull_request:
     branches: [master]
-  workflow_dispatch:
 
 jobs:
   test:
