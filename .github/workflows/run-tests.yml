@@ -36,12 +36,13 @@ jobs:
           - 389:10389
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout the Vulcan Repository
+        uses: actions/checkout@v3
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: "14"
+          node-version: "16"
       - name: Cache ruby gems
         uses: actions/cache@v1
         with:
