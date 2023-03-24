@@ -72,12 +72,19 @@ jobs:
             console.log(`Using tag: ${tag}`);
             return tag;
 
+      - name: Set tag as env variable
+        run: |
+          TAG=${{ steps.set_tag.outputs.result }}
+          TAG=$(echo "$TAG" | tr -d '"' | tr -d "'")
+          TAG=$(echo "$TAG" | xargs)
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
       - name: Build and push with tag
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          tags: mitre/vulcan:${{ steps.set_tag.outputs.result.trim() }}
+          tags: mitre/vulcan:${{ env.TAG }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=none
           cache-to: type=none
