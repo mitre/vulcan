@@ -79,7 +79,7 @@ jobs:
           name: coverage-report
           path: coverage
 
-       - name: Save triggered_event as artifact
+      - name: Save triggered_event as artifact
         run: |
           echo ${{ github.event_name }} > triggered_event.txt
           echo "triggered_event=$(cat triggered_event.txt)" >> $GITHUB_ENV
