@@ -30,9 +30,9 @@ jobs:
           script: |
             const repo = context.repo;
             const payload = context.payload;
-            console.log({ payload})
-            const triggeredEvent = payload.workflow_run.event;
-
+            console.log({ workflowRun: payload.workflow_run});
+            const triggeredEvent = payload.workflow_run.outputs.triggered_event;
+            console.log({ triggeredEvent});
             let tag = "latest";
             // checking what event triggered the workflow that triggered this workflow
             if (triggeredEvent === "workflow_run") {
