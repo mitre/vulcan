@@ -10,6 +10,7 @@
 defaults: &defaults
   welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || nil %>
   contact_email: <%= ENV['VULCAN_CONTACT_EMAIL']%>
+  app_url: <%= ENV['VULCAN_APP_URL'] || nil %>
   smtp:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SMTP']) %>
     settings:
@@ -70,6 +71,10 @@ defaults: &defaults
         userinfo_endpoint: <%= ENV['VULCAN_OIDC_USERINFO_URL'] %>
         jwks_uri: <%= ENV['VULCAN_OIDC_JWKS_URI'] %>
         post_logout_redirect_uri: '/'
+  slack:
+    enabled: <%= ENV['VULCAN_ENABLE_SLACK_COMMS'] || false %>
+    api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>
+    channel_id: <%= ENV['VULCAN_SLACK_CHANNEL_ID'] %>
   providers:
     # - { name: 'github',
     #     app_id: '<APP_ID>',

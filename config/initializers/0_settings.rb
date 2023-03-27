@@ -23,6 +23,9 @@ Settings.project['create_permission_enabled'] = false if Settings.project['creat
 Settings['smtp'] ||= Settingslogic.new({})
 Settings.smtp['enabled'] = false if Settings.smtp['enabled'].nil?
 
+Settings['slack'] ||= Settingslogic.new({})
+Settings.slack['enabled'] = false if Settings.slack['enabled'].nil?
+
 Settings['providers'] ||= Settingslogic.new({})
 
 Settings['contact_email'] = 'do_not_reply@vulcan' if Settings['contact_email'].blank?
