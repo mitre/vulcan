@@ -6,7 +6,6 @@
 class ProjectsController < ApplicationController
   include ExportHelper
   include ProjectMemberConstants
-
   before_action :set_project, only: %i[show update destroy export]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
@@ -65,6 +64,7 @@ class ProjectsController < ApplicationController
 
     # First save ensures base Project is acceptable.
     if project.save
+      send_slack_notification(:create_project, project) if Settings.slack.enabled
       redirect_to project
     else
       flash.alert = "Unable to create project. #{project.errors.full_messages}"
@@ -76,6 +76,7 @@ class ProjectsController < ApplicationController
   def update
     if @project.update(project_params)
       render json: { toast: 'Project updated successfully' }
+      send_slack_notification(:rename_project, @project) if Settings.slack.enabled
     else
       render json: {
         toast: {
@@ -89,6 +90,7 @@ class ProjectsController < ApplicationController
 
   def destroy
     if @project.destroy
+      send_slack_notification(:remove_project, @project) if Settings.slack.enabled
       flash.notice = 'Successfully removed project.'
     else
       flash.alert = "Unable to remove project. #{@project.errors.full_messages}"

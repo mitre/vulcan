@@ -13,12 +13,14 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure Project Create Permissions:](#configure-project-create-permissions) Logged-In users can create projects
 - [Configure LDAP:](#configure-ldap)
 - [Configure OIDC:](#configure-oidc)
+- [Configure Slack:](#configure-slack)
 - [Configure Providers:](#configure-providers)
 
 ## Configure Welcome Text and Contact Email:
 
 - **welcome_text:** Welcome text is the text shown on the homepage below the "What is Vulcan" blurb on the homepage. It can be configured by the administrator to provide users with any information that may be relevant to their access and usage of the Vulcan application. `(ENV: VULCAN_WELCOME_TEXT)(default: nil)`
 - **contact_email:** Contact email is the reply email shown to users on confirmation and notification emails. By default this will revert to `do_not_reply@vulcan` if no email is specified. Is the default email for ApplicationMailer to use. `(ENV: VULCAN_CONTACT_EMAIL)(default: do_not_reply@vulcan)`
+- **app_url:** Allows hyper-linking of vulcan urls when notifications are sent `(ENV: VULCAN_APP_URL)`
 
 ## Configure SMTP:
 
@@ -87,12 +89,19 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
       - **jwks_uri:** The jwks_uri on the authorization server `(ENV: VULCAN_OIDC_JWKS_URI)`
       - **post_logout_redirect_uri:** '/'
 
+## Configure Slack
+
+- **enabled:** Enable Integration with Slack `(ENV: VULCAN_ENABLE_SLACK_COMMS)(default: false)`
+- **api_token:** Slack Authentication token bearing required scopes.`(ENV: VULCAN_SLACK_API_TOKEN)`
+- **channel_id:**  Slack Channel, private group, or IM channel to send message to. Can be an encoded ID, or a name. `(ENV: VULCAN_SLACK_CHANNEL_ID)`
+
 ## Example Vulcan.yml
 
 ```
 defaults: &defaults
   welcome_text:
   contact_email:
+  app_url:
   smtp:
     enabled:
     settings:
@@ -145,6 +154,10 @@ defaults: &defaults
         userinfo_endpoint:
         jwks_uri:
         post_logout_redirect_uri:
+  slack:
+    enabled:
+    api_token:
+    channel_id:
   providers:
     # - { name: 'github',
     #     app_id: '<APP_ID>',

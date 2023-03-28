@@ -21,6 +21,7 @@ class SecurityRequirementsGuidesController < ApplicationController
     srg.parsed_benchmark = parsed_benchmark
     srg.xml = file.read
     if srg.save
+      send_slack_notification(:upload_srg, srg) if Settings.slack.enabled
       render(json: { toast: 'Successfully created SRG.' }, status: :ok)
     else
       render(json: {
@@ -37,6 +38,7 @@ class SecurityRequirementsGuidesController < ApplicationController
   def destroy
     if @srg.destroy
       flash.notice = 'Successfully removed SRG.'
+      send_slack_notification(:remove_srg, @srg) if Settings.slack.enabled
     else
       flash.alert = "Unable to remove SRG. #{@srg.errors.full_messages.join(', ')}"
     end

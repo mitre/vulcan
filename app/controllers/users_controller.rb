@@ -18,6 +18,8 @@ class UsersController < ApplicationController
   def update
     if @user.update(user_update_params)
       flash.notice = 'Successfully updated user.'
+      notification_type = @user.admin ? :assign_vulcan_admin : :remove_vulcan_admin
+      send_slack_notification(notification_type, @user) if Settings.slack.enabled
     else
       flash.alert = "Unable to updated user. #{@user.errors.full_messages}"
     end

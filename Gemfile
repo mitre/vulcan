@@ -103,3 +103,7 @@ end
 gem 'tzinfo-data'
 
 gem 'highline', '~> 2.0'
+# Ruby wrapper around slack API
+gem 'slack-ruby-client', '1.0.0'
+# Slack notification formatting
+gem 'slack_block_kit', '0.3.3'
