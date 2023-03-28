@@ -1,6 +1,10 @@
-name: Run Test Suite on PR or push to master
+name: Run Test Suite on Draft Release Creation, Push, and Pull Request to master
 
 on:
+  workflow_run:
+    workflows: [Create Release Draft]
+    types: [completed]
+    branches: [master]
   push:
     branches: [ master ]
   pull_request:
@@ -8,7 +12,7 @@ on:
 
 jobs:
   test:
-
+    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
 
     services:
