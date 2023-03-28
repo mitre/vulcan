@@ -28,6 +28,12 @@ class MembershipsController < ApplicationController
     membership = Membership.new(membership_create_params)
     if membership.save
       flash.notice = 'Successfully created membership.'
+      case membership.membership_type
+      when 'Project'
+        send_membership_notification(:create_project_membership, membership)
+      when 'Component'
+        send_membership_notification(:create_component_membership, membership)
+      end
       redirect_to membership.membership
     else
       flash.alert = "Unable to create membership. #{membership.errors.full_messages}"
@@ -38,6 +44,12 @@ class MembershipsController < ApplicationController
   def update
     if @membership.update(membership_update_params)
       flash.notice = 'Successfully updated membership.'
+      case @membership.membership_type
+      when 'Project'
+        send_membership_notification(:update_project_membership, @membership)
+      when 'Component'
+        send_membership_notification(:update_component_membership, @membership)
+      end
     else
       flash.alert = "Unable to updated membership. #{@membership.errors.full_messages}"
     end
@@ -47,6 +59,12 @@ class MembershipsController < ApplicationController
   def destroy
     if @membership.destroy
       flash.notice = 'Successfully removed membership.'
+      case @membership.membership_type
+      when 'Project'
+        send_membership_notification(:remove_project_membership, @membership)
+      when 'Component'
+        send_membership_notification(:remove_component_membership, @membership)
+      end
     else
       flash.alert = "Unable to remove membership. #{@membership.errors.full_messages}"
     end
@@ -78,5 +96,11 @@ class MembershipsController < ApplicationController
 
   def membership_update_params
     params.require(:membership).permit(:role)
+  end
+
+  def send_membership_notification(notification_type, membership)
+    return unless Settings.slack.enabled
+
+    send_slack_notification(notification_type, membership)
   end
 end

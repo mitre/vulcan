@@ -5,11 +5,9 @@
 #
 class ComponentsController < ApplicationController
   include ExportHelper
-
   before_action :set_component, only: %i[show update destroy export]
   before_action :set_project, only: %i[show create]
   before_action :set_component_permissions, only: %i[show]
-
   before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
@@ -70,6 +68,7 @@ class ComponentsController < ApplicationController
       component.create_rule_satisfactions if component_create_params[:file]
       component.rules_count = component.rules.where(deleted_at: nil).size
       component.save
+      send_slack_notification(:create_component, component) if Settings.slack.enabled
       render json: { toast: 'Successfully added component to project.' }
     else
       render json: {
@@ -101,6 +100,7 @@ class ComponentsController < ApplicationController
       # Soft deleted rules must be destroyed in order for component to be destroyed
       Rule.unscoped.where(component_id: @component.id).destroy_all
       @component.destroy!
+      send_slack_notification(:remove_component, @component) if Settings.slack.enabled
       render json: { toast: 'Successfully removed component from project.' }
     end
   rescue StandardError
