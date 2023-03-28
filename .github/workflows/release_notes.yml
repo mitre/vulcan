@@ -1,0 +1,53 @@
+name: Generate Release Notes
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  generate_release_notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Generate Release Notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" > latest_release.json
+          latest_release_date=$(jq -r '.created_at' latest_release.json)
+
+          prs=$(curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls?state=closed&sort=updated&direction=desc")
+
+          echo '## 🔄 Changes' > RELEASE_NOTES.md
+          for pr in $(echo "$prs" | jq -r '.[] | @base64'); do
+            is_merged=$(echo "$pr" | base64 --decode | jq -r '.merged')
+            if [ "$is_merged" = "true" ]; then
+            merged_at=$(echo "$pr" | base64 --decode | jq -r '.merged_at')
+            if [[ "$merged_at" > "$latest_release_date" ]]; then
+            pr_number=$(echo "$pr" | base64 --decode | jq -r '.number')
+            pr_title=$(echo "$pr" | base64 --decode | jq -r '.title')
+            pr_author=$(echo "$pr" | base64 --decode | jq -r '.user.login')
+            pr_date=$(date -d "$merged_at" +'%Y-%m-%d')
+            pr_body=$(echo "$pr" | base64 --decode | jq -r '.body')
+            echo "- PR #$pr_number: $pr_title by @$pr_author (merged $pr_date)" >> RELEASE_NOTES.md
+            if [ ! -z "$pr_body" ]; then
+              echo "  $pr_body" | sed 's/^/  /' >> RELEASE_NOTES.md
+            fi
+            echo "" >> RELEASE_NOTES.md
+          fi
+            fi
+          done
+
+          rm latest_release.json
+          
+      - name: Commit and push Release Notes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add RELEASE_NOTES.md
+          git commit -m "Update RELEASE_NOTES.md" || echo "No changes to commit"
+          git push
