@@ -38,4 +38,3 @@ jobs:
           push: true
           tags: mitre/vulcan:${{ env.TAG }}
           platforms: linux/amd64,linux/arm64
-          no-cache: true
