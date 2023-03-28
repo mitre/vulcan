@@ -22,14 +22,16 @@
     />
     <template v-else-if="question.question_type === 'url'">
       <template v-if="!validurl">
-        <span class="text-danger clickable float-right mr-3"> Must Start with HTTP or HTTPS! </span>
+        <span class="text-danger clickable float-right mr-3">
+          Must be a valid URL and start with http or https!
+        </span>
       </template>
       <b-input
         v-if="!disabled"
         :id="`ruleEditor-additional-field-${question.id}`"
         :value="findAnswerText(question.id)"
         :class="inputClass(question.name)"
-        placeholder="Enter URL - make sure it starts with http or https..."
+        placeholder="Enter URL..."
         @input="addOrUpdateAnswer($event, question.id)"
       />
     </template>
@@ -74,8 +76,10 @@ export default {
   },
   methods: {
     addOrUpdateAnswer: function (event, question_id) {
-      if (this.question.question_type === "url" && event.length > 3) {
-        this.validurl = event.substring(0, 4).toLowerCase() == "http";
+      if (this.question.question_type === "url" && event.length > 0) {
+        var reg =
+          /^(http|https):\/\/[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,16}\b([-a-zA-Z0-9@:%_\+.~#?&\/=]*)$/gi;
+        this.validurl = reg.test(event);
       } else {
         this.validurl = true;
       }
