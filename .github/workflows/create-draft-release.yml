@@ -1,0 +1,89 @@
+name: Create Release Draft
+
+on:
+  schedule:
+    - cron: "0 0 * * 2" # Every Tuesday at midnight (format: "`min(0 - 59)` `hr(0 - 23)` `day of month(1 - 31)` `month(1 - 12) ` `day of week(0 - 6)`")
+
+jobs:
+  create_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the Vulcan Repository
+        uses: actions/checkout@v3
+
+      - name: Get current release version
+        id: current_version
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const repo = context.repo;
+            const default_tag = 'v2.0.0';
+            try {
+              const latestRelease = await github.rest.repos.getLatestRelease(repo);
+              return latestRelease.data.tag_name;
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('No releases found');
+                return default_tag; // Default value if there are no releases
+              } else {
+                console.error(error);
+                throw error;
+              }
+            }
+
+      - name: Calculate next release version
+        id: next_version
+        run: |
+          export CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
+          CURRENT_VERSION=$(echo $CURRENT_VERSION | tr -d '"') # Remove extra quotes
+          IFS='.' read -ra VERSION_PARTS <<< "${CURRENT_VERSION:1}"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+
+          PATCH=$((PATCH + 1))
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
+
+      - name: Download source code as .zip and .tar.gz
+        run: |
+          wget -O source.zip https://github.com/mitre/vulcan/archive/refs/heads/master.zip
+          wget -O source.tar.gz https://github.com/mitre/vulcan/archive/refs/heads/master.tar.gz
+
+      - name: Create release draft
+        id: create_release
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const repo = context.repo;
+            const newVersion = process.env.NEW_VERSION;
+            const response = await github.rest.repos.createRelease({
+              ...repo,
+              tag_name: newVersion,
+              name: `vulcan ${newVersion}`,
+              draft: true,
+            });
+            return { id: response.data.id, upload_url: response.data.upload_url };
+
+      - name: Upload source code .zip to release draft
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ fromJson(steps.create_release.outputs.result).upload_url }}
+          asset_path: source.zip
+          asset_name: source code(zip)
+          asset_content_type: application/zip
+
+      - name: Upload source code .tar.gz to release draft
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ fromJson(steps.create_release.outputs.result).upload_url }}
+          asset_path: source.tar.gz
+          asset_name: source code(tar.gz)
+          asset_content_type: application/gzip
