@@ -34,7 +34,7 @@ Rails.application.routes.draw do
   # Export component
   get '/components/:id/export/:type', to: 'components#export'
   # Components based on same srg
-  get '/components/:id/based_on_same_srg', to: 'components#based_on_same_srg'
+  get '/components/:id/search/based_on_same_srg', to: 'components#based_on_same_srg'
   # Compare components
   get '/components/:id/compare/:diff_id', to: 'components#compare'
   # Find

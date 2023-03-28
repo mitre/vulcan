@@ -237,7 +237,7 @@ export default {
       this.ruleDeselected();
       if (this.baseComponent) {
         axios
-          .get(`/components/${this.baseComponent.id}/based_on_same_srg`)
+          .get(`/components/${this.baseComponent.id}/search/based_on_same_srg`)
           .then((response) => {
             this.compareList = response.data;
           })
