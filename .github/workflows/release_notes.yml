@@ -44,10 +44,22 @@ jobs:
 
           rm latest_release.json
           
-      - name: Commit and push Release Notes
+      - name: Create and submit a Pull Request
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git checkout -b release-notes-update
           git add RELEASE_NOTES.md
-          git commit -m "Update RELEASE_NOTES.md" || echo "No changes to commit"
-          git push
+          git commit -m "Update RELEASE_NOTES.md" || (echo "No changes to commit" && exit 0)
+          git push -u origin release-notes-update
+
+          PR_JSON=$(printf '{
+            "title": "Update RELEASE_NOTES.md",
+            "head": "release-notes-update",
+            "base": "master",
+            "body": "This PR updates the RELEASE_NOTES.md with the changes since the last release.",
+            "maintainer_can_modify": true
+          }')
+
+          curl -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/$GITHUB_REPOSITORY/pulls -d "$PR_JSON"
+
