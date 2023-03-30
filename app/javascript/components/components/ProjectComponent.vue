@@ -206,6 +206,7 @@
                   <template v-if="value.question_type === 'dropdown'">
                     Options: {{ value.options.join(", ") }}
                   </template>
+                  <template v-if="value.question_type === 'url'"> URL </template>
                   <template v-else> Freeform Text </template>
                 </p>
               </div>
