@@ -67,6 +67,7 @@ function initialState(component) {
     deleted_questions: [],
     typeOptions: [
       { value: "freeform", text: "Freeform Text" },
+      { value: "url", text: "URL" },
       { value: "dropdown", text: "Multiple Select" },
     ],
   };
