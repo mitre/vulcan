@@ -311,6 +311,12 @@ export default {
     SortRulesMixin,
   ],
   props: {
+    queriedRule: {
+      type: Object,
+      default() {
+        return {};
+      },
+    },
     effective_permissions: {
       type: String,
     },
@@ -427,6 +433,12 @@ export default {
         localStorage.removeItem(`componentTabIndex-${this.component.id}`);
       }
     }
+    // Set selectedRule to the queried rule if present
+    if (this.queriedRule.id) {
+      this.selectedRule = this.queriedRule;
+      this.componentSelectedRuleId = this.selectedRule.id;
+      window.history.pushState({}, "", `/components/${this.component.id}`);
+    }
   },
   methods: {
     refreshComponent: function () {
@@ -455,12 +467,21 @@ export default {
       }
     },
     updateSelectedRule: function (rule) {
-      axios
-        .get(`/rules/${rule.id}`)
-        .then((response) => {
-          this.selectedRule = response.data;
-        })
-        .catch(this.alertOrNotifyResponse);
+      if (this.queriedRule.id) {
+        return;
+      }
+      if (rule) {
+        axios
+          .get(`/rules/${rule.id}`)
+          .then((response) => {
+            this.selectedRule = response.data;
+            this.componentSelectedRuleId = this.selectedRule.id;
+          })
+          .catch(this.alertOrNotifyResponse);
+      } else {
+        this.selectedRule = {};
+        this.componentSelectedRuleId = null;
+      }
     },
     handleRuleSelected: function (ruleId) {
       this.componentSelectedRuleId = ruleId;
