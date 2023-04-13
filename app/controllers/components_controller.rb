@@ -13,8 +13,8 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
   before_action :authorize_admin_component, only: %i[update], if: lambda {
-    params.require(:component).permit(:advanced_fields)[:advanced_fields].present?
-  }
+                                params.require(:component).permit(:advanced_fields)[:advanced_fields].present?
+                              }
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
   before_action :authorize_logged_in, only: %i[search]
   before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
@@ -38,19 +38,19 @@ class ComponentsController < ApplicationController
                           .distinct
                           .pluck(:id, :name)
     render json: {
-      components: components
+      components: components,
     }
   end
 
   def show
     @component_json = if @effective_permissions
-                        @component.to_json(
-                          methods: %i[histories memberships metadata inherited_memberships available_members rules
-                                      reviews]
-                        )
-                      else
-                        @component.to_json(methods: %i[rules reviews])
-                      end
+        @component.to_json(
+          methods: %i[histories memberships metadata inherited_memberships available_members rules
+                      reviews],
+        )
+      else
+        @component.to_json(methods: %i[rules reviews])
+      end
     @project_json = @component.project.to_json
     respond_to do |format|
       format.html
@@ -69,28 +69,28 @@ class ComponentsController < ApplicationController
       component.rules_count = component.rules.where(deleted_at: nil).size
       component.save
       send_slack_notification(:create_component, component) if Settings.slack.enabled
-      render json: { toast: 'Successfully added component to project.' }
+      render json: { toast: "Successfully added component to project." }
     else
       render json: {
         toast: {
-          title: 'Could not add component to project.',
+          title: "Could not add component to project.",
           message: component.errors.full_messages,
-          variant: 'danger'
-        }
+          variant: "danger",
+        },
       }, status: :unprocessable_entity
     end
   end
 
   def update
     if @component.update(component_update_params)
-      render json: { toast: 'Successfully updated component.' }
+      render json: { toast: "Successfully updated component." }
     else
       render json: {
         toast: {
-          title: 'Could not update component.',
+          title: "Could not update component.",
           message: @component.errors.full_messages,
-          variant: 'danger'
-        }
+          variant: "danger",
+        },
       }, status: :unprocessable_entity
     end
   end
@@ -101,15 +101,15 @@ class ComponentsController < ApplicationController
       Rule.unscoped.where(component_id: @component.id).destroy_all
       @component.destroy!
       send_slack_notification(:remove_component, @component) if Settings.slack.enabled
-      render json: { toast: 'Successfully removed component from project.' }
+      render json: { toast: "Successfully removed component from project." }
     end
   rescue StandardError
     render json: {
       toast: {
-        title: 'Error',
-        message: 'Could not remove component from project.',
-        variant: 'danger'
-      }
+        title: "Error",
+        message: "Could not remove component from project.",
+        variant: "danger",
+      },
     }, status: :unprocessable_entity
   end
 
@@ -120,27 +120,27 @@ class ComponentsController < ApplicationController
     unless %i[csv inspec xccdf].include?(export_type)
       render json: {
         toast: {
-          title: 'Export error',
+          title: "Export error",
           message: "Unsupported export type: #{export_type}",
-          variant: 'danger'
-        }
+          variant: "danger",
+        },
       }, status: :bad_request
       return
     end
 
     respond_to do |format|
       format.html do
-        version = @component[:version] ? "V#{@component[:version]}" : ''
-        release = @component[:release] ? "R#{@component[:release]}" : ''
+        version = @component[:version] ? "V#{@component[:version]}" : ""
+        release = @component[:release] ? "R#{@component[:release]}" : ""
 
         case export_type
         when :csv
           send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
         when :inspec
-          filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
+          filename = "#{@component[:name].tr(" ", "-")}-#{version}#{release}-stig-baseline.zip"
           send_data export_inspec_component(@component).string, filename: filename
         when :xccdf
-          filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml"
+          filename = "#{@component[:name].tr(" ", "-")}-#{version}#{release}-xccdf.xml"
           send_data export_xccdf_component(@component), filename: filename
         end
       end
@@ -156,8 +156,8 @@ class ComponentsController < ApplicationController
                           .where.not(id: params[:id])
                           .order(:project_id)
                           .joins(:project)
-                          .select('components.id, components.name, components.version, components.prefix, '\
-                                  'components.release, projects.name AS project_name')
+                          .select("components.id, components.name, components.version, components.prefix, " \
+                                  "components.release, projects.name AS project_name")
                           .map(&:attributes)
   end
 
@@ -185,25 +185,25 @@ class ComponentsController < ApplicationController
 
         # added
         (diff.keys - base.keys).each do |rule_id|
-          changes[rule_id] = { change: 'added', diff: diff[rule_id] }
+          changes[rule_id] = { change: "added", diff: diff[rule_id] }
         end
 
         # removed
         (base.keys - diff.keys).each do |rule_id|
-          changes[rule_id] = { change: 'removed', base: base[rule_id] }
+          changes[rule_id] = { change: "removed", base: base[rule_id] }
         end
 
         # updated
         base.keys.intersection(diff.keys)
             .filter { |rule_id| base[rule_id] != diff[rule_id] }
             .each do |rule_id|
-              changes[rule_id] = { change: 'updated', base: base[rule_id], diff: diff[rule_id] }
-            end
+          changes[rule_id] = { change: "updated", base: base[rule_id], diff: diff[rule_id] }
+        end
 
         history << {
           baseComponent: prev_component,
           diffComponent: component,
-          changes: changes
+          changes: changes,
         }
       end
 
@@ -218,11 +218,11 @@ class ComponentsController < ApplicationController
     component_id = params.require(:id)
 
     rules = Component.find_by(id: component_id).rules
-    checks = Check.where(base_rule: rules).where('content like ?', "%#{find.downcase}%")
-    descriptions = DisaRuleDescription.where(base_rule: rules).where('vuln_discussion like ?', "%#{find.downcase}%")
-    rules = rules.where('title like ?', "%#{find.downcase}%").or(
-      rules.where('fixtext LIKE ?', "%#{find.downcase}%").or(
-        rules.where('vendor_comments LIKE ?', "%#{find.downcase}%").or(
+    checks = Check.where(base_rule: rules).where("content like ?", "%#{find.downcase}%")
+    descriptions = DisaRuleDescription.where(base_rule: rules).where("vuln_discussion like ?", "%#{find.downcase}%")
+    rules = rules.where("title like ?", "%#{find.downcase}%").or(
+      rules.where("fixtext LIKE ?", "%#{find.downcase}%").or(
+        rules.where("vendor_comments LIKE ?", "%#{find.downcase}%").or(
           rules.where(id: checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
         )
       )
@@ -264,14 +264,14 @@ class ComponentsController < ApplicationController
     @component = Component.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers, :satisfies, :satisfied_by, {
-                srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
-              }]
+        srg_rule: %i[disa_rule_descriptions rule_descriptions checks],
+      }],
     ).find_by(id: params[:id])
 
     # Returns out of the method If the Component instance variable does exist.
     return if @component.present?
 
-    message = 'The requested component could not be found.'
+    message = "The requested component could not be found."
     respond_to do |format|
       # Return an HTML response with an alert flash message if request format is HTML.
       format.html do
@@ -282,10 +282,10 @@ class ComponentsController < ApplicationController
       format.json do
         render json: {
           toast: {
-            title: 'Control not found',
+            title: "Control not found",
             message: message,
-            variant: 'danger'
-          }
+            variant: "danger",
+          },
         }, status: :not_found
       end
     end
@@ -306,9 +306,9 @@ class ComponentsController < ApplicationController
     if @rule.present?
       @rule_json = @rule.to_json
 
-    # Else, create an error message and respond to either HTML or JSON requests
+      # Else, create an error message and respond to either HTML or JSON requests
     else
-      message = 'The requested component and control combination could not be found.'
+      message = "The requested component and control combination could not be found."
       respond_to do |format|
         flash.alert = message
 
@@ -321,10 +321,10 @@ class ComponentsController < ApplicationController
           # as well as setting status code of the response to not_found (404)
           render json: {
             toast: {
-              title: 'Control not found',
+              title: "Control not found",
               message: message,
-              variant: 'danger'
-            }
+              variant: "danger",
+            },
           }, status: :not_found
         end
       end
@@ -342,10 +342,11 @@ class ComponentsController < ApplicationController
       :version,
       :release,
       :title,
+      :prefix,
       :description,
       :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
-      component_metadata_attributes: { data: {} }
+      component_metadata_attributes: { data: {} },
     )
   end
 
@@ -364,7 +365,7 @@ class ComponentsController < ApplicationController
       :title,
       :description,
       :file,
-      file: {}
+      file: {},
     )
   end
 end
