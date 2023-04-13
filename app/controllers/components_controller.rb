@@ -12,9 +12,13 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
-  before_action :authorize_admin_component, only: %i[update], if: lambda {
-                                                                    params.require(:component).permit(:advanced_fields)[:advanced_fields].present?
-                                                                  }
+  before_action :authorize_admin_component, only: %i[update], if: (lambda {
+                                                                     params
+                                                                       .require(:component)
+                                                                       .permit(:advanced_fields)[:advanced_fields]
+                                                                       .present?
+                                                                   })
+
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
   before_action :authorize_logged_in, only: %i[search]
   before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
