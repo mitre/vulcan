@@ -187,7 +187,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
     title = (component[:title] || "#{component[:name]} STIG Readiness Guide")
     ox_el_helper(benchmark, 'title', title)
-    ox_el_helper(benchmark, 'description', component[:description])
+    ox_el_helper(benchmark, 'description', component[:description] || title)
     ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })
     ox_el_helper(benchmark, 'front-matter', nil, { 'xml:lang': 'en' })
     ox_el_helper(benchmark, 'rear-matter', nil, { 'xml:lang': 'en' })
