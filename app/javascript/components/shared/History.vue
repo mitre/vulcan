@@ -1,58 +1,62 @@
 <template>
   <div>
-    <div v-for="history in histories" :key="history.id">
+    <div v-for="group in groupedHistories" :key="group.id">
       <p class="ml-2 mb-0 mt-2">
-        <strong>{{ history.name }}</strong>
+        <strong>{{ group.history.name }}</strong>
       </p>
       <p class="ml-2 mb-0">
-        <small>{{ friendlyDateTime(history.created_at) }}</small>
+        <small>{{ friendlyDateTime(group.history.created_at) }}</small>
       </p>
-      <p v-if="history.comment" class="ml-3 mb-0 white-space-pre-wrap">{{ history.comment }}</p>
-
-      <!-- Associated audits are abbreviated -->
-      <template v-if="abbreviateType">
-        <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
-          {{ userIdentifier(history) }} was created
-        </p>
-        <template v-if="history.action == 'update'">
-          <p
-            v-if="history.audited_changes.map((c) => c.field).includes('deleted_at')"
-            class="ml-3 mb-0 text-danger"
-          >
-            {{ userIdentifier(history) }} was deleted
+      <p v-if="group.history.comment" class="ml-3 mb-0">
+        {{ group.history.comment }}
+      </p>
+      <!-- Iterate over associated audits for each group -->
+      <div v-for="history in group.histories" :key="history.id">
+        <!-- Associated audits are abbreviated -->
+        <template v-if="abbreviateType">
+          <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
+            {{ userIdentifier(history) }} was created
           </p>
-          <p v-else class="ml-3 mb-0 text-info">{{ userIdentifier(history) }} was updated</p>
-        </template>
-      </template>
-      <template v-else>
-        <!-- Edit or Delete action -->
-        <template v-if="history.action == 'update' || history.action == 'destroy'">
-          <template v-if="revertable">
-            <RuleRevertModal
-              :rule="rule"
-              :component="component"
-              :history="history"
-              :statuses="statuses"
-              :severities="severities"
-            />
-          </template>
-          <template v-else>
-            <div v-for="changes in history.audited_changes" :key="changes.id">
-              <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
-                {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
-              </p>
-            </div>
-            <p v-if="history.action == 'destroy'" class="ml-3 mb-0 text-danger">
-              {{ userIdentifier(history) }} was {{ computeDeletionText(history) }}
+          <template v-if="history.action == 'update'">
+            <p
+              v-if="history.audited_changes.map((c) => c.field).includes('deleted_at')"
+              class="ml-3 mb-0 text-danger"
+            >
+              {{ userIdentifier(history) }} was deleted
             </p>
+            <p v-else class="ml-3 mb-0 text-info">{{ userIdentifier(history) }} was updated</p>
           </template>
         </template>
+        <template v-else>
+          <!-- Edit or Delete action -->
+          <template v-if="history.action == 'update' || history.action == 'destroy'">
+            <template v-if="revertable">
+              <RuleRevertModal
+                :rule="rule"
+                :component="component"
+                :history="history"
+                :statuses="statuses"
+                :severities="severities"
+              />
+            </template>
+            <template v-else>
+              <div v-for="changes in history.audited_changes" :key="changes.id">
+                <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
+                  {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
+                </p>
+              </div>
+              <p v-if="history.action == 'destroy'" class="ml-3 mb-0 text-danger">
+                {{ userIdentifier(history) }} was {{ computeDeletionText(history) }}
+              </p>
+            </template>
+          </template>
 
-        <!-- Create action -->
-        <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
-          {{ userIdentifier(history) }} was {{ computeCreationText(history) }}
-        </p>
-      </template>
+          <!-- Create action -->
+          <p v-if="history.action == 'create'" class="ml-3 mb-0 text-success">
+            {{ userIdentifier(history) }} was {{ computeCreationText(history) }}
+          </p>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -61,11 +65,12 @@
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
 import RuleRevertModal from "./../rules/RuleRevertModal.vue";
+import HistoryGroupingMixinVue from "../../mixins/HistoryGroupingMixin.vue";
 
 export default {
   name: "History",
   components: { RuleRevertModal },
-  mixins: [DateFormatMixinVue, HumanizedTypesMixInVue],
+  mixins: [DateFormatMixinVue, HumanizedTypesMixInVue, HistoryGroupingMixinVue],
   props: {
     histories: {
       type: Array,
@@ -94,6 +99,11 @@ export default {
     abbreviateType: {
       type: String,
       required: false,
+    },
+  },
+  computed: {
+    groupedHistories() {
+      return this.groupHistories(this.histories);
     },
   },
   methods: {
