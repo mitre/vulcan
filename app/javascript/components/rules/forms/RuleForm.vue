@@ -541,7 +541,7 @@ export default {
     tooltips: function () {
       return {
         status:
-          "Applicable – Configurable: The product requires configuration or the application of policy settings to achieve compliance.<br> Applicable – Inherently Meets: The product is compliant in its initial state and cannot be subsequently reconfigured to a noncompliant state.<br> Applicable – Does Not Meet: There are no technical means to achieve compliance.<br> Not Applicable: The requirement addresses a capability or use case that the product does not support.",
+          "Applicable – Configurable: The product requires configuration or the application of policy settings to achieve compliance.<br><br>Applicable – Inherently Meets: The product is compliant in its initial state and cannot be subsequently reconfigured to a noncompliant state.<br><br> Applicable – Does Not Meet: There are no technical means to achieve compliance.<br><br> Not Applicable: The requirement addresses a capability or use case that the product does not support.",
         status_justification: ["Applicable - Configurable", "Not Yet Determined"].includes(
           this.rule.status
         )
@@ -584,4 +584,8 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style>
+.tooltip-inner {
+  max-width: 300px;
+}
+</style>
