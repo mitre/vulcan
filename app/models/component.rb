@@ -101,8 +101,8 @@ class Component < ApplicationRecord
 
     missing_from_srg = spreadsheet_srg_ids - database_srg_ids
     unless missing_from_srg.empty?
-      errors.add(:base, 'The following required SRG IDs were missing from the selected SRG '\
-                        "#{truncate(missing_from_srg.join(', '), length: 300)}. "\
+      errors.add(:base, 'The following required SRG IDs were missing from the selected SRG ' \
+                        "#{truncate(missing_from_srg.join(', '), length: 300)}. " \
                         'Please remove these rows or select a different SRG and try again.')
       return
     end
@@ -119,7 +119,7 @@ class Component < ApplicationRecord
     # Calculate the prefix (which will need to be removed from each row)
     possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.compact_blank
     if possible_prefixes.empty?
-      errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID '\
+      errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID ' \
                         'in the file and try again.')
       return
     else
@@ -148,6 +148,8 @@ class Component < ApplicationRecord
       severity = SEVERITIES_MAP.invert[row[IMPORT_MAPPING[:rule_severity]]&.upcase]
       r.rule_severity = severity if severity
       r.srg_rule_id = srg_rule.id
+      # Get the inspec control body if provided
+      r.inspec_control_body = row[IMPORT_MAPPING[:inspec_control_body]]
 
       disa_rule_description = r.disa_rule_descriptions.first
       disa_rule_description.vuln_discussion = row[IMPORT_MAPPING[:vuln_discussion]]
@@ -427,11 +429,11 @@ class Component < ApplicationRecord
 
   def csv_export
     ::CSV.generate(headers: true) do |csv|
-      csv << ExportConstants::DISA_EXPORT_HEADERS
+      csv << ExportConstants::EXPORT_HEADERS
       rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers, :satisfies,
                        :satisfied_by, srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
            .order(:version, :rule_id).each do |rule|
-        csv << rule.csv_attributes
+        csv << rule.csv_attributes.append(rule.inspec_control_body)
       end
     end
   end
