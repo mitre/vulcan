@@ -47,12 +47,16 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       worksheet_name = component[:name].gsub(/\s+/, '').first(31 - name_ending.length) + name_ending
       worksheet = workbook.add_worksheet(worksheet_name)
       worksheet.auto_width = true
-      worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
+      if is_disa_export
+        worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
+      else
+        worksheet.append_row(ExportConstants::EXPORT_HEADERS)
+      end
       last_row_num = 0
       component.rules.order(:version, :rule_id).each do |rule|
         # fast_excel unfortunately does not provide a method to modify the @last_row_number class variable
         # so it needs to be manually kept track of
-        csv_attributes = rule.csv_attributes
+        csv_attributes = is_disa_export ? rule.csv_attributes : rule.csv_attributes.append(rule.inspec_control_body)
         if is_disa_export
           if rule.status != 'Applicable - Configurable' && rule.status != 'Not Yet Determined'
             check_text, fix_text = get_check_and_fix_text(rule.status).values_at('check_text', 'fix_text')
@@ -178,7 +182,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
     benchmark['xsi:schemaLocation'] = 'http://checklists.nist.gov/xccdf/1.1 ' \
                                       'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
-                                      'http://cpe.mitre.org/dictionary/2.0 '\
+                                      'http://cpe.mitre.org/dictionary/2.0 ' \
                                       'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
     benchmark['id'] = component[:name]
     benchmark['xml:lang'] = 'en'

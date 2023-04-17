@@ -97,8 +97,8 @@ class Rule < BaseRule
           satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
           satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
           additional_answers_attributes: additional_answers.as_json.map do |c|
-                                           c.except('rule_id', 'created_at', 'updated_at')
-                                         end,
+            c.except('rule_id', 'created_at', 'updated_at')
+          end,
           srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule.security_requirements_guide_id).version }
         }
       )
@@ -220,7 +220,7 @@ class Rule < BaseRule
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('cci', ([ident] + satisfies.pluck(:ident)).uniq.sort)) if ident.present?
     control.add_tag(Inspec::Object::Tag.new('nist', ([nist_control_family] +
-                                                      satisfies.map(&:nist_control_family)).uniq.sort))
+                                                     satisfies.map(&:nist_control_family)).uniq.sort))
     if desc.present?
       %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
          third_party_tools mitigation_control responsibility ia_controls].each do |field|
