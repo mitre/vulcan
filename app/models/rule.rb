@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'inspec/objects'
+require "inspec/objects"
 
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
@@ -20,19 +20,19 @@ class Rule < BaseRule
 
   belongs_to :component
   belongs_to :srg_rule
-  belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
+  belongs_to :review_requestor, class_name: "User", inverse_of: :reviews, optional: true
   has_many :reviews, dependent: :destroy
   has_many :additional_answers, dependent: :destroy
 
   accepts_nested_attributes_for :additional_answers
 
   has_and_belongs_to_many :satisfied_by,
-                          class_name: 'Rule',
+                          class_name: "Rule",
                           join_table: :rule_satisfactions,
                           association_foreign_key: :satisfied_by_rule_id
 
   has_and_belongs_to_many :satisfies,
-                          class_name: 'Rule',
+                          class_name: "Rule",
                           join_table: :rule_satisfactions,
                           foreign_key: :satisfied_by_rule_id,
                           association_foreign_key: :rule_id
@@ -66,14 +66,14 @@ class Rule < BaseRule
     rule.component_id = component_id
     rule.srg_rule_id = srg_rules[rule.rule_id]
     # This is what is appended to the component prefix in the UI
-    rule.rule_id = idx&.to_s&.rjust(6, '0')
+    rule.rule_id = idx&.to_s&.rjust(6, "0")
 
     rule
   end
 
   # Overrides for satisfied controls
   def status
-    satisfied_by.size.positive? ? 'Applicable - Configurable' : self[:status]
+    satisfied_by.size.positive? ? "Applicable - Configurable" : self[:status]
   end
 
   def status=(value)
@@ -88,18 +88,18 @@ class Rule < BaseRule
     unless options[:skip_merge].eql?(true)
       result = result.merge(
         {
-          reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-          srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
-                                                       'status_justification', 'artifact_description',
-                                                       'vendor_comments', 'review_requestor_id',
-                                                       'component_id', 'changes_requested', 'srg_rule_id',
-                                                       'security_requirements_guide_id'),
+          reviews: reviews.as_json.map { |c| c.except("user_id", "rule_id", "updated_at") },
+          srg_rule_attributes: srg_rule.as_json.except("id", "locked", "created_at", "updated_at", "status",
+                                                       "status_justification", "artifact_description",
+                                                       "vendor_comments", "review_requestor_id",
+                                                       "component_id", "changes_requested", "srg_rule_id",
+                                                       "security_requirements_guide_id"),
           satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
           satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
           additional_answers_attributes: additional_answers.as_json.map do |c|
-                                           c.except('rule_id', 'created_at', 'updated_at')
-                                         end,
-          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule.security_requirements_guide_id).version }
+            c.except("rule_id", "created_at", "updated_at")
+          end,
+          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule.security_requirements_guide_id).version },
         }
       )
     end
@@ -119,17 +119,17 @@ class Rule < BaseRule
     audit = rule.own_and_associated_audits.find(audit_id)
 
     # nil check for audit
-    raise(RuleRevertError, 'Could not locate history for this control.') if audit.nil?
+    raise(RuleRevertError, "Could not locate history for this control.") if audit.nil?
 
-    if audit.action == 'update'
+    if audit.action == "update"
       record = audit.auditable
 
       # nil check for record
-      raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
+      raise(RuleRevertError, "Could not locate record for this history.") if record.nil?
 
       fields.each do |field|
         # The only field we can revert on AdditionalAnswers is answer
-        field = 'answer' if audit.auditable_type.eql?('AdditionalAnswer')
+        field = "answer" if audit.auditable_type.eql?("AdditionalAnswer")
 
         unless audit.audited_changes.include?(field)
           raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.")
@@ -138,13 +138,13 @@ class Rule < BaseRule
         # The audited change can either be an array `[prev_val, new_val]`
         # or just the `val`
         value = if audit.audited_changes[field].is_a?(Array)
-                  audit.audited_changes[field][0]
-                else
-                  audit.audited_changes[field]
-                end
+            audit.audited_changes[field][0]
+          else
+            audit.audited_changes[field]
+          end
 
         # Special case for AdditionalAnswer since it stores in the 'answer' field always
-        if audit.auditable_type.eql?('AdditionalAnswer')
+        if audit.auditable_type.eql?("AdditionalAnswer")
           record.answer = value
         else
           record[field] = value
@@ -155,18 +155,18 @@ class Rule < BaseRule
       return
     end
 
-    raise(RuleRevertError, 'Cannot revert this history.') unless audit.action == 'destroy'
+    raise(RuleRevertError, "Cannot revert this history.") unless audit.action == "destroy"
 
     auditable_type = case audit.auditable_type
-                     when 'RuleDescription'
-                       RuleDescription
-                     when 'DisaRuleDescription'
-                       DisaRuleDescription
-                     when 'Check'
-                       Check
-                     else
-                       raise(RuleRevertError, 'Cannot revert this history type.')
-                     end
+      when "RuleDescription"
+        RuleDescription
+      when "DisaRuleDescription"
+        DisaRuleDescription
+      when "Check"
+        Check
+      else
+        raise(RuleRevertError, "Cannot revert this history type.")
+      end
     begin
       auditable_type.create!(audit.audited_changes.merge({ rule_id: rule.id, audit_comment: audit_comment }))
     rescue ActiveRecord::RecordInvalid => e
@@ -193,7 +193,8 @@ class Rule < BaseRule
       status_justification,
       disa_rule_descriptions.first&.mitigations,
       artifact_description,
-      vendor_comments_with_satisfactions
+      vendor_comments_with_satisfactions,
+      inspec_control_body,
     ]
   end
 
@@ -204,23 +205,23 @@ class Rule < BaseRule
   def update_inspec_code
     desc = disa_rule_descriptions.first
     control = Inspec::Object::Control.new
-    control.add_header('# -*- encoding : utf-8 -*-')
+    control.add_header("# -*- encoding : utf-8 -*-")
     control.id = "#{component[:prefix]}-#{rule_id}"
     control.title = title
     control.descriptions[:default] = desc[:vuln_discussion] if desc.present?
-    control.descriptions[:rationale] = ''
+    control.descriptions[:rationale] = ""
     control.descriptions[:check] = checks.first&.content
     control.descriptions[:fix] = fixtext
     control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
-    control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
-    control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version).sort)) if satisfies.present?
-    control.add_tag(Inspec::Object::Tag.new('gid', "V-#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('rid', "SV-#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('cci', ([ident] + satisfies.pluck(:ident)).uniq.sort)) if ident.present?
-    control.add_tag(Inspec::Object::Tag.new('nist', ([nist_control_family] +
-                                                      satisfies.map(&:nist_control_family)).uniq.sort))
+    control.add_tag(Inspec::Object::Tag.new("severity", rule_severity))
+    control.add_tag(Inspec::Object::Tag.new("gtitle", version))
+    control.add_tag(Inspec::Object::Tag.new("satisfies", satisfies.pluck(:version).sort)) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new("gid", "V-#{component[:prefix]}-#{rule_id}"))
+    control.add_tag(Inspec::Object::Tag.new("rid", "SV-#{component[:prefix]}-#{rule_id}"))
+    control.add_tag(Inspec::Object::Tag.new("stig_id", "#{component[:prefix]}-#{rule_id}"))
+    control.add_tag(Inspec::Object::Tag.new("cci", ([ident] + satisfies.pluck(:ident)).uniq.sort)) if ident.present?
+    control.add_tag(Inspec::Object::Tag.new("nist", ([nist_control_family] +
+                                                     satisfies.map(&:nist_control_family)).uniq.sort))
     if desc.present?
       %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
          third_party_tools mitigation_control responsibility ia_controls].each do |field|
@@ -245,7 +246,7 @@ class Rule < BaseRule
       title: title,
       vuln_discussion: disa_rule_descriptions.first&.vuln_discussion,
       check: export_checktext,
-      fix: export_fixtext
+      fix: export_fixtext,
     }
   end
 
@@ -268,20 +269,20 @@ class Rule < BaseRule
     comments << vendor_comments if vendor_comments.present?
 
     if satisfied_by.present?
-      comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
+      comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(", ")}."
     end
 
     if satisfies.present?
-      comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
+      comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(", ")}."
     end
 
-    comments.join('. ')
+    comments.join(". ")
   end
 
   def cannot_be_locked_and_under_review
     return unless locked && review_requestor_id.present?
 
-    errors.add(:base, 'Control cannot be under review and locked at the same time.')
+    errors.add(:base, "Control cannot be under review and locked at the same time.")
   end
 
   ##
@@ -296,11 +297,11 @@ class Rule < BaseRule
     # Break early if review and non-review fields have not changed together
     return unless any_review_fields_changed && any_non_review_fields_changed
 
-    errors.add(:base, 'Cannot update review-related attributes with other non-review-related attributes')
+    errors.add(:base, "Cannot update review-related attributes with other non-review-related attributes")
   end
 
   def set_rule_id
-    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') if rule_id.blank?
+    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, "0") if rule_id.blank?
   end
 
   ##
@@ -312,14 +313,14 @@ class Rule < BaseRule
 
     # Abort if under review and trying to delete
     if review_requestor_id_was.present?
-      errors.add(:base, 'Control is under review and cannot be destroyed')
+      errors.add(:base, "Control is under review and cannot be destroyed")
       throw(:abort)
     end
 
     # Abort if locked and trying to delete
     return unless locked_was
 
-    errors.add(:base, 'Control is locked and cannot be destroyed')
+    errors.add(:base, "Control is locked and cannot be destroyed")
     throw(:abort)
   end
 
