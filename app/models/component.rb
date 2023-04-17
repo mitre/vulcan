@@ -48,11 +48,11 @@ class Component < ApplicationRecord
                select(:srg_id, :title, :version)
              },
              class_name: :SecurityRequirementsGuide,
-             foreign_key: 'security_requirements_guide_id',
-             inverse_of: 'components'
+             foreign_key: "security_requirements_guide_id",
+             inverse_of: "components"
   has_many :rules, dependent: :destroy
-  belongs_to :component, class_name: 'Component', inverse_of: :child_components, optional: true
-  has_many :child_components, class_name: 'Component', inverse_of: :component, dependent: :destroy
+  belongs_to :component, class_name: "Component", inverse_of: :child_components, optional: true
+  has_many :child_components, class_name: "Component", inverse_of: :component, dependent: :destroy
   has_many :memberships, -> { includes :user }, inverse_of: :membership, as: :membership, dependent: :destroy
   has_one :component_metadata, dependent: :destroy
 
@@ -75,7 +75,7 @@ class Component < ApplicationRecord
     super(options.merge(methods: methods)).merge(
       {
         based_on_title: based_on.title,
-        based_on_version: based_on.version
+        based_on_version: based_on.version,
       }
     )
   end
@@ -92,7 +92,7 @@ class Component < ApplicationRecord
 
     missing_headers = REQUIRED_MAPPING_CONSTANTS.values - file_headers
     unless missing_headers.empty?
-      errors.add(:base, "The following required headers were missing #{missing_headers.join(', ')}")
+      errors.add(:base, "The following required headers were missing #{missing_headers.join(", ")}")
       return
     end
 
@@ -101,9 +101,9 @@ class Component < ApplicationRecord
 
     missing_from_srg = spreadsheet_srg_ids - database_srg_ids
     unless missing_from_srg.empty?
-      errors.add(:base, 'The following required SRG IDs were missing from the selected SRG '\
-                        "#{truncate(missing_from_srg.join(', '), length: 300)}. "\
-                        'Please remove these rows or select a different SRG and try again.')
+      errors.add(:base, "The following required SRG IDs were missing from the selected SRG " \
+                        "#{truncate(missing_from_srg.join(", "), length: 300)}. " \
+                        "Please remove these rows or select a different SRG and try again.")
       return
     end
 
@@ -111,7 +111,7 @@ class Component < ApplicationRecord
 
     # Missing rows from the spreadsheet should still be present in the database
     missing_from_spreadsheet.each do |missing|
-      row = file_headers.index_with { |_key| '' }
+      row = file_headers.index_with { |_key| "" }
       row[IMPORT_MAPPING[:srg_id]] = missing
       parsed << row
     end
@@ -119,8 +119,8 @@ class Component < ApplicationRecord
     # Calculate the prefix (which will need to be removed from each row)
     possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.compact_blank
     if possible_prefixes.empty?
-      errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID '\
-                        'in the file and try again.')
+      errors.add(:base, "No STIG prefixes were detected in the file. Please set any STIGID " \
+                        "in the file and try again.")
       return
     else
       self.prefix = possible_prefixes.first[0, 7]
@@ -132,7 +132,7 @@ class Component < ApplicationRecord
       r = srg_rule.amoeba_dup
 
       # Remove the prefix and remove any non-digits
-      r.rule_id = row[IMPORT_MAPPING[:stig_id]]&.sub(prefix, '')&.delete('^0-9')
+      r.rule_id = row[IMPORT_MAPPING[:stig_id]]&.sub(prefix, "")&.delete("^0-9")
       r.title = row[IMPORT_MAPPING[:title]]
       r.fixtext = row[IMPORT_MAPPING[:fixtext]]
       r.artifact_description = row[IMPORT_MAPPING[:artifact_description]]
@@ -148,6 +148,8 @@ class Component < ApplicationRecord
       severity = SEVERITIES_MAP.invert[row[IMPORT_MAPPING[:rule_severity]]&.upcase]
       r.rule_severity = severity if severity
       r.srg_rule_id = srg_rule.id
+      # Get the inspec control body if provided
+      r.inspec_control_body = row[IMPORT_MAPPING[:inspec_control_body]]
 
       disa_rule_description = r.disa_rule_descriptions.first
       disa_rule_description.vuln_discussion = row[IMPORT_MAPPING[:vuln_discussion]]
@@ -177,8 +179,8 @@ class Component < ApplicationRecord
 
   def update_admin_contact_info
     admin_members = admins
-    admin_component_membership = admin_members.select { |member| member.membership_type == 'Component' }
-    admin_project_membership = admin_members.select { |member| member.membership_type == 'Project' }
+    admin_component_membership = admin_members.select { |member| member.membership_type == "Component" }
+    admin_project_membership = admin_members.select { |member| member.membership_type == "Project" }
 
     if admin_component_membership.present?
       self.admin_name = admin_component_membership.first.name
@@ -202,14 +204,14 @@ class Component < ApplicationRecord
   # - `nil`
   def admins
     Membership.where(
-      membership_type: 'Component',
+      membership_type: "Component",
       membership_id: id,
-      role: 'admin'
+      role: "admin",
     ).or(
       Membership.where(
-        membership_type: 'Project',
+        membership_type: "Project",
         membership_id: project_id,
-        role: 'admin'
+        role: "admin",
       )
     ).eager_load(:user).select(:user_id, :name, :email, :membership_type)
   end
@@ -257,7 +259,7 @@ class Component < ApplicationRecord
       new_srg_rule = new_srg_rules[copied_rule[:version]]
 
       # delete rules that are no longer present - calling destroy here will also persist new_component in the DB
-      copied_rule.destroy! if new_srg_rule.blank? && copied_rule.status != 'Applicable - Configurable'
+      copied_rule.destroy! if new_srg_rule.blank? && copied_rule.status != "Applicable - Configurable"
 
       # skip if not in new SRG (leave old SRG rule references on it) - only for "non-Configurable" rules
       next if new_srg_rule.blank?
@@ -270,7 +272,7 @@ class Component < ApplicationRecord
       copied_rule.srg_rule = new_srg_rule
 
       # don't touch the "Applicable - Configurable" rules, leave original content in place (title,check,fix,discussion)
-      next if copied_rule.status == 'Applicable - Configurable'
+      next if copied_rule.status == "Applicable - Configurable"
 
       # Update fields for "non-Configurable" - reset to new SRG rule info for title, check, fix, discussion
       copied_rule.title = new_srg_rule.title
@@ -333,12 +335,12 @@ class Component < ApplicationRecord
   end
 
   def create_rule_satisfactions
-    rules.where('vendor_comments LIKE ?', '%Satisfied By: %').find_each do |rule|
+    rules.where("vendor_comments LIKE ?", "%Satisfied By: %").find_each do |rule|
       vc = rule.vendor_comments.split
-      sb = vc[vc.index('By:') + 1]
+      sb = vc[vc.index("By:") + 1]
       next if sb.nil?
 
-      sb_rule_id = sb.delete('.').split('-').last
+      sb_rule_id = sb.delete(".").split("-").last
       sb_rule = rules.find_by(rule_id: sb_rule_id)
       next if sb_rule.nil?
 
@@ -362,10 +364,10 @@ class Component < ApplicationRecord
     srg_rule_versions = filtered_srg_rules.pluck(:rule_id, :version).to_h
 
     filtered_benchmark_rules = if new_rule_versions.nil?
-                                 benchmark.rule
-                               else
-                                 benchmark.rule.filter { |r| new_rule_versions.include?(r.version.first.version) }
-                               end
+        benchmark.rule
+      else
+        benchmark.rule.filter { |r| new_rule_versions.include?(r.version.first.version) }
+      end
     rule_models = filtered_benchmark_rules.sort_by { |r| srg_rule_versions[r.id] }.each_with_index.map do |rule, idx|
       Rule.from_mapping(rule, id, starting_idx + idx + 1, srg_rules)
     end
@@ -375,12 +377,12 @@ class Component < ApplicationRecord
     if success
       reload
     else
-      errors.add(:base, 'Some rules failed to import successfully for the component.')
+      errors.add(:base, "Some rules failed to import successfully for the component.")
     end
     success
   rescue StandardError => e
     message = e.message[0, 50]
-    message += '...' if e.message.size >= 50
+    message += "..." if e.message.size >= 50
     errors.add(:base, "Encountered an error when importing rules from the SRG: #{message}")
     false
   end
@@ -405,13 +407,13 @@ class Component < ApplicationRecord
   # - not already memebers of the component
   def available_members
     exclude_user_ids = Membership.where(
-      membership_type: 'Project',
+      membership_type: "Project",
       membership_id: project_id,
-      role: 'admin'
+      role: "admin",
     ).or(
       Membership.where(
-        membership_type: 'Component',
-        membership_id: id
+        membership_type: "Component",
+        membership_id: id,
       )
     ).pluck(:user_id)
     User.where.not(id: exclude_user_ids).select(:id, :name, :email)
@@ -420,7 +422,7 @@ class Component < ApplicationRecord
   def reviews
     rule_ids = rules.to_h { |r| [r.id, r.displayed_name] }
     Review.where(rule: rules).order(created_at: :desc).limit(20).as_json.map do |review|
-      review['displayed_rule_name'] = rule_ids[review['rule_id'].to_i]
+      review["displayed_rule_name"] = rule_ids[review["rule_id"].to_i]
       review
     end
   end
@@ -456,21 +458,21 @@ class Component < ApplicationRecord
     # Break early if the component is not an overlay or if `id != component_id`
     return if component_id.nil? || id != component_id
 
-    errors.add(:component_id, 'cannot overlay itself')
+    errors.add(:component_id, "cannot overlay itself")
   end
 
   def cannot_unrelease_component
     # Error if component was released and has been changed to released = false
     return unless released_was && !released
 
-    errors.add(:base, 'Cannot unrelease a released component')
+    errors.add(:base, "Cannot unrelease a released component")
   end
 
   def associated_component_must_be_released
     # If this isn't an imported component, then skip this vaildation
     return if component_id.nil? || component.released
 
-    errors.add(:base, 'Cannot overlay a component that has not been released')
+    errors.add(:base, "Cannot overlay a component that has not been released")
   end
 
   # All rules associated with the component should be in a locked state in order
@@ -482,6 +484,6 @@ class Component < ApplicationRecord
     # If rule is releasable, then this validation passes
     return if releasable
 
-    errors.add(:base, 'Cannot release a component that contains rules that are not yet locked')
+    errors.add(:base, "Cannot release a component that contains rules that are not yet locked")
   end
 end
