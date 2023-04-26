@@ -4,7 +4,7 @@
     <div class="clickable" @click="showHistories = !showHistories">
       <h2 class="m-0 d-inline-block">Revision History</h2>
       <b-badge v-if="rule.histories" pill class="ml-1 superVerticalAlign">{{
-        rule.histories.length
+        groupedRuleHistories.length
       }}</b-badge>
 
       <i v-if="showHistories" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
@@ -28,11 +28,12 @@
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import History from "../shared/History.vue";
+import HistoryGroupingMixinVue from "../../mixins/HistoryGroupingMixin.vue";
 
 export default {
   name: "RuleHistories",
   components: { History },
-  mixins: [DateFormatMixinVue, AlertMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, HistoryGroupingMixinVue],
   props: {
     rule: {
       type: Object,
@@ -55,6 +56,11 @@ export default {
     return {
       showHistories: true,
     };
+  },
+  computed: {
+    groupedRuleHistories() {
+      return this.groupHistories(this.rule.histories);
+    },
   },
 };
 </script>
