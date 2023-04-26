@@ -27,6 +27,19 @@
             </b-form-group>
           </b-col>
         </b-form-row>
+        <!-- STIG ID Prefix -->
+        <b-form-group
+          label="STIG ID Prefix"
+          description="STIG IDs for each control will be automatically generated based on this prefix value"
+        >
+          <b-form-input
+            v-model="prefix"
+            placeholder="Example... ABCD-EF, ABCD-00"
+            required
+            autocomplete="off"
+          />
+        </b-form-group>
+
         <!-- Title -->
         <b-form-group label="Title">
           <b-form-input v-model="title" placeholder="Component Title" required autocomplete="off" />
@@ -63,6 +76,7 @@ export default {
       release: this.component.release,
       title: this.component.title,
       description: this.component.description,
+      prefix: this.component.prefix,
     };
   },
   methods: {
@@ -72,6 +86,7 @@ export default {
       this.release = this.component.release;
       this.title = this.component.title;
       this.description = this.component.description;
+      this.prefix = this.component.prefix;
     },
     showModal: function () {
       this.$refs["updateComponentDetailsModal"].show();
@@ -79,7 +94,7 @@ export default {
     updateComponentDetails: function () {
       this.$refs["updateComponentDetailsModal"].hide();
       let payload = { component: {} };
-      ["name", "version", "release", "title", "description"].forEach((attr) => {
+      ["name", "version", "release", "title", "description", "prefix"].forEach((attr) => {
         if (payload.component[attr] !== this[attr]) {
           payload.component[attr] = this[attr];
         }

@@ -12,9 +12,13 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
-  before_action :authorize_admin_component, only: %i[update], if: lambda {
-    params.require(:component).permit(:advanced_fields)[:advanced_fields].present?
-  }
+  before_action :authorize_admin_component, only: %i[update], if: (lambda {
+                                                                     params
+                                                                       .require(:component)
+                                                                       .permit(:advanced_fields)[:advanced_fields]
+                                                                       .present?
+                                                                   })
+
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
   before_action :authorize_logged_in, only: %i[search]
   before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
@@ -156,7 +160,7 @@ class ComponentsController < ApplicationController
                           .where.not(id: params[:id])
                           .order(:project_id)
                           .joins(:project)
-                          .select('components.id, components.name, components.version, components.prefix, '\
+                          .select('components.id, components.name, components.version, components.prefix, ' \
                                   'components.release, projects.name AS project_name')
                           .map(&:attributes)
   end
@@ -197,8 +201,8 @@ class ComponentsController < ApplicationController
         base.keys.intersection(diff.keys)
             .filter { |rule_id| base[rule_id] != diff[rule_id] }
             .each do |rule_id|
-              changes[rule_id] = { change: 'updated', base: base[rule_id], diff: diff[rule_id] }
-            end
+          changes[rule_id] = { change: 'updated', base: base[rule_id], diff: diff[rule_id] }
+        end
 
         history << {
           baseComponent: prev_component,
@@ -306,7 +310,7 @@ class ComponentsController < ApplicationController
     if @rule.present?
       @rule_json = @rule.to_json
 
-    # Else, create an error message and respond to either HTML or JSON requests
+      # Else, create an error message and respond to either HTML or JSON requests
     else
       message = 'The requested component and control combination could not be found.'
       respond_to do |format|
@@ -342,6 +346,7 @@ class ComponentsController < ApplicationController
       :version,
       :release,
       :title,
+      :prefix,
       :description,
       :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
