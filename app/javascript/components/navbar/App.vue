@@ -3,7 +3,7 @@
     <b-navbar toggleable="lg" type="dark" variant="dark">
       <b-navbar-brand id="heading" href="/">
         <i class="mdi mdi-radar" aria-hidden="true" />
-        VULCAN
+        VULCAN <span class="latest-release">{{ latestRelease }}</span>
       </b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse" />
@@ -66,6 +66,31 @@ export default {
       required: false,
     },
   },
+  data() {
+    return {
+      latestRelease: "",
+    };
+  },
+  mounted() {
+    this.fetchLatestRelease();
+  },
+  methods: {
+    fetchLatestRelease() {
+      const owner = "mitre";
+      const repo = "vulcan";
+
+      // Make the API request to fetch the latest release
+      fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`)
+        .then((response) => response.json())
+        .then((data) => {
+          this.latestRelease = data.tag_name;
+        })
+        .catch((error) => {
+          // console.error("Error fetching latest release:", error);
+          this.latestRelease = "";
+        });
+    },
+  },
 };
 </script>
 
@@ -74,6 +99,10 @@ export default {
   font-family: verdana, arial, helvetica, sans-serif;
   font-weight: 700;
   letter-spacing: 1px;
+}
+
+.latest-release {
+  font-size: 0.6em;
 }
 .right-container {
   gap: 32px;
