@@ -129,6 +129,19 @@
         </b-form-checkbox>
       </b-form-group>
 
+      <!-- Toggle Sort by SRG ID -->
+      <b-form-group class="mt-3">
+        <b-form-checkbox
+          id="sortBySRGIdChecked"
+          v-model="filters.sortBySRGIdChecked"
+          class="mb-1 unselectable"
+          switch
+          name="sortBySRGIdChecked-fitler"
+        >
+          Sort by SRG ID
+        </b-form-checkbox>
+      </b-form-group>
+
       <!-- Find & Replace -->
       <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" :rules="rules" />
 
@@ -323,6 +336,7 @@ export default {
         lckFilterChecked: true, // Locked
         showDuplicatesChecked: false, // Show duplicates
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
+        sortBySRGIdChecked: false, // Sort by SRG ID
       },
     };
   },
@@ -475,7 +489,12 @@ export default {
     // Helper to filter & search a group of rules
     filterRules: function (rules) {
       let downcaseSearch = this.filters.search.toLowerCase();
-      return rules.filter((rule) => {
+      let sortedRules = [...rules];
+      if (this.filters.sortBySRGIdChecked) {
+        sortedRules.sort((a, b) => a.version.localeCompare(b.version));
+      }
+
+      return sortedRules.filter((rule) => {
         return (
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
@@ -572,6 +591,7 @@ export default {
         lckFilterChecked: true, // Locked
         showDuplicatesChecked: false, // Show duplicates
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
+        sortBySRGIdChecked: false, // Sort by SRG ID
       };
     },
     handleScroll: function () {
