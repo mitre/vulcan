@@ -3,9 +3,8 @@
     <b-navbar toggleable="lg" type="dark" variant="dark">
       <b-navbar-brand id="heading" href="/">
         <i class="mdi mdi-radar" aria-hidden="true" />
-        VULCAN
+        VULCAN <span class="latest-release">{{ currentVersion }}</span>
       </b-navbar-brand>
-
       <b-navbar-toggle target="nav-collapse" />
 
       <b-collapse id="nav-collapse" is-nav>
@@ -34,12 +33,22 @@
         </div>
       </b-collapse>
     </b-navbar>
+    <b-alert
+      dismissible
+      fade
+      :show="updateAvailable"
+      class="text-center"
+      @dismissed="updateAvailable = false"
+    >
+      New version: Vulcan {{ latestRelease }} is now available!!
+    </b-alert>
   </div>
 </template>
 
 <script>
 import NavbarItem from "./NavbarItem.vue";
 import SrgIdSearch from "./SrgIdSearch.vue";
+import { version } from "../../../../package.json";
 
 export default {
   name: "Navbar",
@@ -66,6 +75,35 @@ export default {
       required: false,
     },
   },
+  data() {
+    return {
+      latestRelease: "",
+      currentVersion: version,
+      updateAvailable: false,
+    };
+  },
+  mounted() {
+    this.fetchLatestRelease();
+  },
+  methods: {
+    fetchLatestRelease() {
+      const owner = "mitre";
+      const repo = "vulcan";
+      // Make the API request to fetch the latest release
+      fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`)
+        .then((response) => response.json())
+        .then((data) => {
+          this.latestRelease = data.tag_name.substring(1);
+          this.updateAvailable = this.checkUpdateAvailable();
+        })
+        .catch((error) => {
+          this.latestRelease = "";
+        });
+    },
+    checkUpdateAvailable() {
+      return this.latestRelease.trim() !== "" && this.latestRelease !== this.currentVersion;
+    },
+  },
 };
 </script>
 
@@ -74,6 +112,10 @@ export default {
   font-family: verdana, arial, helvetica, sans-serif;
   font-weight: 700;
   letter-spacing: 1px;
+}
+
+.latest-release {
+  font-size: 0.6em;
 }
 .right-container {
   gap: 32px;
