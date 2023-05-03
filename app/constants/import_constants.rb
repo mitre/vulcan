@@ -17,7 +17,8 @@ module ImportConstants
   OPTIONAL_MAPPING_CONSTANTS = {
     vendor_comments: 'Vendor Comments',
     mitigation: 'Mitigation',
-    inspec_control_body: 'InSpec Control Body'
+    inspec_control_body: 'InSpec Control Body',
+    ident: 'CCI'
   }.freeze
 
   IMPORT_MAPPING = REQUIRED_MAPPING_CONSTANTS.merge(OPTIONAL_MAPPING_CONSTANTS)
