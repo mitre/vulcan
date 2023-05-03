@@ -39,7 +39,7 @@ class Rule < BaseRule
 
   before_validation :set_rule_id
   before_save :apply_audit_comment
-  before_save :update_inspec_code
+  before_save :sort_ident, :update_inspec_code
   before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
   after_save :update_component_rules_count
@@ -249,6 +249,10 @@ class Rule < BaseRule
   end
 
   private
+
+  def sort_ident
+    self.ident = ident.to_s.split(/, */).uniq.sort.join(', ')
+  end
 
   def format_inspec_control_cci
     rule_cci = ident.split(/, */)
