@@ -260,4 +260,12 @@ RSpec.describe Review, type: :model do
       @p1r1.reload
     end
   end
+
+  context 'rule with multiple ident' do
+    it 'should have a unique string list of cci sorted in ascending order' do
+      @p1r1.ident = 'CCI-000068, CCI-000054, CCI-000054'
+      @p1r1.save!
+      expect(@p1r1.ident).to eq('CCI-000054, CCI-000068')
+    end
+  end
 end

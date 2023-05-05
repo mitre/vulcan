@@ -39,7 +39,7 @@ class Rule < BaseRule
 
   before_validation :set_rule_id
   before_save :apply_audit_comment
-  before_save :update_inspec_code
+  before_save :sort_ident, :update_inspec_code
   before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
   after_save :update_component_rules_count
@@ -218,9 +218,8 @@ class Rule < BaseRule
     control.add_tag(Inspec::Object::Tag.new('gid', "V-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('rid', "SV-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('cci', ([ident] + satisfies.pluck(:ident)).uniq.sort)) if ident.present?
-    control.add_tag(Inspec::Object::Tag.new('nist', ([nist_control_family] +
-                                                     satisfies.map(&:nist_control_family)).uniq.sort))
+    control.add_tag(Inspec::Object::Tag.new('cci', format_inspec_control_cci.uniq.sort)) if ident.present?
+    control.add_tag(Inspec::Object::Tag.new('nist', format_inspec_control_nist.uniq.sort))
     if desc.present?
       %i[false_negatives false_positives documentable mitigations severity_override_guidance potential_impacts
          third_party_tools mitigation_control responsibility ia_controls].each do |field|
@@ -250,6 +249,22 @@ class Rule < BaseRule
   end
 
   private
+
+  def sort_ident
+    self.ident = ident.to_s.split(/, */).uniq.sort.join(', ')
+  end
+
+  def format_inspec_control_cci
+    rule_cci = ident.split(/, */)
+    satisfies_cci = satisfies.pluck(:ident).map { |cci| cci.split(/, */) }.flatten
+    rule_cci + satisfies_cci
+  end
+
+  def format_inspec_control_nist
+    rule_nist = nist_control_family.split(/, */)
+    statisfies_nist = satisfies.map(&:nist_control_family).map { |nist| nist.split(/, */) }.flatten
+    rule_nist + statisfies_nist
+  end
 
   def single_rule_clone?
     @single_rule_clone
