@@ -150,6 +150,8 @@ class Component < ApplicationRecord
       r.srg_rule_id = srg_rule.id
       # Get the inspec control body if provided
       r.inspec_control_body = row[IMPORT_MAPPING[:inspec_control_body]]
+      # It's possible to have multiple cci on the spreadsheet. Parse cci from the spreadsheet.
+      r.ident = row[IMPORT_MAPPING[:ident]]
 
       disa_rule_description = r.disa_rule_descriptions.first
       disa_rule_description.vuln_discussion = row[IMPORT_MAPPING[:vuln_discussion]]
