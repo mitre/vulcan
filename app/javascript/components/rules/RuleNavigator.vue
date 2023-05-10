@@ -148,14 +148,11 @@
       <hr class="mt-2 mb-2" />
 
       <!-- Currently opened controls -->
-      <p class="mt-0 mb-0">
+      <p class="mt-0 mb-1 d-flex justify-content-between align-items-center spacing-responsive">
         <strong>Open Controls</strong>
         <template v-if="openRuleIds.length > 0">
-          <i
-            class="text-primary mdi mdi-close clickable float-right"
-            @click="rulesDeselected(openRules)"
-          />
-          <span class="text-primary float-right clickable" @click="rulesDeselected(openRules)">
+          <span class="clickable text-primary" @click="rulesDeselected(openRules)">
+            <i class="mdi mdi-close clickable" />
             close all
           </span>
         </template>
@@ -168,31 +165,30 @@
           v-for="rule in openRules"
           :key="`open-${rule.id}`"
           :class="ruleRowClass(rule)"
+          class="d-flex justify-content-between align-items-center text-responsive"
           @click="ruleSelected(rule)"
         >
-          <i
-            class="mdi mdi-close closeRuleButton"
-            aria-hidden="true"
-            @click.stop="ruleDeselected(rule)"
-          />
-          <div v-if="filters.showSRGIdChecked">
-            {{ rule.version }}
-          </div>
-          <div v-else>
-            {{ formatRuleId(rule.rule_id) }}
-          </div>
-          <i
-            v-if="rule.review_requestor_id"
-            class="mdi mdi-file-find float-right"
-            aria-hidden="true"
-          />
-          <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-          <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-          <i
-            v-if="rule.satisfied_by.length > 0"
-            class="mdi mdi-content-copy float-right"
-            aria-hidden="true"
-          />
+          <p>
+            <i
+              class="mdi mdi-close closeRuleButton"
+              aria-hidden="true"
+              @click.stop="ruleDeselected(rule)"
+            />
+            <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
+            <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
+          </p>
+          <p>
+            <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
+            <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
+            <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
+            <i
+              v-if="rule.satisfied_by.length > 0"
+              v-b-tooltip.hover
+              class="mdi mdi-content-copy"
+              title="Satisfied by another control"
+              aria-hidden="true"
+            />
+          </p>
         </div>
       </div>
 
@@ -216,30 +212,45 @@
       />
 
       <!-- All rules list -->
-      <div
-        v-for="rule in filteredRules"
-        :key="`rule-${rule.id}`"
-        :class="ruleRowClass(rule)"
-        @click="ruleSelected(rule)"
-      >
-        <div v-if="filters.showSRGIdChecked">
-          {{ rule.version }}
+      <div v-for="rule in filteredRules" :key="`rule-${rule.id}`">
+        <div
+          :class="ruleRowClass(rule)"
+          class="d-flex justify-content-between align-items-center text-responsive"
+          @click="ruleSelected(rule)"
+        >
+          <div v-if="filters.showSRGIdChecked">
+            {{ rule.version }}
+          </div>
+          <div v-else>
+            {{ formatRuleId(rule.rule_id) }}
+          </div>
+          <i
+            v-if="rule.satisfies.length > 0"
+            v-b-tooltip.hover
+            class="mdi mdi-source-fork"
+            title="Satisfies other"
+            aria-hidden="true"
+          />
+          <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
+          <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
+          <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
         </div>
-        <div v-else>
-          {{ formatRuleId(rule.rule_id) }}
+        <div v-if="filters.showDuplicatesChecked && rule.satisfies.length > 0">
+          <div
+            v-for="satisfies in rule.satisfies"
+            :key="satisfies.id"
+            :class="ruleRowClass(satisfies)"
+            class="nested-rule d-flex justify-content-between align-items-center text-responsive"
+            @click="ruleSelected(satisfies)"
+          >
+            <div v-if="filters.showSRGIdChecked">
+              {{ satisfies.version }}
+            </div>
+            <div v-else>
+              {{ formatRuleId(satisfies.rule_id) }}
+            </div>
+          </div>
         </div>
-        <i
-          v-if="rule.review_requestor_id"
-          class="mdi mdi-file-find float-right"
-          aria-hidden="true"
-        />
-        <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-        <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-        <i
-          v-if="rule.satisfied_by.length > 0"
-          class="mdi mdi-content-copy float-right"
-          aria-hidden="true"
-        />
       </div>
     </div>
   </div>
@@ -455,7 +466,8 @@ export default {
       );
     },
     isDuplicate: function (rule) {
-      return this.filters.showDuplicatesChecked || rule.satisfied_by.length === 0;
+      // return this.filters.showDuplicatesChecked || rule.satisfied_by.length === 0;
+      return rule.satisfied_by.length === 0;
     },
     // Helper to filter & search a group of rules
     filterRules: function (rules) {
@@ -579,6 +591,17 @@ export default {
 </script>
 
 <style scoped>
+.text-responsive {
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.spacing-responsive {
+  letter-spacing: -0.05em;
+}
+.nested-rule {
+  margin-left: 0.5em;
+}
 .ruleRow {
   padding: 0.25em;
 }
@@ -606,5 +629,15 @@ export default {
 #scrolling-sidebar {
   display: block;
   overflow-y: auto;
+}
+
+@media (min-width: 1200px) {
+  .text-responsive {
+    font-size: 1em;
+    font-weight: 400;
+  }
+  .spacing-responsive {
+    letter-spacing: 0.01em;
+  }
 }
 </style>
