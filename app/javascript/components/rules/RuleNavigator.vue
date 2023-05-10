@@ -182,6 +182,13 @@
             <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
             <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
             <i
+              v-if="rule.satisfies.length > 0"
+              v-b-tooltip.hover
+              class="mdi mdi-source-fork"
+              title="Satisfies other"
+              aria-hidden="true"
+            />
+            <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
               class="mdi mdi-content-copy"
@@ -241,12 +248,13 @@
         </div>
         <div v-if="filters.showDuplicatesChecked && rule.satisfies.length > 0">
           <div
-            v-for="satisfies in rule.satisfies"
+            v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
             :class="ruleRowClass(satisfies)"
-            class="nested-rule d-flex justify-content-between align-items-center text-responsive"
+            class="text-responsive"
             @click="ruleSelected(satisfies)"
           >
+            <i class="mdi mdi-chevron-right" />
             <span v-if="filters.showSRGIdChecked">
               {{ satisfies.version }}
             </span>
@@ -490,6 +498,9 @@ export default {
         );
       });
     },
+    sortAlsoSatisfies: function (rules) {
+      return rules.sort((a, b) => a.rule_id.localeCompare(b.rule_id));
+    },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
     },
@@ -602,9 +613,6 @@ export default {
 
 .spacing-responsive {
   letter-spacing: -0.05em;
-}
-.nested-rule {
-  margin-left: 0.5em;
 }
 .ruleRow {
   padding: 0.25em;
