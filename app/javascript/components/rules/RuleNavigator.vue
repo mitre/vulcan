@@ -218,22 +218,26 @@
           class="d-flex justify-content-between align-items-center text-responsive"
           @click="ruleSelected(rule)"
         >
-          <div v-if="filters.showSRGIdChecked">
-            {{ rule.version }}
-          </div>
-          <div v-else>
-            {{ formatRuleId(rule.rule_id) }}
-          </div>
-          <i
-            v-if="rule.satisfies.length > 0"
-            v-b-tooltip.hover
-            class="mdi mdi-source-fork"
-            title="Satisfies other"
-            aria-hidden="true"
-          />
-          <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
-          <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
-          <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
+          <span>
+            <span v-if="filters.showSRGIdChecked">
+              {{ rule.version }}
+            </span>
+            <span v-else>
+              {{ formatRuleId(rule.rule_id) }}
+            </span>
+          </span>
+          <span>
+            <i
+              v-if="rule.satisfies.length > 0"
+              v-b-tooltip.hover
+              class="mdi mdi-source-fork"
+              title="Satisfies other"
+              aria-hidden="true"
+            />
+            <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
+            <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
+            <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
+          </span>
         </div>
         <div v-if="filters.showDuplicatesChecked && rule.satisfies.length > 0">
           <div
@@ -243,12 +247,12 @@
             class="nested-rule d-flex justify-content-between align-items-center text-responsive"
             @click="ruleSelected(satisfies)"
           >
-            <div v-if="filters.showSRGIdChecked">
+            <span v-if="filters.showSRGIdChecked">
               {{ satisfies.version }}
-            </div>
-            <div v-else>
+            </span>
+            <span v-else>
               {{ formatRuleId(satisfies.rule_id) }}
-            </div>
+            </span>
           </div>
         </div>
       </div>
