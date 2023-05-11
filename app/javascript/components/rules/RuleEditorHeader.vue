@@ -41,42 +41,7 @@
           @ruleSelected="$emit('ruleSelected', $event.id)"
         />
         <b-button v-b-modal.duplicate-rule-modal variant="info">Clone Control</b-button>
-        <!-- Mark/Unmark as duplicate modal -->
-        <span
-          v-if="
-            rule.satisfied_by &&
-            rule.satisfies &&
-            rule.satisfied_by.length === 0 &&
-            rule.satisfies.length > 0
-          "
-          v-b-tooltip.hover
-          title="This control cannot be marked as duplicate because it satisfies other controls"
-        >
-          <b-button v-b-modal.mark-as-duplicate-modal disabled variant="orange"
-            >Mark as Duplicate</b-button
-          >
-        </span>
-        <span v-b-tooltip.hover title="Merge requirement">
-          <b-button
-            v-if="
-              rule.satisfied_by &&
-              rule.satisfies &&
-              rule.satisfied_by.length === 0 &&
-              rule.satisfies.length === 0
-            "
-            v-b-modal.mark-rule-as-duplicate-modal
-            variant="orange"
-            >Mark as Duplicate</b-button
-          >
-        </span>
-        <span v-b-tooltip.hover title="Unmerge requirement">
-          <b-button
-            v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
-            v-b-modal.unmark-rule-as-duplicate-modal
-            variant="orange"
-            >Unmark as Duplicate</b-button
-          >
-        </span>
+
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
@@ -218,45 +183,22 @@
           </template>
         </b-modal>
         <b-modal
-          id="mark-rule-as-duplicate-modal"
-          title="Mark as Duplicate"
+          id="also-satisfies-modal"
+          title="Also Satisfies"
           centered
-          @ok="$root.$emit('markDuplicate:rule', rule.id, satisfied_by_rule_id)"
+          @ok="$root.$emit('addSatisfied:rule', satisfies_rule_id, rule.id)"
         >
-          <p>Mark control as duplicate of:</p>
+          <p>Select a control that this one satisfies:</p>
           <b-form-select
-            v-model="satisfied_by_rule_id"
+            v-model="satisfies_rule_id"
             :options="
               rules
                 .filter((r) => {
-                  return r.id !== rule.id && (!r.satisfied_by || r.satisfied_by.length === 0);
+                  return r.id !== rule.id && r.satisfies.length === 0;
                 })
                 .map((r) => {
                   return { value: r.id, text: formatRuleId(r.rule_id) };
                 })
-            "
-          />
-          <template #modal-footer="{ cancel, ok }">
-            <!-- Emulate built in modal footer ok and cancel button actions -->
-            <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="info" @click="ok()"> OK </b-button>
-          </template>
-        </b-modal>
-        <b-modal
-          id="unmark-rule-as-duplicate-modal"
-          title="Unmark as Duplicate"
-          centered
-          @ok="$root.$emit('unmarkDuplicate:rule', rule.id, satisfied_by_rule_id)"
-        >
-          <p>Unmark control as duplicate of:</p>
-          <b-form-select
-            v-model="satisfied_by_rule_id"
-            :options="
-              rule.satisfied_by
-                ? rule.satisfied_by.map((r) => {
-                    return { value: r.id, text: formatRuleId(r.rule_id) };
-                  })
-                : []
             "
           />
           <template #modal-footer="{ cancel, ok }">
@@ -310,7 +252,7 @@ export default {
   },
   data: function () {
     return {
-      satisfied_by_rule_id: null,
+      satisfies_rule_id: null,
       selectedReviewAction: null,
       showReviewPane: false,
       reviewComment: "",

@@ -101,14 +101,14 @@ export default {
     this.$root.$on("add:disaDescription", this.addDisaRuleDescription);
     this.$root.$on("create:rule", this.createRule);
     this.$root.$on("delete:rule", this.deleteRule);
-    this.$root.$on("markDuplicate:rule", this.markDuplicateRule);
-    this.$root.$on("unmarkDuplicate:rule", this.unmarkDuplicateRule);
+    this.$root.$on("addSatisfied:rule", this.addSatisfiedRule);
+    this.$root.$on("removeSatisfied:rule", this.removeSatisfiedRule);
   },
   methods: {
     /**
-     * Event handler for @markDuplicate:rule
+     * Event handler for @addSatisfied:rule
      */
-    markDuplicateRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
+    addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
         .then((response) => {
@@ -125,9 +125,9 @@ export default {
         .catch(this.alertOrNotifyResponse);
     },
     /**
-     * Event handler for @markDuplicate:rule
+     * Event handler for @removeSatisfied:rule
      */
-    unmarkDuplicateRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
+    removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
         .then((response) => {

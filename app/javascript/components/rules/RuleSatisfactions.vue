@@ -1,15 +1,31 @@
 <template>
   <div>
-    <div v-if="rule.satisfies && rule.satisfies.length > 0">
+    <div v-if="rule.satisfied_by && rule.satisfied_by.length === 0">
       <!-- Collapsable header -->
-      <div class="clickable" @click="showAlsoSatisfies = !showAlsoSatisfies">
-        <h2 class="m-0 d-inline-block">Also Satisfies</h2>
-        <b-badge v-if="rule.satisfies" pill class="ml-1 superVerticalAlign">{{
-          rule.satisfies.length
-        }}</b-badge>
+      <div class="d-flex justify-content-between align-items-center text-responsive">
+        <div class="clickable" @click="showAlsoSatisfies = !showAlsoSatisfies">
+          <h2 class="m-0 d-inline-block">Also Satisfies</h2>
+          <b-badge v-if="rule.satisfies" pill class="ml-1 superVerticalAlign">{{
+            rule.satisfies.length
+          }}</b-badge>
 
-        <i v-if="showAlsoSatisfies" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-        <i v-if="!showAlsoSatisfies" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+          <i
+            v-if="showAlsoSatisfies"
+            class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+          />
+          <i
+            v-if="!showAlsoSatisfies"
+            class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+          />
+        </div>
+        <div
+          v-b-modal.also-satisfies-modal
+          v-b-tooltip.hover
+          title="Merge requirement"
+          class="text-primary clickable mr-2"
+        >
+          <i class="mdi mdi-plus" /> Add
+        </div>
       </div>
 
       <!-- All rules also satisfied -->
@@ -19,13 +35,17 @@
           :key="satisfies.id"
           :class="ruleRowClass(satisfies)"
         >
-          <i
+          <!-- The modal "also-satisfies-modal" is in RuleEditorHeader.vue -->
+          <span
             v-if="!readOnly"
             v-b-modal.unmark-satisfies-modal
-            class="mdi mdi-close closeRuleButton"
+            v-b-tooltip.hover
+            title="Unmerge requirement"
             aria-hidden="true"
             @click="satisfies_rule = satisfies"
-          />
+          >
+            <i class="mdi mdi-close closeRuleButton" />
+          </span>
           <span @click="ruleSelected(satisfies)">
             {{ formatRuleForDisplay(satisfies) }}
           </span>
@@ -34,13 +54,12 @@
 
       <b-modal
         id="unmark-satisfies-modal"
-        title="Unmark as Duplicate"
+        title="Remove Satisfaction Relationship"
         centered
-        @ok="$root.$emit('unmarkDuplicate:rule', satisfies_rule.id, rule.id)"
+        @ok="$root.$emit('removeSatisfied:rule', satisfies_rule.id, rule.id)"
       >
         <p>
-          Are you sure you want to unmark {{ formatRuleForDisplay(satisfies_rule) }} as a duplicate
-          of this control?
+          Are you sure this control no longer satisfies {{ formatRuleForDisplay(satisfies_rule) }}?
         </p>
         <template #modal-footer="{ cancel, ok }">
           <!-- Emulate built in modal footer ok and cancel button actions -->
@@ -84,12 +103,12 @@
 
       <b-modal
         id="unmark-satisfied-by-modal"
-        title="Unmark as Duplicate"
+        title="Remove Satisfaction Relationship"
         centered
-        @ok="$root.$emit('unmarkDuplicate:rule', rule.id, satisfied_by_rule.id)"
+        @ok="$root.$emit('removeSatisfied:rule', rule.id, satisfied_by_rule.id)"
       >
         <p>
-          Are you sure you want to unmark this control as a duplicate of
+          Are you sure this control is no longer satisfied by
           {{ formatRuleForDisplay(satisfied_by_rule) }}
         </p>
         <template #modal-footer="{ cancel, ok }">

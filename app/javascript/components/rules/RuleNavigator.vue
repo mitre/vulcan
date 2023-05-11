@@ -112,7 +112,7 @@
           switch
           name="expandSatisfiedRulesChecked-fitler"
         >
-          Expands Satisfied SRGs
+          Expands Satisfied Controls
         </b-form-checkbox>
       </b-form-group>
 
