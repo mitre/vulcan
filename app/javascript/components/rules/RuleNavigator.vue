@@ -499,7 +499,7 @@ export default {
       });
     },
     sortAlsoSatisfies: function (rules) {
-      return rules.sort((a, b) => a.rule_id.localeCompare(b.rule_id));
+      return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
