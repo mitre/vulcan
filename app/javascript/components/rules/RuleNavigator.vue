@@ -106,13 +106,13 @@
       <!-- Show/hide duplicates -->
       <b-form-group class="mt-3" label="Filter by Duplicate Status">
         <b-form-checkbox
-          id="showMergedRulesChecked"
-          v-model="filters.showMergedRulesChecked"
+          id="expandSatisfiedRulesChecked"
+          v-model="filters.expandSatisfiedRulesChecked"
           class="mb-1 unselectable"
           switch
-          name="showMergedRulesChecked-fitler"
+          name="expandSatisfiedRulesChecked-fitler"
         >
-          Show Merged Rules
+          Expands Satisfied SRGs
         </b-form-checkbox>
       </b-form-group>
 
@@ -192,7 +192,7 @@
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
               class="mdi mdi-content-copy"
-              title="Satisfied by another control"
+              title="Satisfied by other"
               aria-hidden="true"
             />
           </p>
@@ -202,11 +202,12 @@
       <hr class="mt-2 mb-2" />
 
       <!-- All project controls -->
-      <p class="mt-0 mb-0">
+      <p class="mt-0 mb-0 d-flex justify-content-between align-items-center spacing-responsive">
         <strong>All Controls</strong>
         <template v-if="!readOnly">
-          <i v-b-modal.create-rule-modal class="text-primary mdi mdi-plus clickable float-right" />
-          <span v-b-modal.create-rule-modal class="text-primary float-right clickable">add </span>
+          <span v-b-modal.create-rule-modal class="text-primary clickable">
+            <i v-b-modal.create-rule-modal class="mdi mdi-plus" /> add
+          </span>
         </template>
       </p>
 
@@ -246,7 +247,7 @@
             <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
           </span>
         </div>
-        <div v-if="filters.showMergedRulesChecked && rule.satisfies.length > 0">
+        <div v-if="filters.expandSatisfiedRulesChecked && rule.satisfies.length > 0">
           <div
             v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
@@ -328,7 +329,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        showMergedRulesChecked: false, // Show merged rules
+        expandSatisfiedRulesChecked: false, // Expands Satisfied Rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       },
@@ -478,7 +479,7 @@ export default {
       );
     },
     isDuplicate: function (rule) {
-      // return this.filters.showMergedRulesChecked || rule.satisfied_by.length === 0;
+      // return this.filters.expandSatisfiedRulesChecked || rule.satisfied_by.length === 0;
       return rule.satisfied_by.length === 0;
     },
     // Helper to filter & search a group of rules
@@ -587,7 +588,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        showMergedRulesChecked: false, // Show merged rules
+        expandSatisfiedRulesChecked: false, // Expands satisfied rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       };
