@@ -106,13 +106,13 @@
       <!-- Show/hide duplicates -->
       <b-form-group class="mt-3" label="Filter by Duplicate Status">
         <b-form-checkbox
-          id="showDuplicatesChecked"
-          v-model="filters.showDuplicatesChecked"
+          id="showMergedRulesChecked"
+          v-model="filters.showMergedRulesChecked"
           class="mb-1 unselectable"
           switch
-          name="showDuplicatesChecked-fitler"
+          name="showMergedRulesChecked-fitler"
         >
-          Show Duplicates
+          Show Merged Rules
         </b-form-checkbox>
       </b-form-group>
 
@@ -246,7 +246,7 @@
             <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
           </span>
         </div>
-        <div v-if="filters.showDuplicatesChecked && rule.satisfies.length > 0">
+        <div v-if="filters.showMergedRulesChecked && rule.satisfies.length > 0">
           <div
             v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
@@ -328,7 +328,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        showDuplicatesChecked: false, // Show duplicates
+        showMergedRulesChecked: false, // Show merged rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       },
@@ -478,7 +478,7 @@ export default {
       );
     },
     isDuplicate: function (rule) {
-      // return this.filters.showDuplicatesChecked || rule.satisfied_by.length === 0;
+      // return this.filters.showMergedRulesChecked || rule.satisfied_by.length === 0;
       return rule.satisfied_by.length === 0;
     },
     // Helper to filter & search a group of rules
@@ -587,7 +587,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        showDuplicatesChecked: false, // Show duplicates
+        showMergedRulesChecked: false, // Show merged rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       };
