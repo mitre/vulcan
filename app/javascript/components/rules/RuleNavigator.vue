@@ -1,6 +1,14 @@
 <template>
   <div id="scrolling-sidebar" ref="sidebar" :style="sidebarStyle">
     <div class="mr-2">
+      <!-- Find & Replace -->
+      <FindAndReplace
+        :component-id="componentId"
+        :project-prefix="projectPrefix"
+        :rules="rules"
+        class="mb-2"
+      />
+
       <!-- Rule search -->
       <p class="mb-2">
         <strong>Filter &amp; Search</strong>
@@ -103,8 +111,9 @@
         </b-form-checkbox>
       </b-form-group>
 
-      <!-- Show/hide duplicates -->
-      <b-form-group class="mt-3" label="Filter by Duplicate Status">
+      <!-- Toggle display -->
+      <b-form-group class="mt-3" label="Toggle Display">
+        <!-- Expand satisfied controls -->
         <b-form-checkbox
           id="expandSatisfiedRulesChecked"
           v-model="filters.expandSatisfiedRulesChecked"
@@ -112,12 +121,10 @@
           switch
           name="expandSatisfiedRulesChecked-fitler"
         >
-          Expands Satisfied Controls
+          Expand Satisfied Controls
         </b-form-checkbox>
-      </b-form-group>
 
-      <!-- Toggle STIG ID/SRG ID -->
-      <b-form-group class="mt-3">
+        <!-- Toggle STIG ID/SRG ID -->
         <b-form-checkbox
           id="showSRGIdChecked"
           v-model="filters.showSRGIdChecked"
@@ -127,10 +134,8 @@
         >
           Show SRG ID
         </b-form-checkbox>
-      </b-form-group>
 
-      <!-- Toggle Sort by SRG ID -->
-      <b-form-group class="mt-3">
+        <!-- Toggle Sort by SRG ID -->
         <b-form-checkbox
           id="sortBySRGIdChecked"
           v-model="filters.sortBySRGIdChecked"
@@ -141,9 +146,6 @@
           Sort by SRG ID
         </b-form-checkbox>
       </b-form-group>
-
-      <!-- Find & Replace -->
-      <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" :rules="rules" />
 
       <hr class="mt-2 mb-2" />
 
