@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a v-b-modal.find-replace-modal class="">Find &amp; Replace</a>
+    <b-button v-b-modal.find-replace-modal class="w-100">Find &amp; Replace</b-button>
     <b-modal
       id="find-replace-modal"
       size="xl"
@@ -173,11 +173,15 @@ export default {
 </script>
 
 <style scoped>
-@media (min-width: 992px) .modal-xl {
-  max-width: auto !important;
+@media (min-width: 992px) {
+  .modal-xl {
+    max-width: auto !important;
+  }
 }
 
-@media (min-width: 576px) .modal-dialog {
-  max-width: auto !important;
+@media (min-width: 576px) {
+  .modal-dialog {
+    max-width: auto !important;
+  }
 }
 </style>
