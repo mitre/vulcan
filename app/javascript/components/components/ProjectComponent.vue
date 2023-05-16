@@ -242,6 +242,15 @@
         <hr />
         <b-row>
           <b-col>
+            <RuleSatisfactions
+              :component="component"
+              :rule="selectedRule"
+              :selected-rule-id="selectedRule.id"
+              :project-prefix="component.prefix"
+              :read-only="true"
+              @ruleSelected="handleRuleSelected($event)"
+            />
+            <br />
             <div v-if="selectedRule.reviews">
               <RuleReviews :rule="selectedRule" />
               <br />
@@ -255,14 +264,6 @@
               />
               <br />
             </div>
-            <RuleSatisfactions
-              :component="component"
-              :rule="selectedRule"
-              :selected-rule-id="selectedRule.id"
-              :project-prefix="component.prefix"
-              :read-only="true"
-              @ruleSelected="handleRuleSelected($event)"
-            />
           </b-col>
         </b-row>
       </b-col>
