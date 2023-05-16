@@ -19,6 +19,7 @@
           />
         </div>
         <div
+          v-if="!readOnly"
           v-b-modal.also-satisfies-modal
           v-b-tooltip.hover
           title="Merge requirement"
