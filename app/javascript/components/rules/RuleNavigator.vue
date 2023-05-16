@@ -113,15 +113,15 @@
 
       <!-- Toggle display -->
       <b-form-group class="mt-3" label="Toggle Display">
-        <!-- Expand satisfied controls -->
+        <!-- Nest satisfied controls -->
         <b-form-checkbox
-          id="expandSatisfiedRulesChecked"
-          v-model="filters.expandSatisfiedRulesChecked"
+          id="nestSatisfiedRulesChecked"
+          v-model="filters.nestSatisfiedRulesChecked"
           class="mb-1 unselectable"
           switch
-          name="expandSatisfiedRulesChecked-fitler"
+          name="nestSatisfiedRulesChecked-fitler"
         >
-          Expand Satisfied Controls
+          Nest Satisfied Controls
         </b-form-checkbox>
 
         <!-- Toggle STIG ID/SRG ID -->
@@ -244,12 +244,19 @@
               title="Satisfies other"
               aria-hidden="true"
             />
+            <i
+              v-if="rule.satisfied_by.length > 0"
+              v-b-tooltip.hover
+              class="mdi mdi-content-copy"
+              title="Satisfied by other"
+              aria-hidden="true"
+            />
             <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
             <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
             <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
           </span>
         </div>
-        <div v-if="filters.expandSatisfiedRulesChecked && rule.satisfies.length > 0">
+        <div v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
           <div
             v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
@@ -331,7 +338,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        expandSatisfiedRulesChecked: false, // Expands Satisfied Rules
+        nestSatisfiedRulesChecked: false, // Nests Satisfied Rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       },
@@ -480,9 +487,12 @@ export default {
         (this.filters.lckFilterChecked && rule.locked == true)
       );
     },
-    isDuplicate: function (rule) {
-      // return this.filters.expandSatisfiedRulesChecked || rule.satisfied_by.length === 0;
-      return rule.satisfied_by.length === 0;
+    listSatisfiedRule: function (rule) {
+      let showRule = true;
+      if (this.filters.nestSatisfiedRulesChecked) {
+        showRule = rule.satisfied_by.length === 0;
+      }
+      return showRule;
     },
     // Helper to filter & search a group of rules
     filterRules: function (rules) {
@@ -497,7 +507,7 @@ export default {
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
           this.doesRuleHaveFilteredReviewStatus(rule) &&
-          this.isDuplicate(rule)
+          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
         );
       });
     },
@@ -590,7 +600,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        expandSatisfiedRulesChecked: false, // Expands satisfied rules
+        nestSatisfiedRulesChecked: false, // Nests satisfied rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       };
