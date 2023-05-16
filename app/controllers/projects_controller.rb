@@ -74,9 +74,14 @@ class ProjectsController < ApplicationController
 
   # Update project and response with json
   def update
+    current_project_name = @project.name
     if @project.update(project_params)
-      render json: { toast: 'Project updated successfully' }
-      send_slack_notification(:rename_project, @project) if Settings.slack.enabled
+      if project_name_changed?(current_project_name, project_params)
+        render json: { toast: 'Project renamed successfully' }
+        send_slack_notification(:rename_project, @project) if Settings.slack.enabled
+      else
+        render json: { toast: 'Project updated successfully' }
+      end
     else
       render json: {
         toast: {
@@ -159,5 +164,9 @@ class ProjectsController < ApplicationController
       :name,
       project_metadata_attributes: { data: {} }
     )
+  end
+
+  def project_name_changed?(current_project_name, project_params)
+    project_params['name'].present? && project_params['name'] != current_project_name
   end
 end
