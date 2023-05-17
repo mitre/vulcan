@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-button class="px-2 m-2" variant="success" @click="showModal()"> Update Details </b-button>
+    <a class="clickable" @click="showModal()"> edit component details </a>
     <b-modal
       ref="updateComponentDetailsModal"
       title="Update Details"
