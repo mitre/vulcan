@@ -11,13 +11,6 @@
 
     <b-collapse id="collapse-reviews" v-model="showReviews">
       <!-- All reviews -->
-      <p
-        v-if="numShownReviews < rule.reviews.length"
-        class="ml-2 mb-0 text-primary clickable"
-        @click="numShownReviews += 5"
-      >
-        show older reviews...
-      </p>
       <div v-for="review in shownReviews" :key="review.id">
         <p class="ml-2 mb-0 mt-2">
           <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
@@ -25,7 +18,23 @@
         <p class="ml-2 mb-0">
           <small>{{ friendlyDateTime(review.created_at) }}</small>
         </p>
-        <p class="ml-3 mb-3 white-space-pre-wrap">{{ review.comment }}</p>
+        <p class="ml-3 mb-2 white-space-pre-wrap">{{ review.comment }}</p>
+      </div>
+      <div class="d-flex justify-content-center align-items-center">
+        <p
+          v-if="numShownReviews < rule.reviews.length"
+          class="text-primary clickable"
+          @click="numShownReviews += 2"
+        >
+          show older reviews...
+        </p>
+        <p
+          v-if="numShownReviews > 2 && rule.reviews.length > 2"
+          class="ml-4 text-primary clickable"
+          @click="numShownReviews -= 2"
+        >
+          hide older reviews...
+        </p>
       </div>
     </b-collapse>
   </div>
@@ -56,7 +65,7 @@ export default {
   },
   data: function () {
     return {
-      numShownReviews: 5,
+      numShownReviews: 2,
       showReviews: true,
       actionDescriptions: {
         comment: "Commented",
@@ -71,7 +80,10 @@ export default {
   },
   computed: {
     shownReviews: function () {
-      return this.rule.reviews.slice(-1 * this.numShownReviews);
+      const sortedReviews = [...this.rule.reviews].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      return sortedReviews.slice(0, this.numShownReviews);
     },
   },
 };

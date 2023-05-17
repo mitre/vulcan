@@ -222,7 +222,7 @@
               <i v-if="!showReviews" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
             </div>
             <b-collapse id="collapse-metadata" v-model="showReviews">
-              <div v-for="review in component.reviews" :key="review.id">
+              <div v-for="review in shownReviews" :key="review.id">
                 <p class="ml-2 mb-0 mt-2">
                   <strong>
                     {{ review.displayed_rule_name }}
@@ -234,7 +234,23 @@
                 <p class="ml-2 mb-0">
                   <small>{{ friendlyDateTime(review.created_at) }}</small>
                 </p>
-                <p class="ml-3 mb-3 white-space-pre-wrap">{{ review.comment }}</p>
+                <p class="ml-3 mb-2 white-space-pre-wrap">{{ review.comment }}</p>
+              </div>
+              <div class="d-flex justify-content-center align-items-center">
+                <p
+                  v-if="numShownReviews < component.reviews.length"
+                  class="text-primary clickable"
+                  @click="numShownReviews += 2"
+                >
+                  show older reviews...
+                </p>
+                <p
+                  v-if="numShownReviews > 2 && component.reviews.length > 2"
+                  class="ml-4 text-primary clickable"
+                  @click="numShownReviews -= 2"
+                >
+                  hide older reviews...
+                </p>
               </div>
             </b-collapse>
           </b-col>
@@ -351,6 +367,7 @@ export default {
   },
   data: function () {
     return {
+      numShownReviews: 2,
       selectedRule: {},
       showDetails: true,
       showMetadata: true,
@@ -372,6 +389,9 @@ export default {
     };
   },
   computed: {
+    shownReviews: function () {
+      return this.component.reviews.slice(0, this.numShownReviews);
+    },
     rules: function () {
       return [...this.component.rules].sort(this.compareRules);
     },
