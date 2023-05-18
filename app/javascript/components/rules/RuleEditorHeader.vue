@@ -188,19 +188,21 @@
           centered
           @ok="$root.$emit('addSatisfied:rule', satisfies_rule_id, rule.id)"
         >
-          <p>Select a control that this one satisfies:</p>
-          <b-form-select
-            v-model="satisfies_rule_id"
-            :options="
-              rules
-                .filter((r) => {
-                  return r.id !== rule.id && r.satisfies.length === 0;
-                })
-                .map((r) => {
-                  return { value: r.id, text: formatRuleId(r.rule_id) };
-                })
-            "
-          />
+          <b-form-group label="Select a control that this one satisfies:">
+            <vue-simple-suggest
+              :key="`componentKey-${rules[0].component_id}`"
+              ref="controlSearch"
+              :list="filteredSelectRules"
+              display-attribute="text"
+              value-attribute="value"
+              placeholder="Search for eligible control..."
+              :filter-by-query="true"
+              :min-length="0"
+              :max-suggestions="0"
+              :number="0"
+              @select="satisfies_rule_id = $refs.controlSearch.selected.value"
+            />
+          </b-form-group>
           <template #modal-footer="{ cancel, ok }">
             <!-- Emulate built in modal footer ok and cancel button actions -->
             <b-button @click="cancel()"> Cancel </b-button>
@@ -219,10 +221,12 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import VueSimpleSuggest from "vue-simple-suggest";
+import "vue-simple-suggest/dist/styles.css";
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal, NewRuleModalForm },
+  components: { CommentModal, NewRuleModalForm, VueSimpleSuggest },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
@@ -252,6 +256,8 @@ export default {
   },
   data: function () {
     return {
+      showSRGIdChecked: localStorage.getItem(`showSRGIdChecked-${this.rules[0].component_id}`),
+      filteredSelectRules: [],
       satisfies_rule_id: null,
       selectedReviewAction: null,
       showReviewPane: false,
@@ -363,7 +369,40 @@ export default {
       ];
     },
   },
+  mounted: function () {
+    this.filterRules();
+    this.updateShowSRGIdChecked();
+  },
+  beforeUnmount: function () {
+    clearInterval(this.showSRGIdCheckedInterval);
+  },
   methods: {
+    updateShowSRGIdChecked: function () {
+      const componentId = this.rules[0].component_id;
+      this.showSRGIdCheckedInterval = setInterval(() => {
+        const newValue = localStorage.getItem(`showSRGIdChecked-${componentId}`);
+        if (newValue !== this.showSRGIdChecked) {
+          this.showSRGIdChecked = newValue;
+          this.filterRules();
+        }
+      }, 1000);
+    },
+    filterRules: function () {
+      this.filteredSelectRules = this.rules
+        .filter((r) => {
+          return (
+            r.id !== this.rule.id &&
+            r.satisfies.length === 0 &&
+            !this.rule.satisfies.some((s) => s.id === r.id)
+          );
+        })
+        .map((r) => {
+          return {
+            value: r.id,
+            text: JSON.parse(this.showSRGIdChecked) ? r.version : this.formatRuleId(r.rule_id),
+          };
+        });
+    },
     saveRule(comment) {
       const payload = {
         rule: {

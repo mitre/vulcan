@@ -419,6 +419,7 @@ export default {
           `ruleNavigatorFilters-${this.componentId}`,
           JSON.stringify(this.filters)
         );
+        localStorage.setItem(`showSRGIdChecked-${this.componentId}`, this.filters.showSRGIdChecked);
       },
       deep: true,
     },
