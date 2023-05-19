@@ -470,6 +470,11 @@ export default {
     // Helper to test if a rule's status is a currently selected filter checkboxes
     doesRuleHaveFilteredStatus: function (rule) {
       return (
+        (!this.filters.acFilterChecked &&
+          !this.filters.aimFilterChecked &&
+          !this.filters.adnmFilterChecked &&
+          !this.filters.naFilterChecked &&
+          !this.filters.nydFilterChecked) ||
         (this.filters.acFilterChecked && rule.status == "Applicable - Configurable") ||
         (this.filters.aimFilterChecked && rule.status == "Applicable - Inherently Meets") ||
         (this.filters.adnmFilterChecked && rule.status == "Applicable - Does Not Meet") ||
@@ -479,13 +484,12 @@ export default {
     },
     doesRuleHaveFilteredReviewStatus: function (rule) {
       return (
-        (this.filters.nurFilterChecked &&
-          rule.locked == false &&
-          rule.review_requestor_id == null) ||
-        (this.filters.urFilterChecked &&
-          rule.locked == false &&
-          rule.review_requestor_id != null) ||
-        (this.filters.lckFilterChecked && rule.locked == true)
+        (!this.filters.nurFilterChecked &&
+          !this.filters.urFilterChecked &&
+          !this.filters.lckFilterChecked) ||
+        (this.filters.nurFilterChecked && !rule.locked && !rule.review_requestor_id) ||
+        (this.filters.urFilterChecked && !rule.locked && rule.review_requestor_id) ||
+        (this.filters.lckFilterChecked && rule.locked)
       );
     },
     listSatisfiedRule: function (rule) {
