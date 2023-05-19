@@ -6,6 +6,7 @@
         :component-id="componentId"
         :project-prefix="projectPrefix"
         :rules="rules"
+        :read-only="readOnly"
         class="mb-2"
       />
 

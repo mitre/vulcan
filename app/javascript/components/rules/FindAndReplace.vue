@@ -39,6 +39,7 @@
           >Find</b-button
         >
         <CommentModal
+          v-if="!readOnly"
           title="Replace All"
           message="Provide a comment that summarizes your changes to these controls."
           :require-non-empty="false"
@@ -60,7 +61,7 @@
                 :field="result.field"
                 :segments="result.segments"
                 :replace="fr.replace"
-                :disabled="loading"
+                :disabled="loading || readOnly"
                 @replace_one="replace_one(id, result, $event)"
               />
             </div>
@@ -77,7 +78,9 @@
           :require-non-empty="false"
           button-text="Replace All"
           button-variant="primary"
-          :button-disabled="fr.find == '' || Object.keys(find_results).length == 0 || loading"
+          :button-disabled="
+            readOnly || fr.find == '' || Object.keys(find_results).length == 0 || loading
+          "
           @comment="replace_all($event)"
         />
       </template>
@@ -108,6 +111,10 @@ export default {
     rules: {
       type: Array,
       required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {
