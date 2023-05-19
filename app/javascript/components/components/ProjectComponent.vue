@@ -3,23 +3,10 @@
     <b-breadcrumb :items="breadcrumbs" />
     <b-row class="align-items-center">
       <b-col md="8">
-        <div class="d-flex justify-content-start align-items-center">
-          <h1 class="mr-4">
-            {{ component.title || component.name }}
-            <span v-if="component.version || component.release">
-              -
-              <span v-if="component.version">V{{ component.version }}</span>
-              <span v-if="component.release">R{{ component.release }} </span>
-            </span>
-            <i v-if="component.released" class="mdi mdi-stamper" aria-hidden="true" />
-          </h1>
-          <div v-if="havePermission">
-            <UpdateComponentDetailsModal
-              :component="component"
-              @componentUpdated="refreshComponent"
-            />
-          </div>
-        </div>
+        <h1>
+          {{ component.name }}
+          <i v-if="component.released" class="mdi mdi-stamper" aria-hidden="true" />
+        </h1>
       </b-col>
       <b-col md="4" class="text-muted text-md-right">
         <p v-if="lastAudit" class="text-muted mb-1">
@@ -124,6 +111,53 @@
         <div v-if="!selectedRule.id" class="component-data">
           <b-row class="pb-2">
             <b-col>
+              <div class="clickable" @click="showDetails = !showDetails">
+                <h5 class="m-0 d-inline-block">Component Details</h5>
+                <i
+                  v-if="showDetails"
+                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+                />
+                <i
+                  v-if="!showDetails"
+                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+                />
+              </div>
+              <b-collapse id="collapse-metadata" v-model="showDetails">
+                <div v-if="component.name">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Name: </strong>{{ component.name }}
+                  </p>
+                </div>
+                <div v-if="component.version">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Version: </strong>{{ component.version }}
+                  </p>
+                </div>
+                <div v-if="component.release">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Release: </strong>{{ component.release }}
+                  </p>
+                </div>
+                <div v-if="component.title">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Title: </strong>{{ component.title }}
+                  </p>
+                </div>
+                <div v-if="component.description">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Description: </strong>{{ component.description }}
+                  </p>
+                </div>
+                <UpdateComponentDetailsModal
+                  v-if="havePermission"
+                  :component="component"
+                  @componentUpdated="refreshComponent"
+                />
+              </b-collapse>
+            </b-col>
+          </b-row>
+          <b-row class="pb-2">
+            <b-col>
               <div class="clickable" @click="showMetadata = !showMetadata">
                 <h5 class="m-0 d-inline-block">Component Metadata</h5>
                 <i
@@ -141,7 +175,11 @@
                     <strong>{{ propertyName }}: </strong>{{ value }}
                   </p>
                 </div>
-                <UpdateMetadataModal :component="component" @componentUpdated="refreshComponent" />
+                <UpdateMetadataModal
+                  v-if="havePermission"
+                  :component="component"
+                  @componentUpdated="refreshComponent"
+                />
               </b-collapse>
             </b-col>
           </b-row>
@@ -172,7 +210,11 @@
                     <template v-else> Freeform Text </template>
                   </p>
                 </div>
-                <AddQuestionsModal :component="component" @componentUpdated="refreshComponent" />
+                <AddQuestionsModal
+                  v-if="havePermission || effective_permissions === 'reviewer'"
+                  :component="component"
+                  @componentUpdated="refreshComponent"
+                />
               </b-collapse>
             </b-col>
           </b-row>

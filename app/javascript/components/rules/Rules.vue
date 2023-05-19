@@ -2,7 +2,11 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
-    <h1>{{ component.name }} - Controls</h1>
+    <h1>
+      {{ component.name }}
+      <span v-if="component.version">V{{ component.version }}</span>
+      <span v-if="component.release">R{{ component.release }}</span> - Controls
+    </h1>
 
     <RulesCodeEditorView
       :project="project"
