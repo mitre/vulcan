@@ -222,11 +222,12 @@ class ComponentsController < ApplicationController
     component_id = params.require(:id)
 
     rules = Component.find_by(id: component_id).rules
-    checks = Check.where(base_rule: rules).where('content like ?', "%#{find.downcase}%")
-    descriptions = DisaRuleDescription.where(base_rule: rules).where('vuln_discussion like ?', "%#{find.downcase}%")
-    rules = rules.where('title like ?', "%#{find.downcase}%").or(
-      rules.where('fixtext LIKE ?', "%#{find.downcase}%").or(
-        rules.where('vendor_comments LIKE ?', "%#{find.downcase}%").or(
+    checks = Check.where(base_rule: rules).where('LOWER(content) like LOWER(?)', "%#{find}%")
+    descriptions = DisaRuleDescription.where(base_rule: rules).where('LOWER(vuln_discussion) like LOWER(?)',
+                                                                     "%#{find}%")
+    rules = rules.where('LOWER(title) like LOWER(?)', "%#{find}%").or(
+      rules.where('LOWER(fixtext) LIKE LOWER(?)', "%#{find}%").or(
+        rules.where('LOWER(vendor_comments) LIKE LOWER(?)', "%#{find}%").or(
           rules.where(id: checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
         )
       )
