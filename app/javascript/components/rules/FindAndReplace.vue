@@ -9,7 +9,13 @@
       @hidden="resetModal"
     >
       <b-form-group label="Find">
-        <b-form-input v-model="fr.find" autocomplete="off" />
+        <div class="find-input-wrapper">
+          <b-form-input v-model="fr.find" autocomplete="off" />
+          <label class="match-case-toggle">
+            <b-form-checkbox v-model="fr.matchCase" />
+            Match Case
+          </label>
+        </div>
       </b-form-group>
       <b-form-group label="Replace">
         <b-form-input
@@ -18,6 +24,31 @@
           autocomplete="off"
         />
       </b-form-group>
+      <span v-if="find_results_ver">
+        <small v-if="total_results_match">
+          {{ total_results_match }} results in {{ total_results_control }} controls
+        </small>
+        <small v-else>No results found.</small>
+      </span>
+      <hr v-if="!Object.keys(find_results).length == 0" />
+      <div
+        v-if="!Object.keys(find_results).length == 0"
+        class="d-flex justify-content-end align-items-center"
+      >
+        <b-button variant="primary" :disabled="fr.find == '' || loading" class="mr-4" @click="find"
+          >Find</b-button
+        >
+        <CommentModal
+          title="Replace All"
+          message="Provide a comment that summarizes your changes to these controls."
+          :require-non-empty="false"
+          button-text="Replace All"
+          button-variant="primary"
+          :button-disabled="fr.find == '' || Object.keys(find_results).length == 0 || loading"
+          @comment="replace_all($event)"
+        />
+      </div>
+      <hr v-if="!Object.keys(find_results).length == 0" />
       <div
         v-for="[id, find_result] in Object.entries(find_results)"
         :key="`${find_results_ver}-${id}`"
@@ -85,10 +116,13 @@ export default {
       fr: {
         find: "",
         replace: "",
+        matchCase: false,
       },
       find_text: "",
       find_results: {},
       find_results_ver: 0,
+      total_results_match: 0,
+      total_results_control: 0,
     };
   },
   methods: {
@@ -108,10 +142,31 @@ export default {
       axios
         .post(`/components/${this.componentId}/find`, { find: this.find_text })
         .then((response) => {
-          this.find_results = this.groupFindResults(response.data, this.find_text);
+          this.find_results = this.groupFindResults(
+            response.data,
+            this.find_text,
+            this.fr.matchCase
+          );
           this.find_results_ver += 1;
+          this.countTotalResults();
           this.loading = false;
         });
+    },
+    countTotalResults: function () {
+      const resultValues = Object.values(this.find_results);
+      this.total_results_control = resultValues.length;
+      this.total_results_match = resultValues.reduce((total, obj) => {
+        return (
+          total +
+          obj.results.reduce((count, result) => {
+            return (
+              count +
+              result.segments.filter((segment) => segment.text.length > 0 && segment.highlighted)
+                .length
+            );
+          }, 0)
+        );
+      }, 0);
     },
     replace_one: function (rule_id, result, comment) {
       this.loading = true;
@@ -173,6 +228,22 @@ export default {
 </script>
 
 <style scoped>
+.find-input-wrapper {
+  position: relative;
+}
+
+.match-case-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 @media (min-width: 992px) {
   .modal-xl {
     max-width: auto !important;
