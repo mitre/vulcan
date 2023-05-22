@@ -168,7 +168,12 @@
           v-for="rule in openRules"
           :key="`open-${rule.id}`"
           :class="ruleRowClass(rule)"
-          class="d-flex justify-content-between align-items-center text-responsive"
+          class="
+            d-flex
+            justify-content-between justify-content-lg-start
+            align-items-center
+            text-responsive
+          "
           @click="ruleSelected(rule)"
         >
           <p>
@@ -180,22 +185,42 @@
             <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </p>
-          <p>
-            <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
-            <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
-            <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
+          <p class="ml-lg-4">
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-source-fork"
               title="Satisfies other"
               aria-hidden="true"
-            />
+            >
+              <img :src="satisfiesIcon" class="parent-svg-container" />
+            </i>
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-content-copy"
               title="Satisfied by other"
+              aria-hidden="true"
+            >
+              <img :src="satisfiedByIcon" class="child-svg-container" />
+            </i>
+            <i
+              v-if="rule.review_requestor_id"
+              v-b-tooltip.hover
+              title="Review requested"
+              class="mdi mdi-file-find"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.locked"
+              v-b-tooltip.hover
+              title="Locked"
+              class="mdi mdi-lock"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.changes_requested"
+              v-b-tooltip.hover
+              title="Changes requested"
+              class="mdi mdi-delta"
               aria-hidden="true"
             />
           </p>
@@ -226,7 +251,12 @@
       <div v-for="rule in filteredRules" :key="`rule-${rule.id}`">
         <div
           :class="ruleRowClass(rule)"
-          class="d-flex justify-content-between align-items-center text-responsive"
+          class="
+            d-flex
+            justify-content-between justify-content-lg-start
+            align-items-center
+            text-responsive
+          "
           @click="ruleSelected(rule)"
         >
           <span>
@@ -237,24 +267,45 @@
               {{ formatRuleId(rule.rule_id) }}
             </span>
           </span>
-          <span>
+          <span class="ml-lg-5">
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-source-fork"
               title="Satisfies other"
               aria-hidden="true"
-            />
+            >
+              <img :src="satisfiesIcon" class="parent-svg-container" />
+            </i>
+
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-content-copy"
               title="Satisfied by other"
               aria-hidden="true"
+            >
+              <img :src="satisfiedByIcon" class="child-svg-container" />
+            </i>
+            <i
+              v-if="rule.review_requestor_id"
+              v-b-tooltip.hover
+              title="Review requested"
+              class="mdi mdi-file-find ml-1"
+              aria-hidden="true"
             />
-            <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
-            <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
-            <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
+            <i
+              v-if="rule.locked"
+              v-b-tooltip.hover
+              title="Locked"
+              class="mdi mdi-lock ml-1"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.changes_requested"
+              v-b-tooltip.hover
+              title="Changes requested"
+              class="mdi mdi-delta ml-1"
+              aria-hidden="true"
+            />
           </span>
         </div>
         <div v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
@@ -292,6 +343,8 @@ import _ from "lodash";
 import axios from "axios";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import satisfiedByIcon from "../../images/child-icon.svg";
+import satisfiesIcon from "../../images/parent-icon.svg";
 export default {
   name: "RuleNavigator",
   components: { FindAndReplace, NewRuleModalForm },
@@ -327,6 +380,8 @@ export default {
   },
   data: function () {
     return {
+      satisfiedByIcon: satisfiedByIcon,
+      satisfiesIcon: satisfiesIcon,
       rule_form_rule_id: "",
       sidebarOffset: 0, // How far the sidebar is from the top of the screen
       filters: {
@@ -625,6 +680,20 @@ export default {
 </script>
 
 <style scoped>
+.parent-svg-container {
+  width: 18px;
+  height: 18px;
+  margin-left: -0.1em;
+  font-weight: 800;
+}
+
+.child-svg-container {
+  width: 24px;
+  height: 24px;
+  margin-left: -0.4em;
+  font-weight: 800;
+}
+
 .text-responsive {
   font-size: 0.9em;
   font-weight: 500;
