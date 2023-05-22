@@ -35,7 +35,14 @@
           class="mb-1 unselectable"
           name="acFilterChecked-filter"
         >
-          <strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
+          <span class="d-flex flex-column align-items-center">
+            <span
+              ><strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
+            </span>
+            <small v-if="ruleStatusCounts.acsb" class="text-info"
+              >{{ ruleStatusCounts.acsb }} Satisfied by other
+            </small>
+          </span>
         </b-form-checkbox>
 
         <b-form-checkbox
@@ -414,6 +421,7 @@ export default {
       let adnmCount = 0;
       let naCount = 0;
       let nydCount = 0;
+      let acSatisfiedByCount = 0;
 
       // review counts
       let nurCount = 0;
@@ -422,9 +430,11 @@ export default {
 
       for (var i = 0; i < this.rules.length; i++) {
         const status = this.rules[i].status;
+        const satisfiedByOther = this.rules[i].satisfied_by.length > 0;
         // Status counts
         if (status == "Applicable - Configurable") {
           acCount += 1;
+          acSatisfiedByCount += satisfiedByOther ? 1 : 0;
         } else if (status == "Applicable - Inherently Meets") {
           aimCount += 1;
         } else if (status == "Applicable - Does Not Meet") {
@@ -452,6 +462,7 @@ export default {
         aim: aimCount,
         adnm: adnmCount,
         na: naCount,
+        acsb: acSatisfiedByCount, // applicable - configurable satisfied by other controls.
         nyd: nydCount,
         nur: nurCount,
         ur: urCount,
