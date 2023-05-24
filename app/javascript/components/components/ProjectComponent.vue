@@ -138,12 +138,12 @@
                     <strong>Release: </strong>{{ component.release }}
                   </p>
                 </div>
-                <div v-if="component.title">
+                <div>
                   <p v-linkified class="ml-2 mb-0 mt-2">
                     <strong>Title: </strong>{{ component.title }}
                   </p>
                 </div>
-                <div v-if="component.description">
+                <div>
                   <p v-linkified class="ml-2 mb-0 mt-2">
                     <strong>Description: </strong>{{ component.description }}
                   </p>
