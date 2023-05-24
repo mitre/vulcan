@@ -175,10 +175,10 @@
           v-for="rule in openRules"
           :key="`open-${rule.id}`"
           :class="ruleRowClass(rule)"
-          class="d-flex justify-content-between align-items-center text-responsive"
+          class="d-flex justify-content-between text-responsive"
           @click="ruleSelected(rule)"
         >
-          <p>
+          <span>
             <i
               class="mdi mdi-close closeRuleButton"
               aria-hidden="true"
@@ -186,8 +186,8 @@
             />
             <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
-          </p>
-          <p>
+          </span>
+          <span>
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
@@ -223,7 +223,7 @@
               class="mdi mdi-delta"
               aria-hidden="true"
             />
-          </p>
+          </span>
         </div>
       </div>
 
@@ -251,7 +251,7 @@
       <div v-for="rule in filteredRules" :key="`rule-${rule.id}`">
         <div
           :class="ruleRowClass(rule)"
-          class="d-flex justify-content-between align-items-center text-responsive"
+          class="d-flex justify-content-between text-responsive"
           @click="ruleSelected(rule)"
         >
           <span>
