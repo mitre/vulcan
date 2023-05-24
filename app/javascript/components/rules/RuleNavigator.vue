@@ -175,12 +175,7 @@
           v-for="rule in openRules"
           :key="`open-${rule.id}`"
           :class="ruleRowClass(rule)"
-          class="
-            d-flex
-            justify-content-between justify-content-lg-start
-            align-items-center
-            text-responsive
-          "
+          class="d-flex justify-content-between align-items-center text-responsive"
           @click="ruleSelected(rule)"
         >
           <p>
@@ -192,23 +187,21 @@
             <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </p>
-          <p class="ml-lg-4">
+          <p>
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
+              class="mdi mdi-source-fork"
               title="Satisfies other"
               aria-hidden="true"
-            >
-              <img :src="satisfiesIcon" class="parent-svg-container" />
-            </i>
+            />
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
+              class="mdi mdi-content-copy"
               title="Satisfied by other"
               aria-hidden="true"
-            >
-              <img :src="satisfiedByIcon" class="child-svg-container" />
-            </i>
+            />
             <i
               v-if="rule.review_requestor_id"
               v-b-tooltip.hover
@@ -258,12 +251,7 @@
       <div v-for="rule in filteredRules" :key="`rule-${rule.id}`">
         <div
           :class="ruleRowClass(rule)"
-          class="
-            d-flex
-            justify-content-between justify-content-lg-start
-            align-items-center
-            text-responsive
-          "
+          class="d-flex justify-content-between align-items-center text-responsive"
           @click="ruleSelected(rule)"
         >
           <span>
@@ -274,24 +262,22 @@
               {{ formatRuleId(rule.rule_id) }}
             </span>
           </span>
-          <span class="ml-lg-5">
+          <span>
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
+              class="mdi mdi-source-fork"
               title="Satisfies other"
               aria-hidden="true"
-            >
-              <img :src="satisfiesIcon" class="parent-svg-container" />
-            </i>
+            />
 
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
+              class="mdi mdi-content-copy"
               title="Satisfied by other"
               aria-hidden="true"
-            >
-              <img :src="satisfiedByIcon" class="child-svg-container" />
-            </i>
+            />
             <i
               v-if="rule.review_requestor_id"
               v-b-tooltip.hover
