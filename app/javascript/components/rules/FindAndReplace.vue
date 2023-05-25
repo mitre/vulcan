@@ -24,6 +24,37 @@
           autocomplete="off"
         />
       </b-form-group>
+      <b-form-group>
+        <template #label>
+          <span>Fields to include</span><br />
+          <b-form-checkbox
+            v-model="allFieldsSelected"
+            :indeterminate="indeterminate"
+            aria-describedby="control-fields"
+            aria-controls="control-fields"
+            class="mt-1"
+            @change="toggleAllFields"
+          >
+            {{ allFieldsSelected ? "Un-select All" : "Select All" }}
+          </b-form-checkbox>
+        </template>
+        <template #default="{ ariaDescribedby }">
+          <div class="d-flex flex-wrap ml-3">
+            <b-form-checkbox
+              v-for="option in controlFields"
+              :key="option"
+              v-model="fr.fields"
+              :value="option"
+              :aria-describedby="ariaDescribedby"
+              :name="ariaDescribedby"
+              class="mb-lg-1 col-lg-3"
+              aria-label="Individual control fields"
+            >
+              {{ option }}
+            </b-form-checkbox>
+          </div>
+        </template>
+      </b-form-group>
       <span v-if="find_results_ver">
         <small v-if="total_results_match">
           {{ total_results_match }} results in {{ total_results_control }} controls
@@ -50,10 +81,7 @@
         />
       </div>
       <hr v-if="!Object.keys(find_results).length == 0" />
-      <div
-        v-for="[id, find_result] in Object.entries(find_results)"
-        :key="`${find_results_ver}-${id}`"
-      >
+      <div v-for="[id, find_result] in sortFindResults()" :key="`${find_results_ver}-${id}`">
         <b-card :title="formatRuleId(find_result.rule_id)" class="mb-3">
           <b-card-text>
             <div v-for="(result, index) in find_result.results" :key="index">
@@ -119,11 +147,24 @@ export default {
   },
   data: function () {
     return {
+      allFieldsSelected: true,
+      indeterminate: false,
+      controlFields: [
+        "Artifact Description",
+        "Check",
+        "Fix",
+        "Mitigations",
+        "Status Justification",
+        "Title",
+        "Vendor Comments",
+        "Vulnerability Discussion",
+      ],
       loading: false,
       fr: {
         find: "",
         replace: "",
         matchCase: false,
+        fields: this.controlFields,
       },
       find_text: "",
       find_results: {},
@@ -132,16 +173,45 @@ export default {
       total_results_control: 0,
     };
   },
+  watch: {
+    "fr.fields": function (newValue, oldValue) {
+      // Handle changes in individual field checkboxes
+      if (newValue.length === 0) {
+        this.indeterminate = false;
+        this.allFieldsSelected = false;
+      } else if (newValue.length === this.controlFields.length) {
+        this.indeterminate = false;
+        this.allFieldsSelected = true;
+      } else {
+        this.indeterminate = true;
+        this.allFieldsSelected = false;
+      }
+    },
+  },
   methods: {
+    toggleAllFields: function (checked) {
+      this.fr.fields = checked ? this.controlFields.slice() : [];
+    },
+    sortFindResults: function () {
+      return Object.entries(this.find_results).sort((a, b) => {
+        const findResultA = a[1].rule_id;
+        const findResultB = b[1].rule_id;
+        return findResultA.localeCompare(findResultB);
+      });
+    },
     resetModal: function () {
       this.loading = false;
       this.fr = {
         find: "",
         replace: "",
+        matchCase: false,
+        fields: this.controlFields,
       };
       this.find_text = "";
       this.find_results = {};
       this.find_results_ver = 0;
+      this.total_results_match = 0;
+      this.total_results_control = 0;
     },
     find: function () {
       this.loading = true;
@@ -152,7 +222,8 @@ export default {
           this.find_results = this.groupFindResults(
             response.data,
             this.find_text,
-            this.fr.matchCase
+            this.fr.matchCase,
+            this.fr.fields
           );
           this.find_results_ver += 1;
           this.countTotalResults();
