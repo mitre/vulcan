@@ -105,4 +105,3 @@ class UserMailer < ApplicationMailer
     latest_review.user
   end
 end
-

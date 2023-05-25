@@ -105,4 +105,3 @@ class MembershipsController < ApplicationController
     send_slack_notification(notification_type, membership)
   end
 end
-

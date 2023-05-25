@@ -164,4 +164,3 @@ class ApplicationController < ActionController::Base
     @navigation += helpers.base_navigation if current_user
   end
 end
-

@@ -12,4 +12,3 @@ if Rails.env.production? && Settings.smtp.enabled
   ActionMailer::Base.delivery_method = :smtp
   ActionMailer::Base.smtp_settings = Settings.smtp.settings.transform_keys(&:to_sym)
 end
-

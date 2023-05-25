@@ -95,4 +95,3 @@ class ReviewsController < ApplicationController
     params.require(:review).permit(:component_id, :action, :comment)
   end
 end
-
