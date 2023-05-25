@@ -163,7 +163,6 @@
                   required
                 />
               </b-form-group>
-
               <!-- Review action -->
               <b-form-group label="" class="mb-0">
                 <b-form-radio
@@ -469,6 +468,7 @@ export default {
       axios
         .post(`/rules/${this.rule.id}/reviews`, {
           review: {
+            component_id: this.rule.component_id,
             action: this.selectedReviewAction,
             comment: this.reviewComment.trim(),
           },
@@ -509,3 +509,4 @@ export default {
   color: inherit;
 }
 </style>
+

@@ -104,6 +104,14 @@ class ApplicationController < ActionController::Base
     }
   end
 
+  def send_smtp_notification(mailer, action, *args)
+    mailer.request_review(*args).deliver_now if action == 'request_review'
+    mailer.approve_review(*args).deliver_now if action == 'approve'
+    mailer.revoke_review(*args).deliver_now if action == 'revoke_review_request'
+    mailer.request_review_changes(*args).deliver_now if action == 'request_changes'
+    mailer.welcome_project_member(*args).deliver_now if action == 'welcome_user'
+  end
+
   private
 
   def helpful_errors(exception)
@@ -156,3 +164,4 @@ class ApplicationController < ActionController::Base
     @navigation += helpers.base_navigation if current_user
   end
 end
+
