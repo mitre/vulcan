@@ -8,7 +8,7 @@ class UserMailer < ApplicationMailer
       mail(
         to: @user.email,
         cc: @project_admins,
-        subject: "Vulcan Project Access - #{@project_name}",
+        subject: "Vulcan Project Access - #{@project.name}",
         from: Settings.smtp.settings.user_name
       )
     rescue StandardError => e
@@ -22,7 +22,7 @@ class UserMailer < ApplicationMailer
       mail(
         to: @user.email,
         cc: @project_admins,
-        subject: "Vulcan Component Access - #{@component_name}",
+        subject: "Vulcan Component Access - #{@component.name}",
         from: Settings.smtp.settings.user_name
       )
     rescue StandardError => e
@@ -104,15 +104,14 @@ class UserMailer < ApplicationMailer
 
   def parse_mailer_welcome_user_args(*args)
     @current_user, @membership = args
-    membership_id = @membership.membership_id
     case @membership.membership_type
     when 'Project'
-      @project_id = membership_id
-      @project_name = Project.find(@project_id).name
+      @project_id = @membership.membership_id
+      @project = Project.find(@project_id)
     when 'Component'
-      @component_id = membership_id
-      @project_id = Component.find(@component_id).project_id
-      @component_name = Component.find(@component_id).name
+      @component_id = @membership.membership_id
+      @component = Component.find(@component_id)
+      @project_id = @component.project_id
     end
     @project_admins = get_project_admins(@project_id)
     @user = User.find(@membership.user_id)
