@@ -4,7 +4,7 @@
   <body>
     <h2>Vulcan Component Access</h2>
     <p>Hi <%= @user.name %>,</p>
-    <p>You have been added to the <%= @role_assigned %> role in the <%= @component_name %> project.</p>
+    <p>You have been added to the <%= @role_assigned %> role in the <%= @component_name %> component.</p>
     <% if Settings.app_url.present? %>
         <p>You can access the component at <%= link_to @component_name, "#{Settings.app_url}/components/#{@component_id}" %> .</p>
     <% else %>
