@@ -4,11 +4,11 @@
   <body>
     <h2>Vulcan Project Access</h2>
     <p>Hi <%= @user.name %>,</p>
-    <p>You have been added to the <%= @role_assigned %> role in the <%= Project.find(@project_id).name %> project.</p>
+    <p>You have been added to the <%= @role_assigned %> role in the <%= @project_name %> project.</p>
     <% if Settings.app_url.present? %>
-        <p>You can access the project at <%= link_to Project.find(@project_id).name, "#{Settings.app_url}/projects/#{@project_id}" %> .</p>
+        <p>You can access the project at <%= link_to @project_name, "#{Settings.app_url}/projects/#{@project_id}" %> .</p>
     <% else %>
-        <p>You can access the project "<%= Project.find(@project_id).name %>".</p>
+        <p>You can access the project "<%= @project_name %>".</p>
       <% end %>
     <br/>
     <br/>
@@ -16,3 +16,4 @@
     <p>Vulcan Support</p>
   </body>
 </html>
+

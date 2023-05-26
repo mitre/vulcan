@@ -8,7 +8,21 @@ class UserMailer < ApplicationMailer
       mail(
         to: @user.email,
         cc: @project_admins,
-        subject: "Welcome to Vulcan Project - #{Project.find(@project_id).name}",
+        subject: "Vulcan Project Access - #{@project_name}",
+        from: Settings.smtp.settings.user_name
+      )
+    rescue StandardError => e
+      Rails.logger.error("Error delivering welcome email to user #{@user.name}: #{e.message}")
+    end
+  end
+
+  def welcome_component_member(*args)
+    parse_mailer_welcome_user_args(*args)
+    begin
+      mail(
+        to: @user.email,
+        cc: @project_admins,
+        subject: "Vulcan Component Access - #{@component_name}",
         from: Settings.smtp.settings.user_name
       )
     rescue StandardError => e
@@ -91,8 +105,16 @@ class UserMailer < ApplicationMailer
   def parse_mailer_welcome_user_args(*args)
     @current_user, @membership = args
     membership_id = @membership.membership_id
-    @project_id = membership_id
-    @project_admins = get_project_admins(membership_id)
+    case @membership.membership_type
+    when 'Project'
+      @project_id = membership_id
+      @project_name = Project.find(@project_id).name
+    when 'Component'
+      @component_id = membership_id
+      @project_id = Component.find(@component_id).project_id
+      @component_name = Component.find(@component_id).name
+    end
+    @project_admins = get_project_admins(@project_id)
     @user = User.find(@membership.user_id)
     @role_assigned = @membership.role.to_s
   end
