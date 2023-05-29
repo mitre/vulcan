@@ -30,8 +30,10 @@ class MembershipsController < ApplicationController
       flash.notice = 'Successfully created membership.'
       case membership.membership_type
       when 'Project'
+        send_smtp_notification(UserMailer, 'project_user', current_user, membership) if Settings.smtp.enabled
         send_membership_notification(:create_project_membership, membership)
       when 'Component'
+        send_smtp_notification(UserMailer, 'component_user', current_user, membership) if Settings.smtp.enabled
         send_membership_notification(:create_component_membership, membership)
       end
       redirect_to membership.membership

@@ -10,8 +10,19 @@ class ReviewsController < ApplicationController
   before_action :authorize_author_project
 
   def create
-    review = Review.new(review_params.merge({ user: current_user, rule: @rule }))
+    review_params_without_component_id = review_params.except('component_id')
+    review = Review.new(review_params_without_component_id.merge({ user: current_user, rule: @rule }))
     if review.save
+      if Settings.smtp.enabled
+        send_smtp_notification(
+          UserMailer,
+          review_params[:action],
+          current_user,
+          review_params[:component_id],
+          review_params[:comment],
+          @rule
+        )
+      end
       render json: { toast: 'Successfully added review.' }
     else
       render json: {
@@ -81,6 +92,6 @@ class ReviewsController < ApplicationController
   end
 
   def review_params
-    params.require(:review).permit(:action, :comment)
+    params.require(:review).permit(:component_id, :action, :comment)
   end
 end
