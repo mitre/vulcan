@@ -218,19 +218,24 @@ class ComponentsController < ApplicationController
   end
 
   def find
-    find = params.require(:find)
+    find_param = params.require(:find).downcase
     component_id = params.require(:id)
 
     rules = Component.find_by(id: component_id).rules
-    checks = Check.where(base_rule: rules).where('content like ?', "%#{find.downcase}%")
-    descriptions = DisaRuleDescription.where(base_rule: rules).where('vuln_discussion like ?', "%#{find.downcase}%")
-    rules = rules.where('title like ?', "%#{find.downcase}%").or(
-      rules.where('fixtext LIKE ?', "%#{find.downcase}%").or(
-        rules.where('vendor_comments LIKE ?', "%#{find.downcase}%").or(
-          rules.where(id: checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
-        )
-      )
-    ).order(:rule_id)
+    checks = Check.where(base_rule: rules).where('LOWER(content) LIKE ?', "%#{find_param}%")
+    descriptions = DisaRuleDescription.where(base_rule: rules).where(
+      'LOWER(vuln_discussion) LIKE ? OR LOWER(mitigations) LIKE ?', "%#{find_param}%", "%#{find_param}%"
+    )
+    rules = rules.where(
+      'LOWER(title) LIKE ? OR
+      LOWER(fixtext) LIKE ? OR
+      LOWER(vendor_comments) LIKE ? OR
+      LOWER(status_justification) LIKE ? OR
+      LOWER(artifact_description) LIKE ? OR
+      id IN (?) ', "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
+      "%#{find_param}%", (checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
+    )
+                 .order(:rule_id)
 
     render json: rules
   end

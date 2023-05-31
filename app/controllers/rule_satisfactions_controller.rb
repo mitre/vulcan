@@ -9,11 +9,11 @@ class RuleSatisfactionsController < ApplicationController
 
   def create
     if @rule.satisfies.empty? && (@rule.satisfied_by << @satisfied_by_rule)
-      render json: { toast: 'Successfully marked rule as duplicate.' }
+      render json: { toast: "Successfully marked #{@rule.version} as satisfied by #{@satisfied_by_rule.version}." }
     else
       render json: {
         toast: {
-          title: 'Could not mark rule as duplicate.',
+          title: "Could not mark #{@rule.version} as satisfied by #{@satisfied_by_rule.version}.",
           message: @rule.errors.full_messages,
           variant: 'danger'
         }
@@ -23,11 +23,11 @@ class RuleSatisfactionsController < ApplicationController
 
   def destroy
     if @rule.satisfied_by.delete(@satisfied_by_rule)
-      render json: { toast: 'Successfully unmarked rule as duplicate.' }
+      render json: { toast: "#{@rule.version} is no longer marked as satisfied by #{@satisfied_by_rule.version}." }
     else
       render json: {
         toast: {
-          title: 'Could not unmark rule as duplicate.',
+          title: "Could not unmark #{@rule.version} as satisfied by #{@satisfied_by_rule.version}.",
           message: @rule.errors.full_messages,
           variant: 'danger'
         }
