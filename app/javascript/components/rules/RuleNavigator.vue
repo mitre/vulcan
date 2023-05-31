@@ -306,15 +306,40 @@
             v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
             :class="ruleRowClass(satisfies)"
-            class="text-responsive"
+            class="d-flex justify-content-between text-responsive"
             @click="ruleSelected(satisfies)"
           >
-            <i class="mdi mdi-chevron-right" />
-            <span v-if="filters.showSRGIdChecked">
-              {{ satisfies.version }}
+            <span>
+              <i class="mdi mdi-chevron-right" />
+              <span v-if="filters.showSRGIdChecked">
+                {{ satisfies.version }}
+              </span>
+              <span v-else>
+                {{ formatRuleId(satisfies.rule_id) }}
+              </span>
             </span>
-            <span v-else>
-              {{ formatRuleId(satisfies.rule_id) }}
+            <span>
+              <i
+                v-if="satisfies.review_requestor_id"
+                v-b-tooltip.hover
+                title="Review requested"
+                class="mdi mdi-file-find ml-1"
+                aria-hidden="true"
+              />
+              <i
+                v-if="satisfies.locked"
+                v-b-tooltip.hover
+                title="Locked"
+                class="mdi mdi-lock ml-1"
+                aria-hidden="true"
+              />
+              <i
+                v-if="satisfies.changes_requested"
+                v-b-tooltip.hover
+                title="Changes requested"
+                class="mdi mdi-delta ml-1"
+                aria-hidden="true"
+              />
             </span>
           </div>
         </div>
@@ -336,8 +361,6 @@ import _ from "lodash";
 import axios from "axios";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-import satisfiedByIcon from "../../images/child-icon.svg";
-import satisfiesIcon from "../../images/parent-icon.svg";
 export default {
   name: "RuleNavigator",
   components: { FindAndReplace, NewRuleModalForm },
@@ -373,8 +396,6 @@ export default {
   },
   data: function () {
     return {
-      satisfiedByIcon: satisfiedByIcon,
-      satisfiesIcon: satisfiesIcon,
       rule_form_rule_id: "",
       sidebarOffset: 0, // How far the sidebar is from the top of the screen
       filters: {

@@ -463,6 +463,11 @@ export default {
       this.selectedReviewAction = null;
       this.showReviewPane = false;
       this.$root.$emit("refresh:rule", this.rule.id, "all");
+      if (this.rule.satisfied_by.length > 0) {
+        this.rule.satisfied_by.forEach((r) => {
+          this.$root.$emit("refresh:rule", r.id, "all");
+        });
+      }
     },
   },
 };

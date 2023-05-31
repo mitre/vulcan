@@ -70,7 +70,10 @@ class BaseRule < ApplicationRecord
         disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
         checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) },
         nist_control_family: nist_control_family,
-        version: version
+        version: version,
+        locked: locked,
+        review_requestor_id: review_requestor_id,
+        changes_requested: changes_requested
       }
     )
   end
