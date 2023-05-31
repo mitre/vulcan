@@ -1,10 +1,12 @@
 <template>
   <div :class="wrapperClass">
     <b-button
+      v-b-tooltip.hover
       :variant="buttonVariant"
       :class="buttonClass"
       :size="buttonSize"
       :disabled="buttonDisabled"
+      :title="buttonDisabled ? 'Cannot replace on read only mode' : ''"
       @click="$bvModal.show(`comment-modal-${mod}`)"
     >
       {{ buttonText }}

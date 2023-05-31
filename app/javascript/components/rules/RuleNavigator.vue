@@ -1,6 +1,15 @@
 <template>
   <div id="scrolling-sidebar" ref="sidebar" :style="sidebarStyle">
     <div class="mr-2">
+      <!-- Find & Replace -->
+      <FindAndReplace
+        :component-id="componentId"
+        :project-prefix="projectPrefix"
+        :rules="rules"
+        :read-only="readOnly"
+        class="mb-2"
+      />
+
       <!-- Rule search -->
       <p class="mb-2">
         <strong>Filter &amp; Search</strong>
@@ -26,7 +35,14 @@
           class="mb-1 unselectable"
           name="acFilterChecked-filter"
         >
-          <strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
+          <span class="d-flex flex-column align-items-center">
+            <span
+              ><strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
+            </span>
+            <small v-if="ruleStatusCounts.acsb" class="text-info"
+              >{{ ruleStatusCounts.acsb }} Satisfied by other
+            </small>
+          </span>
         </b-form-checkbox>
 
         <b-form-checkbox
@@ -103,21 +119,20 @@
         </b-form-checkbox>
       </b-form-group>
 
-      <!-- Show/hide duplicates -->
-      <b-form-group class="mt-3" label="Filter by Duplicate Status">
+      <!-- Toggle display -->
+      <b-form-group class="mt-3" label="Toggle Display">
+        <!-- Nest satisfied controls -->
         <b-form-checkbox
-          id="showDuplicatesChecked"
-          v-model="filters.showDuplicatesChecked"
+          id="nestSatisfiedRulesChecked"
+          v-model="filters.nestSatisfiedRulesChecked"
           class="mb-1 unselectable"
           switch
-          name="showDuplicatesChecked-fitler"
+          name="nestSatisfiedRulesChecked-fitler"
         >
-          Show Duplicates
+          Nest Satisfied Controls
         </b-form-checkbox>
-      </b-form-group>
 
-      <!-- Toggle STIG ID/SRG ID -->
-      <b-form-group class="mt-3">
+        <!-- Toggle STIG ID/SRG ID -->
         <b-form-checkbox
           id="showSRGIdChecked"
           v-model="filters.showSRGIdChecked"
@@ -127,10 +142,8 @@
         >
           Show SRG ID
         </b-form-checkbox>
-      </b-form-group>
 
-      <!-- Toggle Sort by SRG ID -->
-      <b-form-group class="mt-3">
+        <!-- Toggle Sort by SRG ID -->
         <b-form-checkbox
           id="sortBySRGIdChecked"
           v-model="filters.sortBySRGIdChecked"
@@ -142,20 +155,14 @@
         </b-form-checkbox>
       </b-form-group>
 
-      <!-- Find & Replace -->
-      <FindAndReplace :component-id="componentId" :project-prefix="projectPrefix" :rules="rules" />
-
       <hr class="mt-2 mb-2" />
 
       <!-- Currently opened controls -->
-      <p class="mt-0 mb-0">
+      <p class="mt-0 mb-1 d-flex justify-content-between align-items-center spacing-responsive">
         <strong>Open Controls</strong>
         <template v-if="openRuleIds.length > 0">
-          <i
-            class="text-primary mdi mdi-close clickable float-right"
-            @click="rulesDeselected(openRules)"
-          />
-          <span class="text-primary float-right clickable" @click="rulesDeselected(openRules)">
+          <span class="clickable text-primary" @click="rulesDeselected(openRules)">
+            <i class="mdi mdi-close clickable" />
             close all
           </span>
         </template>
@@ -168,59 +175,67 @@
           v-for="rule in openRules"
           :key="`open-${rule.id}`"
           :class="ruleRowClass(rule)"
+          class="d-flex justify-content-between text-responsive"
           @click="ruleSelected(rule)"
         >
-          <div v-if="filters.showSRGIdChecked">
+          <span>
             <i
               class="mdi mdi-close closeRuleButton"
               aria-hidden="true"
               @click.stop="ruleDeselected(rule)"
             />
-            {{ rule.version }}
+            <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
+            <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
+          </span>
+          <span>
             <i
-              v-if="rule.review_requestor_id"
-              class="mdi mdi-file-find float-right"
+              v-if="rule.satisfies.length > 0"
+              v-b-tooltip.hover
+              class="mdi mdi-source-fork"
+              title="Satisfies other"
               aria-hidden="true"
             />
-            <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-            <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-            <i
-              v-if="rule.satisfied_by.length > 0"
-              class="mdi mdi-content-copy float-right"
-              aria-hidden="true"
-            />
-          </div>
-          <div v-else>
-            <i
-              class="mdi mdi-close closeRuleButton"
-              aria-hidden="true"
-              @click.stop="ruleDeselected(rule)"
-            />
-            {{ formatRuleId(rule.rule_id) }}
-            <i
-              v-if="rule.review_requestor_id"
-              class="mdi mdi-file-find float-right"
-              aria-hidden="true"
-            />
-            <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-            <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
             <i
               v-if="rule.satisfied_by.length > 0"
-              class="mdi mdi-content-copy float-right"
+              v-b-tooltip.hover
+              class="mdi mdi-content-copy"
+              title="Satisfied by other"
               aria-hidden="true"
             />
-          </div>
+            <i
+              v-if="rule.review_requestor_id"
+              v-b-tooltip.hover
+              title="Review requested"
+              class="mdi mdi-file-find"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.locked"
+              v-b-tooltip.hover
+              title="Locked"
+              class="mdi mdi-lock"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.changes_requested"
+              v-b-tooltip.hover
+              title="Changes requested"
+              class="mdi mdi-delta"
+              aria-hidden="true"
+            />
+          </span>
         </div>
       </div>
 
       <hr class="mt-2 mb-2" />
 
       <!-- All project controls -->
-      <p class="mt-0 mb-0">
+      <p class="mt-0 mb-0 d-flex justify-content-between align-items-center spacing-responsive">
         <strong>All Controls</strong>
         <template v-if="!readOnly">
-          <i v-b-modal.create-rule-modal class="text-primary mdi mdi-plus clickable float-right" />
-          <span v-b-modal.create-rule-modal class="text-primary float-right clickable">add </span>
+          <span v-b-modal.create-rule-modal class="text-primary clickable">
+            <i v-b-modal.create-rule-modal class="mdi mdi-plus" /> add
+          </span>
         </template>
       </p>
 
@@ -233,41 +248,100 @@
       />
 
       <!-- All rules list -->
-      <div
-        v-for="rule in filteredRules"
-        :key="`rule-${rule.id}`"
-        :class="ruleRowClass(rule)"
-        @click="ruleSelected(rule)"
-      >
-        <div v-if="filters.showSRGIdChecked">
-          {{ rule.version }}
-          <i
-            v-if="rule.review_requestor_id"
-            class="mdi mdi-file-find float-right"
-            aria-hidden="true"
-          />
-          <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-          <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-          <i
-            v-if="rule.satisfied_by.length > 0"
-            class="mdi mdi-content-copy float-right"
-            aria-hidden="true"
-          />
+      <div v-for="rule in filteredRules" :key="`rule-${rule.id}`">
+        <div
+          :class="ruleRowClass(rule)"
+          class="d-flex justify-content-between text-responsive"
+          @click="ruleSelected(rule)"
+        >
+          <span>
+            <span v-if="filters.showSRGIdChecked">
+              {{ rule.version }}
+            </span>
+            <span v-else>
+              {{ formatRuleId(rule.rule_id) }}
+            </span>
+          </span>
+          <span>
+            <i
+              v-if="rule.satisfies.length > 0"
+              v-b-tooltip.hover
+              class="mdi mdi-source-fork"
+              title="Satisfies other"
+              aria-hidden="true"
+            />
+
+            <i
+              v-if="rule.satisfied_by.length > 0"
+              v-b-tooltip.hover
+              class="mdi mdi-content-copy"
+              title="Satisfied by other"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.review_requestor_id"
+              v-b-tooltip.hover
+              title="Review requested"
+              class="mdi mdi-file-find ml-1"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.locked"
+              v-b-tooltip.hover
+              title="Locked"
+              class="mdi mdi-lock ml-1"
+              aria-hidden="true"
+            />
+            <i
+              v-if="rule.changes_requested"
+              v-b-tooltip.hover
+              title="Changes requested"
+              class="mdi mdi-delta ml-1"
+              aria-hidden="true"
+            />
+          </span>
         </div>
-        <div v-else>
-          {{ formatRuleId(rule.rule_id) }}
-          <i
-            v-if="rule.review_requestor_id"
-            class="mdi mdi-file-find float-right"
-            aria-hidden="true"
-          />
-          <i v-if="rule.locked" class="mdi mdi-lock float-right" aria-hidden="true" />
-          <i v-if="rule.changes_requested" class="mdi mdi-delta float-right" aria-hidden="true" />
-          <i
-            v-if="rule.satisfied_by.length > 0"
-            class="mdi mdi-content-copy float-right"
-            aria-hidden="true"
-          />
+        <div v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
+          <div
+            v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
+            :key="satisfies.id"
+            :class="ruleRowClass(satisfies)"
+            class="d-flex justify-content-between text-responsive"
+            @click="ruleSelected(satisfies)"
+          >
+            <span>
+              <i class="mdi mdi-chevron-right" />
+              <span v-if="filters.showSRGIdChecked">
+                {{ satisfies.version }}
+              </span>
+              <span v-else>
+                {{ formatRuleId(satisfies.rule_id) }}
+              </span>
+            </span>
+            <span>
+              <i
+                v-if="satisfies.review_requestor_id"
+                v-b-tooltip.hover
+                title="Review requested"
+                class="mdi mdi-file-find ml-1"
+                aria-hidden="true"
+              />
+              <i
+                v-if="satisfies.locked"
+                v-b-tooltip.hover
+                title="Locked"
+                class="mdi mdi-lock ml-1"
+                aria-hidden="true"
+              />
+              <i
+                v-if="satisfies.changes_requested"
+                v-b-tooltip.hover
+                title="Changes requested"
+                class="mdi mdi-delta ml-1"
+                aria-hidden="true"
+              />
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -334,7 +408,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        showDuplicatesChecked: false, // Show duplicates
+        nestSatisfiedRulesChecked: false, // Nests Satisfied Rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       },
@@ -354,6 +428,7 @@ export default {
       let adnmCount = 0;
       let naCount = 0;
       let nydCount = 0;
+      let acSatisfiedByCount = 0;
 
       // review counts
       let nurCount = 0;
@@ -362,9 +437,11 @@ export default {
 
       for (var i = 0; i < this.rules.length; i++) {
         const status = this.rules[i].status;
+        const satisfiedByOther = this.rules[i].satisfied_by.length > 0;
         // Status counts
         if (status == "Applicable - Configurable") {
           acCount += 1;
+          acSatisfiedByCount += satisfiedByOther ? 1 : 0;
         } else if (status == "Applicable - Inherently Meets") {
           aimCount += 1;
         } else if (status == "Applicable - Does Not Meet") {
@@ -392,6 +469,7 @@ export default {
         aim: aimCount,
         adnm: adnmCount,
         na: naCount,
+        acsb: acSatisfiedByCount, // applicable - configurable satisfied by other controls.
         nyd: nydCount,
         nur: nurCount,
         ur: urCount,
@@ -415,6 +493,7 @@ export default {
           `ruleNavigatorFilters-${this.componentId}`,
           JSON.stringify(this.filters)
         );
+        localStorage.setItem(`showSRGIdChecked-${this.componentId}`, this.filters.showSRGIdChecked);
       },
       deep: true,
     },
@@ -465,6 +544,11 @@ export default {
     // Helper to test if a rule's status is a currently selected filter checkboxes
     doesRuleHaveFilteredStatus: function (rule) {
       return (
+        (!this.filters.acFilterChecked &&
+          !this.filters.aimFilterChecked &&
+          !this.filters.adnmFilterChecked &&
+          !this.filters.naFilterChecked &&
+          !this.filters.nydFilterChecked) ||
         (this.filters.acFilterChecked && rule.status == "Applicable - Configurable") ||
         (this.filters.aimFilterChecked && rule.status == "Applicable - Inherently Meets") ||
         (this.filters.adnmFilterChecked && rule.status == "Applicable - Does Not Meet") ||
@@ -474,17 +558,20 @@ export default {
     },
     doesRuleHaveFilteredReviewStatus: function (rule) {
       return (
-        (this.filters.nurFilterChecked &&
-          rule.locked == false &&
-          rule.review_requestor_id == null) ||
-        (this.filters.urFilterChecked &&
-          rule.locked == false &&
-          rule.review_requestor_id != null) ||
-        (this.filters.lckFilterChecked && rule.locked == true)
+        (!this.filters.nurFilterChecked &&
+          !this.filters.urFilterChecked &&
+          !this.filters.lckFilterChecked) ||
+        (this.filters.nurFilterChecked && !rule.locked && !rule.review_requestor_id) ||
+        (this.filters.urFilterChecked && !rule.locked && rule.review_requestor_id) ||
+        (this.filters.lckFilterChecked && rule.locked)
       );
     },
-    isDuplicate: function (rule) {
-      return this.filters.showDuplicatesChecked || rule.satisfied_by.length === 0;
+    listSatisfiedRule: function (rule) {
+      let showRule = true;
+      if (this.filters.nestSatisfiedRulesChecked) {
+        showRule = rule.satisfied_by.length === 0;
+      }
+      return showRule;
     },
     // Helper to filter & search a group of rules
     filterRules: function (rules) {
@@ -499,9 +586,12 @@ export default {
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
           this.doesRuleHaveFilteredReviewStatus(rule) &&
-          this.isDuplicate(rule)
+          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
         );
       });
+    },
+    sortAlsoSatisfies: function (rules) {
+      return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
@@ -589,7 +679,7 @@ export default {
         nurFilterChecked: true, // Not under review
         urFilterChecked: true, // Under review
         lckFilterChecked: true, // Locked
-        showDuplicatesChecked: false, // Show duplicates
+        nestSatisfiedRulesChecked: false, // Nests satisfied rules
         showSRGIdChecked: false, // Show SRG ID instead of STIG ID
         sortBySRGIdChecked: false, // Sort by SRG ID
       };
@@ -608,6 +698,28 @@ export default {
 </script>
 
 <style scoped>
+.parent-svg-container {
+  width: 18px;
+  height: 18px;
+  margin-left: -0.1em;
+  font-weight: 800;
+}
+
+.child-svg-container {
+  width: 24px;
+  height: 24px;
+  margin-left: -0.4em;
+  font-weight: 800;
+}
+
+.text-responsive {
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.spacing-responsive {
+  letter-spacing: -0.05em;
+}
 .ruleRow {
   padding: 0.25em;
 }
@@ -635,5 +747,15 @@ export default {
 #scrolling-sidebar {
   display: block;
   overflow-y: auto;
+}
+
+@media (min-width: 1200px) {
+  .text-responsive {
+    font-size: 1em;
+    font-weight: 400;
+  }
+  .spacing-responsive {
+    letter-spacing: 0.01em;
+  }
 }
 </style>

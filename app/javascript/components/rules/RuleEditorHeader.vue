@@ -41,42 +41,7 @@
           @ruleSelected="$emit('ruleSelected', $event.id)"
         />
         <b-button v-b-modal.duplicate-rule-modal variant="info">Clone Control</b-button>
-        <!-- Mark/Unmark as duplicate modal -->
-        <span
-          v-if="
-            rule.satisfied_by &&
-            rule.satisfies &&
-            rule.satisfied_by.length === 0 &&
-            rule.satisfies.length > 0
-          "
-          v-b-tooltip.hover
-          title="This control cannot be marked as duplicate because it satisfies other controls"
-        >
-          <b-button v-b-modal.mark-as-duplicate-modal disabled variant="orange"
-            >Mark as Duplicate</b-button
-          >
-        </span>
-        <span v-b-tooltip.hover title="Merge requirement">
-          <b-button
-            v-if="
-              rule.satisfied_by &&
-              rule.satisfies &&
-              rule.satisfied_by.length === 0 &&
-              rule.satisfies.length === 0
-            "
-            v-b-modal.mark-rule-as-duplicate-modal
-            variant="orange"
-            >Mark as Duplicate</b-button
-          >
-        </span>
-        <span v-b-tooltip.hover title="Unmerge requirement">
-          <b-button
-            v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
-            v-b-modal.unmark-rule-as-duplicate-modal
-            variant="orange"
-            >Unmark as Duplicate</b-button
-          >
-        </span>
+
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
@@ -218,47 +183,26 @@
           </template>
         </b-modal>
         <b-modal
-          id="mark-rule-as-duplicate-modal"
-          title="Mark as Duplicate"
+          id="also-satisfies-modal"
+          title="Also Satisfies"
           centered
-          @ok="$root.$emit('markDuplicate:rule', rule.id, satisfied_by_rule_id)"
+          @ok="$root.$emit('addSatisfied:rule', satisfies_rule_id, rule.id)"
         >
-          <p>Mark control as duplicate of:</p>
-          <b-form-select
-            v-model="satisfied_by_rule_id"
-            :options="
-              rules
-                .filter((r) => {
-                  return r.id !== rule.id && (!r.satisfied_by || r.satisfied_by.length === 0);
-                })
-                .map((r) => {
-                  return { value: r.id, text: formatRuleId(r.rule_id) };
-                })
-            "
-          />
-          <template #modal-footer="{ cancel, ok }">
-            <!-- Emulate built in modal footer ok and cancel button actions -->
-            <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="info" @click="ok()"> OK </b-button>
-          </template>
-        </b-modal>
-        <b-modal
-          id="unmark-rule-as-duplicate-modal"
-          title="Unmark as Duplicate"
-          centered
-          @ok="$root.$emit('unmarkDuplicate:rule', rule.id, satisfied_by_rule_id)"
-        >
-          <p>Unmark control as duplicate of:</p>
-          <b-form-select
-            v-model="satisfied_by_rule_id"
-            :options="
-              rule.satisfied_by
-                ? rule.satisfied_by.map((r) => {
-                    return { value: r.id, text: formatRuleId(r.rule_id) };
-                  })
-                : []
-            "
-          />
+          <b-form-group label="Select a control that this one satisfies:">
+            <vue-simple-suggest
+              :key="`componentKey-${rules[0].component_id}`"
+              ref="controlSearch"
+              :list="filteredSelectRules"
+              display-attribute="text"
+              value-attribute="value"
+              placeholder="Search for eligible control..."
+              :filter-by-query="true"
+              :min-length="0"
+              :max-suggestions="0"
+              :number="0"
+              @select="satisfies_rule_id = $refs.controlSearch.selected.value"
+            />
+          </b-form-group>
           <template #modal-footer="{ cancel, ok }">
             <!-- Emulate built in modal footer ok and cancel button actions -->
             <b-button @click="cancel()"> Cancel </b-button>
@@ -277,10 +221,12 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import VueSimpleSuggest from "vue-simple-suggest";
+import "vue-simple-suggest/dist/styles.css";
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal, NewRuleModalForm },
+  components: { CommentModal, NewRuleModalForm, VueSimpleSuggest },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
@@ -310,7 +256,9 @@ export default {
   },
   data: function () {
     return {
-      satisfied_by_rule_id: null,
+      showSRGIdChecked: localStorage.getItem(`showSRGIdChecked-${this.rules[0].component_id}`),
+      filteredSelectRules: [],
+      satisfies_rule_id: null,
       selectedReviewAction: null,
       showReviewPane: false,
       reviewComment: "",
@@ -421,7 +369,40 @@ export default {
       ];
     },
   },
+  mounted: function () {
+    this.filterRules();
+    this.updateShowSRGIdChecked();
+  },
+  beforeUnmount: function () {
+    clearInterval(this.showSRGIdCheckedInterval);
+  },
   methods: {
+    updateShowSRGIdChecked: function () {
+      const componentId = this.rules[0].component_id;
+      this.showSRGIdCheckedInterval = setInterval(() => {
+        const newValue = localStorage.getItem(`showSRGIdChecked-${componentId}`);
+        if (newValue !== this.showSRGIdChecked) {
+          this.showSRGIdChecked = newValue;
+          this.filterRules();
+        }
+      }, 1000);
+    },
+    filterRules: function () {
+      this.filteredSelectRules = this.rules
+        .filter((r) => {
+          return (
+            r.id !== this.rule.id &&
+            r.satisfies.length === 0 &&
+            !this.rule.satisfies.some((s) => s.id === r.id)
+          );
+        })
+        .map((r) => {
+          return {
+            value: r.id,
+            text: JSON.parse(this.showSRGIdChecked) ? r.version : this.formatRuleId(r.rule_id),
+          };
+        });
+    },
     saveRule(comment) {
       const payload = {
         rule: {
@@ -482,6 +463,11 @@ export default {
       this.selectedReviewAction = null;
       this.showReviewPane = false;
       this.$root.$emit("refresh:rule", this.rule.id, "all");
+      if (this.rule.satisfied_by.length > 0) {
+        this.rule.satisfied_by.forEach((r) => {
+          this.$root.$emit("refresh:rule", r.id, "all");
+        });
+      }
     },
   },
 };

@@ -2,8 +2,11 @@
 import _ from "lodash";
 
 const FIND_AND_REPLACE_FIELDS = {
+  "Status Justification": ["status_justification"],
   Title: ["title"],
+  "Artifact Description": ["artifact_description"],
   "Vulnerability Discussion": ["disa_rule_descriptions_attributes", 0, "vuln_discussion"],
+  Mitigations: ["disa_rule_descriptions_attributes", 0, "mitigations"],
   Check: ["checks_attributes", 0, "content"],
   Fix: ["fixtext"],
   "Vendor Comments": ["vendor_comments"],
@@ -12,16 +15,21 @@ const FIND_AND_REPLACE_FIELDS = {
 // This mixin is for find and replace helper methods
 export default {
   methods: {
-    groupFindResults: function (data, find_text) {
+    groupFindResults: function (data, find_text, matchCase, fields) {
+      const normalizedFindText = matchCase ? find_text : find_text.toLowerCase();
       const find_results = {};
       data.forEach((rule) => {
-        Object.entries(FIND_AND_REPLACE_FIELDS).forEach(([key, path]) => {
-          const value = _.get(rule, path);
-          if (value && value.toLowerCase().includes(find_text.toLowerCase())) {
+        fields.forEach((key) => {
+          const value = _.get(rule, FIND_AND_REPLACE_FIELDS[key]);
+          let normalizedValue = "";
+          if (value) {
+            normalizedValue = matchCase ? value : value.toLowerCase();
+          }
+          if (normalizedValue.includes(normalizedFindText)) {
             const result = {
               field: key,
               value: value,
-              segments: this.getSegments(value, find_text),
+              segments: this.getSegments(value, find_text, matchCase),
             };
             if (rule.id in find_results) {
               find_results[rule.id].results.push(result);
@@ -36,10 +44,10 @@ export default {
       });
       return find_results;
     },
-    getSegments: function (value, find_text) {
+    getSegments: function (value, find_text, matchCase) {
       const segments = [];
-      const normalizedValue = value.toLowerCase();
-      const normalizedFind = find_text.toLowerCase();
+      const normalizedValue = matchCase ? value : value.toLowerCase();
+      const normalizedFind = matchCase ? find_text : find_text.toLowerCase();
       const matchIndices = [];
       let currentIndex;
       let previousIndex = 0;

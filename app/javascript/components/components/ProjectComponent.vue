@@ -107,164 +107,215 @@
         </b-tabs>
       </b-col>
       <b-col v-if="effective_permissions" md="3">
-        <b-row class="pb-2">
-          <b-col>
-            <div class="clickable" @click="showDetails = !showDetails">
-              <h5 class="m-0 d-inline-block">Component Details</h5>
-              <i v-if="showDetails" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-              <i v-if="!showDetails" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
-            </div>
-            <b-collapse id="collapse-metadata" v-model="showDetails">
-              <div v-if="component.name">
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>Name: </strong>{{ component.name }}
-                </p>
-              </div>
-              <div v-if="component.version">
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>Version: </strong>{{ component.version }}
-                </p>
-              </div>
-              <div v-if="component.release">
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>Release: </strong>{{ component.release }}
-                </p>
-              </div>
-              <div v-if="component.title">
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>Title: </strong>{{ component.title }}
-                </p>
-              </div>
-              <div v-if="component.description">
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>Description: </strong>{{ component.description }}
-                </p>
-              </div>
-              <UpdateComponentDetailsModal
-                :component="component"
-                @componentUpdated="refreshComponent"
-              />
-            </b-collapse>
-          </b-col>
-        </b-row>
-        <b-row class="pb-2">
-          <b-col>
-            <div class="clickable" @click="showMetadata = !showMetadata">
-              <h5 class="m-0 d-inline-block">Component Metadata</h5>
-              <i
-                v-if="showMetadata"
-                class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-              />
-              <i v-if="!showMetadata" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
-            </div>
-            <b-collapse id="collapse-metadata" v-model="showMetadata">
-              <div v-for="(value, propertyName) in component.metadata" :key="propertyName">
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>{{ propertyName }}: </strong>{{ value }}
-                </p>
-              </div>
-              <UpdateMetadataModal :component="component" @componentUpdated="refreshComponent" />
-            </b-collapse>
-          </b-col>
-        </b-row>
-        <b-row class="pb-2">
-          <b-col>
-            <div class="clickable" @click="showHistory = !showHistory">
-              <h5 class="m-0 d-inline-block">Component History</h5>
-              <i v-if="showHistory" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-              <i v-if="!showHistory" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
-            </div>
-            <b-collapse id="collapse-metadata" v-model="showHistory">
-              <History
-                :histories="component.histories"
-                :revertable="false"
-                abbreviate-type="BaseRule"
-              />
-            </b-collapse>
-          </b-col>
-        </b-row>
-        <b-row class="pb-2">
-          <b-col>
-            <div class="clickable" @click="showAdditionalQuestions = !showAdditionalQuestions">
-              <h5 class="m-0 d-inline-block">Component Additional Questions</h5>
-              <i
-                v-if="showAdditionalQuestions"
-                class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-              />
-              <i
-                v-if="!showAdditionalQuestions"
-                class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-              />
-            </div>
-            <b-collapse id="collapse-metadata" v-model="showAdditionalQuestions">
-              <div
-                v-for="value in component.additional_questions"
-                :key="value.id + value.question_type + value.name"
-              >
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>{{ value.name }}: </strong>
-                  <template v-if="value.question_type === 'dropdown'">
-                    Options: {{ value.options.join(", ") }}
-                  </template>
-                  <template v-if="value.question_type === 'url'"> URL </template>
-                  <template v-else> Freeform Text </template>
-                </p>
-              </div>
-              <AddQuestionsModal :component="component" @componentUpdated="refreshComponent" />
-            </b-collapse>
-          </b-col>
-        </b-row>
-        <b-row class="pb-2">
-          <b-col>
-            <div class="clickable" @click="showReviews = !showReviews">
-              <h5 class="m-0 d-inline-block">Component Reviews</h5>
-              <i v-if="showReviews" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-              <i v-if="!showReviews" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
-            </div>
-            <b-collapse id="collapse-metadata" v-model="showReviews">
-              <div v-for="review in component.reviews" :key="review.id">
-                <p class="ml-2 mb-0 mt-2">
-                  <strong>
-                    {{ review.displayed_rule_name }}
-                  </strong>
-                </p>
-                <p class="ml-2 mb-0 mt-0">
-                  <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
-                </p>
-                <p class="ml-2 mb-0">
-                  <small>{{ friendlyDateTime(review.created_at) }}</small>
-                </p>
-                <p class="ml-3 mb-3 white-space-pre-wrap">{{ review.comment }}</p>
-              </div>
-            </b-collapse>
-          </b-col>
-        </b-row>
         <hr />
-        <b-row>
-          <b-col>
-            <div v-if="selectedRule.reviews">
-              <RuleReviews :rule="selectedRule" />
-              <br />
-            </div>
-            <div v-if="selectedRule.histories">
-              <RuleHistories
-                :rule="selectedRule"
+        <div v-if="!selectedRule.id" class="component-data">
+          <b-row class="pb-2">
+            <b-col>
+              <div class="clickable" @click="showDetails = !showDetails">
+                <h5 class="m-0 d-inline-block">Component Details</h5>
+                <i
+                  v-if="showDetails"
+                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+                />
+                <i
+                  v-if="!showDetails"
+                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+                />
+              </div>
+              <b-collapse id="collapse-metadata" v-model="showDetails">
+                <div v-if="component.name">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Name: </strong>{{ component.name }}
+                  </p>
+                </div>
+                <div v-if="component.version">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Version: </strong>{{ component.version }}
+                  </p>
+                </div>
+                <div v-if="component.release">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Release: </strong>{{ component.release }}
+                  </p>
+                </div>
+                <div>
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Title: </strong>{{ component.title }}
+                  </p>
+                </div>
+                <div>
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>Description: </strong>{{ component.description }}
+                  </p>
+                </div>
+                <UpdateComponentDetailsModal
+                  v-if="havePermission"
+                  :component="component"
+                  @componentUpdated="refreshComponent"
+                />
+              </b-collapse>
+            </b-col>
+          </b-row>
+          <b-row class="pb-2">
+            <b-col>
+              <div class="clickable" @click="showMetadata = !showMetadata">
+                <h5 class="m-0 d-inline-block">Component Metadata</h5>
+                <i
+                  v-if="showMetadata"
+                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+                />
+                <i
+                  v-if="!showMetadata"
+                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+                />
+              </div>
+              <b-collapse id="collapse-metadata" v-model="showMetadata">
+                <div v-for="(value, propertyName) in component.metadata" :key="propertyName">
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>{{ propertyName }}: </strong>{{ value }}
+                  </p>
+                </div>
+                <UpdateMetadataModal
+                  v-if="havePermission"
+                  :component="component"
+                  @componentUpdated="refreshComponent"
+                />
+              </b-collapse>
+            </b-col>
+          </b-row>
+          <b-row class="pb-2">
+            <b-col>
+              <div class="clickable" @click="showAdditionalQuestions = !showAdditionalQuestions">
+                <h5 class="m-0 d-inline-block">Component Additional Questions</h5>
+                <i
+                  v-if="showAdditionalQuestions"
+                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+                />
+                <i
+                  v-if="!showAdditionalQuestions"
+                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+                />
+              </div>
+              <b-collapse id="collapse-metadata" v-model="showAdditionalQuestions">
+                <div
+                  v-for="value in component.additional_questions"
+                  :key="value.id + value.question_type + value.name"
+                >
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>{{ value.name }}: </strong>
+                    <template v-if="value.question_type === 'dropdown'">
+                      Options: {{ value.options.join(", ") }}
+                    </template>
+                    <template v-if="value.question_type === 'url'"> URL </template>
+                    <template v-else> Freeform Text </template>
+                  </p>
+                </div>
+                <AddQuestionsModal
+                  v-if="havePermission || effective_permissions === 'reviewer'"
+                  :component="component"
+                  @componentUpdated="refreshComponent"
+                />
+              </b-collapse>
+            </b-col>
+          </b-row>
+          <b-row class="pb-2">
+            <b-col>
+              <div class="clickable" @click="showHistory = !showHistory">
+                <h5 class="m-0 d-inline-block">Component History</h5>
+                <i
+                  v-if="showHistory"
+                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+                />
+                <i
+                  v-if="!showHistory"
+                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+                />
+              </div>
+              <b-collapse id="collapse-metadata" v-model="showHistory">
+                <History
+                  :histories="component.histories"
+                  :revertable="false"
+                  abbreviate-type="BaseRule"
+                />
+              </b-collapse>
+            </b-col>
+          </b-row>
+          <b-row class="pb-2">
+            <b-col>
+              <div class="clickable" @click="showReviews = !showReviews">
+                <h5 class="m-0 d-inline-block">Component Reviews</h5>
+                <i
+                  v-if="showReviews"
+                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
+                />
+                <i
+                  v-if="!showReviews"
+                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
+                />
+              </div>
+              <b-collapse id="collapse-metadata" v-model="showReviews">
+                <div v-for="review in shownReviews" :key="review.id">
+                  <p class="ml-2 mb-0 mt-2">
+                    <strong>
+                      {{ review.displayed_rule_name }}
+                    </strong>
+                  </p>
+                  <p class="ml-2 mb-0 mt-0">
+                    <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
+                  </p>
+                  <p class="ml-2 mb-0">
+                    <small>{{ friendlyDateTime(review.created_at) }}</small>
+                  </p>
+                  <p class="ml-3 mb-2 white-space-pre-wrap">{{ review.comment }}</p>
+                </div>
+                <div class="d-flex justify-content-center align-items-center">
+                  <p
+                    v-if="numShownReviews < component.reviews.length"
+                    class="text-primary clickable"
+                    @click="numShownReviews += 2"
+                  >
+                    show older reviews...
+                  </p>
+                  <p
+                    v-if="numShownReviews > 2 && component.reviews.length > 2"
+                    class="ml-4 text-primary clickable"
+                    @click="numShownReviews -= 2"
+                  >
+                    hide older reviews...
+                  </p>
+                </div>
+              </b-collapse>
+            </b-col>
+          </b-row>
+        </div>
+        <div class="rule-data">
+          <b-row>
+            <b-col>
+              <RuleSatisfactions
                 :component="component"
-                :statuses="statuses"
-                :severities="severities"
+                :rule="selectedRule"
+                :selected-rule-id="selectedRule.id"
+                :project-prefix="component.prefix"
+                :read-only="true"
+                @ruleSelected="handleRuleSelected($event)"
               />
               <br />
-            </div>
-            <RuleSatisfactions
-              :component="component"
-              :rule="selectedRule"
-              :selected-rule-id="selectedRule.id"
-              :project-prefix="component.prefix"
-              :read-only="true"
-              @ruleSelected="handleRuleSelected($event)"
-            />
-          </b-col>
-        </b-row>
+              <div v-if="selectedRule.reviews">
+                <RuleReviews :rule="selectedRule" />
+                <br />
+              </div>
+              <div v-if="selectedRule.histories">
+                <RuleHistories
+                  :rule="selectedRule"
+                  :component="component"
+                  :statuses="statuses"
+                  :severities="severities"
+                />
+                <br />
+              </div>
+            </b-col>
+          </b-row>
+        </div>
       </b-col>
     </b-row>
   </div>
@@ -350,6 +401,7 @@ export default {
   },
   data: function () {
     return {
+      numShownReviews: 2,
       selectedRule: {},
       showDetails: true,
       showMetadata: true,
@@ -371,6 +423,12 @@ export default {
     };
   },
   computed: {
+    havePermission: function () {
+      return this.effective_permissions === "admin" || this.effective_permissions === "author";
+    },
+    shownReviews: function () {
+      return this.component.reviews.slice(0, this.numShownReviews);
+    },
     rules: function () {
       return [...this.component.rules].sort(this.compareRules);
     },

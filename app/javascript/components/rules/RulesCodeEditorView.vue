@@ -41,6 +41,14 @@
 
           <!-- Additional info column -->
           <div class="col-4">
+            <RuleSatisfactions
+              :component="component"
+              :rule="selectedRule()"
+              :selected-rule-id="selectedRuleId"
+              :project-prefix="component.prefix"
+              @ruleSelected="handleRuleSelected($event)"
+            />
+            <br />
             <RuleReviews
               :rule="selectedRule()"
               :effective-permissions="effectivePermissions"
@@ -52,14 +60,6 @@
               :component="component"
               :statuses="statuses"
               :severities="severities"
-            />
-            <br />
-            <RuleSatisfactions
-              :component="component"
-              :rule="selectedRule()"
-              :selected-rule-id="selectedRuleId"
-              :project-prefix="component.prefix"
-              @ruleSelected="handleRuleSelected($event)"
             />
           </div>
         </div>
