@@ -1,3 +1,12 @@
+# Vulcan v2.1.3
+
+### Exciting New Features 🎉
+* VULCAN-551: Enabling SMTP feature to send emails via ActionMailer by @smarlaku820 in https://github.com/mitre/vulcan/pull/584
+* VULCAN-570: Control View Only and Edit Mode UX refactor by @vanessuniq in https://github.com/mitre/vulcan/pull/583
+### Other Changes
+* VULCAN-579: Fix project update logic for detecting name changes correctly by @smarlaku820 in https://github.com/mitre/vulcan/pull/580
+* VULCAN-581: Enhance Import from Spreadsheet workflow  by @vanessuniq in https://github.com/mitre/vulcan/pull/582
+
 # Vulcan v2.1.2
 
 ### Exciting New Features 🎉
