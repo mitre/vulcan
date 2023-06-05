@@ -369,8 +369,12 @@ export default {
       ];
     },
   },
+  watch: {
+    rule: function (_) {
+      this.filterRules();
+    },
+  },
   mounted: function () {
-    this.filterRules();
     this.updateShowSRGIdChecked();
   },
   beforeUnmount: function () {
@@ -392,6 +396,7 @@ export default {
         .filter((r) => {
           return (
             r.id !== this.rule.id &&
+            r.status === "Applicable - Configurable" &&
             r.satisfies.length === 0 &&
             !this.rule.satisfies.some((s) => s.id === r.id)
           );
