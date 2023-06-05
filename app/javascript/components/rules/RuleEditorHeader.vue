@@ -369,8 +369,12 @@ export default {
       ];
     },
   },
+  watch: {
+    rule: function (_) {
+      this.filterRules();
+    },
+  },
   mounted: function () {
-    this.filterRules();
     this.updateShowSRGIdChecked();
   },
   beforeUnmount: function () {
