@@ -19,7 +19,7 @@
           />
         </div>
         <div
-          v-if="!readOnly"
+          v-if="!readOnly && rule.status === 'Applicable - Configurable'"
           v-b-modal.also-satisfies-modal
           v-b-tooltip.hover
           title="Merge requirement"
