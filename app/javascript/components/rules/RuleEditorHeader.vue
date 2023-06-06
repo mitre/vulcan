@@ -350,6 +350,13 @@ export default {
             ? "Cannot lock a control that is currently under review"
             : this.rule.locked
             ? "Cannot lock a control that is already locked"
+            : this.rule.status === "Applicable - Does Not Meet" &&
+              this.rule.disa_rule_descriptions_attributes[0].mitigations.length === 0
+            ? "Cannot lock control: Mitigation is required for Applicable - Does Not Meet"
+            : this.rule.status === "Applicable - Inherently Meets" &&
+              (this.rule.artifact_description === null ||
+                this.rule.artifact_description.length === 0)
+            ? "Cannot lock control: Artifact Description is required for Applicable - Inherently Meets"
             : null,
         },
 
