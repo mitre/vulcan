@@ -37,16 +37,37 @@ class ReviewsController < ApplicationController
 
   def lock_controls
     unlocked = @component.rules.where(locked: false)
+    doesnotmeet_unlocked = unlocked.includes(:disa_rule_descriptions).where(status: 'Applicable - Does Not Meet',
+                                                                            disa_rule_descriptions: { mitigations: [
+                                                                              nil, ''
+                                                                            ] }).distinct.order(:rule_id)
+    inherentlymeet_unlocked = unlocked.where(status: 'Applicable - Inherently Meets',
+                                             artifact_description: [nil,
+                                                                    '']).order(:rule_id)
     filtered_unlocked = unlocked.where(status: 'Not Yet Determined')
+
     satisfied_rule_ids = RuleSatisfaction.where(rule_id: filtered_unlocked).pluck(:rule_id)
     filtered_unlocked = filtered_unlocked.where.not(id: satisfied_rule_ids).order(:rule_id)
 
-    if filtered_unlocked.any?
+    if filtered_unlocked.any? || doesnotmeet_unlocked.any? || inherentlymeet_unlocked.any?
+      doesnotmeet_controls = doesnotmeet_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
+      if doesnotmeet_controls.present?
+        doesnotmeet_msg = 'The following controls are Applicable - Does Not Meet'
+        doesnotmeet_msg += " with no mitigations: #{doesnotmeet_controls}"
+      end
+      inherentlymeet_controls = inherentlymeet_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
+      if inherentlymeet_controls.present?
+        inherentlymeet_msg = 'The following controls are Applicable - Inherently Meets'
+        inherentlymeet_msg += " with no Artifact Description: #{inherentlymeet_controls}"
+      end
       not_determined_controls = filtered_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
+      if not_determined_controls.present?
+        not_determined_msg = "The following controls are 'Not Yet Determined': #{not_determined_controls}"
+      end
       render json: {
         toast: {
           title: 'Could not lock controls.',
-          message: "The following controls are 'Not Yet Determined': #{not_determined_controls}",
+          message: "#{not_determined_msg}\n #{doesnotmeet_msg}\n #{inherentlymeet_msg}",
           variant: 'danger'
         }
       }, status: :unprocessable_entity
