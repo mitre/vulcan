@@ -9,16 +9,13 @@ class MembershipsController < ApplicationController
 
   def create
     # Ensure the current_user has permissions on the Project or component
-    current_user_effective_role = if current_user.admin
-                                    'admin'
-                                  else
-                                    Membership.where(
-                                      membership_type: membership_create_params[:membership_type],
-                                      membership_id: membership_create_params[:membership_id],
-                                      user_id: current_user.id
-                                    ).pick(:role)
-                                  end
-    unless current_user_effective_role == 'admin'
+    project_or_component = if membership_create_params[:membership_type] == 'Project'
+                             Project.find_by(id: membership_create_params[:membership_id])
+                           else
+                             Component.find_by(id: membership_create_params[:membership_id])
+                           end
+
+    unless current_user.admin || current_user.effective_permissions(project_or_component) == 'admin'
       raise(
         NotAuthorizedError,
         "You are not authorized to manage permissions on this #{membership_create_params[:membership_type]}"
