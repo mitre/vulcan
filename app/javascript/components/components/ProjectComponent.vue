@@ -148,6 +148,16 @@
                     <strong>Description: </strong>{{ component.description }}
                   </p>
                 </div>
+                <div>
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>PoC Name: </strong>{{ component.admin_name }}
+                  </p>
+                </div>
+                <div>
+                  <p v-linkified class="ml-2 mb-0 mt-2">
+                    <strong>PoC Email: </strong>{{ component.admin_email }}
+                  </p>
+                </div>
                 <UpdateComponentDetailsModal
                   v-if="havePermission"
                   :component="component"
