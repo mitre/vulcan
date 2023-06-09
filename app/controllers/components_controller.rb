@@ -50,7 +50,7 @@ class ComponentsController < ApplicationController
     @component_json = if @effective_permissions
                         @component.to_json(
                           methods: %i[histories memberships metadata inherited_memberships available_members rules
-                                      reviews]
+                                      reviews admins]
                         )
                       else
                         @component.to_json(methods: %i[rules reviews])
@@ -68,6 +68,7 @@ class ComponentsController < ApplicationController
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
     if component.errors.empty? && component.save
+      component.update_admin_contact_info
       component.duplicate_reviews_and_history(component_create_params[:id])
       component.create_rule_satisfactions if component_create_params[:file]
       component.rules_count = component.rules.where(deleted_at: nil).size
@@ -227,12 +228,12 @@ class ComponentsController < ApplicationController
       'LOWER(vuln_discussion) LIKE ? OR LOWER(mitigations) LIKE ?', "%#{find_param}%", "%#{find_param}%"
     )
     rules = rules.where(
-      'LOWER(title) LIKE ? OR
+      "LOWER(title) LIKE ? OR
       LOWER(fixtext) LIKE ? OR
       LOWER(vendor_comments) LIKE ? OR
       LOWER(status_justification) LIKE ? OR
       LOWER(artifact_description) LIKE ? OR
-      id IN (?) ', "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
+      id IN (?) ", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
       "%#{find_param}%", (checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
     )
                  .order(:rule_id)
@@ -353,6 +354,8 @@ class ComponentsController < ApplicationController
       :title,
       :prefix,
       :description,
+      :admin_name,
+      :admin_email,
       :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
       component_metadata_attributes: { data: {} }
