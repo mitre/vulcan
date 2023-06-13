@@ -68,7 +68,8 @@ class ComponentsController < ApplicationController
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
     if component.errors.empty? && component.save
-      component.update_admin_contact_info
+      component.admin_name = component_create_params[:admin_name].presence || current_user.name
+      component.admin_email = component_create_params[:admin_email].presence || current_user.email
       component.duplicate_reviews_and_history(component_create_params[:id])
       component.create_rule_satisfactions if component_create_params[:file]
       component.rules_count = component.rules.where(deleted_at: nil).size
@@ -376,6 +377,8 @@ class ComponentsController < ApplicationController
       :release,
       :title,
       :description,
+      :admin_name,
+      :admin_email,
       :file,
       file: {}
     )

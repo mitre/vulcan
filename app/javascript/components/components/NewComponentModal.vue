@@ -141,6 +141,25 @@
             <b-form-group label="Description">
               <b-form-textarea v-model="description" placeholder="" rows="3" />
             </b-form-group>
+            <!-- Select PoC -->
+            <b-form-group
+              v-if="project"
+              label="Select the Point of Contact"
+              description="If no user selected, the PoC will be set to the user creating the component"
+            >
+              <vue-simple-suggest
+                ref="userSearch"
+                :list="potentialPocs"
+                display-attribute="name"
+                value-attribute="email"
+                placeholder="Search for eligible PoC..."
+                :filter-by-query="true"
+                :min-length="0"
+                :max-suggestions="0"
+                :number="0"
+                @select="setComponentPoc($refs.userSearch.selected)"
+              />
+            </b-form-group>
           </b-col>
         </b-row>
       </b-form>
@@ -217,6 +236,9 @@ export default {
       displayedSrgs: [],
       file: null,
       componentKey: 0,
+      potentialPocs: this.project ? this.project.users : [],
+      admin_name: "",
+      admin_email: "",
     };
   },
   computed: {
@@ -265,6 +287,10 @@ export default {
         : [];
       this.displayedSrgs = [];
       this.$refs["AddComponentModal"].show();
+    },
+    setComponentPoc: function (user) {
+      this.admin_email = user.email;
+      this.admin_name = user.name;
     },
     fetchData: function (_bvModalEvt) {
       axios.get("/srgs").then((response) => {
@@ -381,6 +407,12 @@ export default {
       }
       if (this.description) {
         formData.append("component[description]", this.description);
+      }
+      if (this.admin_name) {
+        formData.append("component[admin_name]", this.admin_name);
+      }
+      if (this.admin_email) {
+        formData.append("component[admin_email]", this.admin_email);
       }
 
       axios
