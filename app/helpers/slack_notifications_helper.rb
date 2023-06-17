@@ -12,10 +12,10 @@ module SlackNotificationsHelper
   def send_notification(channel, message_params)
     message = build_message(message_params)
     client.chat_postMessage(channel: channel, blocks: message)
-  rescue Slack::Web::Api::Errors::ChannelNotFound
-    flash.alert = "Slack channel '#{channel}' not found"
+  rescue Slack::Web::Api::Errors::ChannelNotFound => e
+    Rails.logger.error "Slack channel '#{channel}' not found: #{e.message}"
   rescue Slack::Web::Api::Errors::SlackError => e
-    flash.alert = "Slack API error: #{e.message}"
+    Rails.logger.error "Slack API error: #{e.message}"
   end
 
   def get_slack_headers_icons(notification_type, notification_type_prefix)
