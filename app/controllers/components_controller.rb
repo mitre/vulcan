@@ -71,6 +71,11 @@ class ComponentsController < ApplicationController
       component.duplicate_reviews_and_history(component_create_params[:id])
       component.create_rule_satisfactions if component_create_params[:file]
       component.rules_count = component.rules.where(deleted_at: nil).size
+      if component_create_params[:slack_channel_id].present?
+        component.component_metadata_attributes = { data: {
+          'Slack Channel ID' => component_create_params[:slack_channel_id]
+        } }
+      end
       component.save
       send_slack_notification(:create_component, component) if Settings.slack.enabled
       render json: { toast: 'Successfully added component to project.' }
@@ -374,6 +379,7 @@ class ComponentsController < ApplicationController
       :title,
       :description,
       :file,
+      :slack_channel_id,
       file: {}
     )
   end

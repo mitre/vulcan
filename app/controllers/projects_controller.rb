@@ -61,6 +61,9 @@ class ProjectsController < ApplicationController
       name: new_project_params[:name],
       memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
     )
+    if new_project_params[:slack_channel_id].present?
+      project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } }
+    end
 
     # First save ensures base Project is acceptable.
     if project.save
@@ -156,7 +159,7 @@ class ProjectsController < ApplicationController
   end
 
   def new_project_params
-    params.require(:project).permit(:name)
+    params.require(:project).permit(:name, :slack_channel_id)
   end
 
   def project_params

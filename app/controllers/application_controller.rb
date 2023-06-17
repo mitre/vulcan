@@ -90,7 +90,8 @@ class ApplicationController < ActionController::Base
   end
 
   def send_slack_notification(notification_type, object)
-    send_notification(Settings.slack.channel_id, slack_notification_params(notification_type, object))
+    channel = find_slack_channel(object)
+    send_notification(channel, slack_notification_params(notification_type, object)) if channel.present?
   end
 
   def slack_notification_params(notification_type, object)
@@ -114,6 +115,21 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  # Determine the slack channel or user id to which the slack notification should be sent.
+  def find_slack_channel(object)
+    return object.user.slack_user_id if object.is_a?(Membership) && object.user.slack_user_id.present?
+    return object.slack_user_id if object.is_a?(User) && object.slack_user_id.present?
+
+    if object.is_a?(Component) || object.is_a?(Project)
+      return object.metadata['Slack Channel ID'] if object.metadata&.[]('Slack Channel ID').present?
+      if object.is_a?(Component) && object.project.metadata&.[]('Slack Channel ID').present?
+        return object.project.metadata['Slack Channel ID']
+      end
+    end
+
+    Settings.slack.channel_id
+  end
 
   def helpful_errors(exception)
     # Based on the accepted response type, either send a JSON response with the

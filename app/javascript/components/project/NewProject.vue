@@ -18,6 +18,17 @@
               autocomplete="off"
             />
           </b-form-group>
+          <!-- Slack Channel ID -->
+          <b-form-group
+            label="Slack Channel ID"
+            description="Provide a slack channel ID for slack notification about activities on this project"
+          >
+            <b-form-input
+              placeholder="Example... C123456, #general"
+              name="project[slack_channel_id]"
+              autocomplete="off"
+            />
+          </b-form-group>
           <b-button type="submit" variant="primary"> Create Project </b-button>
         </b-col>
       </b-row>
