@@ -2,27 +2,18 @@
 
 # Sends Email Notifications to users if Vulcan is configured to use an SMTP server
 class UserMailer < ApplicationMailer
-  def welcome_project_member(*args)
+  def welcome_member(*args)
     parse_mailer_welcome_user_args(*args)
+    subject = if @project_or_component.is_a?(Project)
+                "Vulcan Project Access - #{@project_or_component.name}"
+              else
+                "Vulcan Component Access - #{@project_or_component.name}"
+              end
     begin
       mail(
         to: @user.email,
-        cc: @project_admins,
-        subject: "Vulcan Project Access - #{@project.name}",
-        from: Settings.smtp.settings.user_name
-      )
-    rescue StandardError => e
-      Rails.logger.error("Error delivering welcome email to user #{@user.name}: #{e.message}")
-    end
-  end
-
-  def welcome_component_member(*args)
-    parse_mailer_welcome_user_args(*args)
-    begin
-      mail(
-        to: @user.email,
-        cc: @project_admins,
-        subject: "Vulcan Component Access - #{@component.name}",
+        cc: @admins,
+        subject: subject,
         from: Settings.smtp.settings.user_name
       )
     rescue StandardError => e
@@ -34,7 +25,7 @@ class UserMailer < ApplicationMailer
     parse_mailer_review_args(*args)
     begin
       mail(
-        to: @project_admins,
+        to: @component_admins,
         cc: @current_user.email,
         subject: "Review Requested - #{@stig_id}",
         from: Settings.smtp.settings.user_name
@@ -50,7 +41,7 @@ class UserMailer < ApplicationMailer
     begin
       mail(
         to: @latest_review_user.email,
-        cc: @project_admins,
+        cc: @component_admins,
         subject: "Review Approved - #{@stig_id}",
         from: Settings.smtp.settings.user_name
       )
@@ -65,7 +56,7 @@ class UserMailer < ApplicationMailer
     begin
       mail(
         to: @latest_review_user.email,
-        cc: @project_admins,
+        cc: @component_admins,
         subject: "Review Revoked - #{@stig_id}",
         from: Settings.smtp.settings.user_name
       )
@@ -80,7 +71,7 @@ class UserMailer < ApplicationMailer
     begin
       mail(
         to: @latest_review_user.email,
-        cc: @project_admins,
+        cc: @component_admins,
         subject: "Requesting Changes on the Review - #{@stig_id}",
         from: Settings.smtp.settings.user_name
       )
@@ -91,30 +82,23 @@ class UserMailer < ApplicationMailer
 
   private
 
-  def get_project_admins(project_id)
-    Project.find(project_id).users.where(memberships: { role: 'admin' }).pluck(:email)
+  def get_project_or_component_admins(project_or_component)
+    project_or_component.admins.pluck(:email)
   end
 
   def parse_mailer_review_args(*args)
     @current_user, @component_id, @comment, @rule = args
-    @stig_id = "#{Component.find(@component_id).prefix}-#{@rule.rule_id}"
-    @project_id = Component.find(@component_id).project.id
-    @project_admins = get_project_admins(@project_id)
+    component = Component.find(@component_id)
+    @stig_id = "#{component.prefix}-#{@rule.rule_id}"
+    @project_id = component.project.id
+    @component_admins = get_project_or_component_admins(component)
   end
 
   def parse_mailer_welcome_user_args(*args)
     @current_user, @membership = args
-    case @membership.membership_type
-    when 'Project'
-      @project_id = @membership.membership_id
-      @project = Project.find(@project_id)
-    when 'Component'
-      @component_id = @membership.membership_id
-      @component = Component.find(@component_id)
-      @project_id = @component.project_id
-    end
-    @project_admins = get_project_admins(@project_id)
-    @user = User.find(@membership.user_id)
+    @project_or_component = @membership.membership
+    @admins = get_project_or_component_admins(@project_or_component)
+    @user = @membership.user
     @role_assigned = @membership.role.to_s
   end
 

@@ -3,11 +3,7 @@
   <%= render 'user_mailer/shared_styles' %>
   <body>
     <h2>Hi <%=@latest_review_user.name %>,</h2>
-    <% if Settings.app_url.present? %>
-        <p><%= @current_user.name %> requested changes on the review <%= link_to @stig_id, "#{Settings.app_url}/components/#{@component_id}/#{@stig_id}" %> .</p>
-    <% else %>
-        <p><%= @current_user.name %> requested changes on the review <%= @stig_id %>.</p>
-    <% end %>
+    <p><%= @current_user.name %> requested changes on the review <%= link_to @stig_id, component_url("#{@component_id}/#{@stig_id}") %> .</p>
     <h3>The comments are:</h3>
     <blockquote>
       <%= @comment %>
