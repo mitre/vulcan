@@ -45,6 +45,7 @@ class MembershipsController < ApplicationController
   def update
     if @membership.update(membership_update_params)
       flash.notice = 'Successfully updated membership.'
+      send_smtp_notification(UserMailer, 'update_membership', current_user, @membership) if Settings.smtp.enabled
       case @membership.membership_type
       when 'Project'
         send_membership_notification(:update_project_membership, @membership)
@@ -60,6 +61,7 @@ class MembershipsController < ApplicationController
   def destroy
     if @membership.destroy
       flash.notice = 'Successfully removed membership.'
+      send_smtp_notification(UserMailer, 'remove_membership', current_user, @membership) if Settings.smtp.enabled
       case @membership.membership_type
       when 'Project'
         send_membership_notification(:remove_project_membership, @membership)

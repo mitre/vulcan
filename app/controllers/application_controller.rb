@@ -106,11 +106,8 @@ class ApplicationController < ActionController::Base
   end
 
   def send_smtp_notification(mailer, action, *args)
-    mailer.request_review(*args).deliver_now if action == 'request_review'
-    mailer.approve_review(*args).deliver_now if action == 'approve'
-    mailer.revoke_review(*args).deliver_now if action == 'revoke_review_request'
-    mailer.request_review_changes(*args).deliver_now if action == 'request_changes'
-    mailer.welcome_member(*args).deliver_now if action == 'welcome_user'
+    mailer.membership_action(action, *args).deliver_now if membership_action?(action)
+    mailer.review_action(action, *args).deliver_now if review_action?(action)
   end
 
   private
@@ -128,6 +125,14 @@ class ApplicationController < ActionController::Base
     end
 
     Settings.slack.channel_id
+  end
+
+  def membership_action?(action)
+    %w[welcome_user update_membership remove_membership].include?(action)
+  end
+
+  def review_action?(action)
+    %w[request_review approve revoke_review_request request_changes].include?(action)
   end
 
   def helpful_errors(exception)
