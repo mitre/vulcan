@@ -50,7 +50,7 @@ class ComponentsController < ApplicationController
     @component_json = if @effective_permissions
                         @component.to_json(
                           methods: %i[histories memberships metadata inherited_memberships available_members rules
-                                      reviews admins]
+                                      reviews admins all_users]
                         )
                       else
                         @component.to_json(methods: %i[rules reviews])

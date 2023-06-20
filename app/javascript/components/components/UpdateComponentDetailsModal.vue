@@ -97,7 +97,7 @@ export default {
       title: this.component.title,
       description: this.component.description,
       prefix: this.component.prefix,
-      potentialPocs: this.component.admins,
+      potentialPocs: this.component.all_users,
       admin_name: this.component.admin_name,
       admin_email: this.component.admin_email,
     };
@@ -110,7 +110,7 @@ export default {
       this.title = this.component.title;
       this.description = this.component.description;
       this.prefix = this.component.prefix;
-      this.potentialPocs = this.component.admins;
+      this.potentialPocs = this.component.all_users;
       this.admin_name = this.component.admin_name;
       this.admin_email = this.component.admin_email;
     },
