@@ -89,15 +89,16 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
-  def send_slack_notification(notification_type, object)
-    channel = find_slack_channel(object)
-    send_notification(channel, slack_notification_params(notification_type, object)) if channel.present?
+  def send_slack_notification(notification_type, object, *args)
+    channel = find_slack_channel(object, notification_type)
+    send_notification(channel, slack_notification_params(notification_type, object, *args)) if channel.present?
   end
 
-  def slack_notification_params(notification_type, object)
-    notification_type_prefix = notification_type.to_s.match(/^(assign|create|update|upload|rename|remove)/)[1]
+  def slack_notification_params(notification_type, object, *args)
+    pattern = /^(approve|revoke|request_changes|request_review|assign|create|update|upload|rename|remove)/
+    notification_type_prefix = notification_type.to_s.match(pattern)[1]
     icon, header = get_slack_headers_icons(notification_type, notification_type_prefix)
-    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix)
+    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *args)
     {
       icon: icon,
       header: header,
@@ -113,10 +114,16 @@ class ApplicationController < ActionController::Base
   private
 
   # Determine the slack channel or user id to which the slack notification should be sent.
-  def find_slack_channel(object)
-    return object.user.slack_user_id if object.is_a?(Membership) && object.user.slack_user_id.present?
-    return object.slack_user_id if object.is_a?(User) && object.slack_user_id.present?
+  # For notifications concerning User or Membership, user will receive a DM if slack_user_id provided.
+  # For review requests, the channel (project or component depending which one is provided) will notified.
+  # For review request changes, revoke or approved, the user who initiated the request will receive a DM.
+  # Any other Notifications will be sent to the default/project/component channer.
+  def find_slack_channel(object, notification_type)
+    return latest_reviewer_slack_id(object) if object.is_a?(Rule) && notification_type.to_s != 'request_review'
+    return object.user.slack_user_id if object.is_a?(Membership)
+    return object.slack_user_id if object.is_a?(User)
 
+    object = object.component if object.is_a?(Rule) && notification_type.to_s == 'request_review'
     if object.is_a?(Component) || object.is_a?(Project)
       return object.metadata['Slack Channel ID'] if object.metadata&.[]('Slack Channel ID').present?
       if object.is_a?(Component) && object.project.metadata&.[]('Slack Channel ID').present?
@@ -125,6 +132,14 @@ class ApplicationController < ActionController::Base
     end
 
     Settings.slack.channel_id
+  end
+
+  def latest_reviewer_slack_id(rule)
+    latest_review = Review.where(
+      rule_id: Rule.find_by(rule_id: rule.rule_id.to_s, component_id: rule.component_id).id,
+      action: 'request_review'
+    ).order(updated_at: :desc).first
+    latest_review&.user&.slack_user_id
   end
 
   def membership_action?(action)
