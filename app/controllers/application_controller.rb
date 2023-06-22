@@ -90,8 +90,10 @@ class ApplicationController < ActionController::Base
   end
 
   def send_slack_notification(notification_type, object, *args)
-    channel = find_slack_channel(object, notification_type)
-    send_notification(channel, slack_notification_params(notification_type, object, *args)) if channel.present?
+    channels = find_slack_channel(object, notification_type)
+    channels.each do |channel|
+      send_notification(channel, slack_notification_params(notification_type, object, *args))
+    end
   end
 
   def slack_notification_params(notification_type, object, *args)
@@ -113,25 +115,35 @@ class ApplicationController < ActionController::Base
 
   private
 
-  # Determine the slack channel or user id to which the slack notification should be sent.
-  # For notifications concerning User or Membership, user will receive a DM if slack_user_id provided.
-  # For review requests, the channel (project or component depending which one is provided) will notified.
-  # For review request changes, revoke or approved, the user who initiated the request will receive a DM.
-  # Any other Notifications will be sent to the default/project/component channer.
+  # Determine the slack channel(s) and user id to which the slack notification should be sent.
   def find_slack_channel(object, notification_type)
-    return latest_reviewer_slack_id(object) if object.is_a?(Rule) && notification_type.to_s != 'request_review'
-    return object.user.slack_user_id if object.is_a?(Membership)
-    return object.slack_user_id if object.is_a?(User)
-
-    object = object.component if object.is_a?(Rule) && notification_type.to_s == 'request_review'
-    if object.is_a?(Component) || object.is_a?(Project)
-      return object.metadata['Slack Channel ID'] if object.metadata&.[]('Slack Channel ID').present?
-      if object.is_a?(Component) && object.project.metadata&.[]('Slack Channel ID').present?
-        return object.project.metadata['Slack Channel ID']
-      end
+    channels = []
+    # In all case except for review request, the general channel
+    # (default configured with the Vulcan instance) will be notified
+    channels << Settings.slack.channel_id unless object.is_a?(Rule)
+    # Usecase: requesting a review, revoking review request, approving or requesting changes on a control
+    case object
+    when Rule
+      # Getting the component or project slack channel
+      comp = object.component
+      channels << (comp.metadata&.dig('Slack Channel ID') || comp.project.metadata&.dig('Slack Channel ID'))
+      # Getting the slack user id of the user who initially requested the review
+      channels << latest_reviewer_slack_id(object) unless notification_type.to_s == 'request_review'
+    when Membership
+      # Usecase: updating project/component membership role
+      channels << object.user.slack_user_id
+    when User
+      # Usecase: updating Vulcan role (admin/user)
+      channels << object.slack_user_id
+    when Project
+      # Usecase: Project creation, removal, & renaming
+      channels << object.metadata&.dig('Slack Channel ID')
+    when Component
+      # Usecase: Component creation and removal
+      channels << (object.metadata&.dig('Slack Channel ID') || object.project.metadata&.dig('Slack Channel ID'))
     end
 
-    Settings.slack.channel_id
+    channels.compact.uniq
   end
 
   def latest_reviewer_slack_id(rule)
