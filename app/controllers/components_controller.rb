@@ -12,6 +12,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
+  before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :authorize_admin_component, only: %i[update], if: (lambda {
                                                                      params
                                                                        .require(:component)
@@ -232,12 +233,12 @@ class ComponentsController < ApplicationController
       'LOWER(vuln_discussion) LIKE ? OR LOWER(mitigations) LIKE ?', "%#{find_param}%", "%#{find_param}%"
     )
     rules = rules.where(
-      'LOWER(title) LIKE ? OR
+      "LOWER(title) LIKE ? OR
       LOWER(fixtext) LIKE ? OR
       LOWER(vendor_comments) LIKE ? OR
       LOWER(status_justification) LIKE ? OR
       LOWER(artifact_description) LIKE ? OR
-      id IN (?) ', "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
+      id IN (?) ", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
       "%#{find_param}%", (checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
     )
                  .order(:rule_id)
@@ -347,6 +348,12 @@ class ComponentsController < ApplicationController
 
   def set_project
     @project = Project.find(params[:project_id] || @component.project_id)
+  end
+
+  def check_permission_to_update_slackchannel
+    return if component_update_params[:component_metadata_attributes][:data]['Slack Channel ID'].blank?
+
+    authorize_admin_component
   end
 
   def component_update_params

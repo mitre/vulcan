@@ -222,7 +222,7 @@
             <b-collapse id="collapse-metadata" v-model="showMetadata">
               <small
                 v-if="
-                  role_gte_to(effective_permissions, 'author') &&
+                  role_gte_to(effective_permissions, 'admin') &&
                   (!project.metadata || !project.metadata.hasOwnProperty('Slack Channel ID'))
                 "
                 class="text-muted"
