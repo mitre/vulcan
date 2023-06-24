@@ -89,14 +89,18 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
-  def send_slack_notification(notification_type, object)
-    send_notification(Settings.slack.channel_id, slack_notification_params(notification_type, object))
+  def send_slack_notification(notification_type, object, *args)
+    channels = find_slack_channel(object, notification_type)
+    channels.each do |channel|
+      send_notification(channel, slack_notification_params(notification_type, object, *args))
+    end
   end
 
-  def slack_notification_params(notification_type, object)
-    notification_type_prefix = notification_type.to_s.match(/^(assign|create|update|upload|rename|remove)/)[1]
+  def slack_notification_params(notification_type, object, *args)
+    pattern = /^(approve|revoke|request_changes|request_review|assign|create|update|upload|rename|remove)/
+    notification_type_prefix = notification_type.to_s.match(pattern)[1]
     icon, header = get_slack_headers_icons(notification_type, notification_type_prefix)
-    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix)
+    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *args)
     {
       icon: icon,
       header: header,
@@ -105,16 +109,59 @@ class ApplicationController < ActionController::Base
   end
 
   def send_smtp_notification(mailer, action, *args)
-    mailer.request_review(*args).deliver_now if action == 'request_review'
-    mailer.approve_review(*args).deliver_now if action == 'approve'
-    mailer.revoke_review(*args).deliver_now if action == 'revoke_review_request'
-    mailer.request_review_changes(*args).deliver_now if action == 'request_changes'
-    mailer.welcome_project_member(*args).deliver_now if action == 'project_user'
-    mailer.welcome_component_member(*args).deliver_now if action == 'component_user'
+    mailer.membership_action(action, *args).deliver_now if membership_action?(action)
+    mailer.review_action(action, *args).deliver_now if review_action?(action)
     mailer.project_access_denied(*args).deliver_now if action == 'reject_access'
   end
 
   private
+
+  # Determine the slack channel(s) and user id to which the slack notification should be sent.
+  def find_slack_channel(object, notification_type)
+    channels = []
+    # In all case except for review request, the general channel
+    # (default configured with the Vulcan instance) will be notified
+    channels << Settings.slack.channel_id unless object.is_a?(Rule)
+    # Usecase: requesting a review, revoking review request, approving or requesting changes on a control
+    case object
+    when Rule
+      # Getting the component or project slack channel
+      comp = object.component
+      channels << (comp.metadata&.dig('Slack Channel ID') || comp.project.metadata&.dig('Slack Channel ID'))
+      # Getting the slack user id of the user who initially requested the review
+      channels << latest_reviewer_slack_id(object) unless notification_type.to_s == 'request_review'
+    when Membership
+      # Usecase: updating project/component membership role
+      channels << object.user.slack_user_id
+    when User
+      # Usecase: updating Vulcan role (admin/user)
+      channels << object.slack_user_id
+    when Project
+      # Usecase: Project creation, removal, & renaming
+      channels << object.metadata&.dig('Slack Channel ID')
+    when Component
+      # Usecase: Component creation and removal
+      channels << (object.metadata&.dig('Slack Channel ID') || object.project.metadata&.dig('Slack Channel ID'))
+    end
+
+    channels.compact.uniq
+  end
+
+  def latest_reviewer_slack_id(rule)
+    latest_review = Review.where(
+      rule_id: Rule.find_by(rule_id: rule.rule_id.to_s, component_id: rule.component_id).id,
+      action: 'request_review'
+    ).order(updated_at: :desc).first
+    latest_review&.user&.slack_user_id
+  end
+
+  def membership_action?(action)
+    %w[welcome_user update_membership remove_membership].include?(action)
+  end
+
+  def review_action?(action)
+    %w[request_review approve revoke_review_request request_changes].include?(action)
+  end
 
   def helpful_errors(exception)
     # Based on the accepted response type, either send a JSON response with the

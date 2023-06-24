@@ -32,12 +32,11 @@ class MembershipsController < ApplicationController
         delete_access_request(membership_create_params[:access_request_id])
       end
       flash.notice = 'Successfully created membership.'
+      send_smtp_notification(UserMailer, 'welcome_user', current_user, membership) if Settings.smtp.enabled
       case membership.membership_type
       when 'Project'
-        send_smtp_notification(UserMailer, 'project_user', current_user, membership) if Settings.smtp.enabled
         send_membership_notification(:create_project_membership, membership)
       when 'Component'
-        send_smtp_notification(UserMailer, 'component_user', current_user, membership) if Settings.smtp.enabled
         send_membership_notification(:create_component_membership, membership)
       end
       redirect_to membership.membership
@@ -50,6 +49,7 @@ class MembershipsController < ApplicationController
   def update
     if @membership.update(membership_update_params)
       flash.notice = 'Successfully updated membership.'
+      send_smtp_notification(UserMailer, 'update_membership', current_user, @membership) if Settings.smtp.enabled
       case @membership.membership_type
       when 'Project'
         send_membership_notification(:update_project_membership, @membership)
@@ -65,6 +65,7 @@ class MembershipsController < ApplicationController
   def destroy
     if @membership.destroy
       flash.notice = 'Successfully removed membership.'
+      send_smtp_notification(UserMailer, 'remove_membership', current_user, @membership) if Settings.smtp.enabled
       case @membership.membership_type
       when 'Project'
         send_membership_notification(:remove_project_membership, @membership)

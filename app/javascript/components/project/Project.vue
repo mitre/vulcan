@@ -221,12 +221,27 @@
               <i v-if="!showMetadata" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
             </div>
             <b-collapse id="collapse-metadata" v-model="showMetadata">
+              <small
+                v-if="
+                  role_gte_to(effective_permissions, 'admin') &&
+                  (!project.metadata || !project.metadata.hasOwnProperty('Slack Channel ID'))
+                "
+                class="text-muted"
+              >
+                For slack notification, you can add a metadata with key `Slack Channel ID` and the
+                value will be the slack channel ID (e.g. C12345) or name (e.g. #general) you wish to
+                notify.
+              </small>
               <div v-for="(value, propertyName) in project.metadata" :key="propertyName">
                 <p v-linkified class="ml-2 mb-0 mt-2">
                   <strong>{{ propertyName }}: </strong>{{ value }}
                 </p>
               </div>
-              <UpdateMetadataModal :project="project" @projectUpdated="refreshProject" />
+              <UpdateMetadataModal
+                v-if="role_gte_to(effective_permissions, 'author')"
+                :project="project"
+                @projectUpdated="refreshProject"
+              />
             </b-collapse>
           </b-col>
         </b-row>

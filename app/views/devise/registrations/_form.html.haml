@@ -9,6 +9,12 @@
     %br/
     = f.email_field :email, autofocus: true, class: "form-control", title: "This field is required.", autocomplete: "email", required: "true"
   .form-group
+    = f.label :slack_user_ID
+    %br/
+    = f.text_field :slack_user_id, autofocus: true, class: "form-control", autocomplete: "slack_user_id", disabled: !resource.provider.nil?
+    %small#passwordHelp.form-text.text-muted
+      Provide your slack's user ID (e.g. U123456) if you would like to receive slack notifications
+  .form-group
     = f.label :password
     - if @minimum_password_length
       %em
