@@ -33,7 +33,7 @@
           data-method="delete"
           :href="`/projects/${membership_id}/project_access_requests/${getAccessRequestId(
             data.item
-          )}?action=reject`"
+          )}`"
           rel="nofollow"
         >
           <i class="mdi mdi-cancel" aria-hidden="true" />

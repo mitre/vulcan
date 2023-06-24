@@ -19,10 +19,12 @@ class ProjectAccessRequestsController < ApplicationController
   def destroy
     @access_request = ProjectAccessRequest.find(params[:id])
     if @access_request.destroy
-      if params[:action] == 'reject' && Settings.smtp.enabled
-        send_smtp_notification(UserMailer, 'reject_access', @access_request.user)
+      if current_user.can_admin_project?(@access_request.project) && Settings.smtp.enabled
+        send_smtp_notification(UserMailer, 'reject_access', @access_request.user, @access_request.project)
+        flash.notice = "Sucessfully denied #{@access_request.user.name}'s request to access project."
+      else
+        flash.notice = "Your request to access #{@access_request.project.name} has been cancelled."
       end
-      flash.notice = 'Your request for access has been cancelled.'
     else
       flash.alert = @access_request.errors.full_messages.to_sentence
     end
