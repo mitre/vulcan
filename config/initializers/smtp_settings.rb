@@ -8,7 +8,9 @@ if Rails.env.production? && Settings.smtp.enabled
   Rails.application.config.action_mailer.delivery_method = :smtp
   Rails.application.config.action_mailer.perform_deliveries = true
   Rails.application.config.action_mailer.raise_delivery_errors = true
-
+  if Settings.app_url.present?
+    Rails.application.config.action_mailer.default_url_options = { host: URI.parse(Settings.app_url).host }
+  end
   ActionMailer::Base.delivery_method = :smtp
   ActionMailer::Base.smtp_settings = Settings.smtp.settings.transform_keys(&:to_sym)
 end

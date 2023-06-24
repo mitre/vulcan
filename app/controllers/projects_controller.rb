@@ -12,6 +12,7 @@ class ProjectsController < ApplicationController
   before_action :authorize_viewer_project, only: %i[show]
   before_action :authorize_logged_in, only: %i[index new search]
   before_action :authorize_admin_or_create_permission_enabled, only: %i[create]
+  before_action :check_permission_to_update_slackchannel, only: %i[update]
 
   def index
     @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])
@@ -61,6 +62,9 @@ class ProjectsController < ApplicationController
       name: new_project_params[:name],
       memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
     )
+    if new_project_params[:slack_channel_id].present?
+      project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } }
+    end
 
     # First save ensures base Project is acceptable.
     if project.save
@@ -156,7 +160,7 @@ class ProjectsController < ApplicationController
   end
 
   def new_project_params
-    params.require(:project).permit(:name)
+    params.require(:project).permit(:name, :slack_channel_id)
   end
 
   def project_params
@@ -164,6 +168,10 @@ class ProjectsController < ApplicationController
       :name,
       project_metadata_attributes: { data: {} }
     )
+  end
+
+  def check_permission_to_update_slackchannel
+    authorize_admin_project if project_params[:project_metadata_attributes][:data]['Slack Channel ID'].present?
   end
 
   def project_name_changed?(current_project_name, project_params)

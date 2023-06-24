@@ -23,6 +23,15 @@ class ReviewsController < ApplicationController
           @rule
         )
       end
+
+      if Settings.slack.enabled
+        send_slack_notification(
+          review_params[:action].to_sym,
+          @rule,
+          review_params[:comment]
+        )
+      end
+
       render json: { toast: 'Successfully added review.' }
     else
       render json: {

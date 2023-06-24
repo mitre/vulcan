@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <%= render 'user_mailer/shared_styles' %>
+  <body>
+    <h2><%= @subject %></h2>
+    <p>Hi <%= @user.name %>,</p>
+    <%= @message.html_safe %>
+    <br/>
+    <p>Thank you,</p>
+    <p>Vulcan Support</p>
+  </body>
+</html>
