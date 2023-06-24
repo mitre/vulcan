@@ -2,7 +2,7 @@
 
 FactoryBot.define do
   factory :project_access_request do
-    user { nil }
-    project { nil }
+    user { create(:user) }
+    project { create(:project) }
   end
 end

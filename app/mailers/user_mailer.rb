@@ -21,17 +21,19 @@ class UserMailer < ApplicationMailer
     end
   end
 
-  def project_access_denied(*args)
+  def project_access_action(action_type, *args)
     @user, @project = *args
+    @subject = subject_field[action_type.to_sym]
     project_admins = get_project_or_component_admins(@project)
+    setting_project_access_message_based_on_action_type(action_type)
     begin
       mail(
-        to: @user.email,
+        to: action_type == 'reject_access' ? @user.email : project_admins,
         cc: project_admins,
-        subject: "Vulcan Project Access Denied - #{@project.name}"
+        subject: @subject
       )
     rescue StandardError => e
-      Rails.logger.error("Error delivering project access rejection email to user #{@user.name}: #{e.message}")
+      Rails.logger.error("Error delivering project access action email to user/admins: #{e.message}")
     end
   end
 
@@ -93,8 +95,32 @@ class UserMailer < ApplicationMailer
       request_review: "Review Requested - #{@stig_id}",
       approve: "Review Approved - #{@stig_id}",
       revoke_review_request: "Review Revoked - #{@stig_id}",
-      request_changes: "Requesting Changes on the Review - #{@stig_id}"
+      request_changes: "Requesting Changes on the Review - #{@stig_id}",
+      reject_access: "Vulcan Project Access Denied - #{@project&.name}",
+      request_access: "Vulcan Project Access Request - #{@project&.name}"
     }
+  end
+
+  def setting_project_access_message_based_on_action_type(action_type)
+    greeting, action_message = case action_type
+                               when 'reject_access'
+                                 [
+                                   "Hi #{@user.name},",
+                                   "Your request to access project <span class='text-blue'>" \
+                                   "#{@project.name}</span> was denied.\n" \
+                                   'If you believe this is an error, please contact one of the ' \
+                                   "project's admins cc'd on this email."
+                                 ]
+                               when 'request_access'
+                                 pending_request_link = link_to("project's members page", project_url(@project))
+                                 [
+                                   'Hi Project Admins,',
+                                   "#{@user.name} has requested access to <span class='text-blue'>" \
+                                   "#{@project.name}</span> project.\n" \
+                                   "You can go to the #{pending_request_link} to review the pending requests."
+                                 ]
+                               end
+    @message = simple_format("#{greeting}\n\n#{action_message}")
   end
 
   def setting_membership_message_based_on_action_type(action_type)

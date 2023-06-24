@@ -111,7 +111,7 @@ class ApplicationController < ActionController::Base
   def send_smtp_notification(mailer, action, *args)
     mailer.membership_action(action, *args).deliver_now if membership_action?(action)
     mailer.review_action(action, *args).deliver_now if review_action?(action)
-    mailer.project_access_denied(*args).deliver_now if action == 'reject_access'
+    mailer.project_access_action(action, *args).deliver_now if access_request_action?(action)
   end
 
   private
@@ -161,6 +161,10 @@ class ApplicationController < ActionController::Base
 
   def review_action?(action)
     %w[request_review approve revoke_review_request request_changes].include?(action)
+  end
+
+  def access_request_action?(action)
+    %w[request_access reject_access].include?(action)
   end
 
   def helpful_errors(exception)
