@@ -150,6 +150,7 @@
               :memberships_count="project.memberships_count"
               :available_members="project.available_members"
               :available_roles="available_roles"
+              :access_requests="project.access_requests"
             />
           </b-tab>
         </b-tabs>

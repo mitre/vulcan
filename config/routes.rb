@@ -19,6 +19,7 @@ Rails.application.routes.draw do
         resources :reviews, only: %i[create]
       end
     end
+    resources :project_access_requests, only: %i[create destroy]
   end
   resources :rule_satisfactions, only: %i[create destroy]
   # Alias rules#index to controls for convenience

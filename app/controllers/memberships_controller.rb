@@ -25,8 +25,12 @@ class MembershipsController < ApplicationController
       )
     end
 
-    membership = Membership.new(membership_create_params)
+    filtered_params = membership_create_params.except(:access_request_id)
+    membership = Membership.new(filtered_params)
     if membership.save
+      if membership_create_params[:access_request_id].present?
+        delete_access_request(membership_create_params[:access_request_id])
+      end
       flash.notice = 'Successfully created membership.'
       case membership.membership_type
       when 'Project'
@@ -93,7 +97,7 @@ class MembershipsController < ApplicationController
   end
 
   def membership_create_params
-    params.require(:membership).permit(:user_id, :role, :membership_id, :membership_type)
+    params.require(:membership).permit(:user_id, :role, :membership_id, :membership_type, :access_request_id)
   end
 
   def membership_update_params
@@ -104,5 +108,10 @@ class MembershipsController < ApplicationController
     return unless Settings.slack.enabled
 
     send_slack_notification(notification_type, membership)
+  end
+
+  def delete_access_request(access_request_id)
+    access_request = ProjectAccessRequest.find_by(id: access_request_id)
+    access_request&.destroy
   end
 end

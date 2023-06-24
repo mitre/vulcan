@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_08_15_180252) do
+ActiveRecord::Schema.define(version: 2023_06_23_211457) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -172,6 +172,16 @@ ActiveRecord::Schema.define(version: 2022_08_15_180252) do
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
+  create_table "project_access_requests", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "project_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["project_id"], name: "index_project_access_requests_on_project_id"
+    t.index ["user_id", "project_id"], name: "index_project_access_requests_on_user_id_and_project_id", unique: true
+    t.index ["user_id"], name: "index_project_access_requests_on_user_id"
+  end
+
   create_table "project_metadata", force: :cascade do |t|
     t.json "data", null: false
     t.bigint "project_id"
@@ -187,6 +197,8 @@ ActiveRecord::Schema.define(version: 2022_08_15_180252) do
     t.integer "memberships_count", default: 0
     t.string "admin_name"
     t.string "admin_email"
+    t.integer "visibility", default: 1
+    t.string "description"
   end
 
   create_table "references", force: :cascade do |t|
@@ -268,6 +280,7 @@ ActiveRecord::Schema.define(version: 2022_08_15_180252) do
     t.datetime "confirmation_sent_at"
     t.string "unconfirmed_email"
     t.boolean "admin", default: false
+    t.string "slack_user_id"
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -281,4 +294,6 @@ ActiveRecord::Schema.define(version: 2022_08_15_180252) do
   add_foreign_key "base_rules", "users", column: "review_requestor_id"
   add_foreign_key "components", "components"
   add_foreign_key "memberships", "users"
+  add_foreign_key "project_access_requests", "projects"
+  add_foreign_key "project_access_requests", "users"
 end

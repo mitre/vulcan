@@ -30,6 +30,20 @@ class UserMailer < ApplicationMailer
     end
   end
 
+  def project_access_denied(*args)
+    @user, @project = *args
+    # begin
+    #   mail(
+    #     to: @user.email,
+    #     cc: @project_admins,
+    #     subject: "Vulcan Component Access - #{@component.name}",
+    #     from: Settings.smtp.settings.user_name
+    #   )
+    # rescue StandardError => e
+    #   Rails.logger.error("Error delivering welcome email to user #{@user.name}: #{e.message}")
+    # end
+  end
+
   def request_review(*args)
     parse_mailer_review_args(*args)
     begin

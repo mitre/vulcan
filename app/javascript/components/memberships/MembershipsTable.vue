@@ -1,7 +1,49 @@
 <template>
   <div>
-    <h2>{{ memberships_count }} {{ header_text }}</h2>
+    <!-- Pending Access Request -->
+    <h2 v-if="access_requests.length > 0 && editable">
+      Pending Access Requests <span class="badge bg-info">{{ access_requests.length }}</span>
+    </h2>
+    <b-table
+      v-if="access_requests.length > 0 && editable"
+      id="project-access-requests"
+      :items="pendingProjectMembers"
+      :fields="requestFields"
+      sort-icon-left
+    >
+      <!-- Column template for Name -->
+      <template #cell(name)="data">
+        {{ data.item.name }}
+        <br />
+        <small>{{ data.item.email }}</small>
+      </template>
 
+      <!-- Column template for Actions -->
+      <template #cell(actions)="data">
+        <b-button
+          v-b-modal.new-project-member
+          class="btn btn-success"
+          @click="setSelectedMember(data.item)"
+        >
+          <i class="mdi mdi-check" aria-hidden="true" />
+          Accept Request
+        </b-button>
+        <b-button
+          class="btn btn-danger ml-2"
+          data-method="delete"
+          :href="`/projects/${membership_id}/project_access_requests/${getAccessRequestId(
+            data.item
+          )}?action=reject`"
+          rel="nofollow"
+        >
+          <i class="mdi mdi-cancel" aria-hidden="true" />
+          Reject Request
+        </b-button>
+      </template>
+    </b-table>
+
+    <!-- Members -->
+    <h2>{{ memberships_count }} {{ header_text }}</h2>
     <!-- User search -->
     <div class="row">
       <div class="col-6">
@@ -31,17 +73,19 @@
           title="Add New Project Member"
           centered
           :hide-footer="true"
+          @hidden="resetModal"
         >
           <NewMembership
             :membership_type="membership_type"
             :membership_id="membership_id"
             :available_members="available_members"
             :available_roles="available_roles"
+            :selected_member="selectedMember"
+            :access_request_id="access_request_id"
           />
         </b-modal>
       </div>
     </div>
-
     <br />
 
     <!-- Project Members table -->
@@ -121,6 +165,11 @@ export default {
       type: Array,
       required: true,
     },
+    access_requests: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
     membership_type: {
       type: String,
       required: true,
@@ -156,9 +205,15 @@ export default {
       search: "",
       perPage: 10,
       currentPage: 1,
+      selectedMember: null,
+      access_request_id: null,
       fields: [
         { key: "name", label: "User", sortable: true },
         { key: "role", sortable: true },
+        { key: "actions", label: "" },
+      ],
+      requestFields: [
+        { key: "name", label: "User", sortable: true },
         { key: "actions", label: "" },
       ],
     };
@@ -173,12 +228,30 @@ export default {
           pm.name.toLowerCase().includes(downcaseSearch)
       );
     },
+    // Users with pending access request
+    pendingProjectMembers: function () {
+      return this.available_members.filter((member) =>
+        this.access_requests.some((request) => request.user_id === member.id)
+      );
+    },
     // Used by b-pagination to know how many total rows there are
     rows: function () {
       return this.searchedProjectMembers.length;
     },
   },
   methods: {
+    resetModal: function () {
+      this.selectedMember = null;
+      this.access_request_id = null;
+    },
+    // Selecting the user when accepting request
+    setSelectedMember: function (member) {
+      this.selectedMember = member;
+      this.access_request_id = this.getAccessRequestId(member);
+    },
+    getAccessRequestId: function (member) {
+      return this.access_requests.find((request) => request.user_id === member.id).id;
+    },
     // Automatically submit the form when a user selects a form option
     roleChanged: function (_event, project_member) {
       document.getElementById(this.formId(project_member)).submit();

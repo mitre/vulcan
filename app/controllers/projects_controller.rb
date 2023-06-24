@@ -19,6 +19,10 @@ class ProjectsController < ApplicationController
       project['admin'] = project['memberships'].any? do |m|
         m['role'] == PROJECT_MEMBER_ADMINS && m['user_id'] == current_user.id
       end
+      project['is_member'] = project['memberships'].any? do |m|
+        m['user_id'] == current_user.id
+      end || current_user.admin
+      project['access_request_id'] = current_user.access_requests.find_by(project_id: project['id'])&.id
     end
     respond_to do |format|
       format.html
@@ -46,7 +50,8 @@ class ProjectsController < ApplicationController
     # projects that a user has permissions to access
     @project.current_user = current_user
     @project_json = @project.to_json(
-      methods: %i[histories memberships metadata components available_components available_members details]
+      methods: %i[histories memberships metadata components available_components available_members details
+                  access_requests]
     )
     respond_to do |format|
       format.html
@@ -59,7 +64,9 @@ class ProjectsController < ApplicationController
   def create
     project = Project.new(
       name: new_project_params[:name],
-      memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
+      description: new_project_params[:description],
+      memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }],
+      visibility: new_project_params[:visibility]
     )
 
     # First save ensures base Project is acceptable.
@@ -156,12 +163,14 @@ class ProjectsController < ApplicationController
   end
 
   def new_project_params
-    params.require(:project).permit(:name)
+    params.require(:project).permit(:name, :description, :visibility)
   end
 
   def project_params
     params.require(:project).permit(
       :name,
+      :description,
+      :visibility,
       project_metadata_attributes: { data: {} }
     )
   end

@@ -10,12 +10,33 @@
       />
       <b-row>
         <b-col md="6">
+          <!-- Name -->
           <b-form-group label="Project Title">
             <b-form-input
               placeholder="Project Title"
               required
               name="project[name]"
               autocomplete="off"
+            />
+          </b-form-group>
+          <!-- Description -->
+          <b-form-group label="Project Description">
+            <b-form-textarea
+              placeholder="Project Description"
+              required
+              name="project[description]"
+              autocomplete="off"
+            />
+          </b-form-group>
+          <!-- Visibility -->
+          <b-form-group
+            label="Visibility"
+            description="Marking the project as discoverable means that non-members will see the project's details (name, description, etc.) on the projects' list and can request access."
+          >
+            <b-form-select
+              required
+              name="project[visibility]"
+              :options="['discoverable', 'hidden']"
             />
           </b-form-group>
           <b-button type="submit" variant="primary"> Create Project </b-button>

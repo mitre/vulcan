@@ -30,14 +30,23 @@
     <!-- Projects table -->
     <b-table
       id="projects-table"
+      class="text-center align-middle"
       :items="searchedProjects"
       :fields="fields"
       :per-page="perPage"
       :current-page="currentPage"
     >
       <template #cell(name)="data">
-        <b-link :href="getProjectAction(data.item)">
+        <b-link v-if="data.item.is_member" :href="getProjectAction(data.item)">
           {{ data.item.name }}
+        </b-link>
+        <span v-else>{{ data.item.name }}</span>
+      </template>
+
+      <template #cell(description)="data">
+        {{ truncate(data.item.description, data.item.id) }}
+        <b-link v-if="data.item.description" @click="toggleTruncate(data.item.id)">
+          {{ truncated[data.item.id] ? "..." : "read less" }}
         </b-link>
       </template>
 
@@ -52,12 +61,34 @@
           class="floatright"
           @projectRenamed="refreshProjects"
         />
-        <span>
+        <span v-if="!data.item.is_member && !data.item.access_request_id">
           <b-button
-            v-if="is_vulcan_admin"
+            class="btn btn-info text-nowrap mx-2 my-3"
+            data-method="post"
+            :href="requestAccessAction(data.item)"
+            rel="nofollow"
+          >
+            <i class="mdi mdi-account-arrow-right" aria-hidden="true" />
+            Request Access
+          </b-button>
+        </span>
+        <span v-if="data.item.access_request_id">
+          <b-button
+            class="btn btn-danger text-nowrap mx-2 my-3"
+            :data-confirm="getLabel(data.item, 'cancel request')"
+            data-method="delete"
+            :href="cancelAccessRequestAction(data.item)"
+            rel="nofollow"
+          >
+            <i class="mdi mdi-cancel" aria-hidden="true" />
+            Cancel Access Request
+          </b-button>
+        </span>
+        <span v-if="is_vulcan_admin">
+          <b-button
             class="px-2 m-2"
             variant="danger"
-            :data-confirm="getLabel(data.item)"
+            :data-confirm="getLabel(data.item, 'remove project')"
             data-method="delete"
             :href="destroyAction(data.item)"
             rel="nofollow"
@@ -103,8 +134,10 @@ export default {
       search: "",
       perPage: 10,
       currentPage: 1,
+      truncated: {}, // store the truncated state for each project description
       fields: [
         { key: "name", sortable: true },
+        { key: "description", label: "Description" },
         { key: "memberships_count", label: "Members", sortable: true },
         { key: "updated_at", label: "Last Updated", sortable: true },
         {
@@ -131,6 +164,11 @@ export default {
       return this.projects.length;
     },
   },
+  created: function () {
+    this.projects.forEach((project) => {
+      this.$set(this.truncated, project.id, true);
+    });
+  },
   methods: {
     // Path to POST/DELETE to when updating/deleting a project
     formAction: function (project) {
@@ -150,11 +188,31 @@ export default {
     destroyAction: function (project) {
       return `/projects/${project.id}`;
     },
-    getLabel: function (project) {
-      return `Are you sure you want to completely remove project ${project.name} and all of its related data?`;
+    // Path to POST/DELETE action to when requesting access to project or cancelling request
+    requestAccessAction: function (project) {
+      return `/projects/${project.id}/project_access_requests`;
+    },
+    cancelAccessRequestAction: function (project) {
+      return `/projects/${project.id}/project_access_requests/${project.access_request_id}`;
+    },
+    getLabel: function (project, action) {
+      if (action === "remove project") {
+        return `Are you sure you want to completely remove project ${project.name} and all of its related data?`;
+      } else {
+        return `Are you sure you want to cancel your request to access project ${project.name}?`;
+      }
     },
     refreshProjects: function () {
       this.$emit("projectRenamed");
+    },
+    toggleTruncate: function (id) {
+      this.$set(this.truncated, id, !this.truncated[id]);
+    },
+    truncate: function (text, id) {
+      if (this.truncated[id] && text && text.length > 75) {
+        return text.substring(0, 75);
+      }
+      return text;
     },
   },
 };
