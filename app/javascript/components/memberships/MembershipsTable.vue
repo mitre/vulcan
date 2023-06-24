@@ -95,6 +95,7 @@
       :fields="fields"
       :per-page="perPage"
       :current-page="currentPage"
+      sort-icon-left
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">

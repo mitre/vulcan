@@ -35,6 +35,7 @@
       :fields="fields"
       :per-page="perPage"
       :current-page="currentPage"
+      sort-icon-left
     >
       <template #cell(name)="data">
         <b-link v-if="data.item.is_member" :href="getProjectAction(data.item)">
