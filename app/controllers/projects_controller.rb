@@ -12,7 +12,7 @@ class ProjectsController < ApplicationController
   before_action :authorize_viewer_project, only: %i[show]
   before_action :authorize_logged_in, only: %i[index new search]
   before_action :authorize_admin_or_create_permission_enabled, only: %i[create]
-  before_action :check_permission_to_update_slackchannel, only: %i[update]
+  before_action :check_permission_to_update, only: %i[update]
 
   def index
     @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])
@@ -85,14 +85,16 @@ class ProjectsController < ApplicationController
 
   # Update project and response with json
   def update
-    current_project_name = @project.name
+    notification_types = []
+    notification_types << :rename_project if project_name_changed?(@project.name)
+    notification_types << :change_visibility if project_visibility_changed?(@project.visibility)
     if @project.update(project_params)
-      if project_name_changed?(current_project_name, project_params)
-        render json: { toast: 'Project renamed successfully' }
-        send_slack_notification(:rename_project, @project) if Settings.slack.enabled
-      else
-        render json: { toast: 'Project updated successfully' }
+      if Settings.slack.enabled
+        notification_types.each do |type|
+          send_slack_notification(type, @project)
+        end
       end
+      render json: { toast: 'Successfully updated project' }
     else
       render json: {
         toast: {
@@ -179,11 +181,17 @@ class ProjectsController < ApplicationController
     )
   end
 
-  def check_permission_to_update_slackchannel
-    authorize_admin_project if project_params[:project_metadata_attributes][:data]['Slack Channel ID'].present?
+  def check_permission_to_update
+    condition = (project_params[:project_metadata_attributes]&.dig('data')&.dig('Slack Channel ID').present? ||
+                  project_params[:visibility].present?)
+    authorize_admin_project if condition
   end
 
-  def project_name_changed?(current_project_name, project_params)
+  def project_name_changed?(current_project_name)
     project_params['name'].present? && project_params['name'] != current_project_name
+  end
+
+  def project_visibility_changed?(current_project_visibility)
+    project_params[:visibility].present? && project_params[:visibility] != current_project_visibility
   end
 end

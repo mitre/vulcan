@@ -3,7 +3,30 @@
     <b-breadcrumb :items="breadcrumbs" />
     <b-row class="align-items-center">
       <b-col md="8">
-        <h1>{{ project.name }}</h1>
+        <div class="d-flex justify-content-start">
+          <h1>{{ project.name }}</h1>
+          <b-badge pill variant="info" class="w-15 h-25">{{ project.visibility }} </b-badge>
+          <div v-if="role_gte_to(effective_permissions, 'admin')">
+            <b-form-checkbox
+              v-model="visible"
+              v-b-modal.confirm-visibility-change
+              switch
+              size="lg"
+              class="ml-2"
+            >
+              <small>{{ visible ? "Switch back to private" : "Mark as discoverable" }}</small>
+            </b-form-checkbox>
+            <b-modal
+              id="confirm-visibility-change"
+              title="Confirm Visibility Change"
+              @ok="updateVisibility"
+              @hide="visible = project.visibility === 'discoverable'"
+            >
+              Are you sure you want to change the visibility of this project to
+              <mark>{{ visible ? "discoverable" : "hidden" }} </mark>?
+            </b-modal>
+          </div>
+        </div>
       </b-col>
       <b-col md="4" class="text-muted text-md-right">
         <p v-if="lastAudit" class="text-muted mb-1">
@@ -142,6 +165,21 @@
 
           <!-- Project members -->
           <b-tab :title="`Members (${project.memberships_count})`">
+            <template #title>
+              <div class="position-relative">
+                Members ({{ project.memberships_count }})
+                <b-badge
+                  v-if="
+                    role_gte_to(effective_permissions, 'admin') &&
+                    project.access_requests.length > 0
+                  "
+                  pill
+                  variant="info"
+                >
+                  pending request
+                </b-badge>
+              </div>
+            </template>
             <MembershipsTable
               :editable="role_gte_to(effective_permissions, 'admin')"
               :membership_type="'Project'"
@@ -322,6 +360,7 @@ export default {
       showMetadata: true,
       showHistory: true,
       project: this.initialProjectState,
+      visible: this.initialProjectState.visibility === "discoverable",
       projectTabIndex: 0,
     };
   },
@@ -391,7 +430,18 @@ export default {
     refreshProject: function () {
       axios.get(`/projects/${this.project.id}`).then((response) => {
         this.project = response.data;
+        this.visible = this.project.visibility === "discoverable";
       });
+    },
+    updateVisibility: function () {
+      let payload = { project: { visibility: this.visible ? "discoverable" : "hidden" } };
+      axios
+        .put(`/projects/${this.project.id}`, payload)
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.refreshProject();
+        })
+        .catch(this.alertOrNotifyResponse);
     },
     // Having deleteComponent on the `ComponentCard` causes it to
     // disappear almost immediately because the component gets

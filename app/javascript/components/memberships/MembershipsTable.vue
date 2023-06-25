@@ -43,7 +43,9 @@
     </b-table>
 
     <!-- Members -->
-    <h2>{{ memberships_count }} {{ header_text }}</h2>
+    <h2>
+      {{ header_text }} <span class="badge bg-info">{{ memberships_count }} </span>
+    </h2>
     <!-- User search -->
     <div class="row">
       <div class="col-6">

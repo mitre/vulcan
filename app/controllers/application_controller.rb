@@ -97,7 +97,20 @@ class ApplicationController < ActionController::Base
   end
 
   def slack_notification_params(notification_type, object, *args)
-    pattern = /^(approve|revoke|request_changes|request_review|assign|create|update|upload|rename|remove)/
+    pattern = /^(
+      approve|
+      revoke|
+      request_changes|
+      request_review|
+      assign|
+      create|
+      update|
+      upload|
+      rename|
+      remove|
+      change_visibility
+    )/x
+
     notification_type_prefix = notification_type.to_s.match(pattern)[1]
     icon, header = get_slack_headers_icons(notification_type, notification_type_prefix)
     fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *args)
