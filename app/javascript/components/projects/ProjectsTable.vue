@@ -2,7 +2,7 @@
   <div>
     <!-- Table information -->
     <p>
-      <b>Project Count:</b> <span>{{ projectCount }}</span>
+      <b>Project Count:</b> <b-badge variant="info">{{ projectCount }}</b-badge>
     </p>
 
     <!-- Project search -->
@@ -23,6 +23,9 @@
           />
         </div>
       </div>
+      <b-form-checkbox v-model="discoverableToggled" size="lg" class="ml-2">
+        <small>Filter discoverable</small>
+      </b-form-checkbox>
     </div>
 
     <br />
@@ -135,6 +138,7 @@ export default {
       search: "",
       perPage: 10,
       currentPage: 1,
+      discoverableToggled: false,
       truncated: {}, // store the truncated state for each project description
       fields: [
         { key: "name", sortable: true },
@@ -153,8 +157,12 @@ export default {
   computed: {
     // Search projects based on name
     searchedProjects: function () {
+      let projects = this.projects;
+      if (this.discoverableToggled) {
+        projects = projects.filter((project) => project.visibility === "discoverable");
+      }
       let downcaseSearch = this.search.toLowerCase();
-      return this.projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
+      return projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
     },
     // Used by b-pagination to know how many total rows there are
     rows: function () {
