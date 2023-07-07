@@ -16,7 +16,7 @@ class ProjectAccessRequestsController < ApplicationController
     else
       flash.alert = @access_request.errors.full_messages.to_sentence
     end
-    redirect_to projects_path
+    redirect_to root_path
   end
 
   def destroy
@@ -34,6 +34,6 @@ class ProjectAccessRequestsController < ApplicationController
       flash.alert = @access_request.errors.full_messages.to_sentence
     end
 
-    redirect_back(fallback_location: projects_path)
+    redirect_back(fallback_location: root_path)
   end
 end

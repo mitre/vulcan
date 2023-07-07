@@ -38,7 +38,7 @@ RSpec.describe ProjectAccessRequestsController, type: :controller do
 
     it 'redirects to the fallback location or projects path' do
       delete :destroy, params: { project_id: project.id, id: access_request.id }
-      expect(response).to redirect_to(projects_path)
+      expect(response).to redirect_to(root_path)
     end
   end
 end
