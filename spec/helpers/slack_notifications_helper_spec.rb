@@ -31,20 +31,21 @@ RSpec.describe SlackNotificationsHelper, type: :helper do
       send_notification(channel, message_params)
     end
 
-    it 'rescues and sets a flash message if the channel is not found' do
+    it 'logs an error if the channel is not found' do
       allow(client).to receive(:chat_postMessage).and_raise(
         Slack::Web::Api::Errors::ChannelNotFound.new(
           "Slack channel '#{channel}' not found"
         )
       )
+      expect(Rails.logger).to receive(:error)
+        .with("Slack channel '#{channel}' not found: Slack channel '#{channel}' not found")
       helper.send_notification(channel, message_params)
-      expect(flash.alert).to eq("Slack channel '#{channel}' not found")
     end
 
-    it 'rescues and sets a flash message if there is a Slack API error' do
+    it 'logs an error if there is a Slack API error' do
       allow(client).to receive(:chat_postMessage).and_raise(Slack::Web::Api::Errors::SlackError.new('Test error'))
+      expect(Rails.logger).to receive(:error).with('Slack API error: Test error')
       send_notification(channel, message_params)
-      expect(flash.alert).to eq('Slack API error: Test error')
     end
   end
 

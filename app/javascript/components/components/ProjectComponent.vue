@@ -159,7 +159,7 @@
                   </p>
                 </div>
                 <UpdateComponentDetailsModal
-                  v-if="havePermission"
+                  v-if="role_gte_to(effective_permissions, 'author')"
                   :component="component"
                   @componentUpdated="refreshComponent"
                 />
@@ -180,13 +180,24 @@
                 />
               </div>
               <b-collapse id="collapse-metadata" v-model="showMetadata">
+                <small
+                  v-if="
+                    role_gte_to(effective_permissions, 'admin') &&
+                    (!component.metadata || !component.metadata.hasOwnProperty('Slack Channel ID'))
+                  "
+                  class="text-muted"
+                >
+                  For slack notification, you can add a metadata with key `Slack Channel ID` and the
+                  value will be the slack channel ID (e.g. C12345) or name (e.g. #general) you wish
+                  to notify.
+                </small>
                 <div v-for="(value, propertyName) in component.metadata" :key="propertyName">
                   <p v-linkified class="ml-2 mb-0 mt-2">
                     <strong>{{ propertyName }}: </strong>{{ value }}
                   </p>
                 </div>
                 <UpdateMetadataModal
-                  v-if="havePermission"
+                  v-if="role_gte_to(effective_permissions, 'author')"
                   :component="component"
                   @componentUpdated="refreshComponent"
                 />
@@ -221,7 +232,7 @@
                   </p>
                 </div>
                 <AddQuestionsModal
-                  v-if="havePermission || effective_permissions === 'reviewer'"
+                  v-if="role_gte_to(effective_permissions, 'author')"
                   :component="component"
                   @componentUpdated="refreshComponent"
                 />
@@ -433,9 +444,6 @@ export default {
     };
   },
   computed: {
-    havePermission: function () {
-      return this.effective_permissions === "admin" || this.effective_permissions === "author";
-    },
     shownReviews: function () {
       return this.component.reviews.slice(0, this.numShownReviews);
     },

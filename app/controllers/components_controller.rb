@@ -12,6 +12,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
+  before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :authorize_admin_component, only: %i[update], if: (lambda {
                                                                      params
                                                                        .require(:component)
@@ -73,6 +74,11 @@ class ComponentsController < ApplicationController
       component.duplicate_reviews_and_history(component_create_params[:id])
       component.create_rule_satisfactions if component_create_params[:file]
       component.rules_count = component.rules.where(deleted_at: nil).size
+      if component_create_params[:slack_channel_id].present?
+        component.component_metadata_attributes = { data: {
+          'Slack Channel ID' => component_create_params[:slack_channel_id]
+        } }
+      end
       component.save
       send_slack_notification(:create_component, component) if Settings.slack.enabled
       render json: { toast: 'Successfully added component to project.' }
@@ -346,6 +352,12 @@ class ComponentsController < ApplicationController
     @project = Project.find(params[:project_id] || @component.project_id)
   end
 
+  def check_permission_to_update_slackchannel
+    return if component_update_params[:component_metadata_attributes][:data]['Slack Channel ID'].blank?
+
+    authorize_admin_component
+  end
+
   def component_update_params
     params.require(:component).permit(
       :released,
@@ -380,6 +392,7 @@ class ComponentsController < ApplicationController
       :admin_name,
       :admin_email,
       :file,
+      :slack_channel_id,
       file: {}
     )
   end

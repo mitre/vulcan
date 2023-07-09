@@ -25,8 +25,8 @@ module Users
     end
 
     def configure_permitted_parameters
-      devise_parameter_sanitizer.permit(:sign_up, keys: [:name])
-      devise_parameter_sanitizer.permit(:account_update, keys: [:name])
+      devise_parameter_sanitizer.permit(:sign_up, keys: %i[name slack_user_id])
+      devise_parameter_sanitizer.permit(:account_update, keys: %i[name slack_user_id])
     end
   end
 end

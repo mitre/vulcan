@@ -160,6 +160,17 @@
                 @select="setComponentPoc($refs.userSearch.selected)"
               />
             </b-form-group>
+            <!-- Slack Channel ID -->
+            <b-form-group
+              label="Slack Channel ID"
+              description="Provide a slack channel ID for slack notification about activities on this component"
+            >
+              <b-form-input
+                v-model="slackChannelId"
+                placeholder="Example... C123456, #general"
+                autocomplete="off"
+              />
+            </b-form-group>
           </b-col>
         </b-row>
       </b-form>
@@ -228,6 +239,7 @@ export default {
       title: "",
       description: "",
       prefix: this.predetermined_prefix,
+      slackChannelId: "",
       projects: [],
       components: this.copy_component
         ? this.addDisplayNameToComponents(this.project.components)
@@ -282,6 +294,7 @@ export default {
       this.title = "";
       this.description = "";
       this.prefix = this.predetermined_prefix;
+      this.slackChannelId = "";
       this.components = this.copy_component
         ? this.addDisplayNameToComponents(this.project.components)
         : [];
@@ -413,6 +426,9 @@ export default {
       }
       if (this.admin_email) {
         formData.append("component[admin_email]", this.admin_email);
+      }
+      if (this.slackChannelId) {
+        formData.append("component[slack_channel_id]", this.slackChannelId);
       }
 
       axios

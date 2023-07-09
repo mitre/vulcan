@@ -12,17 +12,17 @@ module SlackNotificationsHelper
   def send_notification(channel, message_params)
     message = build_message(message_params)
     client.chat_postMessage(channel: channel, blocks: message)
-  rescue Slack::Web::Api::Errors::ChannelNotFound
-    flash.alert = "Slack channel '#{channel}' not found"
+  rescue Slack::Web::Api::Errors::ChannelNotFound => e
+    Rails.logger.error "Slack channel '#{channel}' not found: #{e.message}"
   rescue Slack::Web::Api::Errors::SlackError => e
-    flash.alert = "Slack API error: #{e.message}"
+    Rails.logger.error "Slack API error: #{e.message}"
   end
 
   def get_slack_headers_icons(notification_type, notification_type_prefix)
     icon = case notification_type_prefix
-           when 'assign', 'upload', 'create' then ':white_check_mark:'
-           when 'rename', 'update' then ':loudspeaker:'
-           when 'remove' then ':x:'
+           when 'assign', 'upload', 'create', 'approve' then ':white_check_mark:'
+           when 'rename', 'update', 'request_review' then ':loudspeaker:'
+           when 'remove', 'revoke', 'request_changes' then ':x:'
            end
     header_map = {
       create_component: 'Vulcan New Component Creation',
@@ -39,7 +39,11 @@ module SlackNotificationsHelper
       upload_srg: 'Vulcan New SRG (Security Requirement Guide) Upload',
       remove_srg: 'Vulcan SRG (Security Requirement Guide) Removal',
       assign_vulcan_admin: 'Assigning Vulcan Admin',
-      remove_vulcan_admin: 'Removing Vulcan Admin'
+      remove_vulcan_admin: 'Removing Vulcan Admin',
+      request_review: 'Control Review Request',
+      approve: 'Control Reviewed and Locked',
+      revoke_review_request: 'Revoking Review Request',
+      request_changes: 'Control Changes Request'
     }
     header = header_map[notification_type.to_sym]
     [icon, header]
