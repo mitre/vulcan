@@ -159,7 +159,7 @@
                   </p>
                 </div>
                 <UpdateComponentDetailsModal
-                  v-if="role_gte_to(effective_permissions, 'author')"
+                  v-if="role_gte_to(effective_permissions, 'admin')"
                   :component="component"
                   @componentUpdated="refreshComponent"
                 />
