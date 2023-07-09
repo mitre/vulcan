@@ -171,7 +171,9 @@ class ProjectsController < ApplicationController
   end
 
   def check_permission_to_update_slackchannel
-    authorize_admin_project if project_params[:project_metadata_attributes][:data]['Slack Channel ID'].present?
+    return if project_params[:project_metadata_attributes]&.dig('data')&.dig('Slack Channel ID').blank?
+
+    authorize_admin_project
   end
 
   def project_name_changed?(current_project_name, project_params)

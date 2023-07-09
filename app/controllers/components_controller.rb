@@ -353,7 +353,7 @@ class ComponentsController < ApplicationController
   end
 
   def check_permission_to_update_slackchannel
-    return if component_update_params[:component_metadata_attributes][:data]['Slack Channel ID'].blank?
+    return if component_update_params[:component_metadata_attributes]&.dig('data')&.dig('Slack Channel ID').blank?
 
     authorize_admin_component
   end
