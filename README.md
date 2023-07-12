@@ -54,7 +54,7 @@ Make sure you have run the setup steps at least once before following these step
 
 See `docker-compose.yml` for container configuration options.
 
-Documentation on how to configure additional Vulcan settings such as SMTP, LDAP, etc, are available on the [Vulcan website](https://vulcan.mitre.org/docs/config.html).
+Documentation on how to configure additional Vulcan settings such as SMTP, LDAP, OIDC, Slack, etc, are available on the [Vulcan website](https://vulcan.mitre.org/docs/config.html).
 
 ### NOTICE
 

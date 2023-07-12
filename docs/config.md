@@ -67,7 +67,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **enabled:** `(ENV: VULCAN_ENABLE_OIDC)(default: false)`
 - **strategy:** :openid_connect `Omniauth Strategy for working with OIDC providers`
 - **title:** : Description or Title for the OIDC Provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
-- **args:** 
+- **args:**
   - **name:** Name of the OIDC provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
   - **scope:** Which OpenID scope to include (:openid is always required) `default: [:openid]`
   - **uid_field:** The field of the user info response to be used as a unique id
@@ -75,7 +75,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
   - **issuer:** Root url for the authorization server `(ENV: VULCAN_OIDC_ISSUER_URL)`
   - **client_auth_method:** Which authentication method to use to authenticate your app with the authorization server `default: :secret`
   - **client_signing_alg:** Signing algorithms, specify the base64-encoded secret used to sign the JWT token `(ENV: VULCAN_OIDC_CLIENT_SIGNING_ALG)`
-  - **nonce:** 
+  - **nonce:**
   - **client_options:**
       - **port:** The port for the authorization server `(ENV: VULCAN_OIDC_PORT)(default: 443)`
       - **scheme:** The http scheme to use `(ENV: VULCAN_OIDC_SCHEME)(default: https)`
@@ -91,9 +91,56 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 
 ## Configure Slack
 
+### Prerequisites
+
+Before you begin, ensure you have a Slack App. If not, create a new [Slack App](https://api.slack.com/apps) and  [generate an API token](https://api.slack.com/tutorials/tracks/getting-a-token) for your app. The API token will be used to integrate your Vulcan instance with Slack.
+
+>> **Note:** Depending on your organization/workspace's restrictions, the scope of your Slack App can be restricted to posting to channels that your app has been added to, and to individual slack user (DM).
+### Configuration
+
 - **enabled:** Enable Integration with Slack `(ENV: VULCAN_ENABLE_SLACK_COMMS)(default: false)`
 - **api_token:** Slack Authentication token bearing required scopes.`(ENV: VULCAN_SLACK_API_TOKEN)`
 - **channel_id:**  Slack Channel, private group, or IM channel to send message to. Can be an encoded ID, or a name. `(ENV: VULCAN_SLACK_CHANNEL_ID)`
+
+The application will now send notifications to your specified channel for various events such as project creation, removal, and renaming, component actions, SRG uploads, admin assignments, member modifications, role updates, and review requests/approvals.
+
+### Providing Additional Slack Channel
+
+For more granular control, admins can add a different Slack channel per project or component. This is done on project/component creation or by providing the `Slack Channel ID` in the project or component's metadata. This allows notifications to be sent to more specific destinations in addition to the default channel.
+
+>>**Note:** You may need to add your Slack App/Bot to your Slack channel in order for it to post notifications.
+
+![Edit Metadata](<Screenshot 2023-07-12 at 12.56.09 PM.png>)
+
+![Adding Slack Channel Id to Metadata](<Screenshot 2023-07-12 at 1.06.06 PM.png>)
+
+### Direct Message Notifications
+
+Users can opt to receive Slack direct messages for certain notifications. To enable this feature, the user must provide their Slack User ID during signup or by editing their profile.
+
+### Finding Slack Channel ID and User ID
+
+To find your Slack Channel ID:
+
+1. Open the Slack app and navigate to your desired channel.
+2. Click on the channel name at the top.
+3. Click `More` > `About this Channel`.
+4. Here, you will find the Channel ID.
+
+To find your Slack User ID:
+
+1. Click on your profile picture in the top right corner of Slack.
+2. Click `Profile & Account`.
+3. Click `More` > `Account settings`.
+4. Under the `Account` section, you will find the User ID.
+
+### Adding the Slack App/Bot to a Channel
+
+1. Open the Slack app and navigate to your desired channel.
+2. Click on the channel name at the top.
+3. Click `More` > `Add apps`.
+4. Search for your app in the search bar and select it from the dropdown list.
+5. Click `Add`.
 
 ## Example Vulcan.yml
 
@@ -130,15 +177,15 @@ defaults: &defaults
         password:
         base:
   oidc:
-    enabled: 
+    enabled:
     strategy:
     title:
     args:
-      name: 
+      name:
       scope:
-      uid_field: 
+      uid_field:
       response_type:
-      issuer: 
+      issuer:
       client_auth_method:
       client_signing_alg:
       nonce:
