@@ -54,6 +54,7 @@ class Component < ApplicationRecord
   belongs_to :component, class_name: 'Component', inverse_of: :child_components, optional: true
   has_many :child_components, class_name: 'Component', inverse_of: :component, dependent: :destroy
   has_many :memberships, -> { includes :user }, inverse_of: :membership, as: :membership, dependent: :destroy
+  has_many :users, through: :memberships
   has_one :component_metadata, dependent: :destroy
 
   has_many :additional_questions, dependent: :destroy
@@ -195,6 +196,12 @@ class Component < ApplicationRecord
       self.admin_email = nil
     end
     save if admin_name_changed? || admin_email_changed?
+  end
+
+  # Get all members of the Component: this will be the inherited members from the parent
+  # project + the members of the component
+  def all_users
+    (users + project.users).uniq
   end
 
   ##

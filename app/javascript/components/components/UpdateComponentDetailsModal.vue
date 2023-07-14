@@ -48,6 +48,23 @@
         <b-form-group label="Description">
           <b-form-textarea v-model="description" placeholder="" rows="3" />
         </b-form-group>
+        <!-- Select PoC -->
+        <b-form-group label="Select the Point of Contact">
+          <vue-simple-suggest
+            :key="`componentKey-${component.id}`"
+            ref="userSearch"
+            :value="admin_name"
+            :list="potentialPocs"
+            display-attribute="name"
+            value-attribute="email"
+            placeholder="Search for eligible PoC..."
+            :filter-by-query="true"
+            :min-length="0"
+            :max-suggestions="0"
+            :number="0"
+            @select="setComponentPoc($refs.userSearch.selected)"
+          />
+        </b-form-group>
         <!-- Allow the enter button to submit the form -->
         <b-btn type="submit" class="d-none" @click.prevent="updateComponentDetails()" />
       </b-form>
@@ -59,9 +76,12 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import VueSimpleSuggest from "vue-simple-suggest";
+import "vue-simple-suggest/dist/styles.css";
 
 export default {
   name: "UpdateComponentDetailsModal",
+  components: { VueSimpleSuggest },
   mixins: [AlertMixinVue, FormMixinVue],
   props: {
     component: {
@@ -77,6 +97,9 @@ export default {
       title: this.component.title,
       description: this.component.description,
       prefix: this.component.prefix,
+      potentialPocs: this.component.all_users,
+      admin_name: this.component.admin_name,
+      admin_email: this.component.admin_email,
     };
   },
   methods: {
@@ -87,14 +110,30 @@ export default {
       this.title = this.component.title;
       this.description = this.component.description;
       this.prefix = this.component.prefix;
+      this.potentialPocs = this.component.all_users;
+      this.admin_name = this.component.admin_name;
+      this.admin_email = this.component.admin_email;
     },
     showModal: function () {
       this.$refs["updateComponentDetailsModal"].show();
     },
+    setComponentPoc: function (user) {
+      this.admin_email = user.email;
+      this.admin_name = user.name;
+    },
     updateComponentDetails: function () {
       this.$refs["updateComponentDetailsModal"].hide();
       let payload = { component: {} };
-      ["name", "version", "release", "title", "description", "prefix"].forEach((attr) => {
+      [
+        "name",
+        "version",
+        "release",
+        "title",
+        "description",
+        "prefix",
+        "admin_name",
+        "admin_email",
+      ].forEach((attr) => {
         if (payload.component[attr] !== this[attr]) {
           payload.component[attr] = this[attr];
         }
