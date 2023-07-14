@@ -32,119 +32,113 @@
       <b-card-sub-title v-if="component.description" class="my-2">
         {{ component.description }}
       </b-card-sub-title>
-      <p>
+      <p class="mt-4">
         <span v-if="component.admin_name">
-          {{ component.admin_name }}
+          PoC: {{ component.admin_name }}
           {{ component.admin_email ? `(${component.admin_email})` : "" }}
         </span>
         <em v-else>No Component Admin</em>
-
-        <!-- Component actions -->
-        <span>
-          <!-- Open component -->
-          <a :href="`/components/${component.id}`" target="_blank" class="text-body">
-            <i
-              v-b-tooltip.hover
-              class="mdi mdi-open-in-new float-right h5 clickable"
-              aria-hidden="true"
-              title="Open Component"
-            />
-          </a>
-
-          <!-- Remove component -->
+      </p>
+      <!-- Component actions -->
+      <p>
+        <!-- Open component -->
+        <a :href="`/components/${component.id}`" target="_blank" class="text-body">
           <i
-            v-if="actionable && component.id && effectivePermissions == 'admin'"
             v-b-tooltip.hover
-            class="mdi mdi-delete float-right h5 clickable mr-2"
+            class="mdi mdi-open-in-new float-right h5 clickable"
             aria-hidden="true"
-            title="Remove Component"
-            @click="showDeleteConfirmation = !showDeleteConfirmation"
+            title="Open Component"
           />
+        </a>
 
-          <!-- Duplicate component -->
-          <span v-if="actionable && effectivePermissions == 'admin'" class="float-right mr-2">
-            <NewComponentModal
-              :component_to_duplicate="component.id"
-              :project_id="component.project_id"
-              :predetermined_prefix="component.prefix"
-              :predetermined_security_requirements_guide_id="
-                component.security_requirements_guide_id
-              "
-              @projectUpdated="$emit('projectUpdated')"
-            >
-              <template #opener>
-                <i
-                  v-if="component.id"
-                  v-b-tooltip.hover
-                  class="mdi mdi-content-copy h5 clickable"
-                  aria-hidden="true"
-                  title="Duplicate component and create a new version"
-                />
-              </template>
-            </NewComponentModal>
-          </span>
+        <!-- Remove component -->
+        <i
+          v-if="actionable && component.id && effectivePermissions == 'admin'"
+          v-b-tooltip.hover
+          class="mdi mdi-delete float-right h5 clickable mr-2"
+          aria-hidden="true"
+          title="Remove Component"
+          @click="showDeleteConfirmation = !showDeleteConfirmation"
+        />
 
-          <!-- Release component -->
-          <span
-            v-if="actionable && component.id && effectivePermissions == 'admin'"
-            class="float-right mr-2"
+        <!-- Duplicate component -->
+        <span v-if="actionable && effectivePermissions == 'admin'" class="float-right mr-2">
+          <NewComponentModal
+            :component_to_duplicate="component.id"
+            :project_id="component.project_id"
+            :predetermined_prefix="component.prefix"
+            :predetermined_security_requirements_guide_id="component.security_requirements_guide_id"
+            @projectUpdated="$emit('projectUpdated')"
           >
-            <span v-b-tooltip.hover :title="releaseComponentTooltip">
+            <template #opener>
               <i
-                :class="releaseComponentClasses"
+                v-if="component.id"
+                v-b-tooltip.hover
+                class="mdi mdi-content-copy h5 clickable"
                 aria-hidden="true"
-                @click="confirmComponentRelease"
+                title="Duplicate component and create a new version"
               />
-            </span>
+            </template>
+          </NewComponentModal>
+        </span>
+
+        <!-- Release component -->
+        <span
+          v-if="actionable && component.id && effectivePermissions == 'admin'"
+          class="float-right mr-2"
+        >
+          <span v-b-tooltip.hover :title="releaseComponentTooltip">
+            <i
+              :class="releaseComponentClasses"
+              aria-hidden="true"
+              @click="confirmComponentRelease"
+            />
           </span>
+        </span>
 
-          <!-- Export CSV component -->
-          <i
-            v-b-tooltip.hover
-            class="mdi mdi-download h5 float-right mr-2 clickable"
-            aria-hidden="true"
-            title="Export Component as CSV"
-            @click="downloadExport('csv')"
-          />
+        <!-- Export CSV component -->
+        <i
+          v-b-tooltip.hover
+          class="mdi mdi-download h5 float-right mr-2 clickable"
+          aria-hidden="true"
+          title="Export Component as CSV"
+          @click="downloadExport('csv')"
+        />
 
-          <!-- Export XCCDF component -->
-          <i
-            v-b-tooltip.hover
-            class="xccdf-icon h5 float-right mr-2 clickable"
-            aria-hidden="true"
-            title="Export Component as XCCDF"
-            @click="downloadExport('xccdf')"
-          />
+        <!-- Export XCCDF component -->
+        <i
+          v-b-tooltip.hover
+          class="xccdf-icon h5 float-right mr-2 clickable"
+          aria-hidden="true"
+          title="Export Component as XCCDF"
+          @click="downloadExport('xccdf')"
+        />
 
-          <!-- Download InSpec Profile -->
-          <i
-            v-b-tooltip.hover
-            class="inspec-icon h5 float-right mr-2 clickable"
-            aria-hidden="true"
-            title="Download InSpec Profile"
-            @click="downloadExport('inspec')"
-          />
+        <!-- Download InSpec Profile -->
+        <i
+          v-b-tooltip.hover
+          class="inspec-icon h5 float-right mr-2 clickable"
+          aria-hidden="true"
+          title="Download InSpec Profile"
+          @click="downloadExport('inspec')"
+        />
 
-          <!-- Lock all controls in component -->
-          <span
-            v-if="actionable && role_gte_to(effectivePermissions, 'reviewer')"
-            class="float-right mr-2"
-          >
-            <LockControlsModal
-              :component_id="component.id"
-              @projectUpdated="$emit('projectUpdated')"
-            >
-              <template #opener>
-                <i
-                  v-if="component.id"
-                  v-b-tooltip.hover
-                  class="mdi mdi-lock h5 clickable"
-                  aria-hidden="true"
-                  title="Lock component controls"
-                />
-              </template>
-            </LockControlsModal>
-          </span>
+        <!-- Lock all controls in component -->
+        <span
+          v-if="actionable && role_gte_to(effectivePermissions, 'reviewer')"
+          class="float-right mr-2"
+        >
+          <LockControlsModal :component_id="component.id" @projectUpdated="$emit('projectUpdated')">
+            <template #opener>
+              <i
+                v-if="component.id"
+                v-b-tooltip.hover
+                class="mdi mdi-lock h5 clickable"
+                aria-hidden="true"
+                title="Lock component controls"
+              />
+            </template>
+          </LockControlsModal>
         </span>
       </p>
     </b-card>

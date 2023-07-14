@@ -51,7 +51,7 @@ class ComponentsController < ApplicationController
     @component_json = if @effective_permissions
                         @component.to_json(
                           methods: %i[histories memberships metadata inherited_memberships available_members rules
-                                      reviews]
+                                      reviews admins all_users]
                         )
                       else
                         @component.to_json(methods: %i[rules reviews])
@@ -69,6 +69,8 @@ class ComponentsController < ApplicationController
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
     if component.errors.empty? && component.save
+      component.admin_name = component_create_params[:admin_name].presence || current_user.name
+      component.admin_email = component_create_params[:admin_email].presence || current_user.email
       component.duplicate_reviews_and_history(component_create_params[:id])
       component.create_rule_satisfactions if component_create_params[:file]
       component.rules_count = component.rules.where(deleted_at: nil).size
@@ -351,7 +353,7 @@ class ComponentsController < ApplicationController
   end
 
   def check_permission_to_update_slackchannel
-    return if component_update_params[:component_metadata_attributes][:data]['Slack Channel ID'].blank?
+    return if component_update_params[:component_metadata_attributes]&.dig('data')&.dig('Slack Channel ID').blank?
 
     authorize_admin_component
   end
@@ -365,6 +367,8 @@ class ComponentsController < ApplicationController
       :title,
       :prefix,
       :description,
+      :admin_name,
+      :admin_email,
       :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
       component_metadata_attributes: { data: {} }
@@ -385,6 +389,8 @@ class ComponentsController < ApplicationController
       :release,
       :title,
       :description,
+      :admin_name,
+      :admin_email,
       :file,
       :slack_channel_id,
       file: {}
