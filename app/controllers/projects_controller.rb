@@ -51,7 +51,7 @@ class ProjectsController < ApplicationController
     # projects that a user has permissions to access
     @project.current_user = current_user
     @project_json = @project.to_json(
-      methods: %i[histories memberships metadata components available_components available_members details
+      methods: %i[histories memberships metadata components available_components available_members details users
                   access_requests]
     )
     respond_to do |format|
@@ -181,9 +181,9 @@ class ProjectsController < ApplicationController
     )
   end
 
-  def check_permission_to_update
+  def check_permission_to_update_slackchannel
     condition = (project_params[:project_metadata_attributes]&.dig('data')&.dig('Slack Channel ID').present? ||
-                  project_params[:visibility].present?)
+                 project_params[:visibility].present?)
     authorize_admin_project if condition
   end
 

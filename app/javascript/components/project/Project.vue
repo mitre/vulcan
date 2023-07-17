@@ -56,11 +56,13 @@
               <NewComponentModal
                 v-if="role_gte_to(effective_permissions, 'admin')"
                 :project_id="project.id"
+                :project="project"
                 @projectUpdated="refreshProject"
               />
               <NewComponentModal
                 v-if="role_gte_to(effective_permissions, 'admin')"
                 :project_id="project.id"
+                :project="project"
                 :spreadsheet_import="true"
                 @projectUpdated="refreshProject"
               />
