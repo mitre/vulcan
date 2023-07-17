@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   include SlackNotificationsHelper
 
   before_action :setup_navigation, :authenticate_user!
+  before_action :check_access_request_notifications
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
@@ -228,5 +229,19 @@ class ApplicationController < ActionController::Base
   def setup_navigation
     @navigation = []
     @navigation += helpers.base_navigation if current_user
+  end
+
+  def check_access_request_notifications
+    @access_requests = []
+    return @access_requests unless user_signed_in?
+
+    # iterate over the user's projects and check if they are admin
+    # if they are admin on a project, retrieve the access requests if any
+    current_user.available_projects.each do |project|
+      if current_user.can_admin_project?(project)
+        @access_requests << project.access_requests.eager_load(:user, :project).as_json(methods: %i[user project])
+      end
+    end
+    @access_requests.flatten!
   end
 end

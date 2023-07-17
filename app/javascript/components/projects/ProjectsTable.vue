@@ -4,10 +4,15 @@
     <p>
       <b>Project Count:</b> <b-badge variant="info">{{ projectCount }}</b-badge>
     </p>
+    <small v-if="projectCount > 0" class="text-info">
+      {{ discoverableProjectCount }} Discoverable Project{{
+        discoverableProjectCount > 1 ? "s" : ""
+      }}
+    </small>
 
     <!-- Project search -->
-    <div class="row">
-      <div class="col-6">
+    <div class="d-flex flex-md-row flex-sm-column justify-content-start">
+      <div class="col-lg-6">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text">
@@ -23,9 +28,35 @@
           />
         </div>
       </div>
-      <b-form-checkbox v-model="discoverableToggled" size="lg" class="ml-2">
-        <small>Filter discoverable</small>
-      </b-form-checkbox>
+      <div class="d-flex flex-wrap mx-auto mt-sm-2 mt-md-0 justify-content-lg-start">
+        <b-form-checkbox
+          v-model="filter.allToggled"
+          :disabled="filter.allToggled"
+          size="lg"
+          class="ml-3"
+          switch
+        >
+          <small>All Projects</small>
+        </b-form-checkbox>
+        <b-form-checkbox v-model="filter.myProjectsToggled" size="lg" class="ml-3" switch>
+          <small>Show My Projects</small>
+          <i
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            title="Projects I am a member of"
+          />
+        </b-form-checkbox>
+        <b-form-checkbox v-model="filter.discoverableToggled" size="lg" class="ml-3" switch>
+          <small>Show Discoverable Projects</small>
+          <i
+            v-b-tooltip.hover.html
+            class="mdi mdi-information"
+            aria-hidden="true"
+            title="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
+          />
+        </b-form-checkbox>
+      </div>
     </div>
 
     <br />
@@ -33,7 +64,6 @@
     <!-- Projects table -->
     <b-table
       id="projects-table"
-      class="text-center align-middle"
       :items="searchedProjects"
       :fields="fields"
       :per-page="perPage"
@@ -138,8 +168,12 @@ export default {
       search: "",
       perPage: 10,
       currentPage: 1,
-      discoverableToggled: false,
       truncated: {}, // store the truncated state for each project description
+      filter: {
+        discoverableToggled: this.is_vulcan_admin,
+        myProjectsToggled: true,
+        allToggled: this.is_vulcan_admin,
+      },
       fields: [
         { key: "name", sortable: true },
         { key: "description", label: "Description" },
@@ -157,9 +191,13 @@ export default {
   computed: {
     // Search projects based on name
     searchedProjects: function () {
-      let projects = this.projects;
-      if (this.discoverableToggled) {
-        projects = projects.filter((project) => project.visibility === "discoverable");
+      let projects = [];
+      if (this.filter.allToggled) {
+        projects = this.projects;
+      } else if (this.filter.discoverableToggled) {
+        projects = this.projects.filter((project) => project.visibility === "discoverable");
+      } else if (this.filter.myProjectsToggled) {
+        projects = this.projects.filter((project) => project.visibility === "hidden");
       }
       let downcaseSearch = this.search.toLowerCase();
       return projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
@@ -168,10 +206,58 @@ export default {
     rows: function () {
       return this.searchedProjects.length;
     },
-    // Total number of projects in the system
+    // Total number of user's projects
     projectCount: function () {
       return this.projects.length;
     },
+    // Total number of discoverable projects in the system
+    discoverableProjectCount: function () {
+      return this.projects.filter((project) => project.visibility === "discoverable").length;
+    },
+  },
+  watch: {
+    filter: {
+      handler(_) {
+        localStorage.setItem("projectTableFilters", JSON.stringify(this.filter));
+      },
+      deep: true,
+    },
+    "filter.allToggled": function (newValue, oldValue) {
+      // Handle changes in individual field checkboxes
+      if (newValue) {
+        this.filter.discoverableToggled = true;
+        this.filter.myProjectsToggled = true;
+      }
+    },
+    "filter.discoverableToggled": function (newValue, oldValue) {
+      // Handle changes in individual field checkboxes
+      if (newValue && this.filter.myProjectsToggled) {
+        this.filter.allToggled = true;
+      } else {
+        this.filter.allToggled = false;
+      }
+    },
+    "filter.myProjectsToggled": function (newValue, oldValue) {
+      // Handle changes in individual field checkboxes
+      if (newValue && this.filter.discoverableToggled) {
+        this.filter.allToggled = true;
+      } else {
+        this.filter.allToggled = false;
+      }
+    },
+  },
+  mounted: function () {
+    // Persist `filters` across page loads
+    if (localStorage.getItem("projectTableFilters")) {
+      try {
+        this.filter = JSON.parse(localStorage.getItem("projectTableFilters"));
+      } catch (e) {
+        localStorage.removeItem("projectTableFilters");
+      }
+    }
+  },
+  destroyed() {
+    window.removeEventListener("scroll", this.handleScroll);
   },
   created: function () {
     this.projects.forEach((project) => {
