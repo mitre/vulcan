@@ -11,6 +11,7 @@ module ApplicationHelper
     nav_links = [
       { icon: 'mdi-folder-open-outline', name: 'Projects', link: projects_path },
       { icon: 'mdi-stamper', name: 'Released Components', link: components_path },
+      { icon: 'mdi-folder', name: 'STIGs', link: stigs_path },
       { icon: 'mdi-folder', name: 'SRGs', link: srgs_path }
     ]
 

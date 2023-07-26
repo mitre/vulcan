@@ -1,0 +1,8 @@
+- content_for :assets do
+  = javascript_pack_tag 'stigs'
+
+#Stigs
+  %Stigs{                                                               |
+    'v-bind:givenstigs': @stigs.to_json,                                |
+    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" ) |
+  }

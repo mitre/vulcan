@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_06_14_193742) do
+ActiveRecord::Schema.define(version: 2023_07_21_191337) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -90,12 +90,19 @@ ActiveRecord::Schema.define(version: 2023_06_14_193742) do
     t.text "inspec_control_body_lang", default: "ruby"
     t.text "inspec_control_file_lang", default: "ruby"
     t.datetime "deleted_at"
+    t.bigint "stig_id"
+    t.bigint "stig_rule_id"
+    t.string "srg_id"
+    t.string "vuln_id"
+    t.string "legacy_ids"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
     t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
     t.index ["srg_rule_id"], name: "index_base_rules_on_srg_rule_id"
+    t.index ["stig_id"], name: "index_base_rules_on_stig_id"
+    t.index ["stig_rule_id"], name: "index_base_rules_on_stig_rule_id"
   end
 
   create_table "checks", force: :cascade do |t|
@@ -172,6 +179,16 @@ ActiveRecord::Schema.define(version: 2023_06_14_193742) do
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
+  create_table "project_access_requests", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "project_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["project_id"], name: "index_project_access_requests_on_project_id"
+    t.index ["user_id", "project_id"], name: "index_project_access_requests_on_user_id_and_project_id", unique: true
+    t.index ["user_id"], name: "index_project_access_requests_on_user_id"
+  end
+
   create_table "project_metadata", force: :cascade do |t|
     t.json "data", null: false
     t.bigint "project_id"
@@ -187,6 +204,8 @@ ActiveRecord::Schema.define(version: 2023_06_14_193742) do
     t.integer "memberships_count", default: 0
     t.string "admin_name"
     t.string "admin_email"
+    t.integer "visibility", default: 1
+    t.string "description"
   end
 
   create_table "references", force: :cascade do |t|
@@ -247,6 +266,18 @@ ActiveRecord::Schema.define(version: 2023_06_14_193742) do
     t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
   end
 
+  create_table "stigs", force: :cascade do |t|
+    t.string "stig_id"
+    t.string "title"
+    t.text "description"
+    t.string "version"
+    t.xml "xml"
+    t.date "benchmark_date"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["stig_id", "version"], name: "stigs_stig_id_version_index", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -277,9 +308,13 @@ ActiveRecord::Schema.define(version: 2023_06_14_193742) do
   add_foreign_key "additional_answers", "additional_questions"
   add_foreign_key "additional_answers", "base_rules", column: "rule_id"
   add_foreign_key "base_rules", "base_rules", column: "srg_rule_id"
+  add_foreign_key "base_rules", "base_rules", column: "stig_rule_id"
   add_foreign_key "base_rules", "components"
   add_foreign_key "base_rules", "security_requirements_guides"
+  add_foreign_key "base_rules", "stigs"
   add_foreign_key "base_rules", "users", column: "review_requestor_id"
   add_foreign_key "components", "components"
   add_foreign_key "memberships", "users"
+  add_foreign_key "project_access_requests", "projects"
+  add_foreign_key "project_access_requests", "users"
 end

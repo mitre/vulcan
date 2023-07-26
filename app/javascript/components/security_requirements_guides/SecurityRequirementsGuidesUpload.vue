@@ -4,13 +4,13 @@
       id="upload-srg-modal"
       v-model="modalShow"
       size="lg"
-      title="Upload an SRG"
+      :title="`Upload an ${post_path ? 'STIG' : 'SRG'}`"
       @hidden="clearFile()"
     >
       <b-form-file
         v-model="file"
-        placeholder="Choose or drop an SRG XML here..."
-        drop-placeholder="Drop SRG XML here..."
+        :placeholder="`Choose or drop an ${post_path ? 'STIG' : 'SRG'} XML here...`"
+        :drop-placeholder="`Drop ${post_path ? 'STIG' : 'SRG'} XML here...`"
         accept="text/xml, application/xml"
       />
       <template #modal-footer>
@@ -51,6 +51,10 @@ export default {
       type: Boolean,
       required: true,
     },
+    post_path: {
+      type: String,
+      required: false,
+    },
   },
   data: function () {
     return {
@@ -76,9 +80,9 @@ export default {
       this.loading = true;
       let formData = new FormData();
       formData.append("file", this.file);
-
+      const path = this.post_path ? this.post_path : "/srgs";
       axios
-        .post("/srgs", formData, {
+        .post(path, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },

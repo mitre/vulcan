@@ -1,6 +1,9 @@
 <template>
   <div>
     <b-table id="srgs-table" :items="srgs" :fields="fields">
+      <template v-if="type === 'STIG'" #cell(stig_id)="data">
+        <b-link :href="`/stigs/${data.item.id}`">{{ data.item.stig_id }}</b-link>
+      </template>
       <template #cell(actions)="data">
         <b-button
           v-if="is_vulcan_admin"
@@ -33,13 +36,21 @@ export default {
       type: Boolean,
       required: true,
     },
+    type: {
+      type: String,
+      default: "SRG",
+    },
   },
   data: function () {
     const fields = [
-      { key: "srg_id", label: "SRG ID" },
+      this.type === "SRG"
+        ? { key: "srg_id", label: "SRG ID" }
+        : { key: "stig_id", label: "STIG ID" },
       { key: "title", label: "Title" },
       { key: "version", label: "Version" },
-      { key: "release_date", label: "Release Date" },
+      this.type === "SRG"
+        ? { key: "release_date", label: "Release Date" }
+        : { key: "benchmark_date", label: "Benchmark Date" },
     ];
     if (this.is_vulcan_admin) {
       fields.push({
@@ -59,8 +70,8 @@ export default {
     },
   },
   methods: {
-    destroyAction: function (srg) {
-      return `/srgs/${srg.id}`;
+    destroyAction: function (item) {
+      return `/${this.type === "SRG" ? "srgs" : "stigs"}/${item.id}`;
     },
   },
 };

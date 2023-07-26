@@ -8,6 +8,7 @@ Rails.application.routes.draw do
 
   resources :users, only: %i[index create update destroy]
   resources :srgs, only: %i[index create destroy], controller: 'security_requirements_guides'
+  resources :stigs, only: %i[index show create destroy]
 
   resources :memberships, only: %i[create update destroy]
   resources :projects do
