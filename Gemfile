@@ -66,6 +66,7 @@ gem 'ox'
 gem 'rubyzip'
 
 gem 'mitre-inspec-objects'
+gem 'rest-client'
 
 group :development do
   gem 'listen', '~> 3.1.5'

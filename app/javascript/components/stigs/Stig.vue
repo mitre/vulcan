@@ -1,8 +1,8 @@
 <template>
   <main role="main" class="container-fluid">
+    <h1>{{ stig.title }} :: {{ stig.version }}</h1>
+    <h6 class="card-subtitle text-muted mb-2">Benchmark Date: {{ stig.benchmark_date }}</h6>
     <div class="row w-100">
-      <h1>{{ stig.title }} :: {{ stig.version }}</h1>
-      <h6 class="card-subtitle text-muted mb-2">Benchmark Date: {{ stig.benchmark_date }}</h6>
       <div class="card-group">
         <div class="card">
           <div class="card-header">

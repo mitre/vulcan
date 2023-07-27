@@ -2,7 +2,10 @@
   <div>
     <b-row>
       <b-col md="10">
-        <h1>Security Technical Implementation Guides</h1>
+        <h1>
+          Security Technical Implementation Guides
+          <b-badge :variant="secondary">{{ stigs.length }}</b-badge>
+        </h1>
         <h6 class="card-subtitle text-muted mb-2">Published STIGs</h6>
       </b-col>
       <b-col v-if="is_vulcan_admin" md="2" class="align-self-center">
