@@ -7,6 +7,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 ## Index
 * [Dependencies](#dependencies)
 * [Run with Docker](#run-with-docker)
+* [Tasks](#tasks)
 
 ## Installation
 
@@ -61,4 +62,8 @@ This will fetch the latest version of the container, redeploy if a newer version
 
 #### Stopping the Container
 
-`docker-compose down` # From the source directory you started from
+`docker-compose down` # From the source directory you started from.
+
+### Tasks
+
+Refer to the [main page](https://vulcan.mitre.org/#tasks) to see the available rake tasks that can be scheduled in production.
