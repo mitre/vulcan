@@ -4,7 +4,7 @@
       <b-col md="10">
         <h1>
           Security Technical Implementation Guides
-          <b-badge :variant="secondary">{{ stigs.length }}</b-badge>
+          <b-badge variant="secondary">{{ stigs.length }}</b-badge>
         </h1>
         <h6 class="card-subtitle text-muted mb-2">Published STIGs</h6>
       </b-col>

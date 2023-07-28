@@ -3,7 +3,7 @@
     <b-row>
       <b-col md="10">
         <h1>
-          Security Requirements Guides <b-badge :variant="secondary">{{ srgs.length }}</b-badge>
+          Security Requirements Guides <b-badge variant="secondary">{{ srgs.length }}</b-badge>
         </h1>
         <h6 class="card-subtitle text-muted mb-2">
           Use the following guides to start a new Project
