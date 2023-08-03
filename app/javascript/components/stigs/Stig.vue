@@ -2,24 +2,8 @@
   <main role="main" class="container-fluid">
     <h1>{{ stig.title }} :: {{ stig.version }}</h1>
     <h6 class="card-subtitle text-muted mb-2">Benchmark Date: {{ stig.benchmark_date }}</h6>
-    <div class="row w-100">
-      <div class="card-group">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title">Description</h5>
-          </div>
-          <div class="card-body">
-            <p>{{ stig.description }}</p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title">Compare Version/Releases</h5>
-          </div>
-          <div class="card-body" />
-        </div>
-      </div>
-    </div>
+    <br />
+    <hr />
     <div class="row responsive w-100">
       <!-- Left Sidebar -->
       <aside class="col-md-3 w-100">

@@ -121,7 +121,7 @@
               id="keywordSearch"
               v-model="keywordSearch"
               type="text"
-              class="form-control"
+              class="form-control col-9"
               placeholder="Search keyword in results"
             />
           </div>
