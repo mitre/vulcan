@@ -17,31 +17,23 @@
       centered
       ok-only
       size="xl"
-      @show="resetModal"
+      @show="getRelatedRules"
+      @close="resetModal"
     >
       <!-- RESET FILTERS -->
       <b-link class="h6 float-right" @click="resetFilters">Reset Filters</b-link>
 
       <!-- FILTER RESULTS BY STIG / COMPONENT -->
-      <b-form-group label="Filter results by STIG / Vulcan Component" label-class="h6">
+      <b-form-group label="Filter results by DISA STIGs / Local Vulcan Components" label-class="h6">
         <div class="row mb-2">
-          <b-form-checkbox
-            v-model="stigsAndComponents"
-            :disabled="stigsAndComponents"
-            class="ml-3 mr-4"
-            switch
-            @change="setStigAndComponentFilter('all')"
-          >
-            STIGs & Components
-          </b-form-checkbox>
           <b-form-checkbox
             v-model="stigResultsOnly"
             :disabled="!stigsAndComponents && stigResultsOnly"
-            class="mr-4"
+            class="ml-3 mr-4"
             switch
             @change="setStigAndComponentFilter('stig')"
           >
-            STIGs Only
+            DISA STIGs
           </b-form-checkbox>
           <b-form-checkbox
             v-model="componentResultsOnly"
@@ -50,7 +42,7 @@
             switch
             @change="setStigAndComponentFilter('component')"
           >
-            Components Only
+            Vulcan Components
           </b-form-checkbox>
         </div>
         <vue-simple-suggest
@@ -341,7 +333,8 @@ export default {
     },
   },
   methods: {
-    resetModal: async function () {
+    getRelatedRules: async function () {
+      this.resetModal();
       axios.get(`/rules/${this.rule.id}/search/related_rules`).then((response) => {
         this.fields = this.controlFields;
         this.relatedRules = response.data.rules;
@@ -365,6 +358,14 @@ export default {
         });
       });
     },
+    resetModal: function () {
+      this.fields = [];
+      this.relatedRules = [];
+      this.relatedRulesParents = [];
+      this.filteredRules = [];
+      this.results = 0;
+      this.resetFilters();
+    },
     resetFilters: function () {
       this.stigsAndComponents = true;
       this.stigResultsOnly = true;
@@ -383,7 +384,9 @@ export default {
       this.filteredRules = rules;
     },
     lookupSearchWordInRules: function (rules) {
-      const searchWord = this.keywordSearch.toLowerCase();
+      // const searchWord = this.keywordSearch.toLowerCase();
+      const words = this.keywordSearch.toLowerCase().trim().split(" ");
+      const checkWord = (text) => words.some((w) => text.includes(w));
       return rules.filter((r) => {
         const discussion = r.disa_rule_descriptions_attributes[0].vuln_discussion.toLowerCase();
         const check = r.checks_attributes[0].content.toLowerCase();
@@ -392,33 +395,39 @@ export default {
         const includeFix = this.fields.includes("Fix");
         const includeDiscussion = this.fields.includes("Vulnerability Discussion");
         if (this.allFieldsSelected) {
-          return (
-            discussion.includes(searchWord) ||
-            check.includes(searchWord) ||
-            fix.includes(searchWord)
-          );
+          return checkWord(discussion) || checkWord(check) || checkWord(fix);
         } else if (includeDiscussion && includeCheck) {
-          return discussion.includes(searchWord) || check.includes(searchWord);
+          return checkWord(discussion) || checkWord(check);
         } else if (includeDiscussion && includeFix) {
-          return discussion.includes(searchWord) || fix.includes(searchWord);
+          return checkWord(discussion) || checkWord(fix);
         } else if (includeCheck && includeFix) {
-          return check.includes(searchWord) || fix.includes(searchWord);
+          return checkWord(check) || checkWord(fix);
         } else if (includeDiscussion) {
-          return discussion.includes(searchWord);
+          return checkWord(discussion);
         } else if (includeCheck) {
-          return check.includes(searchWord);
+          return checkWord(check);
         } else {
-          return fix.includes(searchWord);
+          return checkWord(fix);
         }
       });
     },
     formatAndHighlightSearchWord: function (text) {
       let formattedText = this.escapeHtml(text);
-      if (this.keywordSearch) {
-        let re = new RegExp(this.keywordSearch, "gi");
-        formattedText = formattedText.replace(re, (match) => {
-          return `<mark class='bg-warning'>${match}</mark>`;
-        });
+      if (this.keywordSearch.trim()) {
+        const words = this.keywordSearch.trim().split(" ");
+        for (let word of words) {
+          word = word.trim();
+          if (word) {
+            const re = new RegExp(word, "gi");
+            formattedText = formattedText.replace(re, (match) => {
+              return `<mark class='bg-warning'>${match}</mark>`;
+            });
+          }
+        }
+        // const re = new RegExp(this.keywordSearch, "gi");
+        // formattedText = formattedText.replace(re, (match) => {
+        //   return `<mark class='bg-warning'>${match}</mark>`;
+        // });
       }
       return formattedText.replace(/\n/g, "<br />");
     },
