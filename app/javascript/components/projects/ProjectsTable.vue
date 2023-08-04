@@ -197,7 +197,7 @@ export default {
       } else if (this.filter.discoverableToggled) {
         projects = this.projects.filter((project) => project.visibility === "discoverable");
       } else if (this.filter.myProjectsToggled) {
-        projects = this.projects.filter((project) => project.visibility === "hidden");
+        projects = this.projects.filter((project) => project.is_member);
       }
       let downcaseSearch = this.search.toLowerCase();
       return projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
