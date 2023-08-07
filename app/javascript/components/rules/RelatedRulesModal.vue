@@ -51,6 +51,7 @@
           :list="filteredParents"
           display-attribute="displayed"
           value-attribute="displayed"
+          type="search"
           placeholder="Search STIG/Component by name ..."
           :filter-by-query="true"
           :min-length="0"
@@ -112,10 +113,27 @@
             <input
               id="keywordSearch"
               v-model="keywordSearch"
-              type="text"
+              type="search"
               class="form-control col-9"
               placeholder="Search keyword in results"
+              @keydown.enter="addKeywordSearchToList"
             />
+          </div>
+          <div class="d-flex justify-content-start flex-wrap mt-2">
+            <b-badge
+              v-for="(keyword, index) in keywordList"
+              :key="`keyword-${index}`"
+              pill
+              variant="transparent"
+              class="border border-1 border-primary ml-1 mb-1 font-weight-normal"
+            >
+              {{ keyword }}
+              <i
+                class="mdi mdi-close-thick ml-1 text-muted"
+                aria-hidden="true"
+                @click="removeKeywordSearchFromList(index)"
+              />
+            </b-badge>
           </div>
         </div>
       </div>
@@ -152,6 +170,13 @@
             </b-card-header>
             <b-collapse :id="relatedRule.name" v-model="relatedRule.show">
               <b-card-body>
+                <h5 class="card-title row p-2">
+                  Title:
+                  <span
+                    class="h6 col-11 text-wrap"
+                    v-html="formatAndHighlightSearchWord(relatedRule.title)"
+                  />
+                </h5>
                 <div class="row p-2 bg-light">
                   <b-card-text
                     v-if="fields.includes('Vulnerability Discussion')"
@@ -257,6 +282,7 @@ export default {
       filteredRules: [],
       selectedParent: "",
       keywordSearch: "",
+      keywordList: [],
       results: 0,
       stigsAndComponents: true,
       stigResultsOnly: true,
@@ -273,7 +299,9 @@ export default {
       // Filter by STIG / Component
       let rules = this.relatedRules.filter((r) => parentsNames.includes(r.parent));
       // Filter rules that includes the searchWord in check, fix, or discussion
-      rules = this.lookupSearchWordInRules(rules);
+      if (this.keywordList.length > 0) {
+        rules = this.lookupSearchWordInRules(rules);
+      }
       // Filter rules in a gven stig or component
       if (this.selectedParent) {
         rules = rules.filter((r) => r.parent === this.selectedParent);
@@ -326,10 +354,8 @@ export default {
         this.allFieldsSelected = false;
       }
     },
-    keywordSearch: function (newValue) {
-      if (newValue) {
-        this.toggleAllCollapses(true);
-      }
+    keywordList: function () {
+      this.toggleAllCollapses(true);
     },
   },
   methods: {
@@ -375,6 +401,7 @@ export default {
       this.fields = this.controlFields;
       this.selectedParent = "";
       this.keywordSearch = "";
+      this.keywordList = [];
       this.toggleAllCollapses(false);
     },
     updateTotalResults: function (rules) {
@@ -383,11 +410,21 @@ export default {
     updateFilteredRules: function (rules) {
       this.filteredRules = rules;
     },
+    addKeywordSearchToList: function (e) {
+      e.preventDefault;
+      if (this.keywordSearch.trim()) {
+        this.keywordList.push(this.keywordSearch.trim());
+        this.keywordSearch = "";
+      }
+    },
+    removeKeywordSearchFromList: function (index) {
+      this.keywordList.splice(index, 1);
+    },
     lookupSearchWordInRules: function (rules) {
-      // const searchWord = this.keywordSearch.toLowerCase();
-      const words = this.keywordSearch.toLowerCase().trim().split(" ");
+      const words = this.keywordList.map((w) => w.toLowerCase());
       const checkWord = (text) => words.some((w) => text.includes(w));
       return rules.filter((r) => {
+        const title = r.title.toLowerCase();
         const discussion = r.disa_rule_descriptions_attributes[0].vuln_discussion.toLowerCase();
         const check = r.checks_attributes[0].content.toLowerCase();
         const fix = r.fixtext.toLowerCase();
@@ -395,39 +432,32 @@ export default {
         const includeFix = this.fields.includes("Fix");
         const includeDiscussion = this.fields.includes("Vulnerability Discussion");
         if (this.allFieldsSelected) {
-          return checkWord(discussion) || checkWord(check) || checkWord(fix);
+          return checkWord(discussion) || checkWord(check) || checkWord(fix) || checkWord(title);
         } else if (includeDiscussion && includeCheck) {
-          return checkWord(discussion) || checkWord(check);
+          return checkWord(discussion) || checkWord(check) || checkWord(title);
         } else if (includeDiscussion && includeFix) {
-          return checkWord(discussion) || checkWord(fix);
+          return checkWord(discussion) || checkWord(fix) || checkWord(title);
         } else if (includeCheck && includeFix) {
-          return checkWord(check) || checkWord(fix);
+          return checkWord(check) || checkWord(fix) || checkWord(title);
         } else if (includeDiscussion) {
-          return checkWord(discussion);
+          return checkWord(discussion) || checkWord(title);
         } else if (includeCheck) {
-          return checkWord(check);
+          return checkWord(check) || checkWord(title);
         } else {
-          return checkWord(fix);
+          return checkWord(fix) || checkWord(title);
         }
       });
     },
     formatAndHighlightSearchWord: function (text) {
       let formattedText = this.escapeHtml(text);
-      if (this.keywordSearch.trim()) {
-        const words = this.keywordSearch.trim().split(" ");
+      if (this.keywordList.length) {
+        const words = this.keywordList.map((w) => w.toLowerCase());
         for (let word of words) {
-          word = word.trim();
-          if (word) {
-            const re = new RegExp(word, "gi");
-            formattedText = formattedText.replace(re, (match) => {
-              return `<mark class='bg-warning'>${match}</mark>`;
-            });
-          }
+          const re = new RegExp(word, "gi");
+          formattedText = formattedText.replace(re, (match) => {
+            return `<mark class='bg-warning'>${match}</mark>`;
+          });
         }
-        // const re = new RegExp(this.keywordSearch, "gi");
-        // formattedText = formattedText.replace(re, (match) => {
-        //   return `<mark class='bg-warning'>${match}</mark>`;
-        // });
       }
       return formattedText.replace(/\n/g, "<br />");
     },
@@ -486,4 +516,15 @@ export default {
   },
 };
 </script>
-<style scoped></style>
+<style scoped>
+.keyword-bubble {
+  display: inline-block;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  margin: 5px;
+  width: 50px;
+  height: 5px;
+  font-size: xx-small;
+}
+</style>
