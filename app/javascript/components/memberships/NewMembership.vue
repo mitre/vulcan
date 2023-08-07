@@ -97,6 +97,12 @@
             :value="selectedUserId"
           />
           <input
+            id="access_request_id"
+            type="hidden"
+            name="membership[access_request_id]"
+            :value="access_request_id"
+          />
+          <input
             id="NewMembershipRole"
             type="hidden"
             name="membership[role]"
@@ -144,11 +150,19 @@ export default {
       type: Array,
       required: true,
     },
+    selected_member: {
+      type: Object,
+      required: false,
+    },
+    access_request_id: {
+      type: Number,
+      required: false,
+    },
   },
   data: function () {
     return {
       search: "",
-      selectedUser: null,
+      selectedUser: this.selected_member,
       selectedRole: null,
       roleDescriptions: [
         "Read only access to the Project or Component",

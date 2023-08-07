@@ -32,11 +32,13 @@ module SlackNotificationFieldsHelper
       ]
     when Project
       notification_fields = project_notification_fields(notification_type_prefix, object)
-      fields = [
-        app_notification_field,
-        notification_fields[:generate_project_label],
-        notification_fields[:generate_initiated_by_label]
-      ]
+      if notification_type_prefix == 'change_visibility'
+        fields = [
+          app_notification_field,
+          notification_fields[:generate_project_label],
+          notification_fields[:generate_initiated_by_label]
+        ] << notification_fields[:generate_visibility_label]
+      end
     when SecurityRequirementsGuide
       notification_fields = srg_notification_fields(notification_type_prefix, object)
       fields = [

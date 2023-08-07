@@ -21,7 +21,7 @@ module SlackNotificationsHelper
   def get_slack_headers_icons(notification_type, notification_type_prefix)
     icon = case notification_type_prefix
            when 'assign', 'upload', 'create', 'approve' then ':white_check_mark:'
-           when 'rename', 'update', 'request_review' then ':loudspeaker:'
+           when 'rename', 'update', 'request_review', 'change_visibility' then ':loudspeaker:'
            when 'remove', 'revoke', 'request_changes' then ':x:'
            end
     header_map = {
@@ -29,6 +29,7 @@ module SlackNotificationsHelper
       remove_component: 'Vulcan Component Removal',
       create_project: 'Vulcan New Project Creation',
       rename_project: 'Vulcan Project Renaming',
+      change_visibility: 'Vulcan Project Visibility Change',
       remove_project: 'Vulcan Project Removal',
       create_project_membership: 'New Members Added to the Project',
       update_project_membership: 'Membership Updated on the Project',
