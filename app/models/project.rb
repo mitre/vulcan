@@ -4,12 +4,15 @@
 class Project < ApplicationRecord
   attr_accessor :current_user
 
+  enum visibility: { discoverable: 0, hidden: 1 }
+
   audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
 
   has_many :memberships, -> { includes :user }, as: :membership, inverse_of: :membership, dependent: :destroy
   has_many :users, through: :memberships
   has_many :components, dependent: :destroy
   has_many :rules, through: :components
+  has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :memberships
 

@@ -18,9 +18,31 @@
 
         <div v-if="signed_in" class="d-flex justify-content-between right-container">
           <SrgIdSearch />
-
+          <!-- Notification Dropdown -->
           <!-- Right aligned nav items -->
           <b-navbar-nav class="ml-auto">
+            <b-nav-item-dropdown right no-caret class="position-relative ml-3">
+              <template #button-content>
+                <i class="mdi mdi-bell-outline" aria-hidden="true" />
+                <b-badge
+                  v-if="access_requests.length"
+                  variant="danger"
+                  class="rounded-pill position-absolute top-0 start-100 translate-middle"
+                  style="top: 0; right: 0"
+                >
+                  {{ access_requests.length }}
+                </b-badge>
+              </template>
+              <b-dropdown-item
+                v-for="(access_request, index) in access_requests"
+                :key="index"
+                :href="`/projects/${access_request.project_id}`"
+              >
+                {{
+                  `${access_request.user.name} has requested access to project ${access_request.project.name}`
+                }}
+              </b-dropdown-item>
+            </b-nav-item-dropdown>
             <b-nav-item-dropdown right>
               <template #button-content>
                 <i class="mdi mdi-account-circle" aria-hidden="true" />
@@ -73,6 +95,11 @@ export default {
     sign_out_path: {
       type: String,
       required: false,
+    },
+    access_requests: {
+      type: Array,
+      required: false,
+      default: () => [],
     },
   },
   data() {

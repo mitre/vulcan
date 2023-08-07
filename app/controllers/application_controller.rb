@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   include SlackNotificationsHelper
 
   before_action :setup_navigation, :authenticate_user!
+  before_action :check_access_request_notifications
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
@@ -97,7 +98,20 @@ class ApplicationController < ActionController::Base
   end
 
   def slack_notification_params(notification_type, object, *args)
-    pattern = /^(approve|revoke|request_changes|request_review|assign|create|update|upload|rename|remove)/
+    pattern = /^(
+      approve|
+      revoke|
+      request_changes|
+      request_review|
+      assign|
+      create|
+      update|
+      upload|
+      rename|
+      remove|
+      change_visibility
+    )/x
+
     notification_type_prefix = notification_type.to_s.match(pattern)[1]
     icon, header = get_slack_headers_icons(notification_type, notification_type_prefix)
     fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *args)
@@ -111,6 +125,7 @@ class ApplicationController < ActionController::Base
   def send_smtp_notification(mailer, action, *args)
     mailer.membership_action(action, *args).deliver_now if membership_action?(action)
     mailer.review_action(action, *args).deliver_now if review_action?(action)
+    mailer.project_access_action(action, *args).deliver_now if access_request_action?(action)
   end
 
   private
@@ -162,6 +177,10 @@ class ApplicationController < ActionController::Base
     %w[request_review approve revoke_review_request request_changes].include?(action)
   end
 
+  def access_request_action?(action)
+    %w[request_access reject_access].include?(action)
+  end
+
   def helpful_errors(exception)
     # Based on the accepted response type, either send a JSON response with the
     # alert message, or redirect to home and display the alert.
@@ -210,5 +229,19 @@ class ApplicationController < ActionController::Base
   def setup_navigation
     @navigation = []
     @navigation += helpers.base_navigation if current_user
+  end
+
+  def check_access_request_notifications
+    @access_requests = []
+    return @access_requests unless user_signed_in?
+
+    # iterate over the user's projects and check if they are admin
+    # if they are admin on a project, retrieve the access requests if any
+    current_user.available_projects.each do |project|
+      if current_user.can_admin_project?(project)
+        @access_requests << project.access_requests.eager_load(:user, :project).as_json(methods: %i[user project])
+      end
+    end
+    @access_requests.flatten!
   end
 end
