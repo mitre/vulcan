@@ -1,14 +1,15 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div>
-    <b-button
+    <a
       v-b-modal.related-rules-modal
       v-b-tooltip.hover.html
-      variant="info"
+      class="m"
       title="Rules in other components or STIGs that have the same SRG ID"
     >
-      View Related Rules
-    </b-button>
+      <h3>View Related Rules</h3>
+    </a>
+
     <b-modal
       id="related-rules-modal"
       ref="modal"

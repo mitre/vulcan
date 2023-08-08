@@ -14,13 +14,6 @@
             {{ `${projectPrefix}-${rule.rule_id}` }} // {{ rule.version }}
           </a>
         </h2>
-        <!-- Related Rules modal-->
-        <RelatedRulesModal
-          v-if="!readOnly && !rule.locked && !rule.review_requestor_id"
-          :rule="rule"
-          :rule-stig-id="`${projectPrefix}-${rule.rule_id}`"
-          class="ml-4"
-        />
       </div>
       <p v-if="!readOnly && rule.locked" class="text-danger font-weight-bold">
         This control is locked and must first be unlocked if changes or deletion are required.
@@ -229,13 +222,12 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-import RelatedRulesModal from "./RelatedRulesModal.vue";
 import VueSimpleSuggest from "vue-simple-suggest";
 import "vue-simple-suggest/dist/styles.css";
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal, NewRuleModalForm, RelatedRulesModal, VueSimpleSuggest },
+  components: { CommentModal, NewRuleModalForm, VueSimpleSuggest },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
