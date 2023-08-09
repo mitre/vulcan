@@ -89,13 +89,13 @@ class BaseRule < ApplicationRecord
   private
 
   def ensure_disa_description_exists
-    return unless disa_rule_descriptions.size.zero?
+    return unless disa_rule_descriptions.empty?
 
     disa_rule_descriptions << DisaRuleDescription.new(base_rule: self)
   end
 
   def ensure_check_exists
-    return unless checks.size.zero?
+    return unless checks.empty?
 
     checks << Check.new(base_rule: self)
   end
