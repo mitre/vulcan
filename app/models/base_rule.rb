@@ -47,8 +47,9 @@ class BaseRule < ApplicationRecord
       rule_weight: rule_mapping.weight || '10.0',
       version: rule_mapping.version.first&.version,
       title: rule_mapping.title.first || nil,
-      ident: rule_mapping.ident.reject(&:legacy).first.ident,
-      ident_system: rule_mapping.ident.reject(&:legacy).first.system,
+      ident: rule_mapping.ident.reject(&:legacy).map(&:ident).sort.join(', '),
+      legacy_ids: rule_mapping.ident.select(&:legacy).map(&:ident).join(', '),
+      ident_system: rule_mapping.ident&.reject(&:legacy)&.first&.system,
       fixtext: rule_mapping.fixtext.first&.fixtext,
       fixtext_fixref: rule_mapping.fixtext.first&.fixref,
       fix_id: rule_mapping.fix.first&.id
@@ -88,13 +89,13 @@ class BaseRule < ApplicationRecord
   private
 
   def ensure_disa_description_exists
-    return unless disa_rule_descriptions.size.zero?
+    return unless disa_rule_descriptions.empty?
 
     disa_rule_descriptions << DisaRuleDescription.new(base_rule: self)
   end
 
   def ensure_check_exists
-    return unless checks.size.zero?
+    return unless checks.empty?
 
     checks << Check.new(base_rule: self)
   end

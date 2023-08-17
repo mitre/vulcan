@@ -38,8 +38,25 @@ $mdi-font-path: "~@mdi/font/fonts/";
   white-space: pre-wrap;
 }
 
-// Button background custum variant
-.btn-orange {
-  background-color: rgb(198, 106, 13) !important;
-  color: white !important;
+// Responsive typography
+html {
+  font-size: 0.8rem;
+}
+
+@include media-breakpoint-up(sm) {
+  html {
+    font-size: 0.7rem;
+  }
+}
+
+@include media-breakpoint-up(md) {
+  html {
+    font-size: 0.8rem;
+  }
+}
+
+@include media-breakpoint-up(lg) {
+  html {
+    font-size: 1rem;
+  }
 }
