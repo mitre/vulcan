@@ -3,36 +3,39 @@
     <b-row>
       <b-col md="10">
         <h1>
-          Security Requirements Guides <b-badge variant="secondary">{{ srgs.length }}</b-badge>
+          Security Technical Implementation Guides
+          <b-badge variant="secondary">{{ stigs.length }}</b-badge>
         </h1>
-        <h6 class="card-subtitle text-muted mb-2">
-          Use the following guides to start a new Project
-        </h6>
+        <h6 class="card-subtitle text-muted mb-2">Published STIGs</h6>
       </b-col>
       <b-col v-if="is_vulcan_admin" md="2" class="align-self-center">
         <b-button href="#" class="float-right" @click="showUploadComponent = !showUploadComponent">
           <i class="mdi mdi-file-upload-outline" aria-hidden="true" />
-          Upload SRG
+          Upload STIG
         </b-button>
       </b-col>
     </b-row>
-    <SecurityRequirementsGuidesTable :srgs="srgs" :is_vulcan_admin="is_vulcan_admin" />
-    <SecurityRequirementsGuidesUpload v-model="showUploadComponent" @uploaded="loadSrgs" />
+    <SecurityRequirementsGuidesTable :srgs="stigs" :is_vulcan_admin="is_vulcan_admin" type="STIG" />
+    <SecurityRequirementsGuidesUpload
+      v-model="showUploadComponent"
+      post_path="/stigs"
+      @uploaded="loadStigs"
+    />
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import SecurityRequirementsGuidesTable from "./SecurityRequirementsGuidesTable";
-import SecurityRequirementsGuidesUpload from "./SecurityRequirementsGuidesUpload";
+import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable";
+import SecurityRequirementsGuidesUpload from "../security_requirements_guides/SecurityRequirementsGuidesUpload";
 
 export default {
-  name: "SecurityRequirementsGuides",
+  name: "Stigs",
   components: { SecurityRequirementsGuidesTable, SecurityRequirementsGuidesUpload },
   mixins: [AlertMixinVue],
   props: {
-    givensrgs: {
+    givenstigs: {
       type: Array,
       required: true,
     },
@@ -44,18 +47,18 @@ export default {
   data: function () {
     return {
       showUploadComponent: false,
-      srgs: [],
+      stigs: [],
     };
   },
   mounted: function () {
-    this.srgs = this.givensrgs;
+    this.stigs = this.givenstigs;
   },
   methods: {
-    loadSrgs: function () {
+    loadStigs: function () {
       axios
-        .get("/srgs")
+        .get("/stigs")
         .then(({ data }) => {
-          this.srgs = data;
+          this.stigs = data;
         })
         .catch(this.alertOrNotifyResponse);
     },

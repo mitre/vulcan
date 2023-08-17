@@ -41,6 +41,13 @@
 
           <!-- Additional info column -->
           <div class="col-4">
+            <!-- Related Rules modal-->
+            <RelatedRulesModal
+              v-if="!selectedRule().locked && !selectedRule().review_requestor_id"
+              :rule="selectedRule()"
+              :rule-stig-id="`${component.prefix}-${selectedRule().rule_id}`"
+            />
+            <hr v-if="!selectedRule().locked && !selectedRule().review_requestor_id" class="mt-0" />
             <RuleSatisfactions
               :component="component"
               :rule="selectedRule()"
@@ -83,6 +90,7 @@ import RuleNavigator from "./RuleNavigator.vue";
 import RuleHistories from "./RuleHistories.vue";
 import RuleReviews from "./RuleReviews.vue";
 import RuleSatisfactions from "./RuleSatisfactions.vue";
+import RelatedRulesModal from "./RelatedRulesModal.vue";
 import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
 
 export default {
@@ -94,6 +102,7 @@ export default {
     RuleHistories,
     RuleReviews,
     RuleSatisfactions,
+    RelatedRulesModal,
   },
   mixins: [SelectedRulesMixin],
   props: {
