@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_07_21_191337) do
+ActiveRecord::Schema.define(version: 2023_08_14_135633) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -263,6 +263,7 @@ ActiveRecord::Schema.define(version: 2023_07_21_191337) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.date "release_date"
+    t.string "name"
     t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
   end
 
@@ -275,6 +276,7 @@ ActiveRecord::Schema.define(version: 2023_07_21_191337) do
     t.date "benchmark_date"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "name"
     t.index ["stig_id", "version"], name: "stigs_stig_id_version_index", unique: true
   end
 
