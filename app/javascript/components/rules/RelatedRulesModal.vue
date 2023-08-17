@@ -50,8 +50,8 @@
           :key="rule.id"
           v-model="selectedParent"
           :list="filteredParents"
-          display-attribute="displayed"
-          value-attribute="displayed"
+          display-attribute="name"
+          value-attribute="name"
           type="search"
           placeholder="Search STIG/Component by name ..."
           :filter-by-query="true"
@@ -296,7 +296,7 @@ export default {
   },
   computed: {
     filteredGroupedRules: function () {
-      const parentsNames = this.filteredParents.map((parent) => parent.displayed);
+      const parentsNames = this.filteredParents.map((parent) => parent.name);
       // Filter by STIG / Component
       let rules = this.relatedRules.filter((r) => parentsNames.includes(r.parent));
       // Filter rules that includes the searchWord in check, fix, or discussion
@@ -368,17 +368,16 @@ export default {
         this.relatedRulesParents = response.data.parents;
         this.relatedRulesParents.forEach((parent) => {
           if (parent.stig_id) {
-            parent.displayed = `${parent.stig_id.split("_").join(" ")}::${parent.version}`;
             const stig_rules = this.relatedRules.filter((r) => r.stig_id == parent.id);
             stig_rules.forEach((r) => {
-              r.parent = parent.displayed;
+              r.parent = parent.name;
               r.name = `${r.version}//${r.srg_id}`;
             });
           } else {
             const comp_rules = this.relatedRules.filter((r) => r.component_id == parent.id);
-            parent.displayed = `${parent.name}::V${parent.version}R${parent.release}`;
+            parent.name = `${parent.name} - Ver ${parent.version}, Rel ${parent.release}`;
             comp_rules.forEach((r) => {
-              r.parent = parent.displayed;
+              r.parent = parent.name;
               r.name = `${parent.prefix}-${r.rule_id}//${r.version}`;
             });
           }
