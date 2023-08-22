@@ -449,6 +449,7 @@ export default {
       });
     },
     formatAndHighlightSearchWord: function (text) {
+      if (!text) return;
       let formattedText = this.escapeHtml(text);
       if (this.keywordList.length) {
         const words = this.keywordList.map((w) => w.toLowerCase());
@@ -462,12 +463,13 @@ export default {
       return formattedText.replace(/\n/g, "<br />");
     },
     escapeHtml: function (text) {
+      if (!text) return;
       return text
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(/'/g, "&#039;");        
     },
     copyCheckContentToRule: function (root, checkContent) {
       const check = this.rule.checks_attributes[0];
