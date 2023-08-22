@@ -449,6 +449,7 @@ export default {
       });
     },
     formatAndHighlightSearchWord: function (text) {
+      if (!text) return;
       let formattedText = this.escapeHtml(text);
       if (this.keywordList.length) {
         const words = this.keywordList.map((w) => w.toLowerCase());
@@ -462,6 +463,7 @@ export default {
       return formattedText.replace(/\n/g, "<br />");
     },
     escapeHtml: function (text) {
+      if (!text) return;
       return text
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
