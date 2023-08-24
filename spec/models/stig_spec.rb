@@ -9,6 +9,7 @@ RSpec.describe Stig, type: :model do
     it 'validates presence of stig_id, title, version, and xml' do
       expect(stig.stig_id).to be_present
       expect(stig.title).to be_present
+      expect(stig.name).to be_present
       expect(stig.version).to be_present
       expect(stig.xml).to be_present
     end
