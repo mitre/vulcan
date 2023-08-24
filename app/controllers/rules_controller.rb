@@ -47,7 +47,7 @@ class RulesController < ApplicationController
     rules = Rule.where(version: srg_id).where.not(id: @rule.id).eager_load(:disa_rule_descriptions, :checks, :component)
     stig_rules = StigRule.where(srg_id: srg_id).eager_load(:disa_rule_descriptions, :checks, :stig)
     rules = rules.filter { |r| r.component.all_users.include?(current_user) } unless current_user.admin?
-    parents = (stig_rules.map(&:stig) + rules.map(&:component)).uniq
+    parents = (stig_rules.map(&:stig).as_json + rules.map(&:component).as_json(methods: %i[project])).uniq
 
     render json: { rules: stig_rules + rules, parents: parents }.to_json
   end

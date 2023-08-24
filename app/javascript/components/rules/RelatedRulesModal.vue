@@ -375,7 +375,7 @@ export default {
             });
           } else {
             const comp_rules = this.relatedRules.filter((r) => r.component_id == parent.id);
-            parent.name = `${parent.name} - Ver ${parent.version}, Rel ${parent.release}`;
+            parent.name = `${parent.project.name} / ${parent.name} - Ver ${parent.version}, Rel ${parent.release}`;
             comp_rules.forEach((r) => {
               r.parent = parent.name;
               r.name = `${parent.prefix}-${r.rule_id}//${r.version}`;
