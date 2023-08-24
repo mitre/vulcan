@@ -69,8 +69,9 @@ GEM
       activerecord (>= 4.2.0)
     ast (2.4.2)
     attr_required (1.0.1)
-    audited (5.0.2)
+    audited (5.3.3)
       activerecord (>= 5.0, < 7.1)
+      request_store (~> 1.2)
     bcrypt (3.1.16)
     bindata (2.4.15)
     bindex (0.8.1)
@@ -164,7 +165,7 @@ GEM
     http-cookie (1.0.5)
       domain_name (~> 0.5)
     httpclient (2.8.3)
-    i18n (1.12.0)
+    i18n (1.13.0)
       concurrent-ruby (~> 1.0)
     inspec-core (4.24.32)
       addressable (~> 2.4)
@@ -224,7 +225,7 @@ GEM
     mime-types-data (3.2023.0218.1)
     mini_mime (1.1.2)
     mini_portile2 (2.8.1)
-    minitest (5.17.0)
+    minitest (5.18.0)
     mitre-inspec-objects (0.3.3)
       inspec-core
     mixlib-config (3.0.9)
@@ -351,6 +352,8 @@ GEM
       ffi (~> 1.0)
     redcarpet (3.6.0)
     regexp_parser (2.2.1)
+    request_store (1.5.1)
+      rack (>= 1.4)
     responders (3.0.1)
       actionpack (>= 5.0)
       railties (>= 5.0)
@@ -524,7 +527,7 @@ GEM
     wisper (2.0.1)
     xpath (3.2.0)
       nokogiri (~> 1.8)
-    zeitwerk (2.6.7)
+    zeitwerk (2.6.8)
 
 PLATFORMS
   ruby
@@ -535,7 +538,7 @@ PLATFORMS
 DEPENDENCIES
   activerecord-import
   amoeba
-  audited (~> 5.0.1)
+  audited (~> 5.3.3)
   bootsnap (>= 1.4.2)
   brakeman
   byebug
