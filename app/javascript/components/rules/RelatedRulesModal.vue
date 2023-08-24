@@ -477,7 +477,7 @@ export default {
     },
     copyCheckContentToRule: function (root, checkContent) {
       const check = this.rule.checks_attributes[0];
-      const content = `${check.content}\n\n ${checkContent}`;
+      const content = `${check.content}\n\n${checkContent}`;
       root.$emit("update:check", this.rule, { ...check, content }, 0);
       this.$bvToast.toast(`Check successfully copied to ${this.ruleStigId}`, {
         title: "Success",
@@ -487,7 +487,7 @@ export default {
     },
     copyDiscussionToRule: function (root, vulnDiscussion) {
       const discussion = this.rule.disa_rule_descriptions_attributes[0];
-      const vuln_discussion = `${discussion.vuln_discussion}\n\n ${vulnDiscussion}`;
+      const vuln_discussion = `${discussion.vuln_discussion}\n\n${vulnDiscussion}`;
       root.$emit("update:disaDescription", this.rule, { ...discussion, vuln_discussion }, 0);
       this.$bvToast.toast(`Discussion successfully copied to ${this.ruleStigId}`, {
         title: "Success",
@@ -496,7 +496,7 @@ export default {
       });
     },
     copyFixTextToRule: function (root, fix) {
-      const fixtext = `${this.rule.fixtext} \n\n ${fix}`;
+      const fixtext = `${this.rule.fixtext}\n\n${fix}`;
       root.$emit("update:rule", { ...this.rule, fixtext });
       this.$bvToast.toast(`Fix successfully copied to ${this.ruleStigId}`, {
         title: "Success",
