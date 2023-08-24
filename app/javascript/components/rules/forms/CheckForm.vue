@@ -164,8 +164,11 @@ export default {
   },
   computed: {
     check: function () {
-      return (this.rule.satisfied_by.length > 0 ? this.rule.satisfied_by[0] : this.rule)
-        .checks_attributes[0];
+      return (
+        this.rule.satisfied_by && this.rule.satisfied_by.length > 0
+          ? this.rule.satisfied_by[0]
+          : this.rule
+      ).checks_attributes[0];
     },
     tooltips: function () {
       return {

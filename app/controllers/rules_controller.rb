@@ -4,7 +4,7 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update destroy revert]
+  before_action :set_rule, only: %i[show update destroy revert related_rules]
   before_action :set_component, only: %i[index show create update revert]
   before_action :set_project, only: %i[index show create update revert]
   before_action :set_project_permissions, only: %i[index]
@@ -40,6 +40,16 @@ class RulesController < ApplicationController
 
   def show
     render json: @rule.to_json(methods: %i[histories satisfies satisfied_by])
+  end
+
+  def related_rules
+    srg_id = @rule.version
+    rules = Rule.where(version: srg_id).where.not(id: @rule.id).eager_load(:disa_rule_descriptions, :checks, :component)
+    stig_rules = StigRule.where(srg_id: srg_id).eager_load(:disa_rule_descriptions, :checks, :stig)
+    rules = rules.filter { |r| r.component.all_users.include?(current_user) } unless current_user.admin?
+    parents = (stig_rules.map(&:stig) + rules.map(&:component)).uniq
+
+    render json: { rules: stig_rules + rules, parents: parents }.to_json
   end
 
   def create
