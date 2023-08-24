@@ -11,6 +11,7 @@ module ApplicationHelper
     nav_links = [
       { icon: 'mdi-folder-open-outline', name: 'Projects', link: projects_path },
       { icon: 'mdi-stamper', name: 'Released Components', link: components_path },
+      { icon: 'mdi-folder', name: 'STIGs', link: stigs_path },
       { icon: 'mdi-folder', name: 'SRGs', link: srgs_path }
     ]
 
@@ -19,5 +20,40 @@ module ApplicationHelper
     end
 
     nav_links
+  end
+
+  # Get the latest release changes to display on the landing page
+  def latest_release_details
+    changelog_path = Rails.root.join('CHANGELOG.md')
+    release_details = ''
+
+    begin
+      File.open(changelog_path, 'r') do |file|
+        line = file.gets
+        while line
+          if line.start_with?('## Vulcan v')
+            # Found the beginning of a release, start reading details
+            release_details = line
+            line = file.gets
+            while line && !line.start_with?('## Vulcan v')
+              release_details += line
+              line = file.gets
+            end
+            # Exit the loop once the latest release details have been read
+            break
+          end
+          line = file.gets
+        end
+      end
+    rescue StandardError => e
+      Rails.logger.error "Unable to read latest release: #{e.message}"
+    end
+
+    release_details
+  end
+
+  def markdown_to_html(text)
+    options = %i[hard_wrap autolink no_intra_emphasis fenced_code_blocks]
+    Markdown.new(text, *options).to_html
   end
 end

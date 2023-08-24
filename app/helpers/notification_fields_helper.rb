@@ -15,12 +15,21 @@ module NotificationFieldsHelper
   def project_notification_fields(notif_prefix, project)
     {
       generate_project_label: {
-        label: generate_proj_comp_action_label(notif_prefix, 'Project'),
+        label: if notif_prefix == 'change_visibility'
+                 'Project'
+               else
+                 generate_proj_comp_action_label(notif_prefix,
+                                                 'Project')
+               end,
         value: notif_prefix == 'remove' ? project.name : generate_proj_or_comp_value(project, Project)
       },
       generate_initiated_by_label: {
         label: generate_proj_comp_action_label(notif_prefix, 'By'),
         value: "#{current_user.name} (#{current_user.email})"
+      },
+      generate_visibility_label: {
+        label: 'New Visibility',
+        value: "#{project.visibility} "
       }
     }.freeze
   end
@@ -166,7 +175,8 @@ module NotificationFieldsHelper
     labels_hash = {
       'create' => "Created #{action}",
       'remove' => "Removed #{action}",
-      'rename' => "Renamed #{action}"
+      'rename' => "Renamed #{action}",
+      'change_visibility' => "Changed #{action}"
     }
     labels_hash[notification_type_prefix]
   end

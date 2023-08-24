@@ -9,7 +9,7 @@ gem 'rails', '~> 6.1.4'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
-gem 'puma', '~> 4.3'
+gem 'puma', '~> 5.6'
 # Transpile app-like JavaScript. Read more: https://github.com/rails/webpacker
 gem 'webpacker', '~> 5.0'
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
@@ -66,6 +66,10 @@ gem 'ox'
 gem 'rubyzip'
 
 gem 'mitre-inspec-objects'
+gem 'rest-client'
+
+# Markdown processing
+gem 'redcarpet'
 
 group :development do
   gem 'listen', '~> 3.1.5'
@@ -82,7 +86,7 @@ group :test do
   gem 'capybara', '>= 2.15'
   gem 'selenium-webdriver'
   # Easy installation and use of web drivers to run system tests with browsers
-  gem 'webdrivers'
+  # gem 'webdrivers'
 
   gem 'database_cleaner-active_record'
   gem 'rubocop', require: false

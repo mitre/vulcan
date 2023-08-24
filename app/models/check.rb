@@ -10,10 +10,10 @@ class Check < ApplicationRecord
   # with the rule.
   def self.from_mapping(check_mapping)
     {
-      system: check_mapping.system,
-      content_ref_name: check_mapping.check_content_ref.first.name,
-      content_ref_href: check_mapping.check_content_ref.first.href,
-      content: check_mapping.check_content.content
+      system: check_mapping&.system,
+      content_ref_name: check_mapping&.check_content_ref&.first&.name,
+      content_ref_href: check_mapping&.check_content_ref&.first&.href,
+      content: check_mapping&.check_content&.content
     }
   end
 end

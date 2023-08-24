@@ -21,11 +21,12 @@ class User < ApplicationRecord
   has_many :memberships, dependent: :destroy
   has_many :projects, through: :memberships, source: :membership, source_type: 'Project'
   has_many :components, through: :memberships, source: :membership, source_type: 'Component'
+  has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
 
   scope :alphabetical, -> { order(:name) }
 
   def available_projects
-    admin ? Project.all : projects
+    admin ? Project.all : Project.where(id: projects.pluck(:id)).or(Project.discoverable).distinct
   end
 
   def self.from_omniauth(auth)

@@ -8,6 +8,7 @@ Rails.application.routes.draw do
 
   resources :users, only: %i[index create update destroy]
   resources :srgs, only: %i[index create destroy], controller: 'security_requirements_guides'
+  resources :stigs, only: %i[index show create destroy]
 
   resources :memberships, only: %i[create update destroy]
   resources :projects do
@@ -19,6 +20,7 @@ Rails.application.routes.draw do
         resources :reviews, only: %i[create]
       end
     end
+    resources :project_access_requests, only: %i[create destroy]
   end
   resources :rule_satisfactions, only: %i[create destroy]
   # Alias rules#index to controls for convenience
@@ -45,6 +47,7 @@ Rails.application.routes.draw do
   get '/search/projects', to: 'projects#search'
   get '/search/components', to: 'components#search'
   get '/search/rules', to: 'rules#search'
+  get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
   root to: 'projects#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html

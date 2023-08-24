@@ -2,18 +2,19 @@
   <!-- Rule Details column -->
   <div class="row">
     <div class="col-12">
-      <h2>
-        <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
-        <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
-        <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
-        <a
-          class="headerLink"
-          :href="`/components/${rule.component_id}/${projectPrefix}-${rule.rule_id}`"
-        >
-          {{ `${projectPrefix}-${rule.rule_id}` }} // {{ rule.version }}
-        </a>
-      </h2>
-
+      <div class="row">
+        <h2>
+          <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
+          <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
+          <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
+          <a
+            class="headerLink"
+            :href="`/components/${rule.component_id}/${projectPrefix}-${rule.rule_id}`"
+          >
+            {{ `${projectPrefix}-${rule.rule_id}` }} // {{ rule.version }}
+          </a>
+        </h2>
+      </div>
       <p v-if="!readOnly && rule.locked" class="text-danger font-weight-bold">
         This control is locked and must first be unlocked if changes or deletion are required.
       </p>
