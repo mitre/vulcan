@@ -25,8 +25,9 @@ class SecurityRequirementsGuide < ApplicationRecord
               "#{SecurityRequirementsGuide.revision(benchmark_mapping.plaintext.first)}" rescue nil
     release_date = SecurityRequirementsGuide.release_date(benchmark_mapping.plaintext.first)
     # rubocop:enable Style/RescueModifier
-
-    SecurityRequirementsGuide.new(srg_id: id, title: title, version: version, release_date: release_date)
+    name = id&.tr('_', ' ')&.gsub(/(?<=\d)-/, '.')
+    name = "#{name} - Ver #{version.to_s[1]}, Rel #{version.to_s.last}"
+    SecurityRequirementsGuide.new(srg_id: id, title: title, name: name, version: version, release_date: release_date)
   end
 
   # If the SRGs do not conform nicely and this function gets complex, remove the version parse logic

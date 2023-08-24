@@ -4,7 +4,7 @@
 class Stig < ApplicationRecord
   has_many :stig_rules, dependent: :destroy
 
-  validates :stig_id, :title, :version, :xml, presence: true
+  validates :stig_id, :title, :name, :version, :xml, presence: true
   validates :stig_id, uniqueness: {
     scope: :version,
     message: 'ID has already been taken'
@@ -19,8 +19,11 @@ class Stig < ApplicationRecord
               "#{SecurityRequirementsGuide.revision(benchmark_mapping.plaintext.first)}"
     benchmark_date = SecurityRequirementsGuide.release_date(benchmark_mapping.plaintext.first)
     description = benchmark_mapping&.description&.first
+    name = id&.tr('_', ' ')&.gsub(/(?<=\d)-/, '.')
+    name = "#{name} - Ver #{version.to_s[1]}, Rel #{version.to_s.last}"
 
-    Stig.new(stig_id: id, title: title, version: version, description: description, benchmark_date: benchmark_date)
+    Stig.new(stig_id: id, title: title, name: name, version: version, description: description,
+             benchmark_date: benchmark_date)
   end
 
   def parsed_benchmark

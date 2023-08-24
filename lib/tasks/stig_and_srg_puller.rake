@@ -72,9 +72,7 @@ namespace :stig_and_srg_puller do
         new_object = model.from_mapping(parsed_benchmark)
         new_object.xml = Nokogiri::XML(xml)
         id = model == Stig ? new_object.stig_id : new_object.srg_id
-        name = id.tr('_', ' ').gsub(/(?<=\d)-/, '.')
-        name = "#{name} - Ver #{new_object.version[1]}, Rel #{new_object.version.last}"
-        new_object.name = item[:file_present] ? item[:name] : name
+
         if new_object.save
           @new_items += 1
           puts "Successfully pulled and saved #{new_object.name}"

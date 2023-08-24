@@ -31,6 +31,7 @@ RSpec.describe StigsController, type: :controller do
       sign_in user
       stig2 = Stig.from_mapping(Xccdf::Benchmark.parse(stig.xml))
       stig2.xml = stig.xml
+      stig2.name = stig.name
       stig2.save!
 
       expect do
@@ -42,6 +43,7 @@ RSpec.describe StigsController, type: :controller do
       sign_in user2
       stig2 = Stig.from_mapping(Xccdf::Benchmark.parse(stig.xml))
       stig2.xml = stig.xml
+      stig2.name = stig.name
       stig2.save!
 
       expect do
