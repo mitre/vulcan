@@ -422,8 +422,8 @@ export default {
     },
     lookupSearchWordInRules: function (rules) {
       const words = this.keywordList.map((w) => w.toLowerCase());
-      const checkWord = (text) => words.some((w) => text ? text.includes(w) : '');
-      const convertLower = (text) => text ? text.toLowerCase() : '';
+      const checkWord = (text) => words.some((w) => (text ? text.includes(w) : ""));
+      const convertLower = (text) => (text ? text.toLowerCase() : '');
       return rules.filter((r) => {
         const title = convertLower(r.title);
         const discussion = convertLower(r.disa_rule_descriptions_attributes[0].vuln_discussion);
