@@ -375,7 +375,7 @@ export default {
             });
           } else {
             const comp_rules = this.relatedRules.filter((r) => r.component_id == parent.id);
-            parent.name = `${parent.name} - Ver ${parent.version}, Rel ${parent.release}`;
+            parent.name = `${parent.project.name} / ${parent.name} - Ver ${parent.version}, Rel ${parent.release}`;
             comp_rules.forEach((r) => {
               r.parent = parent.name;
               r.name = `${parent.prefix}-${r.rule_id}//${r.version}`;
@@ -422,32 +422,36 @@ export default {
     },
     lookupSearchWordInRules: function (rules) {
       const words = this.keywordList.map((w) => w.toLowerCase());
-      const checkWord = (text) => words.some((w) => text.includes(w));
+      const checkWord = (text) => text && words.some((w) => text.includes(w));
+      const convertLower = (text) => text?.toLowerCase() ?? "";
+
+      // Precompute the inclusion flags for the fields
+      const includeCheck = this.fields.includes("Check");
+      const includeFix = this.fields.includes("Fix");
+      const includeDiscussion = this.fields.includes("Vulnerability Discussion");
+      const anyFieldIncluded = includeCheck || includeFix || includeDiscussion;
+
       return rules.filter((r) => {
-        const title = r.title.toLowerCase();
-        const discussion = r.disa_rule_descriptions_attributes[0].vuln_discussion.toLowerCase();
-        const check = r.checks_attributes[0].content.toLowerCase();
-        const fix = r.fixtext.toLowerCase();
-        const includeCheck = this.fields.includes("Check");
-        const includeFix = this.fields.includes("Fix");
-        const includeDiscussion = this.fields.includes("Vulnerability Discussion");
+        const title = convertLower(r.title);
+        const discussion = convertLower(r.disa_rule_descriptions_attributes[0].vuln_discussion);
+        const check = convertLower(r.checks_attributes[0].content);
+        const fix = convertLower(r.fixtext);
+
         if (this.allFieldsSelected) {
-          return checkWord(discussion) || checkWord(check) || checkWord(fix) || checkWord(title);
-        } else if (includeDiscussion && includeCheck) {
-          return checkWord(discussion) || checkWord(check) || checkWord(title);
-        } else if (includeDiscussion && includeFix) {
-          return checkWord(discussion) || checkWord(fix) || checkWord(title);
-        } else if (includeCheck && includeFix) {
-          return checkWord(check) || checkWord(fix) || checkWord(title);
-        } else if (includeDiscussion) {
-          return checkWord(discussion) || checkWord(title);
-        } else if (includeCheck) {
-          return checkWord(check) || checkWord(title);
-        } else {
-          return checkWord(fix) || checkWord(title);
+          return [discussion, check, fix, title].some(checkWord);
         }
+
+        const selectedFieldsTexts = [
+          includeDiscussion ? discussion : null,
+          includeCheck ? check : null,
+          includeFix ? fix : null,
+          title,
+        ].filter(Boolean); // Remove null values
+
+        return !anyFieldIncluded ? checkWord(title) : selectedFieldsTexts.some(checkWord);
       });
     },
+
     formatAndHighlightSearchWord: function (text) {
       if (!text) return;
       let formattedText = this.escapeHtml(text);
@@ -473,7 +477,7 @@ export default {
     },
     copyCheckContentToRule: function (root, checkContent) {
       const check = this.rule.checks_attributes[0];
-      const content = `${check.content}\n\n ${checkContent}`;
+      const content = `${check.content}\n\n${checkContent}`;
       root.$emit("update:check", this.rule, { ...check, content }, 0);
       this.$bvToast.toast(`Check successfully copied to ${this.ruleStigId}`, {
         title: "Success",
@@ -483,7 +487,7 @@ export default {
     },
     copyDiscussionToRule: function (root, vulnDiscussion) {
       const discussion = this.rule.disa_rule_descriptions_attributes[0];
-      const vuln_discussion = `${discussion.vuln_discussion}\n\n ${vulnDiscussion}`;
+      const vuln_discussion = `${discussion.vuln_discussion}\n\n${vulnDiscussion}`;
       root.$emit("update:disaDescription", this.rule, { ...discussion, vuln_discussion }, 0);
       this.$bvToast.toast(`Discussion successfully copied to ${this.ruleStigId}`, {
         title: "Success",
@@ -492,7 +496,7 @@ export default {
       });
     },
     copyFixTextToRule: function (root, fix) {
-      const fixtext = `${this.rule.fixtext} \n\n ${fix}`;
+      const fixtext = `${this.rule.fixtext}\n\n${fix}`;
       root.$emit("update:rule", { ...this.rule, fixtext });
       this.$bvToast.toast(`Fix successfully copied to ${this.ruleStigId}`, {
         title: "Success",
