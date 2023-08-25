@@ -31,11 +31,11 @@ module ApplicationHelper
       File.open(changelog_path, 'r') do |file|
         line = file.gets
         while line
-          if line.start_with?('## Vulcan v')
+          if line.start_with?('## [v')
             # Found the beginning of a release, start reading details
             release_details = line
             line = file.gets
-            while line && !line.start_with?('## Vulcan v')
+            while line && !line.start_with?('## [v')
               release_details += line
               line = file.gets
             end
