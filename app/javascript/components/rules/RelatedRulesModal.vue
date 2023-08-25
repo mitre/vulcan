@@ -422,33 +422,36 @@ export default {
     },
     lookupSearchWordInRules: function (rules) {
       const words = this.keywordList.map((w) => w.toLowerCase());
-      const checkWord = (text) => words.some((w) => (text ? text.includes(w) : ""));
-      const convertLower = (text) => (text ? text.toLowerCase() : "");
+      const checkWord = (text) => text && words.some((w) => text.includes(w));
+      const convertLower = (text) => text?.toLowerCase() ?? "";
+
+      // Precompute the inclusion flags for the fields
+      const includeCheck = this.fields.includes("Check");
+      const includeFix = this.fields.includes("Fix");
+      const includeDiscussion = this.fields.includes("Vulnerability Discussion");
+      const anyFieldIncluded = includeCheck || includeFix || includeDiscussion;
+
       return rules.filter((r) => {
         const title = convertLower(r.title);
         const discussion = convertLower(r.disa_rule_descriptions_attributes[0].vuln_discussion);
         const check = convertLower(r.checks_attributes[0].content);
         const fix = convertLower(r.fixtext);
-        const includeCheck = this.fields.includes("Check");
-        const includeFix = this.fields.includes("Fix");
-        const includeDiscussion = this.fields.includes("Vulnerability Discussion");
+
         if (this.allFieldsSelected) {
-          return checkWord(discussion) || checkWord(check) || checkWord(fix) || checkWord(title);
-        } else if (includeDiscussion && includeCheck) {
-          return checkWord(discussion) || checkWord(check) || checkWord(title);
-        } else if (includeDiscussion && includeFix) {
-          return checkWord(discussion) || checkWord(fix) || checkWord(title);
-        } else if (includeCheck && includeFix) {
-          return checkWord(check) || checkWord(fix) || checkWord(title);
-        } else if (includeDiscussion) {
-          return checkWord(discussion) || checkWord(title);
-        } else if (includeCheck) {
-          return checkWord(check) || checkWord(title);
-        } else {
-          return checkWord(fix) || checkWord(title);
+          return [discussion, check, fix, title].some(checkWord);
         }
+
+        const selectedFieldsTexts = [
+          includeDiscussion ? discussion : null,
+          includeCheck ? check : null,
+          includeFix ? fix : null,
+          title,
+        ].filter(Boolean); // Remove null values
+
+        return !anyFieldIncluded ? checkWord(title) : selectedFieldsTexts.some(checkWord);
       });
     },
+
     formatAndHighlightSearchWord: function (text) {
       if (!text) return;
       let formattedText = this.escapeHtml(text);
