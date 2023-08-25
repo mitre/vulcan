@@ -1,0 +1,10 @@
+user=mitre
+project=vulcan
+future-release=v2.1.4
+since-tag=v2.0.0
+release-branch=master
+add-sections={"dependencies":{"prefix":"**Dependencies updates:**","labels":["dependencies"]}}
+enhancement-labels=enhancement,Enhancement,Type: Enhancement,feature request
+http-cache=false
+filter-by-milestone=false
+issues-of-open-milestones=false
