@@ -186,6 +186,7 @@
                   >
                     <h5>Vulnerability Discussion</h5>
                     <b-button
+                      v-if="!readOnly"
                       class="mb-2"
                       size="sm"
                       @click="
@@ -214,6 +215,7 @@
                   >
                     <h5>Checks</h5>
                     <b-button
+                      v-if="!readOnly"
                       class="mb-2"
                       size="sm"
                       @click="
@@ -237,6 +239,7 @@
                   >
                     <h5>Fix</h5>
                     <b-button
+                      v-if="!readOnly"
                       class="mb-2"
                       size="sm"
                       @click="copyFixTextToRule($root, relatedRule.fixtext)"
@@ -273,6 +276,10 @@ export default {
     },
     ruleStigId: {
       type: String,
+      required: true,
+    },
+    readOnly: {
+      type: Boolean,
       required: true,
     },
   },
