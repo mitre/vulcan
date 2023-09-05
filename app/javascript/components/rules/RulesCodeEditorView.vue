@@ -43,11 +43,11 @@
           <div class="col-4">
             <!-- Related Rules modal-->
             <RelatedRulesModal
-              v-if="!selectedRule().locked && !selectedRule().review_requestor_id"
+              :read-only="selectedRule().locked || !!selectedRule().review_requestor_id"
               :rule="selectedRule()"
               :rule-stig-id="`${component.prefix}-${selectedRule().rule_id}`"
             />
-            <hr v-if="!selectedRule().locked && !selectedRule().review_requestor_id" class="mt-0" />
+            <hr class="mt-0" />
             <RuleSatisfactions
               :component="component"
               :rule="selectedRule()"

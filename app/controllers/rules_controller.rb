@@ -44,7 +44,9 @@ class RulesController < ApplicationController
 
   def related_rules
     srg_id = @rule.version
-    rules = Rule.where(version: srg_id).where.not(id: @rule.id).eager_load(:disa_rule_descriptions, :checks, :component)
+    rules = Rule.where(version: srg_id).where.not(id: @rule.id).where.not(component_id: @rule.component_id).eager_load(
+      :disa_rule_descriptions, :checks, :component
+    )
     stig_rules = StigRule.where(srg_id: srg_id).eager_load(:disa_rule_descriptions, :checks, :stig)
     rules = rules.filter { |r| r.component.all_users.include?(current_user) } unless current_user.admin?
     parents = (stig_rules.map(&:stig).as_json + rules.map(&:component).as_json(methods: %i[project])).uniq
