@@ -312,6 +312,14 @@
         <div class="rule-data">
           <b-row>
             <b-col>
+              <!-- Related Rules modal-->
+              <RelatedRulesModal
+                v-if="Object.keys(selectedRule).length"
+                :read-only="true"
+                :rule="selectedRule"
+                :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
+              />
+              <hr class="mt-0" />
               <RuleSatisfactions
                 :component="component"
                 :rule="selectedRule"
@@ -356,6 +364,7 @@ import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
 import RuleReviews from "../rules/RuleReviews.vue";
 import RuleHistories from "../rules/RuleHistories.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
+import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import MembershipsTable from "../memberships/MembershipsTable.vue";
 import UpdateComponentDetailsModal from "./UpdateComponentDetailsModal.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
@@ -373,6 +382,7 @@ export default {
     RuleReviews,
     RuleHistories,
     RuleSatisfactions,
+    RelatedRulesModal,
   },
   mixins: [
     DateFormatMixinVue,
