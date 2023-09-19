@@ -233,7 +233,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       ox_el_helper(group_rule, 'title', rule[:title])
       descriptions_helper(group_rule, rule)
       ox_el_helper(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
-      ox_el_helper(group_rule, 'fixtext', rule[:fixtext])
+      ox_el_helper(group_rule, 'fixtext', rule[:fixtext], { fixref: "F-#{component[:prefix]}-#{rule[:rule_id]}_fix" })
       checks_helper(group_rule, rule)
 
       group << group_rule
