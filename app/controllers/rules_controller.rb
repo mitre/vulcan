@@ -103,6 +103,8 @@ class RulesController < ApplicationController
 
   def revert
     Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
+    # Save the rule to trigger callbacks (update inspec)
+    @rule.save
     render json: { toast: 'Successfully reverted history for control.' }
   rescue RuleRevertError => e
     render json: {
