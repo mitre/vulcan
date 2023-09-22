@@ -155,16 +155,14 @@ vcenter_vami_v1r1.rules.update(locked: false)
   c.rules.order('RANDOM()').limit(c.rules.size * rand(25..35) / 100)
    .update(status: 'Applicable - Configurable')
 
-  rule_satisfactions = []
-  rules_with_duplicates_ids = c.rules.order('RANDOM()').limit(c.rules.size * rand(5..10) / 100).pluck(:id)
-  c.rules.where.not(id: rules_with_duplicates_ids).order('RANDOM()')
-   .limit(c.rules.size * rand(10..15) / 100).pluck(:id).each do |rule_id|
-    rule_satisfactions << RuleSatisfaction.new(
-      rule_id: rule_id,
-      satisfied_by_rule_id: rules_with_duplicates_ids.sample
-    )
+  # Add Rule satisfaction:
+  # Only Applicable - Configurable rule can satisfy other rules
+  rule_selection = c.rules.where(status: 'Applicable - Configurable')
+  c.rules.where.not(status: 'Applicable - Configurable').limit(3).each do |rule|
+    rule.satisfied_by << rule_selection.sample
+    # Save the rule to trigger callbacks
+    rule.save
   end
-  RuleSatisfaction.import! rule_satisfactions
 
   # Call update last to trigger callbacks
   c.rules.update(locked: true, rule_weight: '10.0', rule_severity: RuleConstants::SEVERITIES.sample)
