@@ -32,10 +32,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     artifact_description: 16
   }.freeze
 
-  def export_excel(project, components_type, is_disa_export)
+  def export_excel(project, component_ids, is_disa_export)
+    components_to_export = project.components.where(id: component_ids.split(','))
     # One file for all data types, each data type in a different tab
     workbook = FastExcel.open(constant_memory: true)
-    components_to_export = components_type == 'all' ? project.components : project.components.where(released: true)
+    # components_to_export = components_type == 'all' ? project.components : project.components.where(released: true)
     components_to_export.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers, :satisfies, :satisfied_by, {

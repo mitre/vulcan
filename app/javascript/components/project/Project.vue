@@ -74,10 +74,15 @@
                 @projectUpdated="refreshProject"
               />
               <b-dropdown right text="Download" variant="secondary" class="px-2 m2">
-                <b-dropdown-item v-b-modal.disa-excel-export-modal>
+                <b-dropdown-item
+                  v-b-modal.excel-export-modal
+                  @click="excelExportType = 'disa_excel'"
+                >
                   DISA Excel Export
                 </b-dropdown-item>
-                <b-dropdown-item v-b-modal.excel-export-modal>Excel Export</b-dropdown-item>
+                <b-dropdown-item v-b-modal.excel-export-modal @click="excelExportType = 'excel'">
+                  Excel Export
+                </b-dropdown-item>
                 <b-dropdown-item @click="downloadExport('inspec')">InSpec Profile</b-dropdown-item>
                 <b-dropdown-item @click="downloadExport('xccdf')">Xccdf Export</b-dropdown-item>
               </b-dropdown>
@@ -85,39 +90,46 @@
               <b-modal
                 id="excel-export-modal"
                 ref="excel-export-modal"
-                title="Excel Export"
+                :title="excelExportType === 'excel' ? 'Excel Export' : 'DISA Excel Export'"
                 centered
               >
-                <p class="my-2">
-                  Would you like to export all components in this project or just the released
-                  components?
-                </p>
-                <template #modal-footer>
-                  <b-button @click="downloadExport('excel', 'all')">
-                    Export all components
-                  </b-button>
-                  <b-button @click="downloadExport('excel', 'released')">
-                    Export released Components
-                  </b-button>
-                </template>
-              </b-modal>
+                <b-form-group>
+                  <template #label>
+                    <h5>Select components to export:</h5>
+                    <b-form-checkbox
+                      v-model="allComponentsSelected"
+                      :indeterminate="indeterminate"
+                      aria-describedby="allComponents"
+                      aria-controls="allComponents"
+                      @change="toggleComponents"
+                    >
+                      {{ allComponentsSelected ? "Un-select All" : "Select All" }}
+                    </b-form-checkbox>
+                    <b-form-checkbox
+                      v-model="releasedComponentsSelected"
+                      aria-describedby="releasedComponents"
+                      aria-controls="releasedComponents"
+                      :disabled="releasedComponents.length === 0"
+                      @change="toggleComponents"
+                    >
+                      Select Released Components
+                    </b-form-checkbox>
+                  </template>
+                  <template #default="{ ariaDescribedby }">
+                    <b-form-checkbox-group
+                      v-model="selectedComponentsToExport"
+                      :options="sortedComponents()"
+                      value-field="id"
+                      text-field="name"
+                      :aria-describedby="ariaDescribedby"
+                      class="mb-2"
+                    />
+                  </template>
+                </b-form-group>
 
-              <b-modal
-                id="disa-excel-export-modal"
-                ref="disa-excel-export-modal"
-                title="DISA Excel Export"
-                centered
-              >
-                <p class="my-2">
-                  Would you like to export all components in this project or just the released
-                  components?
-                </p>
                 <template #modal-footer>
-                  <b-button @click="downloadExport('disa_excel', 'all')">
-                    Export all components
-                  </b-button>
-                  <b-button @click="downloadExport('disa_excel', 'released')">
-                    Export released Components
+                  <b-button @click="downloadExport(excelExportType)">
+                    Export Selected Components
                   </b-button>
                 </template>
               </b-modal>
@@ -364,6 +376,11 @@ export default {
       project: this.initialProjectState,
       visible: this.initialProjectState.visibility === "discoverable",
       projectTabIndex: 0,
+      excelExportType: "",
+      selectedComponentsToExport: [],
+      allComponentsSelected: false,
+      releasedComponentsSelected: false,
+      indeterminate: false,
     };
   },
   computed: {
@@ -399,6 +416,29 @@ export default {
         JSON.stringify(this.projectTabIndex)
       );
     },
+    selectedComponentsToExport: function (newValue, oldValue) {
+      // Handle changes in individual component checkboxes
+      if (newValue.length === 0) {
+        this.indeterminate = false;
+        this.allComponentsSelected = false;
+        this.releasedComponentsSelected = false;
+      } else if (newValue.length === this.project.components.length) {
+        this.indeterminate = false;
+        this.allComponentsSelected = true;
+        this.releasedComponentsSelected = true;
+      } else if (
+        this.releasedComponents().lenght > 0 &&
+        this.releasedComponents().every((element) => newValue.includes(element))
+      ) {
+        this.indeterminate = true;
+        this.allComponentsSelected = false;
+        this.releasedComponentsSelected = true;
+      } else {
+        this.indeterminate = true;
+        this.allComponentsSelected = false;
+        this.releasedComponentsSelected = false;
+      }
+    },
   },
   mounted: function () {
     // Persist `currentTab` across page loads
@@ -416,6 +456,18 @@ export default {
     }
   },
   methods: {
+    toggleComponents: function () {
+      if (this.allComponentsSelected) {
+        this.selectedComponentsToExport = this.project.components.map((comp) => comp.id);
+      } else if (this.releasedComponentsSelected) {
+        this.selectedComponentsToExport = this.releasedComponents();
+      } else {
+        this.selectedComponentsToExport = [];
+      }
+    },
+    releasedComponents: function () {
+      return this.project.components.filter((comp) => comp.released).map((comp) => comp.id);
+    },
     sortedComponents: function () {
       return _.orderBy(
         this.project.components,
@@ -457,20 +509,23 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    downloadExport: function (type, componentsToExport) {
-      if (type === "excel") {
-        this.$refs["excel-export-modal"].hide();
-      } else if (type === "disa_excel") {
-        this.$refs["disa-excel-export-modal"].hide();
-      }
+    downloadExport: function (type) {
       axios
-        .get(`/projects/${this.project.id}/export/${type}?components_type=${componentsToExport}`)
+        .get(
+          `/projects/${this.project.id}/export/${type}?component_ids=${this.selectedComponentsToExport}`
+        )
         .then((_res) => {
           // Once it is validated that there is content to download, prompt
           // the user to save the file
           window.open(`/projects/${this.project.id}/export/${type}`);
         })
         .catch(this.alertOrNotifyResponse);
+
+      if (type === "excel" || type === "disa_excel") {
+        this.$refs["excel-export-modal"].hide();
+        this.excelExportType = "";
+        this.selectedComponentsToExport = [];
+      }
     },
   },
 };
