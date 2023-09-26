@@ -118,9 +118,7 @@
                   <template #default="{ ariaDescribedby }">
                     <b-form-checkbox-group
                       v-model="selectedComponentsToExport"
-                      :options="sortedComponents()"
-                      value-field="id"
-                      text-field="name"
+                      :options="excelExportComponentOptions"
                       :aria-describedby="ariaDescribedby"
                       class="mb-2"
                     />
@@ -384,6 +382,12 @@ export default {
     };
   },
   computed: {
+    excelExportComponentOptions: function () {
+      return this.sortedComponents().map((c) => {
+        const versionRelease = c.version && c.release ? ` - V${c.version}R${c.release}` : "";
+        return { text: `${c.name}${versionRelease}`, value: c.id };
+      });
+    },
     sortedAvailableComponents: function () {
       return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
     },
