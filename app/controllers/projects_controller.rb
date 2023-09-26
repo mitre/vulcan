@@ -117,12 +117,12 @@ class ProjectsController < ApplicationController
   end
 
   def export
-    # Using class variable @@components_to_export here to save params[:components_type] value in memory,
+    # Using class variable @@components_to_export here to save params[:component_ids] value in memory,
     # because format.html below triggers a redirect to this same action controller
-    # causing to lose the :components_type param.
+    # causing to lose the :component_ids param.
 
     # rubocop:disable Style/ClassVars
-    @@components_to_export = params[:components_type] || @@components_to_export
+    @@components_to_export = params[:component_ids] || @@components_to_export
     # rubocop:enable Style/ClassVars
 
     export_type = params[:type]&.to_sym
