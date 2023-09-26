@@ -7,34 +7,32 @@ RSpec.describe ExportHelper, type: :helper do
 
   before(:all) do
     @component = FactoryBot.create(:component)
-    @released_component = FactoryBot.create(:released_component)
+    # @released_component = FactoryBot.create(:released_component)
     @project = @component.project
-    @project_with_released_comp = @released_component.project
+    @component_ids = @project.components.pluck(:id).join(',')
+    # @project_with_released_comp = @released_component.project
   end
 
   describe '#export_excel' do
     before(:all) do
-      @workbook = export_excel(@project, 'released', false)
-      @workbook_release_only = export_excel(@project_with_released_comp, 'released', false)
-      @workbook_release_all = export_excel(@project_with_released_comp, 'all', false)
+      @workbook = export_excel(@project, @component_ids, false)
+      # @workbook_release_only = export_excel(@project_with_released_comp, 'released', false)
+      # @workbook_release_all = export_excel(@project_with_released_comp, 'all', false)
 
-      @workbook_disa_export = export_excel(@project, 'released', true)
-      @workbook_disa_export_release_only = export_excel(@project_with_released_comp, 'released', true)
-      @workbook_disa_export_release_all = export_excel(@project_with_released_comp, 'all', true)
+      @workbook_disa_export = export_excel(@project, @component_ids, true)
+      # @workbook_disa_export_release_only = export_excel(@project_with_released_comp, 'released', true)
+      # @workbook_disa_export_release_all = export_excel(@project_with_released_comp, 'all', true)
 
-      [@workbook, @workbook_release_only, @workbook_release_all,
-       @workbook_disa_export, @workbook_disa_export_release_only,
-       @workbook_disa_export_release_all].each_with_index do |item, index|
+      [@workbook, @workbook_disa_export].each_with_index do |item, index|
         file_name = ''
         if index == 0
           file_name = "./#{@project.name}.xlsx"
           File.binwrite(file_name, item.read_string)
           @xlsx = Roo::Spreadsheet.open(file_name)
         else
-          file_name = "./#{@project_with_released_comp.name}.xlsx"
+          file_name = "./#{@project.name}_DISA.xlsx"
           File.binwrite(file_name, item.read_string)
-          @xlsx_release_only = Roo::Spreadsheet.open(file_name) if index == 1
-          @xlsx_release_all = Roo::Spreadsheet.open(file_name) if index == 2
+          @xlsx_disa = Roo::Spreadsheet.open(file_name)
         end
         File.delete(file_name)
       end
@@ -44,29 +42,67 @@ RSpec.describe ExportHelper, type: :helper do
       it 'creates an excel format of a given project' do
         expect(@workbook).to be_present
         expect(@workbook.filename).to end_with 'xlsx'
+        expect(@workbook_disa_export).to be_present
+        expect(@workbook_disa_export.filename).to end_with 'xlsx'
+      end
+      it 'creates an excel file with the # sheets == # of components that was requested for export' do
+        expect(@xlsx.sheets.size).to eq @component_ids.split(',').size
+        expect(@xlsx_disa.sheets.size).to eq @component_ids.split(',').size
       end
     end
 
-    context 'when project has released component(s) and user requested only released components' do
-      it 'creates an excel file with the # of sheets == # of released components' do
-        expect(@xlsx_release_only.sheets.size).to eq @project_with_released_comp.components.where(released: true).size
+    context 'When a user request a DISA excel export' do
+      it 'does not include a column for "InSpec Control Body"' do
+        parsed = @xlsx_disa.sheet(0).parse(headers: true).drop(1)
+        expect(parsed.first).not_to include 'InSpec Control Body'
+      end
+      it 'returns empty values for "Status Justification", "Mitigation",and "Artifact Description" columns if
+        the rule status is "Applicable - Configurable"' do
+        parsed = @xlsx_disa.sheet(0).parse(headers: true).drop(1)
+        status_justifications = parsed.filter_map do |row|
+          next if row['Status'] != 'Applicable - Configurable'
+
+          row['Status Justification']
+        end
+        mitigations = parsed.filter_map do |row|
+          next if row['Status'] != 'Applicable - Configurable'
+
+          row['Mitigation']
+        end
+        artifact_descriptions = parsed.filter_map do |row|
+          next if row['Status'] != 'Applicable - Configurable'
+
+          row['Artifact Description']
+        end
+        expect(status_justifications).to be_empty
+        expect(mitigations).to be_empty
+        expect(artifact_descriptions).to be_empty
       end
 
-      it 'creates an excel file with correct format for worksheet name' do
-        expect(@xlsx_release_only.sheets).to all(match(/\w+-V[0-9]+R[0-9]+-[0-9]+/))
-      end
-    end
+      it 'returns emty values for "Mitigation" column if rule (row) status is "Applicable - Inherently Meets"' do
+        parsed = @xlsx_disa.sheet(0).parse(headers: true).drop(1)
+        mitigations = parsed.filter_map do |row|
+          next if row['Status'] != 'Applicable - Inherently Meets'
 
-    context 'When project has released component(s) and user requested to download all components' do
-      it 'creates an excel file with the # of sheets == total # of components' do
-        expect(@xlsx_release_all.sheets.size).to eq @project_with_released_comp.components.size
+          row['Mitigation']
+        end
+        expect(mitigations).to be_empty
       end
-    end
 
-    context 'when project has no released component and user requested only released components' do
-      it 'creates an empty spreadsheet' do
-        expect(@xlsx.sheets.size).to eq 1
-        expect(@xlsx.sheets.first).to eq 'Sheet1'
+      it 'returns emty values for "Mitigation, Artifact Description" column if rule (row) status is "Not Applicable"' do
+        parsed = @xlsx_disa.sheet(0).parse(headers: true).drop(1)
+        mitigations = parsed.filter_map do |row|
+          next if row['Status'] != 'Not Applicable'
+
+          row['Mitigation']
+        end
+        artifact_descriptions = parsed.filter_map do |row|
+          next if row['Status'] != 'Not Applicable'
+
+          row['Artifact Description']
+        end
+        expect(mitigations).to be_empty
+        expect(artifact_descriptions).to be_empty
       end
     end
   end
