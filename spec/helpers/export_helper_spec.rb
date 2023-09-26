@@ -7,21 +7,14 @@ RSpec.describe ExportHelper, type: :helper do
 
   before(:all) do
     @component = FactoryBot.create(:component)
-    # @released_component = FactoryBot.create(:released_component)
     @project = @component.project
     @component_ids = @project.components.pluck(:id).join(',')
-    # @project_with_released_comp = @released_component.project
   end
 
   describe '#export_excel' do
     before(:all) do
       @workbook = export_excel(@project, @component_ids, false)
-      # @workbook_release_only = export_excel(@project_with_released_comp, 'released', false)
-      # @workbook_release_all = export_excel(@project_with_released_comp, 'all', false)
-
       @workbook_disa_export = export_excel(@project, @component_ids, true)
-      # @workbook_disa_export_release_only = export_excel(@project_with_released_comp, 'released', true)
-      # @workbook_disa_export_release_all = export_excel(@project_with_released_comp, 'all', true)
 
       [@workbook, @workbook_disa_export].each_with_index do |item, index|
         file_name = ''
