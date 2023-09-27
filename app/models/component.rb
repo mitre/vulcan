@@ -352,6 +352,8 @@ class Component < ApplicationRecord
         next if sb_rule.nil?
 
         rule.satisfied_by << sb_rule
+        # Save the rule to trigger callbacks (update inspec)
+        sb_rule.save
       end
     end
   end
