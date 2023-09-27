@@ -5,6 +5,8 @@ require 'inspec/objects'
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < BaseRule
+  attr_accessor :skip_update_inspec_code
+
   amoeba do
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
@@ -38,12 +40,10 @@ class Rule < BaseRule
                           association_foreign_key: :rule_id
 
   before_validation :set_rule_id
-  before_save :apply_audit_comment
-  before_save :sort_ident, :update_inspec_code
+  before_save :apply_audit_comment, :sort_ident
   before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
-  after_save :update_component_rules_count
-  after_save :update_satisfied_by_inspec_code
+  after_save :update_component_rules_count, :update_inspec_code
 
   validates_with RuleSatisfactionValidator
   validate :cannot_be_locked_and_under_review
@@ -202,6 +202,9 @@ class Rule < BaseRule
   end
 
   def update_inspec_code
+    return if skip_update_inspec_code
+
+    self.skip_update_inspec_code = true
     desc = disa_rule_descriptions.first
     control = Inspec::Object::Control.new
     control.add_header('# -*- encoding : utf-8 -*-')
@@ -228,14 +231,7 @@ class Rule < BaseRule
     end
     control.add_post_body(inspec_control_body) if inspec_control_body.present?
     self.inspec_control_file = control.to_ruby
-  end
-
-  def update_satisfied_by_inspec_code
-    sb = satisfied_by.first
-    return if sb.nil?
-
-    # trigger update_inspec_code callback
-    sb.save
+    save
   end
 
   def basic_fields

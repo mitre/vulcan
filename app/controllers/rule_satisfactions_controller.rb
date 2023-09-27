@@ -9,6 +9,8 @@ class RuleSatisfactionsController < ApplicationController
 
   def create
     if @rule.satisfies.empty? && (@rule.satisfied_by << @satisfied_by_rule)
+      # Save the rule to trigger callbacks (update inspec)
+      @satisfied_by_rule.save
       render json: { toast: "Successfully marked #{@rule.version} as satisfied by #{@satisfied_by_rule.version}." }
     else
       render json: {
@@ -23,6 +25,8 @@ class RuleSatisfactionsController < ApplicationController
 
   def destroy
     if @rule.satisfied_by.delete(@satisfied_by_rule)
+      # Save the rule to trigger callbacks (update inspec)
+      @satisfied_by_rule.save
       render json: { toast: "#{@rule.version} is no longer marked as satisfied by #{@satisfied_by_rule.version}." }
     else
       render json: {
