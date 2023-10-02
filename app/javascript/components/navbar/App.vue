@@ -3,7 +3,10 @@
     <b-navbar toggleable="lg" type="dark" variant="dark">
       <b-navbar-brand id="heading" href="/">
         <i class="mdi mdi-radar" aria-hidden="true" />
-        VULCAN <span class="latest-release">{{ currentVersion }}</span>
+        VULCAN
+        <b-link href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
+          <span class="latest-release">{{ currentVersion }}</span>
+        </b-link>
       </b-navbar-brand>
       <b-navbar-toggle target="nav-collapse" />
 

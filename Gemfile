@@ -68,9 +68,6 @@ gem 'rubyzip'
 gem 'mitre-inspec-objects'
 gem 'rest-client'
 
-# Markdown processing
-gem 'redcarpet'
-
 group :development do
   gem 'listen', '~> 3.1.5'
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
