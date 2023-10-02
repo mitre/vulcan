@@ -32,13 +32,15 @@ For more details on this release and previous ones, check the [Changelog](https:
 
 [Deploying Vulcan in Production](https://vulcan.mitre.org/docs/)&nbsp;&nbsp;&nbsp;[<img src="public/GitHub-Mark-Light-64px.png#gh-dark-mode-only" width="20"/>](https://pages.github.com/)[<img src="public/GitHub-Mark-64px.png#gh-light-mode-only" width="20"/>](https://pages.github.com/)
 
-## Deployment Dependencies:
+## Deployment Dependencies
+
 For Ruby (on Ubuntu):
-  * Ruby
-  * `build-essentials`
-  * Bundler
-  * `libq-dev`
-  * nodejs
+
+* Ruby
+* `build-essentials`
+* Bundler
+* `libq-dev`
+* nodejs
 
 ### Run With Ruby
 
@@ -46,11 +48,13 @@ For Ruby (on Ubuntu):
 
 1. Install the version of Ruby specified in `.ruby-version`
 2. Install postgres and rbenv
-3. gem install foreman
-4. rbenv install
-5. bin/setup
+3. Run `gem install foreman`
+4. Run `rbenv install`
+5. Run `bin/setup`
 
->> **Note**: `bin/setup` will install the JS dependencies, prepare the database and load the sample data.
+  >> **Note**: `bin/setup` will install the JS dependencies andprepare the database.
+
+6. Run `rails db:seed` to seed the database.
 
 #### Running with Ruby
 
@@ -72,7 +76,6 @@ For testing purposes in the development environment, you can use the following c
 
 1. Stop Vulcan by doing `ctrl + c`
 2. Stop the postgres server
-
 
 ## Configuration
 
@@ -132,4 +135,3 @@ This software was produced for the U. S. Government under Contract Number HHSM-5
 No other use other than that granted to the U. S. Government, or to those acting on behalf of the U. S. Government under that Clause is authorized without the express written permission of The MITRE Corporation.
 
 For further information, please contact The MITRE Corporation, Contracts Management Office, 7515 Colshire Drive, McLean, VA 22102-7539, (703) 983-6000.
-
