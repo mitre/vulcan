@@ -1,37 +1,55 @@
 # Changelog
 
+## [v2.1.5](https://github.com/mitre/vulcan/tree/v2.1.5) (2023-10-02)
+
+[Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.4...v2.1.5)
+
+**Implemented enhancements:**
+
+- Enabled viewing of related rules in read-only mode, but hiding the  copy button [\#605](https://github.com/mitre/vulcan/pull/605) ([vanessuniq](https://github.com/vanessuniq))
+- Enable user to select which component to excel export [\#610]( https://github.com/mitre/vulcan/pull/610) ([vanessuniq](https://github.com/vanessuniq))
+
+**Fixed bugs:**
+
+- Vulcan container crashes when exporting to excel [\#600](https://github.com/mitre/vulcan/issues/600)
+- Update inspec after copying or duplicate a component [\#598](https://github.com/mitre/vulcan/issues/598)
+
+**Closed issues:**
+
+- Add fixref to XCCDF generation to be compatible with STIG Viewer 3.x [\#607](https://github.com/mitre/vulcan/issues/607)
+
 ## [v2.1.4](https://github.com/mitre/vulcan/tree/v2.1.4) (2023-08-25)
 
 [Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.3...v2.1.4)
 
 **Implemented enhancements:**
 
-- Constrain the selectable list to allow only Apllicable - Configurable controls to be satisfied by other [\#586](https://github.com/mitre/vulcan/pull/586) ([vanessuniq](https://github.com/vanessuniq))
-- Constrain requirement for locking Applicable -Does Not Meet and Applicable - Inherently Meets controls [\#587](https://github.com/mitre/vulcan/pull/587) ([vanessuniq](https://github.com/vanessuniq))
-- Notifications: Slack notification and SMTP Enhancement [\#594](https://github.com/mitre/vulcan/pull/594) ([vanessuniq](https://github.com/vanessuniq))
-- New Feature: Enable setting up Project visibility and Requesting access to a project [\#595](https://github.com/mitre/vulcan/pull/595) ([vanessuniq](https://github.com/vanessuniq))
-- STIG & Related Rules workflow [\#599](https://github.com/mitre/vulcan/pull/599) ([vanessuniq](https://github.com/vanessuniq))
-
-**Fixed bugs:**
-
-- VULCAN-528: Fix component admin on component cards [\#588](https://github.com/mitre/vulcan/pull/588) ([vanessuniq](https://github.com/vanessuniq))
-- If null data just return for related info [\#602](https://github.com/mitre/vulcan/pull/602) ([freddyfeelgood](https://github.com/freddyfeelgood))
-- Fix: Capture STIG Name on Upload [\#603](https://github.com/mitre/vulcan/pull/603) ([vanessuniq](https://github.com/vanessuniq))
-- Fix Related Rules Grouping [\#604](https://github.com/mitre/vulcan/pull/604) ([vanessuniq](https://github.com/vanessuniq))
-
-**Dependencies updates:**
-
-- Bump audited from 5.0.2 to 5.3.3 [\#568](https://github.com/mitre/vulcan/pull/568) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Bump semver from 5.7.1 to 5.7.2 [\#596](https://github.com/mitre/vulcan/pull/596) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Bump word-wrap from 1.2.3 to 1.2.4 [\#597](https://github.com/mitre/vulcan/pull/597) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Bump puma from 4.3.12 to 5.6.7 by [\#601](https://github.com/mitre/vulcan/pull/601) ([dependabot[bot]](https://github.com/apps/dependabot))
-
-**Closed issues:**
-
 - Give admins the ability to mark a project as 'open' [\#590](https://github.com/mitre/vulcan/issues/590)
 - Add constraint to satisfies workflow for configurable only requirements. [\#585](https://github.com/mitre/vulcan/issues/585)
 - Have Vulcan automatically list all available STIGs/SRGs [\#480](https://github.com/mitre/vulcan/issues/480)
+- STIG & Related Rules workflow [\#599](https://github.com/mitre/vulcan/pull/599) ([vanessuniq](https://github.com/vanessuniq))
+- New Feature: Enable setting up Project visibility and Requesting access to a project [\#595](https://github.com/mitre/vulcan/pull/595) ([vanessuniq](https://github.com/vanessuniq))
+- Notifications: Slack notification and SMTP Enhancement [\#594](https://github.com/mitre/vulcan/pull/594) ([vanessuniq](https://github.com/vanessuniq))
+- VULCAN-528: Fix component admin on component cards [\#588](https://github.com/mitre/vulcan/pull/588) ([vanessuniq](https://github.com/vanessuniq))
+- Constrain requirement for locking Applicable -Does Not Meet and Applicable - Inherently Meets controls [\#587](https://github.com/mitre/vulcan/pull/587) ([vanessuniq](https://github.com/vanessuniq))
+- Constrain the selectable list to allow only Apllicable - Configurable controls to be satisfied by other [\#586](https://github.com/mitre/vulcan/pull/586) ([vanessuniq](https://github.com/vanessuniq))
+
+**Fixed bugs:**
+
 - Fix component\_admin on component cards [\#528](https://github.com/mitre/vulcan/issues/528)
+- Fix Related Rules Grouping [\#604](https://github.com/mitre/vulcan/pull/604) ([vanessuniq](https://github.com/vanessuniq))
+- Fix: Capture STIG Name on Upload [\#603](https://github.com/mitre/vulcan/pull/603) ([vanessuniq](https://github.com/vanessuniq))
+- If null data just return for related info [\#602](https://github.com/mitre/vulcan/pull/602) ([freddyfeelgood](https://github.com/freddyfeelgood))
+
+**Dependencies updates:**
+
+- Bump puma from 4.3.12 to 5.6.7 [\#601](https://github.com/mitre/vulcan/pull/601) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump word-wrap from 1.2.3 to 1.2.4 [\#597](https://github.com/mitre/vulcan/pull/597) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump semver from 5.7.1 to 5.7.2 [\#596](https://github.com/mitre/vulcan/pull/596) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump audited from 5.0.2 to 5.3.3 [\#568](https://github.com/mitre/vulcan/pull/568) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+**Closed issues:**
+
 - Extend email notifications to alert users when their role changes. [\#593](https://github.com/mitre/vulcan/issues/593)
 - Enable users to provide their own Slack user ID if they would like to receive Slack DMs \(e.g. when added/removed from a project, role changes, review requests, etc\). [\#592](https://github.com/mitre/vulcan/issues/592)
 - Enable users \(admins\) to provide the Slack channel they want to use for each project or component. This can be provided on project/component creation or edited in the project/component metadata. [\#591](https://github.com/mitre/vulcan/issues/591)
