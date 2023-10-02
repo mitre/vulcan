@@ -11,20 +11,36 @@ Vulcan models the STIG intent form and the process of aligning security controls
 * Model the STIG creation process between the creator (vendor) and the approver (sponsor)
 * Write and test InSpec code on a local system, or across SSH, AWS, and Docker targets
 * Easily view control status and revision history
-* Enable distributed authorship with multiple authors working on sets of controls and reviewing each others' work
+* Enable distributed authorship with multiple authors working on sets of controls and reviewing each others' work.
+* Enable looking up related controls (controls using the same SRG ID) in published STIGs while auhtoring or reviewing a control.
+* View DISA published STIG Contents.
 * Confidential data in the database is encrypted using symmetric encryption
 * Authenticate via the local server, through GitHub, and through configuring an LDAP server.
+* Email and Slack notification enabled
+
+## Latest Release: [v2.1.4](https://github.com/mitre/vulcan/releases/tag/v2.1.4)
+
+You can pull the Docker image for the latest release with the following command:
+
+```bash
+  docker pull mitre/vulcan:v2.1.4
+```
+
+For more details on this release and previous ones, check the [Changelog](https://vulcan.mitre.org/CHANGELOG.html).
 
 ## Deploy Vulcan
+
 [Deploying Vulcan in Production](https://vulcan.mitre.org/docs/)&nbsp;&nbsp;&nbsp;[<img src="public/GitHub-Mark-Light-64px.png#gh-dark-mode-only" width="20"/>](https://pages.github.com/)[<img src="public/GitHub-Mark-64px.png#gh-light-mode-only" width="20"/>](https://pages.github.com/)
 
-## Deployment Dependencies:
+## Deployment Dependencies
+
 For Ruby (on Ubuntu):
-  * Ruby
-  * `build-essentials`
-  * Bundler
-  * `libq-dev`
-  * nodejs
+
+* Ruby
+* `build-essentials`
+* Bundler
+* `libq-dev`
+* nodejs
 
 ### Run With Ruby
 
@@ -32,9 +48,13 @@ For Ruby (on Ubuntu):
 
 1. Install the version of Ruby specified in `.ruby-version`
 2. Install postgres and rbenv
-3. gem install foreman
-4. rbenv install
-5. bin/setup
+3. Run `gem install foreman`
+4. Run `rbenv install`
+5. Run `bin/setup`
+
+  >> **Note**: `bin/setup` will install the JS dependencies andprepare the database.
+
+6. Run `rails db:seed` to seed the database.
 
 #### Running with Ruby
 
@@ -44,11 +64,18 @@ Make sure you have run the setup steps at least once before following these step
 2. foreman start -f Procfile.dev
 3. Navigate to `http://127.0.0.1:3000`
 
+#### Test User
+
+For testing purposes in the development environment, you can use the following credentials:
+
+**Email**: <admin@example.com>
+
+**Password**: 1234567ab!
+
 #### Stopping Vulcan
 
 1. Stop Vulcan by doing `ctrl + c`
 2. Stop the postgres server
-
 
 ## Configuration
 
@@ -87,6 +114,9 @@ and the impact on the application's performance when deciding on the frequency.
 
 >> Please refer to your hosting platform's documentation or support services for specific instructions on how to set up scheduled tasks or cron jobs.
 
+## Releasing Vulcan
+
+For detailed information about creating a release, please refer to the [release documentation](https://github.com/mitre/vulcan/wiki/Release_vulcan).
 
 ### NOTICE
 
@@ -105,4 +135,3 @@ This software was produced for the U. S. Government under Contract Number HHSM-5
 No other use other than that granted to the U. S. Government, or to those acting on behalf of the U. S. Government under that Clause is authorized without the express written permission of The MITRE Corporation.
 
 For further information, please contact The MITRE Corporation, Contracts Management Office, 7515 Colshire Drive, McLean, VA 22102-7539, (703) 983-6000.
-
