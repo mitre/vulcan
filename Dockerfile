@@ -1,4 +1,4 @@
-FROM ruby:2.7
+FROM harbor-repo.vmware.com/dockerhub-proxy-cache/ruby:2.7
 
 RUN curl -sS https://deb.nodesource.com/setup_16.x | bash -
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
@@ -17,4 +17,8 @@ RUN bundle install --without development test
 ADD . $APP_HOME
 RUN yarn install --check-files --production
 RUN SECRET_KEY_BASE=none NODE_ENV=production bundle exec rake assets:precompile
+
+RUN chown -R 1000:2000 /app
+USER 1000
+
 CMD ["rails","server","-b","0.0.0.0"]
