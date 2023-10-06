@@ -1,4 +1,4 @@
-FROM harbor-repo.vmware.com/dockerhub-proxy-cache/ruby:2.7
+FROM ruby:2.7
 
 RUN curl -sS https://deb.nodesource.com/setup_16.x | bash -
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
