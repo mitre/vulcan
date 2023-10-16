@@ -40,7 +40,7 @@ class VulcanAudit < ::Audited::Audit
     return if action == 'destroy'
 
     rule = Rule.find_by(id: auditable_id)
-    self.audited_username = "Control #{rule&.displayed_name}" if rule.present? & rule.component.present?
+    self.audited_username = "Control #{rule&.displayed_name}" if rule.present? && rule.component.present?
   end
 
   def format
