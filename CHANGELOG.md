@@ -1,5 +1,18 @@
 # Changelog
 
+## [v2.1.6](https://github.com/mitre/vulcan/tree/v2.1.6) (2023-11-08)
+
+[Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.5...v2.1.6)
+
+**Dependencies updates:**
+
+- Bump @babel/traverse from 7.15.4 to 7.23.2 [\#613](https://github.com/mitre/vulcan/pull/613) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump browserify-sign from 4.2.1 to 4.2.2 [\#614](https://github.com/mitre/vulcan/pull/614) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+**Closed issues:**
+
+- Update image to not run as root [\#611](https://github.com/mitre/vulcan/issues/611)
+
 ## [v2.1.5](https://github.com/mitre/vulcan/tree/v2.1.5) (2023-10-02)
 
 [Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.4...v2.1.5)

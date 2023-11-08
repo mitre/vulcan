@@ -18,12 +18,12 @@ Vulcan models the STIG intent form and the process of aligning security controls
 * Authenticate via the local server, through GitHub, and through configuring an LDAP server.
 * Email and Slack notification enabled
 
-## Latest Release: [v2.1.5](https://github.com/mitre/vulcan/releases/tag/v2.1.5)
+## Latest Release: [v2.1.6](https://github.com/mitre/vulcan/releases/tag/v2.1.6)
 
 You can pull the Docker image for the latest release with the following command:
 
 ```bash
-  docker pull mitre/vulcan:v2.1.5
+  docker pull mitre/vulcan:v2.1.6
 ```
 
 For more details on this release and previous ones, check the [Changelog](https://vulcan.mitre.org/CHANGELOG.html).
