@@ -23,6 +23,10 @@
     "vue-turbolinks": "^2.1.0"
   },
   "version": "2.1.6",
+  "engines": {
+    "node": "18.x",
+    "yarn": "1.x"
+  },
   "devDependencies": {
     "eslint": "^8.25.0",
     "eslint-config-prettier": "^8.3.0",
