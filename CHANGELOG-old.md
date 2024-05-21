@@ -1,25 +1,5 @@
 # Changelog
 
-## [v2.1.7](https://github.com/mitre/vulcan/tree/v2.1.7) (2024-05-21)
-
-[Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.5...v2.1.7)
-
-**Dependencies updates:**
-
-- Bump axios from 0.21.4 to 1.6.0 [\#617](https://github.com/mitre/vulcan/pull/617) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Bump the npm_and_yarn group across 1 directories with 1 update [\#619](https://github.com/mitre/vulcan/pull/619) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Bump the npm_and_yarn group across 1 directories with 1 update [\#620](https://github.com/mitre/vulcan/pull/620) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Bump the npm_and_yarn group across 1 directory with 3 updates [\#623](https://github.com/mitre/vulcan/pull/623) ([dependabot[bot]](https://github.com/apps/dependabot))
-
-**Closed issues:**
-- upgrade heroku to new service tier [\#624](https://github.com/mitre/vulcan/pull/624)
-
-
-
-**Merged pull requests:**
-
-- Upgrade to New Heroku Plan [\#624](https://github.com/mitre/vulcan/pull/624)([georgedias](https://github.com/georgedias))
-
 ## [v2.1.6](https://github.com/mitre/vulcan/tree/v2.1.6) (2023-11-08)
 
 [Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.5...v2.1.6)

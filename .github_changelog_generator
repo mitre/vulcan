@@ -1,6 +1,6 @@
 user=mitre
 project=vulcan
-future-release=v2.1.6
+future-release=v2.1.7
 since-tag=v2.0.0
 release-branch=master
 add-sections={"dependencies":{"prefix":"**Dependencies updates:**","labels":["dependencies"]}}
