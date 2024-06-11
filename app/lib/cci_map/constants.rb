@@ -5103,8 +5103,8 @@ module CciMap
       'CCI-005146': 'SR-12',
       'CCI-005147': 'AT-2 a 1',
       'CCI-005149': 'AU-16 (3)',
-      'CCI-005150': 'PM-30 (1)'      
-  }.freeze
+      'CCI-005150': 'PM-30 (1)'
+    }.freeze
   end
 end
 # rubocop:enable Metrics/ModuleLength
