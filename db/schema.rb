@@ -10,8 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_08_24_150144) do
-
+ActiveRecord::Schema[7.1].define(version: 2023_08_24_150144) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -19,8 +18,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.bigint "rule_id", null: false
     t.bigint "additional_question_id", null: false
     t.text "answer"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["additional_question_id"], name: "index_additional_answers_on_additional_question_id"
     t.index ["rule_id", "additional_question_id"], name: "index_additional_answers_on_rule_id_and_additional_question_id", unique: true
     t.index ["rule_id"], name: "index_additional_answers_on_rule_id"
@@ -31,8 +30,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.string "question_type", null: false
     t.string "options", default: [], array: true
     t.bigint "component_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["component_id", "name"], name: "index_additional_questions_on_component_id_and_name", unique: true
     t.index ["component_id"], name: "index_additional_questions_on_component_id"
   end
@@ -46,12 +45,12 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.string "user_type"
     t.string "username"
     t.string "action"
-    t.text "audited_changes"
+    t.jsonb "audited_changes"
     t.integer "version", default: 0
     t.string "comment"
     t.string "remote_address"
     t.string "request_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at", precision: nil
     t.integer "audited_user_id"
     t.string "audited_username"
     t.index ["associated_type", "associated_id"], name: "associated_index"
@@ -63,8 +62,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
 
   create_table "base_rules", force: :cascade do |t|
     t.boolean "locked", default: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "status", default: "Not Yet Determined"
     t.text "status_justification"
     t.text "artifact_description"
@@ -89,7 +88,7 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.text "inspec_control_file"
     t.text "inspec_control_body_lang", default: "ruby"
     t.text "inspec_control_file_lang", default: "ruby"
-    t.datetime "deleted_at"
+    t.datetime "deleted_at", precision: nil
     t.bigint "stig_id"
     t.bigint "stig_rule_id"
     t.string "srg_id"
@@ -111,23 +110,23 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.string "content_ref_name"
     t.string "content_ref_href"
     t.text "content"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["base_rule_id"], name: "index_checks_on_base_rule_id"
   end
 
   create_table "component_metadata", force: :cascade do |t|
     t.json "data", null: false
     t.bigint "component_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["component_id"], name: "by_component_id", unique: true
   end
 
   create_table "components", force: :cascade do |t|
     t.bigint "project_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "component_id"
     t.string "prefix"
     t.bigint "security_requirements_guide_id"
@@ -159,8 +158,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.text "mitigation_control"
     t.text "responsibility"
     t.text "ia_controls"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.boolean "mitigations_available"
     t.boolean "poam_available"
     t.text "poam"
@@ -171,8 +170,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.bigint "user_id"
     t.bigint "membership_id"
     t.string "role", default: "viewer", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "membership_type"
     t.index ["membership_id"], name: "index_memberships_on_membership_id"
     t.index ["user_id", "membership_type", "membership_id"], name: "by_user_and_membership", unique: true
@@ -182,8 +181,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
   create_table "project_access_requests", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "project_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["project_id"], name: "index_project_access_requests_on_project_id"
     t.index ["user_id", "project_id"], name: "index_project_access_requests_on_user_id_and_project_id", unique: true
     t.index ["user_id"], name: "index_project_access_requests_on_user_id"
@@ -192,15 +191,15 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
   create_table "project_metadata", force: :cascade do |t|
     t.json "data", null: false
     t.bigint "project_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["project_id"], name: "by_project_id", unique: true
   end
 
   create_table "projects", force: :cascade do |t|
     t.string "name", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.integer "memberships_count", default: 0
     t.string "admin_name"
     t.string "admin_email"
@@ -224,8 +223,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.string "subject"
     t.string "title"
     t.string "reference_type"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.bigint "base_rule_id"
   end
 
@@ -234,8 +233,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.bigint "rule_id"
     t.string "action"
     t.text "comment"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["rule_id"], name: "index_reviews_on_rule_id"
     t.index ["user_id"], name: "index_reviews_on_user_id"
   end
@@ -243,8 +242,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
   create_table "rule_descriptions", force: :cascade do |t|
     t.bigint "base_rule_id"
     t.text "description"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["base_rule_id"], name: "index_rule_descriptions_on_base_rule_id"
   end
 
@@ -260,8 +259,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.string "title", null: false
     t.string "version", null: false
     t.xml "xml", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.date "release_date"
     t.string "name"
     t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
@@ -274,8 +273,8 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.string "version"
     t.xml "xml"
     t.date "benchmark_date"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "name", null: false
     t.index ["stig_id", "version"], name: "stigs_stig_id_version_index", unique: true
   end
@@ -284,21 +283,21 @@ ActiveRecord::Schema.define(version: 2023_08_24_150144) do
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "reset_password_token"
-    t.datetime "reset_password_sent_at"
-    t.datetime "remember_created_at"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "reset_password_sent_at", precision: nil
+    t.datetime "remember_created_at", precision: nil
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "provider"
     t.string "uid"
     t.string "name"
     t.integer "sign_in_count", default: 0, null: false
-    t.datetime "current_sign_in_at"
-    t.datetime "last_sign_in_at"
+    t.datetime "current_sign_in_at", precision: nil
+    t.datetime "last_sign_in_at", precision: nil
     t.string "current_sign_in_ip"
     t.string "last_sign_in_ip"
     t.string "confirmation_token"
-    t.datetime "confirmed_at"
-    t.datetime "confirmation_sent_at"
+    t.datetime "confirmed_at", precision: nil
+    t.datetime "confirmation_sent_at", precision: nil
     t.string "unconfirmed_email"
     t.boolean "admin", default: false
     t.string "slack_user_id"

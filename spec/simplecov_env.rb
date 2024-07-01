@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'simplecov'
-require 'active_support/core_ext/numeric/time'
 
 module SimpleCovEnv
   module_function

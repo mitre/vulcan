@@ -40,7 +40,7 @@
 import ComponentCard from "./ComponentCard.vue";
 
 export default {
-  name: "Projectcomponent",
+  name: "Projectcomponents",
   components: {
     ComponentCard,
   },

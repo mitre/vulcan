@@ -24,13 +24,14 @@
               %b-tab{:title => Settings.ldap.servers.values.first['title']}
                 %b-card-text
                   = render 'devise/sessions/ldap'
-            - if local_login_enabled?
-              %b-tab{:active => params[:active_tab].eql?('local') ? true : false, :title => "Local Login"}
-                %b-card-text
-                  = render 'devise/sessions/local'
             - if user_registration_enabled?
               %b-tab{:active => params[:active_tab].eql?('registration') ? true : false, :title => "Register"}
                 %b-card-text
                   = render 'devise/registrations/form'
+            - if local_login_enabled?
+              %b-tab{:active => params[:active_tab].eql?('local') ? true : false, :title => "Local Login"}
+                %b-card-text
+                  = render 'devise/sessions/local'
+
 
     %br/

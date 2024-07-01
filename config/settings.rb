@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require 'settingslogic'
+# require 'settingslogic'
+require_relative 'initializers/settingslogic'
 
 # Load settings that are used globally throughout the application.
 # We load settings from a file in order to allow the most flexability

@@ -3,6 +3,6 @@
 # Audited initializer
 Rails.application.reloader.to_prepare do
   Audited.config do |config|
-    config.audit_class = VulcanAudit
+    config.audit_class = 'VulcanAudit'
   end
 end

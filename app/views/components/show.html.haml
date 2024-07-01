@@ -4,7 +4,7 @@
 
 #projectcomponent
   %projectcomponent{                                                                |
-    'v-bind:queried-rule': @rule_json,                                              |
+    'v-bind:queried-rule': @rule_json || {}.to_json,                                              |
     'v-bind:effective_permissions': @effective_permissions.to_json,                 |
     'v-bind:initial-component-state': @component_json,                              |
     'v-bind:project': @project_json,                                                |
