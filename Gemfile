@@ -85,10 +85,8 @@ group :test do
   # Easy installation and use of web drivers to run system tests with browsers
   # gem 'webdrivers'
 
-  gem 'database_cleaner-active_record'
-  gem 'rubocop', require: false
-  gem 'rubocop-performance'
-  gem 'rubocop-rails'
+  # gem 'database_cleaner-active_record'
+  gem 'database_cleaner-sequel'
   gem 'simplecov', require: false
 end
 
@@ -98,6 +96,12 @@ group :development, :test do
   gem 'factory_bot_rails'
   gem 'rspec-mocks'
   gem 'rspec-rails'
+  gem 'rubocop'
+  gem 'rubocop-performance'
+  gem 'rubocop-rails'
+  gem 'rubocop-rake', require: false
+  gem 'rubocop-rspec', require: false
+  gem 'rubocop-sequel', require: false
 end
 
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem

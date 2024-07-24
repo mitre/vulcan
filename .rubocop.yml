@@ -1,6 +1,12 @@
 require:
   - rubocop-rails
   - rubocop-performance
+  - rubocop-rake
+  - rubocop-rspec
+  - rubocop-sequel
+  - rubocop-capybara
+  - rubocop-factory_bot
+  - rubocop-rspec_rails
 
 AllCops:
   NewCops: enable
@@ -11,6 +17,7 @@ AllCops:
     - config/initializers/*
     - node_modules/**/*
     - "vendor/**/*"
+    - "Gemfile"
 Layout/LineLength:
   Max: 120
 Metrics/PerceivedComplexity:
@@ -38,4 +45,22 @@ Rails/ContentTag:
 Rails/FilePath:
   EnforcedStyle: "arguments"
 Rails/HasAndBelongsToMany:
+  Enabled: false
+
+RSpec/AnyInstance:
+  Enabled: false
+RSpec/ExampleLength:
+  Enabled: false
+RSpec/MultipleExpectations:
+  Enabled: false
+RSpec/MultipleMemoizedHelpers:
+  Enabled: false
+RSpec/NestedGroups:
+  Enabled: false
+
+# Following this rule's suggestions breaks postgres support
+Sequel/ConcurrentIndex:
+  Enabled: false
+
+Gemspec/RequireMFA:
   Enabled: false
