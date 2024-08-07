@@ -89,11 +89,12 @@
       </template>
 
       <template #cell(actions)="data">
-        <RenameProjectModal
+        <UpdateProjectDetailsModal
           v-if="is_vulcan_admin || data.item.admin"
           :project="data.item"
+          :is_project_table="true"
           class="floatright"
-          @projectRenamed="refreshProjects"
+          @projectUpdated="refreshProjects"
         />
         <span v-if="!data.item.is_member && !data.item.access_request_id">
           <b-button
@@ -146,11 +147,11 @@
 
 <script>
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import RenameProjectModal from "./RenameProjectModal.vue";
+import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 
 export default {
   name: "ProjectsTable",
-  components: { RenameProjectModal },
+  components: { UpdateProjectDetailsModal },
   mixins: [DateFormatMixinVue],
   props: {
     projects: {
@@ -298,7 +299,7 @@ export default {
       }
     },
     refreshProjects: function () {
-      this.$emit("projectRenamed");
+      this.$emit("projectUpdated");
     },
     toggleTruncate: function (id) {
       this.$set(this.truncated, id, !this.truncated[id]);
