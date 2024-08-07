@@ -35,6 +35,7 @@
                 v-model="search"
                 :list="addDisplayNameToComponents(available_components)"
                 :filter-by-query="true"
+                :max-suggestions="0"
                 value-attribute="id"
                 display-attribute="displayed"
                 placeholder="Search for a component by name..."
