@@ -215,6 +215,10 @@
               <i v-if="!showDetails" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
             </div>
             <b-collapse id="collapse-details" v-model="showDetails">
+              <p class="ml-2 mb-0 mt-2"><strong>Name: </strong>{{ project.name }}</p>
+              <p v-if="project.description" class="ml-2 mb-0 mt-2">
+                <strong>Description: </strong>{{ project.description }}
+              </p>
               <p class="ml-2 mb-0 mt-2">
                 <strong>Applicable - Configurable: </strong> {{ project.details.ac }} ({{
                   ((project.details.ac / project.details.total) * 100).toFixed(2)
@@ -256,6 +260,11 @@
                 }}%)
               </p>
               <p class="ml-2 mb-0 mt-2"><strong>Total: </strong> {{ project.details.total }}</p>
+              <UpdateProjectDetailsModal
+                v-if="role_gte_to(effective_permissions, 'admin')"
+                :project="project"
+                @projectUpdated="refreshProject"
+              />
             </b-collapse>
           </b-col>
         </b-row>
@@ -328,6 +337,7 @@ import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 import DiffViewer from "./DiffViewer.vue";
 import RevisionHistory from "./RevisionHistory.vue";
+import UpdateProjectDetailsModal from "../projects/UpdateProjectDetailsModal.vue";
 
 export default {
   name: "Project",
@@ -340,6 +350,7 @@ export default {
     NewComponentModal,
     DiffViewer,
     RevisionHistory,
+    UpdateProjectDetailsModal,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
