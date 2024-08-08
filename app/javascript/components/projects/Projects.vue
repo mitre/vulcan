@@ -4,7 +4,7 @@
     <ProjectsTable
       :projects="projectlist"
       :is_vulcan_admin="is_vulcan_admin"
-      @projectRenamed="refreshProjects"
+      @projectUpdated="refreshProjects"
     />
   </div>
 </template>
