@@ -400,7 +400,11 @@ export default {
       });
     },
     sortedAvailableComponents: function () {
-      return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
+      return _.sortBy(
+        this.project.available_components,
+        [(component) => component.name.toLowerCase(), "version", "release"],
+        ["asc"]
+      );
     },
     uniqueComponentNames: function () {
       return _.uniq(this.sortedComponents().map((c) => c["name"]));
