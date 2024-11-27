@@ -64,6 +64,32 @@ This will fetch the latest version of the container, redeploy if a newer version
 
 `docker-compose down` # From the source directory you started from.
 
-### Tasks
+## Tasks
 
-Refer to the [main page](https://vulcan.mitre.org/#tasks) to see the available rake tasks that can be scheduled in production.
+### STIG/SRG Puller Task
+
+This application includes a rake task that pulls published Security Requirements Guides (SRGs) and Security Technical Implementation Guides (STIGs) from public.cyber.mil and saves them locally. This task can be executed manually or set up to run on a schedule in a production environment.
+
+#### Manual Execution
+
+You can manually execute the STIG/SRG puller task by running the following command in your terminal:
+
+```shell
+bundle exec rails stig_and_srg_puller:pull
+```
+
+#### Scheduling the Task in Production
+
+If you wish to automate the execution of this task in a production environment, you can set up a task scheduler on your hosting platform.
+The configuration will depend on your specific hosting service.
+
+Generally, you will need to create a job that runs the following command:
+
+```shell
+bundle exec rails stig_and_srg_puller:pull
+```
+
+You can set the frequency of this task according to your preference or needs. However, it's important to consider the volume of data being pulled
+and the impact on the application's performance when deciding on the frequency.
+
+Please refer to your hosting platform's documentation or support services for specific instructions on how to set up scheduled tasks or cron jobs.
