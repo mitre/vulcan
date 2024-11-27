@@ -8,6 +8,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 * [Dependencies](#dependencies)
 * [Run with Docker](#run-with-docker)
 * [Tasks](#tasks)
+* [Environment Variables](#environment-variables)
 
 ## Installation
 
@@ -28,6 +29,7 @@ Given that Vulcan requires at least a database service, we use Docker Compose.
 3. Navigate to the base folder where `docker-compose.yml` is located
 4. Run the following commands in a terminal window from the vulcan source directory:
    1. `./setup-docker-secrets.sh`
+      ([environment variables](#environment-variables) should be set beforehand)
    2. `docker-compose up -d`
    3. `docker-compose run --rm web rake db:create db:schema:load db:migrate`
    4. `docker-compose run --rm web rake db:create_admin`
@@ -93,3 +95,6 @@ You can set the frequency of this task according to your preference or needs. Ho
 and the impact on the application's performance when deciding on the frequency.
 
 Please refer to your hosting platform's documentation or support services for specific instructions on how to set up scheduled tasks or cron jobs.
+
+## Environment Variables
+
