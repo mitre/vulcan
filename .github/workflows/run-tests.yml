@@ -41,7 +41,7 @@ jobs:
         with:
           node-version: '14'
       - name: Cache ruby gems
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
           path: vendor/bundle
           key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
@@ -70,7 +70,7 @@ jobs:
       - name: Run eslint
         run: yarn lint:ci
       - name: Upload coverage results
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report
