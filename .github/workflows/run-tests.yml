@@ -63,8 +63,8 @@ jobs:
           echo "gem: --no-document" > ~/.gemrc
           gem install bundler --conservative
           bundle config path vendor/bundle
-          bin/setup
-          bundle exec rails spec
+          bundle install
+          bundle exec rails db:create db:schema:load spec
       - name: Run Rubocop
         run: bundle exec rubocop
       - name: Run eslint
