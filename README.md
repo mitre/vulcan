@@ -48,12 +48,12 @@ For Ruby (on Ubuntu):
 #### Setup Ruby
 
 1. Install the version of Ruby specified in `.ruby-version`
-2. Install postgres and rbenv
-3. Run `gem install foreman`
-4. Run `rbenv install`
+2. Install postgres and asdf
+3. Run `asdf install`
+4. Run `gem install foreman`
 5. Run `bin/setup`
 
-  >> **Note**: `bin/setup` will install the JS dependencies andprepare the database.
+  >> **Note**: `bin/setup` will install the JS dependencies and prepare the database.
 
 6. Run `rails db:seed` to seed the database.
 
