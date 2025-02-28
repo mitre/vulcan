@@ -121,7 +121,7 @@ For detailed information about creating a release, please refer to the [release 
 
 ### NOTICE
 
-© 2022 The MITRE Corporation.
+© 2025 The MITRE Corporation.
 
 Approved for Public Release; Distribution Unlimited. Case Number 18-3678.
 
