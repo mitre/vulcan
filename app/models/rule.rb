@@ -180,7 +180,6 @@ class Rule < BaseRule
       ident,
       version,
       "#{component.prefix}-#{rule_id}",
-      SEVERITIES_MAP[rule_severity] || rule_severity,
       srg_rule.title, # original srg title
       title,
       srg_rule.disa_rule_descriptions.first&.vuln_discussion, # original srg vuln discussion
@@ -190,8 +189,9 @@ class Rule < BaseRule
       export_checktext,
       srg_rule.fixtext, # original SRG fix text
       export_fixtext,
-      status_justification,
+      SEVERITIES_MAP[rule_severity] || rule_severity,
       disa_rule_descriptions.first&.mitigations,
+      status_justification,
       artifact_description,
       vendor_comments_with_satisfactions
     ]
