@@ -191,8 +191,8 @@ class Rule < BaseRule
       export_fixtext,
       SEVERITIES_MAP[rule_severity] || rule_severity,
       disa_rule_descriptions.first&.mitigations,
-      status_justification,
       artifact_description,
+      status_justification,
       vendor_comments_with_satisfactions
     ]
   end
