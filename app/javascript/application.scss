@@ -1,9 +1,11 @@
-@import "~bootstrap";
-@import "~bootstrap-vue";
+/* 
+ * Temporarily removed imports - we'll add these back properly later
+ * when we fully configure the build process
+ */
 
-// The default font path is '../fonts', which fails with Webpacker.
-$mdi-font-path: "~@mdi/font/fonts/";
-@import "~@mdi/font/scss/materialdesignicons";
+// Placeholder for Bootstrap
+// Placeholder for Bootstrap Vue
+// Placeholder for Material Design Icons
 
 .clickable {
   cursor: pointer;
@@ -38,25 +40,8 @@ $mdi-font-path: "~@mdi/font/fonts/";
   white-space: pre-wrap;
 }
 
-// Responsive typography
+// Responsive typography temporarily removed
+// Will add back once Bootstrap is properly imported
 html {
   font-size: 0.8rem;
-}
-
-@include media-breakpoint-up(sm) {
-  html {
-    font-size: 0.7rem;
-  }
-}
-
-@include media-breakpoint-up(md) {
-  html {
-    font-size: 0.8rem;
-  }
-}
-
-@include media-breakpoint-up(lg) {
-  html {
-    font-size: 1rem;
-  }
 }

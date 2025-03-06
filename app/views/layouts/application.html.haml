@@ -5,12 +5,13 @@
     %title Vulcan Profile Builder
     = csrf_meta_tags
     = csp_meta_tag
-    = stylesheet_pack_tag 'application'
-    = javascript_pack_tag 'application', 'data-turbolinks-track': 'reload'
-    = javascript_pack_tag 'navbar'
-    / If using inline styles in the vue pack, loading the stylesheet_pack_tag as well becomes necessary
-    = stylesheet_pack_tag 'navbar'
-    = javascript_pack_tag 'toaster'
+    = stylesheet_link_tag 'application', 'data-turbolinks-track': 'reload'
+    = javascript_include_tag 'application', 'data-turbolinks-track': 'reload', type: 'module'
+    / Temporarily disabled, will migrate in later steps
+    /= javascript_pack_tag 'navbar'
+    /= stylesheet_pack_tag 'navbar'
+    /= javascript_pack_tag 'toaster'
+    / For now, we're disabling these scripts to test the basic asset pipeline
 
     = yield :assets
   %body

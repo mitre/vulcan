@@ -24,16 +24,22 @@
   },
   "version": "2.1.8",
   "devDependencies": {
+    "esbuild": "^0.25.0",
+    "esbuild-sass-plugin": "^3.3.1",
     "eslint": "^8.25.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-prettier-vue": "^3.1.0",
     "eslint-plugin-vue": "^9.6.0",
     "prettier": "^2.3.2",
+    "sass": "^1.85.1",
     "webpack-dev-server": "^3.10.3"
   },
   "scripts": {
     "lint": "eslint --fix --ext .js,.vue app/javascript",
-    "lint:ci": "eslint --max-warnings 0 --ext .js,.vue app/javascript"
-  }
+    "lint:ci": "eslint --max-warnings 0 --ext .js,.vue app/javascript",
+    "build": "node esbuild.config.js",
+    "build:css": "sass ./app/javascript/application.scss:./app/assets/builds/application.css --load-path=node_modules"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
