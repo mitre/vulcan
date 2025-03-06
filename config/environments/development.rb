@@ -77,4 +77,11 @@ Rails.application.configure do
   # Use an evented file watcher to asynchronously detect changes in source code,
   # routes, locales, etc. This feature depends on the listen gem.
   config.file_watcher = ActiveSupport::EventedFileUpdateChecker
+
+  # Configure a separate log file for JavaScript/asset errors
+  javascript_logger = Logger.new(Rails.root.join('log', 'javascript_errors.log'))
+  javascript_logger.formatter = proc do |severity, datetime, progname, msg|
+    "#{datetime}: #{severity} - #{msg}\n"
+  end
+  config.javascript_logger = javascript_logger
 end
