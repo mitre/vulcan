@@ -71,3 +71,33 @@ We have successfully completed the initial phase of migrating from Webpacker to 
 - Login credentials: admin@example.com / 1234567ab!
 - Dev server command: `yarn dev`
 - Build command: `yarn build && yarn build:css`
+
+## Helper Tools
+
+We've created several tools to assist with the migration process:
+
+1. **Migration Inventory Generator** - Scans templates for asset pack tags
+   - Run: `bundle exec rails migration:find_pack_tags`
+   - Output: `MIGRATION_INVENTORY.md`
+   - Use this to identify which templates and entry points need migration
+
+2. **Error Log Extractor** - Captures errors from Rails logs
+   - Run: `bundle exec rails migration:log_errors`
+   - Output: `ERROR_LOG.md`
+   - Use this when errors occur to understand what needs fixing
+
+3. **JavaScript Error Logging** - Custom logger for JavaScript errors
+   - Configured in `config/environments/development.rb`
+   - Output: `log/javascript_errors.log`
+
+The `MIGRATION_INVENTORY.md` file shows we need to migrate 10 entry points:
+- new_project
+- project
+- project_component
+- project_components
+- projects
+- rules
+- security_requirements_guides
+- stig
+- stigs
+- users
