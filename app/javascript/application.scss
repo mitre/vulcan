@@ -1,11 +1,14 @@
-/* 
- * Temporarily removed imports - we'll add these back properly later
- * when we fully configure the build process
- */
+/* CSS entry point for application */
 
-// Placeholder for Bootstrap
-// Placeholder for Bootstrap Vue
-// Placeholder for Material Design Icons
+// Import Bootstrap styles directly - we're using the sass plugin to process this
+@import "../node_modules/bootstrap/scss/bootstrap";
+
+// Import Bootstrap Vue styles
+@import "../node_modules/bootstrap-vue/dist/bootstrap-vue.css";
+
+// Material Design Icons
+$mdi-font-path: "../node_modules/@mdi/font/fonts";
+@import "../node_modules/@mdi/font/scss/materialdesignicons.scss";
 
 .clickable {
   cursor: pointer;

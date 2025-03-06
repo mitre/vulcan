@@ -4,5 +4,14 @@ import 'turbolinks'
 import '@rails/activestorage'
 import './channels'
 
-// This will be replaced with proper component imports
-console.log('Application JS loaded');
+// Vue setup
+import Vue from 'vue'
+import TurbolinksAdapter from 'vue-turbolinks'
+import BootstrapVue from 'bootstrap-vue'
+
+// Use Vue plugins
+Vue.use(TurbolinksAdapter)
+Vue.use(BootstrapVue)
+
+// Import main components
+// We'll gradually migrate components from their individual packs
