@@ -64,8 +64,8 @@
 </template>
 
 <script>
-import DisaRuleDescriptionForm from "../rules/forms/DisaRuleDescriptionForm";
-import CheckForm from "../rules/forms/CheckForm";
+import DisaRuleDescriptionForm from "../rules/forms/DisaRuleDescriptionForm.vue";
+import CheckForm from "../rules/forms/CheckForm.vue";
 export default {
   name: "StigRuleDetails",
   components: { DisaRuleDescriptionForm, CheckForm },

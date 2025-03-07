@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import AdditionalAnswerForm from "./AdditionalAnswerForm";
+import AdditionalAnswerForm from "./AdditionalAnswerForm.vue";
 
 export default {
   name: "AdditionalQuestions",

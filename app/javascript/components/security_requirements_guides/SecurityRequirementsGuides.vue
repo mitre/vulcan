@@ -24,8 +24,8 @@
 <script>
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import SecurityRequirementsGuidesTable from "./SecurityRequirementsGuidesTable";
-import SecurityRequirementsGuidesUpload from "./SecurityRequirementsGuidesUpload";
+import SecurityRequirementsGuidesTable from "./SecurityRequirementsGuidesTable.vue";
+import SecurityRequirementsGuidesUpload from "./SecurityRequirementsGuidesUpload.vue";
 
 export default {
   name: "SecurityRequirementsGuides",

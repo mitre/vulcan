@@ -200,11 +200,11 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
 
-import AdditionalQuestions from "./forms/AdditionalQuestions";
-import RuleForm from "./forms/RuleForm";
-import RuleDescriptionForm from "./forms/RuleDescriptionForm";
-import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm";
-import CheckForm from "./forms/CheckForm";
+import AdditionalQuestions from "./forms/AdditionalQuestions.vue";
+import RuleForm from "./forms/RuleForm.vue";
+import RuleDescriptionForm from "./forms/RuleDescriptionForm.vue";
+import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm.vue";
+import CheckForm from "./forms/CheckForm.vue";
 import CommentModal from "../shared/CommentModal.vue";
 
 export default {

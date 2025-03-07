@@ -466,9 +466,9 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
-import AdditionalQuestions from "./AdditionalQuestions";
-import CheckForm from "./CheckForm";
+import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm.vue";
+import AdditionalQuestions from "./AdditionalQuestions.vue";
+import CheckForm from "./CheckForm.vue";
 
 export default {
   name: "RuleForm",

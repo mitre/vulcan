@@ -27,8 +27,8 @@
 <script>
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable";
-import SecurityRequirementsGuidesUpload from "../security_requirements_guides/SecurityRequirementsGuidesUpload";
+import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable.vue";
+import SecurityRequirementsGuidesUpload from "../security_requirements_guides/SecurityRequirementsGuidesUpload.vue";
 
 export default {
   name: "Stigs",
