@@ -1,6 +1,5 @@
 - content_for :assets do
-  = javascript_pack_tag 'project'
-  = stylesheet_pack_tag 'project'
+  = javascript_include_tag 'project', 'data-turbolinks-track': 'reload', type: 'module'
 
 #Project
   %Project{                                                                         |

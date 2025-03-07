@@ -1,5 +1,5 @@
 - content_for :assets do
-  = javascript_pack_tag 'users'
+  = javascript_include_tag 'users', 'data-turbolinks-track': 'reload', type: 'module'
 
 #users
   %Users{                                   |

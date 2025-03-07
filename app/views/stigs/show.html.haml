@@ -1,6 +1,5 @@
 - content_for :assets do
-  = javascript_pack_tag 'stig'
-  = stylesheet_pack_tag 'project_component'
+  = javascript_include_tag 'stig', 'data-turbolinks-track': 'reload', type: 'module'
 
 #stig
   %stig{                                                                |

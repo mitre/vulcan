@@ -1,10 +1,22 @@
 - content_for :assets do
-  = javascript_pack_tag 'login'
+  = javascript_include_tag 'login', 'data-turbolinks-track': 'reload', type: 'module'
 
 .row
   .col-md-12
     %h1 Welcome to Vulcan
     %br/
+    
+.row
+  .col-md-12
+    #debug-section.alert.alert-info
+      %h4 Debug Information
+      %p This section will help us diagnose the white screen issue. It should disappear if Vue is rendering correctly.
+      %p HTML is loading correctly since you can see this message. If Vue is working correctly, you should see the diagnostic information below.
+      %p
+        %strong If you don't see anything below this text, there's a problem with Vue initialization.
+      
+#vue-diagnostic-placeholder
+  %b-diagnostic
 .row
   .col-md-5.order-2.order-md-1
     = render 'devise/shared/what_is_vulcan'

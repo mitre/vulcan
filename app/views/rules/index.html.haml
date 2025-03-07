@@ -1,6 +1,5 @@
 - content_for :assets do
-  = javascript_pack_tag 'rules'
-  = stylesheet_pack_tag 'rules'
+  = javascript_include_tag 'rules', 'data-turbolinks-track': 'reload', type: 'module'
 
 #Rules
   %Rules{                                                                           |
