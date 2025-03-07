@@ -1,0 +1,65 @@
+development:
+  welcome_text: 'Welcome to Vulcan'
+  contact_email: 'do_not_reply@vulcan'
+  app_url: 'http://localhost:3000'
+  smtp:
+    enabled: false
+  local_login:
+    enabled: true
+    email_confirmation: false
+    session_timeout: 60
+  user_registration:
+    enabled: true
+  project:
+    create_permission_enabled: true
+  ldap:
+    enabled: false
+  oidc:
+    enabled: false
+  slack:
+    enabled: false
+  providers: []
+
+test:
+  welcome_text: 'Welcome to Vulcan'
+  contact_email: 'do_not_reply@vulcan'
+  app_url: 'http://localhost:3000'
+  smtp:
+    enabled: false
+  local_login:
+    enabled: true
+    email_confirmation: false
+    session_timeout: 60
+  user_registration:
+    enabled: true
+  project:
+    create_permission_enabled: true
+  ldap:
+    enabled: false
+  oidc:
+    enabled: false
+  slack:
+    enabled: false
+  providers: []
+
+production:
+  welcome_text: 'Welcome to Vulcan'
+  contact_email: 'do_not_reply@vulcan'
+  app_url: 'http://localhost:3000'
+  smtp:
+    enabled: false
+  local_login:
+    enabled: true
+    email_confirmation: false
+    session_timeout: 60
+  user_registration:
+    enabled: true
+  project:
+    create_permission_enabled: true
+  ldap:
+    enabled: false
+  oidc:
+    enabled: false
+  slack:
+    enabled: false
+  providers: []

@@ -1,0 +1,15 @@
+version: '3.5'
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - vulcan_dbdata_dev:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: vulcan_development
+    ports:
+      - "5432:5432"
+
+volumes:
+  vulcan_dbdata_dev:

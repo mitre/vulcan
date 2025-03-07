@@ -23,6 +23,10 @@ default: &default
 
 development:
   <<: *default
+  host: localhost
+  port: 5432
+  username: postgres
+  password: vulcan_development
   database: vulcan_vue_development
 
   # The specified database role being used to connect to postgres.
@@ -57,6 +61,10 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
+  host: localhost
+  port: 5432
+  username: postgres
+  password: vulcan_development
   database: vulcan_vue_test
 
 # As with config/credentials.yml, you never want to store sensitive information,

@@ -13,7 +13,9 @@ puts "Populating database for demo use:\n\n"
 # Seeds for Users #
 # --------------- #
 puts 'Creating Users...'
-User.create(name: FFaker::Name.name, email: 'admin@example.com', password: '1234567ab!', admin: true)
+# Make sure to create the admin user from the README
+User.create(name: 'Admin', email: 'admin@example.com', password: '1234567ab!', admin: true) unless User.exists?(email: 'admin@example.com')
+
 users = []
 10.times do
   name = FFaker::Name.name
