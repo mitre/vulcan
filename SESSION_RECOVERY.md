@@ -79,18 +79,23 @@ Our approach is now working correctly:
 
 ## Next Steps
 
-1. **Address Component Registration Issues:**
+1. **Fix Commit Co-authorship:**
+   - Update recent commits to include proper co-authorship attribution
+   - All commits must include "Co-Authored-By: Aaron Lippold <lippold@gmail.com>"
+   - This must be addressed before merging or continuing with other fixes
+
+2. **Address Component Registration Issues:**
    - Fix bootstrap-vue-shim.js import in relevant files
    - Ensure all components are properly registered
 
-2. **Clean Up Diagnostic Components:**
+3. **Clean Up Diagnostic Components:**
    - Remove or properly implement diagnostic components once stable
 
-3. **Additional Testing:**
+4. **Additional Testing:**
    - Test each page thoroughly to ensure all components render correctly
    - Focus on previously problematic components
 
-4. **Address Vue Devtools Conflicts:**
+5. **Address Vue Devtools Conflicts:**
    - Investigate and resolve Vue Devtools conflicts
 
 ## Migration Progress Tracking

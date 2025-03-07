@@ -7,6 +7,18 @@
 - **MIGRATION_INVENTORY.md**: Inventory of JavaScript pack tags that need migration
 - **webpacker-to-jsbundling-migration-guide.md**: Practical guide for migrating from Webpacker
 
+## Project Policies
+
+### Git Commit Standards
+- All commits MUST be co-authored by Aaron Lippold <lippold@gmail.com>
+- Commits should include proper signing 
+- Format for co-authorship:
+  ```
+  Co-Authored-By: Aaron Lippold <lippold@gmail.com>
+  Co-Authored-By: Claude <noreply@anthropic.com>
+  ```
+- Existing commits without proper co-authorship must be amended before merging
+
 ## Build & Test Commands
 - Run development server with hot-reloading: `yarn dev`
 - Run server only (no asset compilation): `bundle exec rails s`
