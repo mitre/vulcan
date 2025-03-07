@@ -43,3 +43,4 @@ yarn-debug.log*
 /app/assets/builds/*
 !/app/assets/builds/.keep
 dev_output.log
+benchmark-tmp/
