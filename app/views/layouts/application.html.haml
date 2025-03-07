@@ -2,16 +2,18 @@
 %html
   %head
     %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}/
+    %meta{:name => "viewport", :content => "width=device-width, initial-scale=1, shrink-to-fit=no"}/
     %title Vulcan Profile Builder
     = csrf_meta_tags
     = csp_meta_tag
     = stylesheet_link_tag 'application', 'data-turbolinks-track': 'reload'
+    = stylesheet_link_tag 'bootstrap-vue', 'data-turbolinks-track': 'reload'
+    = stylesheet_link_tag 'mdi/materialdesignicons.min', 'data-turbolinks-track': 'reload'
     = javascript_include_tag 'application', 'data-turbolinks-track': 'reload', type: 'module'
-    / Temporarily disabled, will migrate in later steps
-    /= javascript_pack_tag 'navbar'
-    /= stylesheet_pack_tag 'navbar'
-    /= javascript_pack_tag 'toaster'
-    / For now, we're disabling these scripts to test the basic asset pipeline
+    = javascript_include_tag 'navbar', 'data-turbolinks-track': 'reload', type: 'module'
+    = javascript_include_tag 'toaster', 'data-turbolinks-track': 'reload', type: 'module'
+    
+    / CSS customizations can be added here if needed
 
     = yield :assets
   %body
@@ -31,3 +33,4 @@
       }
     .pt-3.container-fluid{"data-behavior" => "vue"}
       = yield
+      

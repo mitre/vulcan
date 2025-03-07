@@ -1,14 +1,22 @@
 /* CSS entry point for application */
 
-// Import Bootstrap styles directly - we're using the sass plugin to process this
-@import "../node_modules/bootstrap/scss/bootstrap";
+// Import Bootstrap styles
+@import "bootstrap/scss/bootstrap";
 
-// Import Bootstrap Vue styles
-@import "../node_modules/bootstrap-vue/dist/bootstrap-vue.css";
+// Note: Material Design Icons are now loaded from the asset pipeline
+// via stylesheet_link_tag in app/views/layouts/application.html.haml
 
-// Material Design Icons
-$mdi-font-path: "../node_modules/@mdi/font/fonts";
-@import "../node_modules/@mdi/font/scss/materialdesignicons.scss";
+// Bootstrap Vue CSS is loaded from the precompiled CSS file
+// We'll let the asset pipeline handle this
+
+// Basic styles
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: #212529;
+}
+
+// Note: This will be compiled by sass and bundled with all assets in the proper locations
 
 .clickable {
   cursor: pointer;
