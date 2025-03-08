@@ -1,0 +1,73 @@
+#!/bin/bash
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}Starting test environment with LDAP support...${NC}"
+
+# Stop existing containers
+docker-compose -f docker-compose.test.yml down --remove-orphans 2>/dev/null || true
+if [ "$(docker ps -q -f name=ldap-test-server)" ]; then
+    docker stop ldap-test-server
+    docker rm ldap-test-server
+fi
+
+# Set platform environment variable based on architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then
+    echo -e "${YELLOW}Detected ARM architecture (M1/M2/M3 Mac)${NC}"
+    export DOCKER_PLATFORM=linux/arm64
+    # Bitnami image supports ARM natively
+else
+    echo -e "${YELLOW}Detected x86_64 architecture${NC}"
+    export DOCKER_PLATFORM=linux/amd64
+fi
+
+# Start PostgreSQL and LDAP servers
+docker-compose -f docker-compose.test.yml up -d
+
+echo -e "${YELLOW}Waiting for services to be healthy...${NC}"
+# Wait for services to be healthy
+attempt=0
+max_attempts=30
+interval=2
+
+while [ $attempt -lt $max_attempts ]; do
+    echo -n "."
+    
+    db_status=$(docker ps --filter "name=vulcan_db-test" --format "{{.Status}}" | grep -o "healthy" || echo "")
+    ldap_status=$(docker ps --filter "name=vulcan_ldap-test" --format "{{.Status}}" | grep -o "healthy" || echo "")
+    
+    if [ "$db_status" = "healthy" ] && [ "$ldap_status" = "healthy" ]; then
+        echo -e "\n${GREEN}All services are healthy!${NC}"
+        break
+    fi
+    
+    attempt=$((attempt+1))
+    sleep $interval
+done
+
+if [ $attempt -eq $max_attempts ]; then
+    echo -e "\n${YELLOW}Services are still starting. Proceeding anyway...${NC}"
+fi
+
+# Create test database
+echo -e "${YELLOW}Creating test database...${NC}"
+DATABASE_URL="postgres://postgres:vulcan_test@localhost:5432/postgres" \
+bundle exec rails db:create db:test:prepare RAILS_ENV=test
+
+# Run tests with LDAP environment variables
+echo -e "${GREEN}Running tests with LDAP support...${NC}"
+VULCAN_ENABLE_LDAP=true \
+VULCAN_LDAP_ATTRIBUTE=mail \
+VULCAN_LDAP_BIND_DN="cn=admin,dc=planetexpress,dc=com" \
+VULCAN_LDAP_BASE="ou=people,dc=planetexpress,dc=com" \
+VULCAN_LDAP_PORT=389 \
+VULCAN_LDAP_ADMIN_PASS="GoodNewsEveryone" \
+DATABASE_URL="postgres://postgres:vulcan_test@localhost:5432/vulcan_test" \
+bundle exec rspec $@
+
+echo -e "${GREEN}Tests completed!${NC}"
