@@ -97,6 +97,16 @@
 - Use Single File Component format (.vue)
 - Scope component styles with scoped attribute
 
+### Component Adaptation Patterns
+When adapting components for similar but different data structures (like SRG/STIG):
+- Extend the base component with a new adapter component
+- Add error handling for missing or null properties
+- Create placeholder data for required fields when empty
+- Add extensive null checks with optional chaining (?.)
+- Override methods that access specific data structures
+- Implement comprehensive logging for debugging
+- Use try/catch blocks to avoid crashing on data errors
+
 ### Testing
 - Group tests with describe/context/it blocks
 - Use Factory Bot for test data
