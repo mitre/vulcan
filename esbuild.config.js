@@ -15,6 +15,7 @@ const entryPoints = [
   'app/javascript/project_component.js',
   'app/javascript/rules.js',
   'app/javascript/security_requirements_guides.js',
+  'app/javascript/srg.js',
   'app/javascript/stig.js',
   'app/javascript/stigs.js',
   'app/javascript/users.js',
@@ -70,7 +71,7 @@ const buildOptions = {
   // Fix for CSS paths - allow both node_modules and relative paths
   resolveExtensions: ['.js', '.json', '.vue', '.css', '.scss'],
   // Handle assets with appropriate names to match CSS expectations
-  assetNames: 'materialdesignicons-webfont.[ext]',
+  assetNames: '[name]',
 };
 
 // Add watch option only if in watch mode

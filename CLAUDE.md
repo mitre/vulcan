@@ -42,10 +42,15 @@
    - For third-party CSS that needs to be included directly, import it in application.scss
    - Let Sass handle imports of Bootstrap and other frameworks
 
-3. **Font Handling**:
+3. **Material Design Icons and Font Handling**:
    - Store fonts in app/assets/fonts/
    - Reference them through the asset pipeline with stylesheet_link_tag
    - For libraries like MDI, use the precompiled CSS from app/assets/stylesheets/mdi/
+   - CRITICAL: Always use `assetNames: 'materialdesignicons-webfont.[ext]'` in esbuild.config.js  
+   - MDI CSS expects font files at exact path /assets/materialdesignicons-webfont.[ext]
+   - The CSS already has correct /assets/ prefix in font URLs
+   - Include MDI CSS with `stylesheet_link_tag 'mdi/materialdesignicons.min'`
+   - NEVER change this pattern or manually copy font files around
    - Set `publicPath: '/assets'` in esbuild.config.js to ensure proper URL resolution
 
 4. **JavaScript Module Loading**:

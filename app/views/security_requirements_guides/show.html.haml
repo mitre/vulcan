@@ -1,0 +1,10 @@
+- content_for :assets do
+  = javascript_include_tag 'srg', 'data-turbolinks-track': 'reload', type: 'module'
+
+#srg
+  %srg{                                                              |
+    'v-bind:queried-rule': @rule_json,                               |
+    'v-bind:stig': @srg_json,                                        |
+    'v-bind:severities': RuleConstants::SEVERITIES.to_json,          |
+    'v-bind:severities_map': RuleConstants::SEVERITIES_MAP.to_json,  |
+  }

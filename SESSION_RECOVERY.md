@@ -38,14 +38,24 @@ We successfully resolved the MDI icon path issues following these steps:
      ```ruby
      = stylesheet_link_tag 'mdi/materialdesignicons.min', 'data-turbolinks-track': 'reload'
      ```
-   - Configured esbuild to generate non-hashed font files in the correct location
-   - Explicitly copied font files to app/assets/builds/
-   - Made sure the assetNames configuration in esbuild.config.js was set properly
+   - Configured esbuild with the precise assetNames configuration:
+     ```javascript
+     assetNames: 'materialdesignicons-webfont.[ext]',
+     ```
+   - Placed font files in app/assets/fonts/ directory
+   - Ensured the publicPath is set to '/assets' in esbuild.config.js
 
-3. **Best Practice Followed:**
+3. **CRITICAL: Do not change the assetNames setting**
+   - The configuration MUST use exactly `materialdesignicons-webfont.[ext]` as the pattern
+   - This ensures fonts are available at the exact paths the MDI CSS expects
+   - Changing this setting will break icons throughout the application
+   - Do not manually copy fonts between directories - let the asset pipeline handle it
+
+4. **Best Practice Followed:**
    - Used the asset pipeline as intended rather than manually fixing paths
    - Let Propshaft handle the asset serving
    - Kept original CSS files intact
+   - Well-documented configuration in CLAUDE.md
 
 ### Bootstrap Vue Integration Improvements ✅
 
@@ -96,6 +106,12 @@ We've prepared the necessary documentation for the final stage:
    - All commits must include "Co-Authored-By: Aaron Lippold <lippold@gmail.com>"
    - Currently investigating best approach for modifying git history
 
+3. **SRG Rule Display Issues:**
+   - SRG detail page shows title and date but not rule content
+   - Console errors indicating model data structure mismatches
+   - Working on adapting STIG Vue components to handle SRG data
+   - Need to resolve differences between SRG and STIG models
+
 ## Styling and CSS
 
 Our approach is now working correctly:
@@ -113,18 +129,31 @@ Our approach is now working correctly:
 
 ## Next Steps
 
-1. **Fix Commit Co-authorship:**
+1. **Complete Final jsbundling-rails Migration Testing:**
+   - Test all 14 JavaScript entry points thoroughly
+   - Verify asset precompilation in production mode
+   - Test with different browsers and environments
+   - Ensure all JavaScript dependencies load correctly
+   - This is critical to close out the remaining 2% of the migration
+
+2. **Fix SRG Rule Display:**
+   - Debug model differences between SRG and STIG
+   - Create adapters or normalizers for SRG data structure
+   - Ensure SRG data is compatible with existing components
+   - Test component display with SRG data
+
+3. **Fix Commit Co-authorship:**
    - Find a working approach to modify git history without merge conflicts
    - All commits must include "Co-Authored-By: Aaron Lippold <lippold@gmail.com>"
    - Alternative: Consider using PR-level acknowledgment if git history modification proves too complex
 
-2. **Execute Testing Plan:**
+4. **Execute Testing Plan:**
    - Follow the detailed TESTING_PLAN.md for verification
    - Test each component marked with ⚠️ in our tracking table
    - Focus particularly on complex Vue components and form submissions
    - Document any issues found during testing
 
-3. **Address Vue Devtools Conflicts:**
+5. **Address Vue Devtools Conflicts:**
    - Configure Vue.config to handle multiple devtools instances
    - Test in browsers with extensions disabled
    - Document a recommended approach for developers
