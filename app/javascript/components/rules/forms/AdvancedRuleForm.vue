@@ -38,13 +38,13 @@
                 class="clickable text-dark"
                 @click="$root.$emit('update:description', rule, { ...description, _destroy: true }, index)"
               >
-                <i class="mdi mdi-trash-can" aria-hidden="true" />
+                <b-icon icon="trash"></b-icon>
                 Remove Rule Description
               </a>
             </div>
           </div>
 
-          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="!disabled"><i class="mdi mdi-plus"></i>Add Description</b-button>
+          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="!disabled"><b-icon icon="plus"></b-icon>Add Description</b-button>
         </b-collapse>
       </template> -->
 
@@ -93,14 +93,14 @@
                   $root.$emit('update:disaDescription', rule, { ...description, _destroy: true }, index)
                 "
               >
-                <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+                <b-icon icon="trash"></b-icon>
                 Remove DISA Description
               </a> -->
             </div>
           </div>
 
           <!-- This is commented out because there is currently the assumption that users will only need one description -->
-          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="disabled"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
+          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="disabled"><b-icon icon="plus"></b-icon>Add DISA Description</b-button> -->
         </b-collapse>
       </template>
 
@@ -128,14 +128,14 @@
                 class="clickable text-dark"
                 @click="$root.$emit('update:check', rule, { ...check, _destroy: true }, index)"
               >
-                <i class="mdi mdi-trash-can" aria-hidden="true" />
+                <b-icon icon="trash"></b-icon>
                 Remove Check
               </a>
             </div>
           </div>
 
           <b-button v-if="!disabled" class="mb-2" @click="$root.$emit('add:check', rule)"
-            ><i class="mdi mdi-plus" />Add Check</b-button
+            ><b-icon icon="plus"></b-icon>Add Check</b-button
           >
         </b-collapse>
       </template>

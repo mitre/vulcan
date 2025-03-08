@@ -16,7 +16,7 @@
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text">
-              <i class="mdi mdi-magnify" aria-hidden="true" />
+              <b-icon icon="search"></b-icon>
             </div>
           </div>
           <input
@@ -103,7 +103,7 @@
             :href="requestAccessAction(data.item)"
             rel="nofollow"
           >
-            <i class="mdi mdi-account-arrow-right" aria-hidden="true" />
+            <b-icon icon="person-arrow-right"></b-icon>
             Request Access
           </b-button>
         </span>
@@ -115,7 +115,7 @@
             :href="cancelAccessRequestAction(data.item)"
             rel="nofollow"
           >
-            <i class="mdi mdi-cancel" aria-hidden="true" />
+            <b-icon icon="x-circle"></b-icon>
             Cancel Access Request
           </b-button>
         </span>
@@ -128,7 +128,7 @@
             :href="destroyAction(data.item)"
             rel="nofollow"
           >
-            <i class="mdi mdi-trash-can" aria-hidden="true" />
+            <b-icon icon="trash"></b-icon>
             Remove
           </b-button>
         </span>

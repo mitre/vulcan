@@ -310,7 +310,7 @@
             @click="ruleSelected(satisfies)"
           >
             <span>
-              <i class="mdi mdi-chevron-right" />
+              <b-icon icon="chevron-right"></b-icon>
               <span v-if="filters.showSRGIdChecked">
                 {{ satisfies.version }}
               </span>

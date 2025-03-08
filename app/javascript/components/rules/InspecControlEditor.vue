@@ -29,7 +29,7 @@
       </b-form-select>
       <b-button size="sm" squared @click="copyText">
         Copy
-        <i class="mdi mdi-clipboard-text" aria-hidden="true" />
+        <b-icon icon="clipboard-check"></b-icon>
       </b-button>
     </b-input-group>
     <MonacoEditor

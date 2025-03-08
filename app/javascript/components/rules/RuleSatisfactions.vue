@@ -25,7 +25,7 @@
           title="Merge requirement"
           class="text-primary clickable mr-2"
         >
-          <i class="mdi mdi-plus" /> Add
+          <b-icon icon="plus"></b-icon> Add
         </div>
       </div>
 
