@@ -90,19 +90,7 @@ const initToaster = () => {
   if (el) {
     console.log('Toaster element HTML:', el.innerHTML.substr(0, 100) + '...')
     try {
-      // Insert diagnostic component for testing
-      el.insertAdjacentHTML('beforeend', '<div id="toaster-diagnostic"></div>')
-      
-      // Mount diagnostic component first to verify Vue is working
-      new Vue({
-        el: "#toaster-diagnostic",
-        template: '<b-diagnostic></b-diagnostic>',
-        mounted() {
-          console.log('Toaster diagnostic Vue instance mounted')
-        }
-      })
-      
-      // Now mount the actual toaster
+      // Mount the toaster
       const app = new Vue({
         el: "#Toaster",
         mounted() {

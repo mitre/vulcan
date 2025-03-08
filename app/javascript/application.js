@@ -29,7 +29,7 @@ ActiveStorage.start()
 // Vue setup
 import Vue from 'vue'
 import TurbolinksAdapter from 'vue-turbolinks'
-import BootstrapVue from 'bootstrap-vue'
+import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 
 // Enable Vue debugging
 Vue.config.devtools = true
@@ -46,6 +46,7 @@ window.Vue = Vue
 // Use Vue plugins
 Vue.use(TurbolinksAdapter)
 Vue.use(BootstrapVue)
+Vue.use(IconsPlugin)
 console.log('Vue plugins initialized')
 
 // Add Bootstrap JavaScript to the mix

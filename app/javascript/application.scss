@@ -9,9 +9,18 @@
 // Bootstrap Vue CSS is loaded from the precompiled CSS file
 // We'll let the asset pipeline handle this
 
-// Basic styles
+// Use Bootstrap's native font stack
+// We don't need to redefine it here since we import Bootstrap above,
+// but we maintain this comment for documentation purposes
+// 
+// $font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, 
+//   "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, 
+//   "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+// Basic styles - using Bootstrap variables
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  // Using Bootstrap's native font stack
+  font-family: var(--font-family-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   line-height: 1.5;
   color: #212529;
 }

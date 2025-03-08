@@ -11,6 +11,7 @@ Vue.use(IconsPlugin)
 
 // Register the component globally
 Vue.component('SecurityRequirementsGuides', SecurityRequirementsGuides)
+Vue.component('securityrequirementsguides', SecurityRequirementsGuides)
 
 document.addEventListener('turbolinks:load', () => {
   const element = document.getElementById('SecurityRequirementsGuides')

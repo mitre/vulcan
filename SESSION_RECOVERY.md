@@ -25,37 +25,64 @@ We have successfully completed the jsbundling-rails migration with all critical 
 
 ## Recent Fixes
 
-### Material Design Icons Font Path Resolution ✅
+### Asset Pipeline Standardization: Icons and Fonts ✅
 
-We successfully resolved the MDI icon path issues following these steps:
+We resolved the icon and font display issues by standardizing our approach:
 
 1. **Root Cause:** 
-   - The MDI CSS was looking for fonts at `/assets/materialdesignicons-webfont.*` 
-   - Our esbuild configuration was putting them in different locations with hash suffixes
+   - Material Design Icons required complex font path configuration
+   - Multiple font copies in different directories caused conflicts
+   - Custom font loading approaches were brittle and inconsistent
 
-2. **Solution:**
-   - Added the proper `stylesheet_link_tag` in application.html.haml:
-     ```ruby
-     = stylesheet_link_tag 'mdi/materialdesignicons.min', 'data-turbolinks-track': 'reload'
-     ```
-   - Configured esbuild with the precise assetNames configuration:
+2. **Icon System Solution:**
+   - Switched to Bootstrap Icons via the BootstrapVue IconsPlugin:
      ```javascript
-     assetNames: 'materialdesignicons-webfont.[ext]',
+     import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
+     Vue.use(BootstrapVue)
+     Vue.use(IconsPlugin)
      ```
-   - Placed font files in app/assets/fonts/ directory
-   - Ensured the publicPath is set to '/assets' in esbuild.config.js
+   - Removed MDI stylesheet_link_tag from application.html.haml
+   - Updated all 32 Vue components to use `<b-icon>` components instead of MDI classes:
+     ```html
+     <!-- Old MDI approach -->
+     <i class="mdi mdi-home"></i>
+     
+     <!-- New Bootstrap Icons approach -->
+     <b-icon icon="house"></b-icon>
+     ```
+   - Created automated migration script to convert all components
+   - Simplified esbuild configuration with standard asset naming:
+     ```javascript
+     assetNames: '[name]-[hash].[ext]'
+     ```
 
-3. **CRITICAL: Do not change the assetNames setting**
-   - The configuration MUST use exactly `materialdesignicons-webfont.[ext]` as the pattern
-   - This ensures fonts are available at the exact paths the MDI CSS expects
-   - Changing this setting will break icons throughout the application
-   - Do not manually copy fonts between directories - let the asset pipeline handle it
+3. **Font System Solution:**
+   - Standardized on Bootstrap's native font stack
+   - Removed all custom web font files and imports
+   - Updated application.scss to properly leverage Bootstrap font variables:
+     ```scss
+     // Use Bootstrap's native font stack
+     body {
+       font-family: var(--font-family-sans-serif);
+     }
+     ```
+   - No additional web fonts are loaded - leveraging system fonts for best performance
 
-4. **Best Practice Followed:**
-   - Used the asset pipeline as intended rather than manually fixing paths
-   - Let Propshaft handle the asset serving
-   - Kept original CSS files intact
-   - Well-documented configuration in CLAUDE.md
+4. **Advantages of Our Approach:**
+   - Native integration with Bootstrap Vue ecosystem
+   - No font path configuration issues
+   - Cleaner component-based syntax for icons
+   - Consistent design language across the app
+   - Simpler asset pipeline configuration
+   - Better performance by using system fonts
+   - Reduced bundle size by eliminating custom font files
+
+5. **Best Practice Followed:**
+   - Used the most integrated solutions for our tech stack
+   - Eliminated redundant configuration
+   - Documented both approaches in CLAUDE.md
+   - Removed all unused font files
+   - Created reusable migration tools
 
 ### Bootstrap Vue Integration Improvements ✅
 
@@ -129,31 +156,40 @@ Our approach is now working correctly:
 
 ## Next Steps
 
-1. **Complete Final jsbundling-rails Migration Testing:**
+✅ **Asset Pipeline Standardization - COMPLETED:**
+   - ✅ Converted all 32 Vue components from MDI to Bootstrap Icons
+   - ✅ Created comprehensive icon mapping between MDI and Bootstrap Icons
+   - ✅ Created and used conversion scripts for automation
+   - ✅ Removed all MDI dependencies and font files
+   - ✅ Standardized font handling to use Bootstrap's native font stack
+   - ✅ Updated all documentation to reflect our approach
+   - ✅ Successfully rebuilt application with standardized asset pipeline
+
+3. **Complete Final jsbundling-rails Migration Testing:**
    - Test all 14 JavaScript entry points thoroughly
    - Verify asset precompilation in production mode
    - Test with different browsers and environments
    - Ensure all JavaScript dependencies load correctly
    - This is critical to close out the remaining 2% of the migration
 
-2. **Fix SRG Rule Display:**
+4. **Fix SRG Rule Display:**
    - Debug model differences between SRG and STIG
    - Create adapters or normalizers for SRG data structure
    - Ensure SRG data is compatible with existing components
    - Test component display with SRG data
 
-3. **Fix Commit Co-authorship:**
+5. **Fix Commit Co-authorship:**
    - Find a working approach to modify git history without merge conflicts
    - All commits must include "Co-Authored-By: Aaron Lippold <lippold@gmail.com>"
    - Alternative: Consider using PR-level acknowledgment if git history modification proves too complex
 
-4. **Execute Testing Plan:**
+6. **Execute Testing Plan:**
    - Follow the detailed TESTING_PLAN.md for verification
    - Test each component marked with ⚠️ in our tracking table
    - Focus particularly on complex Vue components and form submissions
    - Document any issues found during testing
 
-5. **Address Vue Devtools Conflicts:**
+7. **Address Vue Devtools Conflicts:**
    - Configure Vue.config to handle multiple devtools instances
    - Test in browsers with extensions disabled
    - Document a recommended approach for developers

@@ -70,8 +70,8 @@ const buildOptions = {
   ],
   // Fix for CSS paths - allow both node_modules and relative paths
   resolveExtensions: ['.js', '.json', '.vue', '.css', '.scss'],
-  // Handle assets with appropriate names to match CSS expectations
-  assetNames: '[name]',
+  // Standard asset naming with content hash for proper caching
+  assetNames: '[name]-[hash].[ext]',
 };
 
 // Add watch option only if in watch mode

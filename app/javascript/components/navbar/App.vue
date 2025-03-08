@@ -2,7 +2,7 @@
   <div>
     <b-navbar toggleable="lg" type="dark" variant="dark">
       <b-navbar-brand id="heading" href="/">
-        <i class="mdi mdi-radar" aria-hidden="true" />
+        <b-icon icon="broadcast"></b-icon>
         VULCAN
         <b-link href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
           <span class="latest-release">{{ currentVersion }}</span>
@@ -26,7 +26,7 @@
           <b-navbar-nav class="ml-auto">
             <b-nav-item-dropdown right no-caret class="position-relative ml-3">
               <template #button-content>
-                <i class="mdi mdi-bell-outline" aria-hidden="true" />
+                <b-icon icon="bell"></b-icon>
                 <b-badge
                   v-if="access_requests.length"
                   variant="danger"
@@ -48,7 +48,7 @@
             </b-nav-item-dropdown>
             <b-nav-item-dropdown right>
               <template #button-content>
-                <i class="mdi mdi-account-circle" aria-hidden="true" />
+                <b-icon icon="person-circle"></b-icon>
               </template>
               <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
               <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>

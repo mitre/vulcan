@@ -15,7 +15,7 @@ const SimpleNavbar = {
     <div>
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <a class="navbar-brand" id="heading" href="/">
-          <i class="mdi mdi-radar" aria-hidden="true"></i>
+          <b-icon icon="radar" aria-hidden="true"></b-icon>
           VULCAN
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#nav-collapse" aria-controls="nav-collapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,7 +25,7 @@ const SimpleNavbar = {
           <ul class="navbar-nav mx-auto">
             <li v-for="item in navigation" :key="item.name" class="nav-item">
               <a class="nav-link" :href="item.link">
-                <i class="mdi" :class="item.icon" aria-hidden="true"></i> {{ item.name }}
+                <b-icon :icon="getBootstrapIconName(item.icon)" aria-hidden="true"></b-icon> {{ item.name }}
               </a>
             </li>
           </ul>
@@ -33,6 +33,32 @@ const SimpleNavbar = {
       </nav>
     </div>
   `,
+  methods: {
+    // Helper method to convert MDI icon names to Bootstrap icon names
+    getBootstrapIconName(mdiIconName) {
+      // Common MDI to Bootstrap icon mappings
+      const iconMap = {
+        'mdi-home': 'house',
+        'mdi-radar': 'radar',
+        'mdi-account': 'person',
+        'mdi-cog': 'gear',
+        'mdi-folder': 'folder',
+        'mdi-shield': 'shield',
+        'mdi-file-document': 'file-text',
+        'mdi-book': 'book',
+        'mdi-alert': 'exclamation-triangle',
+        'mdi-check': 'check',
+        'mdi-close': 'x',
+        'mdi-plus': 'plus'
+      }
+      
+      // Extract the actual icon name without the mdi prefix
+      const iconName = mdiIconName.replace('mdi-', '')
+      
+      // Return mapped icon or a default icon if not found
+      return iconMap[`mdi-${iconName}`] || 'circle'
+    }
+  },
   props: {
     navigation: {
       type: Array,
@@ -62,20 +88,8 @@ const initNavbar = () => {
   
   if (el) {
     console.log('Navbar element HTML:', el.innerHTML.substr(0, 100) + '...')
-    try {
-      // Insert diagnostic component for testing
-      el.insertAdjacentHTML('beforeend', '<div id="navbar-diagnostic"></div>')
-      
-      // Mount diagnostic component first to verify Vue is working
-      new Vue({
-        el: "#navbar-diagnostic",
-        template: '<b-diagnostic></b-diagnostic>',
-        mounted() {
-          console.log('Navbar diagnostic Vue instance mounted')
-        }
-      })
-      
-      // Now mount the actual navbar
+    try {      
+      // Mount the navbar
       const app = new Vue({
         el: "#navbar",
         mounted() {

@@ -6,7 +6,7 @@
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text">
-              <i class="mdi mdi-magnify" aria-hidden="true" />
+              <b-icon icon="search" aria-hidden="true"></b-icon>
             </div>
           </div>
           <input
@@ -30,6 +30,9 @@
       <template v-if="type === 'STIG'" #cell(stig_id)="data">
         <b-link :href="`/stigs/${data.item.id}`">{{ data.item.stig_id }}</b-link>
       </template>
+      <template v-else #cell(srg_id)="data">
+        <b-link :href="`/srgs/${data.item.id}`">{{ data.item.srg_id }}</b-link>
+      </template>
       <template #cell(actions)="data">
         <b-button
           v-if="is_vulcan_admin"
@@ -40,7 +43,7 @@
           :href="destroyAction(data.item)"
           rel="nofollow"
         >
-          <i class="mdi mdi-trash-can" aria-hidden="true" />
+          <b-icon icon="trash" aria-hidden="true"></b-icon>
           Remove
         </b-button>
       </template>

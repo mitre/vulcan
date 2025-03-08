@@ -2,7 +2,6 @@
   "name": "vulcan_vue",
   "private": true,
   "dependencies": {
-    "@mdi/font": "^5.1.45",
     "@rails/actioncable": "^6.0.0",
     "@rails/activestorage": "^6.0.0",
     "@rails/ujs": "^6.0.0",
@@ -26,6 +25,7 @@
   },
   "version": "2.1.8",
   "devDependencies": {
+    "@playwright/test": "^1.51.0",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.1.2",
     "esbuild": "^0.25.0",
@@ -36,6 +36,7 @@
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-prettier-vue": "^3.1.0",
     "eslint-plugin-vue": "^9.6.0",
+    "playwright": "^1.51.0",
     "prettier": "^2.3.2",
     "sass": "^1.85.1",
     "webpack-dev-server": "^3.10.3"

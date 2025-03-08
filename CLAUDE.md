@@ -42,16 +42,38 @@
    - For third-party CSS that needs to be included directly, import it in application.scss
    - Let Sass handle imports of Bootstrap and other frameworks
 
-3. **Material Design Icons and Font Handling**:
-   - Store fonts in app/assets/fonts/
-   - Reference them through the asset pipeline with stylesheet_link_tag
-   - For libraries like MDI, use the precompiled CSS from app/assets/stylesheets/mdi/
-   - CRITICAL: Always use `assetNames: 'materialdesignicons-webfont.[ext]'` in esbuild.config.js  
-   - MDI CSS expects font files at exact path /assets/materialdesignicons-webfont.[ext]
-   - The CSS already has correct /assets/ prefix in font URLs
-   - Include MDI CSS with `stylesheet_link_tag 'mdi/materialdesignicons.min'`
-   - NEVER change this pattern or manually copy font files around
+3. **Icon System - Bootstrap Icons**:
+   - Use Bootstrap Icons via the BootstrapVue IconsPlugin
+   - Enable the plugin in your entry points:
+     ```javascript
+     import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
+     Vue.use(BootstrapVue)
+     Vue.use(IconsPlugin)
+     ```
+   - Use in templates with the b-icon component:
+     ```html
+     <b-icon icon="house" />
+     ```
+   - Standard asset naming in esbuild.config.js:
+     ```javascript
+     assetNames: '[name]-[hash].[ext]'
+     ```
    - Set `publicPath: '/assets'` in esbuild.config.js to ensure proper URL resolution
+
+4. **Font System - Bootstrap Native Font Stack**:
+   - Use Bootstrap's built-in native font stack
+   - No custom web fonts are loaded - leverages system fonts for optimal performance
+   - The font stack is defined in Bootstrap's variables.scss:
+     ```scss
+     $font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", 
+       Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", 
+       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+     ```
+   - Access in custom CSS using Bootstrap's CSS variables:
+     ```css
+     font-family: var(--font-family-sans-serif);
+     ```
+   - Don't load additional web fonts unless absolutely necessary
 
 4. **JavaScript Module Loading**:
    - Use ESM format with `type: 'module'` in javascript_include_tag
