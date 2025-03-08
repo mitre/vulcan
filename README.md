@@ -78,6 +78,36 @@ For testing purposes in the development environment, you can use the following c
 1. Stop Vulcan by doing `ctrl + c`
 2. Stop the postgres server
 
+## Testing
+
+### Ruby Tests
+To run the Ruby tests:
+```bash
+bundle exec rails db:create db:schema:load spec
+```
+
+### JavaScript Tests
+To run the JavaScript tests:
+```bash
+yarn test
+```
+
+### End-to-End Tests
+To run the Playwright end-to-end tests:
+```bash
+npx playwright test
+```
+
+You can also run specific test files:
+```bash
+npx playwright test tests/e2e/jsbundling.spec.js
+```
+
+For detailed test reports with screenshots and console logs:
+```bash
+npx playwright show-report
+```
+
 ## Configuration
 
 See `docker-compose.yml` for container configuration options.
