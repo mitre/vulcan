@@ -15,7 +15,6 @@ const entryPoints = [
   'app/javascript/project_component.js',
   'app/javascript/rules.js',
   'app/javascript/security_requirements_guides.js',
-  'app/javascript/srg.js',
   'app/javascript/stig.js',
   'app/javascript/stigs.js',
   'app/javascript/users.js',
