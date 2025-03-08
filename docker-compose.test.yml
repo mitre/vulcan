@@ -28,9 +28,11 @@ services:
       - LDAP_ADMIN_PASSWORD=GoodNewsEveryone
       - LDAP_ROOT=dc=planetexpress,dc=com
       - LDAP_PORT_NUMBER=389
+      # Add zoidberg@planetexpress.com user to match tests
       - LDAP_USERS=zoidberg
       - LDAP_PASSWORDS=zoidberg
       - LDAP_USER_DC=people
+      - LDAP_EMAILS=zoidberg@planetexpress.com
       - LDAP_ENABLE_TLS=no
     ports:
       - "389:389"

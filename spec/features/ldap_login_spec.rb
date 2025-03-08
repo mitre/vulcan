@@ -2,21 +2,39 @@
 
 require 'rails_helper'
 
-# These tests are skipped if LDAP is not enabled as part of the test suite.
-# In order to run these tests set the `ENABLE_LDAP=true` environment variable
-# and provide an appropriate LDAP server.
+# These tests validate LDAP login functionality using the bitnami/openldap container.
+# The test environment is set up with bin/test-with-ldap script that:
+# 1. Starts a database and LDAP server in Docker containers
+# 2. Configures the right environment for the LDAP tests
+# 3. Works on both Intel and M1/M2/M3 Macs
 #
-# This expects the rroemhild/test-openldap docker image to be running and the
-# appropriate ENV's set so the application knows how to access the LDAP service
-# running. in that container. See the Github Actions configuration
-# for an example of how this works.
+# The default LDAP user created in the container:
+# - Username: zoidberg@planetexpress.com
+# - Password: zoidberg
 RSpec.describe 'Login with LDAP', type: :feature, skip: !Settings.ldap.enabled do
   include LoginHelpers
 
+  before(:all) do
+    puts "LDAP Config: #{Settings.ldap.servers.main.to_hash}"
+  end
+
   context 'when ldap login is enabled' do
     it 'successfully logs an ldap user in with correct credentials' do
+      # Debug information for troubleshooting
+      puts "Settings.ldap.enabled: #{Settings.ldap.enabled}"
+      puts "Testing login with: zoidberg@planetexpress.com / zoidberg"
+      
       expect do
-        vulcan_sign_in_with('LDAP', { username: 'zoidberg@planetexpress.com', password: 'zoidberg' })
+        visit new_user_session_path
+        puts "Page HTML: #{page.html}"
+        
+        # Verify LDAP link is present
+        expect(page).to have_link('LDAP')
+        click_link 'LDAP'
+        
+        fill_in 'username', with: 'zoidberg@planetexpress.com'
+        fill_in 'password', with: 'zoidberg'
+        click_button 'Sign in'
       end.to change(User, :count).from(0).to(1)
 
       expect(page).to have_selector('.b-toast-success', text: I18n.t('devise.sessions.signed_in'))
