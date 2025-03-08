@@ -44,3 +44,5 @@ yarn-debug.log*
 !/app/assets/builds/.keep
 dev_output.log
 benchmark-tmp/
+/srg_feature_backup
+/srg_backup.js
