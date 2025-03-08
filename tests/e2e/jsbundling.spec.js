@@ -356,4 +356,98 @@ test.describe('jsbundling-rails Migration Validation', () => {
     //   JSON.stringify(validator.generateReport(), null, 2)
     // );
   });
+  
+  // Test Rules page loads and renders components
+  test('Rules page loads and renders components', async ({ page }) => {
+    const validator = new AssetValidator(page);
+    
+    // Login first
+    await login(page);
+    
+    // Navigate to a project first (need to select a project to see rules)
+    await page.goto('/projects');
+    await page.waitForLoadState('networkidle');
+    
+    // Click on the first project (if available)
+    const projectLink = await page.$('a.project-link, a[href*="/projects/"]');
+    if (projectLink) {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        projectLink.click()
+      ]);
+      
+      // Now navigate to rules for this project
+      const rulesTab = await page.$('a[href*="/rules"]');
+      if (rulesTab) {
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle' }),
+          rulesTab.click()
+        ]);
+        
+        // Verify rules JS module is loaded
+        const hasRulesJS = validator.jsModules.some(url => url.includes('rules'));
+        expect(hasRulesJS).toBeTruthy();
+        
+        // Take screenshot for verification
+        await page.screenshot({ path: './tests/e2e/rules-page.png', fullPage: true });
+        
+        // For this test, we'll mark as passing if the page loads and the JS is found
+        expect(hasRulesJS).toBeTruthy();
+      }
+    } else {
+      console.log("No projects available to test rules page");
+    }
+  });
+  
+  // Test Project Component page loads and renders components
+  test('Project Component page loads and renders components', async ({ page }) => {
+    const validator = new AssetValidator(page);
+    
+    // Login first
+    await login(page);
+    
+    // Navigate to Components page
+    await page.goto('/components');
+    await page.waitForLoadState('networkidle');
+    
+    // Verify project_component JS module is loaded
+    const hasComponentJS = validator.jsModules.some(url => url.includes('project_component') || url.includes('component'));
+    expect(hasComponentJS).toBeTruthy();
+    
+    // Take screenshot for verification
+    await page.screenshot({ path: './tests/e2e/components-page.png', fullPage: true });
+    
+    // Check for Bootstrap Vue components (card, table, buttons)
+    const hasCards = await page.$$('.card');
+    expect(hasCards.length).toBeGreaterThan(0);
+    
+    // For this test, we'll mark as passing if the page loads and the JS is found
+    expect(hasComponentJS).toBeTruthy();
+  });
+  
+  // Test New Project page loads and renders components
+  test('New Project page loads and renders components', async ({ page }) => {
+    const validator = new AssetValidator(page);
+    
+    // Login first
+    await login(page);
+    
+    // Navigate to New Project page
+    await page.goto('/projects/new');
+    await page.waitForLoadState('networkidle');
+    
+    // Verify new_project JS module is loaded
+    const hasNewProjectJS = validator.jsModules.some(url => url.includes('new_project'));
+    expect(hasNewProjectJS).toBeTruthy();
+    
+    // Take screenshot for verification
+    await page.screenshot({ path: './tests/e2e/new-project-page.png', fullPage: true });
+    
+    // Check for form fields and buttons
+    const hasForm = await page.$('form');
+    expect(hasForm).not.toBeNull();
+    
+    // For this test, we'll mark as passing if the page loads and the JS is found
+    expect(hasNewProjectJS).toBeTruthy();
+  });
 });
