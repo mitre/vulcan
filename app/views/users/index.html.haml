@@ -1,7 +1,7 @@
 - content_for :assets do
   = javascript_include_tag 'users', 'data-turbolinks-track': 'reload', type: 'module'
 
-#users
+#Users
   %Users{                                   |
     'v-bind:users': @users.to_json,        |
     'v-bind:histories': @histories.to_json |
