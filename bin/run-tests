@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# Direct test runner - skips environment setup
+# For developers who have already set up their environment
+# or want to run tests with minimal overhead
+
+# Set colors for improved readability
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+YELLOW="\033[0;33m"
+CYAN="\033[0;36m"
+RESET="\033[0m"
+
+# Default to DB tests if no type specified
+TYPE=${1:-db}
+shift 2>/dev/null
+
+# Show warning about environment setup
+echo -e "${YELLOW}Note: This runs tests directly without environment setup.${RESET}"
+echo -e "${YELLOW}For proper environment preparation, use: bin/vulcan test ${TYPE}${RESET}\n"
+
+case "$TYPE" in
+  db|rspec)
+    # Run RSpec tests directly
+    echo -e "${CYAN}=== Running Database Tests (RSpec) ===${RESET}"
+    bin/unified-test-runner --type rspec "$@"
+    ;;
+  e2e|playwright)
+    # Run Playwright tests directly
+    echo -e "${CYAN}=== Running End-to-End Tests (Playwright) ===${RESET}"
+    bin/unified-test-runner --type playwright "$@"
+    ;;
+  ui)
+    # Run UI tests directly
+    echo -e "${CYAN}=== Running UI Tests ===${RESET}"
+    bin/unified-test-runner --type ui "$@"
+    ;;
+  cli|minitest)
+    # Run CLI/Minitest tests directly
+    echo -e "${CYAN}=== Running CLI Tests (Minitest) ===${RESET}"
+    bin/unified-test-runner --type minitest "$@"
+    ;;
+  ldap)
+    # Run LDAP tests directly - special case that needs LDAP enabled
+    echo -e "${CYAN}=== Running LDAP Tests ===${RESET}"
+    echo -e "${YELLOW}Warning: LDAP tests may fail without proper environment setup${RESET}"
+    echo -e "${YELLOW}Use bin/vulcan test ldap for proper container and environment setup${RESET}\n"
+    
+    VULCAN_ENABLE_LDAP=true bundle exec rspec spec/features/ldap_login_spec.rb --format documentation --color "$@"
+    ;;
+  all)
+    # Run all test types in sequence
+    echo -e "${CYAN}=== Running All Test Suites ===${RESET}"
+    
+    # Run each test type and track results
+    echo "Running database tests..."
+    bin/unified-test-runner --type rspec --format minimal
+    RSPEC_STATUS=$?
+    
+    echo "Running LDAP tests..."
+    VULCAN_ENABLE_LDAP=true bundle exec rspec spec/features/ldap_login_spec.rb --format documentation --color
+    LDAP_STATUS=$?
+    
+    echo "Running end-to-end tests..."
+    bin/unified-test-runner --type playwright --format minimal
+    PLAYWRIGHT_STATUS=$?
+    
+    echo "Running CLI tests..."
+    bin/unified-test-runner --type minitest --format minimal
+    MINITEST_STATUS=$?
+    
+    # Calculate overall status
+    if [ $RSPEC_STATUS -eq 0 ] && [ $LDAP_STATUS -eq 0 ] && [ $PLAYWRIGHT_STATUS -eq 0 ] && [ $MINITEST_STATUS -eq 0 ]; then
+      echo -e "\n${GREEN}✓ All tests completed successfully!${RESET}"
+      exit 0
+    else
+      echo -e "\n${RED}✗ Some tests failed!${RESET}"
+      echo "Database tests: $([ $RSPEC_STATUS -eq 0 ] && echo "${GREEN}Passed${RESET}" || echo "${RED}Failed${RESET}")"
+      echo "LDAP tests: $([ $LDAP_STATUS -eq 0 ] && echo "${GREEN}Passed${RESET}" || echo "${RED}Failed${RESET}")"
+      echo "End-to-end tests: $([ $PLAYWRIGHT_STATUS -eq 0 ] && echo "${GREEN}Passed${RESET}" || echo "${RED}Failed${RESET}")"
+      echo "CLI tests: $([ $MINITEST_STATUS -eq 0 ] && echo "${GREEN}Passed${RESET}" || echo "${RED}Failed${RESET}")"
+      exit 1
+    fi
+    ;;
+  *)
+    echo -e "${RED}Unknown test type: $TYPE${RESET}"
+    echo -e "Available types: ${GREEN}db${RESET}, ${GREEN}e2e${RESET}, ${GREEN}ui${RESET}, ${GREEN}cli${RESET}, ${GREEN}ldap${RESET}, ${GREEN}all${RESET}, ${GREEN}rspec${RESET}, ${GREEN}playwright${RESET}, ${GREEN}minitest${RESET}"
+    echo
+    echo "Examples:"
+    echo "  bin/run-tests db                   # Run all database tests"
+    echo "  bin/run-tests db --focus=component # Focus on component tests"
+    echo "  bin/run-tests e2e                  # Run end-to-end tests"
+    echo "  bin/run-tests ui --focus=user      # Run UI tests focused on user command"
+    echo "  bin/run-tests cli                  # Run CLI unit tests"
+    echo "  bin/run-tests rspec --format json  # Run RSpec tests with JSON output"
+    exit 1
+    ;;
+esac
+
+# Exit with the same code as the test command
+exit $?

@@ -1,0 +1,557 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Unified Test Runner
+# A thin delegation layer that runs tests using the correct framework
+# Delegates to standard test tools with appropriate conventions
+# Author: Vulcan Team, March 2025
+
+require 'optparse'
+require 'pathname'
+require 'fileutils'
+
+# ANSI color codes for output
+class Colors
+  def self.green(text); "\e[32m#{text}\e[0m"; end
+  def self.red(text); "\e[31m#{text}\e[0m"; end
+  def self.yellow(text); "\e[33m#{text}\e[0m"; end
+  def self.cyan(text); "\e[36m#{text}\e[0m"; end
+  def self.blue(text); "\e[34m#{text}\e[0m"; end
+  def self.magenta(text); "\e[35m#{text}\e[0m"; end
+  def self.gray(text); "\e[37m#{text}\e[0m"; end
+  def self.bold(text); "\e[1m#{text}\e[0m"; end
+  def self.dim(text); "\e[2m#{text}\e[0m"; end
+end
+
+# Unified Test Runner that delegates to the appropriate test framework
+class UnifiedTestRunner
+  attr_reader :options
+
+  def initialize
+    @project_root = find_project_root
+    @options = {
+      type: :ui,
+      format: 'documentation',
+      verbose: false,
+      focus: nil,
+      exclude: nil,
+      parallel: false
+    }
+    parse_options
+    
+    # Ensure the tmp directory exists for output files
+    FileUtils.mkdir_p(File.join(@project_root, 'tmp'))
+  end
+
+  # Find the project root directory
+  def find_project_root
+    script_path = File.expand_path($0)
+    if script_path.include?('/bin/')
+      # If we're running from bin directory, go up one level
+      return File.dirname(File.dirname(script_path))
+    else
+      # Otherwise try to find the project root by looking for key files
+      current_dir = File.dirname(script_path)
+      while current_dir != '/' do
+        if File.exist?(File.join(current_dir, 'Gemfile')) && 
+           File.exist?(File.join(current_dir, 'Rakefile'))
+          return current_dir
+        end
+        current_dir = File.dirname(current_dir)
+      end
+      # Fallback to current directory if we can't find project root
+      return Dir.pwd
+    end
+  end
+
+  # Parse command line options
+  def parse_options
+    parser = OptionParser.new do |opts|
+      opts.banner = "Usage: unified-test-runner [options]"
+      
+      opts.on("-f", "--format FORMAT", "Report format - passed to the underlying test framework") do |fmt|
+        @options[:format] = fmt
+      end
+      
+      opts.on("-v", "--verbose", "Verbose output") do
+        @options[:verbose] = true
+      end
+      
+      opts.on("--focus PATTERN", "Focus on tests matching pattern") do |pattern|
+        @options[:focus] = pattern
+      end
+      
+      opts.on("--exclude PATTERN", "Exclude tests matching pattern") do |pattern|
+        @options[:exclude] = pattern
+      end
+      
+      opts.on("-t", "--type TYPE", [:ui, :playwright, :minitest, :rspec, :security], 
+              "Test type (ui, playwright, minitest, rspec, security)") do |type|
+        @options[:type] = type
+      end
+      
+      opts.on("-p", "--parallel", "Run tests in parallel (where supported)") do
+        @options[:parallel] = true
+      end
+      
+      opts.on("-h", "--help", "Show this help message") do
+        puts opts
+        exit
+      end
+    end
+    
+    parser.parse!
+  rescue OptionParser::InvalidOption, OptionParser::MissingArgument => e
+    puts "#{Colors.red('Error:')} #{e.message}"
+    puts parser
+    exit 1
+  end
+
+  # Delegate to the appropriate test runner
+  def run_tests
+    case @options[:type]
+    when :ui
+      run_ui_tests
+    when :playwright
+      run_playwright_tests
+    when :minitest
+      run_minitest_tests
+    when :rspec
+      run_rspec_tests
+    when :security
+      run_security_tests
+    else
+      puts "#{Colors.red('Error:')} Unsupported test type: #{@options[:type]}"
+      exit 1
+    end
+  end
+
+  # Run UI tests (minitest-based CLI UI tests)
+  def run_ui_tests
+    puts banner("UI Test Runner") unless @options[:format] == 'minimal'
+    
+    test_dir = File.join(@project_root, 'tests', 'cli', 'ui')
+    focus_pattern = @options[:focus] || '*'
+    
+    # UI tests use a specific naming convention: *_command_ui_test.rb
+    if @options[:focus]
+      # Apply focus filter (allow partial matches like "docker" to find docker_command_ui_test.rb)
+      files = Dir.glob(File.join(test_dir, "*#{@options[:focus]}*_command_ui_test.rb"))
+      
+      # If no files match with the partial pattern, try exact focus
+      if files.empty?
+        files = Dir.glob(File.join(test_dir, "#{@options[:focus]}_command_ui_test.rb"))
+      end
+      
+      # If still no matches, try using focus as-is
+      if files.empty?
+        files = Dir.glob(File.join(test_dir, @options[:focus]))
+      end
+    else
+      files = Dir.glob(File.join(test_dir, '*_command_ui_test.rb'))
+    end
+    
+    # Filter out the template file
+    files.reject! { |f| f.include?('command_ui_test_template.rb') }
+    
+    # Apply exclude filter if specified
+    if @options[:exclude]
+      files.reject! { |f| f.include?(@options[:exclude]) }
+    end
+    
+    if files.empty?
+      puts "#{Colors.yellow('Warning:')} No UI tests found matching criteria."
+      return false
+    end
+    
+    # Run each test file individually (UI tests are designed to be run separately)
+    results = []
+    
+    files.each do |file|
+      command_name = File.basename(file, '_command_ui_test.rb').split('_').first
+      
+      puts "Running #{Colors.bold(Colors.cyan(command_name.capitalize + " Command UI Tests"))}..." unless @options[:format] == 'minimal'
+      
+      # Set environment variable to disable minitest plugins
+      ENV['MT_NO_PLUGINS'] = 'true'
+      
+      # Build the command
+      command = "ruby #{file}"
+      
+      # Run the test
+      start_time = Time.now
+      output_file = "#{@project_root}/tmp/#{command_name}_ui_output.log"
+      
+      if @options[:verbose]
+        success = system("#{command} 2>&1 | tee #{output_file}")
+      else
+        success = system(command)
+      end
+      
+      duration = (Time.now - start_time).round(2)
+      
+      # Collect results
+      results << {
+        name: command_name,
+        success: success,
+        duration: duration
+      }
+      
+      # Print result for this test
+      status = success ? Colors.green("✅ PASSED") : Colors.red("❌ FAILED")
+      
+      if @options[:format] == 'minimal'
+        puts "#{command_name}: #{status} (#{duration}s)"
+      else
+        puts "#{command_name.capitalize} Command UI Tests: #{status} (#{duration}s)"
+        puts "-" * 40
+      end
+    end
+    
+    # Print summary
+    total = results.size
+    passed = results.count { |r| r[:success] }
+    failed = total - passed
+    
+    puts "\nResults: #{passed}/#{total} passed"
+    
+    if failed > 0
+      puts "Failed tests:"
+      results.select { |r| !r[:success] }.each do |result|
+        puts "  - #{result[:name]} (#{result[:duration]}s)"
+      end
+    end
+    
+    # Return true if all tests passed
+    passed == total
+  end
+
+  # Run Playwright tests (end-to-end browser tests)
+  def run_playwright_tests
+    puts banner("Playwright E2E Test Runner") unless @options[:format] == 'minimal'
+    
+    # Build the playwright command
+    command = "cd #{@project_root} && npx playwright test"
+    
+    # Add focus if specified
+    if @options[:focus]
+      # Check if it's a path or just a test name
+      if @options[:focus].include?('/')
+        # Full path
+        command += " #{@options[:focus]}"
+      elsif @options[:focus].end_with?('.spec.js')
+        # File name
+        command += " tests/e2e/#{@options[:focus]}"
+      else
+        # Test name without extension
+        command += " tests/e2e/#{@options[:focus]}.spec.js"
+      end
+    end
+    
+    # Add parallel option if specified
+    if @options[:parallel]
+      command += " --workers=4"
+    else
+      command += " --workers=1"
+    end
+    
+    # Add reporter option based on format
+    if @options[:verbose]
+      command += " --reporter=list"
+    else
+      command += " --reporter=dot"
+    end
+    
+    # Run tests
+    puts "Running command: #{Colors.dim(command)}" if @options[:verbose]
+    
+    start_time = Time.now
+    success = system(command)
+    duration = (Time.now - start_time).round(2)
+    
+    # Print summary
+    status = success ? Colors.green("PASSED") : Colors.red("FAILED")
+    puts "\nPlaywright tests: #{status} (#{duration}s)" unless @options[:format] == 'minimal'
+    
+    if @options[:format] == 'minimal'
+      puts "Results: #{success ? '1/1' : '0/1'} passed"
+    end
+    
+    # Return success status
+    success
+  end
+
+  # Run Minitest tests (unit tests in tests/cli directory)
+  def run_minitest_tests
+    puts banner("Minitest Unit Test Runner") unless @options[:format] == 'minimal'
+    
+    # Set environment variable to disable minitest plugins
+    ENV['MT_NO_PLUGINS'] = 'true'
+    
+    # Determine the correct test directory and pattern
+    test_dir = File.join(@project_root, 'tests', 'cli')
+    
+    # If a specific file is given with extension, use it directly
+    if @options[:focus] && @options[:focus].end_with?('.rb')
+      # Check if it's a full path or just a filename
+      if @options[:focus].include?('/')
+        test_files = @options[:focus]
+      else
+        # Find file with this name
+        matching_files = Dir.glob(File.join(test_dir, '**', @options[:focus]))
+        test_files = matching_files.join(' ')
+      end
+    elsif @options[:focus] && @options[:focus].include?('/')
+      # Directory based focus
+      test_files = File.join(test_dir, @options[:focus], '*_test.rb')
+    elsif @options[:focus]
+      # General pattern
+      test_files = File.join(test_dir, '**', "*#{@options[:focus]}*_test.rb")
+    else
+      # All tests
+      test_files = File.join(test_dir, '**', '*_test.rb')
+    end
+    
+    # Build the command
+    command = "cd #{@project_root} && "
+    
+    # Add parallel option if specified
+    if @options[:parallel]
+      command += "PARALLEL=true "
+    end
+    
+    # Add minitest command with the test files
+    if test_files.include?(' ')
+      # Multiple files specified directly
+      command += "ruby -I #{test_dir} -e \"ARGV.each{|f| require f}\" #{test_files}"
+    else
+      # Glob pattern
+      command += "ruby -I #{test_dir} -e \"Dir.glob('#{test_files}').each{|f| require f}\""
+    end
+    
+    # Run tests
+    puts "Running command: #{Colors.dim(command)}" if @options[:verbose]
+    
+    start_time = Time.now
+    output_file = "#{@project_root}/tmp/minitest_output.log"
+    
+    if @options[:verbose]
+      success = system("#{command} 2>&1 | tee #{output_file}")
+    else
+      success = system(command)
+    end
+    
+    duration = (Time.now - start_time).round(2)
+    
+    # Parse output for summary if verbose
+    tests_run = 0
+    tests_passed = 0
+    
+    if @options[:verbose] && File.exist?(output_file)
+      output = File.read(output_file)
+      # Look for minitest summary line
+      if output =~ /(\d+) runs, (\d+) assertions, (\d+) failures, (\d+) errors, (\d+) skips/
+        tests_run = $1.to_i
+        failures = $3.to_i
+        errors = $4.to_i
+        tests_passed = tests_run - failures - errors
+      end
+    end
+    
+    # Print summary
+    status = success ? Colors.green("PASSED") : Colors.red("FAILED")
+    puts "\nMinitest tests: #{status} (#{duration}s)" unless @options[:format] == 'minimal'
+    
+    if tests_run > 0
+      puts "Results: #{tests_passed}/#{tests_run} passed"
+    else
+      puts "Results: #{success ? '1/1' : '0/1'} passed"
+    end
+    
+    # Return success status
+    success
+  end
+
+  # Run RSpec tests (Rails application tests in spec directory)
+  def run_rspec_tests
+    puts banner("RSpec Test Runner") unless @options[:format] == 'minimal'
+    
+    # Determine the correct test files based on focus
+    if @options[:focus]
+      # If focus is a directory like 'models', expand to spec/models
+      if !@options[:focus].include?('/') && !@options[:focus].include?('.')
+        test_files = "spec/#{@options[:focus]}"
+      # If focus is a specific file
+      elsif @options[:focus].end_with?('_spec.rb')
+        # Check if it's a full path or just a filename
+        if @options[:focus].include?('/')
+          test_files = @options[:focus]
+        else
+          # Find file with this name
+          matching_files = Dir.glob(File.join(@project_root, 'spec', '**', @options[:focus]))
+          test_files = matching_files.join(' ')
+        end
+      else
+        # General pattern
+        test_files = @options[:focus]
+      end
+    else
+      # All tests
+      test_files = "spec"
+    end
+    
+    # Build the command
+    command = "cd #{@project_root} && "
+    
+    # If parallel execution is requested, use parallel_rspec
+    if @options[:parallel]
+      command += "bundle exec parallel_rspec -n 4 #{test_files}"
+    else
+      # Add format option
+      format_option = @options[:format]
+      format_option = "documentation" if @options[:verbose] && !@options[:format]
+      
+      command += "bundle exec rspec #{test_files} --format #{format_option}"
+    end
+    
+    # Run tests
+    puts "Running command: #{Colors.dim(command)}" if @options[:verbose]
+    
+    start_time = Time.now
+    output_file = "#{@project_root}/tmp/rspec_output.log"
+    
+    if @options[:verbose]
+      success = system("#{command} 2>&1 | tee #{output_file}")
+    else
+      success = system(command)
+    end
+    
+    duration = (Time.now - start_time).round(2)
+    
+    # Parse output for summary if verbose
+    examples = 0
+    failures = 0
+    
+    if @options[:verbose] && File.exist?(output_file)
+      output = File.read(output_file)
+      # Look for RSpec summary line
+      if output =~ /(\d+) examples?, (\d+) failures?/
+        examples = $1.to_i
+        failures = $2.to_i
+      end
+    end
+    
+    # Print summary
+    status = success ? Colors.green("PASSED") : Colors.red("FAILED")
+    puts "\nRSpec tests: #{status} (#{duration}s)" unless @options[:format] == 'minimal'
+    
+    if examples > 0
+      puts "Results: #{examples - failures}/#{examples} passed"
+    else
+      puts "Results: #{success ? '1/1' : '0/1'} passed"
+    end
+    
+    # Return success status
+    success
+  end
+  
+  # Run Security tests (security vulnerability tests)
+  def run_security_tests
+    puts banner("Security Test Runner") unless @options[:format] == 'minimal'
+    
+    # Set environment variable to disable minitest plugins
+    ENV['MT_NO_PLUGINS'] = 'true'
+    
+    # Determine the correct test directory and pattern
+    test_dir = File.join(@project_root, 'tests', 'cli', 'security')
+    
+    # If a specific file is given with extension, use it directly
+    if @options[:focus] && @options[:focus].end_with?('.rb')
+      # Check if it's a full path or just a filename
+      if @options[:focus].include?('/')
+        test_files = @options[:focus]
+      else
+        # Find file with this name
+        matching_files = Dir.glob(File.join(test_dir, @options[:focus]))
+        test_files = matching_files.join(' ')
+      end
+    elsif @options[:focus]
+      # General pattern - match tests with the focus pattern
+      test_files = File.join(test_dir, "*#{@options[:focus]}*_test.rb")
+    else
+      # All security tests
+      test_files = File.join(test_dir, '*_test.rb')
+    end
+    
+    # Build the command
+    command = "cd #{@project_root} && "
+    
+    # Add minitest command with the test files
+    if test_files.include?(' ')
+      # Multiple files specified directly
+      command += "ruby -I #{File.dirname(test_dir)} -e \"ARGV.each{|f| require f}\" #{test_files}"
+    else
+      # Glob pattern
+      command += "ruby -I #{File.dirname(test_dir)} -e \"Dir.glob('#{test_files}').each{|f| require f}\""
+    end
+    
+    # Run tests
+    puts "Running command: #{Colors.dim(command)}" if @options[:verbose]
+    
+    start_time = Time.now
+    output_file = "#{@project_root}/tmp/security_test_output.log"
+    
+    if @options[:verbose]
+      success = system("#{command} 2>&1 | tee #{output_file}")
+    else
+      success = system(command)
+    end
+    
+    duration = (Time.now - start_time).round(2)
+    
+    # Parse output for summary if verbose
+    tests_run = 0
+    tests_passed = 0
+    
+    if @options[:verbose] && File.exist?(output_file)
+      output = File.read(output_file)
+      # Look for minitest summary line
+      if output =~ /(\d+) runs, (\d+) assertions, (\d+) failures, (\d+) errors, (\d+) skips/
+        tests_run = $1.to_i
+        failures = $3.to_i
+        errors = $4.to_i
+        tests_passed = tests_run - failures - errors
+      end
+    end
+    
+    # Print summary
+    status = success ? Colors.green("PASSED") : Colors.red("FAILED")
+    puts "\nSecurity tests: #{status} (#{duration}s)" unless @options[:format] == 'minimal'
+    
+    if tests_run > 0
+      puts "Results: #{tests_passed}/#{tests_run} passed"
+    else
+      puts "Results: #{success ? '1/1' : '0/1'} passed"
+    end
+    
+    # Return success status
+    success
+  end
+  
+  # Create a formatted banner
+  def banner(title)
+    "\n" + "=" * 80 + "\n" + 
+    Colors.bold(Colors.cyan(title)) + "\n" +
+    "Format: #{@options[:format]}" + "\n" +
+    (@options[:focus] ? "Focus: #{Colors.yellow(@options[:focus])}\n" : "") +
+    (@options[:parallel] ? "Mode: #{Colors.green("Parallel")}\n" : "") +
+    "=" * 80
+  end
+end
+
+# Main entry point
+if __FILE__ == $0
+  runner = UnifiedTestRunner.new
+  success = runner.run_tests
+  exit(success ? 0 : 1)
+end
