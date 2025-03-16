@@ -1,0 +1,164 @@
+#!/bin/bash
+# Seed the test environment with necessary data
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Help text
+show_help() {
+  echo "Usage: $(basename "$0") [OPTIONS]"
+  echo 
+  echo "Seed the test environment with necessary data"
+  echo
+  echo "Options:"
+  echo "  -h, --help       Show this help message"
+  echo "  -v, --verbose    Show more verbose output"
+  echo "  --minimal        Load minimal seed data (faster)"
+  echo "  --demo           Load demo data with realistic sample content"
+  echo
+  echo "Examples:"
+  echo "  $(basename "$0")           # Seed with standard test data"
+  echo "  $(basename "$0") --minimal # Seed with minimal data"
+  echo "  $(basename "$0") --demo    # Seed with demonstration data"
+  echo
+}
+
+# Parse arguments
+VERBOSE=false
+SEED_TYPE="standard"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help)
+      show_help
+      exit 0
+      ;;
+    -v|--verbose)
+      VERBOSE=true
+      shift
+      ;;
+    --minimal)
+      SEED_TYPE="minimal"
+      shift
+      ;;
+    --demo)
+      SEED_TYPE="demo"
+      shift
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}"
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
+# Determine database mode
+TEST_DB_MODE="${TEST_DB_MODE:-auto}"
+echo -e "${CYAN}=== Using Database Mode: ${TEST_DB_MODE} ===${NC}"
+
+# Verify test environment is running
+echo -e "${CYAN}=== Checking Test Environment ===${NC}"
+
+# Use db-service to check if database is running
+if ! TEST_DB_MODE="$TEST_DB_MODE" bundle exec bin/db-service status | grep -q "Status: RUNNING"; then
+  echo -e "${RED}Error: Database is not running!${NC}"
+  echo -e "${YELLOW}Start the test environment first with: bin/test-env --up --db-mode ${TEST_DB_MODE}${NC}"
+  exit 1
+else
+  echo -e "${GREEN}Database is running.${NC}"
+fi
+
+# Load database seeds based on seed type
+echo -e "${CYAN}=== Seeding Database ===${NC}"
+
+# Use db-service to seed the database with appropriate mode
+echo -e "${YELLOW}Loading ${SEED_TYPE} seed data using database service...${NC}"
+if TEST_DB_MODE="${TEST_DB_MODE:-auto}" bundle exec bin/db-service seed $SEED_TYPE; then
+  echo -e "${GREEN}Database seeded successfully.${NC}"
+else
+  echo -e "${RED}Database seeding failed!${NC}"
+  exit 1
+fi
+
+# Create additional LDAP test users if needed
+echo -e "${CYAN}=== Setting up LDAP Test Users ===${NC}"
+if docker ps | grep -q vulcan-ldap-test-1; then
+  echo -e "${YELLOW}Adding additional LDAP test users...${NC}"
+  
+  # Add a test admin user to LDAP
+  docker exec vulcan-ldap-test-1 ldapadd -x -D "cn=admin,dc=planetexpress,dc=com" -w "GoodNewsEveryone" <<EOF
+dn: cn=admin,ou=people,dc=planetexpress,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: admin
+sn: Admin
+givenName: Vulcan
+cn: admin
+displayName: Vulcan Admin
+uidNumber: 1001
+gidNumber: 1001
+userPassword: admin123
+mail: admin@planetexpress.com
+homeDirectory: /home/admin
+EOF
+  
+  if [ $? -eq 0 ]; then
+    echo -e "${GREEN}LDAP admin user created.${NC}"
+  else
+    echo -e "${YELLOW}LDAP admin user may already exist. Continuing...${NC}"
+  fi
+else
+  echo -e "${YELLOW}LDAP service not running, skipping LDAP user creation.${NC}"
+fi
+
+# Create additional OIDC test users if needed
+echo -e "${CYAN}=== Setting up OIDC Test Users ===${NC}"
+echo -e "${YELLOW}Creating OIDC test user config file...${NC}"
+
+# Create a Ruby script to add users to the OIDC server
+cat > tmp/add_oidc_users.rb << EOL
+require_relative '../spec/support/oidc_mock_server'
+
+# This script adds custom users to the OIDC mock server's user store
+# It creates additional users beyond the default admin user
+
+# Create the configuration file for custom users
+users = [
+  {
+    'sub' => '2',
+    'name' => 'Vulcan Reviewer',
+    'preferred_username' => 'reviewer',
+    'email' => 'reviewer@example.com',
+    'given_name' => 'Vulcan',
+    'family_name' => 'Reviewer'
+  },
+  {
+    'sub' => '3',
+    'name' => 'Vulcan Developer',
+    'preferred_username' => 'developer',
+    'email' => 'developer@example.com',
+    'given_name' => 'Vulcan',
+    'family_name' => 'Developer'
+  }
+]
+
+# Write users to the configuration file
+require 'json'
+File.write('spec/fixtures/oidc/additional_users.json', JSON.pretty_generate(users))
+puts "OIDC users config created at spec/fixtures/oidc/additional_users.json"
+EOL
+
+# Run the script to create OIDC users
+ruby tmp/add_oidc_users.rb
+
+echo -e "${GREEN}OIDC test users configured.${NC}"
+
+# Add any other custom seed actions as needed
+echo -e "\n${GREEN}All seeding completed successfully!${NC}"

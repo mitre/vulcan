@@ -52,6 +52,11 @@ bin/db-service status
 # Get the database connection URI
 bin/db-service uri
 
+# Seed the database with test data
+bin/db-service seed demo  # Full demo dataset (default in rails)
+bin/db-service seed minimal  # Minimal dataset 
+bin/db-service seed standard  # Standard dataset
+
 # Stop the database
 bin/db-service stop
 ```
@@ -104,6 +109,24 @@ The connection URI is dynamically generated based on the active mode and can be 
 - **Docker**: Uses a named volume `vulcan_test_db` to persist data across restarts
 - **PGLite**: Stores data in the `tmp/pglite` directory
 
+### Test Data Seeding
+
+The database service supports three seeding modes:
+
+1. **Demo** (Default): This is the full dataset as defined in the main Rails `db/seeds.rb` file. It creates admin and regular users, multiple projects (Photon 3, Photon 4, vSphere, dummy project), loads SRG data from XML fixtures, creates components with different configurations, sets up project memberships, and creates dummy released components.
+
+2. **Standard**: A medium-sized dataset that creates essential application entities for testing but with fewer instances than the demo data.
+
+3. **Minimal**: A minimal dataset that creates just enough data to run basic tests.
+
+You can seed the database with any of these modes using:
+
+```bash
+bin/db-service seed demo    # Full dataset
+bin/db-service seed standard  # Medium dataset
+bin/db-service seed minimal   # Minimal dataset
+```
+
 ### Test Environment Integration
 
 The testing infrastructure automatically:
@@ -111,6 +134,7 @@ The testing infrastructure automatically:
 2. Starts the appropriate database service
 3. Configures Rails to use the correct connection URI
 4. Provides the connection to test runners
+5. Seeds the database with the appropriate test data
 
 ## Troubleshooting
 

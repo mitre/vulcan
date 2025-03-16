@@ -108,9 +108,10 @@ fi
 # Seed the test environment
 echo -e "${CYAN}=== Seeding Test Environment ===${NC}"
 if [ "$VERBOSE" = true ]; then
-  ./bin/seed-test-env -v
+  TEST_DB_MODE="$DB_MODE" ./bin/seed-test-env -v
 else
-  ./bin/seed-test-env --minimal
+  # Use demo seeding by default to match Rails seeds.rb behavior
+  TEST_DB_MODE="$DB_MODE" ./bin/seed-test-env --demo
 fi
 
 # Run RSpec tests if needed

@@ -151,6 +151,33 @@ class DatabaseService
       }, "bundle exec rails db:create db:schema:load --trace")
     end
   end
+  
+  # Seed the database with demo data (default Rails seeding)
+  def seed_database(type = "demo")
+    puts "Seeding database with #{type} data..."
+    env = {
+      "DATABASE_URL" => connection_uri,
+      "RAILS_ENV" => "test"
+    }
+    
+    case type
+    when "minimal"
+      env["SEED_TYPE"] = "minimal"
+    when "standard"
+      env["SEED_TYPE"] = "standard"
+    when "demo" # Full dataset as per the default Rails seeds.rb
+      # Default seeding without special environment variables
+    end
+    
+    success = system(env, "bundle exec rails db:seed")
+    if success
+      puts "Database seeded successfully with #{type} data."
+    else
+      puts "Warning: Database seeding failed!"
+    end
+    
+    return success
+  end
 
   # Check if the test database exists
   def database_exists?

@@ -17,6 +17,7 @@ def print_help
   puts "  status      Check database service status"
   puts "  uri         Print the database connection URI"
   puts "  mode        Print the current database mode"
+  puts "  seed [TYPE] Seed the database (demo, standard, minimal)"
   puts "  help        Show this help message"
   puts
   puts "Environment Variables:"
@@ -26,6 +27,7 @@ def print_help
   puts "  TEST_DB_MODE=pglite #{File.basename($PROGRAM_NAME)} start"
   puts "  #{File.basename($PROGRAM_NAME)} uri"
   puts "  #{File.basename($PROGRAM_NAME)} status"
+  puts "  #{File.basename($PROGRAM_NAME)} seed demo"
   puts
 end
 
@@ -70,6 +72,32 @@ when 'uri'
 
 when 'mode'
   puts service.mode
+
+when 'seed'
+  # Get seed type from argument or default to demo
+  seed_type = ARGV[1]&.downcase || "demo"
+  
+  # Validate seed type
+  unless ["demo", "standard", "minimal"].include?(seed_type)
+    puts "Error: Invalid seed type '#{seed_type}'"
+    puts "Valid seed types: demo, standard, minimal"
+    exit 1
+  end
+  
+  # Make sure database is running
+  unless service.running?
+    puts "Error: Database is not running. Start it first with 'bin/db-service start'"
+    exit 1
+  end
+  
+  # Run the seeding
+  puts "Seeding database (#{service.mode} mode) with '#{seed_type}' data..."
+  if service.seed_database(seed_type)
+    puts "Database seeded successfully!"
+  else
+    puts "Error: Failed to seed database"
+    exit 1
+  end
 
 when 'help'
   print_help
