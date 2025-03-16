@@ -403,6 +403,21 @@ class UnifiedTestRunner
     # Build the command
     command = "cd #{@project_root} && "
     
+    # Use database service for connection info if available
+    begin
+      require_relative '../spec/support/database_service'
+      if defined?(DatabaseService)
+        db_service = DatabaseService.instance
+        # If the database is running, use its connection URI
+        if db_service.running?
+          puts "Using #{db_service.mode} database for tests" if @options[:verbose]
+          command += "DATABASE_URL=\"#{db_service.connection_uri}\" "
+        end
+      end
+    rescue LoadError => e
+      puts "Note: DatabaseService not available, using default database settings" if @options[:verbose]
+    end
+    
     # If parallel execution is requested, use parallel_rspec
     if @options[:parallel]
       command += "bundle exec parallel_rspec -n 4 #{test_files}"

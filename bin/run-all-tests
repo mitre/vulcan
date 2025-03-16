@@ -1,0 +1,133 @@
+#!/bin/bash
+# Run all tests in the proper sequence with environment setup
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Help text
+show_help() {
+  echo "Usage: $(basename "$0") [OPTIONS]"
+  echo 
+  echo "Run all tests in the proper sequence with environment setup"
+  echo
+  echo "Options:"
+  echo "  -h, --help          Show this help message"
+  echo "  -v, --verbose       Show verbose output"
+  echo "  -p, --parallel      Run tests in parallel where supported"
+  echo "  --rspec-only        Run only RSpec tests"
+  echo "  --e2e-only          Run only E2E tests"
+  echo "  --db-mode MODE      Set database mode (docker, pglite, auto)"
+  echo
+  echo "Examples:"
+  echo "  $(basename "$0")                              # Run all tests"
+  echo "  $(basename "$0") --e2e-only                   # Run only E2E tests"
+  echo "  $(basename "$0") -p --rspec-only              # Run RSpec tests in parallel"
+  echo "  $(basename "$0") --db-mode pglite             # Use embedded PGLite database"
+  echo "  $(basename "$0") --db-mode docker             # Use Docker PostgreSQL database"
+  echo "  $(basename "$0") --rspec-only --db-mode auto  # Auto-select database mode for RSpec tests"
+  echo
+}
+
+# Parse arguments
+VERBOSE=false
+PARALLEL=false
+RSPEC_ONLY=false
+E2E_ONLY=false
+DB_MODE="auto"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help)
+      show_help
+      exit 0
+      ;;
+    -v|--verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -p|--parallel)
+      PARALLEL=true
+      shift
+      ;;
+    --rspec-only)
+      RSPEC_ONLY=true
+      shift
+      ;;
+    --e2e-only)
+      E2E_ONLY=true
+      shift
+      ;;
+    --db-mode)
+      if [[ -z "$2" || "$2" == -* ]]; then
+        echo -e "${RED}Error: --db-mode requires an argument (docker, pglite, or auto)${NC}"
+        exit 1
+      fi
+      if [[ "$2" != "docker" && "$2" != "pglite" && "$2" != "auto" ]]; then
+        echo -e "${RED}Error: --db-mode must be one of: docker, pglite, auto${NC}"
+        exit 1
+      fi
+      DB_MODE="$2"
+      shift 2
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}"
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
+# Export database mode
+export TEST_DB_MODE="$DB_MODE"
+
+# Build command options
+OPTS=""
+if [ "$VERBOSE" = true ]; then
+  OPTS="$OPTS -v"
+fi
+if [ "$PARALLEL" = true ]; then
+  OPTS="$OPTS -p"
+fi
+
+# Start all required services
+echo -e "${CYAN}=== Starting Test Environment ===${NC}"
+echo -e "${YELLOW}Using database mode: ${DB_MODE}${NC}"
+if [ "$E2E_ONLY" = true ]; then
+  ./bin/test-env --up --db-mode "$DB_MODE"
+elif [ "$RSPEC_ONLY" = true ]; then
+  ./bin/test-env --db-only --db-mode "$DB_MODE"
+else
+  ./bin/test-env --up --db-mode "$DB_MODE"
+fi
+
+# Seed the test environment
+echo -e "${CYAN}=== Seeding Test Environment ===${NC}"
+if [ "$VERBOSE" = true ]; then
+  ./bin/seed-test-env -v
+else
+  ./bin/seed-test-env --minimal
+fi
+
+# Run RSpec tests if needed
+if [ "$E2E_ONLY" = false ]; then
+  echo -e "${CYAN}=== Running RSpec Tests ===${NC}"
+  ./bin/rspec-test $OPTS
+  echo
+fi
+
+# Run E2E tests if needed
+if [ "$RSPEC_ONLY" = false ]; then
+  echo -e "${CYAN}=== Running E2E Tests ===${NC}"
+  ./bin/e2e-test $OPTS
+  echo
+fi
+
+# Clean up
+echo -e "${CYAN}=== Cleaning Up ===${NC}"
+echo -e "${YELLOW}Not shutting down services - use 'bin/test-env --down' when finished.${NC}"
+echo -e "${GREEN}All tests completed!${NC}"

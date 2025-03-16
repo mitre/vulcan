@@ -1,0 +1,270 @@
+#!/bin/bash
+# Set up a complete testing environment with all services
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Help text
+show_help() {
+  echo "Usage: $(basename "$0") [OPTIONS] [COMMAND]"
+  echo 
+  echo "Set up a complete testing environment with all services"
+  echo "(PostgreSQL, LDAP, OIDC, and Rails server)"
+  echo
+  echo "Options:"
+  echo "  -h, --help       Show this help message"
+  echo "  -u, --up         Start all services (default if no command provided)"
+  echo "  -d, --down       Stop all services"
+  echo "  -s, --status     Show status of services"
+  echo "  -r, --restart    Restart all services"
+  echo "  --db-only        Start only the database service"
+  echo "  --rails          Start Rails server in test mode"
+  echo "  --db-mode MODE   Set database mode (docker, pglite, auto)"
+  echo
+  echo "Examples:"
+  echo "  $(basename "$0")                      # Start all services"
+  echo "  $(basename "$0") --down               # Stop all services"
+  echo "  $(basename "$0") --status             # Show status of services"
+  echo "  $(basename "$0") --db-only            # Start only PostgreSQL"
+  echo "  $(basename "$0") --db-mode pglite     # Use embedded PGLite database"
+  echo "  $(basename "$0") --db-mode docker     # Use Docker PostgreSQL database"
+  echo "  $(basename "$0") --db-mode auto       # Automatically select best database option"
+  echo
+}
+
+# Parse arguments
+COMMAND="up"
+DB_ONLY=false
+START_RAILS=false
+DB_MODE="auto"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help)
+      show_help
+      exit 0
+      ;;
+    -u|--up)
+      COMMAND="up"
+      shift
+      ;;
+    -d|--down)
+      COMMAND="down"
+      shift
+      ;;
+    -s|--status)
+      COMMAND="status"
+      shift
+      ;;
+    -r|--restart)
+      COMMAND="restart"
+      shift
+      ;;
+    --db-only)
+      DB_ONLY=true
+      shift
+      ;;
+    --rails)
+      START_RAILS=true
+      shift
+      ;;
+    --db-mode)
+      if [[ -z "$2" || "$2" == -* ]]; then
+        echo -e "${RED}Error: --db-mode requires an argument (docker, pglite, or auto)${NC}"
+        exit 1
+      fi
+      if [[ "$2" != "docker" && "$2" != "pglite" && "$2" != "auto" ]]; then
+        echo -e "${RED}Error: --db-mode must be one of: docker, pglite, auto${NC}"
+        exit 1
+      fi
+      DB_MODE="$2"
+      shift 2
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}"
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
+# Export database mode for our Rails environment
+export TEST_DB_MODE="$DB_MODE"
+
+# Set platform environment variable based on architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then
+  echo -e "${YELLOW}Detected ARM architecture (M1/M2/M3 Mac)${NC}"
+  export DOCKER_PLATFORM=linux/arm64
+else
+  echo -e "${YELLOW}Detected x86_64 architecture${NC}"
+  export DOCKER_PLATFORM=linux/amd64
+fi
+
+# Command: show status
+if [ "$COMMAND" = "status" ]; then
+  echo -e "${CYAN}=== Checking Service Status ===${NC}"
+  
+  # Show database mode
+  echo -e "${YELLOW}Database mode:${NC} ${GREEN}${DB_MODE}${NC}"
+  
+  # Check if containers are running (only if using Docker)
+  echo -e "\n${YELLOW}Docker containers:${NC}"
+  docker ps --filter "name=vulcan"
+  
+  # Check database connection
+  echo -e "\n${YELLOW}Database connection:${NC}"
+  if pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
+    echo -e "${GREEN}PostgreSQL is accepting connections${NC}"
+    
+    # Get database version
+    PG_VERSION=$(psql -h localhost -p 5432 -U postgres -t -c "SELECT version();" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+      echo -e "${GREEN}${PG_VERSION}${NC}"
+    fi
+  else
+    echo -e "${RED}PostgreSQL is not available${NC}"
+  fi
+  
+  # Check LDAP connection
+  echo -e "\n${YELLOW}LDAP connection:${NC}"
+  ldapsearch -x -h localhost -p 389 -D "cn=admin,dc=planetexpress,dc=com" -w "GoodNewsEveryone" -b "dc=planetexpress,dc=com" > /dev/null 2>&1 && echo -e "${GREEN}LDAP is accepting connections${NC}" || echo -e "${RED}LDAP is not available${NC}"
+  
+  # Check OIDC connection - we now use a Ruby-based OIDC server
+  echo -e "\n${YELLOW}OIDC service:${NC}"
+  echo -e "${GREEN}Will use Ruby-based OIDC server for tests${NC}"
+  
+  # Check Rails server
+  echo -e "\n${YELLOW}Rails server:${NC}"
+  curl -s http://localhost:3000 > /dev/null 2>&1 && echo -e "${GREEN}Rails server is responding${NC}" || echo -e "${RED}Rails server is not running${NC}"
+  
+  exit 0
+fi
+
+# Command: stop services
+if [ "$COMMAND" = "down" ]; then
+  echo -e "${CYAN}=== Stopping Services ===${NC}"
+  
+  # Stop database using the appropriate method
+  echo -e "${YELLOW}Stopping database (${DB_MODE} mode)...${NC}"
+  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service stop
+  
+  # Always make sure Docker is stopped to be safe
+  echo -e "${YELLOW}Stopping Docker services...${NC}"
+  docker-compose -f docker-compose.test.yml down --remove-orphans
+  
+  echo -e "${GREEN}All services stopped${NC}"
+  exit 0
+fi
+
+# Command: restart services
+if [ "$COMMAND" = "restart" ]; then
+  echo -e "${CYAN}=== Restarting Services ===${NC}"
+  
+  # Stop all services first
+  echo -e "${YELLOW}Stopping all services...${NC}"
+  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service stop
+  docker-compose -f docker-compose.test.yml down --remove-orphans
+  
+  # Start services based on options
+  if [ "$DB_ONLY" = true ]; then
+    echo -e "${YELLOW}Starting only PostgreSQL (${DB_MODE} mode)${NC}"
+    TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+  else
+    echo -e "${YELLOW}Starting database (${DB_MODE} mode)${NC}"
+    TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+    
+    echo -e "${YELLOW}Starting other services${NC}"
+    # Start LDAP (and any other non-database services)
+    docker-compose -f docker-compose.test.yml up -d ldap-test
+  fi
+  
+  echo -e "${GREEN}Services restarted${NC}"
+  
+  if [ "$START_RAILS" = true ]; then
+    echo -e "${YELLOW}Starting Rails server in test mode${NC}"
+    # Get database connection URI from the db-service
+    DATABASE_URL=$(TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service uri) \
+    RAILS_ENV=test \
+    bundle exec rails server -d
+    echo -e "${GREEN}Rails server started${NC}"
+  fi
+  
+  exit 0
+fi
+
+# Command: start services (default)
+echo -e "${CYAN}=== Starting Test Environment ===${NC}"
+
+# Start the database using the appropriate mode
+if [ "$DB_ONLY" = true ]; then
+  echo -e "${YELLOW}Starting only PostgreSQL (${DB_MODE} mode)${NC}"
+  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+else
+  echo -e "${YELLOW}Starting database (${DB_MODE} mode)${NC}"
+  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+  
+  echo -e "${YELLOW}Starting other services${NC}"
+  # Start LDAP (and any other non-database services)
+  docker-compose -f docker-compose.test.yml up -d ldap-test
+fi
+
+# Database setup is now handled by the db-service script
+
+# Start Rails server in test mode if requested
+if [ "$START_RAILS" = true ]; then
+  echo -e "${YELLOW}Starting Rails server in test mode${NC}"
+  # Get database connection URI from the db-service
+  DATABASE_URL=$(TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service uri) \
+  RAILS_ENV=test \
+  VULCAN_ENABLE_LDAP=true \
+  VULCAN_LDAP_ATTRIBUTE=mail \
+  VULCAN_LDAP_BIND_DN="cn=admin,dc=planetexpress,dc=com" \
+  VULCAN_LDAP_BASE="ou=people,dc=planetexpress,dc=com" \
+  VULCAN_LDAP_PORT=389 \
+  VULCAN_LDAP_ADMIN_PASS="GoodNewsEveryone" \
+  VULCAN_ENABLE_OIDC=true \
+  VULCAN_OIDC_ISSUER_URL="http://localhost:8080" \
+  VULCAN_OIDC_HOST="localhost" \
+  VULCAN_OIDC_PORT=8080 \
+  VULCAN_OIDC_CLIENT_ID="vulcan" \
+  VULCAN_OIDC_CLIENT_SECRET="vulcan-secret" \
+  VULCAN_OIDC_REDIRECT_URI="http://localhost:3000/users/auth/oidc/callback" \
+  VULCAN_OIDC_AUTHORIZATION_URL="http://localhost:8080/connect/authorize" \
+  VULCAN_OIDC_TOKEN_URL="http://localhost:8080/connect/token" \
+  VULCAN_OIDC_USERINFO_URL="http://localhost:8080/connect/userinfo" \
+  VULCAN_OIDC_JWKS_URI="http://localhost:8080/.well-known/jwks" \
+  VULCAN_OIDC_PROVIDER_TITLE="Vulcan OIDC Test" \
+  bundle exec rails server -d
+  
+  echo -e "${GREEN}Rails server started${NC}"
+  
+  # Wait for server to be ready
+  echo -e "${YELLOW}Waiting for Rails server...${NC}"
+  for i in {1..30}; do
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+      echo -e "${GREEN}Rails server is ready!${NC}"
+      break
+    fi
+    echo -n "."
+    sleep 1
+    
+    if [ $i -eq 30 ]; then
+      echo -e "\n${RED}Failed to connect to Rails server after 30 attempts${NC}"
+      exit 1
+    fi
+  done
+fi
+
+echo -e "\n${GREEN}Test environment is ready!${NC}"
+echo -e "You can now run your tests with environment properly configured."
+echo -e "Database mode: ${GREEN}${DB_MODE}${NC}"
+echo -e "Use '${YELLOW}$(basename "$0") --status${NC}' to check service status"
+echo -e "Use '${YELLOW}$(basename "$0") --down${NC}' to stop all services"
+echo -e "Use '${YELLOW}$(basename "$0") --db-mode pglite${NC}' to use embedded PostgreSQL"
+echo -e "Use '${YELLOW}$(basename "$0") --db-mode docker${NC}' to use Docker PostgreSQL"

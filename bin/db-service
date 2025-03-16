@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# This script provides a CLI interface to the DatabaseService class
+# It allows starting, stopping, and checking the status of the database
+# using either Docker or PGLite
+
+require File.expand_path('../config/environment', __dir__)
+require_relative '../spec/support/database_service'
+
+def print_help
+  puts "Usage: #{File.basename($PROGRAM_NAME)} COMMAND"
+  puts
+  puts "Commands:"
+  puts "  start       Start the database service"
+  puts "  stop        Stop the database service"
+  puts "  status      Check database service status"
+  puts "  uri         Print the database connection URI"
+  puts "  mode        Print the current database mode"
+  puts "  help        Show this help message"
+  puts
+  puts "Environment Variables:"
+  puts "  TEST_DB_MODE   Set database mode (docker, pglite, auto)"
+  puts
+  puts "Examples:"
+  puts "  TEST_DB_MODE=pglite #{File.basename($PROGRAM_NAME)} start"
+  puts "  #{File.basename($PROGRAM_NAME)} uri"
+  puts "  #{File.basename($PROGRAM_NAME)} status"
+  puts
+end
+
+# Check if command is provided
+if ARGV.empty?
+  print_help
+  exit 1
+end
+
+# Process command
+command = ARGV[0].downcase
+service = DatabaseService.instance
+
+case command
+when 'start'
+  puts "Starting database in #{service.mode} mode..."
+  service.start
+  puts "Database started successfully!"
+  puts "Connection URI: #{service.connection_uri}"
+
+when 'stop'
+  puts "Stopping database in #{service.mode} mode..."
+  service.stop
+  puts "Database stopped successfully!"
+
+when 'status'
+  puts "Database mode: #{service.mode}"
+  if service.running?
+    puts "Status: RUNNING"
+    puts "Connection URI: #{service.connection_uri}"
+  else
+    puts "Status: STOPPED"
+  end
+
+when 'uri'
+  if service.running?
+    puts service.connection_uri
+  else
+    puts "Error: Database is not running"
+    exit 1
+  end
+
+when 'mode'
+  puts service.mode
+
+when 'help'
+  print_help
+
+else
+  puts "Unknown command: #{command}"
+  print_help
+  exit 1
+end

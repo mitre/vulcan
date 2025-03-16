@@ -93,6 +93,8 @@ group :test do
   gem 'rubocop-performance'
   gem 'rubocop-rails'
   gem 'simplecov', require: false
+  # Embedded PostgreSQL for testing without Docker
+  gem 'pglite', '~> 0.6.0'
 end
 
 group :development, :test do
