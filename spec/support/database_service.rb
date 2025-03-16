@@ -3,7 +3,7 @@
 require 'singleton'
 
 # DatabaseService manages the test database connection
-# It supports both Docker-based PostgreSQL and embedded PGLite
+# It supports both Docker-based PostgreSQL and embedded pg_tmp
 class DatabaseService
   include Singleton
 
@@ -12,14 +12,14 @@ class DatabaseService
   DB_USER = 'postgres'
   DB_PASSWORD = 'vulcan_development'
   DB_NAME = 'vulcan_vue_test'
-  PGLITE_DATA_DIR = File.join(Rails.root, 'tmp', 'pglite')
+  PG_TMP_DIR = File.join(Rails.root, 'tmp', 'pg_tmp')
 
   attr_reader :mode, :uri
 
   def initialize
     @mode = ENV['TEST_DB_MODE']&.downcase || 'auto'
     @mode = detect_best_mode if @mode == 'auto'
-    @pglite_server = nil
+    @pg_tmp_server = nil
   end
 
   # Start the database service
@@ -27,7 +27,7 @@ class DatabaseService
     if docker_mode?
       start_docker_postgres
     else
-      start_pglite
+      start_pg_tmp
     end
     wait_for_postgres
     setup_database
@@ -38,7 +38,7 @@ class DatabaseService
     if docker_mode?
       stop_docker_postgres
     else
-      stop_pglite
+      stop_pg_tmp
     end
   end
 
@@ -57,9 +57,9 @@ class DatabaseService
     @mode == 'docker'
   end
 
-  # Is PGLite mode active?
-  def pglite_mode?
-    @mode == 'pglite'
+  # Is pg_tmp mode active?
+  def pg_tmp_mode?
+    @mode == 'pg_tmp'
   end
 
   private
@@ -69,11 +69,11 @@ class DatabaseService
     if ENV['CI'] == 'true'
       # In CI environments, prefer Docker for isolation
       'docker'
-    elsif defined?(PGLite) && PGLite.installable?
-      # PGLite mode if available (faster local development)
-      'pglite'
+    elsif defined?(PgTmp) || system('which pg_tmp > /dev/null 2>&1')
+      # pg_tmp mode if available (faster local development)
+      'pg_tmp'
     else
-      # Default to Docker if PGLite isn't available
+      # Default to Docker if pg_tmp isn't available
       'docker'
     end
   end
@@ -85,26 +85,33 @@ class DatabaseService
     @uri = "postgres://#{DB_USER}:#{DB_PASSWORD}@#{DB_HOST}:#{DB_PORT}/#{DB_NAME}"
   end
 
-  # Start PostgreSQL via PGLite
-  def start_pglite
-    return if @pglite_server&.running?
+  # Start PostgreSQL via pg_tmp
+  def start_pg_tmp
+    return if @pg_tmp_server && @pg_tmp_server.alive?
 
-    puts "Starting PostgreSQL via PGLite..."
-    require 'pglite'
+    puts "Starting PostgreSQL via pg_tmp..."
+    require 'pg_tmp'
     
-    # Create directory for PGLite data
-    FileUtils.mkdir_p(PGLITE_DATA_DIR)
+    # Create directory for pg_tmp
+    FileUtils.mkdir_p(PG_TMP_DIR)
     
-    # Configure and start PGLite
-    @pglite_server = PGLite::Server.new(
-      data_dir: PGLITE_DATA_DIR,
-      port: DB_PORT,
-      username: DB_USER, 
-      password: DB_PASSWORD
+    # Start pg_tmp server
+    @pg_tmp_server = PgTmp::Server.new
+    
+    # Set up connection info
+    conn_info = @pg_tmp_server.connection_string.match(/postgresql:\/\/(\w+)@([^:]+):(\d+)\/(\w+)/)
+    username = conn_info[1]
+    host = conn_info[2]
+    port = conn_info[3].to_i
+    database = conn_info[4]
+    
+    # Create our database user
+    system(
+      "PGPASSWORD= psql -h #{host} -p #{port} -U #{username} -d #{database} -c " +
+      "'CREATE USER #{DB_USER} WITH SUPERUSER PASSWORD ''#{DB_PASSWORD}'';'"
     )
     
-    @pglite_server.start
-    @uri = @pglite_server.connection_uri
+    @uri = "postgres://#{DB_USER}:#{DB_PASSWORD}@#{host}:#{port}/#{DB_NAME}"
   end
 
   # Stop Docker PostgreSQL
@@ -113,12 +120,12 @@ class DatabaseService
     system("docker-compose -f docker-compose.test.yml stop db-test")
   end
 
-  # Stop PGLite
-  def stop_pglite
-    return unless @pglite_server&.running?
+  # Stop pg_tmp
+  def stop_pg_tmp
+    return unless @pg_tmp_server&.alive?
 
-    puts "Stopping PostgreSQL via PGLite..."
-    @pglite_server.stop
+    puts "Stopping PostgreSQL via pg_tmp..."
+    @pg_tmp_server.stop
   end
 
   # Wait for PostgreSQL to be ready
@@ -184,16 +191,28 @@ class DatabaseService
     if docker_mode?
       system("docker exec vulcan-db-test-1 psql -U postgres -lqt | grep -q #{DB_NAME}")
     else
-      conn = PG.connect(
-        host: DB_HOST,
-        port: DB_PORT,
-        user: DB_USER,
-        password: DB_PASSWORD
-      )
-      result = conn.exec("SELECT 1 FROM pg_database WHERE datname='#{DB_NAME}'")
-      !result.nil? && result.count > 0
-    ensure
-      conn&.close
+      # For pg_tmp, we need to parse the connection URI to get the actual host and port
+      uri = URI.parse("postgres://#{@uri.split('//')[1]}") if @uri
+      host = uri ? uri.host : DB_HOST
+      port = uri ? uri.port : DB_PORT
+      user = uri ? uri.user : DB_USER
+      password = uri ? uri.password : DB_PASSWORD
+      
+      begin
+        conn = PG.connect(
+          host: host,
+          port: port,
+          user: user,
+          password: password
+        )
+        result = conn.exec("SELECT 1 FROM pg_database WHERE datname='#{DB_NAME}'")
+        !result.nil? && result.count > 0
+      rescue PG::Error => e
+        puts "Error checking database existence: #{e.message}"
+        false
+      ensure
+        conn&.close
+      end
     end
   end
 end

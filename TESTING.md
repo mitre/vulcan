@@ -14,16 +14,16 @@ Vulcan uses a comprehensive testing approach with multiple layers:
 
 All tests run against a dedicated test environment with managed services:
 
-- **PostgreSQL** - For database testing (via Docker or embedded PGLite)
+- **PostgreSQL** - For database testing (via Docker or embedded pg_tmp)
 - **LDAP Service** - For authentication testing with LDAP
 - **OIDC Mock** - Ruby-based in-process OpenID Connect server (ARM/M1 compatible)
 - **Rails Server** - Runs on the host machine for E2E tests
 
 The database service supports two modes:
 - **Docker Mode**: PostgreSQL runs in a Docker container
-- **PGLite Mode**: PostgreSQL runs embedded via the PGLite gem
+- **pg_tmp Mode**: PostgreSQL runs via temporary clusters using the pg_tmp gem
 
-For more details, see [PGLite Integration Guide](docs/pglite-integration.md)
+For more details, see [Embedded PostgreSQL Guide](docs/pg-tmp-integration.md)
 
 ## Test Scripts
 

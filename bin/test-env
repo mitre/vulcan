@@ -24,14 +24,14 @@ show_help() {
   echo "  -r, --restart    Restart all services"
   echo "  --db-only        Start only the database service"
   echo "  --rails          Start Rails server in test mode"
-  echo "  --db-mode MODE   Set database mode (docker, pglite, auto)"
+  echo "  --db-mode MODE   Set database mode (docker, pg_tmp, auto)"
   echo
   echo "Examples:"
   echo "  $(basename "$0")                      # Start all services"
   echo "  $(basename "$0") --down               # Stop all services"
   echo "  $(basename "$0") --status             # Show status of services"
   echo "  $(basename "$0") --db-only            # Start only PostgreSQL"
-  echo "  $(basename "$0") --db-mode pglite     # Use embedded PGLite database"
+  echo "  $(basename "$0") --db-mode pg_tmp     # Use embedded pg_tmp database"
   echo "  $(basename "$0") --db-mode docker     # Use Docker PostgreSQL database"
   echo "  $(basename "$0") --db-mode auto       # Automatically select best database option"
   echo
@@ -75,11 +75,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --db-mode)
       if [[ -z "$2" || "$2" == -* ]]; then
-        echo -e "${RED}Error: --db-mode requires an argument (docker, pglite, or auto)${NC}"
+        echo -e "${RED}Error: --db-mode requires an argument (docker, pg_tmp, or auto)${NC}"
         exit 1
       fi
-      if [[ "$2" != "docker" && "$2" != "pglite" && "$2" != "auto" ]]; then
-        echo -e "${RED}Error: --db-mode must be one of: docker, pglite, auto${NC}"
+      if [[ "$2" != "docker" && "$2" != "pg_tmp" && "$2" != "auto" ]]; then
+        echo -e "${RED}Error: --db-mode must be one of: docker, pg_tmp, auto${NC}"
         exit 1
       fi
       DB_MODE="$2"
