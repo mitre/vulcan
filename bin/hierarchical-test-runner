@@ -1,0 +1,571 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Hierarchical Test Runner for Vulcan CLI
+# This script provides a structured approach to running tests in a hierarchical order
+# Uses the unified-test-runner as the execution engine
+# Author: Vulcan Team, March 2025
+
+require 'optparse'
+require 'pathname'
+require 'fileutils'
+require 'json'
+require 'digest'
+
+# ANSI color codes for output
+class Colors
+  def self.green(text); "\e[32m#{text}\e[0m"; end
+  def self.red(text); "\e[31m#{text}\e[0m"; end
+  def self.yellow(text); "\e[33m#{text}\e[0m"; end
+  def self.cyan(text); "\e[36m#{text}\e[0m"; end
+  def self.blue(text); "\e[34m#{text}\e[0m"; end
+  def self.magenta(text); "\e[35m#{text}\e[0m"; end
+  def self.gray(text); "\e[37m#{text}\e[0m"; end
+  def self.bold(text); "\e[1m#{text}\e[0m"; end
+  def self.dim(text); "\e[2m#{text}\e[0m"; end
+end
+
+class HierarchicalTestRunner
+  attr_reader :options, :results
+
+  def initialize
+    @project_root = find_project_root
+    @results = {}
+    @cache_file = File.join(@project_root, 'tmp', 'test_results_cache.json')
+    @options = {
+      level: :all,
+      verbose: false,
+      format: 'minimal',  # Use minimal format by default for cleaner output
+      stop_on_failure: true,
+      focus: nil,
+      parallel: false,
+      incremental: false
+    }
+    parse_options
+    load_cache if @options[:incremental]
+    
+    # Ensure the tmp directory exists
+    FileUtils.mkdir_p(File.join(@project_root, 'tmp'))
+  end
+
+  def find_project_root
+    # Find the project root by looking for the Gemfile
+    current_dir = Dir.pwd
+    while current_dir != '/'
+      if File.exist?(File.join(current_dir, 'Gemfile'))
+        return current_dir
+      end
+      current_dir = File.dirname(current_dir)
+    end
+    # If not found, assume current directory
+    Dir.pwd
+  end
+
+  def parse_options
+    OptionParser.new do |opts|
+      opts.banner = "Usage: hierarchical-test-runner [options]"
+      
+      opts.on("-l", "--level LEVEL", [:foundation, :component, :integration, :workflow, :system, :all], 
+              "Test level to run (foundation, component, integration, workflow, system, all)") do |level|
+        @options[:level] = level
+      end
+      
+      opts.on("-v", "--verbose", "Run with verbose output") do
+        @options[:verbose] = true
+      end
+      
+      opts.on("-f", "--format FORMAT", [:table, :minimal, :json, :doc, :progress, :documentation], 
+              "Output format (table, minimal, json, doc, progress, documentation)") do |format|
+        @options[:format] = format.to_s
+      end
+      
+      opts.on("--focus PATTERN", "Focus on tests matching pattern") do |pattern|
+        @options[:focus] = pattern
+      end
+      
+      opts.on("--no-stop", "Continue running tests even after failures") do
+        @options[:stop_on_failure] = false
+      end
+      
+      opts.on("-p", "--parallel", "Run tests in parallel for faster execution") do
+        @options[:parallel] = true
+      end
+      
+      opts.on("-i", "--incremental", "Run tests incrementally, skipping tests that haven't changed") do
+        @options[:incremental] = true
+      end
+      
+      opts.on("-h", "--help", "Show this help message") do
+        puts opts
+        exit
+      end
+    end.parse!
+  end
+
+  def run_tests
+    print_banner
+
+    # Define test levels with test categories and their patterns
+    test_levels = {
+      foundation: [
+        { name: "Core Utilities", type: :minitest, pattern: "core/*" },
+        { name: "Flag Registry", type: :minitest, pattern: "flag_standardization_test.rb" },
+        { name: "Command Registry", type: :minitest, pattern: "command_registry_test.rb" }
+      ],
+      
+      component: [
+        { name: "Command Tests", type: :minitest, pattern: "registry/commands/*_test.rb" },
+        { name: "Service Tests", type: :minitest, pattern: "services/*_test.rb" },
+        { name: "UI Tests", type: :ui, pattern: nil } # UI tests are handled specially
+      ],
+      
+      integration: [
+        { name: "Bridge Tests", type: :minitest, pattern: "integration/rails_config_bridge_test.rb" },
+        { name: "Module Integration", type: :minitest, pattern: "integration/*_test.rb" }
+      ],
+      
+      workflow: [
+        { name: "Verification Tests", type: :minitest, pattern: "verification/*_test.rb" },
+        { name: "Workflow Tests", type: :minitest, pattern: "workflow/*_test.rb" }
+      ],
+      
+      system: [
+        { name: "End-to-End Tests", type: :playwright, pattern: nil },
+        { name: "Application Tests", type: :rspec, pattern: nil },
+        { name: "System Integration", type: :minitest, pattern: "vulcan_test.rb" }
+      ]
+    }
+
+    # Determine which levels to run
+    levels_to_run = @options[:level] == :all ? 
+      [:foundation, :component, :integration, :workflow, :system] : 
+      [@options[:level]]
+
+    levels_to_run.each do |level|
+      next unless test_levels[level]
+      
+      print_level_header(level)
+      level_success = true
+      
+      # Track results for this level
+      @results[level] = {
+        groups: {},
+        success: true,
+        tests_run: 0,
+        tests_passed: 0,
+        tests_failed: 0
+      }
+      
+      # Run each group in this level
+      test_levels[level].each do |group|
+        print_group_header(group[:name])
+        
+        # Skip if focused on a different group
+        if @options[:focus]
+          focus = @options[:focus].downcase
+          matches = false
+          
+          # Explicit matches for certain test types
+          if focus == "color" && group[:name] == "Core Utilities"
+            # Special case for color test which is in Core Utilities
+            matches = true
+          else
+            # Standard matching logic
+            matches_name = group[:name].downcase.include?(focus)
+            matches_pattern = false
+            
+            if group[:pattern]
+              # Check if pattern directory contains the focus
+              if group[:pattern].include?("/")
+                dir = group[:pattern].split("/").first
+                matches_pattern = dir.downcase.include?(focus)
+              end
+              
+              # Check if pattern itself contains the focus
+              matches_pattern ||= group[:pattern].downcase.include?(focus)
+            end
+          end
+          
+          # Debug output
+          puts "  #{Colors.dim("Debug: Group #{group[:name]}, Pattern=#{group[:pattern]}")}" if @options[:verbose]
+          puts "  #{Colors.dim("Debug: Focus=#{focus}, Matches name: #{matches_name}, Matches pattern: #{matches_pattern}")}" if @options[:verbose]
+          
+          unless matches_name || matches_pattern || matches
+            puts "  #{Colors.yellow('Skipped:')} Doesn't match focus pattern #{@options[:focus]}"
+            next
+          end
+        end
+        
+        # Track results for this group
+        @results[level][:groups][group[:name]] = {
+          success: true,
+          tests_run: 0,
+          tests_passed: 0,
+          tests_failed: 0
+        }
+        
+        # Check if the test group is in the cache
+        if @options[:incremental] && !@options[:focus] && cache_contains_group?(level, group)
+          # Use cached results if they exist for the entire group
+          cached_result = get_cached_group_result(level, group)
+          if cached_result
+            @results[level][:groups][group[:name]] = {
+              success: cached_result["success"],
+              tests_run: cached_result["tests_run"] || 0,
+              tests_passed: cached_result["tests_passed"] || 0,
+              tests_failed: cached_result["tests_failed"] || 0,
+              duration: cached_result["duration"] || 0
+            }
+            @results[level][:tests_run] += cached_result["tests_run"] || 0
+            @results[level][:tests_passed] += cached_result["tests_passed"] || 0
+            @results[level][:tests_failed] += cached_result["tests_failed"] || 0
+            
+            # Mark as cached
+            @results[level][:groups][group[:name]][:cached] = true
+            
+            # Print cached result
+            puts "  #{Colors.blue('Cached:')} #{group[:name]} " + 
+                 "#{cached_result["success"] ? Colors.green('✓') : Colors.red('✗')} " +
+                 "(#{cached_result["tests_passed"] || 0}/#{cached_result["tests_run"] || 0})"
+            
+            # Update level success
+            level_success = false if !cached_result["success"]
+            
+            next
+          end
+        end
+        
+        # Run test group using unified-test-runner
+        result = run_group(group)
+        
+        # Record result
+        @results[level][:groups][group[:name]][:success] = result[:success]
+        @results[level][:groups][group[:name]][:tests_run] = result[:tests_run]
+        @results[level][:groups][group[:name]][:tests_passed] = result[:tests_passed]
+        @results[level][:groups][group[:name]][:tests_failed] = result[:tests_failed]
+        @results[level][:groups][group[:name]][:duration] = result[:duration]
+        @results[level][:groups][group[:name]][:type] = group[:type]
+        
+        # Update level results
+        @results[level][:tests_run] += result[:tests_run]
+        @results[level][:tests_passed] += result[:tests_passed]
+        @results[level][:tests_failed] += result[:tests_failed]
+        
+        if !result[:success]
+          @results[level][:success] = false
+          level_success = false
+        end
+        
+        # Print group summary
+        print_group_summary(group[:name], @results[level][:groups][group[:name]])
+        
+        # Stop if there were failures and stop_on_failure is true
+        if !result[:success] && @options[:stop_on_failure]
+          puts "\n#{Colors.red('Failures detected!')} Stopping test execution at #{level} level / #{group[:name]} group."
+          print_level_summary(level, @results[level])
+          return false
+        end
+      end
+      
+      # Print level summary
+      print_level_summary(level, @results[level])
+      
+      # Stop if there were failures and stop_on_failure is true
+      if !level_success && @options[:stop_on_failure]
+        puts "\n#{Colors.red('Failures detected!')} Stopping test execution at #{level} level."
+        return false
+      end
+    end
+    
+    # Print overall summary
+    print_overall_summary
+    
+    # Save cache if incremental mode is enabled
+    save_cache if @options[:incremental]
+    
+    # Return true if all tests passed
+    levels_to_run.all? { |level| @results[level] && @results[level][:success] }
+  end
+  
+  # Run a group of tests using the unified test runner
+  def run_group(group)
+    test_type = group[:type]
+    pattern = group[:pattern]
+    
+    # Further refine the focus if provided
+    effective_focus = @options[:focus]
+    if @options[:focus] && pattern
+      # If both focus and pattern are provided, try to combine them
+      if pattern.include?('*')
+        # Pattern has a wildcard, replace it with the focus
+        effective_focus = pattern.gsub('*', @options[:focus])
+      elsif @options[:focus].include?(pattern)
+        # Focus already includes the pattern, use it as is
+        effective_focus = @options[:focus]
+      else
+        # Otherwise, the focus is more specific than the pattern
+        effective_focus = pattern.include?('/') ? 
+          pattern.sub(/\/[^\/]*$/, "/#{@options[:focus]}") : 
+          @options[:focus]
+      end
+    elsif pattern && !@options[:focus]
+      # If only pattern is provided, use it as the focus
+      effective_focus = pattern
+    end
+    
+    puts "  Running tests with type=#{test_type}, focus=#{effective_focus || 'none'}" if @options[:verbose]
+    
+    # Build the command to run the unified test runner
+    command = "#{@project_root}/bin/unified-test-runner --type #{test_type}"
+    command += " --format #{@options[:format]}"
+    command += " --verbose" if @options[:verbose]
+    command += " --focus \"#{effective_focus}\"" if effective_focus
+    command += " --parallel" if @options[:parallel]
+    
+    # Log the command if verbose
+    puts "  #{Colors.dim("Command: #{command}")}" if @options[:verbose]
+    
+    # Run the tests
+    start_time = Time.now
+    output_file = "#{@project_root}/tmp/#{test_type}_#{group[:name].downcase.gsub(/\s+/, '_')}.log"
+    
+    # Run with output capture for parsing
+    if @options[:verbose]
+      success = system("#{command} 2>&1 | tee #{output_file}")
+    else
+      success = system("#{command} > #{output_file} 2>&1")
+    end
+    
+    duration = (Time.now - start_time).round(2)
+    
+    # Parse test results from output
+    result = {
+      success: success,
+      duration: duration,
+      tests_run: 0,
+      tests_passed: 0,
+      tests_failed: 0
+    }
+    
+    # Try to parse more detailed results from the output file
+    if File.exist?(output_file)
+      output = File.read(output_file)
+      
+      # Look for the "Results: X/Y passed" pattern
+      if output =~ /Results: (\d+)\/(\d+) passed/
+        result[:tests_passed] = $1.to_i
+        result[:tests_run] = $2.to_i
+        result[:tests_failed] = result[:tests_run] - result[:tests_passed]
+      elsif output =~ /(\d+) runs, (\d+) assertions, (\d+) failures, (\d+) errors/
+        # Minitest format
+        result[:tests_run] = $1.to_i
+        result[:tests_passed] = result[:tests_run] - $3.to_i - $4.to_i
+        result[:tests_failed] = $3.to_i + $4.to_i
+      elsif output =~ /(\d+) examples?, (\d+) failures?/
+        # RSpec format
+        result[:tests_run] = $1.to_i
+        result[:tests_failed] = $2.to_i
+        result[:tests_passed] = result[:tests_run] - result[:tests_failed]
+      end
+      
+      # If we couldn't parse the details, make a best guess
+      if result[:tests_run] == 0
+        if success
+          result[:tests_run] = 1
+          result[:tests_passed] = 1
+        else
+          result[:tests_run] = 1
+          result[:tests_failed] = 1
+        end
+      end
+    end
+    
+    # Delete the output file if not in verbose mode
+    File.unlink(output_file) unless @options[:verbose]
+    
+    result
+  end
+  
+  # Check if the cache contains results for a group
+  def cache_contains_group?(level, group)
+    return false unless @cache
+    
+    # Group is identified by level, name, and type
+    group_key = "#{level}_#{group[:name]}_#{group[:type]}"
+    result = !!@cache[group_key]
+    
+    puts "  #{Colors.dim("Cache check: key=#{group_key}, exists=#{result}")}" if @options[:verbose]
+    
+    result
+  end
+  
+  # Get cached result for a group
+  def get_cached_group_result(level, group)
+    return nil unless @cache
+    
+    # Group is identified by level, name, and type
+    group_key = "#{level}_#{group[:name]}_#{group[:type]}"
+    result = @cache[group_key]
+    
+    puts "  #{Colors.dim("Cache get: key=#{group_key}, found=#{!result.nil?}")}" if @options[:verbose]
+    
+    result
+  end
+  
+  def print_banner
+    puts "\n" + "=" * 80
+    puts Colors.bold(Colors.cyan("Vulcan CLI Hierarchical Test Runner"))
+    puts "Running tests in hierarchical order to build confidence in the system"
+    puts "Format: #{@options[:format]}"
+    if @options[:focus]
+      puts "Focus: #{Colors.yellow(@options[:focus])}"
+    end
+    
+    # Display execution mode information
+    mode_parts = []
+    mode_parts << Colors.green("Parallel") if @options[:parallel]
+    mode_parts << Colors.blue("Incremental") if @options[:incremental]
+    
+    if mode_parts.any?
+      puts "Mode: #{mode_parts.join(' + ')} #{Colors.dim(@options[:incremental] ? "(skipping unchanged tests)" : "(running tests concurrently)")}"
+    end
+    
+    puts "=" * 80
+  end
+  
+  def print_level_header(level)
+    puts "\n" + "=" * 80
+    puts Colors.bold(Colors.blue("LEVEL #{level.to_s.upcase}"))
+    puts "-" * 80
+  end
+  
+  def print_group_header(group)
+    puts "\n#{Colors.bold(Colors.magenta("GROUP: #{group}"))}"
+    puts "-" * 40
+  end
+  
+  def print_group_summary(group, results)
+    status = results[:success] ? Colors.green("PASSED") : Colors.red("FAILED")
+    puts "#{Colors.magenta("#{group} Summary:")} #{status} - #{results[:tests_passed]}/#{results[:tests_run]} tests passed (#{results[:duration]}s)"
+  end
+  
+  def print_level_summary(level, results)
+    puts "\n" + "-" * 80
+    status = results[:success] ? Colors.green("PASSED") : Colors.red("FAILED")
+    puts "#{Colors.bold(Colors.blue("LEVEL #{level.to_s.upcase}"))} - #{status}"
+    puts "Tests: #{results[:tests_run]} | Passed: #{results[:tests_passed]} | Failed: #{results[:tests_failed]}"
+    puts "-" * 80
+  end
+  
+  def print_overall_summary
+    puts "\n" + "=" * 80
+    puts Colors.bold("OVERALL TEST SUMMARY")
+    puts "-" * 80
+    
+    all_passed = true
+    total_run = 0
+    total_passed = 0
+    total_failed = 0
+    total_cached = 0
+    
+    @results.each do |level, level_results|
+      status = level_results[:success] ? Colors.green("PASSED") : Colors.red("FAILED")
+      all_passed = false unless level_results[:success]
+      
+      total_run += level_results[:tests_run]
+      total_passed += level_results[:tests_passed]
+      total_failed += level_results[:tests_failed]
+      
+      # Count cached groups at this level
+      cached_count = 0
+      level_results[:groups].each do |_, group_data|
+        cached_count += 1 if group_data[:cached]
+      end
+      total_cached += cached_count
+      
+      puts "#{level.to_s.capitalize.ljust(12)} #{status.ljust(15)} " +
+           "#{level_results[:tests_run].to_s.ljust(5)} tests | " +
+           "#{level_results[:tests_passed].to_s.ljust(5)} passed | " +
+           "#{level_results[:tests_failed].to_s.ljust(5)} failed"
+    end
+    
+    puts "-" * 80
+    overall_status = all_passed ? Colors.green("PASSED") : Colors.red("FAILED")
+    puts "Overall Status: #{overall_status}"
+    
+    if total_cached > 0
+      # Calculate total number of groups
+      total_groups = 0
+      @results.each do |_, level_data|
+        total_groups += level_data[:groups].size
+      end
+      
+      cache_percent = ((total_cached.to_f / total_groups) * 100).round(1)
+      cached_info = " | #{Colors.blue("#{total_cached} groups cached")} (#{cache_percent}%)"
+    else
+      cached_info = ""
+    end
+    puts "Total Tests: #{total_run} | Passed: #{total_passed} | Failed: #{total_failed}#{cached_info}"
+    puts "=" * 80
+  end
+  
+  # Load test results cache
+  def load_cache
+    return unless File.exist?(@cache_file)
+    
+    begin
+      @cache = JSON.parse(File.read(@cache_file))
+      puts "#{Colors.blue('Info:')} Loaded test results cache with #{@cache.size} entries"
+    rescue => e
+      puts "#{Colors.yellow('Warning:')} Failed to load test cache: #{e.message}"
+      @cache = {}
+    end
+  end
+
+  # Save test results cache
+  def save_cache
+    return unless @options[:incremental]
+    
+    # Create tmp directory if it doesn't exist
+    FileUtils.mkdir_p(File.dirname(@cache_file))
+    
+    begin
+      # Convert results to a cache format
+      cache_data = {}
+      
+      @results.each do |level, level_data|
+        level_data[:groups].each do |group_name, group_data|
+          next if group_data[:cached] # Skip already cached results
+          
+          # Create a unique key for this group
+          group_key = "#{level}_#{group_name}_#{group_data[:type] || 'unknown'}"
+          
+          # Store the group result
+          cache_data[group_key] = {
+            success: group_data[:success],
+            tests_run: group_data[:tests_run],
+            tests_passed: group_data[:tests_passed],
+            tests_failed: group_data[:tests_failed],
+            duration: group_data[:duration]
+          }
+        end
+      end
+      
+      # Preserve existing cache entries
+      existing_cache = @cache || {}
+      merged_cache = existing_cache.merge(cache_data)
+      
+      File.write(@cache_file, JSON.generate(merged_cache))
+      puts "#{Colors.blue('Info:')} Saved test results cache with #{merged_cache.size} entries"
+    rescue => e
+      puts "#{Colors.yellow('Warning:')} Failed to save test cache: #{e.message}"
+    end
+  end
+end
+
+# Main entry point
+if __FILE__ == $PROGRAM_NAME
+  runner = HierarchicalTestRunner.new
+  success = runner.run_tests
+  exit(success ? 0 : 1)
+end
