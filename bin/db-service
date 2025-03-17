@@ -3,7 +3,7 @@
 
 # This script provides a CLI interface to the DatabaseService class
 # It allows starting, stopping, and checking the status of the database
-# using either Docker or PGLite
+# using Docker
 
 require File.expand_path('../config/environment', __dir__)
 require_relative '../spec/support/database_service'
@@ -20,11 +20,8 @@ def print_help
   puts "  seed [TYPE] Seed the database (demo, standard, minimal)"
   puts "  help        Show this help message"
   puts
-  puts "Environment Variables:"
-  puts "  TEST_DB_MODE   Set database mode (docker, pglite, auto)"
-  puts
   puts "Examples:"
-  puts "  TEST_DB_MODE=pglite #{File.basename($PROGRAM_NAME)} start"
+  puts "  #{File.basename($PROGRAM_NAME)} start"
   puts "  #{File.basename($PROGRAM_NAME)} uri"
   puts "  #{File.basename($PROGRAM_NAME)} status"
   puts "  #{File.basename($PROGRAM_NAME)} seed demo"
@@ -43,18 +40,17 @@ service = DatabaseService.instance
 
 case command
 when 'start'
-  puts "Starting database in #{service.mode} mode..."
+  puts "Starting database..."
   service.start
   puts "Database started successfully!"
   puts "Connection URI: #{service.connection_uri}"
 
 when 'stop'
-  puts "Stopping database in #{service.mode} mode..."
+  puts "Stopping database..."
   service.stop
   puts "Database stopped successfully!"
 
 when 'status'
-  puts "Database mode: #{service.mode}"
   if service.running?
     puts "Status: RUNNING"
     puts "Connection URI: #{service.connection_uri}"
@@ -71,7 +67,7 @@ when 'uri'
   end
 
 when 'mode'
-  puts service.mode
+  puts "docker"
 
 when 'seed'
   # Get seed type from argument or default to demo
@@ -91,7 +87,7 @@ when 'seed'
   end
   
   # Run the seeding
-  puts "Seeding database (#{service.mode} mode) with '#{seed_type}' data..."
+  puts "Seeding database with '#{seed_type}' data..."
   if service.seed_database(seed_type)
     puts "Database seeded successfully!"
   else

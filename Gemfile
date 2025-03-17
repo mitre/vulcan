@@ -93,8 +93,7 @@ group :test do
   gem 'rubocop-performance'
   gem 'rubocop-rails'
   gem 'simplecov', require: false
-  # Temporary PostgreSQL server for testing without Docker
-  gem 'pg_tmp', '~> 0.1.0'
+  # We use Docker for PostgreSQL in testing
 end
 
 group :development, :test do

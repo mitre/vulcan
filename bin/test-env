@@ -24,16 +24,12 @@ show_help() {
   echo "  -r, --restart    Restart all services"
   echo "  --db-only        Start only the database service"
   echo "  --rails          Start Rails server in test mode"
-  echo "  --db-mode MODE   Set database mode (docker, pg_tmp, auto)"
   echo
   echo "Examples:"
   echo "  $(basename "$0")                      # Start all services"
   echo "  $(basename "$0") --down               # Stop all services"
   echo "  $(basename "$0") --status             # Show status of services"
   echo "  $(basename "$0") --db-only            # Start only PostgreSQL"
-  echo "  $(basename "$0") --db-mode pg_tmp     # Use embedded pg_tmp database"
-  echo "  $(basename "$0") --db-mode docker     # Use Docker PostgreSQL database"
-  echo "  $(basename "$0") --db-mode auto       # Automatically select best database option"
   echo
 }
 
@@ -41,7 +37,6 @@ show_help() {
 COMMAND="up"
 DB_ONLY=false
 START_RAILS=false
-DB_MODE="auto"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -73,18 +68,6 @@ while [[ $# -gt 0 ]]; do
       START_RAILS=true
       shift
       ;;
-    --db-mode)
-      if [[ -z "$2" || "$2" == -* ]]; then
-        echo -e "${RED}Error: --db-mode requires an argument (docker, pg_tmp, or auto)${NC}"
-        exit 1
-      fi
-      if [[ "$2" != "docker" && "$2" != "pg_tmp" && "$2" != "auto" ]]; then
-        echo -e "${RED}Error: --db-mode must be one of: docker, pg_tmp, auto${NC}"
-        exit 1
-      fi
-      DB_MODE="$2"
-      shift 2
-      ;;
     *)
       echo -e "${RED}Unknown option: $1${NC}"
       show_help
@@ -92,9 +75,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-# Export database mode for our Rails environment
-export TEST_DB_MODE="$DB_MODE"
 
 # Set platform environment variable based on architecture
 ARCH=$(uname -m)
@@ -110,11 +90,8 @@ fi
 if [ "$COMMAND" = "status" ]; then
   echo -e "${CYAN}=== Checking Service Status ===${NC}"
   
-  # Show database mode
-  echo -e "${YELLOW}Database mode:${NC} ${GREEN}${DB_MODE}${NC}"
-  
-  # Check if containers are running (only if using Docker)
-  echo -e "\n${YELLOW}Docker containers:${NC}"
+  # Check if containers are running
+  echo -e "${YELLOW}Docker containers:${NC}"
   docker ps --filter "name=vulcan"
   
   # Check database connection
@@ -150,11 +127,11 @@ fi
 if [ "$COMMAND" = "down" ]; then
   echo -e "${CYAN}=== Stopping Services ===${NC}"
   
-  # Stop database using the appropriate method
-  echo -e "${YELLOW}Stopping database (${DB_MODE} mode)...${NC}"
-  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service stop
+  # Stop database
+  echo -e "${YELLOW}Stopping database...${NC}"
+  bundle exec bin/db-service stop
   
-  # Always make sure Docker is stopped to be safe
+  # Stop all Docker services
   echo -e "${YELLOW}Stopping Docker services...${NC}"
   docker-compose -f docker-compose.test.yml down --remove-orphans
   
@@ -168,16 +145,16 @@ if [ "$COMMAND" = "restart" ]; then
   
   # Stop all services first
   echo -e "${YELLOW}Stopping all services...${NC}"
-  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service stop
+  bundle exec bin/db-service stop
   docker-compose -f docker-compose.test.yml down --remove-orphans
   
   # Start services based on options
   if [ "$DB_ONLY" = true ]; then
-    echo -e "${YELLOW}Starting only PostgreSQL (${DB_MODE} mode)${NC}"
-    TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+    echo -e "${YELLOW}Starting only PostgreSQL${NC}"
+    bundle exec bin/db-service start
   else
-    echo -e "${YELLOW}Starting database (${DB_MODE} mode)${NC}"
-    TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+    echo -e "${YELLOW}Starting database${NC}"
+    bundle exec bin/db-service start
     
     echo -e "${YELLOW}Starting other services${NC}"
     # Start LDAP (and any other non-database services)
@@ -189,7 +166,7 @@ if [ "$COMMAND" = "restart" ]; then
   if [ "$START_RAILS" = true ]; then
     echo -e "${YELLOW}Starting Rails server in test mode${NC}"
     # Get database connection URI from the db-service
-    DATABASE_URL=$(TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service uri) \
+    DATABASE_URL=$(bundle exec bin/db-service uri) \
     RAILS_ENV=test \
     bundle exec rails server -d
     echo -e "${GREEN}Rails server started${NC}"
@@ -201,16 +178,16 @@ fi
 # Command: start services (default)
 echo -e "${CYAN}=== Starting Test Environment ===${NC}"
 
-# Start the database using the appropriate mode
+# Start the services
 if [ "$DB_ONLY" = true ]; then
-  echo -e "${YELLOW}Starting only PostgreSQL (${DB_MODE} mode)${NC}"
-  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+  echo -e "${YELLOW}Starting only PostgreSQL${NC}"
+  bundle exec bin/db-service start
 else
-  echo -e "${YELLOW}Starting database (${DB_MODE} mode)${NC}"
-  TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service start
+  echo -e "${YELLOW}Starting database${NC}"
+  bundle exec bin/db-service start
   
   echo -e "${YELLOW}Starting other services${NC}"
-  # Start LDAP (and any other non-database services)
+  # Start LDAP service
   docker-compose -f docker-compose.test.yml up -d ldap-test
 fi
 
@@ -220,7 +197,7 @@ fi
 if [ "$START_RAILS" = true ]; then
   echo -e "${YELLOW}Starting Rails server in test mode${NC}"
   # Get database connection URI from the db-service
-  DATABASE_URL=$(TEST_DB_MODE="$DB_MODE" bundle exec bin/db-service uri) \
+  DATABASE_URL=$(bundle exec bin/db-service uri) \
   RAILS_ENV=test \
   VULCAN_ENABLE_LDAP=true \
   VULCAN_LDAP_ATTRIBUTE=mail \
@@ -263,8 +240,5 @@ fi
 
 echo -e "\n${GREEN}Test environment is ready!${NC}"
 echo -e "You can now run your tests with environment properly configured."
-echo -e "Database mode: ${GREEN}${DB_MODE}${NC}"
 echo -e "Use '${YELLOW}$(basename "$0") --status${NC}' to check service status"
 echo -e "Use '${YELLOW}$(basename "$0") --down${NC}' to stop all services"
-echo -e "Use '${YELLOW}$(basename "$0") --db-mode pglite${NC}' to use embedded PostgreSQL"
-echo -e "Use '${YELLOW}$(basename "$0") --db-mode docker${NC}' to use Docker PostgreSQL"

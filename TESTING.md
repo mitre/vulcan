@@ -14,16 +14,10 @@ Vulcan uses a comprehensive testing approach with multiple layers:
 
 All tests run against a dedicated test environment with managed services:
 
-- **PostgreSQL** - For database testing (via Docker or embedded pg_tmp)
-- **LDAP Service** - For authentication testing with LDAP
+- **PostgreSQL** - For database testing (Docker)
+- **LDAP Service** - For authentication testing with LDAP (Docker)
 - **OIDC Mock** - Ruby-based in-process OpenID Connect server (ARM/M1 compatible)
 - **Rails Server** - Runs on the host machine for E2E tests
-
-The database service supports two modes:
-- **Docker Mode**: PostgreSQL runs in a Docker container
-- **pg_tmp Mode**: PostgreSQL runs via temporary clusters using the pg_tmp gem
-
-For more details, see [Embedded PostgreSQL Guide](docs/pg-tmp-integration.md)
 
 ## Test Scripts
 
@@ -31,20 +25,14 @@ The project provides several scripts to simplify test execution:
 
 ### bin/test-env
 
-Manages test services, including database (Docker or PGLite), LDAP, and Rails server.
+Manages Docker-based test services.
 
 ```bash
-# Start all services with auto-detected database mode
+# Start all services
 bin/test-env --up
 
 # Start only the database
 bin/test-env --db-only
-
-# Use embedded PGLite database
-bin/test-env --up --db-mode pglite
-
-# Use Docker PostgreSQL database
-bin/test-env --up --db-mode docker
 
 # Check service status
 bin/test-env --status
@@ -55,10 +43,10 @@ bin/test-env --down
 
 ### bin/db-service
 
-Manages database service specifically (Docker or PGLite).
+Manages database service specifically.
 
 ```bash
-# Start database with current TEST_DB_MODE
+# Start database
 bin/db-service start
 
 # Get database connection status
@@ -66,6 +54,9 @@ bin/db-service status
 
 # Get database connection URI
 bin/db-service uri
+
+# Seed the database with test data
+bin/db-service seed demo
 
 # Stop database service
 bin/db-service stop
@@ -112,7 +103,7 @@ bin/e2e-test -p
 Runs all tests in the proper sequence.
 
 ```bash
-# Run all tests with auto-detected database mode
+# Run all tests
 bin/run-all-tests
 
 # Run only RSpec tests
@@ -123,10 +114,6 @@ bin/run-all-tests --e2e-only
 
 # Run all tests in parallel mode
 bin/run-all-tests -p
-
-# Run tests with specific database mode
-bin/run-all-tests --db-mode pglite
-bin/run-all-tests --rspec-only --db-mode docker
 ```
 
 ### bin/unified-test-runner
@@ -179,8 +166,7 @@ The test environment supports all authentication methods:
 The testing infrastructure is designed for both local development and CI/CD environments:
 
 - Docker services adapt to the host platform (ARM/x86)
-- PGLite provides embedded PostgreSQL without Docker dependencies
-- The OIDC server runs in-process as a Ruby service (no Docker required)
+- The OIDC server runs in-process as a Ruby service
 - Test commands can be run individually or together
 - All services support health checks for reliability
 
@@ -188,26 +174,13 @@ In CI environments, use the following approach:
 
 ```yaml
 - name: Start Test Environment
-  run: bin/test-env --up --db-mode docker
+  run: bin/test-env --up
 
 - name: Run Tests
-  run: bin/run-all-tests --db-mode docker
+  run: bin/run-all-tests
 
 - name: Stop Test Environment
   run: bin/test-env --down
-```
-
-For local development, the PGLite approach is often faster:
-
-```bash
-# Start test environment with embedded PostgreSQL
-bin/test-env --up --db-mode pglite
-
-# Run your tests
-bin/rspec-test spec/models/user_spec.rb
-
-# Stop when finished
-bin/test-env --down
 ```
 
 ## Debugging Tests

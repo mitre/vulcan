@@ -21,15 +21,11 @@ show_help() {
   echo "  -p, --parallel      Run tests in parallel where supported"
   echo "  --rspec-only        Run only RSpec tests"
   echo "  --e2e-only          Run only E2E tests"
-  echo "  --db-mode MODE      Set database mode (docker, pglite, auto)"
   echo
   echo "Examples:"
-  echo "  $(basename "$0")                              # Run all tests"
-  echo "  $(basename "$0") --e2e-only                   # Run only E2E tests"
-  echo "  $(basename "$0") -p --rspec-only              # Run RSpec tests in parallel"
-  echo "  $(basename "$0") --db-mode pglite             # Use embedded PGLite database"
-  echo "  $(basename "$0") --db-mode docker             # Use Docker PostgreSQL database"
-  echo "  $(basename "$0") --rspec-only --db-mode auto  # Auto-select database mode for RSpec tests"
+  echo "  $(basename "$0")                   # Run all tests"
+  echo "  $(basename "$0") --e2e-only        # Run only E2E tests"
+  echo "  $(basename "$0") -p --rspec-only   # Run RSpec tests in parallel"
   echo
 }
 
@@ -38,7 +34,6 @@ VERBOSE=false
 PARALLEL=false
 RSPEC_ONLY=false
 E2E_ONLY=false
-DB_MODE="auto"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -62,18 +57,6 @@ while [[ $# -gt 0 ]]; do
       E2E_ONLY=true
       shift
       ;;
-    --db-mode)
-      if [[ -z "$2" || "$2" == -* ]]; then
-        echo -e "${RED}Error: --db-mode requires an argument (docker, pglite, or auto)${NC}"
-        exit 1
-      fi
-      if [[ "$2" != "docker" && "$2" != "pglite" && "$2" != "auto" ]]; then
-        echo -e "${RED}Error: --db-mode must be one of: docker, pglite, auto${NC}"
-        exit 1
-      fi
-      DB_MODE="$2"
-      shift 2
-      ;;
     *)
       echo -e "${RED}Unknown option: $1${NC}"
       show_help
@@ -81,9 +64,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-# Export database mode
-export TEST_DB_MODE="$DB_MODE"
 
 # Build command options
 OPTS=""
@@ -96,22 +76,21 @@ fi
 
 # Start all required services
 echo -e "${CYAN}=== Starting Test Environment ===${NC}"
-echo -e "${YELLOW}Using database mode: ${DB_MODE}${NC}"
 if [ "$E2E_ONLY" = true ]; then
-  ./bin/test-env --up --db-mode "$DB_MODE"
+  ./bin/test-env --up
 elif [ "$RSPEC_ONLY" = true ]; then
-  ./bin/test-env --db-only --db-mode "$DB_MODE"
+  ./bin/test-env --db-only
 else
-  ./bin/test-env --up --db-mode "$DB_MODE"
+  ./bin/test-env --up
 fi
 
 # Seed the test environment
 echo -e "${CYAN}=== Seeding Test Environment ===${NC}"
 if [ "$VERBOSE" = true ]; then
-  TEST_DB_MODE="$DB_MODE" ./bin/seed-test-env -v
+  ./bin/seed-test-env -v
 else
   # Use demo seeding by default to match Rails seeds.rb behavior
-  TEST_DB_MODE="$DB_MODE" ./bin/seed-test-env --demo
+  ./bin/seed-test-env --demo
 fi
 
 # Run RSpec tests if needed
