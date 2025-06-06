@@ -59,6 +59,7 @@ defaults: &defaults
       client_auth_method: :secret
       client_signing_alg: <%= ENV['VULCAN_OIDC_CLIENT_SIGNING_ALG']&.to_sym || :RS256 %>
       nonce: <%= proc { SecureRandom.hex(32) } %>
+      prompt: <%= ENV['VULCAN_OIDC_PROMPT'] || nil %>
       client_options:
         port: <%= ENV['VULCAN_OIDC_PORT'] || 443 %>
         scheme: <%= ENV['VULCAN_OIDC_SCHEME'] || 'https' %>

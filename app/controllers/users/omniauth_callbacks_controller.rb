@@ -7,7 +7,14 @@ module Users
   class OmniauthCallbacksController < Devise::OmniauthCallbacksController
     rescue_from Rack::OAuth2::Client::Error, with: :oauth_error
     def all
-      user = User.from_omniauth(request.env['omniauth.auth'])
+      auth = request.env['omniauth.auth']
+      user = User.from_omniauth(auth)
+      
+      # Store ID token in session for OIDC logout
+      if auth.credentials && auth.credentials.id_token
+        session[:id_token] = auth.credentials.id_token
+      end
+      
       flash.notice = I18n.t('devise.sessions.signed_in')
       sign_in_and_redirect(user) && return
     end

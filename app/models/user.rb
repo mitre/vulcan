@@ -31,15 +31,23 @@ class User < ApplicationRecord
 
   def self.from_omniauth(auth)
     email = auth.info.email || auth.extra.raw_info.acct
-    find_or_create_by(email: email) do |user|
-      user.email = email
+    user = find_or_initialize_by(email: email)
+    
+    # Always update provider and uid for existing users
+    user.provider = auth.provider
+    user.uid = auth.uid
+    
+    # Only update name if it's blank (preserve existing names)
+    user.name = auth.info.name || "#{auth.provider} user" if user.name.blank?
+    
+    # Only set password and skip confirmation for new users
+    if user.new_record?
       user.password = Devise.friendly_token[0, 50]
-      user.name = auth.info.name || "#{auth.provider} user"
-      user.provider = auth.provider
-      user.uid = auth.uid
-
       user.skip_confirmation!
     end
+    
+    user.save!
+    user
   end
 
   # Project permssions checking
