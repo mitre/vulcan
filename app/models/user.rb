@@ -32,26 +32,27 @@ class User < ApplicationRecord
   def self.from_omniauth(auth)
     email = auth.info.email || auth.extra.raw_info.acct
     user = find_or_initialize_by(email: email)
-    
+
     if user.new_record?
       Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{auth.provider}"
     else
-      Rails.logger.info "Updating existing user from OmniAuth: email=#{email}, provider=#{auth.provider}, previous_provider=#{user.provider}"
+      Rails.logger.info "Updating existing user from OmniAuth: email=#{email}, " \
+                        "provider=#{auth.provider}, previous_provider=#{user.provider}"
     end
-    
+
     # Always update provider and uid for existing users
     user.provider = auth.provider
     user.uid = auth.uid
-    
+
     # Only update name if it's blank (preserve existing names)
     user.name = auth.info.name || "#{auth.provider} user" if user.name.blank?
-    
+
     # Only set password and skip confirmation for new users
     if user.new_record?
       user.password = Devise.friendly_token[0, 50]
       user.skip_confirmation!
     end
-    
+
     user.save!
     Rails.logger.info "User #{user.email} successfully authenticated via #{auth.provider}"
     user
