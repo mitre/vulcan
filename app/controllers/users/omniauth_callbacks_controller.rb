@@ -11,7 +11,7 @@ module Users
 
       Rails.logger.info "OmniAuth callback received for provider: #{auth.provider}, uid: #{auth.uid}"
       Rails.logger.debug { "OmniAuth info: email=#{auth.info.email}, name=#{auth.info.name}" }
-      
+
       # Debug LDAP auth hash to understand email mapping issue
       if auth.provider == 'ldap'
         Rails.logger.debug { "LDAP raw_info: #{auth.extra.raw_info.inspect}" } if auth.extra&.raw_info
