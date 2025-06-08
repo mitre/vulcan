@@ -54,7 +54,7 @@ jobs:
           # Options below this line are so we can test LDAP
           VULCAN_ENABLE_LDAP: true
           VULCAN_LDAP_HOST: localhost
-          VULCAN_LDAP_ATTRIBUTE: mail
+          VULCAN_LDAP_ATTRIBUTE: uid
           VULCAN_LDAP_BIND_DN: cn=admin,dc=planetexpress,dc=com
           VULCAN_LDAP_BASE: ou=people,dc=planetexpress,dc=com
           VULCAN_LDAP_PORT: 10389
