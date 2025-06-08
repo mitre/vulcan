@@ -33,6 +33,12 @@ class User < ApplicationRecord
     email = auth.info.email || auth.extra.raw_info.acct
     user = find_or_initialize_by(email: email)
     
+    if user.new_record?
+      Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{auth.provider}"
+    else
+      Rails.logger.info "Updating existing user from OmniAuth: email=#{email}, provider=#{auth.provider}, previous_provider=#{user.provider}"
+    end
+    
     # Always update provider and uid for existing users
     user.provider = auth.provider
     user.uid = auth.uid
@@ -47,7 +53,12 @@ class User < ApplicationRecord
     end
     
     user.save!
+    Rails.logger.info "User #{user.email} successfully authenticated via #{auth.provider}"
     user
+  rescue StandardError => e
+    Rails.logger.error "Failed to create/update user from OmniAuth: #{e.message}"
+    Rails.logger.debug e.backtrace.join("\n") if Rails.env.development?
+    raise
   end
 
   # Project permssions checking

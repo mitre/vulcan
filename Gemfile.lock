@@ -118,6 +118,10 @@ GEM
     docile (1.4.0)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
+    dotenv (2.8.1)
+    dotenv-rails (2.8.1)
+      dotenv (= 2.8.1)
+      railties (>= 3.2)
     erubi (1.12.0)
     erubis (2.7.0)
     factory_bot (5.2.0)
@@ -136,6 +140,7 @@ GEM
       ffi (> 1.9, < 2)
     ffaker (2.20.0)
     ffi (1.15.5)
+    foreman (0.88.1)
     fuzzyurl (0.9.0)
     gitlab_omniauth-ldap (2.2.0)
       net-ldap (~> 0.16)
@@ -544,9 +549,11 @@ DEPENDENCIES
   capybara (>= 2.15)
   database_cleaner-active_record
   devise
+  dotenv-rails
   factory_bot_rails (~> 5.2.0)
   fast_excel
   ffaker (~> 2.10)
+  foreman
   gitlab_omniauth-ldap (~> 2.2.0)
   haml-rails (~> 2.0)
   highline (~> 2.0)

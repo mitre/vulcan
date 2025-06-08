@@ -2,7 +2,20 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Local Login', type: :feature do
+# Check if chromedriver is available
+def chromedriver_available?
+  return @chromedriver_available if defined?(@chromedriver_available)
+  
+  @chromedriver_available = begin
+    # Try to find chromedriver in PATH
+    system('which chromedriver > /dev/null 2>&1') || 
+    system('where chromedriver > /dev/null 2>&1')
+  end
+end
+
+# This test requires chromedriver to be installed for Selenium tests.
+# If chromedriver is not available, the test will be skipped.
+RSpec.describe 'Local Login', type: :feature, skip: (!chromedriver_available? ? "Chromedriver not installed" : false) do
   include LoginHelpers
 
   before do
