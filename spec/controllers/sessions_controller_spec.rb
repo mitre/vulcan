@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe SessionsController, type: :controller do
+  BASE_URL = 'http://localhost:3000'
   before do
     @request.env['devise.mapping'] = Devise.mappings[:user]
   end
@@ -24,7 +25,7 @@ RSpec.describe SessionsController, type: :controller do
     end
 
     allow(Settings).to receive(:oidc).and_return(oidc_settings)
-    allow(Settings).to receive(:app_url).and_return('http://localhost:3000')
+    allow(Settings).to receive(:app_url).and_return(BASE_URL)
   end
 
   # Helper method to mock HTTP response
@@ -88,7 +89,7 @@ RSpec.describe SessionsController, type: :controller do
 
         expect(uri.to_s).to start_with('https://example.okta.com/oauth2/v1/logout')
         expect(params['id_token_hint']).to eq(['fake-id-token-12345'])
-        expect(params['post_logout_redirect_uri']).to eq(['http://localhost:3000'])
+        expect(params['post_logout_redirect_uri']).to eq([BASE_URL])
         expect(params['client_id']).to eq(['test-client-id'])
         expect(controller.current_user).to be_nil
         expect(session[:id_token]).to be_nil

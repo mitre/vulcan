@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe User, type: :model do
+  OKTA_UID = 'okta-uid-12345'
   include LoginHelpers
 
   describe '.from_omniauth with OIDC/OKTA' do

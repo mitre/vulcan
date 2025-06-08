@@ -14,6 +14,7 @@ end
 # This test requires chromedriver to be installed for Selenium tests.
 # If chromedriver is not available, the test will be skipped.
 RSpec.describe 'Local Login', type: :feature, skip: (chromedriver_available? ? false : 'Chromedriver not installed') do
+  LOCAL_LOGIN_TAB = 'Local Login'
   include LoginHelpers
 
   before do
@@ -25,14 +26,14 @@ RSpec.describe 'Local Login', type: :feature, skip: (chromedriver_available? ? f
   context 'when user login is incorrect' do
     it 'shows an error banner and the login page again' do
       credentials = { 'user_email' => user1.email, 'user_password' => 'bad_pass' }
-      expect { vulcan_sign_in_with('Local Login', credentials) }
+      expect { vulcan_sign_in_with(LOCAL_LOGIN_TAB, credentials) }
         .not_to change(user1, :sign_in_count)
 
       expect(page)
         .to have_selector('.b-toast-danger', text: 'Invalid Email or password.')
 
       # Expect the Local Login tab to be active on page reload
-      expect(page.find('a', text: 'Local Login')[:class]).to include('active')
+      expect(page.find('a', text: LOCAL_LOGIN_TAB)[:class]).to include('active')
     end
   end
 end
