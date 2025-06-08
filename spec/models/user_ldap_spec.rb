@@ -4,8 +4,9 @@ require 'rails_helper'
 
 RSpec.describe User, type: :model do
   describe '.from_omniauth with LDAP' do
-    let(:ldap_uid) { 'zoidberg' }
-    let(:ldap_email) { 'zoidberg@planetexpress.com' }
+    # Use unique email addresses to avoid conflicts with other tests
+    let(:ldap_uid) { 'zoidberg_ldap_test' }
+    let(:ldap_email) { "zoidberg_ldap_#{SecureRandom.hex(4)}@planetexpress.com" }
     let(:ldap_name) { 'John A. Zoidberg' }
     
     def build_auth_hash(email_location: :info, email_value: nil)
@@ -88,6 +89,26 @@ RSpec.describe User, type: :model do
         
         existing_user.reload
         verify_user_attributes(existing_user)
+      end
+    end
+    
+    context 'when no email can be extracted' do
+      let(:auth_hash) do
+        OmniAuth::AuthHash.new(
+          provider: 'ldap',
+          uid: ldap_uid,
+          info: {
+            email: nil,
+            name: ldap_name
+          },
+          extra: {
+            raw_info: {}
+          }
+        )
+      end
+
+      it 'raises an error' do
+        expect { User.from_omniauth(auth_hash) }.to raise_error(ArgumentError, /Email is required/)
       end
     end
   end

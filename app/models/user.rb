@@ -42,6 +42,12 @@ class User < ApplicationRecord
     # Log what we found for debugging
     Rails.logger.debug { "Attempting to find email from OmniAuth - provider: #{auth.provider}, found: #{email}" }
     
+    # Email is required for user creation
+    if email.blank?
+      Rails.logger.error "Cannot create user from OmniAuth: no email found in auth hash for provider: #{auth.provider}"
+      raise ArgumentError, "Email is required but was not found in the authentication response"
+    end
+    
     user = find_or_initialize_by(email: email)
 
     if user.new_record?
