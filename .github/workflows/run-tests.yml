@@ -19,7 +19,9 @@ jobs:
       db:
         image: postgres:12
         env:
-          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
@@ -47,9 +49,21 @@ jobs:
           key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
           restore-keys: |
             ${{ runner.os }}-gems-
-      - name: Build and run tests
+      - name: Install dependencies
+        run: |
+          sudo apt-get -yqq install libpq-dev
+          echo "gem: --no-document" > ~/.gemrc
+          gem install bundler --conservative
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
+          yarn install --frozen-lockfile
+      - name: Run Rubocop
+        run: bundle exec rubocop
+      - name: Run eslint
+        run: yarn lint:ci
+      - name: Setup database and run tests
         env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
           RAILS_ENV: test
           # Options below this line are so we can test LDAP
           VULCAN_ENABLE_LDAP: true
@@ -60,16 +74,9 @@ jobs:
           VULCAN_LDAP_PORT: 10389
           VULCAN_LDAP_ADMIN_PASS: GoodNewsEveryone
         run: |
-          sudo apt-get -yqq install libpq-dev
-          echo "gem: --no-document" > ~/.gemrc
-          gem install bundler --conservative
-          bundle config path vendor/bundle
-          bin/setup
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
           bundle exec rails spec
-      - name: Run Rubocop
-        run: bundle exec rubocop
-      - name: Run eslint
-        run: yarn lint:ci
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         if: always()

@@ -14,7 +14,7 @@ end
 # This test requires chromedriver to be installed for Selenium tests.
 # If chromedriver is not available, the test will be skipped.
 RSpec.describe 'Local Login', type: :feature, skip: (chromedriver_available? ? false : 'Chromedriver not installed') do
-  LOCAL_LOGIN_TAB = 'Local Login'
+  LOCAL_LOGIN_TAB = 'Local Login' # rubocop:disable Lint/ConstantDefinitionInBlock
   include LoginHelpers
 
   before do

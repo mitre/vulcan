@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe SessionsController, type: :controller do
-  BASE_URL = 'http://localhost:3000'
+  BASE_URL = 'http://localhost:3000' # rubocop:disable Lint/ConstantDefinitionInBlock
   before do
     @request.env['devise.mapping'] = Devise.mappings[:user]
   end
