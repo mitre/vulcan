@@ -101,7 +101,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   def export_xccdf_project(project)
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).each do |component|
+                                              satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
         title = component[:title] || "#{component[:name]} STIG Readiness Guide"

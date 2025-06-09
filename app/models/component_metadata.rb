@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+##
+# ComponentMetadata stores additional metadata for components in a flexible JSON structure
 class ComponentMetadata < ApplicationRecord
   belongs_to :component
 

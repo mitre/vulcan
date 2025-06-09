@@ -31,6 +31,8 @@ Bundler.require(*Rails.groups)
 Dotenv.load('.env', ".env.#{Rails.env}", ".env.#{Rails.env}.local") if defined?(Dotenv)
 
 module VulcanVue
+  ##
+  # Main application configuration for Vulcan
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.0
