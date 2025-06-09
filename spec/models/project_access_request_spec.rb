@@ -4,6 +4,13 @@
 require 'rails_helper'
 
 RSpec.describe ProjectAccessRequest, type: :model do
+  # Use proper audit context for Rails 7 compliance
+  around do |example|
+    VulcanAudit.as_user(system_audit_user) do
+      example.run
+    end
+  end
+
   let(:user1) { create(:user) }
   let(:user2) { create(:user) }
   let(:project) { create(:project) }

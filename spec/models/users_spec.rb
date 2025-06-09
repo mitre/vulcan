@@ -5,6 +5,13 @@ require 'rails_helper'
 RSpec.describe User, type: :model do
   include LoginHelpers
 
+  # Use proper audit context for Rails 7 compliance
+  around do |example|
+    VulcanAudit.as_user(system_audit_user) do
+      example.run
+    end
+  end
+
   describe '.from_omniauth' do
     context 'when registering using an omniauth provider' do
       let(:user1) { build(:user) }
