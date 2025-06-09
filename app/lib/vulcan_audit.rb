@@ -5,21 +5,21 @@ require 'audited/audit'
 # Custom Audited class for Vulcan-specific methods for interacting with audits.
 class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
-  
+
   # In Rails 5+, belongs_to associations are required by default.
   # The parent Audited::Audit class defines `belongs_to :user, polymorphic: true`
   # which becomes required. We need to allow nil users for system-generated audits.
-  
+
   # Remove the user presence validation that Rails adds for belongs_to associations
   # Find and remove the validation added by the parent class
   _validators[:user].reject! { |v| v.is_a?(ActiveRecord::Validations::PresenceValidator) }
   _validate_callbacks.each do |callback|
-    if callback.filter.is_a?(ActiveRecord::Validations::PresenceValidator) && 
+    if callback.filter.is_a?(ActiveRecord::Validations::PresenceValidator) &&
        callback.filter.attributes.include?(:user)
       _validate_callbacks.delete(callback)
     end
   end
-  
+
   before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
 
   def set_username

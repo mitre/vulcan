@@ -66,7 +66,7 @@ class Rule < BaseRule
     rule.srg_rule_id = srg_rules[rule.rule_id]
     # This is what is appended to the component prefix in the UI
     rule.rule_id = idx&.to_s&.rjust(6, '0')
-    
+
     # Set audit comment to indicate this was created from SRG mapping
     rule.audit_comment = 'Created from SRG mapping'
 
