@@ -46,8 +46,12 @@ RSpec.describe 'Local Login', type: :feature, skip: (chromedriver_available? ? f
       # Click the tab to ensure we can access the form
       local_login_tab.click
 
+      # Wait for the tab content to be visible
+      expect(page).to have_css('form[action="/users/sign_in"]', wait: 5)
+
       # Verify the login form is displayed and functional
-      within('#new_local_user') do
+      # Use the form action to identify the correct login form since there are multiple forms with id="new_user"
+      within('form[action="/users/sign_in"]') do
         # The email field should still contain the email we tried
         expect(page).to have_field('user_email', with: user1.email)
         expect(page).to have_field('user_password')
