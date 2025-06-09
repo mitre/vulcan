@@ -7,19 +7,35 @@ class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
   before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
 
+  # Clear parent validators and re-add them with our conditions
+  clear_validators!
+  validates :auditable, presence: { message: :required }
+  validates :user, presence: { message: :required }, unless: :system_generated?
+  validates :associated, presence: { message: :required }
+
   def self.create_initial_rule_audit_from_mapping(project_id)
     {
       auditable_type: 'Rule',
       action: 'create',
-      user_type: 'System',
       audited_changes: {
         project_id: project_id
-      }
+      },
+      system_generated: true
     }
   end
 
+  def system_generated?
+    @system_generated || false
+  end
+
+  def system_generated=(value)
+    @system_generated = value
+    write_attribute(:username, 'System') if value
+  end
+
   def set_username
-    self.username = user&.name
+    # Only set username from user if not system generated
+    self.username = user&.name unless system_generated?
   end
 
   # There are 2 different users associated with an action on a user,
