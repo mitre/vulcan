@@ -33,7 +33,12 @@ RSpec.describe 'Local Login', type: :feature, skip: (chromedriver_available? ? f
         .to have_selector('.b-toast-danger', text: 'Invalid Email or password.')
 
       # Expect the Local Login tab to be active on page reload
-      expect(page.find('a', text: LOCAL_LOGIN_TAB)[:class]).to include('active')
+      # Bootstrap-Vue may put the active class on the parent li element or use aria-selected
+      local_login_tab = page.find('a', text: LOCAL_LOGIN_TAB)
+      tab_is_active = local_login_tab[:class].to_s.include?('active') ||
+                      local_login_tab.find(:xpath, '..')[:class].to_s.include?('active') ||
+                      local_login_tab[:'aria-selected'] == 'true'
+      expect(tab_is_active).to be true
     end
   end
 end

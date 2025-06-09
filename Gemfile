@@ -100,10 +100,10 @@ end
 group :development, :test do
   gem 'brakeman'
   gem 'byebug'
-  gem 'factory_bot_rails', '~> 5.2.0'
+  gem 'factory_bot_rails', '~> 6.4.0'
   gem 'pry'
   gem 'rspec-mocks'
-  gem 'rspec-rails', '~> 4.0.0'
+  gem 'rspec-rails', '~> 6.0.0'
   # Load environment variables from .env files in development and test
   gem 'dotenv-rails'
 end
