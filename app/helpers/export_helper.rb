@@ -119,7 +119,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   def export_inspec_project(project)
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).each do |component|
+                                              satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
         dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline/"

@@ -49,7 +49,7 @@ class BaseRule < ApplicationRecord
       title: rule_mapping.title.first || nil,
       ident: rule_mapping.ident.reject(&:legacy).map(&:ident).sort.join(', '),
       legacy_ids: rule_mapping.ident.select(&:legacy).map(&:ident).join(', '),
-      ident_system: rule_mapping.ident&.reject(&:legacy)&.first&.system,
+      ident_system: rule_mapping.ident&.reject(&:legacy)&.first.try(:system),
       fixtext: rule_mapping.fixtext.first&.fixtext,
       fixtext_fixref: rule_mapping.fixtext.first&.fixref,
       fix_id: rule_mapping.fix.first&.id

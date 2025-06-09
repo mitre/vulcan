@@ -10,8 +10,7 @@ class SecurityRequirementsGuide < ApplicationRecord
 
   validates :srg_id, :title, :version, :xml, presence: true
   validates :srg_id, uniqueness: {
-    scope: :version,
-    message: ' ID has already been taken'
+    scope: :version
   }
 
   # Since an SRG is top-level, the parameter is the entire parsed benchmark

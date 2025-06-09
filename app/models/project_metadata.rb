@@ -5,5 +5,5 @@
 class ProjectMetadata < ApplicationRecord
   belongs_to :project
 
-  validates :project, uniqueness: { message: 'already has associated metadata' }
+  validates :project, uniqueness: true
 end

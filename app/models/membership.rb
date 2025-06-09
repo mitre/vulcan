@@ -22,12 +22,14 @@ class Membership < ApplicationRecord
 
   validates :role, inclusion: {
     in: PROJECT_MEMBER_ROLES,
-    message: "is not an acceptable value. Acceptable values are: #{PROJECT_MEMBER_ROLES.join(', ')}"
+    message: lambda do |_object, _data|
+      I18n.t('activerecord.errors.models.membership.attributes.role.inclusion',
+             acceptable_values: PROJECT_MEMBER_ROLES.join(', '))
+    end
   }
 
   validates :user, uniqueness: {
-    scope: %i[membership_type membership_id],
-    message: 'is already a member of this project.'
+    scope: %i[membership_type membership_id]
   }
 
   ##
@@ -89,8 +91,8 @@ class Membership < ApplicationRecord
 
     errors.add(
       :role,
-      "provides equal or lesser permissions compared to the role the user's current project level role " \
-      "(#{project_membership_role}). This permission would have no effect on the user's abilities."
+      I18n.t('activerecord.errors.models.membership.attributes.role.equal_or_lesser_permissions',
+             project_role: project_membership_role)
     )
   end
 end

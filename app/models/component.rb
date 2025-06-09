@@ -404,7 +404,7 @@ class Component < ApplicationRecord
     else
       result = Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
                                        WHERE component_id = #{id}")
-      result&.values&.flatten&.first&.to_i || 0
+      result&.values&.flatten.try(:first).to_i
     end
   end
 

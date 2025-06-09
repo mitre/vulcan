@@ -56,7 +56,7 @@ class StigsController < ApplicationController
     @stig = Stig.find_by(id: params[:id])
     return unless @stig.nil?
 
-    flash[:alert] = 'STIG not found'
+    flash[:alert] = t('controllers.stigs.not_found')
     redirect_to stigs_path
   end
 end

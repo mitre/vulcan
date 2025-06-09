@@ -110,7 +110,7 @@ namespace :stig_and_srg_puller do
             end
           else
             msg = "STIG And SRG Puller Worker Error: Unable to save/update (#{item['name']}): ."
-            puts msg + existing_object&.errors&.full_messages&.split(', ')
+            puts msg + existing_object&.errors.try(:full_messages).to_s.split(', ').join(' ')
             @failed += 1
           end
         end

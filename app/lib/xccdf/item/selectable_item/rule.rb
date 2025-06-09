@@ -5,6 +5,7 @@ module Xccdf
   # specific benchmark test.
   class Item
     class SelectableItem
+      # Represents a specific benchmark test in XCCDF
       class Rule < SelectableItem
         include HappyMapper
 
