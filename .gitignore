@@ -28,7 +28,8 @@
 
 # Do not commit Docker environment files
 /.env
-/.env-prod
+/.env.*
+.env.*
 
 # Do not commit coverage
 /coverage
@@ -39,3 +40,24 @@
 /yarn-error.log
 yarn-debug.log*
 .yarn-integrity
+
+# Ignore generated assets
+/app/assets/builds/
+
+# Ignore development logs
+*.log
+foreman.log
+rails_*.log
+dev_output.log
+
+# Ignore local development files
+CLAUDE.md
+OKTA_SESSION_RECOVERY.md
+PR_MESSAGE.md
+*.backup
+*_backup/
+benchmark-tmp/
+vulcan-wiki-local/
+
+# Ruby version management
+.ruby-gemset

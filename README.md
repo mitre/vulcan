@@ -16,7 +16,7 @@ Vulcan models the STIG intent form and the process of aligning security controls
 * Enable looking up related controls (controls using the same SRG ID) in published STIGs while auhtoring or reviewing a control.
 * View DISA published STIG Contents.
 * Confidential data in the database is encrypted using symmetric encryption
-* Authenticate via the local server, through GitHub, and through configuring an LDAP server.
+* Authenticate via the local server, through GitHub, LDAP, or OKTA/OIDC providers
 * Email and Slack notification enabled
 
 ## Latest Release: [v2.1.8](https://github.com/mitre/vulcan/releases/tag/v2.1.8)
@@ -82,7 +82,42 @@ For testing purposes in the development environment, you can use the following c
 
 See `docker-compose.yml` for container configuration options.
 
+For a complete list of environment variables that can be used to configure Vulcan, see [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md).
+
 Documentation on how to configure additional Vulcan settings such as SMTP, LDAP, etc, are available on the [Vulcan website](https://vulcan.mitre.org/docs/config.html).
+
+### OKTA/OIDC Authentication
+
+Vulcan supports authentication via OKTA or any OpenID Connect (OIDC) provider. To enable OKTA authentication:
+
+1. **Create an OKTA Application**:
+   - Log into your OKTA admin dashboard
+   - Create a new "Web" application
+   - Set the Sign-in redirect URI to: `http://your-domain/users/auth/oidc/callback`
+   - Set the Sign-out redirect URI to: `http://your-domain`
+   - Note your Client ID and Client Secret
+
+2. **Configure Vulcan Environment Variables**:
+   ```bash
+   # Enable OIDC authentication
+   VULCAN_ENABLE_OIDC=true
+
+   # OKTA configuration
+   VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com
+   VULCAN_OIDC_CLIENT_ID=your-client-id-from-okta
+   VULCAN_OIDC_CLIENT_SECRET=your-client-secret-from-okta
+   VULCAN_OIDC_REDIRECT_URI=http://your-domain/users/auth/oidc/callback
+
+   # Optional: Force re-authentication on each login
+   VULCAN_OIDC_PROMPT=login
+
+   # Optional: Custom provider display name (defaults to "OIDC")
+   VULCAN_OIDC_PROVIDER_TITLE=Okta
+   ```
+
+3. **Restart Vulcan** to apply the configuration changes
+
+Users will now see a "Login with Okta" button on the sign-in page. First-time users will have accounts automatically created upon successful OKTA authentication.
 
 ## Tasks
 

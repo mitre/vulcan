@@ -3,7 +3,8 @@
 Rails.application.routes.draw do
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
-    registrations: 'users/registrations'
+    registrations: 'users/registrations',
+    sessions: 'sessions'
   }
 
   resources :users, only: %i[index create update destroy]

@@ -76,6 +76,8 @@ group :development do
   gem 'letter_opener'
   gem 'spring'
   gem 'spring-watcher-listen', '~> 2.0.0'
+  # Process manager for Procfile-based applications (development only)
+  gem 'foreman'
 end
 
 group :test do
@@ -98,6 +100,8 @@ group :development, :test do
   gem 'factory_bot_rails', '~> 5.2.0'
   gem 'rspec-mocks'
   gem 'rspec-rails', '~> 4.0.0'
+  # Load environment variables from .env files in development and test
+  gem 'dotenv-rails'
 end
 
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem
