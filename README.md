@@ -101,16 +101,16 @@ Vulcan supports authentication via OKTA or any OpenID Connect (OIDC) provider. T
    ```bash
    # Enable OIDC authentication
    VULCAN_ENABLE_OIDC=true
-   
+
    # OKTA configuration
    VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com
    VULCAN_OIDC_CLIENT_ID=your-client-id-from-okta
    VULCAN_OIDC_CLIENT_SECRET=your-client-secret-from-okta
    VULCAN_OIDC_REDIRECT_URI=http://your-domain/users/auth/oidc/callback
-   
+
    # Optional: Force re-authentication on each login
    VULCAN_OIDC_PROMPT=login
-   
+
    # Optional: Custom provider display name (defaults to "OIDC")
    VULCAN_OIDC_PROVIDER_TITLE=Okta
    ```
