@@ -66,6 +66,23 @@ PreCommit:
       - '**/*.js'
       - '**/*.vue'
 
+  # Shell script hooks
+  ShellCheck:
+    enabled: false
+    description: 'Analyze shell scripts with ShellCheck'
+    include:
+      - '**/*.sh'
+      - '**/bin/*'
+    exclude:
+      - '**/bin/*.rb'
+      - '**/bin/bundle'
+      - '**/bin/rails'
+      - '**/bin/rake'
+      - '**/bin/spring'
+      - '**/bin/webpack'
+      - '**/bin/webpack-dev-server'
+      - '**/bin/yarn'
+
   # General hooks
   TrailingWhitespace:
     enabled: true

@@ -1,4 +1,16 @@
 #!/bin/bash
+#
+# Vulcan Development Environment Setup Script
+#
+# This script sets up the complete Vulcan development environment including:
+# - Ruby version management (rbenv/rvm)
+# - Node.js version management (nvm)
+# - PostgreSQL database via Docker
+# - Authentication configuration (Local/LDAP/Okta)
+# - Database initialization with seed data
+#
+# For a simpler Rails-only setup, use: bin/setup
+#
 
 # Script usage
 usage() {
@@ -92,11 +104,11 @@ elif command -v rvm &> /dev/null; then
     if ! type rvm | grep -q 'function'; then
         [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
     fi
-    
+
     # Use rvm use . to respect .ruby-version and .ruby-gemset files
     echo "Loading RVM settings from .ruby-version and .ruby-gemset..."
     rvm use .
-    
+
     # If the required Ruby isn't installed, install it
     if ! rvm list | grep -q "$REQUIRED_RUBY"; then
         echo "Installing Ruby $REQUIRED_RUBY..."
@@ -129,7 +141,7 @@ if command -v nvm &> /dev/null; then
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     fi
-    
+
     # Use .nvmrc or default to Node 16
     if [ -f .nvmrc ]; then
         nvm use
@@ -137,7 +149,7 @@ if command -v nvm &> /dev/null; then
         echo "No .nvmrc found, using Node 16 to match production..."
         nvm use 16
     fi
-    
+
     echo "✓ Using Node.js $(node -v)"
 else
     echo "WARNING: NVM not found. Please ensure Node.js 16.x is installed"
@@ -166,11 +178,12 @@ case $AUTH_MODE in
             echo "Creating .env.development from .env.okta.dev template..."
             cp .env.okta.dev .env.development
         fi
-        
+
         # Check for Okta credentials
         if [ -f .env.development.local ]; then
             echo "Loading Okta credentials from .env.development.local"
-            export $(cat .env.development.local | grep -v '^#' | xargs)
+            # shellcheck disable=SC2046
+            export $(grep -v '^#' .env.development.local | xargs)
         else
             echo "WARNING: .env.development.local not found!"
             echo "Please add your Okta credentials to .env.development.local:"
@@ -178,15 +191,16 @@ case $AUTH_MODE in
             echo "  VULCAN_OIDC_CLIENT_SECRET=your-client-secret"
         fi
         ;;
-        
+
     ldap)
         # Set up LDAP environment
         export VULCAN_ENABLE_LDAP=true
-        
+
         # Check if .env.ldap exists
         if [ -f .env.ldap ]; then
             echo "Loading LDAP configuration from .env.ldap"
-            export $(cat .env.ldap | grep -v '^#' | xargs)
+            # shellcheck disable=SC2046
+            export $(grep -v '^#' .env.ldap | xargs)
         else
             echo "Using default LDAP configuration for development"
             export VULCAN_LDAP_HOST=localhost
@@ -195,18 +209,19 @@ case $AUTH_MODE in
             export VULCAN_LDAP_BIND_DN="cn=admin,dc=planetexpress,dc=com"
             export VULCAN_LDAP_ADMIN_PASS="GoodNewsEveryone"
             export VULCAN_LDAP_BASE="ou=people,dc=planetexpress,dc=com"
-            
+
             echo "LDAP will be available with test users from docker-compose.dev.yml"
         fi
         ;;
-        
+
     local)
         # Local authentication is the default
         echo "Using local authentication (default)"
-        
+
         # Load general .env.development if it exists
         if [ -f .env.development ]; then
-            export $(cat .env.development | grep -v '^#' | xargs)
+            # shellcheck disable=SC2046
+            export $(grep -v '^#' .env.development | xargs)
         fi
         ;;
 esac
@@ -214,7 +229,8 @@ esac
 # Load any general .env file
 if [ -f .env ]; then
     echo "Loading general environment from .env"
-    export $(cat .env | grep -v '^#' | xargs)
+    # shellcheck disable=SC2046
+    export $(grep -v '^#' .env | xargs)
 fi
 
 # Start PostgreSQL in Docker
@@ -256,7 +272,16 @@ echo "  foreman start -f Procfile.dev"
 echo ""
 echo "Or in separate terminals:"
 echo "  Terminal 1: bundle exec rails server"
-echo "  Terminal 2: ./bin/webpack-dev-server"
+
+# Check if Node.js 17+ is being used and provide appropriate webpack-dev-server command
+NODE_VERSION=$(node -v | cut -d. -f1 | sed 's/v//')
+if [ "$NODE_VERSION" -ge 17 ]; then
+    echo "  Terminal 2: NODE_OPTIONS=--openssl-legacy-provider ./bin/webpack-dev-server"
+    echo ""
+    echo "  Note: Node.js $NODE_VERSION requires the --openssl-legacy-provider flag for webpack 4"
+else
+    echo "  Terminal 2: ./bin/webpack-dev-server"
+fi
 echo ""
 echo "Useful commands:"
 echo "  Stop database:    docker-compose -f docker-compose.dev.yml down"
