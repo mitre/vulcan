@@ -394,7 +394,7 @@ class Component < ApplicationRecord
     # Log the full error for debugging
     Rails.logger.error "Import error: #{e.class}: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
-    
+
     message = e.message[0, 50]
     message += '...' if e.message.size >= 50
     errors.add(:base, "Encountered an error when importing rules from the SRG: #{message}")
