@@ -76,6 +76,11 @@ RSpec.describe Review, type: :model do
     it 'properly duplicated rule and required associated records' do
       original_rule = @p1.rules.first
 
+      # Clear any pre-existing associated records from SRG import
+      original_rule.checks.destroy_all
+      original_rule.rule_descriptions.destroy_all
+      original_rule.disa_rule_descriptions.destroy_all
+
       # Add some checks
       Check.create(
         base_rule: original_rule,

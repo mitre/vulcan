@@ -4,7 +4,13 @@ require './spec/simplecov_env'
 SimpleCovEnv.start!
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
+# Suppress net-protocol warnings before loading Rails environment
+# This is due to openid_connect -> net-smtp -> net-protocol dependency
+# conflicting with Ruby 2.7's built-in libraries
+original_verbose = $VERBOSE
+$VERBOSE = nil
 require File.expand_path('../config/environment', __dir__)
+$VERBOSE = original_verbose
 # Prevent database truncation if the environment is production
 abort('The Rails environment is running in production mode!') if Rails.env.production?
 require 'rspec/rails'
