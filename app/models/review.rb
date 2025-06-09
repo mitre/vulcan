@@ -23,7 +23,7 @@ class Review < ApplicationRecord
   # Override `as_json` to include delegated attributes
   #
   def as_json(options = {})
-    super options.merge(methods: %i[name])
+    super(options.merge(methods: %i[name]))
   end
 
   private

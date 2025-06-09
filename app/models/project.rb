@@ -4,7 +4,7 @@
 class Project < ApplicationRecord
   attr_accessor :current_user
 
-  enum visibility: { discoverable: 0, hidden: 1 }
+  enum :visibility, { discoverable: 0, hidden: 1 }
 
   audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
 

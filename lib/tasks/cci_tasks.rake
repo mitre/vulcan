@@ -8,7 +8,7 @@ namespace :cci do
   task parse_cci_to_nist: :environment do
     raise 'Requires VULCAN_CCI_XML_PATH to be set' if ENV['VULCAN_CCI_XML_PATH'].nil?
 
-    xml_path = Pathname.new(ENV['VULCAN_CCI_XML_PATH'])
+    xml_path = Pathname.new(ENV.fetch('VULCAN_CCI_XML_PATH', nil))
     raise "No file exists at #{xml_path}" unless File.exist?(xml_path)
 
     template = ERB.new(File.read(Rails.root.join('lib', 'assets', 'cci_to_nist_constants.rb.erb')), trim_mode: '-')

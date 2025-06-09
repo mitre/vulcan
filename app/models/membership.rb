@@ -35,7 +35,7 @@ class Membership < ApplicationRecord
   # This is useful for the ProjectMember.vue component.
   #
   def as_json(options = {})
-    super options.merge(methods: %i[name email])
+    super(options.merge(methods: %i[name email]))
   end
 
   private
@@ -89,8 +89,8 @@ class Membership < ApplicationRecord
 
     errors.add(
       :role,
-      "provides equal or lesser permissions compared to the role the user's current project level role"\
-      " (#{project_membership_role}). This permission would have no effect on the user's abilities."
+      "provides equal or lesser permissions compared to the role the user's current project level role " \
+      "(#{project_membership_role}). This permission would have no effect on the user's abilities."
     )
   end
 end

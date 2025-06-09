@@ -77,14 +77,14 @@ class Rule < BaseRule
   end
 
   def status=(value)
-    super(value) unless satisfied_by.size.positive?
+    super unless satisfied_by.size.positive?
   end
 
   ##
   # Override `as_json` to include parent SRG information
   #
   def as_json(options = {})
-    result = super(options)
+    result = super
     unless options[:skip_merge].eql?(true)
       result = result.merge(
         {

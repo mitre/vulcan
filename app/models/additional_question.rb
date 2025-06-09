@@ -11,7 +11,7 @@ class AdditionalQuestion < ApplicationRecord
 
   FIELD_TYPES = %w[dropdown freeform url].freeze
 
-  enum question_type: FIELD_TYPES.zip(FIELD_TYPES).to_h
+  enum :question_type, FIELD_TYPES.zip(FIELD_TYPES).to_h
 
   validates :name, :question_type, presence: true
 

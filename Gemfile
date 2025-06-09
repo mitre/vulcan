@@ -87,19 +87,19 @@ end
 group :test do
   # Adds support for Capybara system testing and selenium driver
   gem 'capybara'
-  gem 'selenium-webdriver'
   gem 'database_cleaner-active_record'
   gem 'rubocop', require: false
   gem 'rubocop-performance'
   gem 'rubocop-rails'
+  gem 'selenium-webdriver'
   gem 'simplecov', require: false
 end
 
 group :development, :test do
   gem 'brakeman'
   gem 'byebug'
-  gem 'pry'
   gem 'factory_bot_rails', '~> 5.2.0'
+  gem 'pry'
   gem 'rspec-mocks'
   gem 'rspec-rails', '~> 4.0.0'
   # Load environment variables from .env files in development and test

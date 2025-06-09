@@ -10,7 +10,7 @@ require 'rails_helper'
 # appropriate ENV's set so the application knows how to access the LDAP service
 # running. in that container. See the Github Actions configuration
 # for an example of how this works.
-RSpec.describe 'Login with LDAP', type: :feature, skip: (!Settings.ldap.enabled || ENV['CI']) do
+RSpec.describe 'Login with LDAP', type: :feature, skip: !Settings.ldap.enabled || ENV.fetch('CI', nil) do
   include LoginHelpers
 
   context 'when ldap login is enabled' do
