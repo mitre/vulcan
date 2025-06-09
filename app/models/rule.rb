@@ -62,11 +62,13 @@ class Rule < BaseRule
 
   def self.from_mapping(rule_mapping, component_id, idx, srg_rules)
     rule = super(self, rule_mapping)
-    rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(component_id))
     rule.component_id = component_id
     rule.srg_rule_id = srg_rules[rule.rule_id]
     # This is what is appended to the component prefix in the UI
     rule.rule_id = idx&.to_s&.rjust(6, '0')
+    
+    # Set audit comment to indicate this was created from SRG mapping
+    rule.audit_comment = 'Created from SRG mapping'
 
     rule
   end

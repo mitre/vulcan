@@ -47,7 +47,7 @@ gem 'settingslogic', '~> 2.0.9'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
-gem 'audited', '~> 5.3.3'
+gem 'audited', '~> 5.8.0'
 
 gem 'activerecord-import'
 

@@ -130,12 +130,12 @@ class RulesController < ApplicationController
       srg_rule = srg.parsed_benchmark.rule.find { |r| r.ident.reject(&:legacy).first.ident == 'CCI-000366' }
 
       rule = BaseRule.from_mapping(Rule, srg_rule)
-      rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(@component.id))
       rule.component = @component
       rule.srg_rule = srg.srg_rules.find_by(ident: 'CCI-000366')
       rule.rule_id = (@component.rules.order(:rule_id).pluck(:rule_id).last.to_i + 1)&.to_s&.rjust(6, '0')
       rule.status = 'Not Yet Determined'
       rule.rule_severity = 'unknown'
+      rule.audit_comment = 'Created new rule'
 
       rule
     end
