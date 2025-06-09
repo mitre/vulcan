@@ -11,7 +11,7 @@ namespace :cci do
     xml_path = Pathname.new(ENV.fetch('VULCAN_CCI_XML_PATH', nil))
     raise "No file exists at #{xml_path}" unless File.exist?(xml_path)
 
-    template = ERB.new(File.read(Rails.root.join('lib', 'assets', 'cci_to_nist_constants.rb.erb')), trim_mode: '-')
+    template = ERB.new(Rails.root.join('lib', 'assets', 'cci_to_nist_constants.rb.erb').read, trim_mode: '-')
     parsed_cci_xml = Nokogiri::XML(File.open(xml_path)).remove_namespaces!
     cci_xml_items = parsed_cci_xml.xpath('//cci_list/cci_items/cci_item')
     @cci_to_nist_mapping = {}
@@ -24,7 +24,7 @@ namespace :cci do
       @cci_to_nist_mapping[cci_number.to_sym] = nist_control
     end
     @last = @cci_to_nist_mapping.keys.last
-    File.write(Rails.root.join('app', 'lib', 'cci_map', 'constants.rb'), template.result)
+    Rails.root.join('app', 'lib', 'cci_map', 'constants.rb').write(template.result)
     puts('Running `bundle exec rubocop -a app/lib/cci_map/constants.rb` to finish.')
     system('bundle exec rubocop -a app/lib/cci_map/constants.rb')
   end

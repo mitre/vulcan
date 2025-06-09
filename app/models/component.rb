@@ -230,7 +230,7 @@ class Component < ApplicationRecord
     return false if released_was
 
     # If all rules are locked, then component may be released
-    rules.where(locked: false).size.zero?
+    rules.where(locked: false).empty?
   end
 
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
