@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'audited/audit'
+
 # Custom Audited class for Vulcan-specific methods for interacting with audits.
 class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
