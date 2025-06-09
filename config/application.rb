@@ -27,6 +27,9 @@ require 'csv'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# Load dotenv files before initializing Settings
+Dotenv.load('.env', ".env.#{Rails.env}", ".env.#{Rails.env}.local") if defined?(Dotenv)
+
 module VulcanVue
   # This application was originally generated using Rails 6.0. Any subsequent updates
   # will require testing to verify that the defaults for that new version do not break

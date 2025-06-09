@@ -24,15 +24,15 @@ defaults: &defaults
       user_name: <%= ENV['VULCAN_SMTP_SERVER_USERNAME'] %>
       password: <%= ENV['VULCAN_SMTP_SERVER_PASSWORD'] %>
   local_login:
-    enabled: <%= ENV['VULCAN_ENABLE_LOCAL_LOGIN'] || true %>
-    email_confirmation: <%= ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION'] || false %>
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCAL_LOGIN']) != false %>
+    email_confirmation: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION']) || false %>
     session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
   user_registration:
-    enabled: <%= ENV['VULCAN_ENABLE_USER_REGISTRATION'] || true %>
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
   project:
-    create_permission_enabled: <%= ENV['VULCAN_PROJECT_CREATE_PERMISSION_ENABLED'] || true %>
+    create_permission_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_PROJECT_CREATE_PERMISSION_ENABLED']) != false %>
   ldap:
-    enabled: <%= ENV['VULCAN_ENABLE_LDAP'] || false %>
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LDAP']) || false %>
     servers:
       main:
         host: <%= ENV['VULCAN_LDAP_HOST'] || 'localhost' %>
@@ -44,7 +44,7 @@ defaults: &defaults
         password: <%= ENV['VULCAN_LDAP_ADMIN_PASS'] %>
         base: <%= ENV['VULCAN_LDAP_BASE'] %>
   oidc:
-    enabled: <%= ENV['VULCAN_ENABLE_OIDC'] || false %>
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_OIDC']) || false %>
     strategy: :openid_connect
     title: <%= ENV['VULCAN_OIDC_PROVIDER_TITLE'] || 'OIDC Provider' %>
     args:
@@ -59,6 +59,7 @@ defaults: &defaults
       client_auth_method: :secret
       client_signing_alg: <%= ENV['VULCAN_OIDC_CLIENT_SIGNING_ALG']&.to_sym || :RS256 %>
       nonce: <%= proc { SecureRandom.hex(32) } %>
+      prompt: <%= ENV['VULCAN_OIDC_PROMPT'] || nil %>
       client_options:
         port: <%= ENV['VULCAN_OIDC_PORT'] || 443 %>
         scheme: <%= ENV['VULCAN_OIDC_SCHEME'] || 'https' %>
@@ -72,7 +73,7 @@ defaults: &defaults
         jwks_uri: <%= ENV['VULCAN_OIDC_JWKS_URI'] %>
         post_logout_redirect_uri: '/'
   slack:
-    enabled: <%= ENV['VULCAN_ENABLE_SLACK_COMMS'] || false %>
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>
     channel_id: <%= ENV['VULCAN_SLACK_CHANNEL_ID'] %>
   providers:
