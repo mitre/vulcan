@@ -7,17 +7,41 @@ class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
 
   # In Rails 5+, belongs_to associations are required by default.
-  # The parent Audited::Audit class defines `belongs_to :user, polymorphic: true`
-  # which becomes required. We need to allow nil users for system-generated audits.
+  # The parent Audited::Audit class defines:
+  # - `belongs_to :user, polymorphic: true`
+  # - `belongs_to :associated, polymorphic: true`
+  # Both become required. We need to allow nil for system-generated audits.
 
-  # Remove the user presence validation that Rails adds for belongs_to associations
-  # Find and remove the validation added by the parent class
-  _validators[:user].reject! { |v| v.is_a?(ActiveRecord::Validations::PresenceValidator) }
-  _validate_callbacks.each do |callback|
-    if callback.filter.is_a?(ActiveRecord::Validations::PresenceValidator) &&
-       callback.filter.attributes.include?(:user)
-      _validate_callbacks.delete(callback)
+  # Override the associations to make them optional
+  belongs_to :user, polymorphic: true, optional: true
+  belongs_to :associated, polymorphic: true, optional: true
+
+  # Force removal of presence validations that Rails adds automatically
+  # This needs to be done with a more aggressive approach since Rails keeps re-adding them
+  def self.remove_presence_validations!
+    # Remove all presence validators for user and associated
+    %i[user associated].each do |attr|
+      _validators[attr] = _validators[attr]&.reject { |v| v.is_a?(ActiveRecord::Validations::PresenceValidator) } || []
+
+      # Remove from callback chain (Rails 7 compatible)
+      callbacks_to_remove = _validate_callbacks.select do |callback|
+        callback.filter.is_a?(ActiveRecord::Validations::PresenceValidator) &&
+          callback.filter.attributes.include?(attr)
+      end
+
+      callbacks_to_remove.each do |callback|
+        _validate_callbacks.delete(callback)
+      end
     end
+  end
+
+  # Call it immediately after class definition
+  remove_presence_validations!
+
+  # Also remove them in inherited classes
+  def self.inherited(subclass)
+    super
+    subclass.remove_presence_validations!
   end
 
   before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule

@@ -7,13 +7,15 @@ RSpec.describe StigsController, type: :controller do
   include LoginHelpers
 
   let(:stig) { create(:stig) }
-  let(:user) { create(:user) }
+  let(:user) { create(:admin_user) }
   let(:user2) { create(:user) }
-  before do
-    user.admin = true
-    user.save!
-    # allow(controller).to receive(:current_user).and_return(user)
-    # sign_in user
+  # No need to modify user in before block since it's already an admin
+
+  # Use proper audit context for Rails 7 compliance
+  around do |example|
+    VulcanAudit.as_user(system_audit_user) do
+      example.run
+    end
   end
 
   describe 'POST #create' do

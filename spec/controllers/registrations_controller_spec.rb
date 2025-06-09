@@ -10,6 +10,13 @@ RSpec.describe Users::RegistrationsController, type: :controller do
     @request.env['devise.mapping'] = Devise.mappings[:user]
   end
 
+  # Use proper audit context for Rails 7 compliance
+  around do |example|
+    VulcanAudit.as_user(system_audit_user) do
+      example.run
+    end
+  end
+
   let(:user1) { build(:user) }
 
   context 'when local login is disabled' do
@@ -119,10 +126,11 @@ RSpec.describe Users::RegistrationsController, type: :controller do
     let(:user2) { create(:user) }
     let(:user3) { build(:user) }
     before do
+      stub_local_login_setting(email_confirmation: true)
       sign_in user2
     end
     it 'checks if user is updated' do
-      post :update, params: {
+      put :update, params: {
         user: {
           name: user3.name,
           email: user3.email,
@@ -152,7 +160,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       sign_in user2
     end
     it 'makes sure can not update without password' do
-      post :update, params: {
+      put :update, params: {
         user: {
           name: user3.name,
           email: user2.email,
@@ -171,12 +179,16 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       sign_in user4
     end
     it 'user updates without password' do
-      post :update, params: {
+      new_name = 'Updated LDAP User'
+      put :update, params: {
         user: {
-          name: user1.name
+          name: new_name
         }
       }
-      expect(user4.reload.name).to eq(user1.name)
+
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq('Your account has been updated successfully.')
+      expect(user4.reload.name).to eq(new_name)
     end
   end
 end
