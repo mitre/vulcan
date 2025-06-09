@@ -176,6 +176,7 @@ GEM
       mutex_m
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
+    iniparse (1.5.0)
     inspec-core (4.24.32)
       addressable (~> 2.4)
       chef-telemetry (~> 1.0)
@@ -311,6 +312,10 @@ GEM
       webfinger (~> 1.2)
     orm_adapter (0.5.0)
     ostruct (0.6.1)
+    overcommit (0.67.1)
+      childprocess (>= 0.6.3, < 6)
+      iniparse (~> 1.4)
+      rexml (>= 3.3.9)
     ox (2.14.23)
       bigdecimal (>= 3.0)
     parallel (1.27.0)
@@ -586,6 +591,7 @@ DEPENDENCIES
   omniauth-github
   omniauth-rails_csrf_protection (~> 1.0)
   omniauth_openid_connect (~> 0.6.0)
+  overcommit (~> 0.60)
   ox
   pg (>= 0.18, < 2.0)
   pry

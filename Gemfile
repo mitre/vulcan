@@ -82,6 +82,8 @@ group :development do
   gem 'spring-watcher-listen'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
+  # Git hook manager for automated linting and formatting
+  gem 'overcommit', '~> 0.60', require: false
 end
 
 group :test do
