@@ -18,7 +18,7 @@
       %navbar{                                                               |
         'v-bind:navigation': @navigation.to_json,                            |
         'v-bind:signed_in': user_signed_in?.to_s,                            |
-        'v-bind:users_path': current_user&.admin ? users_path.to_json : nil, |
+        'v-bind:users_path': (current_user&.admin ? users_path : '').to_json, |
         'v-bind:profile_path': edit_user_registration_path.to_json,          |
         'v-bind:sign_out_path': destroy_user_session_path.to_json,            |
         'v-bind:access_requests': @access_requests.to_json                   |
