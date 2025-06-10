@@ -1,4 +1,4 @@
-FROM ruby:2.7
+FROM ruby:3.0.7
 
 RUN curl -sS https://deb.nodesource.com/setup_16.x | bash -
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
@@ -10,7 +10,7 @@ ENV RAILS_ENV=production
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
-RUN gem install bundler:2.2.32
+RUN gem install bundler:2.3.10
 ADD Gemfile* $APP_HOME/
 RUN bundle install --without development test
 

@@ -4,6 +4,7 @@ module Xccdf
   # This abstract item type represents the basic data shared by all
   # Groups and Rules.
   class Item
+    # Abstract base class for selectable XCCDF items (Groups and Rules)
     class SelectableItem < Item
       include HappyMapper
 

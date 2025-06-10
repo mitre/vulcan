@@ -9,8 +9,8 @@ class AdditionalAnswer < ApplicationRecord
   belongs_to :additional_question
   belongs_to :rule
 
-  URL_REGEXP = %r{\A(http|https)://[a-z0-9@:%._+~#=]{2,256}\.[a-z]{2,16}\b([-a-z0-9@:%_+.~#?&/=]*)\z}ix.freeze
-  validates :answer, format: { with: URL_REGEXP, message: 'URL must be valid and begin with http or https' },
+  URL_REGEXP = %r{\A(http|https)://[a-z0-9@:%._+~#=]{2,256}\.[a-z]{2,16}\b([-a-z0-9@:%_+.~#?&/=]*)\z}ix
+  validates :answer, format: { with: URL_REGEXP },
                      if: :present_and_type_is_url?
 
   def present_and_type_is_url?

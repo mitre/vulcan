@@ -1,6 +1,7 @@
 # Vulcan
 
 [![Run Test Suite on Draft Release Creation, Push, and Pull Request to master](https://github.com/mitre/vulcan/actions/workflows/run-tests.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/run-tests.yml) [![Push Vulcan to Docker Hub on successful test suite run](https://github.com/mitre/vulcan/actions/workflows/push-to-docker.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/push-to-docker.yml)
+
 ## Description
 
 Vulcan is a tool to help streamline the process of creating STIG-ready securiy guidance documentation and InSpec automated validation profiles.
@@ -33,37 +34,67 @@ For more details on this release and previous ones, check the [Changelog](https:
 
 [Deploying Vulcan in Production](https://vulcan.mitre.org/docs/)&nbsp;&nbsp;&nbsp;[<img src="public/GitHub-Mark-Light-64px.png#gh-dark-mode-only" width="20"/>](https://pages.github.com/)[<img src="public/GitHub-Mark-64px.png#gh-light-mode-only" width="20"/>](https://pages.github.com/)
 
-## Deployment Dependencies
+## Development Requirements
 
-For Ruby (on Ubuntu):
+### Version Requirements
+* **Ruby**: 3.0.6 (see `.ruby-version`)
+* **Rails**: 7.0.8.7
+* **Node.js**: 16.x (see `.nvmrc`)
+* **PostgreSQL**: 12+
 
-* Ruby
-* `build-essentials`
-* Bundler
-* `libq-dev`
-* nodejs
+### System Dependencies
 
-### Run With Ruby
+For development on macOS/Linux:
+* Ruby version manager (rbenv or rvm recommended)
+* Node.js version manager (nvm recommended)
+* Docker (for PostgreSQL) or local PostgreSQL
+* `build-essential` (Linux) or Xcode Command Line Tools (macOS)
+* `libpq-dev` (Linux) or `postgresql` (macOS via Homebrew)
 
-#### Setup Ruby
+### Quick Development Setup
 
-1. Install the version of Ruby specified in `.ruby-version`
-2. Install postgres and rbenv
-3. Run `gem install foreman`
-4. Run `rbenv install`
-5. Run `bin/setup`
+The easiest way to get started is using our development setup script:
 
-  >> **Note**: `bin/setup` will install the JS dependencies andprepare the database.
+```bash
+# Clone the repository
+git clone https://github.com/mitre/vulcan.git
+cd vulcan
 
-6. Run `rails db:seed` to seed the database.
+# Run the setup script (handles Ruby, Node.js, database setup)
+./bin/dev-setup
 
-#### Running with Ruby
+# Start the application
+foreman start -f Procfile.dev
+```
+
+### Manual Setup
+
+If you prefer to set up manually:
+
+1. Install Ruby 3.0.6 (using rbenv or rvm)
+2. Install Node.js 16.x (using nvm)
+3. Install PostgreSQL 12+ (via Docker or locally)
+4. Run `gem install bundler`
+5. Run `bundle install`
+6. Run `yarn install`
+7. Run `bin/rails db:create db:schema:load db:seed`
+
+### Running the Application
 
 Make sure you have run the setup steps at least once before following these steps!
 
-1. ensure postgres is running
-2. foreman start -f Procfile.dev
+1. Ensure PostgreSQL is running
+2. Start the application: `foreman start -f Procfile.dev`
 3. Navigate to `http://127.0.0.1:3000`
+
+#### Node.js 17+ Compatibility Note
+
+If using Node.js 17 or higher, webpack-dev-server requires a compatibility flag:
+```bash
+NODE_OPTIONS=--openssl-legacy-provider ./bin/webpack-dev-server
+```
+
+Our `Procfile.dev` and `dev-setup` script handle this automatically.
 
 #### Test User
 

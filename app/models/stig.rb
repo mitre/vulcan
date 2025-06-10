@@ -6,8 +6,7 @@ class Stig < ApplicationRecord
 
   validates :stig_id, :title, :name, :version, :xml, presence: true
   validates :stig_id, uniqueness: {
-    scope: :version,
-    message: 'ID has already been taken'
+    scope: :version
   }
 
   after_create :import_stig_rules

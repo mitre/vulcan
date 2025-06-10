@@ -31,3 +31,42 @@
 
 en:
   hello: "Hello world"
+  
+  activerecord:
+    errors:
+      models:
+        additional_answer:
+          attributes:
+            answer:
+              invalid: "URL must be valid and begin with http or https"
+        component_metadata:
+          attributes:
+            component:
+              taken: "already has associated metadata"
+        membership:
+          attributes:
+            role:
+              inclusion: "is not an acceptable value. Acceptable values are: %{acceptable_values}"
+              equal_or_lesser_permissions: "provides equal or lesser permissions compared to the role the user's current project level role (%{project_role}). This permission would have no effect on the user's abilities."
+            user:
+              taken: "is already a member of this project."
+        project_access_request:
+          attributes:
+            user_id:
+              taken: "has already requested access to this project"
+        project_metadata:
+          attributes:
+            project:
+              taken: "already has associated metadata"
+        security_requirements_guide:
+          attributes:
+            srg_id:
+              taken: " ID has already been taken"
+        stig:
+          attributes:
+            stig_id:
+              taken: "ID has already been taken"
+              
+  controllers:
+    stigs:
+      not_found: "STIG not found"

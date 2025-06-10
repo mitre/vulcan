@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Xccdf
+  # Represents warnings with various categories in XCCDF
   class Warning
     include HappyMapper
 

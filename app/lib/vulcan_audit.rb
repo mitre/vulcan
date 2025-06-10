@@ -1,20 +1,50 @@
 # frozen_string_literal: true
 
-# Custom Audited class for Vulcan-specific methods for interacting with audits.
-class VulcanAudit < ::Audited::Audit
-  belongs_to :audited_user, class_name: 'User', optional: true
-  before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
+require 'audited/audit'
 
-  def self.create_initial_rule_audit_from_mapping(project_id)
-    {
-      auditable_type: 'Rule',
-      action: 'create',
-      user_type: 'System',
-      audited_changes: {
-        project_id: project_id
-      }
-    }
+# Custom Audited class for Vulcan-specific methods for interacting with audits.
+class VulcanAudit < Audited::Audit
+  belongs_to :audited_user, class_name: 'User', optional: true
+
+  # In Rails 5+, belongs_to associations are required by default.
+  # The parent Audited::Audit class defines:
+  # - `belongs_to :user, polymorphic: true`
+  # - `belongs_to :associated, polymorphic: true`
+  # Both become required. We need to allow nil for system-generated audits.
+
+  # Override the associations to make them optional
+  belongs_to :user, polymorphic: true, optional: true
+  belongs_to :associated, polymorphic: true, optional: true
+
+  # Force removal of presence validations that Rails adds automatically
+  # This needs to be done with a more aggressive approach since Rails keeps re-adding them
+  def self.remove_presence_validations!
+    # Remove all presence validators for user and associated
+    %i[user associated].each do |attr|
+      _validators[attr] = _validators[attr]&.reject { |v| v.is_a?(ActiveRecord::Validations::PresenceValidator) } || []
+
+      # Remove from callback chain (Rails 7 compatible)
+      callbacks_to_remove = _validate_callbacks.select do |callback|
+        callback.filter.is_a?(ActiveRecord::Validations::PresenceValidator) &&
+          callback.filter.attributes.include?(attr)
+      end
+
+      callbacks_to_remove.each do |callback|
+        _validate_callbacks.delete(callback)
+      end
+    end
   end
+
+  # Call it immediately after class definition
+  remove_presence_validations!
+
+  # Also remove them in inherited classes
+  def self.inherited(subclass)
+    super
+    subclass.remove_presence_validations!
+  end
+
+  before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
 
   def set_username
     self.username = user&.name

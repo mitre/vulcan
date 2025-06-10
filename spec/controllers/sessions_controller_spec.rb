@@ -117,8 +117,8 @@ RSpec.describe SessionsController, type: :controller do
         mock_oidc_settings(enabled: true, issuer: 'https://example.provider.com', client_id: nil)
 
         # Mock ENV to ensure no client_id is picked up
-        allow(ENV).to receive(:[]).and_call_original
-        allow(ENV).to receive(:[]).with('VULCAN_OIDC_CLIENT_ID').and_return(nil)
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with('VULCAN_OIDC_CLIENT_ID', nil).and_return(nil)
 
         # Mock failed discovery response
         mock_http_response(success: false, code: '404', message: 'Not Found')

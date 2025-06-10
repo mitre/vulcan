@@ -1,0 +1,317 @@
+#!/bin/bash
+#
+# Vulcan Development Environment Setup Script
+#
+# This script sets up the complete Vulcan development environment including:
+# - Ruby version management (rbenv/rvm)
+# - Node.js version management (nvm)
+# - PostgreSQL database via Docker
+# - Authentication configuration (Local/LDAP/Okta)
+# - Database initialization with seed data
+#
+# For a simpler Rails-only setup, use: bin/setup
+#
+
+# Script usage
+usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --clean      Stop and remove existing containers before starting"
+    echo "  --refresh    Reset database (drops and recreates)"
+    echo "  --okta       Configure environment for Okta authentication"
+    echo "  --ldap       Configure environment for LDAP authentication"
+    echo "  --local      Configure environment for local authentication (default)"
+    echo "  --help       Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                  # Start with local auth"
+    echo "  $0 --okta           # Start with Okta auth"
+    echo "  $0 --ldap           # Start with LDAP auth"
+    echo "  $0 --clean --okta   # Clean start with Okta"
+    exit 1
+}
+
+# Parse command line arguments
+CLEAN=false
+REFRESH=false
+AUTH_MODE="local"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --clean)
+            CLEAN=true
+            shift
+            ;;
+        --refresh)
+            REFRESH=true
+            shift
+            ;;
+        --okta)
+            AUTH_MODE="okta"
+            shift
+            ;;
+        --ldap)
+            AUTH_MODE="ldap"
+            shift
+            ;;
+        --local)
+            AUTH_MODE="local"
+            shift
+            ;;
+        --help)
+            usage
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+echo "Starting Vulcan Development Environment (Auth: $AUTH_MODE)..."
+
+# Clean up if requested or if containers are already running
+if [ "$CLEAN" = true ] || docker-compose -f docker-compose.dev.yml ps -q | grep -q .; then
+    if [ "$CLEAN" = true ]; then
+        echo "Cleaning up existing containers (--clean flag)..."
+    else
+        echo "Found existing containers, cleaning up..."
+    fi
+    docker-compose -f docker-compose.dev.yml down
+fi
+
+# Check Ruby version
+REQUIRED_RUBY=$(cat .ruby-version 2>/dev/null || echo "2.7.5")
+CURRENT_RUBY=$(ruby -v 2>/dev/null | awk '{print $2}' | cut -d'p' -f1)
+
+echo "Required Ruby version: $REQUIRED_RUBY"
+echo "Current Ruby version: $CURRENT_RUBY"
+
+# Check for rbenv or rvm
+if command -v rbenv &> /dev/null; then
+    echo "Using rbenv..."
+    # Ensure rbenv loads the correct version
+    eval "$(rbenv init -)"
+    if ! rbenv versions | grep -q "$REQUIRED_RUBY"; then
+        echo "Installing Ruby $REQUIRED_RUBY with rbenv..."
+        rbenv install "$REQUIRED_RUBY"
+    fi
+    rbenv local "$REQUIRED_RUBY"
+elif command -v rvm &> /dev/null; then
+    echo "Using rvm..."
+    # Load RVM if not already loaded
+    if ! type rvm | grep -q 'function'; then
+        [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
+    fi
+
+    # Use rvm use . to respect .ruby-version and .ruby-gemset files
+    echo "Loading RVM settings from .ruby-version and .ruby-gemset..."
+    rvm use .
+
+    # If the required Ruby isn't installed, install it
+    if ! rvm list | grep -q "$REQUIRED_RUBY"; then
+        echo "Installing Ruby $REQUIRED_RUBY..."
+        rvm install "$REQUIRED_RUBY"
+        rvm use .
+    fi
+else
+    echo "WARNING: Neither rbenv nor rvm detected!"
+    echo "Please ensure Ruby $REQUIRED_RUBY is installed and active"
+    if [ "$CURRENT_RUBY" != "$REQUIRED_RUBY" ]; then
+        echo "ERROR: Wrong Ruby version. Expected $REQUIRED_RUBY but got $CURRENT_RUBY"
+        exit 1
+    fi
+fi
+
+# Verify Ruby version
+CURRENT_RUBY=$(ruby -v | awk '{print $2}' | cut -d'p' -f1)
+if [ "$CURRENT_RUBY" != "$REQUIRED_RUBY" ]; then
+    echo "ERROR: Failed to switch to Ruby $REQUIRED_RUBY"
+    exit 1
+fi
+
+echo "✓ Using Ruby $CURRENT_RUBY with gemset: $(rvm current | cut -d'@' -f2)"
+
+# Check Node.js version
+if command -v nvm &> /dev/null; then
+    echo "Checking Node.js version..."
+    # Load NVM if not already loaded
+    if ! type nvm | grep -q 'function'; then
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    fi
+
+    # Use .nvmrc or default to Node 16
+    if [ -f .nvmrc ]; then
+        nvm use
+    else
+        echo "No .nvmrc found, using Node 16 to match production..."
+        nvm use 16
+    fi
+
+    echo "✓ Using Node.js $(node -v)"
+else
+    echo "WARNING: NVM not found. Please ensure Node.js 16.x is installed"
+    echo "Current Node.js: $(node -v 2>/dev/null || echo 'Not installed')"
+fi
+
+# Check and install Ruby dependencies
+echo "Checking Ruby dependencies..."
+bundle check || {
+    echo "Installing Ruby dependencies..."
+    bundle install
+}
+
+# Check and install JavaScript dependencies
+echo "Checking JavaScript dependencies..."
+if [ ! -d "node_modules" ] || [ "package.json" -nt "node_modules" ]; then
+    echo "Installing JavaScript dependencies..."
+    yarn install
+fi
+
+# Configure environment based on auth mode
+case $AUTH_MODE in
+    okta)
+        # Check if .env.development exists, if not copy from .env.okta.dev
+        if [ ! -f .env.development ]; then
+            echo "Creating .env.development from .env.okta.dev template..."
+            cp .env.okta.dev .env.development
+        fi
+
+        # Check for Okta credentials
+        if [ -f .env.development.local ]; then
+            echo "Loading Okta credentials from .env.development.local"
+            # shellcheck disable=SC2046
+            export $(grep -v '^#' .env.development.local | xargs)
+        else
+            echo "WARNING: .env.development.local not found!"
+            echo "Please add your Okta credentials to .env.development.local:"
+            echo "  VULCAN_OIDC_CLIENT_ID=your-client-id"
+            echo "  VULCAN_OIDC_CLIENT_SECRET=your-client-secret"
+        fi
+        ;;
+
+    ldap)
+        # Set up LDAP environment
+        export VULCAN_ENABLE_LDAP=true
+
+        # Check if .env.ldap exists
+        if [ -f .env.ldap ]; then
+            echo "Loading LDAP configuration from .env.ldap"
+            # shellcheck disable=SC2046
+            export $(grep -v '^#' .env.ldap | xargs)
+        else
+            echo "Using default LDAP configuration for development"
+            export VULCAN_LDAP_HOST=localhost
+            export VULCAN_LDAP_PORT=10389
+            export VULCAN_LDAP_ATTRIBUTE=mail
+            export VULCAN_LDAP_BIND_DN="cn=admin,dc=planetexpress,dc=com"
+            export VULCAN_LDAP_ADMIN_PASS="GoodNewsEveryone"
+            export VULCAN_LDAP_BASE="ou=people,dc=planetexpress,dc=com"
+
+            echo "LDAP will be available with test users from docker-compose.dev.yml"
+        fi
+        ;;
+
+    local)
+        # Local authentication is the default
+        echo "Using local authentication (default)"
+
+        # Load general .env.development if it exists
+        if [ -f .env.development ]; then
+            # shellcheck disable=SC2046
+            export $(grep -v '^#' .env.development | xargs)
+        fi
+        ;;
+esac
+
+# Load any general .env file
+if [ -f .env ]; then
+    echo "Loading general environment from .env"
+    # shellcheck disable=SC2046
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Start PostgreSQL in Docker
+echo "Starting PostgreSQL database..."
+docker-compose -f docker-compose.dev.yml up -d
+
+# Export DATABASE_URL for Rails
+export DATABASE_URL="postgres://postgres:postgres@localhost:5432/vulcan_vue_development"
+
+# Wait for PostgreSQL to be ready
+echo "Waiting for PostgreSQL to be ready..."
+until docker-compose -f docker-compose.dev.yml exec -T db pg_isready -U postgres > /dev/null 2>&1; do
+    echo -n "."
+    sleep 1
+done
+echo " PostgreSQL is ready!"
+
+# Check database setup
+echo "Checking database..."
+
+if [ "$REFRESH" = true ]; then
+    echo "Refreshing database (--refresh flag)..."
+    DISABLE_SPRING=1 DATABASE_URL="postgres://postgres:postgres@localhost:5432/vulcan_vue_development" rails db:drop db:create db:schema:load db:seed
+else
+    DISABLE_SPRING=1 DATABASE_URL="postgres://postgres:postgres@localhost:5432/vulcan_vue_development" rails db:version 2>/dev/null || {
+        echo "Setting up database..."
+        DISABLE_SPRING=1 DATABASE_URL="postgres://postgres:postgres@localhost:5432/vulcan_vue_development" rails db:create db:schema:load db:seed
+    }
+fi
+
+echo ""
+echo "✅ Vulcan Development Environment Ready!"
+echo ""
+echo "Authentication mode: $AUTH_MODE"
+echo "Database is running at: postgres://localhost:5432/vulcan_vue_development"
+echo ""
+echo "To start the Rails app, run:"
+echo "  foreman start -f Procfile.dev"
+echo ""
+echo "Or in separate terminals:"
+echo "  Terminal 1: bundle exec rails server"
+
+# Check if Node.js 17+ is being used and provide appropriate webpack-dev-server command
+NODE_VERSION=$(node -v | cut -d. -f1 | sed 's/v//')
+if [ "$NODE_VERSION" -ge 17 ]; then
+    echo "  Terminal 2: NODE_OPTIONS=--openssl-legacy-provider ./bin/webpack-dev-server"
+    echo ""
+    echo "  Note: Node.js $NODE_VERSION requires the --openssl-legacy-provider flag for webpack 4"
+else
+    echo "  Terminal 2: ./bin/webpack-dev-server"
+fi
+echo ""
+echo "Useful commands:"
+echo "  Stop database:    docker-compose -f docker-compose.dev.yml down"
+echo "  View logs:        docker-compose -f docker-compose.dev.yml logs -f"
+echo "  Reset everything: $0 --clean --refresh"
+echo ""
+
+# Show auth-specific information
+case $AUTH_MODE in
+    okta)
+        echo "Okta authentication configured."
+        echo "Make sure your Okta app is configured with:"
+        echo "  Redirect URI: http://localhost:3000/users/auth/openid_connect/callback"
+        ;;
+    ldap)
+        echo "LDAP authentication configured."
+        if [ ! -f .env.ldap ]; then
+            echo ""
+            echo "Test LDAP credentials (from docker-compose.dev.yml):"
+            echo "  Username: fry@planetexpress.com"
+            echo "  Password: fry"
+            echo "  Username: zoidberg@planetexpress.com"
+            echo "  Password: zoidberg"
+        fi
+        ;;
+    local)
+        echo "Local authentication configured."
+        echo ""
+        echo "Test credentials:"
+        echo "  Email: admin@example.com"
+        echo "  Password: 1234567ab!"
+        ;;
+esac

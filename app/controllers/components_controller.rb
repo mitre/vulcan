@@ -13,12 +13,12 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
-  before_action :authorize_admin_component, only: %i[update], if: (lambda {
-                                                                     params
-                                                                       .require(:component)
-                                                                       .permit(:advanced_fields)[:advanced_fields]
-                                                                       .present?
-                                                                   })
+  before_action :authorize_admin_component, only: %i[update], if: lambda {
+    params
+      .require(:component)
+      .permit(:advanced_fields)[:advanced_fields]
+      .present?
+  }
 
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
   before_action :authorize_logged_in, only: %i[search]
@@ -241,7 +241,7 @@ class ComponentsController < ApplicationController
       LOWER(status_justification) LIKE ? OR
       LOWER(artifact_description) LIKE ? OR
       id IN (?) ", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
-      "%#{find_param}%", (checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id))
+      "%#{find_param}%", checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id)
     )
                  .order(:rule_id)
 
@@ -353,7 +353,7 @@ class ComponentsController < ApplicationController
   end
 
   def check_permission_to_update_slackchannel
-    return if component_update_params[:component_metadata_attributes]&.dig('data')&.dig('Slack Channel ID').blank?
+    return if component_update_params[:component_metadata_attributes]&.dig('data', 'Slack Channel ID').blank?
 
     authorize_admin_component
   end

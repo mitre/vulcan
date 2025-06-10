@@ -49,7 +49,7 @@ class SessionsController < Devise::SessionsController
     }
 
     # Add client_id if available (required by some providers)
-    client_id = Settings.oidc.args.client_options.identifier || ENV['VULCAN_OIDC_CLIENT_ID']
+    client_id = Settings.oidc.args.client_options.identifier || ENV.fetch('VULCAN_OIDC_CLIENT_ID', nil)
     params[:client_id] = client_id if client_id.present?
 
     "#{logout_endpoint}?#{params.to_query}"
@@ -62,7 +62,7 @@ class SessionsController < Devise::SessionsController
       return session[:oidc_logout_endpoint]
     end
 
-    issuer_url = Settings.oidc.args.issuer || ENV['VULCAN_OIDC_ISSUER_URL']
+    issuer_url = Settings.oidc.args.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
     discovery_url = "#{issuer_url.to_s.chomp('/')}/.well-known/openid-configuration"
 
     Rails.logger.info "Fetching OIDC discovery document from: #{discovery_url}"

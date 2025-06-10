@@ -3,6 +3,7 @@
 # rubocop:disable Metrics/ModuleLength
 module CciMap
   module Constants
+    # rubocop:disable Metrics/CollectionLiteralLength
     CCI_TO_NIST_CONSTANT = {
       'CCI-000001': 'AC-1 a 1',
       'CCI-000002': 'AC-1 a 1 (a)',
@@ -5105,6 +5106,7 @@ module CciMap
       'CCI-005149': 'AU-16 (3)',
       'CCI-005150': 'PM-30 (1)'
     }.freeze
+    # rubocop:enable Metrics/CollectionLiteralLength
   end
 end
 # rubocop:enable Metrics/ModuleLength

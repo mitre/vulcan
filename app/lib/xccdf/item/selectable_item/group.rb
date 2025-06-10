@@ -5,6 +5,7 @@ module Xccdf
   # Groups, Rules and Values.
   class Item
     class SelectableItem
+      # Represents a grouping of Groups, Rules and Values in XCCDF
       class Group < SelectableItem
         include HappyMapper
 

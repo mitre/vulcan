@@ -6,6 +6,13 @@ require 'rails_helper'
 RSpec.describe ProjectAccessRequestsController, type: :controller do
   include LoginHelpers
 
+  # Use proper audit context for Rails 7 compliance
+  around do |example|
+    VulcanAudit.as_user(system_audit_user) do
+      example.run
+    end
+  end
+
   let(:project) { create(:project) }
   let(:user) { create(:user) }
 

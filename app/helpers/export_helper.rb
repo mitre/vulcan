@@ -101,10 +101,10 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   def export_xccdf_project(project)
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).each do |component|
+                                              satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
-        title = (component[:title] || "#{component[:name]} STIG Readiness Guide")
+        title = component[:title] || "#{component[:name]} STIG Readiness Guide"
         file_name = "U_#{title.tr(' ', '_')}_#{version}#{release}-xccdf.xml"
         zio.put_next_entry(file_name)
 
@@ -119,7 +119,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   def export_inspec_project(project)
     Zip::OutputStream.write_buffer do |zio|
       project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).each do |component|
+                                              satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
         dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline/"
@@ -190,7 +190,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
 
     ox_el_helper(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
-    title = (component[:title] || "#{component[:name]} STIG Readiness Guide")
+    title = component[:title] || "#{component[:name]} STIG Readiness Guide"
     ox_el_helper(benchmark, 'title', title)
     ox_el_helper(benchmark, 'description', component[:description] || title)
     ox_el_helper(benchmark, 'notice', nil, { id: 'terms-of-use', 'xml:lang': 'en' })

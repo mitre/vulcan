@@ -5,6 +5,8 @@ module Xccdf
   # just a mandatory URI reference, but also have
   # an override attribute for controlling inheritance.
   class Idref
+    ##
+    # Handles IDREF elements that support override attributes
     class OverrideableIdref < Idref
       include HappyMapper
 

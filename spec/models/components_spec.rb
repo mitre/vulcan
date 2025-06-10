@@ -3,6 +3,12 @@
 require 'rails_helper'
 
 RSpec.describe Component, type: :model do
+  # Use proper audit context for Rails 7 compliance
+  around do |example|
+    VulcanAudit.as_user(system_audit_user) do
+      example.run
+    end
+  end
   before :each do
     srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)

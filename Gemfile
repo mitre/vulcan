@@ -2,10 +2,12 @@
 
 source 'https://rubygems.org'
 
-ruby '~> 2.7'
+ruby File.read('.ruby-version').strip
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 6.1.4'
+gem 'rails', '~> 7.0.0'
+# TODO: Remove this once upgrading to Rails 7.1, this is required for a bug specific to Rails 7.0
+gem 'concurrent-ruby', '1.3.4'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
@@ -45,7 +47,7 @@ gem 'settingslogic', '~> 2.0.9'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
-gem 'audited', '~> 5.3.3'
+gem 'audited', '~> 5.8.0'
 
 gem 'activerecord-import'
 
@@ -61,6 +63,8 @@ gem 'fast_excel'
 # For writing excel files
 gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
+gem 'rexml'
+
 gem 'ox'
 
 gem 'rubyzip'
@@ -69,37 +73,37 @@ gem 'mitre-inspec-objects'
 gem 'rest-client'
 
 group :development do
-  gem 'listen', '~> 3.1.5'
+  gem 'listen'
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
   gem 'web-console', '>= 3.3.0'
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'letter_opener'
   gem 'spring'
-  gem 'spring-watcher-listen', '~> 2.0.0'
+  gem 'spring-watcher-listen'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
+  # Git hook manager for automated linting and formatting
+  gem 'overcommit', '~> 0.60', require: false
 end
 
 group :test do
   # Adds support for Capybara system testing and selenium driver
-  gem 'capybara', '>= 2.15'
-  gem 'selenium-webdriver'
-  # Easy installation and use of web drivers to run system tests with browsers
-  # gem 'webdrivers'
-
+  gem 'capybara'
   gem 'database_cleaner-active_record'
   gem 'rubocop', require: false
   gem 'rubocop-performance'
   gem 'rubocop-rails'
+  gem 'selenium-webdriver'
   gem 'simplecov', require: false
 end
 
 group :development, :test do
   gem 'brakeman'
   gem 'byebug'
-  gem 'factory_bot_rails', '~> 5.2.0'
+  gem 'factory_bot_rails', '~> 6.4.0'
+  gem 'pry'
   gem 'rspec-mocks'
-  gem 'rspec-rails', '~> 4.0.0'
+  gem 'rspec-rails', '~> 6.0.0'
   # Load environment variables from .env files in development and test
   gem 'dotenv-rails'
 end
