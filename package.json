@@ -7,7 +7,7 @@
     "@rails/activestorage": "^6.0.0",
     "@rails/ujs": "^6.0.0",
     "@rails/webpacker": "~5.4.0",
-    "axios": "^1.6.0",
+    "axios": "1.6.0",
     "bootstrap": "^4.4.1",
     "bootstrap-vue": "^2.13.0",
     "lodash": "^4.17.21",
