@@ -6,7 +6,7 @@ RSpec.describe ExportHelper, type: :helper do
   include ExportHelper
 
   before(:all) do
-    @component = FactoryBot.create(:component)
+    @component = create(:component)
     @project = @component.project
     @component_ids = @project.components.pluck(:id).join(',')
   end
@@ -38,6 +38,7 @@ RSpec.describe ExportHelper, type: :helper do
         expect(@workbook_disa_export).to be_present
         expect(@workbook_disa_export.filename).to end_with 'xlsx'
       end
+
       it 'creates an excel file with the # sheets == # of components that was requested for export' do
         expect(@xlsx.sheets.size).to eq @component_ids.split(',').size
         expect(@xlsx_disa.sheets.size).to eq @component_ids.split(',').size
@@ -49,6 +50,7 @@ RSpec.describe ExportHelper, type: :helper do
         parsed = @xlsx_disa.sheet(0).parse(headers: true).drop(1)
         expect(parsed.first).not_to include 'InSpec Control Body'
       end
+
       it 'returns empty values for "Status Justification", "Mitigation",and "Artifact Description" columns if
         the rule status is "Applicable - Configurable"' do
         parsed = @xlsx_disa.sheet(0).parse(headers: true).drop(1)
@@ -149,7 +151,7 @@ RSpec.describe ExportHelper, type: :helper do
       @zip.each do |yml|
         content = nil
         yml.get_input_stream { |io| content = io.read }
-        expect { YAML.parse(content) }.to_not raise_error
+        expect { YAML.parse(content) }.not_to raise_error
       end
     end
 

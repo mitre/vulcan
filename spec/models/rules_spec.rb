@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Review, type: :model do
-  before :each do
+  before do
     srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
     srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
@@ -159,8 +159,8 @@ RSpec.describe Review, type: :model do
         new_rule_attributes.each do |attribute, value|
           expect(value).to eq(original_rule_attributes[attribute])
         end
-        expect(new_rule.review_requestor_id).to eq(nil)
-        expect(new_rule.locked).to eq(false)
+        expect(new_rule.review_requestor_id).to be_nil
+        expect(new_rule.locked).to be(false)
 
         rejectable_attrs = %w[id base_rule_id updated_at created_at]
         # Expect all check fields on the rule except id, rule_id, updated_at, created_at to be the same
@@ -212,19 +212,19 @@ RSpec.describe Review, type: :model do
 
   context 'custom validations' do
     it 'properly validates cannot_be_locked_and_under_review' do
-      expect(@p1r1.valid?).to eq(true)
+      expect(@p1r1.valid?).to be(true)
 
       @p1r1.review_requestor_id = @p_admin.id
       @p1r1.locked = false
-      expect(@p1r1.save).to eq(true)
+      expect(@p1r1.save).to be(true)
 
       @p1r1.review_requestor_id = nil
       @p1r1.locked = true
-      expect(@p1r1.save).to eq(true)
+      expect(@p1r1.save).to be(true)
 
       @p1r1.review_requestor_id = @p_admin.id
       @p1r1.locked = true
-      expect(@p1r1.save).to eq(false)
+      expect(@p1r1.save).to be(false)
       expect(@p1r1.errors[:base]).to include('Control cannot be under review and locked at the same time.')
     end
 
@@ -240,25 +240,25 @@ RSpec.describe Review, type: :model do
       @p1r1.reload
       @p1r1.destroy
       expect(@p1r1.errors[:base]).to include('Control is locked and cannot be destroyed')
-      expect(Rule.find_by(id: @p1r1.id)).to_not eq(nil)
+      expect(Rule.find_by(id: @p1r1.id)).not_to be_nil
     end
 
     it 'properly validates review_fields_cannot_change_with_other_fields' do
       @p1r1.review_requestor_id = @p_admin.id
-      expect(@p1r1.valid?).to eq(true)
+      expect(@p1r1.valid?).to be(true)
       @p1r1.reload
 
       @p1r1.locked = true
-      expect(@p1r1.valid?).to eq(true)
+      expect(@p1r1.valid?).to be(true)
       @p1r1.reload
 
       @p1r1.status_justification = '...'
-      expect(@p1r1.valid?).to eq(true)
+      expect(@p1r1.valid?).to be(true)
       @p1r1.reload
 
       @p1r1.review_requestor_id = @p_admin.id
       @p1r1.status_justification = '...'
-      expect(@p1r1.valid?).to eq(false)
+      expect(@p1r1.valid?).to be(false)
       expect(@p1r1.errors[:base]).to include(
         'Cannot update review-related attributes with other non-review-related attributes'
       )
@@ -267,7 +267,7 @@ RSpec.describe Review, type: :model do
   end
 
   context 'rule with multiple ident' do
-    it 'should have a unique string list of cci sorted in ascending order' do
+    it 'has a unique string list of cci sorted in ascending order' do
       @p1r1.ident = 'CCI-000068, CCI-000054, CCI-000054'
       @p1r1.save!
       expect(@p1r1.ident).to eq('CCI-000054, CCI-000068')

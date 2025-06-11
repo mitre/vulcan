@@ -18,7 +18,7 @@ RSpec.describe ProjectAccessRequestsController, type: :controller do
     it 'creates a new ProjectAccessRequest' do
       expect do
         post :create, params: { project_id: project.id }
-      end.to change { ProjectAccessRequest.count }.by(1)
+      end.to change(ProjectAccessRequest, :count).by(1)
     end
 
     it 'redirects to the root/projects path' do
@@ -33,7 +33,7 @@ RSpec.describe ProjectAccessRequestsController, type: :controller do
     it 'destroys the requested ProjectAccessRequest' do
       expect do
         delete :destroy, params: { project_id: project.id, id: access_request.id }
-      end.to change { ProjectAccessRequest.count }.by(-1)
+      end.to change(ProjectAccessRequest, :count).by(-1)
     end
 
     it 'redirects to the fallback location or projects path' do

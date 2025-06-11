@@ -30,25 +30,66 @@ class User < ApplicationRecord
   end
 
   def self.from_omniauth(auth)
-    # Try multiple sources for email, including LDAP-specific attributes
-    email = auth.info.email ||
-            auth.extra.raw_info.acct ||
-            (auth.provider == 'ldap' && auth.extra.raw_info.respond_to?(:mail) ? auth.extra.raw_info.mail : nil) ||
-            (auth.provider == 'ldap' && auth.extra.raw_info.respond_to?(:[]) ? auth.extra.raw_info['mail'] : nil)
+    # Extract and validate email from multiple sources
+    email = extract_email_from_auth(auth)
 
-    # Handle case where LDAP returns email as an array
-    email = email.first if email.is_a?(Array)
-
-    # Log what we found for debugging
-    Rails.logger.debug { "Attempting to find email from OmniAuth - provider: #{auth.provider}, found: #{email}" }
-
-    # Email is required for user creation
+    # Validate extracted email
     if email.blank?
       Rails.logger.error "Cannot create user from OmniAuth: no email found in auth hash for provider: #{auth.provider}"
       raise ArgumentError, 'Email is required but was not found in the authentication response'
     end
 
-    user = find_or_initialize_by(email: email)
+    # Use transaction with retry logic to handle race conditions
+    retry_count = 0
+    begin
+      ActiveRecord::Base.transaction do
+        create_or_update_user_from_auth(email, auth)
+      end
+    rescue ActiveRecord::RecordNotUnique => e
+      # Handle race condition where multiple requests try to create the same user
+      retry_count += 1
+      if retry_count <= 2
+        Rails.logger.warn "Race condition detected for email #{email}, retrying (attempt #{retry_count})"
+        sleep(0.1 * retry_count) # Brief backoff
+        retry
+      else
+        Rails.logger.error "Failed to create user after #{retry_count} attempts: #{e.message}"
+        raise e
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to create/update user from OmniAuth: #{e.message}"
+    Rails.logger.debug e.backtrace.join("\n") if Rails.env.development?
+    raise
+  end
+
+  private_class_method def self.extract_email_from_auth(auth)
+    # Try multiple sources for email, including LDAP-specific attributes
+    email = auth.info.email ||
+            (auth.extra&.raw_info.respond_to?(:acct) ? auth.extra.raw_info.acct : nil) ||
+            (auth.provider == 'ldap' && auth.extra&.raw_info.respond_to?(:mail) ? auth.extra.raw_info.mail : nil) ||
+            (auth.provider == 'ldap' && auth.extra&.raw_info.respond_to?(:[]) ? auth.extra.raw_info['mail'] : nil)
+
+    # Handle case where LDAP returns email as an array - find first valid email
+    email = email.compact_blank.first if email.is_a?(Array)
+
+    # Log what we found for debugging
+    Rails.logger.debug { "Attempting to find email from OmniAuth - provider: #{auth.provider}, found: #{email}" }
+
+    email
+  end
+
+  private_class_method def self.create_or_update_user_from_auth(email, auth)
+    # Use downcase to ensure case-insensitive lookup consistent with Devise configuration
+    # This prevents "Email has already been taken" errors when users login with different email casing
+    user = find_or_initialize_by(email: email.downcase)
+
+    # Log provider switching for security auditing
+    if user.persisted? && user.provider != auth.provider
+      Rails.logger.warn "User #{user.email} switching authentication provider " \
+                        "from '#{user.provider}' to '#{auth.provider}'"
+      Rails.logger.info "Previous UID: #{user.uid}, New UID: #{auth.uid}"
+    end
 
     if user.new_record?
       Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{auth.provider}"
@@ -62,21 +103,18 @@ class User < ApplicationRecord
     user.uid = auth.uid
 
     # Only update name if it's blank (preserve existing names)
-    user.name = auth.info.name || "#{auth.provider} user" if user.name.blank?
+    user.name = auth.info.name.presence || "#{auth.provider} user" if user.name.blank?
 
     # Only set password and skip confirmation for new users
     if user.new_record?
-      user.password = Devise.friendly_token[0, 50]
+      # Use full-length secure token for better entropy
+      user.password = Devise.friendly_token
       user.skip_confirmation!
     end
 
     user.save!
     Rails.logger.info "User #{user.email} successfully authenticated via #{auth.provider}"
     user
-  rescue StandardError => e
-    Rails.logger.error "Failed to create/update user from OmniAuth: #{e.message}"
-    Rails.logger.debug e.backtrace.join("\n") if Rails.env.development?
-    raise
   end
 
   # Project permssions checking
@@ -102,7 +140,10 @@ class User < ApplicationRecord
   end
 
   def can_author_component?(component)
-    admin || (PROJECT_MEMBER_AUTHORS.include?(effective_permissions(component)) unless component.released)
+    return true if admin
+    return false if component.released
+
+    PROJECT_MEMBER_AUTHORS.include?(effective_permissions(component))
   end
 
   def can_review_component?(component)
