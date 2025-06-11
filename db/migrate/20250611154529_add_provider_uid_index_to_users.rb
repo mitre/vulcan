@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Add compound unique index on provider and uid to prevent duplicate provider/uid combinations
 class AddProviderUidIndexToUsers < ActiveRecord::Migration[6.1]
   def change
     # Add compound unique index on provider and uid to prevent duplicate provider/uid combinations

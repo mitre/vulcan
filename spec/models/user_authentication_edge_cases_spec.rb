@@ -38,7 +38,7 @@ RSpec.describe User, type: :model do
 
         expect(Rails.logger).to receive(:warn).with(/Race condition detected/).at_least(:once)
         expect(Rails.logger).to receive(:error).with(/Failed to create user after \d+ attempts/)
-        expect(Rails.logger).to receive(:error).with(/Failed to create\/update user from OmniAuth/)
+        expect(Rails.logger).to receive(:error).with(%r{Failed to create/update user from OmniAuth})
 
         expect { User.from_omniauth(auth) }.to raise_error(ActiveRecord::RecordNotUnique)
       end
@@ -159,7 +159,7 @@ RSpec.describe User, type: :model do
 
       it 'falls back to acct when email is blank' do
         auth = base_auth
-        auth.info.email = nil  # Make sure it's nil, not empty string
+        auth.info.email = nil # Make sure it's nil, not empty string
         # Create an OpenStruct raw_info that responds to :acct
         auth.extra.raw_info = OpenStruct.new(acct: 'fallback@example.com')
 
@@ -258,7 +258,7 @@ RSpec.describe User, type: :model do
         auth.info.name = 'New Name From Provider'
 
         user = User.from_omniauth(auth)
-        expect(user.name).to eq('Original Name')  # Should preserve original
+        expect(user.name).to eq('Original Name') # Should preserve original
       end
 
       it 'sets name for new users from auth' do

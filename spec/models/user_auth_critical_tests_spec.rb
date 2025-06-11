@@ -132,7 +132,7 @@ RSpec.describe User, type: :model do
 
         user = User.from_omniauth(auth)
         expect(user.password).to be_present
-        expect(user.password.length).to be >= 20  # Devise.friendly_token is typically much longer
+        expect(user.password.length).to be >= 20 # Devise.friendly_token is typically much longer
       end
 
       it 'does not change password for existing users' do
