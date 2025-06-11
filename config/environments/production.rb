@@ -79,10 +79,43 @@ Rails.application.configure do
   # require 'syslog/logger'
   # config.logger = ActiveSupport::TaggedLogging.new(Syslog::Logger.new 'app-name')
 
-  if ENV['RAILS_LOG_TO_STDOUT'].present?
-    logger           = ActiveSupport::Logger.new($stdout)
-    logger.formatter = config.log_formatter
-    config.logger    = ActiveSupport::TaggedLogging.new(logger)
+  # Container-friendly logging: Always log to STDOUT in containerized environments
+  # This ensures logs are visible in Docker, ECS, Kubernetes, etc.
+  # rubocop:disable Layout/LineLength
+  if ENV['RAILS_LOG_TO_STDOUT'].present? || ENV['DOCKER_CONTAINER'].present? || ENV['ECS_CONTAINER_METADATA_URI'].present?
+    # rubocop:enable Layout/LineLength
+    logger = ActiveSupport::Logger.new($stdout)
+
+    # Enhanced formatter for container environments with structured logging
+    logger.formatter = if ENV['STRUCTURED_LOGGING'].present?
+                         # JSON structured logging for ECS/CloudWatch
+                         proc do |severity, timestamp, _progname, msg|
+                           log_entry = {
+                             timestamp: timestamp.utc.iso8601,
+                             level: severity,
+                             message: msg.is_a?(String) ? msg : msg.inspect,
+                             service: 'vulcan',
+                             environment: Rails.env
+                           }
+
+                           # Add request ID if available
+                           if defined?(Current) && Current.respond_to?(:request_id) && Current.request_id
+                             log_entry[:request_id] = Current.request_id
+                           end
+
+                           "#{log_entry.to_json}\n"
+                         end
+                       else
+                         # Human-readable format for development containers
+                         proc do |severity, timestamp, _progname, msg|
+                           "[#{timestamp.utc.iso8601}] #{severity}: #{msg}\n"
+                         end
+                       end
+
+    config.logger = ActiveSupport::TaggedLogging.new(logger)
+
+    # Ensure OIDC discovery logs are visible in production
+    config.logger.info 'Vulcan logging configured for container environment (STDOUT)'
   end
 
   # Do not dump schema after migrations.

@@ -38,24 +38,70 @@ This document lists all environment variables that can be used to configure Vulc
 |----------|-------------|---------|---------|
 | `VULCAN_ENABLE_USER_REGISTRATION` | Allow new users to register | `true` | `true` or `false` |
 
-### OIDC/OAuth (e.g., Okta)
+### OIDC/OAuth (e.g., Okta, Auth0, Keycloak)
+
+**New in v2.2+**: Vulcan supports automatic endpoint discovery, reducing configuration from 8+ variables to just 4 essential ones.
+
+#### Essential Configuration (Auto-Discovery Enabled)
+| Variable | Description | Required | Example |
+|----------|-------------|----------|---------|
+| `VULCAN_ENABLE_OIDC` | Enable OIDC authentication | ✅ | `true` |
+| `VULCAN_OIDC_ISSUER_URL` | OIDC issuer URL | ✅ | `https://dev-12345.okta.com` |
+| `VULCAN_OIDC_CLIENT_ID` | OIDC client ID | ✅ | `0oa1b2c3d4e5f6g7h8i9j` |
+| `VULCAN_OIDC_CLIENT_SECRET` | OIDC client secret | ✅ | `secret_key_here` |
+| `VULCAN_OIDC_REDIRECT_URI` | OIDC redirect URI | ✅ | `https://vulcan.example.com/users/auth/oidc/callback` |
+
+#### Optional Configuration
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `VULCAN_ENABLE_OIDC` | Enable OIDC authentication | `false` | `true` or `false` |
+| `VULCAN_OIDC_DISCOVERY` | Enable automatic endpoint discovery | `true` | `false` (to disable) |
 | `VULCAN_OIDC_PROVIDER_TITLE` | Display name for OIDC provider | `OIDC Provider` | `Okta` |
-| `VULCAN_OIDC_ISSUER_URL` | OIDC issuer URL | - | `https://dev-12345.okta.com` |
-| `VULCAN_OIDC_HOST` | OIDC provider hostname | - | `dev-12345.okta.com` |
-| `VULCAN_OIDC_CLIENT_ID` | OIDC client ID | - | `0oa1b2c3d4e5f6g7h8i9j` |
-| `VULCAN_OIDC_CLIENT_SECRET` | OIDC client secret | - | `secret_key_here` |
-| `VULCAN_OIDC_REDIRECT_URI` | OIDC redirect URI | - | `https://vulcan.example.com/users/auth/oidc/callback` |
-| `VULCAN_OIDC_AUTHORIZATION_URL` | OIDC authorization endpoint | - | `https://dev-12345.okta.com/oauth2/default/v1/authorize` |
-| `VULCAN_OIDC_TOKEN_URL` | OIDC token endpoint | - | `https://dev-12345.okta.com/oauth2/default/v1/token` |
-| `VULCAN_OIDC_USERINFO_URL` | OIDC userinfo endpoint | - | `https://dev-12345.okta.com/oauth2/default/v1/userinfo` |
-| `VULCAN_OIDC_JWKS_URI` | OIDC JWKS endpoint | - | `https://dev-12345.okta.com/oauth2/default/v1/keys` |
-| `VULCAN_OIDC_PORT` | OIDC provider port | `443` | `443` |
-| `VULCAN_OIDC_SCHEME` | OIDC provider scheme | `https` | `https` |
-| `VULCAN_OIDC_CLIENT_SIGNING_ALG` | OIDC signing algorithm | `RS256` | `RS256` |
 | `VULCAN_OIDC_PROMPT` | OIDC prompt parameter | - | `login` (forces re-authentication) |
+| `VULCAN_OIDC_CLIENT_SIGNING_ALG` | OIDC signing algorithm | `RS256` | `RS256` |
+
+#### Manual Configuration (Legacy/Fallback)
+*Only required when `VULCAN_OIDC_DISCOVERY=false` or as fallback endpoints*
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `VULCAN_OIDC_AUTHORIZATION_URL` | OIDC authorization endpoint | `https://dev-12345.okta.com/oauth2/default/v1/authorize` |
+| `VULCAN_OIDC_TOKEN_URL` | OIDC token endpoint | `https://dev-12345.okta.com/oauth2/default/v1/token` |
+| `VULCAN_OIDC_USERINFO_URL` | OIDC userinfo endpoint | `https://dev-12345.okta.com/oauth2/default/v1/userinfo` |
+| `VULCAN_OIDC_JWKS_URI` | OIDC JWKS endpoint | `https://dev-12345.okta.com/oauth2/default/v1/keys` |
+
+#### Deprecated Variables
+*These variables are no longer needed with auto-discovery enabled*
+
+| Variable | Replacement | Notes |
+|----------|-------------|-------|
+| `VULCAN_OIDC_HOST` | Use `VULCAN_OIDC_ISSUER_URL` | Automatically extracted from issuer URL |
+| `VULCAN_OIDC_PORT` | Use `VULCAN_OIDC_ISSUER_URL` | Automatically extracted from issuer URL |
+| `VULCAN_OIDC_SCHEME` | Use `VULCAN_OIDC_ISSUER_URL` | Automatically extracted from issuer URL |
+
+#### Migration Examples
+
+**Before (8+ variables)**:
+```bash
+VULCAN_ENABLE_OIDC=true
+VULCAN_OIDC_ISSUER_URL=https://dev-12345.okta.com
+VULCAN_OIDC_CLIENT_ID=your-client-id
+VULCAN_OIDC_CLIENT_SECRET=your-secret
+VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
+VULCAN_OIDC_AUTHORIZATION_URL=https://dev-12345.okta.com/oauth2/default/v1/authorize
+VULCAN_OIDC_TOKEN_URL=https://dev-12345.okta.com/oauth2/default/v1/token
+VULCAN_OIDC_USERINFO_URL=https://dev-12345.okta.com/oauth2/default/v1/userinfo
+VULCAN_OIDC_JWKS_URI=https://dev-12345.okta.com/oauth2/default/v1/keys
+```
+
+**After (4 variables)**:
+```bash
+VULCAN_ENABLE_OIDC=true
+VULCAN_OIDC_ISSUER_URL=https://dev-12345.okta.com
+VULCAN_OIDC_CLIENT_ID=your-client-id
+VULCAN_OIDC_CLIENT_SECRET=your-secret
+VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
+# Endpoints automatically discovered from /.well-known/openid-configuration
+```
 
 ### LDAP
 | Variable | Description | Default | Example |
@@ -130,6 +176,27 @@ When using Docker, you can set environment variables in:
 - `.env-prod` file referenced in docker-compose.yml
 - Container runtime with `-e` flags
 
+**For Container Deployments** (Docker, ECS, Kubernetes):
+```yaml
+# docker-compose.yml
+environment:
+  RAILS_LOG_TO_STDOUT: "true"
+  STRUCTURED_LOGGING: "true"  # Enable JSON logging for CloudWatch/monitoring
+  # Other environment variables...
+```
+
+**AWS ECS Example**:
+```json
+{
+  "environment": [
+    {"name": "RAILS_LOG_TO_STDOUT", "value": "true"},
+    {"name": "STRUCTURED_LOGGING", "value": "true"}
+  ]
+}
+```
+
+This ensures OIDC auto-discovery events and all application logs are visible in your container orchestration platform's logging system.
+
 ## Rails/Framework Settings
 
 | Variable | Description | Default | Example |
@@ -138,6 +205,21 @@ When using Docker, you can set environment variables in:
 | `RAILS_LOG_TO_STDOUT` | Log to stdout instead of files | - | `true` |
 | `RAILS_SERVE_STATIC_FILES` | Serve static files in production | - | `true` |
 | `FORCE_SSL` | Force SSL connections | - | `true` |
+
+## Container Logging (Production)
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `RAILS_LOG_TO_STDOUT` | Enable container-friendly logging | `false` | `true` |
+| `STRUCTURED_LOGGING` | Enable JSON structured logging for CloudWatch/monitoring | `false` | `true` |
+| `DOCKER_CONTAINER` | Indicates running in Docker container (auto-detected) | - | `true` |
+| `ECS_CONTAINER_METADATA_URI` | AWS ECS metadata URI (auto-detected) | - | Auto-set by ECS |
+
+**Container Logging Features**:
+- **Automatic Detection**: Vulcan automatically detects container environments (Docker, ECS, Kubernetes)
+- **JSON Logging**: When `STRUCTURED_LOGGING=true`, logs are output in JSON format for easy parsing by CloudWatch, Splunk, etc.
+- **OIDC Discovery Visibility**: All OIDC auto-discovery events are logged with detailed context for production debugging
+- **Request Tracking**: Includes request IDs in structured logs when available
 
 ## GitHub OAuth (Optional)
 

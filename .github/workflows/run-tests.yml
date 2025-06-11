@@ -41,7 +41,7 @@ jobs:
         uses: ruby/setup-ruby@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: '16'
       - name: Cache ruby gems
         uses: actions/cache@v4
         with:
@@ -65,6 +65,16 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
           RAILS_ENV: test
+          # OIDC Testing Configuration - Uses real Okta secrets for full integration testing
+          VULCAN_ENABLE_OIDC: true
+          VULCAN_OIDC_ISSUER_URL: ${{ secrets.OKTA_TEST_ISSUER }}
+          VULCAN_OIDC_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
+          VULCAN_OIDC_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
+          VULCAN_OIDC_REDIRECT_URI: http://localhost:3000/users/auth/oidc/callback
+          # Integration test configuration (uses same secrets for consistency)
+          OKTA_TEST_ISSUER: ${{ secrets.OKTA_TEST_ISSUER }}
+          OKTA_TEST_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
+          OKTA_TEST_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
           # Options below this line are so we can test LDAP
           VULCAN_ENABLE_LDAP: true
           VULCAN_LDAP_HOST: localhost
@@ -76,6 +86,7 @@ jobs:
         run: |
           bundle exec rails db:create
           bundle exec rails db:schema:load
+          # Run full test suite including OIDC discovery and startup validation
           bundle exec rails spec
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
