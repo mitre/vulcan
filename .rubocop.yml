@@ -43,6 +43,7 @@ Rails/HasAndBelongsToMany:
 Style/Documentation:
   Exclude:
     - db/migrate/*
+    - spec/**/*
 
 # RSpec configuration - more lenient for existing codebase
 RSpec/ExampleLength:
