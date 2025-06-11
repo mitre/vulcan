@@ -117,8 +117,6 @@ class User < ApplicationRecord
     user
   end
 
-  private
-
   # Project permssions checking
   def can_view_project?(project)
     admin || project.memberships.where(user_id: id, role: PROJECT_MEMBER_VIEWERS).any?
