@@ -86,6 +86,35 @@ For a complete list of environment variables that can be used to configure Vulca
 
 Documentation on how to configure additional Vulcan settings such as SMTP, LDAP, etc, are available on the [Vulcan website](https://vulcan.mitre.org/docs/config.html).
 
+### Production Configuration
+
+The production Docker image includes sensible defaults for containerized deployments:
+
+```bash
+# Environment setup
+RAILS_ENV=production
+NODE_ENV=production
+RACK_ENV=production
+
+# Logging configuration
+RAILS_LOG_TO_STDOUT=true
+RAILS_LOG_LEVEL=info
+
+# Asset serving for containerized deployments
+RAILS_SERVE_STATIC_FILES=true
+
+# Performance and concurrency settings
+RAILS_MAX_THREADS=5
+WEB_CONCURRENCY=2
+
+# Memory optimization
+MALLOC_ARENA_MAX=2
+```
+
+These defaults ensure proper logging for container orchestration platforms (Docker, Kubernetes) and log aggregation systems (ELK stack, Splunk, etc.). The performance settings provide a good balance for most production workloads while remaining conservative on resource usage.
+
+All settings can be overridden at runtime by setting environment variables in your deployment configuration.
+
 ### OKTA/OIDC Authentication
 
 Vulcan supports authentication via OKTA or any OpenID Connect (OIDC) provider. To enable OKTA authentication:
