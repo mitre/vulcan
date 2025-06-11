@@ -40,6 +40,9 @@ Rails/FilePath:
   EnforcedStyle: "arguments"
 Rails/HasAndBelongsToMany:
   Enabled: false
+Style/Documentation:
+  Exclude:
+    - db/migrate/*
 
 # RSpec configuration - more lenient for existing codebase
 RSpec/ExampleLength:
@@ -71,3 +74,9 @@ RSpec/StubbedMock:
   Enabled: false
 RSpec/DescribeClass:
   Enabled: false
+Style/OpenStructUse:
+  Exclude:
+    - spec/**/*
+Rails/SkipsModelValidations:
+  Exclude:
+    - spec/**/*

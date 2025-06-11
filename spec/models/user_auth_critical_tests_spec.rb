@@ -187,8 +187,11 @@ RSpec.describe User, type: :model do
       it 'prioritizes auth.info.email over other sources' do
         auth = mock_omniauth_response(build(:user), provider: 'ldap')
         auth.info.email = 'primary@example.com'
-        auth.extra.raw_info.acct = 'secondary@example.com'
-        auth.extra.raw_info.mail = 'tertiary@example.com'
+        # Create an OpenStruct raw_info that responds to multiple fields
+        auth.extra.raw_info = OpenStruct.new(
+          acct: 'secondary@example.com',
+          mail: 'tertiary@example.com'
+        )
 
         user = User.from_omniauth(auth)
         expect(user.email).to eq('primary@example.com')
