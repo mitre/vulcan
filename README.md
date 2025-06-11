@@ -117,36 +117,134 @@ All settings can be overridden at runtime by setting environment variables in yo
 
 ### OKTA/OIDC Authentication
 
-Vulcan supports authentication via OKTA or any OpenID Connect (OIDC) provider. To enable OKTA authentication:
+Vulcan supports authentication via OKTA or any OpenID Connect (OIDC) provider with **automatic endpoint discovery** to simplify configuration.
 
-1. **Create an OKTA Application**:
-   - Log into your OKTA admin dashboard
-   - Create a new "Web" application
-   - Set the Sign-in redirect URI to: `http://your-domain/users/auth/oidc/callback`
-   - Set the Sign-out redirect URI to: `http://your-domain`
+#### Quick Setup (Recommended)
+
+**New in v2.2+**: Vulcan automatically discovers OIDC endpoints using the provider's `.well-known/openid-configuration` endpoint, reducing configuration to just 4 essential variables:
+
+1. **Create an OIDC Application** in your provider:
+   - **Okta**: Create a new "Web" application in your Okta admin dashboard
+   - **Auth0**: Create a new "Regular Web Application" 
+   - **Keycloak**: Create a new "openid-connect" client
+   - **Azure AD**: Register a new application with "Web" platform
+   - Set the Sign-in redirect URI to: `https://your-domain/users/auth/oidc/callback`
+   - Set the Sign-out redirect URI to: `https://your-domain`
    - Note your Client ID and Client Secret
 
 2. **Configure Vulcan Environment Variables**:
    ```bash
-   # Enable OIDC authentication
+   # Essential configuration (only 4 variables needed!)
    VULCAN_ENABLE_OIDC=true
+   VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com  # Your provider's issuer URL
+   VULCAN_OIDC_CLIENT_ID=your-client-id
+   VULCAN_OIDC_CLIENT_SECRET=your-client-secret
+   VULCAN_OIDC_REDIRECT_URI=https://your-domain/users/auth/oidc/callback
 
-   # OKTA configuration
-   VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com
-   VULCAN_OIDC_CLIENT_ID=your-client-id-from-okta
-   VULCAN_OIDC_CLIENT_SECRET=your-client-secret-from-okta
-   VULCAN_OIDC_REDIRECT_URI=http://your-domain/users/auth/oidc/callback
-
-   # Optional: Force re-authentication on each login
-   VULCAN_OIDC_PROMPT=login
-
-   # Optional: Custom provider display name (defaults to "OIDC")
+   # Optional: Custom provider display name
    VULCAN_OIDC_PROVIDER_TITLE=Okta
    ```
 
 3. **Restart Vulcan** to apply the configuration changes
 
-Users will now see a "Login with Okta" button on the sign-in page. First-time users will have accounts automatically created upon successful OKTA authentication.
+#### Provider Examples
+
+**Okta**:
+```bash
+VULCAN_OIDC_ISSUER_URL=https://dev-12345.okta.com
+# Vulcan auto-discovers: authorization, token, userinfo, and logout endpoints
+```
+
+**Auth0**:
+```bash
+VULCAN_OIDC_ISSUER_URL=https://your-domain.auth0.com
+# Vulcan auto-discovers: authorization, token, userinfo, and logout endpoints
+```
+
+**Keycloak**:
+```bash
+VULCAN_OIDC_ISSUER_URL=https://keycloak.example.com/realms/your-realm
+# Vulcan auto-discovers: authorization, token, userinfo, and logout endpoints
+```
+
+#### Manual Configuration (Legacy)
+
+If you need to disable auto-discovery or override specific endpoints:
+
+```bash
+# Disable auto-discovery
+VULCAN_OIDC_DISCOVERY=false
+
+# Manual endpoint configuration (when discovery is disabled)
+VULCAN_OIDC_AUTHORIZATION_URL=https://provider.com/oauth2/v1/authorize
+VULCAN_OIDC_TOKEN_URL=https://provider.com/oauth2/v1/token
+VULCAN_OIDC_USERINFO_URL=https://provider.com/oauth2/v1/userinfo
+VULCAN_OIDC_JWKS_URI=https://provider.com/oauth2/v1/keys
+```
+
+#### Features
+
+- **🔄 Auto-Discovery**: Automatically configures endpoints from provider metadata
+- **🔒 Security**: HTTPS enforcement, issuer validation, and secure fallbacks
+- **⚡ Performance**: Session caching with 1-hour TTL to minimize discovery calls
+- **🛡️ Resilience**: Graceful fallback to manual configuration if discovery fails
+- **📊 Monitoring**: Comprehensive logging for troubleshooting and monitoring
+
+Users will see a "Login with [Provider]" button on the sign-in page. First-time users will have accounts automatically created upon successful authentication.
+
+### Container Deployment & Logging
+
+When deploying Vulcan in containerized environments (Docker, AWS ECS, Kubernetes), you can enable enhanced logging for better visibility and monitoring:
+
+#### Container Logging Configuration
+
+```bash
+# Enable container-friendly logging
+RAILS_LOG_TO_STDOUT=true
+
+# Enable JSON structured logging for CloudWatch/monitoring systems
+STRUCTURED_LOGGING=true
+```
+
+#### Features
+
+- **🐳 Auto-Detection**: Automatically detects Docker, ECS, and Kubernetes environments
+- **📋 JSON Logs**: Structured JSON output for CloudWatch, Splunk, and other log aggregators
+- **🔍 OIDC Visibility**: All OIDC auto-discovery events are logged with detailed context
+- **🏷️ Request Tracking**: Includes request IDs for tracing user sessions
+
+#### Container Examples
+
+**Docker Compose**:
+```yaml
+services:
+  vulcan:
+    environment:
+      RAILS_LOG_TO_STDOUT: "true"
+      STRUCTURED_LOGGING: "true"
+      # Other environment variables...
+```
+
+**AWS ECS Task Definition**:
+```json
+{
+  "environment": [
+    {"name": "RAILS_LOG_TO_STDOUT", "value": "true"},
+    {"name": "STRUCTURED_LOGGING", "value": "true"}
+  ]
+}
+```
+
+**Kubernetes Deployment**:
+```yaml
+env:
+  - name: RAILS_LOG_TO_STDOUT
+    value: "true"
+  - name: STRUCTURED_LOGGING
+    value: "true"
+```
+
+This ensures all application logs, including OIDC authentication events, are visible in your container orchestration platform's logging system.
 
 ## Tasks
 

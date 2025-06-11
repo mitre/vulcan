@@ -45,6 +45,7 @@ defaults: &defaults
         base: <%= ENV['VULCAN_LDAP_BASE'] %>
   oidc:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_OIDC']) || false %>
+    discovery: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_DISCOVERY']) || true %>
     strategy: :openid_connect
     title: <%= ENV['VULCAN_OIDC_PROVIDER_TITLE'] || 'OIDC Provider' %>
     args:
@@ -55,6 +56,7 @@ defaults: &defaults
       - :profile
       uid_field: 'sub'
       response_type: :code
+      discovery: true
       issuer: <%= ENV['VULCAN_OIDC_ISSUER_URL'] %>
       client_auth_method: :secret
       client_signing_alg: <%= ENV['VULCAN_OIDC_CLIENT_SIGNING_ALG']&.to_sym || :RS256 %>
@@ -67,6 +69,7 @@ defaults: &defaults
         identifier: <%= ENV['VULCAN_OIDC_CLIENT_ID'] %>
         secret: <%= ENV['VULCAN_OIDC_CLIENT_SECRET'] %>
         redirect_uri: <%= ENV['VULCAN_OIDC_REDIRECT_URI'] %>
+        # Fallback/override endpoints (only used if discovery fails or disabled)
         authorization_endpoint: <%= ENV['VULCAN_OIDC_AUTHORIZATION_URL'] %>
         token_endpoint: <%= ENV['VULCAN_OIDC_TOKEN_URL'] %>
         userinfo_endpoint: <%= ENV['VULCAN_OIDC_USERINFO_URL'] %>

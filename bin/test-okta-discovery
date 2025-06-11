@@ -1,0 +1,149 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Quick Okta Discovery Test Script
+# Tests your Okta configuration without running the full test suite
+
+require 'net/http'
+require 'json'
+require 'uri'
+
+# Configuration
+OKTA_ISSUER = ENV['OKTA_TEST_ISSUER'] || ARGV[0]
+
+if OKTA_ISSUER.blank?
+  puts '❌ Please provide your Okta issuer URL:'
+  puts '   ./bin/test-okta-discovery https://dev-12345.okta.com'
+  puts '   OR set OKTA_TEST_ISSUER environment variable'
+  exit 1
+end
+
+puts "🔍 Testing Okta Discovery for: #{OKTA_ISSUER}"
+puts '=' * 60
+
+discovery_url = "#{OKTA_ISSUER.chomp('/')}/.well-known/openid-configuration"
+puts "Discovery URL: #{discovery_url}"
+
+begin
+  # Test discovery endpoint
+  uri = URI(discovery_url)
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+  http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+  http.open_timeout = 10
+  http.read_timeout = 15
+
+  request = Net::HTTP::Get.new(uri)
+  request['User-Agent'] = 'Vulcan-Discovery-Test/1.0'
+  request['Accept'] = 'application/json'
+
+  puts "\n📡 Making discovery request..."
+  response = http.request(request)
+
+  if response.is_a?(Net::HTTPSuccess)
+    puts "✅ HTTP #{response.code} - Discovery endpoint accessible"
+
+    # Parse discovery document
+    discovery = JSON.parse(response.body)
+
+    # Validate issuer
+    actual_issuer = discovery['issuer']
+    if actual_issuer == OKTA_ISSUER
+      puts '✅ Issuer validation passed'
+    else
+      puts '⚠️  Issuer mismatch:'
+      puts "    Expected: #{OKTA_ISSUER}"
+      puts "    Actual:   #{actual_issuer}"
+    end
+
+    # Check required OIDC fields
+    required_fields = %w[
+      issuer authorization_endpoint response_types_supported
+      subject_types_supported id_token_signing_alg_values_supported
+    ]
+
+    puts "\n📋 OIDC Core Fields:"
+    required_fields.each do |field|
+      if discovery[field].present?
+        puts "  ✅ #{field}"
+      else
+        puts "  ❌ #{field} - MISSING"
+      end
+    end
+
+    # Check important endpoints
+    endpoints = {
+      'authorization_endpoint' => 'Authorization',
+      'token_endpoint' => 'Token',
+      'userinfo_endpoint' => 'Userinfo',
+      'jwks_uri' => 'JWKS',
+      'end_session_endpoint' => 'Logout',
+      'revocation_endpoint' => 'Revocation',
+      'introspection_endpoint' => 'Introspection'
+    }
+
+    puts "\n🔗 Available Endpoints:"
+    endpoints.each do |field, name|
+      if discovery[field].present?
+        puts "  ✅ #{name}: #{discovery[field]}"
+      else
+        puts "  ⚠️  #{name}: Not available"
+      end
+    end
+
+    # Check supported features
+    puts "\n🔧 Supported Features:"
+
+    response_types = discovery['response_types_supported'] || []
+    if response_types.include?('code')
+      puts '  ✅ Authorization Code Flow'
+    else
+      puts '  ❌ Authorization Code Flow not supported'
+    end
+
+    signing_algs = discovery['id_token_signing_alg_values_supported'] || []
+    if signing_algs.include?('RS256')
+      puts '  ✅ RS256 Signing'
+    else
+      puts '  ⚠️  RS256 Signing not listed'
+    end
+
+    subject_types = discovery['subject_types_supported'] || []
+    if subject_types.include?('public')
+      puts '  ✅ Public Subject Type'
+    else
+      puts '  ⚠️  Public Subject Type not listed'
+    end
+
+    # Summary
+    endpoint_count = endpoints.count { |field, _| discovery[field].present? }
+    puts "\n📊 Summary:"
+    puts "  📄 Document size: #{response.body.length} bytes"
+    puts "  🔗 Endpoints discovered: #{endpoint_count}/#{endpoints.count}"
+    puts "  🏷️  Response types: #{response_types.join(', ')}" if response_types.any?
+    puts "  🔐 Signing algorithms: #{signing_algs.join(', ')}" if signing_algs.any?
+
+    puts "\n🎉 Okta Discovery Test: SUCCESS"
+    puts "\nTo run full integration tests:"
+    puts "  export OKTA_TEST_ISSUER=#{OKTA_ISSUER}"
+    puts '  bundle exec rspec spec/integration/okta_discovery_integration_spec.rb'
+
+  else
+    puts "❌ HTTP #{response.code} #{response.message}"
+    puts 'Discovery endpoint not accessible'
+    exit 1
+  end
+rescue JSON::ParserError => e
+  puts "❌ Invalid JSON response: #{e.message}"
+  exit 1
+rescue Net::TimeoutError, Net::OpenTimeout, Net::ReadTimeout
+  puts '❌ Request timeout - check network connectivity'
+  exit 1
+rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH => e
+  puts "❌ Network error: #{e.message}"
+  exit 1
+rescue StandardError => e
+  puts "❌ Unexpected error: #{e.message}"
+  puts e.backtrace.first(3)
+  exit 1
+end

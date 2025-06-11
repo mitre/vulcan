@@ -5,6 +5,7 @@ require 'json'
 
 # Custom sessions controller to handle OIDC logout
 class SessionsController < Devise::SessionsController
+  include OidcDiscoveryHelper
   def destroy
     id_token = session[:id_token]
 
@@ -56,44 +57,12 @@ class SessionsController < Devise::SessionsController
   end
 
   def fetch_oidc_logout_endpoint
-    # Try to get from session cache first
-    if session[:oidc_logout_endpoint].present?
-      Rails.logger.debug { "Using cached OIDC logout endpoint: #{session[:oidc_logout_endpoint]}" }
-      return session[:oidc_logout_endpoint]
-    end
+    # Use generalized discovery helper
+    fetch_oidc_endpoint('end_session_endpoint', okta_fallback_logout_url)
+  end
 
+  def okta_fallback_logout_url
     issuer_url = Settings.oidc.args.issuer || ENV['VULCAN_OIDC_ISSUER_URL']
-    discovery_url = "#{issuer_url.to_s.chomp('/')}/.well-known/openid-configuration"
-
-    Rails.logger.info "Fetching OIDC discovery document from: #{discovery_url}"
-
-    begin
-      # Fetch the discovery document
-      response = Net::HTTP.get_response(URI(discovery_url))
-
-      if response.is_a?(Net::HTTPSuccess)
-        discovery = JSON.parse(response.body)
-        logout_endpoint = discovery['end_session_endpoint']
-
-        if logout_endpoint.present?
-          Rails.logger.info "Found OIDC logout endpoint: #{logout_endpoint}"
-          # Cache in session to avoid repeated fetches
-          session[:oidc_logout_endpoint] = logout_endpoint
-          logout_endpoint
-        else
-          Rails.logger.warn 'No end_session_endpoint in discovery document, using OKTA fallback'
-          "#{issuer_url.to_s.chomp('/')}/oauth2/v1/logout"
-        end
-      else
-        # Fall back to OKTA endpoint if discovery fails
-        Rails.logger.warn "Failed to fetch OIDC discovery document: HTTP #{response.code} - #{response.message}"
-        "#{issuer_url.to_s.chomp('/')}/oauth2/v1/logout"
-      end
-    rescue StandardError => e
-      # Fall back to OKTA endpoint on any error
-      Rails.logger.error "Error fetching OIDC discovery: #{e.class} - #{e.message}"
-      Rails.logger.debug { e.backtrace.join("\n") } if Rails.env.development?
-      "#{issuer_url.to_s.chomp('/')}/oauth2/v1/logout"
-    end
+    "#{issuer_url.to_s.chomp('/')}/oauth2/v1/logout"
   end
 end

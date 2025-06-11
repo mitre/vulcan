@@ -93,6 +93,7 @@ group :test do
   gem 'rubocop-rails'
   gem 'rubocop-rspec'
   gem 'simplecov', require: false
+  gem 'webmock'
 end
 
 group :development, :test do

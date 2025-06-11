@@ -10,6 +10,7 @@ Settings.ldap['enabled'] = false if Settings.ldap['enabled'].nil?
 
 Settings['oidc'] ||= Settingslogic.new({})
 Settings.oidc['enabled'] = false if Settings.oidc['enabled'].nil?
+Settings.oidc['discovery'] = true if Settings.oidc['discovery'].nil?
 
 Settings['local_login'] ||= Settingslogic.new({})
 Settings.local_login['enabled'] = false if Settings.local_login['enabled'].nil?
