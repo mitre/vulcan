@@ -133,8 +133,6 @@ PostCheckout:
   YarnInstall:
     enabled: true
     description: 'Install yarn dependencies'
-    required_executable: 'yarn'
-    command: ['yarn', 'install']
 
   ActiveRecordMigrations:
     enabled: true
@@ -147,8 +145,6 @@ PostMerge:
 
   YarnInstall:
     enabled: true
-    required_executable: 'yarn'
-    command: ['yarn', 'install']
 
   ActiveRecordMigrations:
     enabled: true
