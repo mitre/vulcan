@@ -48,7 +48,9 @@ class User < ApplicationRecord
       raise ArgumentError, 'Email is required but was not found in the authentication response'
     end
 
-    user = find_or_initialize_by(email: email)
+    # Use downcase to ensure case-insensitive lookup consistent with Devise configuration
+    # This prevents "Email has already been taken" errors when users login with different email casing
+    user = find_or_initialize_by(email: email.downcase)
 
     if user.new_record?
       Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{auth.provider}"
