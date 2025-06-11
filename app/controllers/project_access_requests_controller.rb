@@ -21,6 +21,14 @@ class ProjectAccessRequestsController < ApplicationController
 
   def destroy
     @access_request = ProjectAccessRequest.find(params[:id])
+
+    # Authorization check: Users can only delete their own requests or must be project admin
+    unless @access_request.user == current_user || current_user.can_admin_project?(@access_request.project)
+      flash.alert = 'You are not authorized to delete this access request.'
+      redirect_back(fallback_location: root_path)
+      return
+    end
+
     if @access_request.destroy
       if current_user.can_admin_project?(@access_request.project)
         if Settings.smtp.enabled

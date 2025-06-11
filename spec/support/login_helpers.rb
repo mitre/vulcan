@@ -13,18 +13,34 @@ module LoginHelpers
     allow(Settings).to receive_messages(to_settings(messages))
   end
 
-  def mock_omniauth_response(user)
+  def mock_omniauth_response(user, provider: 'ldap')
     # This sets up an object that is similar to what LDAP and GitHub return to
     # the User.from_omniauth method
     # rubocop:disable Style/OpenStructUse
-    JSON.parse({
+    auth_hash = {
       info: {
         name: user.name,
         email: user.email
       },
-      provider: 'ldap',
-      uid: FFaker::Random.rand(0...1_000_000)
-    }.to_json, object_class: OpenStruct)
+      provider: provider,
+      uid: FFaker::Random.rand(0...1_000_000).to_s,
+      extra: {
+        raw_info: {}
+      },
+      credentials: {}
+    }
+
+    # Add provider-specific structure
+    case provider
+    when 'ldap'
+      auth_hash[:extra][:raw_info] = {
+        mail: user.email
+      }
+    when 'oidc'
+      auth_hash[:credentials][:id_token] = 'mock_id_token'
+    end
+
+    JSON.parse(auth_hash.to_json, object_class: OpenStruct)
     # rubocop:enable Style/OpenStructUse
   end
 

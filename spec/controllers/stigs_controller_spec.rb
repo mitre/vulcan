@@ -9,6 +9,7 @@ RSpec.describe StigsController, type: :controller do
   let(:stig) { create(:stig) }
   let(:user) { create(:user) }
   let(:user2) { create(:user) }
+
   before do
     user.admin = true
     user.save!
@@ -21,7 +22,7 @@ RSpec.describe StigsController, type: :controller do
       sign_in user
       expect do
         post :create, params: { file: stig.xml }
-      end.to change { Stig.count }.by(1)
+      end.to change(Stig, :count).by(1)
       expect(response.status).to be(302)
     end
   end
@@ -36,7 +37,7 @@ RSpec.describe StigsController, type: :controller do
 
       expect do
         delete :destroy, params: { id: stig2.id }
-      end.to change { Stig.count }.by(-1)
+      end.to change(Stig, :count).by(-1)
     end
 
     it 'does not allow non admin to destroy the stig' do
@@ -48,7 +49,7 @@ RSpec.describe StigsController, type: :controller do
 
       expect do
         delete :destroy, params: { id: stig2.id }
-      end.to change { Stig.count }.by(0)
+      end.not_to change(Stig, :count)
     end
   end
 end

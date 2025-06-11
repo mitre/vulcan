@@ -6,7 +6,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
   include LoginHelpers
   include Users
 
-  before(:each) do
+  before do
     @request.env['devise.mapping'] = Devise.mappings[:user]
   end
 
@@ -97,6 +97,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       stub_base_settings(contact_email: 'contact_email@test.com')
       stub_local_login_setting(email_confirmation: true)
     end
+
     it 'checks if contact email is empty' do
       expect do
         post :create, params: {
@@ -118,9 +119,11 @@ RSpec.describe Users::RegistrationsController, type: :controller do
   context 'update user info' do
     let(:user2) { create(:user) }
     let(:user3) { build(:user) }
+
     before do
       sign_in user2
     end
+
     it 'checks if user is updated' do
       post :update, params: {
         user: {
@@ -148,9 +151,11 @@ RSpec.describe Users::RegistrationsController, type: :controller do
   context 'update user info without password' do
     let(:user2) { create(:user) }
     let(:user3) { build(:user) }
+
     before do
       sign_in user2
     end
+
     it 'makes sure can not update without password' do
       post :update, params: {
         user: {
@@ -161,15 +166,17 @@ RSpec.describe Users::RegistrationsController, type: :controller do
           current_password: ''
         }
       }
-      expect(user2.reload.name).to_not eq(user3.name)
+      expect(user2.reload.name).not_to eq(user3.name)
     end
   end
 
   context 'update ldap user info' do
     let(:user4) { create(:ldap_user) }
+
     before do
       sign_in user4
     end
+
     it 'user updates without password' do
       post :update, params: {
         user: {

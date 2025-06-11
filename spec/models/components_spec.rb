@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Component, type: :model do
-  before :each do
+  before do
     srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
     @srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
@@ -15,75 +15,75 @@ RSpec.describe Component, type: :model do
   end
 
   context 'component release' do
-    it 'should only allow release when all rules are locked' do
-      expect(@p1_c1.valid?).to eq(true)
+    it 'onlies allow release when all rules are locked' do
+      expect(@p1_c1.valid?).to be(true)
       @p1_c1.released = true
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
       expect(@p1_c1.errors[:base]).to include('Cannot release a component that contains rules that are not yet locked')
     end
 
-    it 'should only allow depending on a released component' do
+    it 'onlies allow depending on a released component' do
       p1_c2 = Component.new(project: @p1, version: 'Photon OS 3 V1R2', prefix: 'PHOS-03', based_on: @srg,
                             component_id: @p1_c1.id)
-      expect(p1_c2.valid?).to eq(false)
+      expect(p1_c2.valid?).to be(false)
       expect(p1_c2.errors[:base]).to include('Cannot overlay a component that has not been released')
 
       # release the component
       @p1_c1.rules.update(locked: true)
       @p1_c1.update(released: true)
       p1_c2.component.reload
-      expect(p1_c2.valid?).to eq(true)
+      expect(p1_c2.valid?).to be(true)
     end
 
-    it 'should block a component from becoming unreleased' do
+    it 'blocks a component from becoming unreleased' do
       @p1_c1.rules.update(locked: true)
       @p1_c1.released = true
-      expect(@p1_c1.valid?).to eq(true)
+      expect(@p1_c1.valid?).to be(true)
       @p1_c1.save
 
       @p1_c1.released = false
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
       expect(@p1_c1.errors[:base]).to include('Cannot unrelease a released component')
     end
   end
 
   context 'component_id validation' do
-    it 'should not allow component to overlay itself' do
-      expect(@p1_c1.valid?).to eq(true)
+    it 'does not allow component to overlay itself' do
+      expect(@p1_c1.valid?).to be(true)
       @p1_c1.component_id = @p1_c1.id
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
       expect(@p1_c1.errors[:component_id]).to include('cannot overlay itself')
     end
   end
 
   context 'prefix validation' do
-    it 'should not be nil or blank' do
-      expect(@p1_c1.valid?).to eq(true)
+    it 'is not nil or blank' do
+      expect(@p1_c1.valid?).to be(true)
 
       @p1_c1.prefix = nil
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
 
       @p1_c1.prefix = ''
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
 
       @p1_c1.prefix = '      '
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
     end
 
-    it 'should validate format' do
-      expect(@p1_c1.valid?).to eq(true)
+    it 'validates format' do
+      expect(@p1_c1.valid?).to be(true)
 
       @p1_c1.prefix = '1111-AA'
-      expect(@p1_c1.valid?).to eq(true)
+      expect(@p1_c1.valid?).to be(true)
 
       @p1_c1.prefix = 'AAAA00'
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
 
       @p1_c1.prefix = 'AAA1-00'
-      expect(@p1_c1.valid?).to eq(true)
+      expect(@p1_c1.valid?).to be(true)
 
       @p1_c1.prefix = ' AAAA-00 '
-      expect(@p1_c1.valid?).to eq(false)
+      expect(@p1_c1.valid?).to be(false)
     end
   end
 
@@ -102,7 +102,7 @@ RSpec.describe Component, type: :model do
       # should still belong to the same project
       expect(@p1_c1.project_id).to eq(p1_c2.project_id)
       # should not be released
-      expect(p1_c2.released).to eq(false)
+      expect(p1_c2.released).to be(false)
       # should have the new name
       expect(p1_c2.name).to eq('Photon OS 3')
       # should have the new version

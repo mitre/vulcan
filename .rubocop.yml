@@ -1,6 +1,7 @@
 require:
   - rubocop-rails
   - rubocop-performance
+  - rubocop-rspec
 
 AllCops:
   NewCops: enable
@@ -38,4 +39,35 @@ Rails/ContentTag:
 Rails/FilePath:
   EnforcedStyle: "arguments"
 Rails/HasAndBelongsToMany:
+  Enabled: false
+
+# RSpec configuration - more lenient for existing codebase
+RSpec/ExampleLength:
+  Max: 120
+  Exclude:
+    - spec/**/*_integration_spec.rb
+    - spec/**/*_critical_*_spec.rb
+RSpec/MultipleExpectations:
+  Max: 15
+RSpec/MessageSpies:
+  Enabled: false
+RSpec/InstanceVariable:
+  Enabled: false
+RSpec/FilePath:
+  Enabled: false
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+RSpec/DescribedClass:
+  Enabled: false
+RSpec/ContextWording:
+  Enabled: false
+RSpec/VerifiedDoubles:
+  Enabled: false
+RSpec/BeforeAfterAll:
+  Enabled: false
+RSpec/AnyInstance:
+  Enabled: false
+RSpec/StubbedMock:
+  Enabled: false
+RSpec/DescribeClass:
   Enabled: false
