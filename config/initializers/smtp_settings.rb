@@ -4,7 +4,7 @@
 # config/environments/production.rb due to our Settings model not being
 # loaded at that point.
 
-if Rails.env.production? && Settings.smtp.enabled
+if Rails.env.production? && Settings.smtp.enabled && Settings.smtp.settings.present?
   Rails.application.config.action_mailer.delivery_method = :smtp
   Rails.application.config.action_mailer.perform_deliveries = true
   Rails.application.config.action_mailer.raise_delivery_errors = true

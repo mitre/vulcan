@@ -115,3 +115,54 @@ When implementing each PR:
 5. **Review Process**: Each PR requires thorough review before merging
 
 This structured approach ensures we maintain a clean separation of concerns while progressively enhancing the Vulcan platform.
+
+## Updated Heroku-24 Migration Path
+
+Based on our current analysis, here's the refined PR sequence for achieving Heroku-24 compatibility:
+
+### PR1: Rails Settings Cached Migration (Current)
+**Branch:** `modernize-configuration-system`
+**Scope:** Replace settingslogic with rails-settings-cached
+**Status:** In Progress
+**Ruby Version:** 2.7.5 (no change)
+
+### PR2: Asset Pipeline - jsbundling-rails
+**Scope:** Migrate from Webpacker 5 to jsbundling-rails
+**Node Upgrade:** 16.x → 20.x
+**Ruby Version:** 2.7.5 (no change)
+
+### PR3: Asset Pipeline - Propshaft
+**Scope:** Replace Sprockets with Propshaft
+**Ruby Version:** 2.7.5 (no change)
+
+### PR4: Ruby 3.3.x Upgrade
+**Scope:** Upgrade Ruby from 2.7.5 to 3.3.x
+**Primary Target:** Ruby 3.3.6 (latest stable)
+**Fallback:** Ruby 3.2.5 if compatibility issues arise
+**Benefits:** 
+- 3+ years of support (EOL March 2027)
+- Significant performance improvements (YJIT)
+- Skip already-EOL versions (3.0.x, 3.1.x)
+
+### PR5: Rails 7.x Upgrade
+**Scope:** Upgrade Rails from 6.1 to 7.0 or 7.1
+**Prerequisite:** Ruby 3.x from PR4
+
+### PR6: Heroku-24 Stack Migration
+**Scope:** Update Heroku stack from heroku-20 to heroku-24
+**Prerequisites:** All previous PRs completed
+
+## Version Strategy Rationale
+
+**Ruby 3.3.x First Approach:**
+- Maximizes support runway (3+ years)
+- Best performance improvements
+- Avoids multiple Ruby upgrades
+- One-time migration effort
+
+**Node.js 20.x Target:**
+- LTS version with long support
+- Required for modern tooling
+- Compatible with jsbundling-rails
+
+This approach minimizes the number of major version changes while maximizing the longevity of our technology choices.

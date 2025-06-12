@@ -243,15 +243,17 @@ Devise.setup do |config|
   # up on your models and hooks.
   # config.omniauth :github, ENV['GITHUB_APP_ID'], ENV['GITHUB_APP_SECRET'],
   #                 scope: 'user,public_repo'
-  if Settings.ldap.enabled
+  if Settings.ldap.enabled && Settings.ldap.servers.present?
     # We currently only support one ldap server however we allow them to be
     # passed in as an array so that we have the ability to support multiple
     # servers later without any changes to the YAML syntax.
     config.omniauth(:ldap, Settings.ldap.servers.values.first)
   end
 
-  Settings.providers.each do |provider|
-    config.omniauth(provider.name.to_sym, provider.app_id, provider.app_secret, provider.args)
+  if Settings.providers.present?
+    Settings.providers.each do |provider|
+      config.omniauth(provider.name.to_sym, provider.app_id, provider.app_secret, provider.args)
+    end
   end
 
   # ==> Warden configuration
@@ -294,5 +296,5 @@ Devise.setup do |config|
   # We are defining OmniAuth strategy authenticating with OpenID Connect providers.
   # With the configuration below users can sign in with an OpenID Connect provider to
   # access protected resources in the vulcan app.
-  config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled
+  config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled && Settings.oidc.args.present?
 end

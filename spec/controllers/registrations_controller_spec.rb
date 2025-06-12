@@ -64,7 +64,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       end.to change(User, :count).by 1
 
       ActionMailer::Base.deliveries.last.tap do |mail|
-        expect(mail.from).to eq(['do_not_reply@vulcan'])
+        expect(mail.from).to eq([Settings.contact_email])
       end
 
       expect(flash[:notice]).to eq I18n.t('devise.registrations.signed_up_but_unconfirmed')

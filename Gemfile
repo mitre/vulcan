@@ -32,8 +32,8 @@ gem 'omniauth-github'
 gem 'omniauth-rails_csrf_protection', '~> 1.0'
 # Allow users to sign in with OIDC providers
 gem 'omniauth_openid_connect', '~> 0.6.0'
-# Vulcan settings
-gem 'settingslogic', '~> 2.0.9'
+# Vulcan settings - modern, Ruby 3+ compatible configuration management
+gem 'rails-settings-cached', '~> 2.9'
 # Use Redis adapter to run Action Cable in production
 # gem 'redis', '~> 4.0'
 # Use Active Model has_secure_password

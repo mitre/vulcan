@@ -271,7 +271,7 @@ class OidcStartupValidator
 
     # Helper methods for accessing configuration
     def issuer_url
-      Settings.oidc.args&.issuer || ENV['VULCAN_OIDC_ISSUER_URL']
+      Settings.oidc.args&.dig('issuer') || ENV['VULCAN_OIDC_ISSUER_URL']
     end
 
     def client_id
