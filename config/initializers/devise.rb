@@ -158,7 +158,8 @@ Devise.setup do |config|
   # ==> Configuration for :timeoutable
   # The time you want to timeout the user session without activity. After this
   # time the user will be asked for credentials again. Default is 30 minutes.
-  config.timeout_in = Settings.local_login.session_timeout.minutes
+  # Defer Settings access to avoid autoloading during initialization
+  config.timeout_in = 30.minutes # Default value, will be updated in to_prepare block
 
   # ==> Configuration for :lockable
   # Defines which strategy will be used to lock an account.
@@ -243,18 +244,7 @@ Devise.setup do |config|
   # up on your models and hooks.
   # config.omniauth :github, ENV['GITHUB_APP_ID'], ENV['GITHUB_APP_SECRET'],
   #                 scope: 'user,public_repo'
-  if Settings.ldap.enabled && Settings.ldap.servers.present?
-    # We currently only support one ldap server however we allow them to be
-    # passed in as an array so that we have the ability to support multiple
-    # servers later without any changes to the YAML syntax.
-    config.omniauth(:ldap, Settings.ldap.servers.values.first)
-  end
-
-  if Settings.providers.present?
-    Settings.providers.each do |provider|
-      config.omniauth(provider.name.to_sym, provider.app_id, provider.app_secret, provider.args)
-    end
-  end
+  # Omniauth providers will be configured in to_prepare block to avoid autoloading
 
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
@@ -296,5 +286,35 @@ Devise.setup do |config|
   # We are defining OmniAuth strategy authenticating with OpenID Connect providers.
   # With the configuration below users can sign in with an OpenID Connect provider to
   # access protected resources in the vulcan app.
-  config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled && Settings.oidc.args.present?
+  # OIDC will be configured in to_prepare block to avoid autoloading
+end
+
+# Configure Devise settings that require access to Settings model
+# This runs after the application is initialized, avoiding autoloading issues
+Rails.application.config.to_prepare do
+  # Update timeout_in with actual setting value
+  Devise.timeout_in = Settings.local_login.session_timeout.minutes
+
+  # Clear existing omniauth configs to avoid duplicates
+  Devise.omniauth_configs.clear if Devise.omniauth_configs
+
+  # Configure LDAP if enabled
+  if Settings.ldap.enabled && Settings.ldap.servers.present?
+    # We currently only support one ldap server however we allow them to be
+    # passed in as an array so that we have the ability to support multiple
+    # servers later without any changes to the YAML syntax.
+    Devise.omniauth(:ldap, Settings.ldap.servers.values.first)
+  end
+
+  # Configure additional providers
+  if Settings.providers.present?
+    Settings.providers.each do |provider|
+      Devise.omniauth(provider.name.to_sym, provider.app_id, provider.app_secret, provider.args)
+    end
+  end
+
+  # Configure OIDC if enabled
+  if Settings.oidc.enabled && Settings.oidc.args.present?
+    Devise.omniauth(Settings.oidc.strategy, Settings.oidc.args)
+  end
 end

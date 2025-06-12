@@ -7,15 +7,18 @@ Rails.application.config.after_initialize do
   # Run validation whenever OIDC is enabled, regardless of environment
   # This allows developers to test OIDC locally if they have proper configuration
 
-  # Only validate if OIDC is enabled
-  next unless Settings.oidc&.enabled
+  # Wrap in to_prepare to ensure Settings model is loaded
+  Rails.application.config.to_prepare do
+    # Only validate if OIDC is enabled
+    next unless Settings.oidc&.enabled
 
-  begin
-    OidcStartupValidator.validate_configuration
-  rescue StandardError => e
-    Rails.logger.error "OIDC Startup Validation Failed: #{e.message}"
-    # Don't crash the application on validation failure
-    # Log the error and let the app start (graceful degradation)
+    begin
+      OidcStartupValidator.validate_configuration
+    rescue StandardError => e
+      Rails.logger.error "OIDC Startup Validation Failed: #{e.message}"
+      # Don't crash the application on validation failure
+      # Log the error and let the app start (graceful degradation)
+    end
   end
 end
 
