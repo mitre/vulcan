@@ -181,6 +181,95 @@ This document outlines the complete modernization strategy for the Vulcan applic
 - **STATE**: Assess centralized vs. component-local state management needs
 - **VALIDATION**: Decide on client-side validation approach
 
+## Phase 3.5: Enterprise Configuration Management
+
+### Objectives
+- Implement dynamic runtime configuration management comparable to Heimdall2
+- Enable zero-restart administrative operations
+- Provide web-based administration interface
+- Support bulk operations for users and STIG/SRG management
+- Enhance enterprise deployment and scaling capabilities
+
+### Context
+Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrative ease, this phase addresses the gap in runtime configuration management. The implementation leverages proven Rails gems to deliver enterprise-grade administration capabilities rapidly.
+
+### Tasks
+**Phase 3.5.1: Foundation (4-6 hours)**
+- [ ] Install and configure rails-settings-cached for database-backed configuration
+- [ ] Install and configure ActiveAdmin for web-based administration interface
+- [ ] Create admin authentication and authorization system
+- [ ] Migrate safe settings from environment variables to database-backed configuration:
+  - Welcome text and contact information
+  - Session timeout settings (with validation)
+  - User registration and project creation permissions
+  - Email template customizations
+- [ ] Create basic admin interface for settings management
+
+**Phase 3.5.2: User Management (2-3 hours)**
+- [ ] Build comprehensive admin interface for user management
+- [ ] Implement batch operations (bulk admin assignment, account confirmation)
+- [ ] Add user search, filtering, and management capabilities
+- [ ] Create audit logging for all administrative actions
+
+**Phase 3.5.3: Feature Flags (1-2 hours)**
+- [ ] Install and configure Flipper with web UI for feature management
+- [ ] Implement feature flags for experimental features
+- [ ] Enable A/B testing capabilities for UI improvements
+- [ ] Create gradual feature rollout mechanisms
+
+**Phase 3.5.4: Bulk Operations (2-4 hours)**
+- [ ] Implement STIG/SRG bulk import and update operations
+- [ ] Create component batch management capabilities
+- [ ] Add automated maintenance task scheduling
+- [ ] Build background job monitoring interface
+
+### Technology Stack
+- **rails-settings-cached**: Database-backed configuration with automatic caching
+- **ActiveAdmin**: Complete admin interface framework (battle-tested)
+- **Flipper + Flipper-UI**: Feature flags and runtime feature management
+- **Background jobs**: For bulk operations and maintenance tasks
+
+### Security Architecture
+```ruby
+# Security-critical settings (remain environment variables):
+- Database connections (DATABASE_URL)
+- OIDC client secrets (VULCAN_OIDC_CLIENT_SECRET)
+- Encryption keys and LDAP credentials
+
+# Administrative settings (move to database-backed):
+- UI customizations and welcome text
+- Session timeout and user permissions
+- Email templates and notification settings
+- Feature flags for experimental features
+```
+
+### Success Criteria
+- [ ] Zero-restart configuration changes for administrative settings
+- [ ] Web-based admin interface accessible to authorized users
+- [ ] Bulk user operations (admin assignment, confirmation, etc.) functional
+- [ ] Feature flags enable safe experimental feature deployment
+- [ ] STIG/SRG bulk import and management capabilities operational
+- [ ] All administrative changes include comprehensive audit logging
+- [ ] Settings cached automatically (< 10ms retrieval time)
+- [ ] Admin interface responsive (< 2s page loads)
+- [ ] Security boundaries maintained between critical and administrative settings
+
+### Decision Points
+- **SECURITY**: Validate separation between security-critical and administrative settings
+- **PERFORMANCE**: Ensure caching strategy meets enterprise scale requirements
+- **AUTHORIZATION**: Determine granular permission levels for admin interface
+- **INTEGRATION**: Assess integration with existing authentication systems
+
+### Dependencies
+- **BLOCKING**: Phase 0 completion (Webpacker migration, Ruby 3.2+ upgrade)
+- **REQUIRED**: Rails 7+ and modern asset pipeline
+- **OPTIONAL**: Redis/Memcached for enhanced settings caching
+
+### Estimated Effort
+**Total**: 8-12 hours across 2-3 sprints
+**Priority**: Medium (after infrastructure modernization)
+**References**: Issue #673 - Comprehensive implementation plan
+
 ## Phase 4: Advanced Features and Optimizations
 
 ### Objectives
