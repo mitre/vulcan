@@ -1,8 +1,8 @@
 # Vulcan Installation
 
-Vulcan can be set up in a few different ways. It can be done by having a vulcan.yml file that has settings for many different configurations. If there is no vulcan.yml file then the configurations will be read in from vulcan.default.yml that has default configuration as well as the ability for the configurations to be set by environment variables.
+Vulcan uses a flexible configuration system based on environment variables and database-backed settings. Configuration can be provided through environment variables at deployment time, and many settings can be modified at runtime through the Rails console or admin interface.
 
-[**Installation**](index.md) | [**Configuration**](config.md)
+[**Installation**](index.md) | [**Configuration**](CONFIGURATION.md)
 
 ## Index
 * [Dependencies](#dependencies)

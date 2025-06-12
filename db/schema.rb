@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_06_11_154529) do
+ActiveRecord::Schema.define(version: 2025_06_12_164743) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -265,6 +265,14 @@ ActiveRecord::Schema.define(version: 2025_06_11_154529) do
     t.date "release_date"
     t.string "name"
     t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
+  end
+
+  create_table "settings", force: :cascade do |t|
+    t.string "var", null: false
+    t.text "value"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["var"], name: "index_settings_on_var", unique: true
   end
 
   create_table "stigs", force: :cascade do |t|
