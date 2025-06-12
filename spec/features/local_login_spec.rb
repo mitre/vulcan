@@ -19,6 +19,7 @@ RSpec.describe 'Local Login', type: :feature, skip: (chromedriver_available? ? f
 
   before do
     stub_ldap_setting(enabled: true)
+    stub_local_login_setting(enabled: true)
   end
 
   let(:user1) { create(:user) }
