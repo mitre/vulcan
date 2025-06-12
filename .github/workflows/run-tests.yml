@@ -65,8 +65,9 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
           RAILS_ENV: test
-          # OIDC Testing Configuration - Minimal vars with auto-discovery
+          # OIDC Testing Configuration - Discovery only (no actual OAuth flows)
           VULCAN_ENABLE_OIDC: true
+          VULCAN_OIDC_DISCOVERY: true
           VULCAN_OIDC_ISSUER_URL: ${{ secrets.OKTA_TEST_ISSUER }}
           VULCAN_OIDC_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
           VULCAN_OIDC_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
