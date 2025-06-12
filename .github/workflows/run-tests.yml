@@ -65,12 +65,11 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
           RAILS_ENV: test
-          # OIDC Testing Configuration - Uses real Okta secrets for full integration testing
+          # OIDC Testing Configuration - Minimal vars with auto-discovery
           VULCAN_ENABLE_OIDC: true
           VULCAN_OIDC_ISSUER_URL: ${{ secrets.OKTA_TEST_ISSUER }}
           VULCAN_OIDC_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
           VULCAN_OIDC_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
-          VULCAN_OIDC_REDIRECT_URI: http://localhost:3000/users/auth/oidc/callback
           # Integration test configuration (uses same secrets for consistency)
           OKTA_TEST_ISSUER: ${{ secrets.OKTA_TEST_ISSUER }}
           OKTA_TEST_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
