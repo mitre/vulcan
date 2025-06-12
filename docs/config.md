@@ -1,8 +1,10 @@
-# Vulcan Configuration
+# Vulcan Configuration (Deprecated)
 
-Vulcan can be set up in a few different ways. It can be done by having a vulcan.yml file that has settings for many different configurations. If there is no vulcan.yml file then the configurations will be read in from vulcan.default.yml that has default configuration as well as the ability for the configurations to be set by environment variables.
+**⚠️ This documentation is outdated. Please see [CONFIGURATION.md](CONFIGURATION.md) for current configuration instructions.**
 
-[**Installation**](index.md) | [**Configuration**](config.md)
+This page documents the legacy settingslogic configuration system that used vulcan.yml files. Vulcan now uses rails-settings-cached for database-backed configuration management.
+
+[**Installation**](index.md) | [**Configuration**](CONFIGURATION.md)
 
 ## Index
 
@@ -79,7 +81,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
   - **client_options:**
       - **port:** The port for the authorization server `(ENV: VULCAN_OIDC_PORT)(default: 443)`
       - **scheme:** The http scheme to use `(ENV: VULCAN_OIDC_SCHEME)(default: https)`
-      - **host:** The host for the authorization server	 `(ENV: VULCAN_OIDC_HOST)`
+      - **host:** The host for the authorization server  `(ENV: VULCAN_OIDC_HOST)`
       - **identifier:** The OIDC client_id `(ENV: VULCAN_OIDC_CLIENT_ID)`
       - **secret:** The OIDC client secret `(ENV: VULCAN_OIDC_CLIENT_SECRET)`
       - **redirect_uri:** The OIDC authorization callback url in vulcan app. `(ENV: VULCAN_OIDC_REDIRECT_URI)`
