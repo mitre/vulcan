@@ -1,5 +1,60 @@
 # Changelog
 
+## [v2.1.9](https://github.com/mitre/vulcan/tree/v2.1.9) (2025-06-13)
+
+[Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.8...v2.1.9)
+
+**🚀 Major Features:**
+- OIDC Auto-Discovery Enhancement (#672) - Automatic configuration discovery for OpenID Connect providers
+- Comprehensive webpacker migration research and planning documents
+- Enhanced Docker Compose configurations with production environment defaults
+- Enterprise configuration management roadmap documentation
+
+**🔧 Infrastructure & CI/CD Improvements:**
+- Add VULCAN_OIDC_DISCOVERY=true to CI/CD workflow
+- Fix CI/CD and WebMock configuration for stable test runs
+- Fix overcommit YarnInstall hook configuration
+- Fix Anchore SBOM artifact naming issue (#668)
+- Update GitHub Actions and dependencies to latest versions
+
+**🛡️ Security & Authentication Fixes:**
+- Fix critical OIDC authentication bug - case sensitivity issue
+- Fix authentication test edge cases and mocking issues
+- Fix critical authentication and authorization vulnerabilities
+- Fix User effective_permissions method visibility
+- Fix LDAP authentication in master branch (#669)
+
+**📊 Excel Export & Data Handling:**
+- Revised ordering of excel/csv output columns to align with DISA provided SRGTemplate spreadsheet (#660)
+- Update CCI mappings to latest rev5 (#627)
+
+**🐛 Bug Fixes:**
+- Fix Dockerfile legacy ENV format warnings
+- Fix axios compatibility issues
+- Remove problematic controller tests in favor of comprehensive model tests
+- Fix RuboCop documentation warnings for test support modules
+
+**📚 Documentation & Project Management:**
+- Add organized documentation structure for decision records, guides, and architecture
+- Track project CLAUDE.md as official project documentation
+- Add comprehensive webpacker migration research and planning documents
+- Enterprise configuration management to modernization roadmap
+
+**🔒 Dependency Updates:**
+- Update workflow to use artifact actions v4 and update actions/cache from v2 to v4
+- Bump ws from 6.2.2 to 6.2.3 in the npm_and_yarn group
+- Various security-focused dependency updates
+
+**🏗️ Development Environment:**
+- Modernize Docker Compose configurations
+- Fix overcommit issues and configuration
+- Add production environment defaults to Docker configuration
+
+**📋 Notes:**
+- This is the final release using settingslogic for configuration management
+- Next release (v2.2.0) will include migration to rails-settings-cached
+- Rollback point for users who need the legacy configuration system
+
 ## [v2.1.8](https://github.com/mitre/vulcan/tree/v2.1.8) (2024-06-28)
 
 [Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.7...v2.1.8)
