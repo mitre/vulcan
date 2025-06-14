@@ -17,16 +17,25 @@ Rails.application.reloader.to_prepare do
 
     # Create a comprehensive multi-provider cache warming controller
     cache_warmer = Class.new do
-      include OidcDiscoveryHelper
-      include ProviderCacheHelper
-      include GeneralSettingsCacheHelper
+      # Only include helpers if they're available (they may not be loaded during initialization)
+      begin
+        include OidcDiscoveryHelper if defined?(OidcDiscoveryHelper)
+        include ProviderCacheHelper if defined?(ProviderCacheHelper)
+        include GeneralSettingsCacheHelper if defined?(GeneralSettingsCacheHelper)
+      rescue StandardError => e
+        Rails.logger.warn "Cache warming helper inclusion failed: #{e.message}"
+        # Define stub methods to prevent errors
+        define_method(:warm_oidc_discovery_cache) { Rails.logger.debug 'OIDC cache warming skipped - helper not available' }
+        define_method(:warm_general_settings_cache) { Rails.logger.debug 'General settings cache warming skipped - helper not available' }
+        define_method(:warm_provider_caches) { |*args| Rails.logger.debug 'Provider cache warming skipped - helper not available' }
+      end
 
       def session
         {} # Minimal session for cache warming
       end
 
-      # Make warming methods accessible
-      public :warm_oidc_discovery_cache, :warm_general_settings_cache
+      # Make warming methods accessible if they exist
+      public :warm_oidc_discovery_cache, :warm_general_settings_cache if respond_to?(:warm_oidc_discovery_cache)
 
       def warm_all_settings_caches
         Rails.logger.info 'Starting multi-provider settings cache warming'

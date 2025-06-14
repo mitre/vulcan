@@ -29,11 +29,15 @@ bundle install
 
 ### 2. Run Database Migration
 
-This creates the new settings table:
+This creates the new settings table and automatically imports existing YAML settings:
 
 ```bash
 bundle exec rails db:migrate
 ```
+
+**Automatic YAML Import**: During migration, if a `config/vulcan.default.yml` file exists,
+non-sensitive settings like `welcome_text` and `contact_email` will be automatically
+imported to the database (only if no environment variable override exists).
 
 ### 3. Verify Environment Variables
 

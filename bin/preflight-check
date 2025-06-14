@@ -69,8 +69,8 @@ class VulcanPreflightCheck
   end
 
   def run
-    puts "🚀 Vulcan Preflight Check"
-    puts "=" * 50
+    puts '🚀 Vulcan Preflight Check'
+    puts '=' * 50
 
     check_ruby_version
     check_database_config
@@ -103,24 +103,22 @@ class VulcanPreflightCheck
     has_individual_config = %w[DATABASE_HOST DATABASE_NAME DATABASE_USERNAME].all? { |var| ENV[var] }
 
     if !has_database_url && !has_individual_config
-      @errors << "Database configuration missing. Set either DATABASE_URL or individual DATABASE_* variables."
+      @errors << 'Database configuration missing. Set either DATABASE_URL or individual DATABASE_* variables.'
     else
-      @info << "✅ Database configuration present"
+      @info << '✅ Database configuration present'
     end
   end
 
   def check_essential_vars
     REQUIRED_ENV_VARS[:essential].each do |var|
-      if ENV[var].to_s.strip.empty?
-        @errors << "Missing required environment variable: #{var}"
-      end
+      @errors << "Missing required environment variable: #{var}" if ENV[var].to_s.strip.empty?
     end
 
     if ENV['SECRET_KEY_BASE'].to_s.length < 128
-      @warnings << "SECRET_KEY_BASE should be at least 128 characters for security"
+      @warnings << 'SECRET_KEY_BASE should be at least 128 characters for security'
     end
 
-    @info << "✅ Essential variables checked" if @errors.empty?
+    @info << '✅ Essential variables checked' if @errors.empty?
   end
 
   def check_authentication_config
@@ -132,8 +130,8 @@ class VulcanPreflightCheck
       check_conditional_vars(:oidc)
 
       # Additional OIDC validations
-      if ENV['VULCAN_OIDC_ISSUER_URL'] && !ENV['VULCAN_OIDC_ISSUER_URL'].start_with?('https://')
-        @warnings << "OIDC issuer should use HTTPS in production" if ENV['RAILS_ENV'] == 'production'
+      if ENV['VULCAN_OIDC_ISSUER_URL'] && !ENV['VULCAN_OIDC_ISSUER_URL'].start_with?('https://') && (ENV['RAILS_ENV'] == 'production')
+        @warnings << 'OIDC issuer should use HTTPS in production'
       end
     end
 
@@ -148,12 +146,12 @@ class VulcanPreflightCheck
       auth_methods << 'Local Login'
 
       if ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION'] == 'true' && ENV['VULCAN_ENABLE_SMTP'] != 'true'
-        @warnings << "Email confirmation enabled but SMTP is not configured"
+        @warnings << 'Email confirmation enabled but SMTP is not configured'
       end
     end
 
     if auth_methods.empty?
-      @errors << "No authentication methods enabled! Enable at least one of: OIDC, LDAP, or Local Login"
+      @errors << 'No authentication methods enabled! Enable at least one of: OIDC, LDAP, or Local Login'
     else
       @info << "✅ Authentication methods enabled: #{auth_methods.join(', ')}"
     end
@@ -163,13 +161,13 @@ class VulcanPreflightCheck
     # SMTP
     if ENV['VULCAN_ENABLE_SMTP'] == 'true'
       check_conditional_vars(:smtp)
-      @info << "✅ SMTP email service configured"
+      @info << '✅ SMTP email service configured'
     end
 
     # Slack
     if ENV['VULCAN_ENABLE_SLACK_COMMS'] == 'true'
       check_conditional_vars(:slack)
-      @info << "✅ Slack integration configured"
+      @info << '✅ Slack integration configured'
     end
   end
 
@@ -178,9 +176,7 @@ class VulcanPreflightCheck
     return unless config
 
     config[:requires].each do |var|
-      if ENV[var].to_s.strip.empty?
-        @errors << "#{service.to_s.upcase} enabled but missing required variable: #{var}"
-      end
+      @errors << "#{service.to_s.upcase} enabled but missing required variable: #{var}" if ENV[var].to_s.strip.empty?
     end
   end
 
@@ -191,9 +187,7 @@ class VulcanPreflightCheck
     ]
 
     deprecated_files.each do |file|
-      if File.exist?(file)
-        @warnings << "Deprecated configuration file found: #{file} - This file is no longer used"
-      end
+      @warnings << "Deprecated configuration file found: #{file} - This file is no longer used" if File.exist?(file)
     end
 
     # Check for old environment variables
@@ -204,9 +198,7 @@ class VulcanPreflightCheck
     ]
 
     deprecated_vars.each do |var|
-      if ENV[var]
-        @warnings << "Deprecated environment variable: #{var} - Use VULCAN_OIDC_ISSUER_URL instead"
-      end
+      @warnings << "Deprecated environment variable: #{var} - Use VULCAN_OIDC_ISSUER_URL instead" if ENV[var]
     end
   end
 
@@ -218,7 +210,7 @@ class VulcanPreflightCheck
         count = Setting.count
         @info << "✅ Settings table exists with #{count} custom settings"
       else
-        @errors << "Settings table does not exist. Run: rails db:migrate"
+        @errors << 'Settings table does not exist. Run: rails db:migrate'
       end
     rescue StandardError => e
       @errors << "Could not connect to database: #{e.message}"
@@ -237,9 +229,9 @@ class VulcanPreflightCheck
     }
 
     puts "\n📋 Example Kubernetes ConfigMap:"
-    puts "=" * 50
+    puts '=' * 50
     puts example.to_yaml
-    puts "=" * 50
+    puts '=' * 50
   end
 
   def generate_k8s_env_vars
@@ -270,7 +262,7 @@ class VulcanPreflightCheck
 
   def print_results
     puts "\n📊 Preflight Check Results:"
-    puts "=" * 50
+    puts '=' * 50
 
     if @info.any?
       puts "\n✅ Passed Checks:"
@@ -291,16 +283,16 @@ class VulcanPreflightCheck
     end
 
     puts "\n💡 Tips:"
-    puts "   - Run with --check-db to verify database connection"
-    puts "   - Run with --k8s-example to generate Kubernetes ConfigMap"
-    puts "   - See CONFIGURATION.md for full documentation"
+    puts '   - Run with --check-db to verify database connection'
+    puts '   - Run with --k8s-example to generate Kubernetes ConfigMap'
+    puts '   - See CONFIGURATION.md for full documentation'
   end
 end
 
 # Parse command line options
 options = {}
 OptionParser.new do |opts|
-  opts.banner = "Usage: bin/preflight-check [options]"
+  opts.banner = 'Usage: bin/preflight-check [options]'
 
   opts.on('-d', '--check-db', 'Check database connection and settings table') do
     options[:check_db] = true

@@ -55,7 +55,6 @@ services:
       # Essential Vulcan Configuration
       VULCAN_CONTACT_EMAIL: ${VULCAN_CONTACT_EMAIL:-admin@localhost}
       VULCAN_APP_URL: ${VULCAN_APP_URL:-http://localhost:3000}
-
       # Authentication Configuration (configure at least one)
 
       # Option 1: OIDC/SSO (recommended)
