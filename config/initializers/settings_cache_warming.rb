@@ -25,9 +25,15 @@ Rails.application.reloader.to_prepare do
       rescue StandardError => e
         Rails.logger.warn "Cache warming helper inclusion failed: #{e.message}"
         # Define stub methods to prevent errors
-        define_method(:warm_oidc_discovery_cache) { Rails.logger.debug 'OIDC cache warming skipped - helper not available' }
-        define_method(:warm_general_settings_cache) { Rails.logger.debug 'General settings cache warming skipped - helper not available' }
-        define_method(:warm_provider_caches) { |*args| Rails.logger.debug 'Provider cache warming skipped - helper not available' }
+        define_method(:warm_oidc_discovery_cache) do
+          Rails.logger.debug 'OIDC cache warming skipped - helper not available'
+        end
+        define_method(:warm_general_settings_cache) do
+          Rails.logger.debug 'General settings cache warming skipped - helper not available'
+        end
+        define_method(:warm_provider_caches) do |*_args|
+          Rails.logger.debug 'Provider cache warming skipped - helper not available'
+        end
       end
 
       def session
