@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: vulcan_production
+      POSTGRES_USER: vulcan
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vulcan_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vulcan"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for ActionCable/background jobs)
+  redis:
+    image: redis:7-alpine
+    networks:
+      - vulcan_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Vulcan Application
+  vulcan:
+    image: mitre/vulcan:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - vulcan_network
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgres://vulcan:${DB_PASSWORD:-changeme}@postgres:5432/vulcan_production
+      REDIS_URL: redis://redis:6379/0
+
+      # Rails Configuration
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_LOG_TO_STDOUT: "true"
+
+      # Essential Vulcan Configuration
+      VULCAN_CONTACT_EMAIL: ${VULCAN_CONTACT_EMAIL:-admin@localhost}
+      VULCAN_APP_URL: ${VULCAN_APP_URL:-http://localhost:3000}
+
+      # Authentication Configuration (configure at least one)
+
+      # Option 1: OIDC/SSO (recommended)
+      VULCAN_ENABLE_OIDC: ${VULCAN_ENABLE_OIDC:-false}
+      VULCAN_OIDC_ISSUER_URL: ${VULCAN_OIDC_ISSUER_URL}
+      VULCAN_OIDC_CLIENT_ID: ${VULCAN_OIDC_CLIENT_ID}
+      VULCAN_OIDC_CLIENT_SECRET: ${VULCAN_OIDC_CLIENT_SECRET}
+      VULCAN_OIDC_REDIRECT_URI: ${VULCAN_OIDC_REDIRECT_URI:-http://localhost:3000/users/auth/oidc/callback}
+
+      # Option 2: LDAP
+      VULCAN_ENABLE_LDAP: ${VULCAN_ENABLE_LDAP:-false}
+      VULCAN_LDAP_HOST: ${VULCAN_LDAP_HOST}
+      VULCAN_LDAP_PORT: ${VULCAN_LDAP_PORT:-389}
+      VULCAN_LDAP_ENCRYPTION: ${VULCAN_LDAP_ENCRYPTION:-plain}
+      VULCAN_LDAP_BASE: ${VULCAN_LDAP_BASE}
+      VULCAN_LDAP_BIND_DN: ${VULCAN_LDAP_BIND_DN}
+      VULCAN_LDAP_ADMIN_PASS: ${VULCAN_LDAP_ADMIN_PASS}
+      VULCAN_LDAP_TITLE: ${VULCAN_LDAP_TITLE:-LDAP}
+
+      # Option 3: Local Login (not recommended for production)
+      VULCAN_ENABLE_LOCAL_LOGIN: ${VULCAN_ENABLE_LOCAL_LOGIN:-true}
+      VULCAN_ENABLE_USER_REGISTRATION: ${VULCAN_ENABLE_USER_REGISTRATION:-false}
+      VULCAN_SESSION_TIMEOUT: ${VULCAN_SESSION_TIMEOUT:-60}
+
+      # Optional Services
+
+      # SMTP Email
+      VULCAN_ENABLE_SMTP: ${VULCAN_ENABLE_SMTP:-false}
+      VULCAN_SMTP_ADDRESS: ${VULCAN_SMTP_ADDRESS}
+      VULCAN_SMTP_PORT: ${VULCAN_SMTP_PORT:-587}
+      VULCAN_SMTP_DOMAIN: ${VULCAN_SMTP_DOMAIN}
+      VULCAN_SMTP_AUTHENTICATION: ${VULCAN_SMTP_AUTHENTICATION:-plain}
+      VULCAN_SMTP_ENABLE_STARTTLS_AUTO: ${VULCAN_SMTP_ENABLE_STARTTLS_AUTO:-true}
+      VULCAN_SMTP_SERVER_USERNAME: ${VULCAN_SMTP_SERVER_USERNAME}
+      VULCAN_SMTP_SERVER_PASSWORD: ${VULCAN_SMTP_SERVER_PASSWORD}
+
+      # Slack Integration
+      VULCAN_ENABLE_SLACK_COMMS: ${VULCAN_ENABLE_SLACK_COMMS:-false}
+      VULCAN_SLACK_API_TOKEN: ${VULCAN_SLACK_API_TOKEN}
+      VULCAN_SLACK_CHANNEL_ID: ${VULCAN_SLACK_CHANNEL_ID}
+
+    # Run preflight check before starting
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "echo 'Running preflight check...' && \
+       bin/preflight-check && \
+       echo 'Running database migrations...' && \
+       bundle exec rails db:migrate && \
+       echo 'Starting Vulcan...' && \
+       bundle exec rails server -b 0.0.0.0"
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Nginx Reverse Proxy (optional, for SSL termination)
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - vulcan
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - vulcan_network
+    profiles:
+      - with-ssl
+
+volumes:
+  postgres_data:
+
+networks:
+  vulcan_network:
+    driver: bridge

@@ -1,0 +1,320 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Preflight check script for Vulcan settings migration
+# Run this before starting the application to validate configuration
+# Especially useful for container/K8s deployments
+
+require 'optparse'
+require 'json'
+require 'yaml'
+
+class VulcanPreflightCheck
+  REQUIRED_ENV_VARS = {
+    database: %w[
+      DATABASE_URL
+      DATABASE_HOST
+      DATABASE_PORT
+      DATABASE_NAME
+      DATABASE_USERNAME
+    ],
+    essential: %w[
+      RAILS_ENV
+      SECRET_KEY_BASE
+    ]
+  }.freeze
+
+  CONDITIONAL_ENV_VARS = {
+    oidc: {
+      enabled_by: 'VULCAN_ENABLE_OIDC',
+      requires: %w[
+        VULCAN_OIDC_ISSUER_URL
+        VULCAN_OIDC_CLIENT_ID
+        VULCAN_OIDC_CLIENT_SECRET
+        VULCAN_OIDC_REDIRECT_URI
+      ]
+    },
+    ldap: {
+      enabled_by: 'VULCAN_ENABLE_LDAP',
+      requires: %w[
+        VULCAN_LDAP_HOST
+        VULCAN_LDAP_BASE
+        VULCAN_LDAP_BIND_DN
+        VULCAN_LDAP_ADMIN_PASS
+      ]
+    },
+    smtp: {
+      enabled_by: 'VULCAN_ENABLE_SMTP',
+      requires: %w[
+        VULCAN_SMTP_ADDRESS
+        VULCAN_SMTP_PORT
+        VULCAN_SMTP_SERVER_USERNAME
+        VULCAN_SMTP_SERVER_PASSWORD
+      ]
+    },
+    slack: {
+      enabled_by: 'VULCAN_ENABLE_SLACK_COMMS',
+      requires: %w[
+        VULCAN_SLACK_API_TOKEN
+        VULCAN_SLACK_CHANNEL_ID
+      ]
+    }
+  }.freeze
+
+  def initialize(options = {})
+    @options = options
+    @errors = []
+    @warnings = []
+    @info = []
+  end
+
+  def run
+    puts "🚀 Vulcan Preflight Check"
+    puts "=" * 50
+
+    check_ruby_version
+    check_database_config
+    check_essential_vars
+    check_authentication_config
+    check_optional_services
+    check_deprecated_config
+    check_settings_table if @options[:check_db]
+    generate_k8s_example if @options[:k8s_example]
+
+    print_results
+    exit(@errors.any? ? 1 : 0)
+  end
+
+  private
+
+  def check_ruby_version
+    ruby_version = RUBY_VERSION
+    if ruby_version < '2.7.0'
+      @errors << "Ruby version #{ruby_version} is too old. Vulcan requires Ruby 2.7.0 or higher."
+    elsif ruby_version < '3.0.0'
+      @warnings << "Ruby #{ruby_version} is supported but deprecated. Consider upgrading to Ruby 3.x."
+    else
+      @info << "✅ Ruby version #{ruby_version}"
+    end
+  end
+
+  def check_database_config
+    has_database_url = ENV['DATABASE_URL'].to_s.strip.length > 0
+    has_individual_config = %w[DATABASE_HOST DATABASE_NAME DATABASE_USERNAME].all? { |var| ENV[var] }
+
+    if !has_database_url && !has_individual_config
+      @errors << "Database configuration missing. Set either DATABASE_URL or individual DATABASE_* variables."
+    else
+      @info << "✅ Database configuration present"
+    end
+  end
+
+  def check_essential_vars
+    REQUIRED_ENV_VARS[:essential].each do |var|
+      if ENV[var].to_s.strip.empty?
+        @errors << "Missing required environment variable: #{var}"
+      end
+    end
+
+    if ENV['SECRET_KEY_BASE'].to_s.length < 128
+      @warnings << "SECRET_KEY_BASE should be at least 128 characters for security"
+    end
+
+    @info << "✅ Essential variables checked" if @errors.empty?
+  end
+
+  def check_authentication_config
+    auth_methods = []
+
+    # Check OIDC
+    if ENV['VULCAN_ENABLE_OIDC'] == 'true'
+      auth_methods << 'OIDC'
+      check_conditional_vars(:oidc)
+
+      # Additional OIDC validations
+      if ENV['VULCAN_OIDC_ISSUER_URL'] && !ENV['VULCAN_OIDC_ISSUER_URL'].start_with?('https://')
+        @warnings << "OIDC issuer should use HTTPS in production" if ENV['RAILS_ENV'] == 'production'
+      end
+    end
+
+    # Check LDAP
+    if ENV['VULCAN_ENABLE_LDAP'] == 'true'
+      auth_methods << 'LDAP'
+      check_conditional_vars(:ldap)
+    end
+
+    # Check local login
+    if ENV['VULCAN_ENABLE_LOCAL_LOGIN'] != 'false'
+      auth_methods << 'Local Login'
+
+      if ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION'] == 'true' && ENV['VULCAN_ENABLE_SMTP'] != 'true'
+        @warnings << "Email confirmation enabled but SMTP is not configured"
+      end
+    end
+
+    if auth_methods.empty?
+      @errors << "No authentication methods enabled! Enable at least one of: OIDC, LDAP, or Local Login"
+    else
+      @info << "✅ Authentication methods enabled: #{auth_methods.join(', ')}"
+    end
+  end
+
+  def check_optional_services
+    # SMTP
+    if ENV['VULCAN_ENABLE_SMTP'] == 'true'
+      check_conditional_vars(:smtp)
+      @info << "✅ SMTP email service configured"
+    end
+
+    # Slack
+    if ENV['VULCAN_ENABLE_SLACK_COMMS'] == 'true'
+      check_conditional_vars(:slack)
+      @info << "✅ Slack integration configured"
+    end
+  end
+
+  def check_conditional_vars(service)
+    config = CONDITIONAL_ENV_VARS[service]
+    return unless config
+
+    config[:requires].each do |var|
+      if ENV[var].to_s.strip.empty?
+        @errors << "#{service.to_s.upcase} enabled but missing required variable: #{var}"
+      end
+    end
+  end
+
+  def check_deprecated_config
+    deprecated_files = %w[
+      config/vulcan.default.yml
+      config/app.yml
+    ]
+
+    deprecated_files.each do |file|
+      if File.exist?(file)
+        @warnings << "Deprecated configuration file found: #{file} - This file is no longer used"
+      end
+    end
+
+    # Check for old environment variables
+    deprecated_vars = %w[
+      VULCAN_OIDC_HOST
+      VULCAN_OIDC_PORT
+      VULCAN_OIDC_SCHEME
+    ]
+
+    deprecated_vars.each do |var|
+      if ENV[var]
+        @warnings << "Deprecated environment variable: #{var} - Use VULCAN_OIDC_ISSUER_URL instead"
+      end
+    end
+  end
+
+  def check_settings_table
+    require_relative '../config/environment'
+
+    begin
+      if ActiveRecord::Base.connection.table_exists?('settings')
+        count = Setting.count
+        @info << "✅ Settings table exists with #{count} custom settings"
+      else
+        @errors << "Settings table does not exist. Run: rails db:migrate"
+      end
+    rescue StandardError => e
+      @errors << "Could not connect to database: #{e.message}"
+    end
+  end
+
+  def generate_k8s_example
+    example = {
+      apiVersion: 'v1',
+      kind: 'ConfigMap',
+      metadata: {
+        name: 'vulcan-config',
+        namespace: 'default'
+      },
+      data: generate_k8s_env_vars
+    }
+
+    puts "\n📋 Example Kubernetes ConfigMap:"
+    puts "=" * 50
+    puts example.to_yaml
+    puts "=" * 50
+  end
+
+  def generate_k8s_env_vars
+    vars = {
+      # Essential
+      'RAILS_ENV' => 'production',
+      'VULCAN_CONTACT_EMAIL' => 'admin@example.com',
+
+      # Authentication (example with OIDC enabled)
+      'VULCAN_ENABLE_OIDC' => 'true',
+      'VULCAN_OIDC_ISSUER_URL' => 'https://your-oidc-provider.com',
+      'VULCAN_OIDC_REDIRECT_URI' => 'https://your-vulcan-domain.com/users/auth/oidc/callback',
+
+      # Optional services
+      'VULCAN_ENABLE_SMTP' => 'false',
+      'VULCAN_ENABLE_SLACK_COMMS' => 'false'
+    }
+
+    # Add current environment variables that start with VULCAN_
+    ENV.each do |key, value|
+      if key.start_with?('VULCAN_') && !value.include?('SECRET') && !value.include?('PASSWORD')
+        vars[key] = 'CONFIGURE_ME'
+      end
+    end
+
+    vars
+  end
+
+  def print_results
+    puts "\n📊 Preflight Check Results:"
+    puts "=" * 50
+
+    if @info.any?
+      puts "\n✅ Passed Checks:"
+      @info.each { |msg| puts "   #{msg}" }
+    end
+
+    if @warnings.any?
+      puts "\n⚠️  Warnings:"
+      @warnings.each { |msg| puts "   #{msg}" }
+    end
+
+    if @errors.any?
+      puts "\n❌ Errors:"
+      @errors.each { |msg| puts "   #{msg}" }
+      puts "\n🚨 Preflight check FAILED! Fix the errors above before starting Vulcan."
+    else
+      puts "\n🎉 Preflight check PASSED! Vulcan is ready to start."
+    end
+
+    puts "\n💡 Tips:"
+    puts "   - Run with --check-db to verify database connection"
+    puts "   - Run with --k8s-example to generate Kubernetes ConfigMap"
+    puts "   - See CONFIGURATION.md for full documentation"
+  end
+end
+
+# Parse command line options
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/preflight-check [options]"
+
+  opts.on('-d', '--check-db', 'Check database connection and settings table') do
+    options[:check_db] = true
+  end
+
+  opts.on('-k', '--k8s-example', 'Generate example Kubernetes ConfigMap') do
+    options[:k8s_example] = true
+  end
+
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end.parse!
+
+# Run the preflight check
+VulcanPreflightCheck.new(options).run
