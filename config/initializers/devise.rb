@@ -282,39 +282,52 @@ Devise.setup do |config|
   # changed. Defaults to true, so a user is signed in automatically after changing a password.
   # config.sign_in_after_change_password = true
 
-  # ==> omniauth_openid_connect configuration
-  # We are defining OmniAuth strategy authenticating with OpenID Connect providers.
-  # With the configuration below users can sign in with an OpenID Connect provider to
-  # access protected resources in the vulcan app.
-  # OIDC will be configured in to_prepare block to avoid autoloading
+  # ==> OmniAuth configuration
+  # Configure providers with dynamic setup to use database settings
+  # This allows runtime configuration changes without restart
+
+  # LDAP provider with dynamic configuration and connectivity caching
+  config.omniauth(:ldap,
+                  setup: lambda { |env|
+                    # This runs on each request, allowing dynamic configuration
+                    if Setting.ldap_enabled && Setting.ldap_servers.present?
+                      strategy = env['omniauth.strategy']
+                      ldap_config = Setting.ldap_servers.values.first
+
+                      # Create helper instance for LDAP validation caching
+                      ldap_helper = Class.new do
+                        include LdapSettingsCacheHelper
+                      end.new
+
+                      # Validate LDAP connectivity with caching before applying configuration
+                      connectivity_result = ldap_helper.validate_ldap_connectivity(ldap_config)
+
+                      if connectivity_result&.dig('status') != 'success'
+                        Rails.logger.warn 'LDAP connectivity validation failed, LDAP authentication may not work'
+                        # Still apply configuration but log the issue
+                      end
+
+                      # Apply configuration regardless of connectivity test result
+                      strategy.options.deep_merge!(ldap_config)
+                    end
+                  })
+
+  # OIDC provider with dynamic configuration
+  config.omniauth(:openid_connect,
+                  setup: lambda { |env|
+                    # This runs on each request, allowing dynamic configuration
+                    if Setting.oidc_enabled && Setting.oidc_args.present?
+                      strategy = env['omniauth.strategy']
+                      strategy.options.deep_merge!(Setting.oidc_args)
+                    end
+                  })
 end
 
-# Configure Devise settings that require access to Settings model
-# This runs after the application is initialized, avoiding autoloading issues
-Rails.application.config.to_prepare do
-  # Update timeout_in with actual setting value
-  Devise.timeout_in = Settings.local_login.session_timeout.minutes
-
-  # Clear existing omniauth configs to avoid duplicates
-  Devise.omniauth_configs.clear if Devise.omniauth_configs
-
-  # Configure LDAP if enabled
-  if Settings.ldap.enabled && Settings.ldap.servers.present?
-    # We currently only support one ldap server however we allow them to be
-    # passed in as an array so that we have the ability to support multiple
-    # servers later without any changes to the YAML syntax.
-    Devise.omniauth(:ldap, Settings.ldap.servers.values.first)
-  end
-
-  # Configure additional providers
-  if Settings.providers.present?
-    Settings.providers.each do |provider|
-      Devise.omniauth(provider.name.to_sym, provider.app_id, provider.app_secret, provider.args)
-    end
-  end
-
-  # Configure OIDC if enabled
-  if Settings.oidc.enabled && Settings.oidc.args.present?
-    Devise.omniauth(Settings.oidc.strategy, Settings.oidc.args)
+# Configure Devise timeout using Setting model with lazy loading to avoid database access during initialization
+Rails.application.reloader.to_prepare do
+  # Use ActiveSupport.on_load to delay Settings access until ActiveRecord is fully initialized
+  ActiveSupport.on_load(:active_record) do
+    # Update timeout_in with actual setting value
+    Devise.timeout_in = Setting.local_login_session_timeout.minutes
   end
 end

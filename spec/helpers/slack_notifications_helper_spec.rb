@@ -5,6 +5,12 @@ require 'rails_helper'
 RSpec.describe SlackNotificationsHelper, type: :helper do
   include SlackNotificationsHelper
 
+  # Mock Setting calls globally to prevent database access during any test
+  before do
+    allow(Setting).to receive(:slack_enabled).and_return(true)
+    allow(Setting).to receive(:slack_api_token).and_return('test-token')
+  end
+
   describe '#send_notification' do
     let(:channel) { 'test_channel' }
     let(:message_params) do
@@ -21,6 +27,19 @@ RSpec.describe SlackNotificationsHelper, type: :helper do
 
     before do
       allow(Slack::Web::Client).to receive(:new).and_return(client)
+
+      # Mock ALL Setting values that SlackNotificationsHelper might access
+      allow(Setting).to receive(:slack_enabled).and_return(true)
+      allow(Setting).to receive(:slack_api_token).and_return('test-token')
+
+      # Mock cache validation methods to return success
+      allow(helper).to receive(:validate_slack_api_token).and_return({ 'status' => 'success' })
+      allow(helper).to receive(:validate_slack_posting_capability).and_return({
+                                                                                'api_token_valid' => true,
+                                                                                'posting_permissions' => true
+                                                                              })
+      allow(helper).to receive(:build_message).and_return([{ type: 'section', text: { type: 'mrkdwn', text: 'test' } }])
+      allow(helper).to receive(:log_settings_cache_metrics)
     end
 
     it 'sends a message to the specified channel' do
@@ -28,7 +47,7 @@ RSpec.describe SlackNotificationsHelper, type: :helper do
         channel: channel,
         blocks: anything
       )
-      send_notification(channel, message_params)
+      expect(helper.send_notification(channel, message_params)).to be true
     end
 
     it 'logs an error if the channel is not found' do
@@ -39,13 +58,13 @@ RSpec.describe SlackNotificationsHelper, type: :helper do
       )
       expect(Rails.logger).to receive(:error)
         .with("Slack channel '#{channel}' not found: Slack channel '#{channel}' not found")
-      helper.send_notification(channel, message_params)
+      expect(helper.send_notification(channel, message_params)).to be false
     end
 
     it 'logs an error if there is a Slack API error' do
       allow(client).to receive(:chat_postMessage).and_raise(Slack::Web::Api::Errors::SlackError.new('Test error'))
       expect(Rails.logger).to receive(:error).with('Slack API error: Test error')
-      send_notification(channel, message_params)
+      expect(helper.send_notification(channel, message_params)).to be false
     end
   end
 

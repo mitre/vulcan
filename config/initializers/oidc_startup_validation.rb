@@ -3,14 +3,12 @@
 # OIDC Configuration Startup Validation
 # Validates OIDC configuration at application boot to catch misconfigurations early
 
-Rails.application.config.after_initialize do
-  # Run validation whenever OIDC is enabled, regardless of environment
-  # This allows developers to test OIDC locally if they have proper configuration
-
-  # Wrap in to_prepare to ensure Settings model is loaded
-  Rails.application.config.to_prepare do
+# OIDC startup validation using Setting model with lazy loading to avoid database access during initialization
+Rails.application.reloader.to_prepare do
+  # Use ActiveSupport.on_load to delay Settings access until ActiveRecord is fully initialized
+  ActiveSupport.on_load(:active_record) do
     # Only validate if OIDC is enabled
-    next unless Settings.oidc&.enabled
+    next unless Setting.oidc_enabled
 
     begin
       OidcStartupValidator.validate_configuration
@@ -36,7 +34,7 @@ class OidcStartupValidator
       validate_issuer_url
 
       # Step 3: Test discovery endpoint if discovery is enabled
-      validate_discovery_endpoint if Settings.oidc.discovery
+      validate_discovery_endpoint if Setting.oidc_discovery
 
       # Step 4: Check for deprecated configuration patterns
       warn_deprecated_patterns
@@ -90,7 +88,7 @@ class OidcStartupValidator
     end
 
     def validate_discovery_endpoint
-      return unless Settings.oidc.discovery
+      return unless Setting.oidc_discovery
 
       # Skip discovery endpoint testing in test environment when WebMock is active
       # This allows unit tests to run without making real HTTP requests
@@ -175,7 +173,7 @@ class OidcStartupValidator
       warnings = []
 
       # Check for deprecated manual endpoint configuration when discovery is enabled
-      if Settings.oidc.discovery
+      if Setting.oidc_discovery
         manual_endpoints = [
           ENV['VULCAN_OIDC_AUTHORIZATION_URL'],
           ENV['VULCAN_OIDC_TOKEN_URL'],
@@ -274,7 +272,7 @@ class OidcStartupValidator
 
     # Helper methods for accessing configuration
     def issuer_url
-      Settings.oidc.args&.dig('issuer') || ENV['VULCAN_OIDC_ISSUER_URL']
+      Setting.oidc_args&.dig('issuer') || ENV['VULCAN_OIDC_ISSUER_URL']
     end
 
     def client_id

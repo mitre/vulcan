@@ -32,6 +32,10 @@ jobs:
           --health-retries 5
       ldap:
         image: rroemhild/test-openldap
+        env:
+          LDAP_ADMIN_PASSWORD: GoodNewsEveryone
+          LDAP_BASE_DN: dc=planetexpress,dc=com
+          LDAP_TLS_VERIFY_CLIENT: never
         ports:
           - 10389:10389
 
@@ -65,6 +69,7 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
           RAILS_ENV: test
+          CI: true
           # OIDC Testing Configuration - Discovery only (no actual OAuth flows)
           VULCAN_ENABLE_OIDC: true
           VULCAN_OIDC_DISCOVERY: true
@@ -75,18 +80,22 @@ jobs:
           OKTA_TEST_ISSUER: ${{ secrets.OKTA_TEST_ISSUER }}
           OKTA_TEST_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
           OKTA_TEST_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
-          # Options below this line are so we can test LDAP
+          # LDAP Testing Configuration (for rroemhild/test-openldap container)
           VULCAN_ENABLE_LDAP: true
           VULCAN_LDAP_HOST: localhost
-          VULCAN_LDAP_ATTRIBUTE: mail
-          VULCAN_LDAP_BIND_DN: cn=admin,dc=planetexpress,dc=com
-          VULCAN_LDAP_BASE: ou=people,dc=planetexpress,dc=com
           VULCAN_LDAP_PORT: 10389
+          VULCAN_LDAP_ENCRYPTION: plain
+          VULCAN_LDAP_BASE: ou=people,dc=planetexpress,dc=com
+          VULCAN_LDAP_BIND_DN: cn=admin,dc=planetexpress,dc=com
           VULCAN_LDAP_ADMIN_PASS: GoodNewsEveryone
+          VULCAN_LDAP_UID: mail
+          VULCAN_LDAP_TITLE: Test LDAP
         run: |
           bundle exec rails db:create
           bundle exec rails db:schema:load
-          # Run full test suite including OIDC discovery and startup validation
+          # Ensure rails-settings-cached table is available
+          bundle exec rails db:migrate
+          # Run the test suite
           bundle exec rails spec
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
