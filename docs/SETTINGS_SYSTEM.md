@@ -9,7 +9,7 @@ Vulcan uses `rails-settings-cached` to provide a flexible, database-backed confi
 ### Precedence Model
 Settings follow this precedence order (highest to lowest):
 1. **Database Value** - Set via admin interface or API
-2. **Environment Variable** - Set in deployment configuration
+2. **Environment Variable** - Set in deployment configuration  
 3. **Hardcoded Default** - Fallback value in the code
 
 ### Example
@@ -205,7 +205,7 @@ Vulcan uses OmniAuth's setup phase to configure providers dynamically:
 
 ```ruby
 # In config/initializers/devise.rb
-config.omniauth(:ldap,
+config.omniauth(:ldap, 
   setup: lambda { |env|
     if Setting.ldap_enabled && Setting.ldap_servers.present?
       strategy = env['omniauth.strategy']
