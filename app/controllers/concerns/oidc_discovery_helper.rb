@@ -2,7 +2,6 @@
 
 # Helper module for OIDC discovery document fetching and validation
 # Provides caching, security validation, and error handling for OpenID Connect discovery
-# rubocop:disable Metrics/ModuleLength
 # This module is intentionally long as it handles the complete OIDC discovery workflow:
 # fetching, caching, validation, error handling, and logging
 module OidcDiscoveryHelper
@@ -353,4 +352,3 @@ module OidcDiscoveryHelper
     endpoint_fields.count { |field| discovery_document[field].present? }
   end
 end
-# rubocop:enable Metrics/ModuleLength

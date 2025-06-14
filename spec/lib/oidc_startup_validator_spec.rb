@@ -11,7 +11,7 @@ RSpec.describe OidcStartupValidator do
 
     if enabled
       args_mock = double('args')
-      allow(args_mock).to receive(:issuer).and_return(issuer)
+      allow(args_mock).to receive(:dig).with('issuer').and_return(issuer)
       allow(args_mock).to receive(:client_id).and_return('test-client-id')
       allow(args_mock).to receive(:client_secret).and_return('test-secret')
       allow(oidc_settings).to receive(:args).and_return(args_mock)

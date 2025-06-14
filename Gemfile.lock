@@ -349,6 +349,9 @@ GEM
       nokogiri (>= 1.6)
     rails-html-sanitizer (1.5.0)
       loofah (~> 2.19, >= 2.19.1)
+    rails-settings-cached (2.9.6)
+      activerecord (>= 5.0.0)
+      railties (>= 5.0.0)
     railties (6.1.4.6)
       actionpack (= 6.1.4.6)
       activesupport (= 6.1.4.6)
@@ -432,7 +435,6 @@ GEM
       websocket (~> 1.0)
     semantic_range (3.0.0)
     semverse (3.0.0)
-    settingslogic (2.0.9)
     sexp_processor (4.16.0)
     simplecov (0.21.2)
       docile (~> 1.1)
@@ -582,6 +584,7 @@ DEPENDENCIES
   pg (>= 0.18, < 2.0)
   puma (~> 5.6)
   rails (~> 6.1.4)
+  rails-settings-cached (~> 2.9)
   rest-client
   rspec-mocks
   rspec-rails (~> 4.0.0)
@@ -592,7 +595,6 @@ DEPENDENCIES
   rubyzip
   ruh-roo (~> 3.0.0)
   selenium-webdriver
-  settingslogic (~> 2.0.9)
   simplecov
   slack-ruby-client (= 1.0.0)
   slack_block_kit (= 0.3.3)

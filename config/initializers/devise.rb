@@ -158,7 +158,8 @@ Devise.setup do |config|
   # ==> Configuration for :timeoutable
   # The time you want to timeout the user session without activity. After this
   # time the user will be asked for credentials again. Default is 30 minutes.
-  config.timeout_in = Settings.local_login.session_timeout.minutes
+  # Defer Settings access to avoid autoloading during initialization
+  config.timeout_in = 30.minutes # Default value, will be updated in to_prepare block
 
   # ==> Configuration for :lockable
   # Defines which strategy will be used to lock an account.
@@ -243,16 +244,7 @@ Devise.setup do |config|
   # up on your models and hooks.
   # config.omniauth :github, ENV['GITHUB_APP_ID'], ENV['GITHUB_APP_SECRET'],
   #                 scope: 'user,public_repo'
-  if Settings.ldap.enabled
-    # We currently only support one ldap server however we allow them to be
-    # passed in as an array so that we have the ability to support multiple
-    # servers later without any changes to the YAML syntax.
-    config.omniauth(:ldap, Settings.ldap.servers.values.first)
-  end
-
-  Settings.providers.each do |provider|
-    config.omniauth(provider.name.to_sym, provider.app_id, provider.app_secret, provider.args)
-  end
+  # Omniauth providers will be configured in to_prepare block to avoid autoloading
 
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
@@ -290,9 +282,52 @@ Devise.setup do |config|
   # changed. Defaults to true, so a user is signed in automatically after changing a password.
   # config.sign_in_after_change_password = true
 
-  # ==> omniauth_openid_connect configuration
-  # We are defining OmniAuth strategy authenticating with OpenID Connect providers.
-  # With the configuration below users can sign in with an OpenID Connect provider to
-  # access protected resources in the vulcan app.
-  config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled
+  # ==> OmniAuth configuration
+  # Configure providers with dynamic setup to use database settings
+  # This allows runtime configuration changes without restart
+
+  # LDAP provider with dynamic configuration and connectivity caching
+  config.omniauth(:ldap,
+                  setup: lambda { |env|
+                    # This runs on each request, allowing dynamic configuration
+                    if Setting.ldap_enabled && Setting.ldap_servers.present?
+                      strategy = env['omniauth.strategy']
+                      ldap_config = Setting.ldap_servers.values.first
+
+                      # Create helper instance for LDAP validation caching
+                      ldap_helper = Class.new do
+                        include LdapSettingsCacheHelper
+                      end.new
+
+                      # Validate LDAP connectivity with caching before applying configuration
+                      connectivity_result = ldap_helper.validate_ldap_connectivity(ldap_config)
+
+                      if connectivity_result&.dig('status') != 'success'
+                        Rails.logger.warn 'LDAP connectivity validation failed, LDAP authentication may not work'
+                        # Still apply configuration but log the issue
+                      end
+
+                      # Apply configuration regardless of connectivity test result
+                      strategy.options.deep_merge!(ldap_config)
+                    end
+                  })
+
+  # OIDC provider with dynamic configuration
+  config.omniauth(:openid_connect,
+                  setup: lambda { |env|
+                    # This runs on each request, allowing dynamic configuration
+                    if Setting.oidc_enabled && Setting.oidc_args.present?
+                      strategy = env['omniauth.strategy']
+                      strategy.options.deep_merge!(Setting.oidc_args)
+                    end
+                  })
+end
+
+# Configure Devise timeout using Setting model with lazy loading to avoid database access during initialization
+Rails.application.reloader.to_prepare do
+  # Use ActiveSupport.on_load to delay Settings access until ActiveRecord is fully initialized
+  ActiveSupport.on_load(:active_record) do
+    # Update timeout_in with actual setting value
+    Devise.timeout_in = Setting.local_login_session_timeout.minutes
+  end
 end

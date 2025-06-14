@@ -3,7 +3,7 @@
 require 'zip'
 
 # Helper methods for exports
-module ExportHelper # rubocop:todo Metrics/ModuleLength
+module ExportHelper
   include ExportConstants
 
   DISA_STATUS_TEXTS = {

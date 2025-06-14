@@ -59,6 +59,7 @@ Note: When using Node.js 17+, webpack-dev-server requires the `NODE_OPTIONS=--op
 - Run Ruby linting: `bundle exec rubocop`
 - Run JS linting: `yarn lint`
 
+
 ## Search Tools
 - Use `rg` (ripgrep) for fast code searching: `rg "pattern" path/`
 - Common rg flags:
