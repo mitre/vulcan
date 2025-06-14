@@ -33,14 +33,14 @@ data:
   RAILS_ENV: "production"
   VULCAN_CONTACT_EMAIL: "admin@your-org.com"
   VULCAN_APP_URL: "https://vulcan.your-org.com"
-
+  
   # Authentication - Choose at least one
-
+  
   # Option A: OIDC/SSO (Recommended for enterprise)
   VULCAN_ENABLE_OIDC: "true"
   VULCAN_OIDC_ISSUER_URL: "https://your-idp.com/oauth2/default"
   VULCAN_OIDC_REDIRECT_URI: "https://vulcan.your-org.com/users/auth/oidc/callback"
-
+  
   # Option B: LDAP
   VULCAN_ENABLE_LDAP: "true"
   VULCAN_LDAP_HOST: "ldap.your-org.com"
@@ -48,11 +48,11 @@ data:
   VULCAN_LDAP_ENCRYPTION: "simple_tls"
   VULCAN_LDAP_BASE: "dc=your-org,dc=com"
   VULCAN_LDAP_TITLE: "Corporate LDAP"
-
+  
   # Option C: Local Login (not recommended for production)
   VULCAN_ENABLE_LOCAL_LOGIN: "true"
   VULCAN_ENABLE_USER_REGISTRATION: "false"
-
+  
   # Optional Services
   VULCAN_ENABLE_SMTP: "true"
   VULCAN_SMTP_ADDRESS: "smtp.your-org.com"
@@ -74,22 +74,22 @@ type: Opaque
 stringData:
   # Database
   DATABASE_URL: "postgres://vulcan:password@postgres:5432/vulcan_production"
-
+  
   # Rails
   SECRET_KEY_BASE: "generate-with-rails-secret"
-
+  
   # OIDC
   VULCAN_OIDC_CLIENT_ID: "your-client-id"
   VULCAN_OIDC_CLIENT_SECRET: "your-client-secret"
-
+  
   # LDAP
   VULCAN_LDAP_BIND_DN: "cn=vulcan,ou=services,dc=your-org,dc=com"
   VULCAN_LDAP_ADMIN_PASS: "ldap-bind-password"
-
+  
   # SMTP
   VULCAN_SMTP_SERVER_USERNAME: "vulcan@your-org.com"
   VULCAN_SMTP_SERVER_PASSWORD: "smtp-password"
-
+  
   # Slack
   VULCAN_SLACK_API_TOKEN: "xoxb-your-token"
   VULCAN_SLACK_CHANNEL_ID: "C1234567890"
@@ -112,7 +112,7 @@ spec:
       containers:
       - name: migrate
         image: mitre/vulcan:latest
-        command:
+        command: 
         - /bin/bash
         - -c
         - |
@@ -198,10 +198,10 @@ auth:
     issuerUrl: https://your-idp.com/oauth2/default
     clientId: your-client-id
     clientSecret: your-client-secret  # Use secrets management!
-
+    
   ldap:
     enabled: false
-
+    
   localLogin:
     enabled: false
 
@@ -212,7 +212,7 @@ services:
     port: 587
     username: vulcan@your-org.com
     password: ""  # Use secrets management!
-
+    
   slack:
     enabled: false
 
@@ -310,7 +310,7 @@ Update your Helm templates to generate the ConfigMap and Secret from these value
 
 4. **Rolling Updates**: The new settings system supports zero-downtime deployments
 
-5. **Backup Before Migration**:
+5. **Backup Before Migration**: 
    ```bash
    kubectl exec -it deployment/vulcan -- pg_dump $DATABASE_URL > backup.sql
    ```

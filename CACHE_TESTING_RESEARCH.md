@@ -24,7 +24,7 @@
 
 ### **Test What Matters**
 1. **Cache Key Generation** - Different providers generate different cache keys
-2. **Cache Hit/Miss Behavior** - Methods return cached vs fresh data correctly
+2. **Cache Hit/Miss Behavior** - Methods return cached vs fresh data correctly  
 3. **Cache Warming** - Warming methods execute without errors
 4. **Multi-Provider Support** - Cache keys include provider IDs for uniqueness
 5. **Fallback Behavior** - Graceful degradation when cache unavailable
@@ -33,7 +33,7 @@
 ```ruby
 RSpec.shared_context("with cache", :with_cache) do
   let(:memory_store) { ActiveSupport::Cache::MemoryStore.new }
-
+  
   before do
     allow(Rails).to receive(:cache).and_return(memory_store)
     Rails.cache.clear

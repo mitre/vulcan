@@ -14,7 +14,7 @@ We've replaced the deprecated `settingslogic` gem with `rails-settings-cached` t
 
 1. **New Database Table Required**: A `settings` table must be created
 2. **Configuration Storage**: Settings are now stored in the database instead of YAML files
-3. **Removed Files**:
+3. **Removed Files**: 
    - `config/vulcan.default.yml` - No longer used
    - `config/app.yml` - No longer used
 
@@ -35,8 +35,8 @@ This creates the new settings table and automatically imports existing YAML sett
 bundle exec rails db:migrate
 ```
 
-**Automatic YAML Import**: During migration, if a `config/vulcan.default.yml` file exists,
-non-sensitive settings like `welcome_text` and `contact_email` will be automatically
+**Automatic YAML Import**: During migration, if a `config/vulcan.default.yml` file exists, 
+non-sensitive settings like `welcome_text` and `contact_email` will be automatically 
 imported to the database (only if no environment variable override exists).
 
 ### 3. Verify Environment Variables
@@ -116,11 +116,11 @@ heroku config:set VULCAN_OIDC_ISSUER_URL=https://your-provider.com
 
 ### Application Won't Start
 
-1. **Check migrations ran successfully**:
+1. **Check migrations ran successfully**: 
    ```bash
    bundle exec rails db:migrate:status
    ```
-
+   
 2. **Verify settings table exists**:
    ```bash
    bundle exec rails runner "puts Setting.count"

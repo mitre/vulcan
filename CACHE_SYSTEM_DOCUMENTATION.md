@@ -9,7 +9,7 @@ Vulcan implements a comprehensive, production-grade caching system designed for 
 ### Core Components
 
 1. **`CacheConfiguration`** - Centralized constants and configuration
-2. **`SettingsCacheHelper`** - Universal settings caching foundation
+2. **`SettingsCacheHelper`** - Universal settings caching foundation  
 3. **`ProviderCacheHelper`** - Multi-provider connectivity caching
 4. **`GeneralSettingsCacheHelper`** - Application settings caching
 5. **Provider-specific helpers** - LDAP, OIDC, SMTP, Slack extensions
@@ -38,7 +38,7 @@ authentication_failure: 15.minutes   # Failed auth expires quickly
 # Provider capabilities - very stable
 capabilities: 2.hours                 # Rarely change
 
-# Configuration validation - stable
+# Configuration validation - stable  
 config_validation: 1.hour            # Settings don't change often
 
 # General application settings - moderately stable
@@ -70,7 +70,7 @@ cache_duration_for('ldap', 'connectivity', success: true)
 # => 15.minutes
 
 # Get connection timeout
-timeout_for('smtp')
+timeout_for('smtp')  
 # => 10.seconds
 
 # Get request lock timeout
@@ -117,7 +117,7 @@ DRY base for all provider-specific caching (LDAP, OIDC, SMTP, Slack).
 
 #### Key Features:
 - **Multi-provider support** - Handle multiple instances of same provider type
-- **Universal cache identifiers** - Consistent across all provider types
+- **Universal cache identifiers** - Consistent across all provider types  
 - **TCP connectivity testing** - Common network testing with configurable timeouts
 - **Provider normalization** - HashWithIndifferentAccess for all configurations
 - **Background cache warming** - Thread-based warming without blocking startup
@@ -148,14 +148,14 @@ def test_ldap_connectivity(server_config, server_name)
   config = normalize_provider_config(server_config)
   host = config[:host]
   port = config[:port] || 389
-
+  
   result = test_tcp_connectivity(host, port, 'ldap', server_name)
-
+  
   # Cache with LDAP-specific durations
   cache_identifier = generate_provider_cache_identifier('ldap', server_config, server_name)
   expires_in = cache_duration_for('ldap', 'connectivity', success: result[:status] == 'success')
   cache_settings_data('ldap_connectivity', cache_identifier, result, expires_in: expires_in)
-
+  
   result
 end
 ```
@@ -168,13 +168,13 @@ def test_smtp_connectivity(smtp_config, provider_id)
   config = normalize_provider_config(smtp_config)
   host = config[:address]
   port = config[:port] || 587
-
+  
   result = test_tcp_connectivity(host, port, 'smtp', provider_id)
-
+  
   # SMTP servers are more stable - longer cache duration
   expires_in = cache_duration_for('smtp', 'connectivity', success: result[:status] == 'success')
   cache_settings_data('smtp_connectivity', cache_identifier, result, expires_in: expires_in)
-
+  
   result
 end
 ```
@@ -189,10 +189,10 @@ The cache warming system pre-populates caches during application startup for opt
 # config/initializers/settings_cache_warming.rb
 Rails.application.reloader.to_prepare do
   next if Rails.env.test?
-
+  
   # Check database readiness
   next unless ActiveRecord::Base.connection.table_exists?('settings')
-
+  
   cache_warmer.warm_all_settings_caches
 end
 ```
@@ -202,16 +202,16 @@ end
 ```ruby
 def warm_all_settings_caches
   Rails.logger.info "Starting multi-provider settings cache warming"
-
+  
   # General settings (always warmed)
   warm_general_settings_cache
-
+  
   # Provider-specific warming (conditional)
   warm_oidc_providers if Setting.oidc_enabled
   warm_ldap_providers if Setting.ldap_enabled && Setting.ldap_servers.present?
   warm_smtp_providers if Setting.smtp_enabled && Setting.smtp_settings.present?
   warm_slack_providers if Setting.slack_enabled && Setting.slack_api_token.present?
-
+  
   Rails.logger.info "Multi-provider settings cache warming completed"
 end
 ```
@@ -311,7 +311,7 @@ identifier = Digest::SHA256.hexdigest(cache_key_base)[0..16]
 ### Test Levels
 
 1. **Unit Tests** - Individual helper methods with mocked dependencies
-2. **Integration Tests** - Real database, cache store, and network connections
+2. **Integration Tests** - Real database, cache store, and network connections  
 3. **Behavioral Tests** - User-facing cache behavior and performance
 4. **Load Tests** - Concurrent access and cache warming
 
@@ -321,7 +321,7 @@ identifier = Digest::SHA256.hexdigest(cache_key_base)[0..16]
 # Use HashWithIndifferentAccess in tests for consistency
 RSpec.shared_context 'with cache', :with_cache do
   let(:memory_store) { ActiveSupport::Cache::MemoryStore.new }
-
+  
   before do
     allow(Rails).to receive(:cache).and_return(memory_store)
     Rails.cache.clear
@@ -337,7 +337,7 @@ Tests verify cache works correctly with real database and providers:
 # Integration test verifying real database interaction
 it 'caches real Settings model data correctly' do
   Setting.app_url = 'https://test.vulcan.com'
-
+  
   cached_settings = test_controller.get_cached_settings('app_config', 'main') do
     { 'app_url' => Setting.app_url }
   end
@@ -401,7 +401,7 @@ When making breaking changes to cached data structure:
 ### Production Deployment
 
 1. **Monitor cache hit rates** - Low hit rates indicate configuration issues
-2. **Watch cache warming logs** - Ensure providers are warming successfully
+2. **Watch cache warming logs** - Ensure providers are warming successfully  
 3. **Set up alerting** - Alert on cache warming failures or high miss rates
 4. **Plan cache size** - Monitor memory usage in production
 5. **Test failover scenarios** - Ensure graceful degradation works
@@ -430,7 +430,7 @@ When making breaking changes to cached data structure:
 # Check cache contents
 Rails.cache.read(cache_key)
 
-# Verify cache existence
+# Verify cache existence  
 Rails.cache.exist?(cache_key)
 
 # Clear specific cache
@@ -447,7 +447,7 @@ Cache metrics logs provide debugging information:
 ```json
 {
   "event": "settings_cache_hit",
-  "cache_type": "ldap_connectivity",
+  "cache_type": "ldap_connectivity", 
   "identifier": "a1b2c3d4e5f6g7h8",
   "cache_version": "1.1",
   "timestamp": "2025-06-13T16:58:29Z"
