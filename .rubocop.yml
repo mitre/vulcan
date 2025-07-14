@@ -26,6 +26,10 @@ Metrics/AbcSize:
   Enabled: false
 Metrics/ClassLength:
   Max: 750
+Metrics/ModuleLength:
+  Max: 750
+  Exclude:
+    - "app/controllers/concerns/*_cache_helper.rb"
 Metrics/ParameterLists:
   Max: 8
 Metrics/BlockLength:

@@ -1,32 +1,10 @@
 # frozen_string_literal: true
 
-# We load our settings first so that we can access them
-# in other initializers
+# rails-settings-cached configuration
+# The Setting model will be autoloaded by Rails when needed
+# Default values are defined in the model using environment variables
+# Database overrides are handled automatically by the gem
 
-require_relative '../settings'
-
-Settings['ldap'] ||= Settingslogic.new({})
-Settings.ldap['enabled'] = false if Settings.ldap['enabled'].nil?
-
-Settings['oidc'] ||= Settingslogic.new({})
-Settings.oidc['enabled'] = false if Settings.oidc['enabled'].nil?
-Settings.oidc['discovery'] = true if Settings.oidc['discovery'].nil?
-
-Settings['local_login'] ||= Settingslogic.new({})
-Settings.local_login['enabled'] = false if Settings.local_login['enabled'].nil?
-
-Settings['user_registration'] ||= Settingslogic.new({})
-Settings.user_registration['enabled'] = false if Settings.user_registration['enabled'].nil?
-
-Settings['project'] ||= Settingslogic.new({})
-Settings.project['create_permission_enabled'] = false if Settings.project['create_permission_enabled'].nil?
-
-Settings['smtp'] ||= Settingslogic.new({})
-Settings.smtp['enabled'] = false if Settings.smtp['enabled'].nil?
-
-Settings['slack'] ||= Settingslogic.new({})
-Settings.slack['enabled'] = false if Settings.slack['enabled'].nil?
-
-Settings['providers'] ||= Settingslogic.new({})
-
-Settings['contact_email'] = 'do_not_reply@vulcan' if Settings['contact_email'].blank?
+# The Settings compatibility layer (config/settings.rb) will be autoloaded
+# when first accessed. This avoids the autoloading deprecation warning
+# during Rails initialization.

@@ -88,7 +88,7 @@ This document outlines the complete modernization strategy for the Vulcan applic
 
 ### Tasks
 - [ ] Audit and update all Rails dependencies
-- [ ] Upgrade Ruby version if needed
+- [ ] Upgrade Ruby from 2.7.5 to 3.3.x (fallback to 3.2.x if compatibility issues)
 - [ ] Implement Rails upgrade in stages (follow major version path)
 - [ ] Audit database design and implement optimizations
 - [ ] Design and implement RESTful API for all data requirements
@@ -261,7 +261,7 @@ Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrati
 - **INTEGRATION**: Assess integration with existing authentication systems
 
 ### Dependencies
-- **BLOCKING**: Phase 0 completion (Webpacker migration, Ruby 3.2+ upgrade)
+- **BLOCKING**: Phase 0 completion (Webpacker migration, Ruby 3.3.x upgrade - fallback to 3.2.x)
 - **REQUIRED**: Rails 7+ and modern asset pipeline
 - **OPTIONAL**: Redis/Memcached for enhanced settings caching
 
