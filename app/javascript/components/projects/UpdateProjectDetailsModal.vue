@@ -5,7 +5,7 @@
       :variant="is_project_table ? 'primary' : 'success'"
       @click="showModal()"
     >
-      <i v-if="is_project_table" class="mdi mdi-wrench" aria-hidden="true" />
+      <b-icon v-if="is_project_table" icon="wrench" aria-hidden="true" />
       {{ is_project_table ? "Update" : "Update Details" }}
     </b-button>
     <b-modal

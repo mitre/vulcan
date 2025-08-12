@@ -38,15 +38,15 @@
           <tr>
             <th class="d-flex">
               <b-form-select v-model="field" :options="ruleFields" />
-              <i
+              <b-icon
                 v-if="sortOrder === 'asc'"
-                class="mdi mdi-arrow-down-drop-circle float-left"
+                icon="arrow-down-circle"
                 aria-hidden="true"
                 @click="sortOrder = 'desc'"
               />
-              <i
+              <b-icon
                 v-if="sortOrder === 'desc'"
-                class="mdi mdi-arrow-up-drop-circle float-left"
+                icon="arrow-up-circle"
                 aria-hidden="true"
                 @click="sortOrder = 'asc'"
               />

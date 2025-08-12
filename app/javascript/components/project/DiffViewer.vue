@@ -26,9 +26,9 @@
               @click="ruleSelected(rule_id)"
             >
               {{ baseComponent.prefix }}-{{ rule_id }}
-              <i
+              <b-icon
                 v-if="ruleDiffs[rule_id].changed"
-                class="mdi mdi-file-document-edit-outline float-right diff-icon"
+                icon="file-earmark-text"
                 aria-hidden="true"
               />
             </div>

@@ -5,10 +5,10 @@
       <b-form-group :id="`ruleEditor-rule_description-group-${mod}`">
         <label :for="`ruleEditor-rule_description-${mod}`">
           Rule Description
-          <i
+          <b-icon
             v-if="tooltips['rule_description']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['rule_description']"
           />

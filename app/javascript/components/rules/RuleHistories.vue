@@ -7,8 +7,8 @@
         groupedRuleHistories.length
       }}</b-badge>
 
-      <i v-if="showHistories" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-      <i v-if="!showHistories" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+      <b-icon v-if="showHistories" icon="chevron-down" />
+      <b-icon v-if="!showHistories" icon="chevron-up" />
     </div>
 
     <!-- All histories -->

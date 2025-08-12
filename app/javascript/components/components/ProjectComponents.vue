@@ -12,7 +12,7 @@
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text">
-              <i class="mdi mdi-magnify" aria-hidden="true" />
+              <b-icon icon="search" aria-hidden="true" />
             </div>
           </div>
           <input

@@ -5,8 +5,8 @@
       <h2 class="m-0 d-inline-block">Reviews &amp; Comments</h2>
       <b-badge pill class="ml-1 superVerticalAlign">{{ rule.reviews.length }}</b-badge>
 
-      <i v-if="showReviews" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-      <i v-if="!showReviews" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+      <b-icon v-if="showReviews" icon="chevron-down" />
+      <b-icon v-if="!showReviews" icon="chevron-up" />
     </div>
 
     <b-collapse id="collapse-reviews" v-model="showReviews">

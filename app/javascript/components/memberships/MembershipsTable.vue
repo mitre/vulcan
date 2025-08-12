@@ -25,7 +25,7 @@
           class="btn btn-success"
           @click="setSelectedMember(data.item)"
         >
-          <i class="mdi mdi-check" aria-hidden="true" />
+          <b-icon icon="check" aria-hidden="true" />
           Accept Request
         </b-button>
         <b-button
@@ -36,7 +36,7 @@
           )}`"
           rel="nofollow"
         >
-          <i class="mdi mdi-cancel" aria-hidden="true" />
+          <b-icon icon="x-circle" aria-hidden="true" />
           Reject Request
         </b-button>
       </template>
@@ -52,7 +52,7 @@
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text">
-              <i class="mdi mdi-magnify" aria-hidden="true" />
+              <b-icon icon="search" aria-hidden="true" />
             </div>
           </div>
           <input
@@ -138,7 +138,7 @@
           :href="formAction(data.item)"
           rel="nofollow"
         >
-          <i class="mdi mdi-trash-can" aria-hidden="true" />
+          <b-icon icon="trash" aria-hidden="true" />
           Remove
         </b-button>
       </template>

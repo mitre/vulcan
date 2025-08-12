@@ -5,13 +5,17 @@ source 'https://rubygems.org'
 ruby '~> 3.1'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 6.1.4'
+gem 'rails', '~> 7.0.0'
+# TODO: Remove this once upgrading to Rails 7.1, this is required for a bug specific to Rails 7.0
+gem 'concurrent-ruby', '1.3.4'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
 gem 'puma', '~> 5.6'
-# Transpile app-like JavaScript. Read more: https://github.com/rails/webpacker
-gem 'webpacker', '~> 5.0'
+# Asset pipeline for JavaScript bundling
+gem 'jsbundling-rails'
+# Asset pipeline for Rails
+gem 'propshaft'
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
 gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
@@ -45,7 +49,7 @@ gem 'mitre-settingslogic', '~> 3.0'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
-gem 'audited', '~> 5.3.3'
+gem 'audited', '~> 5.8.0'
 
 gem 'activerecord-import'
 
@@ -61,6 +65,9 @@ gem 'fast_excel'
 # For writing excel files
 gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
+# REXML - required explicitly in Ruby 3.0+
+gem 'rexml'
+
 gem 'ox'
 
 gem 'rubyzip'
@@ -75,7 +82,7 @@ group :development do
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'letter_opener'
   gem 'spring'
-  gem 'spring-watcher-listen', '~> 2.0.0'
+  gem 'spring-watcher-listen'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
 end

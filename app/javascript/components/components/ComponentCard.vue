@@ -20,7 +20,7 @@
           <span v-if="component.version"> &nbsp;Version {{ component.version }} </span>
           <span v-if="component.release"> &nbsp;Release {{ component.release }} </span>
         </span>
-        <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
+        <b-icon v-if="component.released" icon="patch-check" aria-hidden="true" />
         <!-- Rules count info -->
         <span class="float-right h6">
           {{ component.rules_count }} {{ component.component_id ? "Overlaid" : "" }} Controls
@@ -43,19 +43,19 @@
       <p>
         <!-- Open component -->
         <a :href="`/components/${component.id}`" target="_blank" class="text-body">
-          <i
+          <b-icon
             v-b-tooltip.hover
-            class="mdi mdi-open-in-new float-right h5 clickable"
+            icon="box-arrow-up-right"
             aria-hidden="true"
             title="Open Component"
           />
         </a>
 
         <!-- Remove component -->
-        <i
+        <b-icon
           v-if="actionable && component.id && effectivePermissions == 'admin'"
           v-b-tooltip.hover
-          class="mdi mdi-delete float-right h5 clickable mr-2"
+          icon="trash"
           aria-hidden="true"
           title="Remove Component"
           @click="showDeleteConfirmation = !showDeleteConfirmation"
@@ -71,10 +71,10 @@
             @projectUpdated="$emit('projectUpdated')"
           >
             <template #opener>
-              <i
+              <b-icon
                 v-if="component.id"
                 v-b-tooltip.hover
-                class="mdi mdi-content-copy h5 clickable"
+                icon="files"
                 aria-hidden="true"
                 title="Duplicate component and create a new version"
               />
@@ -97,9 +97,9 @@
         </span>
 
         <!-- Export CSV component -->
-        <i
+        <b-icon
           v-b-tooltip.hover
-          class="mdi mdi-download h5 float-right mr-2 clickable"
+          icon="download"
           aria-hidden="true"
           title="Export Component as CSV"
           @click="downloadExport('csv')"
@@ -130,10 +130,10 @@
         >
           <LockControlsModal :component_id="component.id" @projectUpdated="$emit('projectUpdated')">
             <template #opener>
-              <i
+              <b-icon
                 v-if="component.id"
                 v-b-tooltip.hover
-                class="mdi mdi-lock h5 clickable"
+                icon="lock"
                 aria-hidden="true"
                 title="Lock component controls"
               />

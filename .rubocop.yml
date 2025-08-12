@@ -13,7 +13,7 @@ AllCops:
     - node_modules/**/*
     - "vendor/**/*"
 Layout/LineLength:
-  Max: 120
+  Max: 200
 Metrics/PerceivedComplexity:
   Enabled: false
 Metrics/CyclomaticComplexity:
@@ -40,11 +40,6 @@ Rails/FilePath:
   EnforcedStyle: "arguments"
 Rails/HasAndBelongsToMany:
   Enabled: false
-Style/Documentation:
-  Exclude:
-    - db/migrate/*
-    - spec/**/*
-
 # RSpec configuration - more lenient for existing codebase
 RSpec/ExampleLength:
   Max: 120

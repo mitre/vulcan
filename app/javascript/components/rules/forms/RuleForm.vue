@@ -6,10 +6,10 @@
         <b-form-group :id="`ruleEditor-status-group-${mod}`">
           <label :for="`ruleEditor-status-${mod}`">
             Status
-            <i
+            <b-icon
               v-if="tooltips['status']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['status']"
             />
@@ -36,10 +36,10 @@
         <b-form-group :id="`ruleEditor-status_justification-group-${mod}`">
           <label :for="`ruleEditor-status_justification-${mod}`">
             Status Justification
-            <i
+            <b-icon
               v-if="tooltips['status_justification']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['status_justification']"
             />
@@ -71,10 +71,10 @@
         >
           <label :for="`ruleEditor-title-${mod}`">
             Title
-            <i
+            <b-icon
               v-if="tooltips['title']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['title']"
             />
@@ -117,10 +117,10 @@
       >
         <label :for="`ruleEditor-version-${mod}`">
           Version
-          <i
+          <b-icon
             v-if="tooltips['version']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['version']"
           />
@@ -148,10 +148,10 @@
       >
         <label :for="`ruleEditor-artifact_description-${mod}`">
           Artifact Description
-          <i
+          <b-icon
             v-if="tooltips['artifact_description']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['artifact_description']"
           />
@@ -194,10 +194,10 @@
         >
           <label :for="`ruleEditor-fix_id-${mod}`">
             Fix ID
-            <i
+            <b-icon
               v-if="tooltips['fix_id']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['fix_id']"
             />
@@ -226,10 +226,10 @@
         >
           <label :for="`ruleEditor-fixtext_fixref-${mod}`">
             Fix Text Reference
-            <i
+            <b-icon
               v-if="tooltips['fixtext_fixref']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['fixtext_fixref']"
             />
@@ -258,10 +258,10 @@
       >
         <label :for="`ruleEditor-fixtext-${mod}`">
           Fix
-          <i
+          <b-icon
             v-if="tooltips['fixtext']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['fixtext']"
           />
@@ -293,10 +293,10 @@
         >
           <label :for="`ruleEditor-rule_severity-${mod}`">
             Severity
-            <i
+            <b-icon
               v-if="tooltips['rule_severity']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['rule_severity']"
             />
@@ -331,10 +331,10 @@
         >
           <label :for="`ruleEditor-rule_weight-${mod}`">
             Rule Weight
-            <i
+            <b-icon
               v-if="tooltips['rule_weight']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['rule_weight']"
             />
@@ -365,10 +365,10 @@
         >
           <label :for="`ruleEditor-ident-${mod}`">
             Identity
-            <i
+            <b-icon
               v-if="tooltips['ident']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['ident']"
             />
@@ -397,10 +397,10 @@
         >
           <label :for="`ruleEditor-ident_system-${mod}`">
             Identity System
-            <i
+            <b-icon
               v-if="tooltips['ident_system']"
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               :title="tooltips['ident_system']"
             />
@@ -429,10 +429,10 @@
       >
         <label :for="`ruleEditor-vendor_comments-${mod}`">
           Vendor Comments
-          <i
+          <b-icon
             v-if="tooltips['vendor_comments']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['vendor_comments']"
           />

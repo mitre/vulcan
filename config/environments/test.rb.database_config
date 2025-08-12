@@ -1,0 +1,19 @@
+# Database configuration additions for test.rb
+# Add these to config/environments/test.rb for better test stability
+
+# Increase database connection pool and timeout settings for tests
+config.active_record.database_selector = nil
+config.active_record.database_resolver = nil
+config.active_record.database_resolver_context = nil
+
+# Configure connection pool settings specifically for test environment
+Rails.application.configure do
+  # Increase connection pool checkout timeout
+  config.active_record.checkout_timeout = 10
+
+  # Configure connection pool reaping
+  config.active_record.connection_pool_reaper = 30
+
+  # Disable connection pooling logging in test environment
+  config.active_record.verbose_query_logs = false
+end

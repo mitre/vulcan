@@ -2,18 +2,18 @@
   <div>
     <div class="clickable mb-2" @click="showSrgInformation = !showSrgInformation">
       <h2 class="m-0 d-inline-block">Security Requirements Guide Information</h2>
-      <i v-if="showSrgInformation" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-      <i v-if="!showSrgInformation" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+      <b-icon v-if="showSrgInformation" icon="chevron-down" />
+      <b-icon v-if="!showSrgInformation" icon="chevron-up" />
     </div>
     <b-collapse v-model="showSrgInformation">
       <div class="row">
         <div class="col-4">
           <!-- nist_control (aka IA Control) -->
           <strong>IA Control</strong>
-          <i
+          <b-icon
             v-if="tooltips['nist_control']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['nist_control']"
           />
@@ -26,10 +26,10 @@
         <div class="col-4">
           <!-- cci -->
           <strong>CCI</strong>
-          <i
+          <b-icon
             v-if="tooltips['cci']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['cci']"
           />
@@ -42,10 +42,10 @@
         <div class="col-4">
           <!-- srg_requirement -->
           <strong>SRG Requirement</strong>
-          <i
+          <b-icon
             v-if="tooltips['srg_requirement']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['srg_requirement']"
           />
@@ -56,10 +56,10 @@
         <div class="col-4">
           <!-- srg_vuln_discussion -->
           <strong>SRG Vulnerability Discussion</strong>
-          <i
+          <b-icon
             v-if="tooltips['srg_vuln_discussion']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['srg_vuln_discussion']"
           />
@@ -70,10 +70,10 @@
         <div class="col-4">
           <!-- srg_check_text -->
           <strong>SRG Check Text</strong>
-          <i
+          <b-icon
             v-if="tooltips['srg_check_text']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['srg_check_text']"
           />
@@ -84,10 +84,10 @@
         <div class="col-4">
           <!-- srg_fix_text -->
           <strong>SRG Fix Text</strong>
-          <i
+          <b-icon
             v-if="tooltips['srg_fix_text']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['srg_fix_text']"
           />
@@ -98,10 +98,10 @@
         <div class="col-4">
           <!-- srg_version aka ID -->
           <strong>SRG ID</strong>
-          <i
+          <b-icon
             v-if="tooltips['srg_id']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['srg_id']"
           />
@@ -111,10 +111,10 @@
       <div class="row">
         <div class="col-4">
           <strong>SRG Version</strong>
-          <i
+          <b-icon
             v-if="tooltips['srg_version']"
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             :title="tooltips['srg_version']"
           />

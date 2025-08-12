@@ -4,9 +4,9 @@
     <div class="col-12">
       <div class="row">
         <h2>
-          <i v-if="rule.locked" class="mdi mdi-lock" aria-hidden="true" />
-          <i v-if="rule.review_requestor_id" class="mdi mdi-file-find" aria-hidden="true" />
-          <i v-if="rule.changes_requested" class="mdi mdi-delta" aria-hidden="true" />
+          <b-icon v-if="rule.locked" icon="lock" aria-hidden="true" />
+          <b-icon v-if="rule.review_requestor_id" icon="file-earmark-search" aria-hidden="true" />
+          <b-icon v-if="rule.changes_requested" icon="exclamation-triangle" aria-hidden="true" />
           <a
             class="headerLink"
             :href="`/components/${rule.component_id}/${projectPrefix}-${rule.rule_id}`"
@@ -112,11 +112,7 @@
               <!-- Submit button -->
               <template #header>
                 <strong>Complete a Review</strong>
-                <i
-                  class="mdi mdi-close h5 mb-0 clickable float-right"
-                  aria-hidden="true"
-                  @click="showReviewPane = false"
-                />
+                <b-icon icon="x" aria-hidden="true" @click="showReviewPane = false" />
               </template>
 
               <!-- Review comment -->

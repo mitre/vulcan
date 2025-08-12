@@ -162,7 +162,7 @@
         <strong>Open Controls</strong>
         <template v-if="openRuleIds.length > 0">
           <span class="clickable text-primary" @click="rulesDeselected(openRules)">
-            <i class="mdi mdi-close clickable" />
+            <b-icon icon="x" class="clickable" />
             close all
           </span>
         </template>
@@ -179,11 +179,7 @@
           @click="ruleSelected(rule)"
         >
           <span>
-            <i
-              class="mdi mdi-close closeRuleButton"
-              aria-hidden="true"
-              @click.stop="ruleDeselected(rule)"
-            />
+            <b-icon icon="x" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
             <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </span>
@@ -191,36 +187,36 @@
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-source-fork"
+              icon="diagram-3"
               title="Satisfies other"
               aria-hidden="true"
             />
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-content-copy"
+              icon="files"
               title="Satisfied by other"
               aria-hidden="true"
             />
-            <i
+            <b-icon
               v-if="rule.review_requestor_id"
               v-b-tooltip.hover
+              icon="file-earmark-search"
               title="Review requested"
-              class="mdi mdi-file-find"
               aria-hidden="true"
             />
-            <i
+            <b-icon
               v-if="rule.locked"
               v-b-tooltip.hover
+              icon="lock"
               title="Locked"
-              class="mdi mdi-lock"
               aria-hidden="true"
             />
-            <i
+            <b-icon
               v-if="rule.changes_requested"
               v-b-tooltip.hover
+              icon="exclamation-triangle"
               title="Changes requested"
-              class="mdi mdi-delta"
               aria-hidden="true"
             />
           </span>
@@ -234,7 +230,7 @@
         <strong>All Controls</strong>
         <template v-if="!readOnly">
           <span v-b-modal.create-rule-modal class="text-primary clickable">
-            <i v-b-modal.create-rule-modal class="mdi mdi-plus" /> add
+            <b-icon v-b-modal.create-rule-modal icon="plus" /> add
           </span>
         </template>
       </p>
@@ -266,7 +262,7 @@
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-source-fork"
+              icon="diagram-3"
               title="Satisfies other"
               aria-hidden="true"
             />
@@ -274,29 +270,29 @@
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
-              class="mdi mdi-content-copy"
+              icon="files"
               title="Satisfied by other"
               aria-hidden="true"
             />
-            <i
+            <b-icon
               v-if="rule.review_requestor_id"
               v-b-tooltip.hover
+              icon="file-earmark-search"
               title="Review requested"
-              class="mdi mdi-file-find ml-1"
               aria-hidden="true"
             />
-            <i
+            <b-icon
               v-if="rule.locked"
               v-b-tooltip.hover
+              icon="lock"
               title="Locked"
-              class="mdi mdi-lock ml-1"
               aria-hidden="true"
             />
-            <i
+            <b-icon
               v-if="rule.changes_requested"
               v-b-tooltip.hover
+              icon="exclamation-triangle"
               title="Changes requested"
-              class="mdi mdi-delta ml-1"
               aria-hidden="true"
             />
           </span>
@@ -310,7 +306,7 @@
             @click="ruleSelected(satisfies)"
           >
             <span>
-              <i class="mdi mdi-chevron-right" />
+              <b-icon icon="chevron-right" />
               <span v-if="filters.showSRGIdChecked">
                 {{ satisfies.version }}
               </span>
@@ -319,25 +315,25 @@
               </span>
             </span>
             <span>
-              <i
+              <b-icon
                 v-if="satisfies.review_requestor_id"
                 v-b-tooltip.hover
+                icon="file-earmark-search"
                 title="Review requested"
-                class="mdi mdi-file-find ml-1"
                 aria-hidden="true"
               />
-              <i
+              <b-icon
                 v-if="satisfies.locked"
                 v-b-tooltip.hover
+                icon="lock"
                 title="Locked"
-                class="mdi mdi-lock ml-1"
                 aria-hidden="true"
               />
-              <i
+              <b-icon
                 v-if="satisfies.changes_requested"
                 v-b-tooltip.hover
+                icon="exclamation-triangle"
                 title="Changes requested"
-                class="mdi mdi-delta ml-1"
                 aria-hidden="true"
               />
             </span>

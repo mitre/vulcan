@@ -9,14 +9,8 @@
             rule.satisfies.length
           }}</b-badge>
 
-          <i
-            v-if="showAlsoSatisfies"
-            class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-          />
-          <i
-            v-if="!showAlsoSatisfies"
-            class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-          />
+          <b-icon v-if="showAlsoSatisfies" icon="chevron-down" />
+          <b-icon v-if="!showAlsoSatisfies" icon="chevron-up" />
         </div>
         <div
           v-if="!readOnly && rule.status === 'Applicable - Configurable'"
@@ -25,7 +19,7 @@
           title="Merge requirement"
           class="text-primary clickable mr-2"
         >
-          <i class="mdi mdi-plus" /> Add
+          <b-icon icon="plus" /> Add
         </div>
       </div>
 
@@ -45,7 +39,7 @@
             aria-hidden="true"
             @click="satisfies_rule = satisfies"
           >
-            <i class="mdi mdi-close closeRuleButton" />
+            <b-icon icon="x" class="closeRuleButton" />
           </span>
           <span @click="ruleSelected(satisfies)">
             {{ formatRuleForDisplay(satisfies) }}
@@ -78,8 +72,8 @@
           rule.satisfied_by.length
         }}</b-badge>
 
-        <i v-if="showSatisfiedBy" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-        <i v-if="!showSatisfiedBy" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+        <b-icon v-if="showSatisfiedBy" icon="chevron-down" />
+        <b-icon v-if="!showSatisfiedBy" icon="chevron-up" />
       </div>
 
       <!-- All rules also satisfied -->
@@ -89,10 +83,10 @@
           :key="satisfied_by.id"
           :class="ruleRowClass(satisfied_by)"
         >
-          <i
+          <b-icon
             v-if="!readOnly"
             v-b-modal.unmark-satisfied-by-modal
-            class="mdi mdi-close closeRuleButton"
+            icon="x"
             aria-hidden="true"
             @click="satisfied_by_rule = satisfied_by"
           />

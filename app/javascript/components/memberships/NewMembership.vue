@@ -5,9 +5,7 @@
         <template v-if="!selectedUser">
           <b-input-group>
             <b-input-group-prepend>
-              <b-input-group-text
-                ><i class="mdi mdi-magnify" aria-hidden="true"
-              /></b-input-group-text>
+              <b-input-group-text><b-icon icon="search" aria-hidden="true" /></b-input-group-text>
             </b-input-group-prepend>
             <vue-simple-suggest
               ref="userSearch"

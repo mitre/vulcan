@@ -15,10 +15,10 @@
         "
       >
         Documentable
-        <i
+        <b-icon
           v-if="tooltips['documentable']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['documentable']"
         />
@@ -32,10 +32,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-vuln_discussion-${mod}`">
         Vulnerability Discussion
-        <i
+        <b-icon
           v-if="tooltips['vuln_discussion']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['vuln_discussion']"
         />
@@ -76,10 +76,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-false_positives-${mod}`">
         False Positives
-        <i
+        <b-icon
           v-if="tooltips['false_positives']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['false_positives']"
         />
@@ -116,10 +116,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-false_negatives-${mod}`">
         False Negatives
-        <i
+        <b-icon
           v-if="tooltips['false_negatives']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['false_negatives']"
         />
@@ -178,10 +178,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-mitigations-${mod}`">
         Mitigations
-        <i
+        <b-icon
           v-if="tooltips['mitigations']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['mitigations']"
         />
@@ -240,10 +240,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-poam-${mod}`">
         POA&amp;M
-        <i
+        <b-icon
           v-if="tooltips['poam']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['poam']"
         />
@@ -275,10 +275,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`">
         Security Override Guidance
-        <i
+        <b-icon
           v-if="tooltips['severity_override_guidance']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['severity_override_guidance']"
         />
@@ -315,10 +315,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-potential_impacts-${mod}`">
         Potential Impacts
-        <i
+        <b-icon
           v-if="tooltips['potential_impacts']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['potential_impacts']"
         />
@@ -355,10 +355,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-third_party_tools-${mod}`">
         Third Party Tools
-        <i
+        <b-icon
           v-if="tooltips['third_party_tools']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['third_party_tools']"
         />
@@ -395,10 +395,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-mitigation_control-${mod}`">
         Mitigation Control
-        <i
+        <b-icon
           v-if="tooltips['mitigation_control']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['mitigation_control']"
         />
@@ -435,10 +435,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-responsibility-${mod}`">
         Responsibility
-        <i
+        <b-icon
           v-if="tooltips['responsibility']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['responsibility']"
         />
@@ -475,10 +475,10 @@
     >
       <label :for="`ruleEditor-disa_rule_description-ia_controls-${mod}`">
         IA Controls
-        <i
+        <b-icon
           v-if="tooltips['ia_controls']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['ia_controls']"
         />
