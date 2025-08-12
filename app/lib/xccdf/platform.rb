@@ -9,6 +9,7 @@ module Xccdf
   # local reference syntax: "#cpeid1".
   class Platform
     include HappyMapper
+
     tag 'platform'
 
     attribute :idref, String, tag: 'idref'

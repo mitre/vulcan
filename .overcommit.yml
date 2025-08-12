@@ -33,7 +33,7 @@ PreCommit:
     description: 'Analyze Ruby code with RuboCop'
     required_executable: 'bundle'
     command: ['bundle', 'exec', 'rubocop']
-    flags: ['--auto-correct-all', '--display-cop-names']
+    flags: ['--autocorrect-all', '--display-cop-names']
     on_warn: fail # Treat warnings as failures
     problem_on_unmodified_line: report
     include:

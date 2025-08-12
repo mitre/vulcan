@@ -22,7 +22,7 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
   end
 
   describe 'Real Okta Discovery Endpoint Testing' do
-    let(:okta_test_issuer) { ENV['VULCAN_OIDC_ISSUER_URL'] || ENV['OKTA_TEST_ISSUER'] }
+    let(:okta_test_issuer) { ENV['VULCAN_OIDC_ISSUER_URL'] || ENV.fetch('OKTA_TEST_ISSUER', nil) }
     let(:discovery_url) { "#{okta_test_issuer}/.well-known/openid-configuration" }
 
     context 'with live Okta discovery endpoint' do
@@ -59,11 +59,11 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
         # Log discovered capabilities for debugging
         Rails.logger.info 'Okta Discovery Test Results:'
         Rails.logger.info "  Issuer: #{discovery_doc['issuer']}"
-        Rails.logger.info "  Authorization: #{discovery_doc['authorization_endpoint']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  Token: #{discovery_doc['token_endpoint']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  Userinfo: #{discovery_doc['userinfo_endpoint']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  JWKS: #{discovery_doc['jwks_uri']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  End Session: #{discovery_doc['end_session_endpoint']&.present? ? '✓' : '✗'}"
+        Rails.logger.info "  Authorization: #{discovery_doc['authorization_endpoint'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  Token: #{discovery_doc['token_endpoint'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  Userinfo: #{discovery_doc['userinfo_endpoint'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  JWKS: #{discovery_doc['jwks_uri'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  End Session: #{discovery_doc['end_session_endpoint'].present? ? '✓' : '✗'}"
         Rails.logger.info "  Response Types: #{discovery_doc['response_types_supported']&.join(', ')}"
         Rails.logger.info "  Signing Algorithms: #{discovery_doc['id_token_signing_alg_values_supported']&.join(', ')}"
       end
@@ -263,8 +263,7 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
   # Helper method to mock OIDC settings
   def mock_oidc_settings(enabled: true, discovery: true, issuer: nil)
     oidc_settings = double('oidc_settings')
-    allow(oidc_settings).to receive(:enabled).and_return(enabled)
-    allow(oidc_settings).to receive(:discovery).and_return(discovery)
+    allow(oidc_settings).to receive_messages(enabled: enabled, discovery: discovery)
 
     if enabled && issuer
       args_mock = double('args')

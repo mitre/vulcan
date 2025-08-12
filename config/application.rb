@@ -2,6 +2,12 @@
 
 require_relative 'boot'
 
+# Fix for Rails 6.1 compatibility with Ruby 3.1+
+# Rails 6.1 expects Logger to be available without requiring it
+# In Ruby 3.1+, Logger is no longer autoloaded
+# This can be removed after upgrading to Rails 7
+require 'logger' if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.1.0')
+
 require 'rails'
 # Pick the frameworks you want:
 require 'active_model/railtie'

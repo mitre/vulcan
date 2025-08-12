@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '~> 2.7'
+ruby '~> 3.1'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 6.1.4'
@@ -32,8 +32,8 @@ gem 'omniauth-github'
 gem 'omniauth-rails_csrf_protection', '~> 1.0'
 # Allow users to sign in with OIDC providers
 gem 'omniauth_openid_connect', '~> 0.6.0'
-# Vulcan settings
-gem 'settingslogic', '~> 2.0.9'
+# Vulcan settings - upgraded for Ruby 3.1+ compatibility
+gem 'mitre-settingslogic', '~> 3.0'
 # Use Redis adapter to run Action Cable in production
 # gem 'redis', '~> 4.0'
 # Use Active Model has_secure_password
@@ -69,7 +69,7 @@ gem 'mitre-inspec-objects'
 gem 'rest-client'
 
 group :development do
-  gem 'listen', '~> 3.1.5'
+  gem 'listen', '~> 3.7'
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
   gem 'web-console', '>= 3.3.0'
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring

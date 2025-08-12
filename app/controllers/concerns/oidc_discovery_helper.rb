@@ -205,6 +205,7 @@ module OidcDiscoveryHelper
     Rails.logger.debug { "Cached OIDC discovery for #{normalized_issuer}, expires at #{config['expires_at']}" }
   end
 
+  # rubocop:disable Naming/PredicateMethod
   def validate_discovery_document(config, expected_issuer)
     # Security: Validate issuer matches expected value (prevents man-in-the-middle attacks)
     actual_issuer = config['issuer']
@@ -300,21 +301,22 @@ module OidcDiscoveryHelper
 
     # Log provider capabilities for debugging
     Rails.logger.debug do
-      "OIDC Discovery validation passed for #{actual_issuer}:\n" \
-        "  - Response types: #{response_types&.join(', ')}\n" \
-        "  - Signing algorithms: #{signing_algs&.join(', ')}\n" \
-        "  - Token endpoint: #{config['token_endpoint'].present? ? 'present' : 'missing'}\n" \
-        "  - Userinfo endpoint: #{config['userinfo_endpoint'].present? ? 'present' : 'missing'}\n" \
-        "  - End session endpoint: #{config['end_session_endpoint'].present? ? 'present' : 'missing'}"
+      "OIDC Discovery validation passed for #{actual_issuer}:\n  " \
+        "- Response types: #{response_types&.join(', ')}\n  " \
+        "- Signing algorithms: #{signing_algs&.join(', ')}\n  " \
+        "- Token endpoint: #{config['token_endpoint'].present? ? 'present' : 'missing'}\n  " \
+        "- Userinfo endpoint: #{config['userinfo_endpoint'].present? ? 'present' : 'missing'}\n  " \
+        "- End session endpoint: #{config['end_session_endpoint'].present? ? 'present' : 'missing'}"
     end
 
     true
   end
+  # rubocop:enable Naming/PredicateMethod
 
   def fetch_oidc_endpoint(endpoint_name, fallback_url = nil)
     return fallback_url unless Settings.oidc.discovery
 
-    issuer_url = Settings.oidc.args.issuer || ENV['VULCAN_OIDC_ISSUER_URL']
+    issuer_url = Settings.oidc.args.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
     return fallback_url unless issuer_url
 
     discovery = fetch_oidc_discovery_document(issuer_url)

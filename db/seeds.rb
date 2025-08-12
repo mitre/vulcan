@@ -20,7 +20,7 @@ users = []
   users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: '1234567ab!')
 end
 User.import(users)
-User.all.each do |user|
+User.find_each do |user|
   user.skip_confirmation!
   user.save!
 end
@@ -41,7 +41,7 @@ puts 'Created Projects'
 # ------------------------- #
 puts 'Adding Users to Projects...'
 project_members = []
-User.all.each do |user|
+User.find_each do |user|
   project_members << Membership.new(user: user, membership_id: photon3.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: photon4.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: vsphere.id, membership_type: 'Project')
@@ -50,7 +50,7 @@ Membership.import(project_members)
 puts 'Project Members added'
 
 # Counter cache update
-Project.all.each { |p| Project.reset_counters(p.id, :memberships_count) }
+Project.find_each { |p| Project.reset_counters(p.id, :memberships_count) }
 
 # -------------- #
 # Seeds for SRGs #

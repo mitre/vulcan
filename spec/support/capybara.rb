@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 Capybara.register_driver :chrome do |app|
-  options = ::Selenium::WebDriver::Chrome::Options.new
+  options = Selenium::WebDriver::Chrome::Options.new
   options.add_argument('--headless') if ENV['CI']
 
   client = Selenium::WebDriver::Remote::Http::Default.new

@@ -6,14 +6,11 @@ RSpec.describe OidcStartupValidator do
   # Helper method to mock OIDC settings
   def mock_oidc_settings(enabled: true, discovery: true, issuer: 'https://example.okta.com')
     oidc_settings = double('oidc_settings')
-    allow(oidc_settings).to receive(:enabled).and_return(enabled)
-    allow(oidc_settings).to receive(:discovery).and_return(discovery)
+    allow(oidc_settings).to receive_messages(enabled: enabled, discovery: discovery)
 
     if enabled
       args_mock = double('args')
-      allow(args_mock).to receive(:issuer).and_return(issuer)
-      allow(args_mock).to receive(:client_id).and_return('test-client-id')
-      allow(args_mock).to receive(:client_secret).and_return('test-secret')
+      allow(args_mock).to receive_messages(issuer: issuer, client_id: 'test-client-id', client_secret: 'test-secret')
       allow(oidc_settings).to receive(:args).and_return(args_mock)
     end
 
@@ -45,8 +42,7 @@ RSpec.describe OidcStartupValidator do
     if success
       allow(mock_response).to receive(:body).and_return(body || valid_discovery_response.to_json)
     else
-      allow(mock_response).to receive(:code).and_return(code)
-      allow(mock_response).to receive(:message).and_return(message)
+      allow(mock_response).to receive_messages(code: code, message: message)
     end
 
     # Mock the Net::HTTP instance and its request method
@@ -56,8 +52,7 @@ RSpec.describe OidcStartupValidator do
     allow(mock_http).to receive(:verify_mode=)
     allow(mock_http).to receive(:open_timeout=)
     allow(mock_http).to receive(:read_timeout=)
-    allow(mock_http).to receive(:use_ssl?).and_return(true)
-    allow(mock_http).to receive(:request).and_return(mock_response)
+    allow(mock_http).to receive_messages(use_ssl?: true, request: mock_response)
 
     # Add method for connectivity test (HEAD request)
     allow(mock_response).to receive(:code).and_return(code) if success
@@ -87,8 +82,7 @@ RSpec.describe OidcStartupValidator do
 
   before do
     # Mock Rails environment as production for most tests
-    allow(Rails.env).to receive(:production?).and_return(true)
-    allow(Rails.env).to receive(:staging?).and_return(false)
+    allow(Rails.env).to receive_messages(production?: true, staging?: false)
 
     # Mock basic OIDC settings
     mock_oidc_settings
@@ -159,8 +153,7 @@ RSpec.describe OidcStartupValidator do
       end
 
       it 'warns but does not raise error for HTTP in development' do
-        allow(Rails.env).to receive(:production?).and_return(false)
-        allow(Rails.env).to receive(:development?).and_return(true)
+        allow(Rails.env).to receive_messages(production?: false, development?: true)
 
         mock_env_vars('VULCAN_OIDC_ISSUER_URL' => 'http://dev.example.com')
         mock_oidc_settings(issuer: 'http://dev.example.com')
@@ -281,8 +274,7 @@ RSpec.describe OidcStartupValidator do
     end
 
     it 'runs validation when OIDC is enabled (development with config)' do
-      allow(Rails.env).to receive(:production?).and_return(false)
-      allow(Rails.env).to receive(:development?).and_return(true)
+      allow(Rails.env).to receive_messages(production?: false, development?: true)
 
       expect(described_class).to receive(:validate_configuration)
 

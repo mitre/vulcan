@@ -11,22 +11,19 @@ RSpec.describe SessionsController, type: :controller do
   # Helper method to mock OIDC settings
   def mock_oidc_settings(enabled:, issuer: nil, client_id: nil, discovery: true)
     oidc_settings = double('oidc_settings')
-    allow(oidc_settings).to receive(:enabled).and_return(enabled)
-    allow(oidc_settings).to receive(:discovery).and_return(discovery)
+    allow(oidc_settings).to receive_messages(enabled: enabled, discovery: discovery)
 
     if issuer
       args_mock = double('args')
-      allow(args_mock).to receive(:issuer).and_return(issuer)
 
       client_options_mock = double('client_options')
       allow(client_options_mock).to receive(:identifier).and_return(client_id)
-      allow(args_mock).to receive(:client_options).and_return(client_options_mock)
+      allow(args_mock).to receive_messages(issuer: issuer, client_options: client_options_mock)
 
       allow(oidc_settings).to receive(:args).and_return(args_mock)
     end
 
-    allow(Settings).to receive(:oidc).and_return(oidc_settings)
-    allow(Settings).to receive(:app_url).and_return(BASE_URL)
+    allow(Settings).to receive_messages(oidc: oidc_settings, app_url: BASE_URL)
   end
 
   # Helper method to mock HTTP response for enhanced discovery helper
@@ -39,22 +36,19 @@ RSpec.describe SessionsController, type: :controller do
       # Mock body length for security check
       allow(mock_response.body).to receive(:length).and_return(body&.length || 0)
     else
-      allow(mock_response).to receive(:code).and_return(code)
-      allow(mock_response).to receive(:message).and_return(message)
+      allow(mock_response).to receive_messages(code: code, message: message)
     end
 
     # Mock the Net::HTTP instance and its request method
     mock_http = double('http')
-    allow(Net::HTTP).to receive(:new).and_return(mock_http)
     allow(mock_http).to receive(:use_ssl=)
     allow(mock_http).to receive(:verify_mode=)
     allow(mock_http).to receive(:open_timeout=)
     allow(mock_http).to receive(:read_timeout=)
-    allow(mock_http).to receive(:use_ssl?).and_return(true)
-    allow(mock_http).to receive(:request).and_return(mock_response)
+    allow(mock_http).to receive_messages(use_ssl?: true, request: mock_response)
 
     # Also support the old get_response for backward compatibility
-    allow(Net::HTTP).to receive(:get_response).and_return(mock_response)
+    allow(Net::HTTP).to receive_messages(new: mock_http, get_response: mock_response)
   end
 
   describe '#destroy' do

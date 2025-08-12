@@ -22,12 +22,10 @@ RSpec.describe 'OIDC Discovery Integration', type: :feature do
 
   before do
     # Mock OIDC settings for tests
-    allow(Settings.oidc).to receive(:enabled).and_return(true)
-    allow(Settings.oidc).to receive(:discovery).and_return(true)
 
     oidc_args = double('oidc_args')
     allow(oidc_args).to receive(:issuer).and_return('https://example.okta.com')
-    allow(Settings.oidc).to receive(:args).and_return(oidc_args)
+    allow(Settings.oidc).to receive_messages(enabled: true, discovery: true, args: oidc_args)
 
     # Mock discovery endpoint with WebMock
     stub_request(:get, 'https://example.okta.com/.well-known/openid-configuration')

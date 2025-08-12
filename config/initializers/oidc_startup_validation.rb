@@ -174,10 +174,10 @@ class OidcStartupValidator
       # Check for deprecated manual endpoint configuration when discovery is enabled
       if Settings.oidc.discovery
         manual_endpoints = [
-          ENV['VULCAN_OIDC_AUTHORIZATION_URL'],
-          ENV['VULCAN_OIDC_TOKEN_URL'],
-          ENV['VULCAN_OIDC_USERINFO_URL'],
-          ENV['VULCAN_OIDC_JWKS_URI']
+          ENV.fetch('VULCAN_OIDC_AUTHORIZATION_URL', nil),
+          ENV.fetch('VULCAN_OIDC_TOKEN_URL', nil),
+          ENV.fetch('VULCAN_OIDC_USERINFO_URL', nil),
+          ENV.fetch('VULCAN_OIDC_JWKS_URI', nil)
         ].compact
 
         if manual_endpoints.any?
@@ -202,7 +202,7 @@ class OidcStartupValidator
     end
 
     def validate_redirect_uri
-      redirect_uri = ENV['VULCAN_OIDC_REDIRECT_URI']
+      redirect_uri = ENV.fetch('VULCAN_OIDC_REDIRECT_URI', nil)
       return if redirect_uri.blank?
 
       begin
@@ -251,10 +251,10 @@ class OidcStartupValidator
         'JWKS' => discovery['jwks_uri']
       }
 
-      available_endpoints = endpoints.select { |_, url| url.present? }
+      available_endpoints = endpoints.compact_blank
 
       Rails.logger.info '📋 OIDC Provider Capabilities:'
-      available_endpoints.each do |name, _url|
+      available_endpoints.each_key do |name|
         Rails.logger.info "    #{name}: ✓"
       end
 
@@ -271,15 +271,15 @@ class OidcStartupValidator
 
     # Helper methods for accessing configuration
     def issuer_url
-      Settings.oidc.args&.issuer || ENV['VULCAN_OIDC_ISSUER_URL']
+      Settings.oidc.args&.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
     end
 
     def client_id
-      ENV['VULCAN_OIDC_CLIENT_ID']
+      ENV.fetch('VULCAN_OIDC_CLIENT_ID', nil)
     end
 
     def client_secret
-      ENV['VULCAN_OIDC_CLIENT_SECRET']
+      ENV.fetch('VULCAN_OIDC_CLIENT_SECRET', nil)
     end
   end
 end

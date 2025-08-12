@@ -97,7 +97,7 @@ class Component < ApplicationRecord
       return
     end
 
-    spreadsheet_srg_ids = parsed.map { |row| row[IMPORT_MAPPING[:srg_id]] }
+    spreadsheet_srg_ids = parsed.pluck(IMPORT_MAPPING[:srg_id])
     database_srg_ids = srg_rules.map(&:version)
 
     missing_from_srg = spreadsheet_srg_ids - database_srg_ids
@@ -118,7 +118,7 @@ class Component < ApplicationRecord
     end
 
     # Calculate the prefix (which will need to be removed from each row)
-    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.compact_blank
+    possible_prefixes = parsed.pluck(IMPORT_MAPPING[:stig_id]).compact_blank
     if possible_prefixes.empty?
       errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID ' \
                         'in the file and try again.')
@@ -230,7 +230,7 @@ class Component < ApplicationRecord
     return false if released_was
 
     # If all rules are locked, then component may be released
-    rules.where(locked: false).size.zero?
+    rules.where(locked: false).empty?
   end
 
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
@@ -403,7 +403,7 @@ class Component < ApplicationRecord
       rules.collect { |rule| rule.rule_id.to_i }.max
     else
       Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
-                              WHERE component_id = #{id}")&.values&.flatten&.first&.to_i || 0
+                              WHERE component_id = #{id}")&.values&.flatten&.first.to_i
     end
   end
 

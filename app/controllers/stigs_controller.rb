@@ -6,7 +6,7 @@ class StigsController < ApplicationController
   before_action :set_stig, only: %i[show destroy]
 
   def index
-    @stigs = Stig.all.order(:stig_id, :version).select(:id, :stig_id, :title, :version, :benchmark_date)
+    @stigs = Stig.order(:stig_id, :version).select(:id, :stig_id, :title, :version, :benchmark_date)
     respond_to do |format|
       format.html
       format.json { render json: @stigs }

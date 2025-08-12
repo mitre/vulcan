@@ -10,6 +10,7 @@ class DisaRuleDescription < ApplicationRecord
   # with the rule.
   def self.from_mapping(disa_rule_description_mapping)
     include REXML
+
     # Because description is a freetext XHTML field, everything is parsed from text
     # with REXML to a hash
 

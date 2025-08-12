@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Audited initializer
-Rails.application.reloader.to_prepare do
-  Audited.config do |config|
-    config.audit_class = VulcanAudit
-  end
+# Use string class name to avoid Zeitwerk autoloading issues
+# See: https://github.com/collectiveidea/audited/issues/608
+Audited.config do |config|
+  config.audit_class = 'VulcanAudit'
 end

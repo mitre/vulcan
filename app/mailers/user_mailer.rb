@@ -4,6 +4,7 @@
 class UserMailer < ApplicationMailer
   include ActionView::Helpers::UrlHelper
   include ActionView::Helpers::TextHelper
+
   default from: Settings.smtp.settings.user_name
 
   def membership_action(action_type, *args)
