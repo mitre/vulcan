@@ -1,8 +1,8 @@
 # Vulcan Development Guide
 
 ## Version Requirements
-- **Ruby**: 3.0.6 (specified in `.ruby-version`)
-- **Node.js**: 16.x (specified in `.nvmrc`, matches production Dockerfile)
+- **Ruby**: 3.3.6 (specified in `.ruby-version`)
+- **Node.js**: 20.x (specified in `.nvmrc`, matches production Dockerfile)
 - **PostgreSQL**: 12 (from docker-compose.dev.yml)
 - **Rails**: 7.0.8.7 (from Gemfile.lock)
 

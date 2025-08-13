@@ -3,9 +3,9 @@
   "private": true,
   "dependencies": {
     "@mdi/font": "^5.1.45",
-    "@rails/actioncable": "^6.0.0",
-    "@rails/activestorage": "^6.0.0",
-    "@rails/ujs": "^6.0.0",
+    "@rails/actioncable": "^7.0.0",
+    "@rails/activestorage": "^7.0.0",
+    "@rails/ujs": "^7.0.0",
     "axios": "^1.6.0",
     "bootstrap": "^4.4.1",
     "bootstrap-icons": "^1.13.1",
