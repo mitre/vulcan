@@ -36,7 +36,8 @@ RSpec.describe 'OIDC Discovery Integration', type: :feature do
     it 'automatically configures OIDC endpoints' do
       # Simulate a controller that would use discovery
       controller = SessionsController.new
-      allow(controller).to receive(:session).and_return({})
+      # Clear Rails.cache to ensure fresh start
+      Rails.cache.clear
 
       # Test that discovery is used for logout endpoint
       logout_endpoint = controller.send(:fetch_oidc_logout_endpoint)
@@ -48,16 +49,18 @@ RSpec.describe 'OIDC Discovery Integration', type: :feature do
 
     it 'caches discovery results in session' do
       controller = SessionsController.new
-      session_cache = {}
-      allow(controller).to receive(:session).and_return(session_cache)
+      # Clear Rails.cache to ensure fresh start
+      Rails.cache.clear
 
       # First call should hit the discovery endpoint
       controller.send(:fetch_oidc_logout_endpoint)
       expect(a_request(:get, 'https://example.okta.com/.well-known/openid-configuration')).to have_been_made.once
 
-      # Verify cache was populated
-      expect(session_cache['oidc_discovery']).to be_present
-      expect(session_cache['oidc_discovery']['end_session_endpoint']).to eq('https://example.okta.com/oauth2/v1/logout')
+      # Verify cache was populated in Rails.cache
+      cache_key = 'oidc_discovery:oidc_discovery:https://example.okta.com'
+      cached_data = Rails.cache.read(cache_key)
+      expect(cached_data).to be_present
+      expect(cached_data['end_session_endpoint']).to eq('https://example.okta.com/oauth2/v1/logout')
 
       # Second call should use cache, not hit endpoint again
       controller.send(:fetch_oidc_logout_endpoint)
@@ -92,7 +95,8 @@ RSpec.describe 'OIDC Discovery Integration', type: :feature do
 
     it 'falls back to manual configuration gracefully' do
       controller = SessionsController.new
-      allow(controller).to receive(:session).and_return({})
+      # Clear Rails.cache to ensure fresh start
+      Rails.cache.clear
 
       # Should fall back to manual Okta-style URL
       logout_endpoint = controller.send(:fetch_oidc_logout_endpoint)

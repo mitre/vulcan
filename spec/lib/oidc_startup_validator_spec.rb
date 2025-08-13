@@ -29,8 +29,10 @@ RSpec.describe OidcStartupValidator do
     combined_vars = default_vars.merge(vars)
 
     allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:fetch).and_call_original
     combined_vars.each do |key, value|
       allow(ENV).to receive(:[]).with(key).and_return(value)
+      allow(ENV).to receive(:fetch).with(key, anything).and_return(value)
     end
   end
 
@@ -243,9 +245,7 @@ RSpec.describe OidcStartupValidator do
         minimal_discovery = {
           'issuer' => 'https://example.okta.com',
           'authorization_endpoint' => 'https://example.okta.com/oauth2/v1/authorize'
-          # rubocop:disable Layout/LineLength
           # Missing required fields: response_types_supported, subject_types_supported, id_token_signing_alg_values_supported
-          # rubocop:enable Layout/LineLength
         }
 
         mock_http_response(success: true, body: minimal_discovery.to_json)

@@ -126,7 +126,9 @@ RSpec.describe SessionsController, type: :controller do
 
         # Mock ENV to ensure no client_id is picked up
         allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:fetch).and_call_original
         allow(ENV).to receive(:[]).with('VULCAN_OIDC_CLIENT_ID').and_return(nil)
+        allow(ENV).to receive(:fetch).with('VULCAN_OIDC_CLIENT_ID', anything).and_return(nil)
 
         # Mock failed discovery response
         mock_http_response(success: false, code: '404', message: 'Not Found')
@@ -203,8 +205,12 @@ RSpec.describe SessionsController, type: :controller do
 
     describe 'concurrent request handling' do
       it 'prevents duplicate discovery requests' do
-        session_cache = { 'oidc_discovery_requesting' => true }
-        controller.send(:define_singleton_method, :session) { session_cache }
+        # Clear cache to start fresh
+        Rails.cache.clear
+
+        # Set up Rails.cache to simulate a request in progress
+        request_lock_key = 'oidc_discovery:lock:https://example.okta.com'
+        Rails.cache.write(request_lock_key, true, expires_in: 10.seconds)
 
         # Mock a successful discovery response (this should not be called)
         discovery_response = {
@@ -223,23 +229,30 @@ RSpec.describe SessionsController, type: :controller do
         expect(result).to be_nil
 
         # Verify the request flag is still set (not cleared by our request)
-        expect(session_cache['oidc_discovery_requesting']).to be_truthy
+        expect(Rails.cache.read(request_lock_key)).to be_truthy
+
+        # Clean up
+        Rails.cache.delete(request_lock_key)
       end
     end
 
     describe 'cache invalidation on issuer change' do
       it 'invalidates cache when issuer URL changes' do
-        session_cache = {}
-        controller.send(:define_singleton_method, :session) { session_cache }
+        # Clear cache to start fresh
+        Rails.cache.clear
 
         # Cache discovery for first issuer
         old_discovery = {
           'issuer' => 'https://old.okta.com',
           'authorization_endpoint' => 'https://old.okta.com/oauth2/v1/authorize',
           'expires_at' => 1.hour.from_now,
-          'vulcan_cache_version' => '1.1'
+          'vulcan_cache_version' => '1.1',
+          'cached_issuer' => 'https://old.okta.com',
+          'cache_key' => 'oidc_discovery'
         }
-        session_cache['oidc_discovery'] = old_discovery
+        # Write to Rails.cache with the old issuer key
+        old_cache_key = 'oidc_discovery:oidc_discovery:https://old.okta.com'
+        Rails.cache.write(old_cache_key, old_discovery, expires_in: 1.hour)
 
         # Request discovery for new issuer should invalidate cache
         new_discovery_response = {
@@ -256,14 +269,18 @@ RSpec.describe SessionsController, type: :controller do
 
         expect(result).to be_present
         expect(result['issuer']).to eq('https://example.okta.com')
-        # Verify old cache was invalidated and new cache was set
-        expect(session_cache['oidc_discovery']['issuer']).to eq('https://example.okta.com')
+        # Verify new cache was set with correct issuer
+        new_cache_key = 'oidc_discovery:oidc_discovery:https://example.okta.com'
+        cached_data = Rails.cache.read(new_cache_key)
+        expect(cached_data).to be_present
+        expect(cached_data['issuer']).to eq('https://example.okta.com')
       end
     end
 
     describe 'partial discovery document handling' do
       it 'handles discovery documents missing optional fields' do
-        controller.send(:define_singleton_method, :session) { {} }
+        # Clear Rails.cache to ensure fresh start
+        Rails.cache.clear
 
         # Minimal valid discovery document (missing optional fields)
         minimal_discovery = {
@@ -289,7 +306,8 @@ RSpec.describe SessionsController, type: :controller do
       end
 
       it 'handles discovery documents with unknown future fields' do
-        controller.send(:define_singleton_method, :session) { {} }
+        # Clear Rails.cache to ensure fresh start
+        Rails.cache.clear
 
         # Discovery document with future/unknown fields
         future_discovery = {
@@ -319,17 +337,20 @@ RSpec.describe SessionsController, type: :controller do
 
     describe 'cache version compatibility' do
       it 'invalidates cache with old version numbers' do
-        session_cache = {}
-        controller.send(:define_singleton_method, :session) { session_cache }
+        # Clear cache to start fresh
+        Rails.cache.clear
 
         # Cache with old version
         old_version_cache = {
           'issuer' => 'https://example.okta.com',
           'authorization_endpoint' => 'https://example.okta.com/oauth2/v1/authorize',
           'expires_at' => 1.hour.from_now,
-          'vulcan_cache_version' => '1.0' # Old version
+          'vulcan_cache_version' => '1.0', # Old version
+          'cached_issuer' => 'https://example.okta.com',
+          'cache_key' => 'oidc_discovery'
         }
-        session_cache['oidc_discovery'] = old_version_cache
+        cache_key = 'oidc_discovery:oidc_discovery:https://example.okta.com'
+        Rails.cache.write(cache_key, old_version_cache, expires_in: 1.hour)
 
         new_discovery_response = {
           'issuer' => 'https://example.okta.com',
@@ -345,7 +366,9 @@ RSpec.describe SessionsController, type: :controller do
 
         expect(result).to be_present
         # Should have refreshed cache with new version
-        expect(session_cache['oidc_discovery']['vulcan_cache_version']).to eq('1.1')
+        cached_data = Rails.cache.read(cache_key)
+        expect(cached_data).to be_present
+        expect(cached_data['vulcan_cache_version']).to eq('1.1')
       end
     end
   end

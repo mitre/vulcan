@@ -20,10 +20,10 @@ module OidcDiscoveryHelper
 
     # Prevent concurrent requests for the same discovery URL
     discovery_url = "#{normalized_issuer}/.well-known/openid-configuration"
-    request_key = "#{cache_key}_requesting"
+    request_lock_key = "oidc_discovery:lock:#{normalized_issuer}"
 
     # Check if a request is already in progress
-    if session[request_key]
+    if Rails.cache.read(request_lock_key)
       log_oidc_discovery_event('concurrent_request_blocked', normalized_issuer, {
                                  reason: 'request_in_progress',
                                  cache_key: cache_key
@@ -31,8 +31,8 @@ module OidcDiscoveryHelper
       return nil
     end
 
-    # Mark that we're making a request
-    session[request_key] = true
+    # Mark request in progress with short TTL
+    Rails.cache.write(request_lock_key, true, expires_in: 10.seconds)
 
     begin
       # Perform HTTP request with timeout and security constraints
@@ -94,8 +94,9 @@ module OidcDiscoveryHelper
                                })
       nil
     ensure
-      # Always clear the request-in-progress flag
-      session.delete(request_key)
+      # Clear the request lock from cache
+      request_lock_key = "oidc_discovery:lock:#{normalized_issuer}"
+      Rails.cache.delete(request_lock_key)
     end
   end
 
@@ -104,9 +105,7 @@ module OidcDiscoveryHelper
     normalized = issuer_url.to_s.chomp('/')
 
     # Security: Only allow HTTPS in production
-    unless Rails.env.development? || normalized.start_with?('https://')
-      raise SecurityError, 'OIDC issuer must use HTTPS in production environment'
-    end
+    raise SecurityError, 'OIDC issuer must use HTTPS in production environment' unless Rails.env.development? || normalized.start_with?('https://')
 
     # Validate URL format
     uri = URI.parse(normalized)
@@ -139,9 +138,7 @@ module OidcDiscoveryHelper
 
     if response.is_a?(Net::HTTPSuccess)
       # Validate response size (prevent DoS)
-      if response.body.length > 100_000 # 100KB limit
-        raise SecurityError, "Discovery document too large: #{response.body.length} bytes"
-      end
+      raise SecurityError, "Discovery document too large: #{response.body.length} bytes" if response.body.length > 100_000 # 100KB limit
 
       JSON.parse(response.body)
     else
@@ -151,16 +148,10 @@ module OidcDiscoveryHelper
   end
 
   def get_cached_discovery(cache_key, expected_issuer)
-    cached = session[cache_key]
+    # Use Rails.cache instead of session to avoid cookie overflow
+    full_cache_key = "oidc_discovery:#{cache_key}:#{expected_issuer}"
+    cached = Rails.cache.read(full_cache_key)
     return nil unless cached
-
-    # Check expiration
-    expires_at = cached['expires_at']
-    if expires_at.nil? || expires_at <= Time.current
-      Rails.logger.debug { "OIDC Discovery cache expired for #{expected_issuer}" }
-      session.delete(cache_key)
-      return nil
-    end
 
     # Validate cached issuer matches current request (handle issuer URL changes)
     cached_issuer = cached['issuer']
@@ -170,7 +161,7 @@ module OidcDiscoveryHelper
                                  cached_issuer: cached_issuer,
                                  expected_issuer: expected_issuer
                                })
-      session.delete(cache_key)
+      Rails.cache.delete(full_cache_key)
       return nil
     end
 
@@ -182,7 +173,7 @@ module OidcDiscoveryHelper
                                  cached_version: cache_version,
                                  expected_version: '1.1'
                                })
-      session.delete(cache_key)
+      Rails.cache.delete(full_cache_key)
       return nil
     end
 
@@ -201,22 +192,20 @@ module OidcDiscoveryHelper
     config['cached_issuer'] = normalized_issuer
     config['cache_key'] = cache_key
 
-    session[cache_key] = config
-    Rails.logger.debug { "Cached OIDC discovery for #{normalized_issuer}, expires at #{config['expires_at']}" }
+    # Use Rails.cache instead of session to avoid cookie overflow
+    full_cache_key = "oidc_discovery:#{cache_key}:#{normalized_issuer}"
+    Rails.cache.write(full_cache_key, config, expires_in: 1.hour)
+    Rails.logger.debug { "Cached OIDC discovery for #{normalized_issuer}, expires in 1 hour" }
   end
 
   # rubocop:disable Naming/PredicateMethod
   def validate_discovery_document(config, expected_issuer)
     # Security: Validate issuer matches expected value (prevents man-in-the-middle attacks)
     actual_issuer = config['issuer']
-    unless actual_issuer == expected_issuer
-      raise SecurityError, "OIDC Discovery: Issuer mismatch. Expected '#{expected_issuer}', got '#{actual_issuer}'"
-    end
+    raise SecurityError, "OIDC Discovery: Issuer mismatch. Expected '#{expected_issuer}', got '#{actual_issuer}'" unless actual_issuer == expected_issuer
 
     # Security: Ensure issuer uses HTTPS in production
-    unless Rails.env.development? || actual_issuer.start_with?('https://')
-      raise SecurityError, 'OIDC Discovery: Issuer must use HTTPS in production'
-    end
+    raise SecurityError, 'OIDC Discovery: Issuer must use HTTPS in production' unless Rails.env.development? || actual_issuer.start_with?('https://')
 
     # OIDC Core spec 1.0: Required discovery metadata fields
     required_fields = %w[
@@ -228,9 +217,7 @@ module OidcDiscoveryHelper
     ]
 
     missing_required_fields = required_fields - config.keys
-    if missing_required_fields.any?
-      raise ArgumentError, "OIDC Discovery: Missing required fields: #{missing_required_fields.join(', ')}"
-    end
+    raise ArgumentError, "OIDC Discovery: Missing required fields: #{missing_required_fields.join(', ')}" if missing_required_fields.any?
 
     # Handle partial discovery documents: warn about missing optional but important fields
     recommended_fields = %w[
@@ -249,7 +236,6 @@ module OidcDiscoveryHelper
     end
 
     # Schema forward compatibility: Log unknown fields for debugging
-    # rubocop:disable Layout/LineLength
     # These are official OIDC specification field names that cannot be shortened
     known_fields = %w[
       issuer authorization_endpoint token_endpoint userinfo_endpoint jwks_uri
@@ -265,8 +251,6 @@ module OidcDiscoveryHelper
       code_challenge_methods_supported end_session_endpoint check_session_iframe frontchannel_logout_supported frontchannel_logout_session_supported
       backchannel_logout_supported backchannel_logout_session_supported
     ]
-    # rubocop:enable Layout/LineLength
-
     unknown_fields = config.keys - known_fields - %w[expires_at cached_at vulcan_cache_version cached_issuer
                                                      cache_key]
     if unknown_fields.any?
@@ -282,22 +266,16 @@ module OidcDiscoveryHelper
       endpoint_url = config[field]
       next if endpoint_url.blank?
 
-      unless Rails.env.development? || endpoint_url.start_with?('https://')
-        raise SecurityError, "OIDC Discovery: #{field} must use HTTPS in production: #{endpoint_url}"
-      end
+      raise SecurityError, "OIDC Discovery: #{field} must use HTTPS in production: #{endpoint_url}" unless Rails.env.development? || endpoint_url.start_with?('https://')
     end
 
     # Validate response_types_supported contains 'code' for authorization code flow
     response_types = config['response_types_supported']
-    unless response_types.is_a?(Array) && response_types.include?('code')
-      Rails.logger.warn "OIDC Discovery: 'code' response type not supported, may affect authentication flow"
-    end
+    Rails.logger.warn "OIDC Discovery: 'code' response type not supported, may affect authentication flow" unless response_types.is_a?(Array) && response_types.include?('code')
 
     # Validate signing algorithms include RS256 (most common and secure)
     signing_algs = config['id_token_signing_alg_values_supported']
-    unless signing_algs.is_a?(Array) && signing_algs.include?('RS256')
-      Rails.logger.warn 'OIDC Discovery: RS256 signing algorithm not supported, may affect token validation'
-    end
+    Rails.logger.warn 'OIDC Discovery: RS256 signing algorithm not supported, may affect token validation' unless signing_algs.is_a?(Array) && signing_algs.include?('RS256')
 
     # Log provider capabilities for debugging
     Rails.logger.debug do
