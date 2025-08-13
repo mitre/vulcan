@@ -20,7 +20,7 @@ class Rule < BaseRule
           associated_with: :component
   has_associated_audits
 
-  belongs_to :component
+  belongs_to :component, counter_cache: true
   belongs_to :srg_rule
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
   has_many :reviews, dependent: :destroy

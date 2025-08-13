@@ -14,7 +14,7 @@ class Component < ApplicationRecord
     include_association :rules
     include_association :additional_questions
     set released: false
-    set rules_count: 0
+    # Don't set rules_count - it will be recalculated after save
 
     customize(lambda { |original_component, new_component|
       # There is unfortunately no way to do this at a lower level since the new component isn't
@@ -293,6 +293,10 @@ class Component < ApplicationRecord
     end
 
     if copied_component.save
+      # Reset the rules_count counter cache after duplication
+      Component.reset_counters(copied_component.id, :rules)
+      copied_component.reload
+
       # import any new rules
       new_rule_versions = (new_srg_rules.keys - copied_component.rules.map(&:version))
       return copied_component if copied_component.from_mapping(new_srg, new_rule_versions,
@@ -384,6 +388,8 @@ class Component < ApplicationRecord
     success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
     if success
       reload
+      # Reset counter cache after bulk import since callbacks are bypassed
+      Component.reset_counters(id, :rules)
     else
       errors.add(:base, 'Some rules failed to import successfully for the component.')
     end

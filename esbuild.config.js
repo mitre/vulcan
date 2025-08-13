@@ -79,4 +79,3 @@ if (watch) {
 require("esbuild")
   .build(buildOptions)
   .catch(() => process.exit(1));
-

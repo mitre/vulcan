@@ -156,10 +156,13 @@ vcenter_vami_v1r1.rules.update(locked: false)
   # Add Rule satisfaction:
   # Only Applicable - Configurable rule can satisfy other rules
   rule_selection = c.rules.where(status: 'Applicable - Configurable')
-  c.rules.where.not(status: 'Applicable - Configurable').limit(3).each do |rule|
-    rule.satisfied_by << rule_selection.sample
-    # Save the rule to trigger callbacks
-    rule.save
+  if rule_selection.any?
+    c.rules.where.not(status: 'Applicable - Configurable').limit(3).each do |rule|
+      satisfying_rule = rule_selection.sample
+      rule.satisfied_by << satisfying_rule if satisfying_rule
+      # Save the rule to trigger callbacks
+      rule.save
+    end
   end
 
   # Call update last to trigger callbacks
