@@ -1,6 +1,6 @@
-FROM ruby:2.7
+FROM ruby:3.3.6
 
-RUN curl -sS https://deb.nodesource.com/setup_16.x | bash -
+RUN curl -sS https://deb.nodesource.com/setup_20.x | bash -
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
 RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 RUN apt-get update -qq && apt-get install -y build-essential nodejs yarn
@@ -26,7 +26,7 @@ ENV MALLOC_ARENA_MAX=2
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
-RUN gem install bundler:2.2.32
+RUN gem install bundler:2.3.27
 ADD Gemfile* $APP_HOME/
 RUN bundle install --without development test
 

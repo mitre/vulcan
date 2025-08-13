@@ -47,7 +47,7 @@ For Ruby (on Ubuntu):
 
 #### Setup Ruby
 
-1. Install the version of Ruby specified in `.ruby-version`
+1. Install Ruby 3.3.6 (as specified in `.ruby-version`)
 2. Install postgres and rbenv
 3. Run `gem install foreman`
 4. Run `rbenv install`
