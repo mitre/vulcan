@@ -1,8 +1,8 @@
-FROM ruby:3.3.6
+FROM ruby:3.3.9
 
 # Disable SSL verification for corporate proxy environments
 # Note: This reduces security - only use in trusted environments
-RUN curl -k -sS https://deb.nodesource.com/setup_20.x | bash -
+RUN curl -k -sS https://deb.nodesource.com/setup_22.x | bash -
 RUN curl -k -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
 RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 RUN apt-get update -qq && apt-get install -y build-essential nodejs yarn

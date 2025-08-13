@@ -97,7 +97,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def slack_notification_params(notification_type, object, *args)
+  def slack_notification_params(notification_type, object, *)
     pattern = /^(
       approve|
       revoke|
@@ -114,7 +114,7 @@ class ApplicationController < ActionController::Base
 
     notification_type_prefix = notification_type.to_s.match(pattern)[1]
     icon, header = get_slack_headers_icons(notification_type, notification_type_prefix)
-    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *args)
+    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *)
     {
       icon: icon,
       header: header,
@@ -122,10 +122,10 @@ class ApplicationController < ActionController::Base
     }
   end
 
-  def send_smtp_notification(mailer, action, *args)
-    mailer.membership_action(action, *args).deliver_now if membership_action?(action)
-    mailer.review_action(action, *args).deliver_now if review_action?(action)
-    mailer.project_access_action(action, *args).deliver_now if access_request_action?(action)
+  def send_smtp_notification(mailer, action, *)
+    mailer.membership_action(action, *).deliver_now if membership_action?(action)
+    mailer.review_action(action, *).deliver_now if review_action?(action)
+    mailer.project_access_action(action, *).deliver_now if access_request_action?(action)
   end
 
   private

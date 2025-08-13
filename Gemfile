@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.3.6'
+ruby '3.3.9'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 7.0.0'
@@ -85,6 +85,8 @@ group :development do
   gem 'spring-watcher-listen'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
+  # Git hooks management
+  gem 'overcommit', require: false
 end
 
 group :test do

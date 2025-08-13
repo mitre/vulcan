@@ -1,8 +1,8 @@
 # Overcommit configuration for Rails projects
 # https://github.com/sds/overcommit
 
-# Don't use Bundler context since overcommit is installed globally
-gemfile: false
+# Use bundled version of overcommit
+gemfile: Gemfile
 
 # Hooks that run during `git commit`
 CommitMsg:
