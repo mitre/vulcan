@@ -296,7 +296,6 @@ class Component < ApplicationRecord
       # Reset the rules_count counter cache after duplication
       Component.reset_counters(copied_component.id, :rules)
       copied_component.reload
-
       # import any new rules
       new_rule_versions = (new_srg_rules.keys - copied_component.rules.map(&:version))
       return copied_component if copied_component.from_mapping(new_srg, new_rule_versions,
