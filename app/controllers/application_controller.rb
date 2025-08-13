@@ -238,9 +238,7 @@ class ApplicationController < ActionController::Base
     # iterate over the user's projects and check if they are admin
     # if they are admin on a project, retrieve the access requests if any
     current_user.available_projects.each do |project|
-      if current_user.can_admin_project?(project)
-        @access_requests << project.access_requests.eager_load(:user, :project).as_json(methods: %i[user project])
-      end
+      @access_requests << project.access_requests.eager_load(:user, :project).as_json(methods: %i[user project]) if current_user.can_admin_project?(project)
     end
     @access_requests.flatten!
   end

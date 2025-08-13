@@ -254,9 +254,7 @@ class Component < ApplicationRecord
     # Manual Updates required for any 'configurable' requirements with updated underlying SRG requirements
 
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
-    if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
-      return copied_component
-    end
+    return copied_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
 
     # update the based_on field to the new srg
     copied_component.based_on = new_srg

@@ -131,9 +131,7 @@ class Rule < BaseRule
         # The only field we can revert on AdditionalAnswers is answer
         field = 'answer' if audit.auditable_type.eql?('AdditionalAnswer')
 
-        unless audit.audited_changes.include?(field)
-          raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.")
-        end
+        raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(field)
 
         # The audited change can either be an array `[prev_val, new_val]`
         # or just the `val`
@@ -278,13 +276,9 @@ class Rule < BaseRule
     comments = []
     comments << vendor_comments if vendor_comments.present?
 
-    if satisfied_by.present?
-      comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
-    end
+    comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}." if satisfied_by.present?
 
-    if satisfies.present?
-      comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}."
-    end
+    comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}." if satisfies.present?
 
     comments.join('. ')
   end

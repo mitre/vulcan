@@ -18,9 +18,7 @@ namespace :cci do
     cci_xml_items.each do |item|
       cci_number = item.attributes['id'].value
       # Get NIST 800-53 revision 4
-      # rubocop:disable Layout/LineLength
       nist_control = item.xpath('./references/reference[not(@version <= preceding-sibling::reference/@version) and not(@version <=following-sibling::reference/@version)]/@index').text
-      # rubocop:enable Layout/LineLength
       @cci_to_nist_mapping[cci_number.to_sym] = nist_control
     end
     @last = @cci_to_nist_mapping.keys.last

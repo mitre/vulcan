@@ -70,9 +70,7 @@ class ProjectsController < ApplicationController
       memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }],
       visibility: new_project_params[:visibility]
     )
-    if new_project_params[:slack_channel_id].present?
-      project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } }
-    end
+    project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } } if new_project_params[:slack_channel_id].present?
 
     # First save ensures base Project is acceptable.
     if project.save

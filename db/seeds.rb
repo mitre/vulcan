@@ -3,9 +3,7 @@
 # rubocop:disable Rails/Output
 
 # Populate the database for demonstration use.
-unless Rails.env.development? || ENV.fetch('DISABLE_DATABASE_ENVIRONMENT_CHECK', false)
-  raise 'This task is only for use in a development environment'
-end
+raise 'This task is only for use in a development environment' unless Rails.env.development? || ENV.fetch('DISABLE_DATABASE_ENVIRONMENT_CHECK', false)
 
 puts "Populating database for demo use:\n\n"
 

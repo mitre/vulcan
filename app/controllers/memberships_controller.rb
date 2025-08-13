@@ -25,9 +25,7 @@ class MembershipsController < ApplicationController
     filtered_params = membership_create_params.except(:access_request_id)
     membership = Membership.new(filtered_params)
     if membership.save
-      if membership_create_params[:access_request_id].present?
-        delete_access_request(membership_create_params[:access_request_id])
-      end
+      delete_access_request(membership_create_params[:access_request_id]) if membership_create_params[:access_request_id].present?
       flash.notice = 'Successfully created membership.'
       send_smtp_notification(UserMailer, 'welcome_user', current_user, membership) if Settings.smtp.enabled
       case membership.membership_type

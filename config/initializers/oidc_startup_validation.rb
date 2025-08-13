@@ -54,9 +54,7 @@ class OidcStartupValidator
       missing_settings << 'VULCAN_OIDC_CLIENT_ID' if client_id.blank?
       missing_settings << 'VULCAN_OIDC_CLIENT_SECRET' if client_secret.blank?
 
-      if missing_settings.any?
-        raise ArgumentError, "Missing required OIDC configuration: #{missing_settings.join(', ')}"
-      end
+      raise ArgumentError, "Missing required OIDC configuration: #{missing_settings.join(', ')}" if missing_settings.any?
 
       Rails.logger.debug '✓ Required OIDC settings present'
     end
@@ -153,9 +151,7 @@ class OidcStartupValidator
       ]
 
       missing_fields = required_fields - discovery.keys
-      if missing_fields.any?
-        Rails.logger.warn "⚠️  OIDC discovery document missing required fields: #{missing_fields.join(', ')}"
-      end
+      Rails.logger.warn "⚠️  OIDC discovery document missing required fields: #{missing_fields.join(', ')}" if missing_fields.any?
 
       # Validate issuer matches configured issuer
       actual_issuer = discovery['issuer']
@@ -180,9 +176,7 @@ class OidcStartupValidator
           ENV.fetch('VULCAN_OIDC_JWKS_URI', nil)
         ].compact
 
-        if manual_endpoints.any?
-          warnings << 'Manual OIDC endpoints configured while discovery is enabled (these will be used as fallbacks)'
-        end
+        warnings << 'Manual OIDC endpoints configured while discovery is enabled (these will be used as fallbacks)' if manual_endpoints.any?
       end
 
       # Check for old-style configuration variables
@@ -208,13 +202,9 @@ class OidcStartupValidator
       begin
         uri = URI.parse(redirect_uri)
 
-        unless uri.scheme&.match?(/^https?$/)
-          Rails.logger.warn "⚠️  OIDC redirect URI should use HTTP/HTTPS: #{redirect_uri}"
-        end
+        Rails.logger.warn "⚠️  OIDC redirect URI should use HTTP/HTTPS: #{redirect_uri}" unless uri.scheme&.match?(/^https?$/)
 
-        unless uri.path&.end_with?('/users/auth/oidc/callback')
-          Rails.logger.warn "⚠️  OIDC redirect URI should end with '/users/auth/oidc/callback': #{redirect_uri}"
-        end
+        Rails.logger.warn "⚠️  OIDC redirect URI should end with '/users/auth/oidc/callback': #{redirect_uri}" unless uri.path&.end_with?('/users/auth/oidc/callback')
 
         Rails.logger.debug '✓ OIDC redirect URI format valid'
       rescue URI::InvalidURIError => e

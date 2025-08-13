@@ -70,9 +70,7 @@ class ReviewsController < ApplicationController
         inherentlymeet_msg += " with no Artifact Description: #{inherentlymeet_controls}"
       end
       not_determined_controls = filtered_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
-      if not_determined_controls.present?
-        not_determined_msg = "The following controls are 'Not Yet Determined': #{not_determined_controls}"
-      end
+      not_determined_msg = "The following controls are 'Not Yet Determined': #{not_determined_controls}" if not_determined_controls.present?
       render json: {
         toast: {
           title: 'Could not lock controls.',

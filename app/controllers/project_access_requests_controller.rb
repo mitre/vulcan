@@ -10,9 +10,7 @@ class ProjectAccessRequestsController < ApplicationController
 
     if @access_request.save
       flash.notice = 'Your request for access has been sent.'
-      if Settings.smtp.enabled
-        send_smtp_notification(UserMailer, 'request_access', @access_request.user, @access_request.project)
-      end
+      send_smtp_notification(UserMailer, 'request_access', @access_request.user, @access_request.project) if Settings.smtp.enabled
     else
       flash.alert = @access_request.errors.full_messages.to_sentence
     end
@@ -31,9 +29,7 @@ class ProjectAccessRequestsController < ApplicationController
 
     if @access_request.destroy
       if current_user.can_admin_project?(@access_request.project)
-        if Settings.smtp.enabled
-          send_smtp_notification(UserMailer, 'reject_access', @access_request.user, @access_request.project)
-        end
+        send_smtp_notification(UserMailer, 'reject_access', @access_request.user, @access_request.project) if Settings.smtp.enabled
         flash.notice = "Sucessfully denied #{@access_request.user.name}'s request to access project."
       else
         flash.notice = "Your request to access #{@access_request.project.name} has been cancelled."
