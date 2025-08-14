@@ -65,7 +65,7 @@ ARG NODE_VERSION=22
 RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g yarn && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./

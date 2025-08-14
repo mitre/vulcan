@@ -30,7 +30,8 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 RUN curl -sS https://deb.nodesource.com/setup_22.x | bash - && \
     curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
     echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-    apt-get update -qq && apt-get install -y build-essential nodejs yarn
+    apt-get update -qq && apt-get install -y build-essential nodejs yarn && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 ENV APP_HOME=/app
 ENV RAILS_ENV=production
@@ -57,10 +58,10 @@ COPY Gemfile* $APP_HOME/
 RUN bundle install --without development test
 
 COPY . $APP_HOME
-# Install all dependencies (including dev) for build
-RUN yarn install --frozen-lockfile
-# Build assets - don't set NODE_ENV during the build to ensure all modules are available
-RUN SECRET_KEY_BASE=dummyvalue bundle exec rake assets:precompile
+# Install all dependencies (including dev) for build and build assets
+# Don't set NODE_ENV during the build to ensure all modules are available
+RUN yarn install --frozen-lockfile && \
+    SECRET_KEY_BASE=dummyvalue bundle exec rake assets:precompile
 # Remove dev dependencies after build to reduce image size
 RUN yarn install --production --ignore-scripts --prefer-offline
 
