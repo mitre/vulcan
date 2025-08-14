@@ -32,13 +32,13 @@
     }
   },
   "scripts": {
-    "postdeploy": "bundle exec rails db:schema:load db:seed"
+    "postdeploy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bundle exec rails db:schema:load db:seed"
   },
   "environments": {
     "review": {
       "addons": ["heroku-postgresql:essential-0"],
       "scripts": {
-        "postdeploy": "bundle exec rails db:schema:load db:seed"
+        "postdeploy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bundle exec rails db:schema:load db:seed"
       }
     }
   }

@@ -49,6 +49,10 @@ gem 'mitre-settingslogic', '~> 3.0'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
+# Ruby 3.4 compatibility - these will be removed from stdlib
+gem 'csv'
+gem 'abbrev'
+
 gem 'audited', '~> 5.8.0'
 
 gem 'activerecord-import'
