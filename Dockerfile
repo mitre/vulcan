@@ -5,8 +5,7 @@ FROM ruby:3.3.9
 # These will be added to the system certificate store
 COPY certs/ /usr/local/share/ca-certificates/custom/
 WORKDIR /usr/local/share/ca-certificates/custom
-RUN # Convert .pem and .cer files to .crt extension (required by update-ca-certificates) \
-    for cert in ./*.pem; do \
+RUN for cert in ./*.pem; do \
       [ -f "$cert" ] && cp "$cert" "${cert%.pem}.crt" || true; \
     done && \
     for cert in ./*.cer; do \
@@ -26,10 +25,14 @@ WORKDIR /
 # Set Node to use system certificates for all subsequent commands
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
-# Install Node.js and Yarn
-RUN curl -sS https://deb.nodesource.com/setup_22.x | bash - && \
-    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
-    echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+# Install dependencies and Node.js/Yarn (using signed-by instead of deprecated apt-key)
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
+    # Update certificates again after installing ca-certificates package
+    update-ca-certificates && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
     apt-get update -qq && apt-get install -y build-essential nodejs yarn && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
