@@ -58,7 +58,8 @@ WORKDIR $APP_HOME
 
 RUN gem install bundler:2.3.27
 COPY Gemfile* $APP_HOME/
-RUN bundle install --without development test
+RUN bundle config set --local without 'development test' && \
+    bundle install
 
 COPY . $APP_HOME
 # Install all dependencies (including dev) for build and build assets
