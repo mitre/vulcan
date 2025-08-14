@@ -50,8 +50,8 @@ gem 'mitre-settingslogic', '~> 3.0'
 gem 'bootsnap', '>= 1.4.2', require: false
 
 # Ruby 3.4 compatibility - these will be removed from stdlib
-gem 'csv'
 gem 'abbrev'
+gem 'csv'
 
 gem 'audited', '~> 5.8.0'
 
