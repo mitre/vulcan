@@ -8,6 +8,8 @@
 module OidcDiscoveryHelper
   extend ActiveSupport::Concern
 
+  HTTPS_PROTOCOL = 'https://'
+
   private
 
   def fetch_oidc_discovery_document(issuer_url, cache_key = 'oidc_discovery')
@@ -105,7 +107,7 @@ module OidcDiscoveryHelper
     normalized = issuer_url.to_s.chomp('/')
 
     # Security: Only allow HTTPS in production
-    raise SecurityError, 'OIDC issuer must use HTTPS in production environment' unless Rails.env.development? || normalized.start_with?('https://')
+    raise SecurityError, 'OIDC issuer must use HTTPS in production environment' unless Rails.env.development? || normalized.start_with?(HTTPS_PROTOCOL)
 
     # Validate URL format
     uri = URI.parse(normalized)
@@ -205,7 +207,7 @@ module OidcDiscoveryHelper
     raise SecurityError, "OIDC Discovery: Issuer mismatch. Expected '#{expected_issuer}', got '#{actual_issuer}'" unless actual_issuer == expected_issuer
 
     # Security: Ensure issuer uses HTTPS in production
-    raise SecurityError, 'OIDC Discovery: Issuer must use HTTPS in production' unless Rails.env.development? || actual_issuer.start_with?('https://')
+    raise SecurityError, 'OIDC Discovery: Issuer must use HTTPS in production' unless Rails.env.development? || actual_issuer.start_with?(HTTPS_PROTOCOL)
 
     # OIDC Core spec 1.0: Required discovery metadata fields
     required_fields = %w[
@@ -266,7 +268,7 @@ module OidcDiscoveryHelper
       endpoint_url = config[field]
       next if endpoint_url.blank?
 
-      raise SecurityError, "OIDC Discovery: #{field} must use HTTPS in production: #{endpoint_url}" unless Rails.env.development? || endpoint_url.start_with?('https://')
+      raise SecurityError, "OIDC Discovery: #{field} must use HTTPS in production: #{endpoint_url}" unless Rails.env.development? || endpoint_url.start_with?(HTTPS_PROTOCOL)
     end
 
     # Validate response_types_supported contains 'code' for authorization code flow

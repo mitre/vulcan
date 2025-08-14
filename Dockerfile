@@ -4,30 +4,33 @@ FROM ruby:3.3.9
 # Users can place .crt, .pem, or .cer files in the certs/ directory
 # These will be added to the system certificate store
 COPY certs/ /usr/local/share/ca-certificates/custom/
-RUN cd /usr/local/share/ca-certificates/custom && \
-    # Convert .pem and .cer files to .crt extension (required by update-ca-certificates)
-    for cert in *.pem; do \
+WORKDIR /usr/local/share/ca-certificates/custom
+RUN # Convert .pem and .cer files to .crt extension (required by update-ca-certificates) \
+    for cert in ./*.pem; do \
       [ -f "$cert" ] && cp "$cert" "${cert%.pem}.crt" || true; \
     done && \
-    for cert in *.cer; do \
+    for cert in ./*.cer; do \
       [ -f "$cert" ] && cp "$cert" "${cert%.cer}.crt" || true; \
     done && \
     # Check if we have any certificates to install
-    if ls *.crt *.pem 2>/dev/null | grep -q .; then \
+    if ls ./*.crt ./*.pem 2>/dev/null | grep -q .; then \
       echo "Installing custom certificates..." && \
       update-ca-certificates; \
     else \
       echo "No custom certificates found"; \
     fi
 
+# Reset working directory back to root
+WORKDIR /
+
 # Set Node to use system certificates for all subsequent commands
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # Install Node.js and Yarn
 RUN curl -sS https://deb.nodesource.com/setup_22.x | bash - && \
-    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
-RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-RUN apt-get update -qq && apt-get install -y build-essential nodejs yarn
+    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+    echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+    apt-get update -qq && apt-get install -y build-essential nodejs yarn
 
 ENV APP_HOME=/app
 ENV RAILS_ENV=production
@@ -50,10 +53,10 @@ RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
 RUN gem install bundler:2.3.27
-ADD Gemfile* $APP_HOME/
+COPY Gemfile* $APP_HOME/
 RUN bundle install --without development test
 
-ADD . $APP_HOME
+COPY . $APP_HOME
 # Install all dependencies (including dev) for build
 RUN yarn install --frozen-lockfile
 # Build assets - don't set NODE_ENV during the build to ensure all modules are available

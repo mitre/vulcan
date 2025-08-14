@@ -14,24 +14,26 @@ WORKDIR /rails
 # Install base packages including jemalloc for better memory management
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
+      ca-certificates \
       curl \
       libjemalloc2 \
       libvips \
-      postgresql-client \
-      ca-certificates && \
+      postgresql-client && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install custom SSL certificates if provided
 COPY certs/ /usr/local/share/ca-certificates/custom/
-RUN cd /usr/local/share/ca-certificates/custom && \
-    for cert in *.pem *.cer; do \
+WORKDIR /usr/local/share/ca-certificates/custom
+RUN for cert in ./*.pem ./*.cer; do \
       [ -f "$cert" ] && mv "$cert" "${cert%.*}.crt" || true; \
     done && \
-    if ls *.crt 2>/dev/null | grep -q .; then \
+    if ls ./*.crt 2>/dev/null | grep -q .; then \
       update-ca-certificates; \
     fi && \
     rm -rf /usr/local/share/ca-certificates/custom/README.md
+# Reset working directory back to /rails
+WORKDIR /rails
 
 # Set production environment with jemalloc enabled
 ENV RAILS_ENV="production" \
@@ -52,9 +54,9 @@ RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
       build-essential \
       git \
+      gnupg \
       libpq-dev \
       pkg-config \
-      gnupg \
       zlib1g-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 

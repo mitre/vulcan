@@ -92,9 +92,6 @@
               </a> -->
             </div>
           </div>
-
-          <!-- This is commented out because there is currently the assumption that users will only need one description -->
-          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="disabled"><b-icon icon="plus"></b-icon>Add DISA Description</b-button> -->
         </b-collapse>
       </template>
 
