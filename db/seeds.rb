@@ -104,6 +104,10 @@ photon3_v1r1_overlay = Component.create!(
   security_requirements_guide_id: photon3_v1r1.security_requirements_guide_id,
   name: photon3_v1r1.name
 )
+# Overlay components need to have rules duplicated from the parent component
+photon3_v1r1.rules.each do |orig_rule|
+  photon3_v1r1_overlay.rules.create!(orig_rule.attributes.except('id', 'created_at', 'updated_at', 'component_id'))
+end
 photon3_v1r1_overlay.rules.update(locked: false)
 
 vcenter_perf_v1r1 = Component.create!(
