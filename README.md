@@ -86,6 +86,112 @@ For a complete list of environment variables that can be used to configure Vulca
 
 Documentation on how to configure additional Vulcan settings such as SMTP, LDAP, etc, are available on the [Vulcan website](https://vulcan.mitre.org/docs/config.html).
 
+### Docker Build with Custom SSL Certificates
+
+For corporate environments with custom SSL certificates (e.g., corporate proxies):
+
+1. Place your certificate files in the `certs/` directory:
+   ```bash
+   cp /path/to/your/certificate.pem ./certs/
+   ```
+
+2. Build the Docker image:
+   ```bash
+   docker build -t vulcan .
+   ```
+
+The Docker build process will automatically install any certificates found in the `certs/` directory. Supported formats include `.crt`, `.pem`, and `.cer`.
+
+#### Platform Support for Docker Builds
+
+If you encounter platform compatibility errors when building the Docker image (e.g., "Your bundle only supports platforms..."), add the necessary platforms to your Gemfile.lock:
+
+```bash
+# Add common Docker platforms
+bundle lock --add-platform x86_64-linux     # Intel/AMD Linux
+bundle lock --add-platform aarch64-linux    # ARM64 Linux (Apple Silicon)
+bundle lock --add-platform x86_64-linux-musl # Alpine Linux
+bundle lock --add-platform ruby             # Generic Ruby platform
+```
+
+This ensures the Docker build works across different architectures and operating systems.
+
+### Docker Deployment
+
+Vulcan includes production-ready Docker configurations for easy deployment:
+
+#### Quick Start
+
+1. **Generate environment configuration**:
+   ```bash
+   ./setup-docker-secrets.sh
+   ```
+   Choose option 1 for development (with test Okta) or option 2 for production.
+
+2. **Configure your environment** (production only):
+   Edit `.env` and update:
+   - OIDC/LDAP authentication settings
+   - Application URL and contact email
+   - SMTP settings if needed
+
+3. **Place SSL certificates** (if behind corporate proxy):
+   ```bash
+   cp /path/to/your/certificate.pem ./certs/
+   ```
+
+4. **Start the application**:
+   ```bash
+   # Development
+   docker-compose up
+   
+   # Production (detached)
+   docker-compose up -d
+   ```
+
+5. **Initialize the database** (first time only):
+   ```bash
+   docker-compose run --rm web bundle exec rake db:create db:schema:load db:migrate
+   ```
+
+6. **Create admin user** (production):
+   ```bash
+   docker cp create_admin.rb vulcan-web-1:/tmp/
+   docker-compose exec web bundle exec rails runner -e production /tmp/create_admin.rb
+   ```
+   This creates an admin user with email `admin@example.com` and password `password123`.
+
+#### Environment Files
+
+- `.env.example` - Development template with test Okta configuration
+- `.env.production.example` - Production template with all available options
+- `setup-docker-secrets.sh` - Script to generate secure secrets automatically
+
+The setup script will:
+- Generate secure random passwords for PostgreSQL
+- Generate Rails secret keys and cipher salts
+- Copy the appropriate template based on your environment
+- Set proper file permissions (600) for security
+
+#### Docker Images
+
+Vulcan provides two Dockerfiles:
+
+- `Dockerfile` - Development image with debugging tools
+- `Dockerfile.production` - Optimized production image (1.76GB vs 6.5GB)
+  - Uses multi-stage builds
+  - Includes jemalloc for 20-40% memory reduction
+  - Ruby 3.3.9 slim base image
+  - Health checks configured
+
+#### Docker Compose Configuration
+
+The `docker-compose.yml` file includes:
+- PostgreSQL 12 database with health checks
+- Rails application with jemalloc optimization
+- Automatic database connection retry logic
+- Volume persistence for database data
+- Port 3000 exposed for web access
+
 ### Production Configuration
 
 The production Docker image includes sensible defaults for containerized deployments:

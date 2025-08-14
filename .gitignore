@@ -27,9 +27,10 @@
 /config/vulcan.yml
 
 # Do not commit Docker environment files
-/.env
-/.env.*
+.env
 .env.*
+!.env.example
+!.env.production.example
 
 # Do not commit coverage
 /coverage
@@ -56,8 +57,14 @@ OKTA_SESSION_RECOVERY.md
 PR_MESSAGE.md
 *.backup
 *_backup/
+env-backup/
 benchmark-tmp/
 vulcan-wiki-local/
 
 # Ruby version management
 .ruby-gemset
+
+# SSL Certificates (user-provided for Docker builds)
+/certs/*
+!/certs/README.md
+!/certs/.gitkeep
