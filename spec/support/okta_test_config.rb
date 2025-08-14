@@ -30,9 +30,9 @@ RSpec.configure do |config|
   # Helper to get Okta test configuration
   config.before(:each, :okta_integration) do
     @okta_test_config = {
-      issuer: ENV['OKTA_TEST_ISSUER'],
-      client_id: ENV['OKTA_TEST_CLIENT_ID'],
-      client_secret: ENV['OKTA_TEST_CLIENT_SECRET']
+      issuer: ENV.fetch('OKTA_TEST_ISSUER', nil),
+      client_id: ENV.fetch('OKTA_TEST_CLIENT_ID', nil),
+      client_secret: ENV.fetch('OKTA_TEST_CLIENT_SECRET', nil)
     }
   end
 end
@@ -40,7 +40,7 @@ end
 # Helper methods for OIDC testing
 module OktaTestHelpers
   def okta_test_issuer
-    ENV['VULCAN_OIDC_ISSUER_URL'] || ENV['OKTA_TEST_ISSUER']
+    ENV['VULCAN_OIDC_ISSUER_URL'] || ENV.fetch('OKTA_TEST_ISSUER', nil)
   end
 
   def oidc_enabled?

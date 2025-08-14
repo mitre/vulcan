@@ -8,6 +8,7 @@ module Xccdf
   # signed with an XML-Signature.
   class Profile
     include HappyMapper
+
     tag 'Profile'
     attribute :id, String, tag: 'id' # required
     attribute :prohibit_changes, Boolean, tag: 'prohibitChanges'

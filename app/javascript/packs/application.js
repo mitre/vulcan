@@ -6,7 +6,7 @@
 require("@rails/ujs").start();
 require("turbolinks").start();
 require("@rails/activestorage").start();
-require("channels");
+require("../channels");
 
 // Load the base application CSS Styling
 import "../application";

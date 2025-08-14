@@ -81,8 +81,7 @@ class BaseRule < ApplicationRecord
 
   def nist_control_family
     ccis = ident.to_s.split(/, */)
-    ia_controls = []
-    ccis.each { |cci| ia_controls << CCI_TO_NIST_CONSTANT[cci.to_sym] }
+    ia_controls = ccis.map { |cci| CCI_TO_NIST_CONSTANT[cci.to_sym] }
     ia_controls.uniq.join(', ')
   end
 

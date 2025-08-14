@@ -10,8 +10,8 @@
           <div class="clickable" @click="showHistory = !showHistory">
             <h5 class="m-0 d-inline-block">User History</h5>
 
-            <i v-if="showHistory" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-            <i v-if="!showHistory" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+            <b-icon v-if="showHistory" icon="chevron-down" />
+            <b-icon v-if="!showHistory" icon="chevron-up" />
           </div>
           <b-collapse id="collapse-metadata" v-model="showHistory">
             <History :histories="histories" :revertable="false" />

@@ -14,17 +14,37 @@
     <!-- Card -->
     <b-card class="shadow">
       <b-card-title>
-        {{ component.name }}
-        <span v-if="component.version || component.release">
-          &nbsp;-
-          <span v-if="component.version"> &nbsp;Version {{ component.version }} </span>
-          <span v-if="component.release"> &nbsp;Release {{ component.release }} </span>
-        </span>
-        <i v-if="component.released" class="mdi mdi-stamper h5" aria-hidden="true" />
-        <!-- Rules count info -->
-        <span class="float-right h6">
-          {{ component.rules_count }} {{ component.component_id ? "Overlaid" : "" }} Controls
-        </span>
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <span class="h5 mb-0">{{ component.name }}</span>
+            <span v-if="component.version || component.release" class="text-muted ml-2">
+              <small>
+                <span v-if="component.version">v{{ component.version }}</span>
+                <span v-if="component.release">r{{ component.release }}</span>
+              </small>
+            </span>
+            <b-icon
+              v-if="component.released"
+              v-b-tooltip.hover
+              icon="patch-check-fill"
+              variant="success"
+              class="ml-2"
+              title="Component Released"
+            />
+          </div>
+          <!-- Rules count info -->
+          <div class="text-right">
+            <b-badge v-if="component.rules_count > 0" variant="info" pill class="px-3 py-2">
+              <b-icon icon="shield-check" class="mr-1" />
+              {{ component.rules_count }} Control{{ component.rules_count !== 1 ? "s" : "" }}
+              <span v-if="component.component_id" class="ml-1">(Overlaid)</span>
+            </b-badge>
+            <b-badge v-else variant="secondary" pill class="px-3 py-2">
+              <b-icon icon="gear" class="mr-1" />
+              Not Configured
+            </b-badge>
+          </div>
+        </div>
       </b-card-title>
       <b-card-sub-title class="mb-2">
         Based on {{ component.based_on_title }} {{ component.based_on_version }}
@@ -40,107 +60,107 @@
         <em v-else>No Component Admin</em>
       </p>
       <!-- Component actions -->
-      <p>
-        <!-- Open component -->
-        <a :href="`/components/${component.id}`" target="_blank" class="text-body">
-          <i
-            v-b-tooltip.hover
-            class="mdi mdi-open-in-new float-right h5 clickable"
-            aria-hidden="true"
-            title="Open Component"
-          />
-        </a>
+      <div class="mt-3 pt-3 border-top">
+        <!-- Primary Actions Row -->
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <!-- Primary Action Button -->
+            <b-button
+              :href="`/components/${component.id}`"
+              variant="primary"
+              size="sm"
+              class="mr-2"
+            >
+              <b-icon icon="box-arrow-up-right" class="mr-1" />
+              Open Component
+            </b-button>
 
-        <!-- Remove component -->
-        <i
-          v-if="actionable && component.id && effectivePermissions == 'admin'"
-          v-b-tooltip.hover
-          class="mdi mdi-delete float-right h5 clickable mr-2"
-          aria-hidden="true"
-          title="Remove Component"
-          @click="showDeleteConfirmation = !showDeleteConfirmation"
-        />
+            <!-- Export Dropdown -->
+            <b-dropdown size="sm" variant="outline-secondary" text="Export">
+              <b-dropdown-item @click="downloadExport('csv')">
+                <b-icon icon="file-earmark-text" class="mr-2" />CSV
+              </b-dropdown-item>
+              <b-dropdown-item @click="downloadExport('inspec')">
+                <b-icon icon="shield-check" class="mr-2" />InSpec
+              </b-dropdown-item>
+              <b-dropdown-item @click="downloadExport('xccdf')">
+                <b-icon icon="file-earmark-code" class="mr-2" />XCCDF
+              </b-dropdown-item>
+            </b-dropdown>
+          </div>
 
-        <!-- Duplicate component -->
-        <span v-if="actionable && effectivePermissions == 'admin'" class="float-right mr-2">
-          <NewComponentModal
-            :component_to_duplicate="component.id"
-            :project_id="component.project_id"
-            :predetermined_prefix="component.prefix"
-            :predetermined_security_requirements_guide_id="component.security_requirements_guide_id"
-            @projectUpdated="$emit('projectUpdated')"
-          >
-            <template #opener>
-              <i
-                v-if="component.id"
+          <!-- Admin Actions -->
+          <div v-if="actionable && component.id" class="d-flex align-items-center">
+            <!-- All action buttons in one group -->
+            <div class="btn-toolbar">
+              <LockControlsModal
+                v-if="role_gte_to(effectivePermissions, 'reviewer')"
+                :component_id="component.id"
+                @projectUpdated="$emit('projectUpdated')"
+              >
+                <template #opener>
+                  <b-button
+                    v-b-tooltip.hover
+                    variant="outline-warning"
+                    title="Lock all controls"
+                    size="sm"
+                    class="mr-1"
+                  >
+                    <b-icon icon="lock" />
+                  </b-button>
+                </template>
+              </LockControlsModal>
+
+              <NewComponentModal
+                v-if="effectivePermissions == 'admin'"
+                :component_to_duplicate="component.id"
+                :project_id="component.project_id"
+                :predetermined_prefix="component.prefix"
+                :predetermined_security_requirements_guide_id="
+                  component.security_requirements_guide_id
+                "
+                @projectUpdated="$emit('projectUpdated')"
+              >
+                <template #opener>
+                  <b-button
+                    v-b-tooltip.hover
+                    variant="outline-info"
+                    title="Duplicate component"
+                    size="sm"
+                    class="mr-1"
+                  >
+                    <b-icon icon="files" />
+                  </b-button>
+                </template>
+              </NewComponentModal>
+
+              <b-button
+                v-if="effectivePermissions == 'admin' && !component.released"
                 v-b-tooltip.hover
-                class="mdi mdi-content-copy h5 clickable"
-                aria-hidden="true"
-                title="Duplicate component and create a new version"
-              />
-            </template>
-          </NewComponentModal>
-        </span>
+                variant="outline-success"
+                :disabled="!component.releasable"
+                :title="releaseComponentTooltip"
+                size="sm"
+                class="mr-1"
+                @click="confirmComponentRelease"
+              >
+                <b-icon icon="tag" />
+              </b-button>
 
-        <!-- Release component -->
-        <span
-          v-if="actionable && component.id && effectivePermissions == 'admin'"
-          class="float-right mr-2"
-        >
-          <span v-b-tooltip.hover :title="releaseComponentTooltip">
-            <i
-              :class="releaseComponentClasses"
-              aria-hidden="true"
-              @click="confirmComponentRelease"
-            />
-          </span>
-        </span>
-
-        <!-- Export CSV component -->
-        <i
-          v-b-tooltip.hover
-          class="mdi mdi-download h5 float-right mr-2 clickable"
-          aria-hidden="true"
-          title="Export Component as CSV"
-          @click="downloadExport('csv')"
-        />
-
-        <!-- Export XCCDF component -->
-        <i
-          v-b-tooltip.hover
-          class="xccdf-icon h5 float-right mr-2 clickable"
-          aria-hidden="true"
-          title="Export Component as XCCDF"
-          @click="downloadExport('xccdf')"
-        />
-
-        <!-- Download InSpec Profile -->
-        <i
-          v-b-tooltip.hover
-          class="inspec-icon h5 float-right mr-2 clickable"
-          aria-hidden="true"
-          title="Download InSpec Profile"
-          @click="downloadExport('inspec')"
-        />
-
-        <!-- Lock all controls in component -->
-        <span
-          v-if="actionable && role_gte_to(effectivePermissions, 'reviewer')"
-          class="float-right mr-2"
-        >
-          <LockControlsModal :component_id="component.id" @projectUpdated="$emit('projectUpdated')">
-            <template #opener>
-              <i
-                v-if="component.id"
+              <b-button
+                v-if="effectivePermissions == 'admin'"
                 v-b-tooltip.hover
-                class="mdi mdi-lock h5 clickable"
-                aria-hidden="true"
-                title="Lock component controls"
-              />
-            </template>
-          </LockControlsModal>
-        </span>
-      </p>
+                variant="outline-danger"
+                title="Remove from project"
+                size="sm"
+                @click="showDeleteConfirmation = !showDeleteConfirmation"
+              >
+                <b-icon icon="trash" />
+              </b-button>
+            </div>
+          </div>
+        </div>
+      </div>
     </b-card>
   </b-overlay>
 </template>
@@ -222,8 +242,8 @@ export default {
   background-size: 100%;
   height: 1rem;
   width: 1rem;
-  margin: 0.1875rem 0;
-  display: block;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .xccdf-icon {
@@ -231,7 +251,7 @@ export default {
   background-size: 100%;
   height: 1rem;
   width: 1rem;
-  margin: 0.1875rem 0;
-  display: block;
+  display: inline-block;
+  vertical-align: middle;
 }
 </style>

@@ -3,16 +3,18 @@
   "private": true,
   "dependencies": {
     "@mdi/font": "^5.1.45",
-    "@rails/actioncable": "^6.0.0",
-    "@rails/activestorage": "^6.0.0",
-    "@rails/ujs": "^6.0.0",
-    "@rails/webpacker": "~5.4.0",
-    "axios": "1.6.0",
+    "@rails/actioncable": "^7.0.0",
+    "@rails/activestorage": "^7.0.0",
+    "@rails/ujs": "^7.0.0",
+    "axios": "^1.6.0",
     "bootstrap": "^4.4.1",
+    "bootstrap-icons": "^1.13.1",
     "bootstrap-vue": "^2.13.0",
+    "jquery": "^3.7.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "monaco-editor": "0.32.1",
+    "popper.js": "^1.16.1",
     "turbolinks": "^5.2.0",
     "vue": "^2.6.11",
     "vue-linkify": "^1.0.1",
@@ -24,17 +26,26 @@
   },
   "version": "2.1.8",
   "devDependencies": {
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^9.1.2",
+    "esbuild": "^0.25.0",
+    "esbuild-sass-plugin": "^3.3.1",
+    "esbuild-vue": "^1.2.2",
     "eslint": "^8.25.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-prettier-vue": "^3.1.0",
     "eslint-plugin-vue": "^9.6.0",
     "prettier": "^2.3.2",
-    "webpack-dev-server": "^3.10.3"
+    "sass": "^1.85.1"
   },
   "scripts": {
     "lint": "eslint --fix --ext .js,.vue app/javascript",
-    "lint:ci": "eslint --max-warnings 0 --ext .js,.vue app/javascript"
+    "lint:ci": "eslint --max-warnings 0 --ext .js,.vue app/javascript",
+    "build": "node esbuild.config.js",
+    "build:css": "sass ./app/javascript/application.scss:./app/assets/builds/application.css --load-path=node_modules",
+    "build:watch": "chokidar 'app/javascript/**/*' -c 'yarn build'",
+    "dev": "concurrently \"rails server\" \"yarn build:watch\""
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

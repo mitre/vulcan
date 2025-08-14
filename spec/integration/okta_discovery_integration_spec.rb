@@ -16,13 +16,11 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
 
   before do
     # Skip if OIDC is not enabled or no issuer configured
-    unless oidc_enabled? && okta_test_issuer.present?
-      skip 'OIDC not configured - set VULCAN_ENABLE_OIDC=true and VULCAN_OIDC_ISSUER_URL to run these tests'
-    end
+    skip 'OIDC not configured - set VULCAN_ENABLE_OIDC=true and VULCAN_OIDC_ISSUER_URL to run these tests' unless oidc_enabled? && okta_test_issuer.present?
   end
 
   describe 'Real Okta Discovery Endpoint Testing' do
-    let(:okta_test_issuer) { ENV['VULCAN_OIDC_ISSUER_URL'] || ENV['OKTA_TEST_ISSUER'] }
+    let(:okta_test_issuer) { ENV['VULCAN_OIDC_ISSUER_URL'] || ENV.fetch('OKTA_TEST_ISSUER', nil) }
     let(:discovery_url) { "#{okta_test_issuer}/.well-known/openid-configuration" }
 
     context 'with live Okta discovery endpoint' do
@@ -59,11 +57,11 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
         # Log discovered capabilities for debugging
         Rails.logger.info 'Okta Discovery Test Results:'
         Rails.logger.info "  Issuer: #{discovery_doc['issuer']}"
-        Rails.logger.info "  Authorization: #{discovery_doc['authorization_endpoint']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  Token: #{discovery_doc['token_endpoint']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  Userinfo: #{discovery_doc['userinfo_endpoint']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  JWKS: #{discovery_doc['jwks_uri']&.present? ? '✓' : '✗'}"
-        Rails.logger.info "  End Session: #{discovery_doc['end_session_endpoint']&.present? ? '✓' : '✗'}"
+        Rails.logger.info "  Authorization: #{discovery_doc['authorization_endpoint'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  Token: #{discovery_doc['token_endpoint'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  Userinfo: #{discovery_doc['userinfo_endpoint'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  JWKS: #{discovery_doc['jwks_uri'].present? ? '✓' : '✗'}"
+        Rails.logger.info "  End Session: #{discovery_doc['end_session_endpoint'].present? ? '✓' : '✗'}"
         Rails.logger.info "  Response Types: #{discovery_doc['response_types_supported']&.join(', ')}"
         Rails.logger.info "  Signing Algorithms: #{discovery_doc['id_token_signing_alg_values_supported']&.join(', ')}"
       end
@@ -135,8 +133,8 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
         mock_oidc_settings(enabled: true, issuer: okta_test_issuer, discovery: true)
 
         controller = SessionsController.new
-        session_cache = {}
-        allow(controller).to receive(:session).and_return(session_cache)
+        # Clear Rails.cache to ensure fresh start
+        Rails.cache.clear
 
         # First request should fetch from Okta
         start_time = Time.current
@@ -151,10 +149,13 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
         # Validate both requests returned same data
         expect(discovery_doc1).to eq(discovery_doc2)
 
-        # Cache should have Vulcan metadata
-        expect(session_cache['oidc_discovery']['vulcan_cache_version']).to eq('1.1')
-        expect(session_cache['oidc_discovery']['cached_at']).to be_present
-        expect(session_cache['oidc_discovery']['expires_at']).to be_present
+        # Cache should have Vulcan metadata in Rails.cache
+        cache_key = "oidc_discovery:oidc_discovery:#{okta_test_issuer}"
+        cached_data = Rails.cache.read(cache_key)
+        expect(cached_data).to be_present
+        expect(cached_data['vulcan_cache_version']).to eq('1.1')
+        expect(cached_data['cached_at']).to be_present
+        expect(cached_data['expires_at']).to be_present
 
         # Second request should be significantly faster (cached)
         expect(second_request_time).to be < (first_request_time * 0.1),
@@ -263,8 +264,7 @@ RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
   # Helper method to mock OIDC settings
   def mock_oidc_settings(enabled: true, discovery: true, issuer: nil)
     oidc_settings = double('oidc_settings')
-    allow(oidc_settings).to receive(:enabled).and_return(enabled)
-    allow(oidc_settings).to receive(:discovery).and_return(discovery)
+    allow(oidc_settings).to receive_messages(enabled: enabled, discovery: discovery)
 
     if enabled && issuer
       args_mock = double('args')

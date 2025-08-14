@@ -172,8 +172,8 @@ In production, set these as actual environment variables through your deployment
 ## Docker Deployment
 
 When using Docker, you can set environment variables in:
+- `.env` file (created by `setup-docker-secrets.sh`)
 - `docker-compose.yml` using the `environment:` section
-- `.env-prod` file referenced in docker-compose.yml
 - Container runtime with `-e` flags
 
 **For Container Deployments** (Docker, ECS, Kubernetes):

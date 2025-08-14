@@ -6,6 +6,7 @@ require 'json'
 # Custom sessions controller to handle OIDC logout
 class SessionsController < Devise::SessionsController
   include OidcDiscoveryHelper
+
   def destroy
     id_token = session[:id_token]
 
@@ -50,7 +51,7 @@ class SessionsController < Devise::SessionsController
     }
 
     # Add client_id if available (required by some providers)
-    client_id = Settings.oidc.args.client_options.identifier || ENV['VULCAN_OIDC_CLIENT_ID']
+    client_id = Settings.oidc.args.client_options.identifier || ENV.fetch('VULCAN_OIDC_CLIENT_ID', nil)
     params[:client_id] = client_id if client_id.present?
 
     "#{logout_endpoint}?#{params.to_query}"
@@ -62,7 +63,7 @@ class SessionsController < Devise::SessionsController
   end
 
   def okta_fallback_logout_url
-    issuer_url = Settings.oidc.args.issuer || ENV['VULCAN_OIDC_ISSUER_URL']
+    issuer_url = Settings.oidc.args.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
     "#{issuer_url.to_s.chomp('/')}/oauth2/v1/logout"
   end
 end

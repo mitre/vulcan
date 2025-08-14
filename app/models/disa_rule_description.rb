@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'rexml/document'
+
 # Rule DisaRuleDescription class
 class DisaRuleDescription < ApplicationRecord
   audited associated_with: :base_rule, on: %i[update], except: %i[base_rule_id], max_audits: 1000
@@ -9,7 +11,6 @@ class DisaRuleDescription < ApplicationRecord
   # must return Hashes instead of an actual object to be properly created and associated
   # with the rule.
   def self.from_mapping(disa_rule_description_mapping)
-    include REXML
     # Because description is a freetext XHTML field, everything is parsed from text
     # with REXML to a hash
 

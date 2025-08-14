@@ -1,8 +1,8 @@
 # Overcommit configuration for Rails projects
 # https://github.com/sds/overcommit
 
-# Don't use Bundler context since overcommit is installed globally
-gemfile: false
+# Use bundled version of overcommit
+gemfile: Gemfile
 
 # Hooks that run during `git commit`
 CommitMsg:
@@ -33,7 +33,7 @@ PreCommit:
     description: 'Analyze Ruby code with RuboCop'
     required_executable: 'bundle'
     command: ['bundle', 'exec', 'rubocop']
-    flags: ['--auto-correct-all', '--display-cop-names']
+    flags: ['--autocorrect-all', '--display-cop-names']
     on_warn: fail # Treat warnings as failures
     problem_on_unmodified_line: report
     include:

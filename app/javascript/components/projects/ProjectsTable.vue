@@ -16,7 +16,7 @@
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text">
-              <i class="mdi mdi-magnify" aria-hidden="true" />
+              <b-icon icon="search" aria-hidden="true" />
             </div>
           </div>
           <input
@@ -40,18 +40,18 @@
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.myProjectsToggled" size="lg" class="ml-3" switch>
           <small>Show My Projects</small>
-          <i
+          <b-icon
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             title="Projects I am a member of"
           />
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.discoverableToggled" size="lg" class="ml-3" switch>
           <small>Show Discoverable Projects</small>
-          <i
+          <b-icon
             v-b-tooltip.hover.html
-            class="mdi mdi-information"
+            icon="info-circle"
             aria-hidden="true"
             title="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
           />
@@ -103,7 +103,7 @@
             :href="requestAccessAction(data.item)"
             rel="nofollow"
           >
-            <i class="mdi mdi-account-arrow-right" aria-hidden="true" />
+            <b-icon icon="person-plus" aria-hidden="true" />
             Request Access
           </b-button>
         </span>
@@ -115,7 +115,7 @@
             :href="cancelAccessRequestAction(data.item)"
             rel="nofollow"
           >
-            <i class="mdi mdi-cancel" aria-hidden="true" />
+            <b-icon icon="x-circle" aria-hidden="true" />
             Cancel Access Request
           </b-button>
         </span>
@@ -128,7 +128,7 @@
             :href="destroyAction(data.item)"
             rel="nofollow"
           >
-            <i class="mdi mdi-trash-can" aria-hidden="true" />
+            <b-icon icon="trash" aria-hidden="true" />
             Remove
           </b-button>
         </span>

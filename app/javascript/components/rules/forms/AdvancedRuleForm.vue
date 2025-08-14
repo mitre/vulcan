@@ -17,8 +17,8 @@
           <h2 class="m-0 d-inline-block">Rule Descriptions</h2>
           <b-badge pill class="superVerticalAlign">{{rule.rule_descriptions_attributes.filter((e) => e._destroy != true ).length}}</b-badge>
 
-          <i class="mdi mdi-menu-down superVerticalAlign collapsableArrow" v-if="showRuleDescriptions"></i>
-          <i class="mdi mdi-menu-up superVerticalAlign collapsableArrow" v-if="!showRuleDescriptions"></i>
+          <b-icon icon="chevron-down" class="superVerticalAlign collapsableArrow" v-if="showRuleDescriptions"></b-icon>
+          <b-icon icon="chevron-up" class="superVerticalAlign collapsableArrow" v-if="!showRuleDescriptions"></b-icon>
         </div>
         <b-collapse v-model="showRuleDescriptions">
           <div v-for="(description, index) in rule.rule_descriptions_attributes" :key="'rule_description_' + index">
@@ -38,13 +38,13 @@
                 class="clickable text-dark"
                 @click="$root.$emit('update:description', rule, { ...description, _destroy: true }, index)"
               >
-                <i class="mdi mdi-trash-can" aria-hidden="true" />
+                <b-icon icon="trash" aria-hidden="true"></b-icon>
                 Remove Rule Description
               </a>
             </div>
           </div>
 
-          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="!disabled"><i class="mdi mdi-plus"></i>Add Description</b-button>
+          <b-button class="mb-2" @click="$root.$emit('add:description', rule)" v-if="!disabled"><b-icon icon="plus"></b-icon>Add Description</b-button>
         </b-collapse>
       </template> -->
 
@@ -60,14 +60,8 @@
           <h2 class="m-0 d-inline-block">Rule Description</h2>
           <!-- <b-badge pill class="superVerticalAlign">{{rule.disa_rule_descriptions_attributes.filter((e) => e._destroy != true ).length}}</b-badge> -->
 
-          <i
-            v-if="showDisaRuleDescriptions"
-            class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-          />
-          <i
-            v-if="!showDisaRuleDescriptions"
-            class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-          />
+          <b-icon v-if="showDisaRuleDescriptions" icon="chevron-down" />
+          <b-icon v-if="!showDisaRuleDescriptions" icon="chevron-up" />
         </div>
         <b-collapse v-model="showDisaRuleDescriptions">
           <div
@@ -93,14 +87,11 @@
                   $root.$emit('update:disaDescription', rule, { ...description, _destroy: true }, index)
                 "
               >
-                <i class="mdi mdi-trash-can" aria-hidden="true"></i>
+                <b-icon icon="trash" aria-hidden="true"></b-icon>
                 Remove DISA Description
               </a> -->
             </div>
           </div>
-
-          <!-- This is commented out because there is currently the assumption that users will only need one description -->
-          <!-- <b-button class="mb-2" @click="$root.$emit('add:disaDescription', rule)" v-if="disabled"><i class="mdi mdi-plus"></i>Add DISA Description</b-button> -->
         </b-collapse>
       </template>
 
@@ -112,8 +103,8 @@
             rule.checks_attributes.filter((e) => e._destroy != true).length
           }}</b-badge>
 
-          <i v-if="showChecks" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-          <i v-if="!showChecks" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+          <b-icon v-if="showChecks" icon="chevron-down" />
+          <b-icon v-if="!showChecks" icon="chevron-up" />
         </div>
         <b-collapse v-model="showChecks">
           <div v-for="(check, index) in rule.checks_attributes" :key="'checks_' + index">
@@ -128,14 +119,14 @@
                 class="clickable text-dark"
                 @click="$root.$emit('update:check', rule, { ...check, _destroy: true }, index)"
               >
-                <i class="mdi mdi-trash-can" aria-hidden="true" />
+                <b-icon icon="trash" aria-hidden="true" />
                 Remove Check
               </a>
             </div>
           </div>
 
           <b-button v-if="!disabled" class="mb-2" @click="$root.$emit('add:check', rule)"
-            ><i class="mdi mdi-plus" />Add Check</b-button
+            ><b-icon icon="plus" />Add Check</b-button
           >
         </b-collapse>
       </template>

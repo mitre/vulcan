@@ -54,9 +54,7 @@ class OidcStartupValidator
       missing_settings << 'VULCAN_OIDC_CLIENT_ID' if client_id.blank?
       missing_settings << 'VULCAN_OIDC_CLIENT_SECRET' if client_secret.blank?
 
-      if missing_settings.any?
-        raise ArgumentError, "Missing required OIDC configuration: #{missing_settings.join(', ')}"
-      end
+      raise ArgumentError, "Missing required OIDC configuration: #{missing_settings.join(', ')}" if missing_settings.any?
 
       Rails.logger.debug '✓ Required OIDC settings present'
     end
@@ -153,9 +151,7 @@ class OidcStartupValidator
       ]
 
       missing_fields = required_fields - discovery.keys
-      if missing_fields.any?
-        Rails.logger.warn "⚠️  OIDC discovery document missing required fields: #{missing_fields.join(', ')}"
-      end
+      Rails.logger.warn "⚠️  OIDC discovery document missing required fields: #{missing_fields.join(', ')}" if missing_fields.any?
 
       # Validate issuer matches configured issuer
       actual_issuer = discovery['issuer']
@@ -174,15 +170,13 @@ class OidcStartupValidator
       # Check for deprecated manual endpoint configuration when discovery is enabled
       if Settings.oidc.discovery
         manual_endpoints = [
-          ENV['VULCAN_OIDC_AUTHORIZATION_URL'],
-          ENV['VULCAN_OIDC_TOKEN_URL'],
-          ENV['VULCAN_OIDC_USERINFO_URL'],
-          ENV['VULCAN_OIDC_JWKS_URI']
+          ENV.fetch('VULCAN_OIDC_AUTHORIZATION_URL', nil),
+          ENV.fetch('VULCAN_OIDC_TOKEN_URL', nil),
+          ENV.fetch('VULCAN_OIDC_USERINFO_URL', nil),
+          ENV.fetch('VULCAN_OIDC_JWKS_URI', nil)
         ].compact
 
-        if manual_endpoints.any?
-          warnings << 'Manual OIDC endpoints configured while discovery is enabled (these will be used as fallbacks)'
-        end
+        warnings << 'Manual OIDC endpoints configured while discovery is enabled (these will be used as fallbacks)' if manual_endpoints.any?
       end
 
       # Check for old-style configuration variables
@@ -202,19 +196,15 @@ class OidcStartupValidator
     end
 
     def validate_redirect_uri
-      redirect_uri = ENV['VULCAN_OIDC_REDIRECT_URI']
+      redirect_uri = ENV.fetch('VULCAN_OIDC_REDIRECT_URI', nil)
       return if redirect_uri.blank?
 
       begin
         uri = URI.parse(redirect_uri)
 
-        unless uri.scheme&.match?(/^https?$/)
-          Rails.logger.warn "⚠️  OIDC redirect URI should use HTTP/HTTPS: #{redirect_uri}"
-        end
+        Rails.logger.warn "⚠️  OIDC redirect URI should use HTTP/HTTPS: #{redirect_uri}" unless uri.scheme&.match?(/^https?$/)
 
-        unless uri.path&.end_with?('/users/auth/oidc/callback')
-          Rails.logger.warn "⚠️  OIDC redirect URI should end with '/users/auth/oidc/callback': #{redirect_uri}"
-        end
+        Rails.logger.warn "⚠️  OIDC redirect URI should end with '/users/auth/oidc/callback': #{redirect_uri}" unless uri.path&.end_with?('/users/auth/oidc/callback')
 
         Rails.logger.debug '✓ OIDC redirect URI format valid'
       rescue URI::InvalidURIError => e
@@ -251,10 +241,10 @@ class OidcStartupValidator
         'JWKS' => discovery['jwks_uri']
       }
 
-      available_endpoints = endpoints.select { |_, url| url.present? }
+      available_endpoints = endpoints.compact_blank
 
       Rails.logger.info '📋 OIDC Provider Capabilities:'
-      available_endpoints.each do |name, _url|
+      available_endpoints.each_key do |name|
         Rails.logger.info "    #{name}: ✓"
       end
 
@@ -271,15 +261,15 @@ class OidcStartupValidator
 
     # Helper methods for accessing configuration
     def issuer_url
-      Settings.oidc.args&.issuer || ENV['VULCAN_OIDC_ISSUER_URL']
+      Settings.oidc.args&.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
     end
 
     def client_id
-      ENV['VULCAN_OIDC_CLIENT_ID']
+      ENV.fetch('VULCAN_OIDC_CLIENT_ID', nil)
     end
 
     def client_secret
-      ENV['VULCAN_OIDC_CLIENT_SECRET']
+      ENV.fetch('VULCAN_OIDC_CLIENT_SECRET', nil)
     end
   end
 end

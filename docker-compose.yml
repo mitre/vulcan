@@ -17,12 +17,18 @@ services:
       retries: 5
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.production
     environment:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db/vulcan_postgres_production
       RAILS_SERVE_STATIC_FILES: "true"
       RAILS_ENV: production
-    env_file: .env-prod
+      NODE_ENV: production
+      # jemalloc is enabled in the Dockerfile
+      LD_PRELOAD: /usr/local/lib/libjemalloc.so
+      MALLOC_ARENA_MAX: "2"
+    env_file: .env
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -30,11 +36,11 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/users/sign_in || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
 volumes:
   vulcan_dbdata:

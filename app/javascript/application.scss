@@ -1,9 +1,8 @@
-@import "~bootstrap";
-@import "~bootstrap-vue";
+@import "bootstrap/scss/bootstrap";
+@import "bootstrap-vue/src/index.scss";
 
-// The default font path is '../fonts', which fails with Webpacker.
-$mdi-font-path: "~@mdi/font/fonts/";
-@import "~@mdi/font/scss/materialdesignicons";
+// Bootstrap Icons are included via the IconsPlugin in Vue
+// No need to import separate icon CSS files
 
 .clickable {
   cursor: pointer;

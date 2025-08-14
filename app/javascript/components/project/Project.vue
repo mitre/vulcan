@@ -211,8 +211,8 @@
             <div class="clickable" @click="showDetails = !showDetails">
               <h5 class="m-0 d-inline-block">Project Details</h5>
 
-              <i v-if="showDetails" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-              <i v-if="!showDetails" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+              <b-icon v-if="showDetails" icon="chevron-down" />
+              <b-icon v-if="!showDetails" icon="chevron-up" />
             </div>
             <b-collapse id="collapse-details" v-model="showDetails">
               <p class="ml-2 mb-0 mt-2"><strong>Name: </strong>{{ project.name }}</p>
@@ -273,11 +273,8 @@
             <div class="clickable" @click="showMetadata = !showMetadata">
               <h5 class="m-0 d-inline-block">Project Metadata</h5>
 
-              <i
-                v-if="showMetadata"
-                class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-              />
-              <i v-if="!showMetadata" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+              <b-icon v-if="showMetadata" icon="chevron-down" />
+              <b-icon v-if="!showMetadata" icon="chevron-up" />
             </div>
             <b-collapse id="collapse-metadata" v-model="showMetadata">
               <small
@@ -309,8 +306,8 @@
             <div class="clickable" @click="showHistory = !showHistory">
               <h5 class="m-0 d-inline-block">Project History</h5>
 
-              <i v-if="showHistory" class="mdi mdi-menu-down superVerticalAlign collapsableArrow" />
-              <i v-if="!showHistory" class="mdi mdi-menu-up superVerticalAlign collapsableArrow" />
+              <b-icon v-if="showHistory" icon="chevron-down" />
+              <b-icon v-if="!showHistory" icon="chevron-up" />
             </div>
             <b-collapse id="collapse-metadata" v-model="showHistory">
               <History :histories="project.histories" :revertable="false" />

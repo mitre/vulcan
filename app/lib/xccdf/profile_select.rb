@@ -9,6 +9,7 @@ module Xccdf
   # add explanatory material or other additional prose.
   class ProfileSelect
     include HappyMapper
+
     tag 'Select'
 
     attribute :idref, String, tag: 'idref' # required

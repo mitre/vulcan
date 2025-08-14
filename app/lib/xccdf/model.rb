@@ -7,6 +7,7 @@ module Xccdf
   # appears here as the system attribute.
   class Model
     include HappyMapper
+
     tag 'model'
 
     attribute :system, String, tag: 'system'

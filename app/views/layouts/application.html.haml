@@ -2,31 +2,33 @@
 %html
   %head
     %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}/
+    %meta{:name => "viewport", :content => "width=device-width, initial-scale=1, shrink-to-fit=no"}/
     %title Vulcan Profile Builder
     = csrf_meta_tags
     = csp_meta_tag
-    = stylesheet_pack_tag 'application'
-    = javascript_pack_tag 'application', 'data-turbolinks-track': 'reload'
-    = javascript_pack_tag 'navbar'
-    / If using inline styles in the vue pack, loading the stylesheet_pack_tag as well becomes necessary
-    = stylesheet_pack_tag 'navbar'
-    = javascript_pack_tag 'toaster'
+    = stylesheet_link_tag 'application', 'data-turbolinks-track': 'reload'
+    = stylesheet_link_tag 'bootstrap-vue', 'data-turbolinks-track': 'reload'
+    = javascript_include_tag 'application', 'data-turbolinks-track': 'reload'
+    = javascript_include_tag 'navbar', 'data-turbolinks-track': 'reload'
+    = javascript_include_tag 'toaster', 'data-turbolinks-track': 'reload'
+
+    / CSS customizations can be added here if needed
 
     = yield :assets
   %body
     #navbar
-      %navbar{                                                               |
-        'v-bind:navigation': @navigation.to_json,                            |
-        'v-bind:signed_in': user_signed_in?.to_s,                            |
-        'v-bind:users_path': current_user&.admin ? users_path.to_json : nil, |
-        'v-bind:profile_path': edit_user_registration_path.to_json,          |
-        'v-bind:sign_out_path': destroy_user_session_path.to_json,            |
-        'v-bind:access_requests': @access_requests.to_json                   |
+      %navbar{
+        'v-bind:navigation': @navigation.to_json,
+        'v-bind:signed_in': user_signed_in?.to_json,
+        'v-bind:users_path': (current_user&.admin ? users_path : '').to_json,
+        'v-bind:profile_path': edit_user_registration_path.to_json,
+        'v-bind:sign_out_path': destroy_user_session_path.to_json,
+        'v-bind:access_requests': @access_requests.to_json
       }
     #Toaster
-      %toaster{                          |
-        'v-bind:notice': notice.to_json, |
-        'v-bind:alert': alert.to_json    |
+      %toaster{
+        'v-bind:notice': notice.to_json,
+        'v-bind:alert': alert.to_json
       }
     .pt-3.container-fluid{"data-behavior" => "vue"}
       = yield

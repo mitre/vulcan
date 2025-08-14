@@ -1,10 +1,10 @@
 - content_for :assets do
-  = javascript_pack_tag 'project_component'
-  = stylesheet_pack_tag 'project_component'
+  = javascript_include_tag 'project_component'
+  = stylesheet_link_tag 'project_component'
 
 #projectcomponent
   %projectcomponent{                                                                |
-    'v-bind:queried-rule': @rule_json,                                              |
+    'v-bind:queried-rule': (@rule_json || {}.to_json),                                              |
     'v-bind:effective_permissions': @effective_permissions.to_json,                 |
     'v-bind:initial-component-state': @component_json,                              |
     'v-bind:project': @project_json,                                                |

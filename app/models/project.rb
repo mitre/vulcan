@@ -4,7 +4,7 @@
 class Project < ApplicationRecord
   attr_accessor :current_user
 
-  enum visibility: { discoverable: 0, hidden: 1 }
+  enum :visibility, { discoverable: 0, hidden: 1 }
 
   audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
 
@@ -48,7 +48,7 @@ class Project < ApplicationRecord
   # Get a list of Users that are not yet members of this project
   #
   def available_members
-    (User.all.select(:id, :name, :email) - users.select(:id, :name, :email))
+    (User.select(:id, :name, :email) - users.select(:id, :name, :email))
   end
 
   def details

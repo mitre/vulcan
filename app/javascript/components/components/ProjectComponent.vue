@@ -5,7 +5,7 @@
       <b-col md="8">
         <h1>
           {{ component.name }}
-          <i v-if="component.released" class="mdi mdi-stamper" aria-hidden="true" />
+          <b-icon v-if="component.released" icon="patch-check" aria-hidden="true" />
         </h1>
       </b-col>
       <b-col md="4" class="text-muted text-md-right">
@@ -113,14 +113,8 @@
             <b-col>
               <div class="clickable" @click="showDetails = !showDetails">
                 <h5 class="m-0 d-inline-block">Component Details</h5>
-                <i
-                  v-if="showDetails"
-                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-                />
-                <i
-                  v-if="!showDetails"
-                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-                />
+                <b-icon v-if="showDetails" icon="chevron-down" />
+                <b-icon v-if="!showDetails" icon="chevron-up" />
               </div>
               <b-collapse id="collapse-metadata" v-model="showDetails">
                 <div v-if="component.name">
@@ -170,14 +164,8 @@
             <b-col>
               <div class="clickable" @click="showMetadata = !showMetadata">
                 <h5 class="m-0 d-inline-block">Component Metadata</h5>
-                <i
-                  v-if="showMetadata"
-                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-                />
-                <i
-                  v-if="!showMetadata"
-                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-                />
+                <b-icon v-if="showMetadata" icon="chevron-down" />
+                <b-icon v-if="!showMetadata" icon="chevron-up" />
               </div>
               <b-collapse id="collapse-metadata" v-model="showMetadata">
                 <small
@@ -208,14 +196,8 @@
             <b-col>
               <div class="clickable" @click="showAdditionalQuestions = !showAdditionalQuestions">
                 <h5 class="m-0 d-inline-block">Component Additional Questions</h5>
-                <i
-                  v-if="showAdditionalQuestions"
-                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-                />
-                <i
-                  v-if="!showAdditionalQuestions"
-                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-                />
+                <b-icon v-if="showAdditionalQuestions" icon="chevron-down" />
+                <b-icon v-if="!showAdditionalQuestions" icon="chevron-up" />
               </div>
               <b-collapse id="collapse-metadata" v-model="showAdditionalQuestions">
                 <div
@@ -243,14 +225,8 @@
             <b-col>
               <div class="clickable" @click="showHistory = !showHistory">
                 <h5 class="m-0 d-inline-block">Component History</h5>
-                <i
-                  v-if="showHistory"
-                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-                />
-                <i
-                  v-if="!showHistory"
-                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-                />
+                <b-icon v-if="showHistory" icon="chevron-down" />
+                <b-icon v-if="!showHistory" icon="chevron-up" />
               </div>
               <b-collapse id="collapse-metadata" v-model="showHistory">
                 <History
@@ -265,14 +241,8 @@
             <b-col>
               <div class="clickable" @click="showReviews = !showReviews">
                 <h5 class="m-0 d-inline-block">Component Reviews</h5>
-                <i
-                  v-if="showReviews"
-                  class="mdi mdi-menu-down superVerticalAlign collapsableArrow"
-                />
-                <i
-                  v-if="!showReviews"
-                  class="mdi mdi-menu-up superVerticalAlign collapsableArrow"
-                />
+                <b-icon v-if="showReviews" icon="chevron-down" />
+                <b-icon v-if="!showReviews" icon="chevron-up" />
               </div>
               <b-collapse id="collapse-metadata" v-model="showReviews">
                 <div v-for="review in shownReviews" :key="review.id">

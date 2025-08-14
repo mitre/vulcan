@@ -4,10 +4,11 @@
 class UserMailer < ApplicationMailer
   include ActionView::Helpers::UrlHelper
   include ActionView::Helpers::TextHelper
+
   default from: Settings.smtp.settings.user_name
 
-  def membership_action(action_type, *args)
-    parse_mailer_welcome_user_args(*args)
+  def membership_action(action_type, *)
+    parse_mailer_welcome_user_args(*)
     @subject = subject_field[action_type.to_sym]
     setting_membership_message_based_on_action_type(action_type)
     begin
@@ -37,8 +38,8 @@ class UserMailer < ApplicationMailer
     end
   end
 
-  def review_action(action_type, *args)
-    parse_mailer_review_args(*args)
+  def review_action(action_type, *)
+    parse_mailer_review_args(*)
     @subject = subject_field[action_type.to_sym]
     @latest_review_user = find_latest_request_review(@rule, @component_id)
     setting_review_message_based_on_action_type(action_type)

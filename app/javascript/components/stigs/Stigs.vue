@@ -10,7 +10,7 @@
       </b-col>
       <b-col v-if="is_vulcan_admin" md="2" class="align-self-center">
         <b-button href="#" class="float-right" @click="showUploadComponent = !showUploadComponent">
-          <i class="mdi mdi-file-upload-outline" aria-hidden="true" />
+          <b-icon icon="cloud-upload" aria-hidden="true" />
           Upload STIG
         </b-button>
       </b-col>

@@ -127,7 +127,7 @@ RSpec.describe ExportHelper, type: :helper do
       expected_names = @project.components.map do |comp|
         version = comp.version ? "V#{comp.version}" : ''
         release = comp.release ? "R#{comp.release}" : ''
-        title = (comp.title || "#{comp.name} STIG Readiness Guide")
+        title = comp.title || "#{comp.name} STIG Readiness Guide"
         "U_#{title.tr(' ', '_')}_#{version}#{release}-xccdf.xml"
       end
       expect(@zip.map(&:name).sort).to eq expected_names.sort

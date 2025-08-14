@@ -6,6 +6,7 @@
 class ProjectsController < ApplicationController
   include ExportHelper
   include ProjectMemberConstants
+
   before_action :set_project, only: %i[show update destroy export]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
@@ -69,9 +70,7 @@ class ProjectsController < ApplicationController
       memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }],
       visibility: new_project_params[:visibility]
     )
-    if new_project_params[:slack_channel_id].present?
-      project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } }
-    end
+    project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } } if new_project_params[:slack_channel_id].present?
 
     # First save ensures base Project is acceptable.
     if project.save
@@ -182,8 +181,8 @@ class ProjectsController < ApplicationController
   end
 
   def check_permission_to_update
-    condition = (project_params[:project_metadata_attributes]&.dig('data')&.dig('Slack Channel ID').present? ||
-                 project_params[:visibility].present?)
+    condition = project_params[:project_metadata_attributes]&.dig('data', 'Slack Channel ID').present? ||
+                project_params[:visibility].present?
     authorize_admin_project if condition
   end
 

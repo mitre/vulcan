@@ -108,7 +108,7 @@
           <div class="input-group">
             <div class="input-group-prepend">
               <div class="input-group-text">
-                <i class="mdi mdi-magnify" aria-hidden="true" />
+                <b-icon icon="search" aria-hidden="true" />
               </div>
             </div>
             <input
@@ -129,11 +129,7 @@
               class="border border-1 border-primary ml-1 mb-1 font-weight-normal"
             >
               {{ keyword }}
-              <i
-                class="mdi mdi-close-thick ml-1 text-muted"
-                aria-hidden="true"
-                @click="removeKeywordSearchFromList(index)"
-              />
+              <b-icon icon="x-lg" aria-hidden="true" @click="removeKeywordSearchFromList(index)" />
             </b-badge>
           </div>
         </div>
@@ -167,7 +163,7 @@
               @click="relatedRule.show = !relatedRule.show"
             >
               {{ relatedRule.name }}
-              <i class="mdi mdi-collapse-all float-right" />
+              <b-icon icon="arrows-collapse" class="float-right" />
             </b-card-header>
             <b-collapse :id="relatedRule.name" v-model="relatedRule.show">
               <b-card-body>

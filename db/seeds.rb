@@ -3,9 +3,7 @@
 # rubocop:disable Rails/Output
 
 # Populate the database for demonstration use.
-unless Rails.env.development? || ENV.fetch('DISABLE_DATABASE_ENVIRONMENT_CHECK', false)
-  raise 'This task is only for use in a development environment'
-end
+raise 'This task is only for use in a development environment' unless Rails.env.development? || ENV.fetch('DISABLE_DATABASE_ENVIRONMENT_CHECK', false)
 
 puts "Populating database for demo use:\n\n"
 
@@ -20,7 +18,7 @@ users = []
   users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: '1234567ab!')
 end
 User.import(users)
-User.all.each do |user|
+User.find_each do |user|
   user.skip_confirmation!
   user.save!
 end
@@ -41,7 +39,7 @@ puts 'Created Projects'
 # ------------------------- #
 puts 'Adding Users to Projects...'
 project_members = []
-User.all.each do |user|
+User.find_each do |user|
   project_members << Membership.new(user: user, membership_id: photon3.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: photon4.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: vsphere.id, membership_type: 'Project')
@@ -50,7 +48,7 @@ Membership.import(project_members)
 puts 'Project Members added'
 
 # Counter cache update
-Project.all.each { |p| Project.reset_counters(p.id, :memberships_count) }
+Project.find_each { |p| Project.reset_counters(p.id, :memberships_count) }
 
 # -------------- #
 # Seeds for SRGs #
@@ -158,10 +156,13 @@ vcenter_vami_v1r1.rules.update(locked: false)
   # Add Rule satisfaction:
   # Only Applicable - Configurable rule can satisfy other rules
   rule_selection = c.rules.where(status: 'Applicable - Configurable')
-  c.rules.where.not(status: 'Applicable - Configurable').limit(3).each do |rule|
-    rule.satisfied_by << rule_selection.sample
-    # Save the rule to trigger callbacks
-    rule.save
+  if rule_selection.any?
+    c.rules.where.not(status: 'Applicable - Configurable').limit(3).each do |rule|
+      satisfying_rule = rule_selection.sample
+      rule.satisfied_by << satisfying_rule if satisfying_rule
+      # Save the rule to trigger callbacks
+      rule.save
+    end
   end
 
   # Call update last to trigger callbacks

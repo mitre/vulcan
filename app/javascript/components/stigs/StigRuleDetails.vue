@@ -21,9 +21,9 @@
         <b-form-group>
           <label :for="`stig-rule-fixtext-${selectedRule.id}`">
             Fix
-            <i
+            <b-icon
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               title="Describe how to correctly configure the requirement to remediate the system vulnerability"
             />
@@ -42,9 +42,9 @@
         <b-form-group v-if="selectedRule.vendor_comments">
           <label :for="`stig-rule-vendor-comments-${selectedRule.id}`">
             Vendor Comments
-            <i
+            <b-icon
               v-b-tooltip.hover.html
-              class="mdi mdi-information"
+              icon="info-circle"
               aria-hidden="true"
               title="Provide context to a reviewing authority; not a published field"
             />

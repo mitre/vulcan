@@ -2,16 +2,20 @@
 
 source 'https://rubygems.org'
 
-ruby '~> 2.7'
+ruby '3.3.9'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 6.1.4'
+gem 'rails', '~> 7.0.0'
+# TODO: Remove this once upgrading to Rails 7.1, this is required for a bug specific to Rails 7.0
+gem 'concurrent-ruby', '1.3.4'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
 gem 'puma', '~> 5.6'
-# Transpile app-like JavaScript. Read more: https://github.com/rails/webpacker
-gem 'webpacker', '~> 5.0'
+# Asset pipeline for JavaScript bundling
+gem 'jsbundling-rails'
+# Asset pipeline for Rails
+gem 'propshaft'
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
 gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
@@ -32,8 +36,8 @@ gem 'omniauth-github'
 gem 'omniauth-rails_csrf_protection', '~> 1.0'
 # Allow users to sign in with OIDC providers
 gem 'omniauth_openid_connect', '~> 0.6.0'
-# Vulcan settings
-gem 'settingslogic', '~> 2.0.9'
+# Vulcan settings - upgraded for Ruby 3.1+ compatibility
+gem 'mitre-settingslogic', '~> 3.0'
 # Use Redis adapter to run Action Cable in production
 # gem 'redis', '~> 4.0'
 # Use Active Model has_secure_password
@@ -45,7 +49,11 @@ gem 'settingslogic', '~> 2.0.9'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
-gem 'audited', '~> 5.3.3'
+# Ruby 3.4 compatibility - these will be removed from stdlib
+gem 'abbrev'
+gem 'csv'
+
+gem 'audited', '~> 5.8.0'
 
 gem 'activerecord-import'
 
@@ -61,6 +69,9 @@ gem 'fast_excel'
 # For writing excel files
 gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
+# REXML - required explicitly in Ruby 3.0+
+gem 'rexml'
+
 gem 'ox'
 
 gem 'rubyzip'
@@ -69,15 +80,17 @@ gem 'mitre-inspec-objects'
 gem 'rest-client'
 
 group :development do
-  gem 'listen', '~> 3.1.5'
+  gem 'listen', '~> 3.7'
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
   gem 'web-console', '>= 3.3.0'
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'letter_opener'
   gem 'spring'
-  gem 'spring-watcher-listen', '~> 2.0.0'
+  gem 'spring-watcher-listen'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
+  # Git hooks management
+  gem 'overcommit', require: false
 end
 
 group :test do

@@ -15,9 +15,7 @@ module ApplicationHelper
       { icon: 'mdi-folder', name: 'SRGs', link: srgs_path }
     ]
 
-    if current_user&.admin? || Settings.project.create_permission_enabled
-      nav_links.insert(1, { icon: 'mdi-timer-sand', name: 'Start New Project', link: new_project_path })
-    end
+    nav_links.insert(1, { icon: 'mdi-timer-sand', name: 'Start New Project', link: new_project_path }) if current_user&.admin? || Settings.project.create_permission_enabled
 
     nav_links
   end

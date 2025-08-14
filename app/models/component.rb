@@ -14,7 +14,7 @@ class Component < ApplicationRecord
     include_association :rules
     include_association :additional_questions
     set released: false
-    set rules_count: 0
+    # Don't set rules_count - it will be recalculated after save
 
     customize(lambda { |original_component, new_component|
       # There is unfortunately no way to do this at a lower level since the new component isn't
@@ -97,7 +97,7 @@ class Component < ApplicationRecord
       return
     end
 
-    spreadsheet_srg_ids = parsed.map { |row| row[IMPORT_MAPPING[:srg_id]] }
+    spreadsheet_srg_ids = parsed.pluck(IMPORT_MAPPING[:srg_id])
     database_srg_ids = srg_rules.map(&:version)
 
     missing_from_srg = spreadsheet_srg_ids - database_srg_ids
@@ -118,7 +118,7 @@ class Component < ApplicationRecord
     end
 
     # Calculate the prefix (which will need to be removed from each row)
-    possible_prefixes = parsed.collect { |row| row[IMPORT_MAPPING[:stig_id]] }.compact_blank
+    possible_prefixes = parsed.pluck(IMPORT_MAPPING[:stig_id]).compact_blank
     if possible_prefixes.empty?
       errors.add(:base, 'No STIG prefixes were detected in the file. Please set any STIGID ' \
                         'in the file and try again.')
@@ -230,7 +230,7 @@ class Component < ApplicationRecord
     return false if released_was
 
     # If all rules are locked, then component may be released
-    rules.where(locked: false).size.zero?
+    rules.where(locked: false).empty?
   end
 
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
@@ -254,9 +254,7 @@ class Component < ApplicationRecord
     # Manual Updates required for any 'configurable' requirements with updated underlying SRG requirements
 
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
-    if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
-      return copied_component
-    end
+    return copied_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
 
     # update the based_on field to the new srg
     copied_component.based_on = new_srg
@@ -295,6 +293,9 @@ class Component < ApplicationRecord
     end
 
     if copied_component.save
+      # Reset the rules_count counter cache after duplication
+      Component.reset_counters(copied_component.id, :rules)
+      copied_component.reload
       # import any new rules
       new_rule_versions = (new_srg_rules.keys - copied_component.rules.map(&:version))
       return copied_component if copied_component.from_mapping(new_srg, new_rule_versions,
@@ -386,6 +387,8 @@ class Component < ApplicationRecord
     success = Rule.import(rule_models, all_or_none: true, recursive: true).failed_instances.blank?
     if success
       reload
+      # Reset counter cache after bulk import since callbacks are bypassed
+      Component.reset_counters(id, :rules)
     else
       errors.add(:base, 'Some rules failed to import successfully for the component.')
     end
@@ -403,7 +406,7 @@ class Component < ApplicationRecord
       rules.collect { |rule| rule.rule_id.to_i }.max
     else
       Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
-                              WHERE component_id = #{id}")&.values&.flatten&.first&.to_i || 0
+                              WHERE component_id = #{id}")&.values&.flatten&.first.to_i
     end
   end
 

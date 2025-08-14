@@ -7,10 +7,10 @@
     >
       <label :for="`ruleEditor-check-system-${mod}`">
         System
-        <i
+        <b-icon
           v-if="tooltips['system']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['system']"
         />
@@ -38,10 +38,10 @@
     >
       <label :for="`ruleEditor-check-content_ref_name-${mod}`">
         Reference Name
-        <i
+        <b-icon
           v-if="tooltips['content_ref_name']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['content_ref_name']"
         />
@@ -69,10 +69,10 @@
     >
       <label :for="`ruleEditor-check-content_ref_href-${mod}`">
         Reference Link
-        <i
+        <b-icon
           v-if="tooltips['content_ref_href']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['content_ref_href']"
         />
@@ -100,10 +100,10 @@
     >
       <label :for="`ruleEditor-check-content-${mod}`">
         Check
-        <i
+        <b-icon
           v-if="tooltips['content']"
           v-b-tooltip.hover.html
-          class="mdi mdi-information"
+          icon="info-circle"
           aria-hidden="true"
           :title="tooltips['content']"
         />
