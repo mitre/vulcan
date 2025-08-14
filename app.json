@@ -1,17 +1,45 @@
 {
+  "name": "Vulcan",
+  "description": "MITRE Security Requirements Guide authoring tool",
+  "stack": "heroku-24",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "heroku/ruby"
+    }
+  ],
   "env": {
     "SECRET_KEY_BASE": {
       "description": "A secret key for verifying the integrity of signed cookies.",
       "generator": "secret"
+    },
+    "RAILS_ENV": {
+      "value": "production"
+    },
+    "RAILS_SERVE_STATIC_FILES": {
+      "value": "true"
+    },
+    "RAILS_LOG_TO_STDOUT": {
+      "value": "true"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
     }
   },
   "scripts": {
-    "postdeploy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=true bundle exec rails db:seed",
-    "pr-predestroy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=true bundle exec rails db:drop"
+    "postdeploy": "bundle exec rails db:schema:load db:seed"
   },
   "environments": {
     "review": {
-      "addons": ["heroku-postgresql:essential-0"]
+      "addons": ["heroku-postgresql:essential-0"],
+      "scripts": {
+        "postdeploy": "bundle exec rails db:schema:load db:seed"
+      }
     }
   }
 }
