@@ -7,6 +7,9 @@
       "url": "heroku/nodejs"
     },
     {
+      "url": "https://github.com/gaffneyc/heroku-buildpack-jemalloc.git"
+    },
+    {
       "url": "heroku/ruby"
     }
   ],
@@ -23,6 +26,18 @@
     },
     "RAILS_LOG_TO_STDOUT": {
       "value": "true"
+    },
+    "WEB_CONCURRENCY": {
+      "description": "Number of Puma worker processes. Set to 2 for basic dynos, can increase for larger dynos.",
+      "value": "2"
+    },
+    "RAILS_MAX_THREADS": {
+      "description": "Maximum number of threads per Puma worker. Default Rails setting.",
+      "value": "5"
+    },
+    "JEMALLOC_ENABLED": {
+      "description": "Enable jemalloc for better memory management (20-40% reduction).",
+      "value": "true"
     }
   },
   "formation": {
@@ -30,9 +45,6 @@
       "quantity": 1,
       "size": "basic"
     }
-  },
-  "scripts": {
-    "postdeploy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bundle exec rails db:schema:load db:seed"
   },
   "environments": {
     "review": {
