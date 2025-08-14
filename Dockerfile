@@ -60,10 +60,10 @@ RUN bundle install --without development test
 COPY . $APP_HOME
 # Install all dependencies (including dev) for build and build assets
 # Don't set NODE_ENV during the build to ensure all modules are available
+# Then remove dev dependencies after build to reduce image size
 RUN yarn install --frozen-lockfile && \
-    SECRET_KEY_BASE=dummyvalue bundle exec rake assets:precompile
-# Remove dev dependencies after build to reduce image size
-RUN yarn install --production --ignore-scripts --prefer-offline
+    SECRET_KEY_BASE=dummyvalue bundle exec rake assets:precompile && \
+    yarn install --production --ignore-scripts --prefer-offline
 
 # Now set NODE_ENV for runtime
 ENV NODE_ENV=production
