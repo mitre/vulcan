@@ -52,7 +52,7 @@ rails_*.log
 dev_output.log
 
 # Ignore local development files
-# CLAUDE.md (project-level documentation is tracked)
+CLAUDE.md
 OKTA_SESSION_RECOVERY.md
 PR_MESSAGE.md
 *.backup
