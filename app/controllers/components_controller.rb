@@ -16,8 +16,7 @@ class ComponentsController < ApplicationController
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :authorize_admin_component, only: %i[update], if: lambda {
     params
-      .require(:component)
-      .permit(:advanced_fields)[:advanced_fields]
+      .expect(component: [:advanced_fields])[:advanced_fields]
       .present?
   }
 
@@ -360,41 +359,41 @@ class ComponentsController < ApplicationController
   end
 
   def component_update_params
-    params.require(:component).permit(
-      :released,
-      :name,
-      :version,
-      :release,
-      :title,
-      :prefix,
-      :description,
-      :admin_name,
-      :admin_email,
-      :advanced_fields,
-      additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
-      component_metadata_attributes: { data: {} }
+    params.expect(
+      component: [:released,
+                  :name,
+                  :version,
+                  :release,
+                  :title,
+                  :prefix,
+                  :description,
+                  :admin_name,
+                  :admin_email,
+                  :advanced_fields,
+                  { additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
+                    component_metadata_attributes: { data: {} } }]
     )
   end
 
   def component_create_params
-    params.require(:component).permit(
-      :id,
-      :duplicate,
-      :copy_component,
-      :component_id,
-      :project_id,
-      :security_requirements_guide_id,
-      :name,
-      :prefix,
-      :version,
-      :release,
-      :title,
-      :description,
-      :admin_name,
-      :admin_email,
-      :file,
-      :slack_channel_id,
-      file: {}
+    params.expect(
+      component: [:id,
+                  :duplicate,
+                  :copy_component,
+                  :component_id,
+                  :project_id,
+                  :security_requirements_guide_id,
+                  :name,
+                  :prefix,
+                  :version,
+                  :release,
+                  :title,
+                  :description,
+                  :admin_name,
+                  :admin_email,
+                  :file,
+                  :slack_channel_id,
+                  { file: {} }]
     )
   end
 end

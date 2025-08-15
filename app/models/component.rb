@@ -317,29 +317,36 @@ class Component < ApplicationRecord
       new_rule = rules.find { |r| r.rule_id == orig_rule.rule_id }
       next if new_rule.nil?
 
-      ActiveRecord::Base.connection.execute(
-        Arel.sql("UPDATE base_rules SET created_at = '#{orig_rule.created_at}', updated_at = '#{orig_rule.updated_at}'
-                  WHERE id = #{new_rule.id}")
+      ActiveRecord::Base.connection.exec_query(
+        'UPDATE base_rules SET created_at = ?, updated_at = ? WHERE id = ?',
+        'SQL',
+        [[nil, orig_rule.created_at], [nil, orig_rule.updated_at], [nil, new_rule.id]]
       )
 
-      ActiveRecord::Base.connection.execute(
-        Arel.sql("DELETE FROM audits WHERE auditable_type = 'BaseRule' AND auditable_id = #{new_rule.id}")
+      ActiveRecord::Base.connection.exec_query(
+        'DELETE FROM audits WHERE auditable_type = ? AND auditable_id = ?',
+        'SQL',
+        [[nil, 'BaseRule'], [nil, new_rule.id]]
       )
 
-      ActiveRecord::Base.connection.execute(
-        Arel.sql("INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, user_id, user_type,
-                                      username, action, audited_changes, version, comment, remote_address, request_uuid,
-                                      created_at, audited_user_id, audited_username)
-                  SELECT #{new_rule.id}, auditable_type, associated_id, associated_type, user_id, user_type, username,
-                         action, audited_changes, version, comment, remote_address, request_uuid, created_at,
-                         audited_user_id, audited_username
-                  FROM audits WHERE auditable_type = 'BaseRule' AND auditable_id = #{orig_rule.id}")
+      ActiveRecord::Base.connection.exec_query(
+        "INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, user_id, user_type,
+                             username, action, audited_changes, version, comment, remote_address, request_uuid,
+                             created_at, audited_user_id, audited_username)
+         SELECT ?, auditable_type, associated_id, associated_type, user_id, user_type, username,
+                action, audited_changes, version, comment, remote_address, request_uuid, created_at,
+                audited_user_id, audited_username
+         FROM audits WHERE auditable_type = ? AND auditable_id = ?",
+        'SQL',
+        [[nil, new_rule.id], [nil, 'BaseRule'], [nil, orig_rule.id]]
       )
 
-      ActiveRecord::Base.connection.execute(
-        Arel.sql("INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
-                  SELECT user_id, #{new_rule.id}, action, comment, created_at, updated_at
-                  FROM reviews WHERE rule_id = #{orig_rule.id}")
+      ActiveRecord::Base.connection.exec_query(
+        'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
+         SELECT user_id, ?, action, comment, created_at, updated_at
+         FROM reviews WHERE rule_id = ?',
+        'SQL',
+        [[nil, new_rule.id], [nil, orig_rule.id]]
       )
     end
   end

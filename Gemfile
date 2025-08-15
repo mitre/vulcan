@@ -5,9 +5,7 @@ source 'https://rubygems.org'
 ruby '3.3.9'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 7.0.0'
-# TODO: Remove this once upgrading to Rails 7.1, this is required for a bug specific to Rails 7.0
-gem 'concurrent-ruby', '1.3.4'
+gem 'rails', '~> 8.0.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
@@ -114,7 +112,7 @@ group :development, :test do
   gem 'byebug'
   gem 'factory_bot_rails', '~> 5.2.0'
   gem 'rspec-mocks'
-  gem 'rspec-rails', '~> 4.0.0'
+  gem 'rspec-rails', '~> 6.0'
   # Load environment variables from .env files in development and test
   gem 'dotenv-rails'
 end
