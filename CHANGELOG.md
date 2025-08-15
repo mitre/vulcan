@@ -1,5 +1,82 @@
 # Changelog
 
+## [Unreleased]
+
+**🚀 Major Framework & Infrastructure Upgrades:**
+
+### Rails 8.0.2.1 Upgrade (#682)
+- **Progressive upgrade path**: Rails 7.0.8.7 → 7.1.5.2 → 7.2.2.2 → 8.0.2.1
+- All 198 tests passing with 0 failures
+- Migrated from Webpacker to jsbundling-rails with esbuild
+- Already using Propshaft (no Sprockets migration needed)
+- Updated RSpec Rails from 4.0 to 6.0 for Rails 8 compatibility
+
+### Ruby & Node.js Modernization (#680)
+- **Ruby**: Upgraded from 3.1.6 → 3.3.6 → 3.3.9
+- **Node.js**: Upgraded from 16 → 20 → 22 LTS (specified in .nvmrc)
+- Full compatibility with modern JavaScript tooling
+- Improved performance and memory usage
+
+### OIDC Authentication Enhancements
+- **Auto-Discovery Feature**: Automatic endpoint configuration from provider metadata
+- Moved OIDC discovery cache from session to Rails.cache for better performance
+- Support for all major OIDC providers (Okta, Auth0, Keycloak, Azure AD)
+- Only 4 environment variables needed (down from 8+)
+- Comprehensive logging for troubleshooting
+
+### Docker & Container Optimization
+- **Production Docker image**: Reduced from 6.5GB to 1.76GB
+- Multi-stage builds with jemalloc for 20-40% memory reduction
+- Fixed SSL certificate installation for corporate proxies
+- Heroku-24 stack compatibility
+- Container-friendly logging with JSON structured output support
+
+**🛡️ Security Improvements:**
+- Fixed SQL injection vulnerability in Component#duplicate_rules using parameterized queries
+- Migrated to Rails 8 `expect` API for strong parameters
+- Updated all security dependencies
+- Fixed mass assignment warnings
+- SonarCloud quality gate passing
+
+**🔧 CI/CD & DevOps:**
+- Fixed Anchore SBOM and Docker Hub push workflows
+- Updated GitHub Actions to v4
+- Fixed Bundler deprecation warnings
+- Added .sonarcloud.properties for automatic analysis
+- Heroku review apps and production deployment optimized
+
+**📚 Environment Variables & Configuration:**
+- Comprehensive environment variable documentation in ENVIRONMENT_VARIABLES.md
+- Production-ready Docker Compose configurations
+- Automatic secret generation script (setup-docker-secrets.sh)
+- Support for corporate SSL certificates in Docker builds
+
+**🐛 Bug Fixes:**
+- Fixed overlay component seed data (now shows correct rule counts)
+- Fixed Vue template compilation error in STIG pages
+- Fixed component rules_count counter cache
+- Fixed Capybara Selenium driver for Selenium 4.x compatibility
+- Resolved all Rails 8 deprecation warnings
+
+**📝 Breaking Changes:**
+- Ruby 3.3.9 required (upgraded from 3.1.6)
+- Node.js 22 LTS required (upgraded from 16)
+- Rails 8.0.2.1 required (upgraded from 7.0.8.7)
+- Webpacker removed in favor of jsbundling-rails with esbuild
+- RSpec Rails 6.0+ required for test suite
+
+**🔄 Migration Notes:**
+- Default credentials remain: admin@example.com / 1234567ab!
+- Database migrations required: `rails db:migrate`
+- Clear Rails cache after upgrade: `rails tmp:cache:clear`
+- Test environment configuration may need updates (see config/environments/test.rb)
+- Bundle install required for new dependencies
+
+**🚧 Upcoming:**
+- Bootstrap 5 migration (currently on Bootstrap 4.4.1)
+- Vue 3 upgrade (currently on Vue 2.x)
+- Potential migration to Hotwire/Turbo
+
 ## [v2.1.9](https://github.com/mitre/vulcan/tree/v2.1.9) (2025-06-13)
 
 [Full Changelog](https://github.com/mitre/vulcan/compare/v2.1.8...v2.1.9)

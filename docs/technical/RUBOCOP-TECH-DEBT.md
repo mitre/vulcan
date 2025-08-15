@@ -20,7 +20,7 @@ Files to fix:
 - `app/models/security_requirements_guide.rb:14` - Validation message
 - `app/models/stig.rb:10` - Validation message
 
-**Fix Strategy**: 
+**Fix Strategy**:
 - Move all strings to `config/locales/en.yml`
 - Use proper I18n keys following Rails conventions
 - Test that all messages still display correctly

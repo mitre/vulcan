@@ -48,14 +48,15 @@ For Ruby (on Ubuntu):
 #### Setup Ruby
 
 1. Install Ruby 3.3.9 (as specified in `.ruby-version`)
-2. Install postgres and rbenv
-3. Run `gem install foreman`
-4. Run `rbenv install`
-5. Run `bin/setup`
+2. Install PostgreSQL and rbenv
+3. Install Rails 8.0.2.1 and dependencies: `gem install rails -v 8.0.2.1`
+4. Run `gem install foreman`
+5. Run `rbenv install`
+6. Run `bin/setup`
 
-  >> **Note**: `bin/setup` will install the JS dependencies andprepare the database.
+  >> **Note**: `bin/setup` will install the JS dependencies and prepare the database.
 
-6. Run `rails db:seed` to seed the database.
+7. Run `rails db:seed` to seed the database.
 
 #### Running with Ruby
 
