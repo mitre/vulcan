@@ -67,7 +67,7 @@ export default {
     arrayToMessage: function (messageArray) {
       return this.$createElement(
         "div",
-        messageArray.map((message) => this.$createElement("p", message))
+        messageArray.map((message) => this.$createElement("p", message)),
       );
     },
   },

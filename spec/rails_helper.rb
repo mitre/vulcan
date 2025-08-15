@@ -112,6 +112,12 @@ RSpec.configure do |config|
 
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include Devise::Test::IntegrationHelpers, type: :request
+  config.include Devise::Test::IntegrationHelpers, type: :system
+
+  # Configure system specs to use our Chrome driver setup
+  config.before(:each, type: :system) do
+    driven_by :chrome
+  end
 
   config.include StubConfiguration
 end

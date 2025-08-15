@@ -65,4 +65,5 @@ end
 RSpec.configure do |config|
   config.include OktaTestHelpers, type: :feature
   config.include OktaTestHelpers, type: :integration
+  config.include OktaTestHelpers, type: :system
 end
