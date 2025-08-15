@@ -89,6 +89,8 @@ group :development do
   gem 'foreman'
   # Git hooks management
   gem 'overcommit', require: false
+  # Security vulnerability scanner for Ruby dependencies
+  gem 'bundler-audit', require: false
 end
 
 group :test do
@@ -110,7 +112,7 @@ end
 group :development, :test do
   gem 'brakeman'
   gem 'byebug'
-  gem 'factory_bot_rails', '~> 5.2.0'
+  gem 'factory_bot_rails', '~> 6.5.0'
   gem 'rspec-mocks'
   gem 'rspec-rails', '~> 6.0'
   # Load environment variables from .env files in development and test
