@@ -53,6 +53,7 @@ dev_output.log
 
 # Ignore local development files
 CLAUDE.md
+.claude/
 *.backup
 *_backup/
 *-backup/
