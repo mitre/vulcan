@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'simplecov'
-require 'active_support/core_ext/numeric/time'
 
 module SimpleCovEnv
   module_function
@@ -29,7 +28,7 @@ module SimpleCovEnv
       add_group 'Mailers',     'app/mailers'
       add_group 'Models',      'app/models'
 
-      merge_timeout 365.days
+      merge_timeout 365 * 24 * 60 * 60 # 365 days in seconds
     end
   end
 end

@@ -42,6 +42,6 @@ class UsersController < ApplicationController
   end
 
   def user_update_params
-    params.require(:user).permit(:admin)
+    params.expect(user: [:admin])
   end
 end

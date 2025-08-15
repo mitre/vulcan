@@ -168,15 +168,15 @@ class ProjectsController < ApplicationController
   end
 
   def new_project_params
-    params.require(:project).permit(:name, :description, :visibility, :slack_channel_id)
+    params.expect(project: %i[name description visibility slack_channel_id])
   end
 
   def project_params
-    params.require(:project).permit(
-      :name,
-      :description,
-      :visibility,
-      project_metadata_attributes: { data: {} }
+    params.expect(
+      project: [:name,
+                :description,
+                :visibility,
+                { project_metadata_attributes: { data: {} } }]
     )
   end
 

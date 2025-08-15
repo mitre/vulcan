@@ -93,11 +93,11 @@ class MembershipsController < ApplicationController
   end
 
   def membership_create_params
-    params.require(:membership).permit(:user_id, :role, :membership_id, :membership_type, :access_request_id)
+    params.expect(membership: %i[user_id role membership_id membership_type access_request_id])
   end
 
   def membership_update_params
-    params.require(:membership).permit(:role)
+    params.expect(membership: [:role])
   end
 
   def send_membership_notification(notification_type, membership)

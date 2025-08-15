@@ -120,6 +120,6 @@ class ReviewsController < ApplicationController
   end
 
   def review_params
-    params.require(:review).permit(:component_id, :action, :comment)
+    params.expect(review: %i[component_id action comment])
   end
 end
