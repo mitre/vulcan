@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-nav-item :href="link" class="mx-3">
-      <i class="mdi" :class="icon" aria-hidden="true" />
+      <b-icon :icon="icon" aria-hidden="true" />
       <div class="d-sm-inline-block d-lg-block">{{ name }}</div>
     </b-nav-item>
   </div>

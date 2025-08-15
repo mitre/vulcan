@@ -16,6 +16,14 @@ abort('The Rails environment is running in production mode!') if Rails.env.produ
 require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
 
+# Rails 8 lazy loading fix - ensure Devise routes are loaded for tests
+Rails.application.reload_routes!
+
+# Additional fix for Rails 8 + Devise compatibility
+ActiveSupport.on_load(:action_controller) do
+  Rails.application.reload_routes_unless_loaded
+end
+
 # Configure WebMock for all tests - allow localhost for Capybara, block external requests
 require 'webmock/rspec'
 WebMock.disable_net_connect!(allow_localhost: true)
@@ -45,7 +53,7 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
-  config.fixture_paths = [Rails.root.join('spec', 'fixtures', 'fixtures').to_s]
+  config.fixture_path = Rails.root.join('spec', 'fixtures', 'fixtures').to_s
 
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
@@ -103,6 +111,13 @@ RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
 
   config.include Devise::Test::ControllerHelpers, type: :controller
+  config.include Devise::Test::IntegrationHelpers, type: :request
+  config.include Devise::Test::IntegrationHelpers, type: :system
+
+  # Configure system specs to use our Chrome driver setup
+  config.before(:each, type: :system) do
+    driven_by :chrome
+  end
 
   config.include StubConfiguration
 end

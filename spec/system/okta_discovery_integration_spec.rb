@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Okta OIDC Discovery Integration', type: :feature do
+RSpec.describe 'Okta OIDC Discovery Integration', type: :system do
   # Allow real HTTP requests for integration testing
   before(:all) do
     WebMock.allow_net_connect! if defined?(WebMock)

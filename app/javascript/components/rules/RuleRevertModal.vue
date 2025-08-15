@@ -283,15 +283,15 @@ export default {
         dependentRecord = this.rule;
       } else if (this.history.auditable_type == "RuleDescription") {
         dependentRecord = this.rule.rule_descriptions_attributes.find(
-          (e) => e.id == this.history.auditable_id
+          (e) => e.id == this.history.auditable_id,
         );
       } else if (this.history.auditable_type == "DisaRuleDescription") {
         dependentRecord = this.rule.disa_rule_descriptions_attributes.find(
-          (e) => e.id == this.history.auditable_id
+          (e) => e.id == this.history.auditable_id,
         );
       } else if (this.history.auditable_type == "Check") {
         dependentRecord = this.rule.checks_attributes.find(
-          (e) => e.id == this.history.auditable_id
+          (e) => e.id == this.history.auditable_id,
         );
       } else if (this.history.auditable_type == "AdditionalAnswer") {
         dependentRecord["additional_answers_attributes"] =
@@ -319,7 +319,7 @@ export default {
         if (this.selectedRevertFields.includes(audited_field)) {
           if (this.history.auditable_type === "AdditionalAnswer") {
             let id = this.rule.additional_answers_attributes.findIndex(
-              (e) => e.id == this.history.auditable_id
+              (e) => e.id == this.history.auditable_id,
             );
             afterState.additional_answers_attributes[id].answer = audited_change.prev_value;
           } else {

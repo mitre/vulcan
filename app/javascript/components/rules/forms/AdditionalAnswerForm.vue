@@ -96,7 +96,7 @@ export default {
     },
     findAnswerText: function (question_id) {
       return this.rule.additional_answers_attributes.find(
-        (element) => element.additional_question_id == question_id
+        (element) => element.additional_question_id == question_id,
       )?.answer;
     },
   },

@@ -32,7 +32,7 @@
           class="btn btn-danger ml-2"
           data-method="delete"
           :href="`/projects/${membership_id}/project_access_requests/${getAccessRequestId(
-            data.item
+            data.item,
           )}`"
           rel="nofollow"
         >
@@ -228,13 +228,13 @@ export default {
       return this.memberships.filter(
         (pm) =>
           pm.email.toLowerCase().includes(downcaseSearch) ||
-          pm.name.toLowerCase().includes(downcaseSearch)
+          pm.name.toLowerCase().includes(downcaseSearch),
       );
     },
     // Users with pending access request
     pendingProjectMembers: function () {
       return this.available_members.filter((member) =>
-        this.access_requests.some((request) => request.user_id === member.id)
+        this.access_requests.some((request) => request.user_id === member.id),
       );
     },
     // Used by b-pagination to know how many total rows there are

@@ -223,7 +223,7 @@ export default {
             response.data,
             this.find_text,
             this.fr.matchCase,
-            this.fr.fields
+            this.fr.fields,
           );
           this.find_results_ver += 1;
           this.countTotalResults();
@@ -287,7 +287,7 @@ export default {
             .then((response) => {
               self.saveRuleSuccess(response, rule_id);
             })
-            .catch(self.alertOrNotifyResponse)
+            .catch(self.alertOrNotifyResponse),
         );
       });
       Promise.all(promises).then(function () {

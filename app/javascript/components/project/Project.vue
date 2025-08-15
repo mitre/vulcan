@@ -425,7 +425,7 @@ export default {
     projectTabIndex: function (_) {
       localStorage.setItem(
         `projectTabIndex-${this.project.id}`,
-        JSON.stringify(this.projectTabIndex)
+        JSON.stringify(this.projectTabIndex),
       );
     },
     selectedComponentsToExport: function (newValue, oldValue) {
@@ -459,8 +459,8 @@ export default {
         this.$nextTick(
           () =>
             (this.projectTabIndex = JSON.parse(
-              localStorage.getItem(`projectTabIndex-${this.project.id}`)
-            ))
+              localStorage.getItem(`projectTabIndex-${this.project.id}`),
+            )),
         );
       } catch (e) {
         localStorage.removeItem(`projectTabIndex-${this.project.id}`);
@@ -484,7 +484,7 @@ export default {
       return _.orderBy(
         this.project.components,
         [(component) => component.name.toLowerCase(), "version", "release"],
-        ["asc"]
+        ["asc"],
       );
     },
     sortedOverlayComponents: function () {
@@ -524,7 +524,7 @@ export default {
     downloadExport: function (type) {
       axios
         .get(
-          `/projects/${this.project.id}/export/${type}?component_ids=${this.selectedComponentsToExport}`
+          `/projects/${this.project.id}/export/${type}?component_ids=${this.selectedComponentsToExport}`,
         )
         .then((_res) => {
           // Once it is validated that there is content to download, prompt

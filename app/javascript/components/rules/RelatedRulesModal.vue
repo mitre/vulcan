@@ -188,7 +188,7 @@
                       @click="
                         copyDiscussionToRule(
                           $root,
-                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion
+                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
                         )
                       "
                     >
@@ -199,7 +199,7 @@
                       style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
                       v-html="
                         formatAndHighlightSearchWord(
-                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion
+                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
                         )
                       "
                     />

@@ -471,7 +471,7 @@ export default {
     componentTabIndex: function (_) {
       localStorage.setItem(
         `componentTabIndex-${this.component.id}`,
-        JSON.stringify(this.componentTabIndex)
+        JSON.stringify(this.componentTabIndex),
       );
     },
   },
@@ -482,8 +482,8 @@ export default {
         this.$nextTick(
           () =>
             (this.componentTabIndex = JSON.parse(
-              localStorage.getItem(`componentTabIndex-${this.component.id}`)
-            ))
+              localStorage.getItem(`componentTabIndex-${this.component.id}`),
+            )),
         );
       } catch (e) {
         localStorage.removeItem(`componentTabIndex-${this.component.id}`);
@@ -506,7 +506,7 @@ export default {
     toggleAdvancedFields: function (advanced_fields) {
       if (
         confirm(
-          `Are you sure you want to ${advanced_fields ? "enable" : "disable"} advanced fields?`
+          `Are you sure you want to ${advanced_fields ? "enable" : "disable"} advanced fields?`,
         )
       ) {
         let payload = {

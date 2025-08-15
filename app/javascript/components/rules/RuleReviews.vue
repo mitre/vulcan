@@ -81,7 +81,7 @@ export default {
   computed: {
     shownReviews: function () {
       const sortedReviews = [...this.rule.reviews].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        (a, b) => new Date(b.created_at) - new Date(a.created_at),
       );
       return sortedReviews.slice(0, this.numShownReviews);
     },

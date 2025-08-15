@@ -81,7 +81,6 @@ PreCommit:
       - '**/bin/bundle'
       - '**/bin/rails'
       - '**/bin/rake'
-      - '**/bin/spring'
       - '**/bin/webpack'
       - '**/bin/webpack-dev-server'
       - '**/bin/yarn'

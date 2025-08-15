@@ -332,7 +332,7 @@ export default {
       this.selected_component_id = component.id;
       this.security_requirements_guide_id = component.security_requirements_guide_id;
       this.security_requirements_guide_displayed = this.srgs.find(
-        (srg) => srg.id === component.security_requirements_guide_id
+        (srg) => srg.id === component.security_requirements_guide_id,
       ).displayed;
       this.name = component.name;
       this.version = component.version;
@@ -392,7 +392,7 @@ export default {
       let formData = new FormData();
       formData.append(
         "component[security_requirements_guide_id]",
-        this.security_requirements_guide_id
+        this.security_requirements_guide_id,
       );
       formData.append("component[name]", this.name);
       if (!this.newComponent) {

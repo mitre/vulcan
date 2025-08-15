@@ -487,7 +487,7 @@ export default {
       handler(_) {
         localStorage.setItem(
           `ruleNavigatorFilters-${this.componentId}`,
-          JSON.stringify(this.filters)
+          JSON.stringify(this.filters),
         );
         localStorage.setItem(`showSRGIdChecked-${this.componentId}`, this.filters.showSRGIdChecked);
       },
