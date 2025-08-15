@@ -4,6 +4,28 @@
 
 **🚀 Major Framework & Infrastructure Upgrades:**
 
+### Test Modernization & Dependency Updates (#683)
+- **Test Framework Modernization**:
+  - Migrated all controller specs to request specs (Rails 8 requirement)
+  - Migrated all feature specs to system specs (Rails 5.1+ standard)
+  - Removed `any_instance_of` anti-pattern from all tests
+  - Fixed Devise authentication issues with Rails 8 lazy route loading
+- **Security & Dependency Updates**:
+  - axios: 1.6.8 → 1.11.0 (fixes SSRF vulnerabilities)
+  - factory_bot: 5.2.0 → 6.5.4
+  - ESLint: 8.x → 8.57.1 (optimized for compatibility)
+  - Prettier: 2.8.8 → 3.6.2
+  - eslint-plugin-prettier: 4.2.1 → 5.2.1
+- **Rails 8 Compatibility Fixes**:
+  - Removed Spring gem (Rails 8 uses built-in reloader)
+  - Fixed `fixture_paths` deprecation (changed to singular `fixture_path`)
+  - Added bundler-audit for Ruby vulnerability scanning
+- **UI Updates**:
+  - Complete MDI to Bootstrap icon migration
+  - Removed @mdi/font package dependency
+  - Updated all navbar and component icons
+- All 190 tests passing with improved performance
+
 ### Rails 8.0.2.1 Upgrade (#682)
 - **Progressive upgrade path**: Rails 7.0.8.7 → 7.1.5.2 → 7.2.2.2 → 8.0.2.1
 - All 198 tests passing with 0 failures

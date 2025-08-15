@@ -49,14 +49,13 @@ For Ruby (on Ubuntu):
 
 1. Install Ruby 3.3.9 (as specified in `.ruby-version`)
 2. Install PostgreSQL and rbenv
-3. Install Rails 8.0.2.1 and dependencies: `gem install rails -v 8.0.2.1`
-4. Run `gem install foreman`
-5. Run `rbenv install`
-6. Run `bin/setup`
+3. Run `rbenv install` (installs the Ruby version from `.ruby-version`)
+4. Run `bundle install` (installs Rails 8.0.2.1 and all dependencies)
+5. Run `bin/setup`
 
   >> **Note**: `bin/setup` will install the JS dependencies and prepare the database.
 
-7. Run `rails db:seed` to seed the database.
+6. Run `rails db:seed` to seed the database.
 
 #### Running with Ruby
 
