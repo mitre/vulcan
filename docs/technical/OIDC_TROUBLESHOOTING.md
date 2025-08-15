@@ -192,7 +192,7 @@ VULCAN_OIDC_REDIRECT_URI=https://your-domain.com/users/auth/oidc/callback
   ```bash
   # ✅ Organization URL (recommended)
   VULCAN_OIDC_ISSUER_URL=https://dev-12345.okta.com
-
+  
   # ⚠️ Authorization server URL (if using custom server)
   VULCAN_OIDC_ISSUER_URL=https://dev-12345.okta.com/oauth2/your-auth-server
   ```

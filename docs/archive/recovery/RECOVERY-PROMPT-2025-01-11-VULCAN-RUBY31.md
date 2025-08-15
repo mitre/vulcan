@@ -32,7 +32,7 @@
 ### The 33 Remaining RuboCop Issues
 All are PRE-EXISTING issues, not caused by our upgrade:
 - `Naming/PredicateMethod` (4 instances)
-- `Rails/I18nLocaleTexts` (8 instances)
+- `Rails/I18nLocaleTexts` (8 instances)  
 - `Style/SafeNavigationChainLength` (7 instances)
 - `Style/Documentation` (7 instances)
 - `Metrics/CollectionLiteralLength` (1 instance)
@@ -46,7 +46,7 @@ All are PRE-EXISTING issues, not caused by our upgrade:
 - Gets VERY frustrated with repeated mistakes
 
 ### Next Steps (What User Wants)
-1. **Deal with the 33 RuboCop offenses**
+1. **Deal with the 33 RuboCop offenses** 
    - User wants them FIXED PROPERLY, not disabled
    - But reached frustration point, may accept disabling them
 2. **Commit all changes**

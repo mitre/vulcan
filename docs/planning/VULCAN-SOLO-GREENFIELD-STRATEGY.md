@@ -65,7 +65,7 @@ Instead of recreating all 24 models perfectly:
    - STI rules hierarchy
    - Validation logic
    - Scopes and associations
-
+   
 3. **Skip non-essential features initially**
    - Audit logging (add later)
    - Complex permissions (simplify first)
@@ -75,7 +75,7 @@ Instead of recreating all 24 models perfectly:
 **Prioritize by user value:**
 
 1. **Week 5**: Projects + Components (core containers)
-2. **Week 6**: Rules + STIG import (main functionality)
+2. **Week 6**: Rules + STIG import (main functionality)  
 3. **Week 7**: Review workflow (critical feature)
 4. **Week 8**: Exports/Reports (user need)
 
@@ -96,7 +96,7 @@ Instead:
 
 2. **Vue 3 only for complex components**
    - Rule editor
-   - Component navigator
+   - Component navigator  
    - Review interface
 
 3. **Modern UI approach**
@@ -123,12 +123,12 @@ namespace :migrate do
       adapter: 'postgresql',
       database: 'vulcan_production_backup'
     )
-
+    
     # Define legacy models inline
     class LegacyUser < Legacy
       self.table_name = 'users'
     end
-
+    
     # Simple copy with progress bar
     LegacyUser.find_each do |old_user|
       User.create!(
@@ -218,20 +218,20 @@ development:
 ## Critical Success Factors
 
 ### Do This:
-✅ Start with Rails 8 + Ruby 3.3
-✅ Use Vue 3 Composition API from day 1
-✅ Copy database schema, refactor models
-✅ Simplify everything possible
-✅ Use modern gems over custom code
-✅ Test critical paths only
+✅ Start with Rails 8 + Ruby 3.3  
+✅ Use Vue 3 Composition API from day 1  
+✅ Copy database schema, refactor models  
+✅ Simplify everything possible  
+✅ Use modern gems over custom code  
+✅ Test critical paths only  
 
 ### Don't Do This:
-❌ Try to maintain compatibility
-❌ Port all features immediately
-❌ Recreate complex workflows as-is
-❌ Write comprehensive tests initially
-❌ Preserve bad design decisions
-❌ Support multiple auth providers initially
+❌ Try to maintain compatibility  
+❌ Port all features immediately  
+❌ Recreate complex workflows as-is  
+❌ Write comprehensive tests initially  
+❌ Preserve bad design decisions  
+❌ Support multiple auth providers initially  
 
 ## The Nuclear Option: Maximum Velocity
 
@@ -266,7 +266,7 @@ cp ../vulcan/app/models/*.rb app/models/
 
 ### Choose Greenfield If You:
 - [x] Single developer
-- [x] No deployment pressure
+- [x] No deployment pressure  
 - [x] Want modern architecture
 - [x] Can accept 3-6 month timeline
 - [x] Comfortable with Rails 8

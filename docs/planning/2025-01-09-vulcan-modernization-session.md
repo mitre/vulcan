@@ -6,7 +6,7 @@
 Working with Aaron Lippold to modernize the Vulcan security compliance application from its current legacy state to modern supported versions. Solo developer, no deployment pressure, can release when complete.
 
 ### Current State (As of Jan 9, 2025)
-- **Ruby**: 2.7.5 (EOL March 2023)
+- **Ruby**: 2.7.5 (EOL March 2023) 
 - **Rails**: 6.1.4 (EOL October 2024)
 - **Node**: 16 (EOL September 2023)
 - **Vue**: 2.7 with Webpacker 5
@@ -48,7 +48,7 @@ Previously thought `settingslogic` gem blocked Ruby 3 upgrade. Research revealed
 
 ### Notes for Tomorrow
 - Ask Aaron about his existing upgrade branches to see what other blockers he hit
-- Deep dive into the XCCDF processing library (app/lib/xccdf/)
+- Deep dive into the XCCDF processing library (app/lib/xccdf/) 
 - Map out all 72 Vue components and their complexity
 - Check test suite compatibility with Ruby 3
 

@@ -4,7 +4,7 @@
 
 ### CRITICAL: First Actions After Compact
 1. **READ /Users/alippold/.claude/CLAUDE.md** - User's global preferences and rules
-2. **READ /Users/alippold/github/mitre/vulcan/CLAUDE.md** - Vulcan project-specific context
+2. **READ /Users/alippold/github/mitre/vulcan/CLAUDE.md** - Vulcan project-specific context  
 3. **READ this file completely** before taking any actions
 4. **CHECK MCP memory**: `mcp__server-memory__open_nodes` with name "Vulcan Rails 7 Upgrade"
 
@@ -18,7 +18,7 @@
 
 ### What We Accomplished Today
 1. **Started with goal**: Upgrade to latest Ruby + Rails possible
-2. **Discovered blocker**: settingslogic incompatible with Ruby 3.1+ (Psych 4 issue)
+2. **Discovered blocker**: settingslogic incompatible with Ruby 3.1+ (Psych 4 issue)  
 3. **Fixed settingslogic**: Replaced with mitre-settingslogic 3.0.3
 4. **Upgraded Ruby**: 2.7.5 → 3.1.6
 5. **Upgraded Rails**: 6.1.4 → 7.0.8.7
@@ -26,7 +26,7 @@
    - Pinned concurrent-ruby to 1.3.4 (Rails 7.0 Logger bug)
    - Upgraded Audited gem to 5.8.0
    - Configured Audited with string class name: 'VulcanAudit'
-7. **Handled RuboCop**:
+7. **Handled RuboCop**: 
    - Version jumped 1.25.1 → 1.79.2
    - Auto-corrected 133 offenses
    - Documented 33 pre-existing offenses in RUBOCOP-TECH-DEBT.md
@@ -78,7 +78,7 @@ git add -A
 git commit -m "Upgrade to Rails 7.0 + Ruby 3.1.6 + mitre-settingslogic
 
 - Upgrade Rails from 6.1.4 to 7.0.8.7
-- Upgrade Ruby from 2.7.5 to 3.1.6
+- Upgrade Ruby from 2.7.5 to 3.1.6  
 - Replace settingslogic with mitre-settingslogic 3.0.3
 - Pin concurrent-ruby to 1.3.4 (Rails 7.0 compatibility)
 - Upgrade Audited gem to 5.8.0
@@ -109,7 +109,7 @@ This upgrade unblocks future Ruby versions (3.2, 3.3) and Rails versions (7.1, 7
 
 ### REMEMBER
 - Rails 7.0 + Ruby 3.1 works but needs concurrent-ruby pinned
-- Audited gem needs string class configuration
+- Audited gem needs string class configuration  
 - Tests haven't been run yet
 - config.load_defaults needs update to 7.0
 - This is a big upgrade - expect some issues but foundation is solid

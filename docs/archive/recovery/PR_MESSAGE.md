@@ -63,7 +63,7 @@ end
 
 ### Configuration Fixes
 - Fixed `config/vulcan.default.yml` to properly use environment variables
-- Added boolean type casting with `ActiveModel::Type::Boolean`
+- Added boolean type casting with `ActiveModel::Type::Boolean` 
 - Ensured all settings can be overridden via environment variables
 - Fixed client_id access in sessions controller to use correct path
 

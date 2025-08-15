@@ -72,7 +72,7 @@ heroku releases --app mitre-vulcan-prod -n 2
 gh run list --branch master --limit 5
 
 # Check MCP memory
-# Use: mcp__server-memory__open_nodes
+# Use: mcp__server-memory__open_nodes 
 # With: ["Vulcan Post-Merge Issues", "Vulcan PR 680 Status", "Vulcan Rails 7 Upgrade"]
 ```
 

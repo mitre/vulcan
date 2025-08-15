@@ -9,14 +9,14 @@
    - Prefer Python/Ruby over sed for text processing
 2. **MUST READ**: `/Users/alippold/github/mitre/vulcan/CLAUDE.md` - Project context
 3. **CHECK MCP**: `mcp__server-memory__open_nodes` with names:
-   - "Vulcan Rails 7 Upgrade"
+   - "Vulcan Rails 7 Upgrade" 
    - "Vulcan Bugs to Fix Post-Rails7"
 4. **VERIFY**: On branch `upgrade-settingslogic-ruby31`
 
 ### 📍 CURRENT STATE
 ```bash
 pwd: /Users/alippold/github/mitre/vulcan
-branch: upgrade-settingslogic-ruby31
+branch: upgrade-settingslogic-ruby31  
 server: http://localhost:3000 (foreman start -f Procfile.dev)
 login: admin@example.com / 1234567ab!
 Ruby: 3.1.6 (testing upgrade to 3.3.6)

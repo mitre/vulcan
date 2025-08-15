@@ -145,11 +145,11 @@ Rails controller stays familiar:
 ```ruby
 def create
   @rule = Rule.new(rule_params)
-
+  
   if @rule.save
     redirect_to rules_path, notice: 'Rule created!'
   else
-    redirect_back fallback_location: rules_path,
+    redirect_back fallback_location: rules_path, 
                   inertia: { errors: @rule.errors }
   end
 end
@@ -229,21 +229,21 @@ const submit = () => {
     <template #header>
       <h3>Edit Rule: {{ rule.name }}</h3>
     </template>
-
+    
     <UForm :state="form" @submit="submit">
       <UFormGroup label="Name" :error="form.errors.name">
         <UInput v-model="form.name" />
       </UFormGroup>
-
+      
       <UFormGroup label="Project">
-        <USelectMenu
-          v-model="form.project_id"
+        <USelectMenu 
+          v-model="form.project_id" 
           :options="projects"
           option-attribute="name"
           value-attribute="id"
         />
       </UFormGroup>
-
+      
       <UButton type="submit" :loading="form.processing">
         Save Changes
       </UButton>
@@ -257,17 +257,17 @@ const submit = () => {
 class RulesController < ApplicationController
   def edit
     @rule = Rule.find(params[:id])
-
+    
     render inertia: 'Rules/Edit', props: {
       rule: @rule,
       projects: Project.select(:id, :name),
       can_delete: can?(:destroy, @rule)
     }
   end
-
+  
   def update
     @rule = Rule.find(params[:id])
-
+    
     if @rule.update(rule_params)
       redirect_to rule_path(@rule), notice: 'Rule updated successfully'
     else
@@ -298,7 +298,7 @@ app/controllers/rules_controller.rb  # Serves both HTML and Inertia
 # Devise/authentication works exactly the same
 class RulesController < ApplicationController
   before_action :authenticate_user!  # Still works!
-
+  
   def index
     # current_user available as normal
     render inertia: 'Rules/Index', props: {
@@ -327,8 +327,8 @@ const submit = () => {
 
 <template>
   <UFormGroup label="Import STIG">
-    <UInput
-      type="file"
+    <UInput 
+      type="file" 
       @change="form.stig_file = $event.target.files[0]"
     />
   </UFormGroup>
@@ -346,7 +346,7 @@ end
 # Controller just redirects with errors
 def create
   @rule = Rule.new(rule_params)
-
+  
   if @rule.save
     redirect_to rules_path
   else
@@ -373,7 +373,7 @@ const refreshRules = () => {
 
 // Load additional data on demand
 const loadStats = () => {
-  router.reload({
+  router.reload({ 
     only: ['stats'],
     onSuccess: () => console.log('Stats loaded')
   })
@@ -417,12 +417,12 @@ class DashboardController < ApplicationController
     render inertia: 'Dashboard', props: {
       # Load immediately
       projects: Project.limit(10),
-
+      
       # Load only when component requests it
-      stats: InertiaRails.lazy(-> {
-        expensive_calculation
+      stats: InertiaRails.lazy(-> { 
+        expensive_calculation 
       }),
-
+      
       # Load rules only if needed
       all_rules: InertiaRails.lazy(-> {
         Rule.includes(:project).all
@@ -467,10 +467,10 @@ npm install @inertiajs/vue3 vue@latest @nuxt/ui
 # config/initializers/inertia_rails.rb
 InertiaRails.configure do |config|
   config.version = '1.0'
-
+  
   # Specify where page components live
   config.component_path = 'Pages'
-
+  
   # Use deep merge for shared data
   config.deep_merge_shared_data = true
 end
@@ -486,10 +486,10 @@ end
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-
+    
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
-
+    
     <!-- Inertia needs this -->
     <%= inertia_headers %>
   </head>
@@ -540,18 +540,18 @@ defineProps({
 <template>
   <div>
     <Head title="Dashboard" />
-
+    
     <UContainer>
       <UCard>
         <template #header>
           <h1>Vulcan Dashboard</h1>
         </template>
-
+        
         <UStats>
           <UStat label="Projects" :value="projects.length" />
           <UStat label="Rules" :value="rules_count" />
         </UStats>
-
+        
         <UTable :rows="recent_activity" />
       </UCard>
     </UContainer>
@@ -625,7 +625,7 @@ redirect_to rules_path, notice: 'Rule created!'
 class ProcessStigJob < ApplicationJob
   def perform(stig_id)
     # Process...
-
+    
     # Broadcast updates (with Inertia)
     InertiaRails::Events.emit('stig:processed', stig_id)
   end

@@ -50,7 +50,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["menu"]
-
+  
   toggle() {
     this.menuTarget.classList.toggle("hidden")
   }
@@ -75,8 +75,8 @@ export default class extends Controller {
   <div>
     <button @click="showModal = true">Edit Rule</button>
     <modal v-if="showModal">
-      <rule-form
-        :rule="rule"
+      <rule-form 
+        :rule="rule" 
         @save="handleSave"
         @cancel="showModal = false"
       />
@@ -104,7 +104,7 @@ export default {
 ```erb
 <!-- app/views/rules/index.html.erb -->
 <%= turbo_frame_tag "rule_modal" %>
-<%= link_to "Edit Rule", edit_rule_path(@rule),
+<%= link_to "Edit Rule", edit_rule_path(@rule), 
     data: { turbo_frame: "rule_modal" } %>
 
 <!-- app/views/rules/edit.html.erb -->
@@ -113,7 +113,7 @@ export default {
     <%= form_with model: @rule do |f| %>
       <%= f.text_field :name %>
       <%= f.submit %>
-      <%= link_to "Cancel", rules_path,
+      <%= link_to "Cancel", rules_path, 
           data: { turbo_frame: "_top" } %>
     <% end %>
   </div>
@@ -196,9 +196,9 @@ class RuleCardComponentTest < ViewComponent::TestCase
   def test_renders_edit_link_for_authorized_user
     rule = create(:rule)
     user = create(:admin)
-
+    
     render_inline(RuleCardComponent.new(rule: rule, current_user: user))
-
+    
     assert_selector "a", text: "Edit"
   end
 end
@@ -226,12 +226,12 @@ class Components::RuleCard < Phlex::HTML
   def template
     div(class: card_classes) do
       h3 { @rule.title }
-
+      
       p(class: "status") do
         plain "Status: "
         span(class: status_color) { @rule.status }
       end
-
+      
       if @rule.editable?
         a(href: edit_rule_path(@rule), class: "btn btn-primary") { "Edit" }
       end
@@ -291,7 +291,7 @@ class Components::Dashboard < Phlex::HTML
   def template
     div(class: "dashboard") do
       h1 { @project.name }
-
+      
       # Nest components naturally
       render Components::RulesList.new(rules: @project.rules)
       render Components::ProjectStats.new(project: @project)
@@ -404,7 +404,7 @@ Reserve for:
     <%= f.text_field :search, value: params[:search],
         data: { action: "input->debounce#search" } %>
   <% end %>
-
+  
   <div class="projects">
     <%= render @projects %>
   </div>
@@ -419,14 +419,14 @@ class StigRuleComponent < ViewComponent::Base
     @rule = rule
     @show_actions = show_actions
   end
-
+  
   def severity_badge
     content_tag :span, @rule.severity,
       class: "badge badge-#{severity_color}"
   end
-
+  
   private
-
+  
   def severity_color
     { high: "danger", medium: "warning", low: "info" }[@rule.severity.to_sym]
   end
@@ -461,7 +461,7 @@ document.addEventListener('turbo:load', () => {
 **Maintenance**: Much simpler
 
 ### Hybrid (Hotwire + Vue for complex)
-**Time**: -40% development time
+**Time**: -40% development time  
 **Complexity**: -60% less JavaScript
 **Performance**: +30% faster
 **Maintenance**: Best of both worlds
@@ -470,7 +470,7 @@ document.addEventListener('turbo:load', () => {
 
 Use **Hotwire** when:
 - Form submissions
-- Page navigation
+- Page navigation  
 - Content updates
 - Filters/search
 - Simple interactions

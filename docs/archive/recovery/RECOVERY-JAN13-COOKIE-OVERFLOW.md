@@ -17,7 +17,7 @@ server: http://localhost:3000 (running)
 login: admin@example.com / 1234567ab!
 Ruby: 3.1.6 (have 3.3.6 and 3.4.5 installed but not tested)
 Rails: 7.0.8.7
-Tests: ALL 198 PASSING!
+Tests: ALL 198 PASSING! 
 ```
 
 ### ✅ WHAT'S COMPLETE
@@ -62,7 +62,7 @@ M app/controllers/concerns/oidc_discovery_helper.rb       # PARTIAL fix for cook
 ```ruby
 # Replace lines 21-35 in oidc_discovery_helper.rb:
     discovery_url = "#{normalized_issuer}/.well-known/openid-configuration"
-
+    
     # Use Rails.cache for concurrent request prevention
     request_lock_key = "oidc_discovery:lock:#{normalized_issuer}"
     if Rails.cache.read(request_lock_key)
@@ -72,10 +72,10 @@ M app/controllers/concerns/oidc_discovery_helper.rb       # PARTIAL fix for cook
                                })
       return nil
     end
-
+    
     # Mark request in progress with short TTL
     Rails.cache.write(request_lock_key, true, expires_in: 10.seconds)
-
+    
     begin
 
 # Also remove line 96-98:

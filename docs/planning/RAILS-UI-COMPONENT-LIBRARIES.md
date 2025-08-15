@@ -36,7 +36,7 @@
 
 ### 1. ViewComponent Libraries (Closest to Component Libraries)
 
-#### **Lookbook** + **ViewComponent**
+#### **Lookbook** + **ViewComponent** 
 ```ruby
 # gem "view_component"
 # gem "lookbook" # Storybook for Rails
@@ -185,7 +185,7 @@ end
 
 **NuxtUI Data Table**:
 ```vue
-<UTable
+<UTable 
   :rows="rules"
   :columns="columns"
   :sort="{ column: 'name', direction: 'asc' }"
@@ -297,7 +297,7 @@ end
 
 ```erb
 <!-- Use RailsUI templates -->
-<%= render "railsui/data_table",
+<%= render "railsui/data_table", 
     collection: @rules,
     columns: %w[name status severity] %>
 ```
@@ -347,7 +347,7 @@ module UI
       @columns = columns
       @dark_mode = dark_mode
     end
-
+    
     # ... implement all table features
   end
 end

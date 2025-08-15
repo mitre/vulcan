@@ -4,7 +4,7 @@
 
 ## 🚨 CRITICAL - READ FIRST
 1. **READ**: `/Users/alippold/.claude/CLAUDE.md` - User's strict preferences (NO Claude signatures in commits!)
-2. **READ**: `/Users/alippold/github/mitre/vulcan/CLAUDE.md` - Project context
+2. **READ**: `/Users/alippold/github/mitre/vulcan/CLAUDE.md` - Project context  
 3. **CHECK MCP**: `mcp__server-memory__open_nodes` with names: `["Vulcan Rails 7 Upgrade", "Vulcan Bugs to Fix Post-Rails7", "Vulcan Docker Environment Cleanup"]`
 
 ## Current Status
