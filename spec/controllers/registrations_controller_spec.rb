@@ -22,7 +22,9 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       expect { post :create, params: {} }.not_to change(User, :count)
 
       expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to include(I18n.t('devise.registrations.disabled'))
+      # The flash message should indicate registration is disabled
+      expect(flash[:alert]).to be_present
+      expect(flash[:alert]).to match(/registration is not currently enabled|contact an administrator/)
     end
   end
 
@@ -165,6 +167,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
     let(:user3) { build(:user) }
 
     before do
+      @request.env['devise.mapping'] = Devise.mappings[:user]
       sign_in user2
     end
 

@@ -202,13 +202,6 @@ export default {
     };
   },
   computed: {
-    releaseComponentClasses: function () {
-      let classes = ["mdi", "mdi-stamper", "h5", "clickable"];
-      if (!this.component.releasable) {
-        classes.push("text-muted");
-      }
-      return classes;
-    },
     releaseComponentTooltip: function () {
       if (this.component.released) {
         return "Component has already been released";

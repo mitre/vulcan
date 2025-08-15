@@ -106,9 +106,9 @@ GEM
       rack-test (>= 0.6.3)
       regexp_parser (>= 1.5, < 3.0)
       xpath (~> 3.2)
-    chef-config (18.7.10)
+    chef-config (18.8.11)
       addressable
-      chef-utils (= 18.7.10)
+      chef-utils (= 18.8.11)
       fuzzyurl
       mixlib-config (>= 2.2.12, < 4.0)
       mixlib-shellout (>= 2.0, < 4.0)
@@ -116,7 +116,7 @@ GEM
     chef-telemetry (1.1.1)
       chef-config
       concurrent-ruby (~> 1.0)
-    chef-utils (18.7.10)
+    chef-utils (18.8.11)
       concurrent-ruby
     childprocess (5.1.0)
       logger (~> 1.5)
@@ -310,7 +310,7 @@ GEM
     mixlib-shellout (3.3.9)
       chef-utils
     msgpack (1.8.0)
-    multi_xml (0.7.1)
+    multi_xml (0.7.2)
       bigdecimal (~> 3.1)
     multipart-post (2.4.1)
     mutex_m (0.3.0)
