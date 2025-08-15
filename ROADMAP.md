@@ -15,33 +15,34 @@ This document outlines the complete modernization strategy for the Vulcan applic
 7. **Technical Debt Reduction**: Address existing issues before adding new complexity
 8. **Evidence-Based Decisions**: Use metrics and benchmarks to guide architectural choices
 
-## Phase 0: Webpacker Migration Completion and Documentation (Current)
+## Phase 0: Rails 8 and Infrastructure Modernization (COMPLETED)
 
 ### Objectives
-- Complete the migration from Webpacker to jsbundling-rails
-- Document all temporary simplifications made during migration
-- Establish security baseline and identify vulnerabilities
-- Review existing GitHub issues for relevance to modernization
+- ✅ Complete Rails 8.0.2.1 upgrade
+- ✅ Complete the migration from Webpacker to jsbundling-rails
+- ✅ Upgrade Ruby to 3.3.9 and Node.js to 22 LTS
+- ✅ Fix all security vulnerabilities and pass SonarCloud quality gate
+- ✅ Establish OIDC auto-discovery for simplified authentication
 
-### Tasks
-- [x] Audit all JavaScript dependencies
-- [x] Create migration inventory of all Webpacker views/components
-- [x] Migrate core entry points (application, navbar, toaster, login)
-- [ ] Migrate remaining entry points (projects, rules, users, etc.)
-- [ ] Update all view templates to use new asset helpers
-- [ ] Document all temporary simplifications made (components, database.yml, etc.)
-- [ ] Create inventory of changes that need to be restored before production
-- [ ] Review and triage 76 open GitHub issues
-- [ ] Conduct security scan to identify CVEs and vulnerabilities
-- [ ] Document current component architecture and dependencies
+### Completed Tasks
+- [x] Progressive Rails upgrade: 7.0.8.7 → 7.1.5.2 → 7.2.2.2 → 8.0.2.1
+- [x] Ruby upgrade: 3.1.6 → 3.3.9
+- [x] Node.js upgrade: 16 → 22 LTS
+- [x] Migrate from Webpacker to jsbundling-rails with esbuild
+- [x] Fix SQL injection vulnerability in Component#duplicate_rules
+- [x] Implement Rails 8 strong parameters `expect` API
+- [x] Update RSpec Rails from 4.0 to 6.0
+- [x] OIDC auto-discovery implementation
+- [x] Docker image optimization (6.5GB → 1.76GB)
+- [x] All 198 tests passing
 
-### Success Criteria
-- All assets successfully build with jsbundling-rails (no Webpacker)
-- All features function identically to pre-migration
-- Complete inventory of simplified components and configurations
-- Prioritized list of GitHub issues to address
-- Security vulnerabilities identified and prioritized
-- Clear documentation of current architecture exists
+### Success Criteria Achieved
+- ✅ Rails 8.0.2.1 running in production
+- ✅ All assets build with jsbundling-rails (Webpacker removed)
+- ✅ All features function identically to pre-migration
+- ✅ Security vulnerabilities fixed (SonarCloud passing)
+- ✅ OIDC configuration simplified to 4 environment variables
+- ✅ Docker builds optimized with jemalloc
 
 ### Decision Points
 - **GO/NO-GO**: Proceed to next phase only when all entry points are successfully migrated
@@ -270,7 +271,44 @@ Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrati
 **Priority**: Medium (after infrastructure modernization)
 **References**: Issue #673 - Comprehensive implementation plan
 
-## Phase 4: Advanced Features and Optimizations
+## Phase 4: Testing and Development Infrastructure
+
+### Objectives
+- Enhance testing infrastructure for better reliability
+- Implement CLI architecture improvements
+- Overhaul configuration system
+- Improve development workflow
+
+### Tasks (from separate workstream branches)
+- [ ] **Testing Infrastructure Enhancement**
+  - Hierarchical test runner implementation
+  - Cross-platform test containers
+  - Test organization improvements
+  - Enhanced test isolation
+  - Expanded Playwright test suite
+- [ ] **CLI Architecture**
+  - TTY-based CLI with improved UX
+  - Command registry implementation
+  - Shell escaping security enhancements
+  - Standardized command formats
+- [ ] **Configuration System Overhaul**
+  - Rails-CLI configuration bridge
+  - Environment-specific configuration
+  - Configuration validation
+  - Secret management improvements
+
+### Success Criteria
+- Test suite runs reliably across all platforms
+- CLI provides intuitive developer experience
+- Configuration system is validated and secure
+- Development workflow is streamlined
+
+### Decision Points
+- **TESTING**: Playwright vs other E2E testing frameworks
+- **CLI**: TTY toolkit selection (TTY::Prompt, etc.)
+- **CONFIG**: rails-settings-cached vs custom solution
+
+## Phase 5: Advanced Features and Optimizations
 
 ### Objectives
 - Implement SSR or hybrid rendering if beneficial

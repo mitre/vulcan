@@ -1,6 +1,8 @@
 # Practical Guide: Migrating from Webpacker to jsbundling-rails + Propshaft
 
-This guide provides practical implementation steps for transitioning from Webpacker to jsbundling-rails (with esbuild/rollup) + Propshaft in your Vulcan Rails + Vue.js application.
+**STATUS: COMPLETED** - This migration has been successfully completed as part of the Rails 8.0.2.1 upgrade.
+
+This guide documents the practical implementation steps that were used to transition from Webpacker to jsbundling-rails (with esbuild) + Propshaft in the Vulcan Rails + Vue.js application.
 
 ## 1. Understanding Your Current Webpacker Setup
 

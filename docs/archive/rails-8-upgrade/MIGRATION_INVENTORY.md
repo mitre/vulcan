@@ -1,22 +1,18 @@
 # Asset Pack Tags Migration Inventory
 
-This file lists all templates using asset pack tags that need to be migrated.
+**STATUS: COMPLETED** - All Webpacker assets have been successfully migrated to jsbundling-rails with esbuild.
 
-## javascript_pack_tag
+This file documented the migration from Webpacker to jsbundling-rails that was completed as part of the Rails 8.0.2.1 upgrade.
 
-No occurrences found.
+## Migration Summary
 
-## stylesheet_pack_tag
+All Webpacker pack tags have been successfully replaced:
+- `javascript_pack_tag` → `javascript_include_tag`
+- `stylesheet_pack_tag` → `stylesheet_link_tag`
+- Webpacker removed from Gemfile
+- Assets now compiled with esbuild via jsbundling-rails
+- Using Propshaft for asset pipeline (no Sprockets)
 
-No occurrences found.
+## Entry Point Mapping
 
-## image_pack_tag
-
-No occurrences found.
-
-## Migration Plan
-
-### Entry Point Mapping
-
-| Webpacker Entry Point | Migrated Entry Point | Status |
-|----------------------|---------------------|--------|
+All entry points have been successfully migrated to esbuild configuration.
