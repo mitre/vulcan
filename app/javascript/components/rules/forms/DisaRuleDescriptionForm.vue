@@ -10,7 +10,7 @@
             'update:disaDescription',
             rule,
             { ...description, documentable: $event },
-            index
+            index,
           )
         "
       >
@@ -57,7 +57,7 @@
             'update:disaDescription',
             rule,
             { ...description, vuln_discussion: $event },
-            index
+            index,
           )
         "
       />
@@ -97,7 +97,7 @@
             'update:disaDescription',
             rule,
             { ...description, false_positives: $event },
-            index
+            index,
           )
         "
       />
@@ -137,7 +137,7 @@
             'update:disaDescription',
             rule,
             { ...description, false_negatives: $event },
-            index
+            index,
           )
         "
       />
@@ -163,7 +163,7 @@
             'update:disaDescription',
             rule,
             { ...description, mitigations_available: $event },
-            index
+            index,
           )
         "
       >
@@ -199,7 +199,7 @@
             'update:disaDescription',
             rule,
             { ...description, mitigations: $event },
-            index
+            index,
           )
         "
       />
@@ -225,7 +225,7 @@
             'update:disaDescription',
             rule,
             { ...description, poam_available: $event },
-            index
+            index,
           )
         "
       >
@@ -296,7 +296,7 @@
             'update:disaDescription',
             rule,
             { ...description, severity_override_guidance: $event },
-            index
+            index,
           )
         "
       />
@@ -336,7 +336,7 @@
             'update:disaDescription',
             rule,
             { ...description, potential_impacts: $event },
-            index
+            index,
           )
         "
       />
@@ -376,7 +376,7 @@
             'update:disaDescription',
             rule,
             { ...description, third_party_tools: $event },
-            index
+            index,
           )
         "
       />
@@ -416,7 +416,7 @@
             'update:disaDescription',
             rule,
             { ...description, mitigation_control: $event },
-            index
+            index,
           )
         "
       />
@@ -456,7 +456,7 @@
             'update:disaDescription',
             rule,
             { ...description, responsibility: $event },
-            index
+            index,
           )
         "
       />
@@ -496,7 +496,7 @@
             'update:disaDescription',
             rule,
             { ...description, ia_controls: $event },
-            index
+            index,
           )
         "
       />

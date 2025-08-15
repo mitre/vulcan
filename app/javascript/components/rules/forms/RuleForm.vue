@@ -543,7 +543,7 @@ export default {
         status:
           "Applicable – Configurable: The product requires configuration or the application of policy settings to achieve compliance.<br><br>Applicable – Inherently Meets: The product is compliant in its initial state and cannot be subsequently reconfigured to a noncompliant state.<br><br> Applicable – Does Not Meet: There are no technical means to achieve compliance.<br><br> Not Applicable: The requirement addresses a capability or use case that the product does not support.",
         status_justification: ["Applicable - Configurable", "Not Yet Determined"].includes(
-          this.rule.status
+          this.rule.status,
         )
           ? null
           : "Explain the rationale behind selecting one of the above statuses",
@@ -556,24 +556,24 @@ export default {
           this.rule.status === "Not Applicable"
             ? "Provide evidence that the control is not applicable to the system - code files, documentation, screenshots, etc."
             : [
-                "Not Yet Determined",
-                "Applicable - Configurable",
-                "Applicable - Does Not Meet",
-              ].includes(this.rule.status)
-            ? null
-            : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
+                  "Not Yet Determined",
+                  "Applicable - Configurable",
+                  "Applicable - Does Not Meet",
+                ].includes(this.rule.status)
+              ? null
+              : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
         fix_id: null,
         fixtext_fixref: null,
         fixtext:
           this.rule.status === "Applicable - Configurable"
             ? "Describe how to correctly configure the requirement to remediate the system vulnerability"
             : [
-                "Applicable - Does Not Meet",
-                "Applicable - Inherently Meets",
-                "Not Applicable",
-              ].includes(this.rule.status)
-            ? null
-            : "Explain how to fix the vulnerability discussed",
+                  "Applicable - Does Not Meet",
+                  "Applicable - Inherently Meets",
+                  "Not Applicable",
+                ].includes(this.rule.status)
+              ? null
+              : "Explain how to fix the vulnerability discussed",
         ident:
           "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",
         ident_system: null,

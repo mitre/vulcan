@@ -179,12 +179,12 @@ export default {
           this.rule.status === "Applicable - Configurable"
             ? "Describe how to validate that the remediation has been properly implemented"
             : [
-                "Applicable - Does Not Meet",
-                "Applicable - Inherently Meets",
-                "Not Applicable",
-              ].includes(this.rule.status)
-            ? null
-            : "Describe how to check for the presence of the vulnerability",
+                  "Applicable - Does Not Meet",
+                  "Applicable - Inherently Meets",
+                  "Not Applicable",
+                ].includes(this.rule.status)
+              ? null
+              : "Describe how to check for the presence of the vulnerability",
       };
     },
   },

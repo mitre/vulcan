@@ -43,7 +43,7 @@ export default {
         { duplicate: this.forDuplicate, id: this.selectedRuleId },
         (response) => {
           this.$emit("ruleSelected", response.data.data);
-        }
+        },
       );
     },
   },

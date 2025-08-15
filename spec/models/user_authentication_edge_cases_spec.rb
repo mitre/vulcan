@@ -31,8 +31,9 @@ RSpec.describe User, type: :model do
         auth = base_auth
 
         # Simulate persistent race condition
-        allow(User).to receive(:find_or_initialize_by).and_return(build(:user, email: 'test@example.com'))
-        allow_any_instance_of(User).to receive(:save!).and_raise(
+        user_instance = build(:user, email: 'test@example.com')
+        allow(User).to receive(:find_or_initialize_by).and_return(user_instance)
+        allow(user_instance).to receive(:save!).and_raise(
           ActiveRecord::RecordNotUnique.new('Persistent duplicate')
         )
 
@@ -238,7 +239,9 @@ RSpec.describe User, type: :model do
         auth = base_auth
 
         # Mock failure during save
-        allow_any_instance_of(User).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(User.new))
+        user_instance = build(:user)
+        allow(User).to receive(:find_or_initialize_by).and_return(user_instance)
+        allow(user_instance).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(User.new))
 
         initial_count = User.count
 

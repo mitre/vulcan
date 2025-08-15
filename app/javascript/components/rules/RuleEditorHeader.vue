@@ -287,8 +287,8 @@ export default {
           disabledTooltip: isUnderReview
             ? "Control is already under review"
             : this.rule.locked
-            ? "Control is currently locked"
-            : null,
+              ? "Control is currently locked"
+              : null,
         },
 
         // should only be able to revoke review request if
@@ -301,8 +301,8 @@ export default {
           disabledTooltip: !(isAdmin || isRequestor)
             ? "Only an admin or the review requestor can revoke the current review request"
             : !isUnderReview
-            ? "Control is not currently under review"
-            : null,
+              ? "Control is not currently under review"
+              : null,
         },
 
         // should only be able to request changes if
@@ -315,8 +315,8 @@ export default {
           disabledTooltip: !(isAdmin || isReviewer)
             ? "Only an admin or reviewer can request changes"
             : !isUnderReview
-            ? "Control is not currently under review"
-            : null,
+              ? "Control is not currently under review"
+              : null,
         },
 
         // should only be able to approve if
@@ -329,8 +329,8 @@ export default {
           disabledTooltip: !(isAdmin || isReviewer)
             ? "Only an admin or reviewer can approve"
             : !isUnderReview
-            ? "Control is not currently under review"
-            : null,
+              ? "Control is not currently under review"
+              : null,
         },
 
         // should only be able to lock control if
@@ -344,17 +344,17 @@ export default {
           disabledTooltip: !isAdmin
             ? "Only an admin can directly lock a control"
             : isUnderReview
-            ? "Cannot lock a control that is currently under review"
-            : this.rule.locked
-            ? "Cannot lock a control that is already locked"
-            : this.rule.status === "Applicable - Does Not Meet" &&
-              this.rule.disa_rule_descriptions_attributes[0].mitigations.length === 0
-            ? "Cannot lock control: Mitigation is required for Applicable - Does Not Meet"
-            : this.rule.status === "Applicable - Inherently Meets" &&
-              (this.rule.artifact_description === null ||
-                this.rule.artifact_description.length === 0)
-            ? "Cannot lock control: Artifact Description is required for Applicable - Inherently Meets"
-            : null,
+              ? "Cannot lock a control that is currently under review"
+              : this.rule.locked
+                ? "Cannot lock a control that is already locked"
+                : this.rule.status === "Applicable - Does Not Meet" &&
+                    this.rule.disa_rule_descriptions_attributes[0].mitigations.length === 0
+                  ? "Cannot lock control: Mitigation is required for Applicable - Does Not Meet"
+                  : this.rule.status === "Applicable - Inherently Meets" &&
+                      (this.rule.artifact_description === null ||
+                        this.rule.artifact_description.length === 0)
+                    ? "Cannot lock control: Artifact Description is required for Applicable - Inherently Meets"
+                    : null,
         },
 
         // should only be able to unlock a control if
@@ -367,8 +367,8 @@ export default {
           disabledTooltip: !isAdmin
             ? "Only an admin can unlock a control"
             : !this.rule.locked
-            ? "Cannot unlock a control that is not locked"
-            : null,
+              ? "Cannot unlock a control that is not locked"
+              : null,
         },
       ];
     },

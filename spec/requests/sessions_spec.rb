@@ -78,24 +78,17 @@ RSpec.describe 'Sessions', type: :request do
         mock_http_response(success: true, body: discovery_response)
       end
 
-      it 'redirects to OIDC logout URL with ID token' do
+      it 'handles logout for OIDC users' do
         user = create(:user, provider: 'oidc', uid: 'okta-123')
-
-        # Sign in and simulate ID token in session
-        post '/users/sign_in', params: { user: { email: user.email, password: user.password } }
-
-        # We need to set the session ID token directly in the test
-        # In request specs, we can't directly access session, so we'll verify redirect behavior
-        allow_any_instance_of(SessionsController).to receive(:session).and_return({ id_token: 'fake-id-token-12345' })
+        sign_in user
 
         delete '/users/sign_out'
 
         expect(response).to have_http_status(:redirect)
-        redirect_url = response.location
 
-        # Since we can't set session directly in request specs,
-        # we just verify it redirects (either to OIDC or root)
-        expect(redirect_url).to be_present
+        # Verify user is actually logged out by trying to create a project
+        post '/projects', params: { project: { name: 'Test' } }
+        expect(response).to have_http_status(:redirect) # Should redirect to login
       end
     end
 
@@ -126,18 +119,17 @@ RSpec.describe 'Sessions', type: :request do
         mock_http_response(success: false, code: '404', message: 'Not Found')
       end
 
-      it 'falls back to OKTA-style logout URL' do
+      it 'handles logout when OIDC discovery fails' do
         user = create(:user, provider: 'oidc', uid: 'provider-123')
-
-        # Mock session with ID token
-        allow_any_instance_of(SessionsController).to receive(:session).and_return({ id_token: 'fake-id-token' })
-
         sign_in user
+
         delete '/users/sign_out'
 
         expect(response).to have_http_status(:redirect)
-        # Will either redirect to OIDC or root depending on session state
-        expect(response.location).to be_present
+
+        # Verify user is actually logged out by trying to create a project
+        post '/projects', params: { project: { name: 'Test' } }
+        expect(response).to have_http_status(:redirect) # Should redirect to login
       end
     end
   end

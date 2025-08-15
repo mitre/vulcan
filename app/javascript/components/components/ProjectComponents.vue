@@ -59,7 +59,7 @@ export default {
     sortedFilteredComponents() {
       let downcaseSearch = this.search.toLowerCase();
       let filteredComponents = this.components.filter((component) =>
-        component.name.toLowerCase().includes(downcaseSearch)
+        component.name.toLowerCase().includes(downcaseSearch),
       );
 
       return filteredComponents.sort((c_1, c_2) => {

@@ -151,7 +151,7 @@ export default {
         return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
       } else {
         return `${changes.field} was updated from ${this.prettifyObjects(
-          changes.prev_value
+          changes.prev_value,
         )} to ${this.prettifyObjects(changes.new_value)}`;
       }
     },
