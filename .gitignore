@@ -53,11 +53,9 @@ dev_output.log
 
 # Ignore local development files
 CLAUDE.md
-OKTA_SESSION_RECOVERY.md
-PR_MESSAGE.md
 *.backup
 *_backup/
-env-backup/
+*-backup/
 benchmark-tmp/
 vulcan-wiki-local/
 
