@@ -87,6 +87,7 @@ nav:
   - User Guide: user-guide/overview.md
   - Deployment:
     - Docker: deployment/docker.md
+    - Bare Metal: deployment/bare-metal.md
     - Heroku: deployment/heroku.md
     - Kubernetes: deployment/kubernetes.md
     - Authentication Setup:
