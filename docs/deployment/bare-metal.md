@@ -353,7 +353,7 @@ sudo firewall-cmd --reload
 
 Create `/etc/logrotate.d/vulcan`:
 
-```
+```text
 /var/log/vulcan/*.log {
     daily
     missingok
@@ -426,7 +426,7 @@ find $BACKUP_DIR -type f -mtime +30 -delete
 
 Edit `/etc/postgresql/*/main/postgresql.conf`:
 
-```conf
+```ini
 shared_buffers = 256MB
 effective_cache_size = 1GB
 maintenance_work_mem = 64MB

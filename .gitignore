@@ -4,6 +4,10 @@
 # or operating system, you probably want to add a global ignore instead:
 #   git config --global core.excludesfile '~/.gitignore_global'
 
+# VitePress
+docs/.vitepress/cache
+docs/.vitepress/dist
+
 # Ignore bundler config.
 /.bundle
 
@@ -68,5 +72,3 @@ vulcan-wiki-local/
 !/certs/README.md
 !/certs/.gitkeep
 
-# MkDocs build output
-site/
