@@ -13,11 +13,11 @@ hero:
       text: Get Started
       link: /getting-started/quick-start
     - theme: alt
+      text: Try Production
+      link: https://mitre-vulcan-prod.herokuapp.com/users/sign_in
+    - theme: alt
       text: View on GitHub
       link: https://github.com/mitre/vulcan
-    - theme: alt
-      text: Project README
-      link: /README.md
 
 features:
   - icon: 📋
