@@ -50,10 +50,11 @@ For detailed release notes, see the [Changelog](CHANGELOG.md).
 
 ## 📚 Documentation
 
-- [Installation Guide](https://vulcan.mitre.org/docs/installation)
-- [Configuration Reference](ENVIRONMENT_VARIABLES.md)
-- [API Documentation](https://vulcan.mitre.org/docs/api)
-- [Wiki](https://github.com/mitre/vulcan/wiki)
+- **[📖 Full Documentation](https://mitre.github.io/vulcan/)** - Comprehensive guides and references
+- [Installation Guide](https://mitre.github.io/vulcan/getting-started/installation/)
+- [Configuration Reference](https://mitre.github.io/vulcan/getting-started/environment-variables/)
+- [User Guide](https://mitre.github.io/saf-training/courses/guidance/) - Complete training materials
+- [API Documentation](https://mitre.github.io/vulcan/api/overview/)
 - [Contributing Guidelines](CONTRIBUTING.md)
 
 ## 🛠️ Technology Stack

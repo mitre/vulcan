@@ -1,0 +1,122 @@
+# Vulcan v2.2.0 - Major Framework Modernization
+
+## 🎉 Release Highlights
+
+This release represents a significant modernization of the Vulcan platform, bringing major framework upgrades, performance improvements, and comprehensive bug fixes. The upgrade positions Vulcan for long-term maintainability and sets the foundation for upcoming Vue 3 and Bootstrap 5 migrations.
+
+## 🚀 Major Framework Upgrades
+
+### Core Platform
+- **Rails 8.0.2.1** - Upgraded from Rails 7.0.8.7, bringing improved performance and modern Rails features
+- **Ruby 3.3.9** - Upgraded from Ruby 3.1.6, providing better performance and language enhancements
+- **Node.js 22 LTS** - Upgraded from Node.js 16, ensuring long-term support and modern JavaScript features
+
+### Test Framework Modernization
+- Migrated all controller specs to request specs (Rails 8 compatibility)
+- Migrated all feature specs to system specs (modern Rails testing standard)
+- Fixed Devise authentication with Rails 8 lazy route loading
+- All 190 tests passing with improved test coverage
+
+### Docker Optimization
+- **73% smaller Docker image** - Reduced from 6.5GB to 1.76GB
+- Multi-stage build optimization with production-ready configuration
+- Implemented jemalloc for improved memory management
+- Updated to Debian Bookworm base image
+
+## 🐛 Bug Fixes
+
+### Security & Code Quality
+- Fixed SQL injection vulnerability through parameterized queries
+- Resolved mass assignment security warnings with Rails 8 strong parameters
+- Fixed unreachable code in RelatedRulesModal.vue
+- Added missing HTML accessibility attributes (lang, title tags)
+- Fixed version comparison logic using proper semver library
+
+### UI/UX Improvements
+- **Fixed Issue #681**: "Applicable - Configurable" status now correctly shows check/fix fields instead of justification field
+- **MDI to Bootstrap Icons Migration**: Fully migrated from deprecated MDI icons to Bootstrap Icons
+- Fixed missing function call parentheses in event handlers
+- Resolved Bootstrap-Vue deprecation warnings
+
+## 📦 Dependency Updates
+
+### Security Updates
+- axios: 1.6.8 → 1.11.0 (fixes 2 high SSRF vulnerabilities)
+- factory_bot: 5.2.0 → 6.5.4
+- ESLint: 8.x → 9.33.0
+- Prettier: 2.8.8 → 3.6.2
+- Updated all Rails gems to latest secure versions
+
+### New Dependencies
+- Added bundler-audit for Ruby vulnerability scanning
+- Integrated semver for proper version comparison
+
+## 📚 Documentation Overhaul
+
+### Comprehensive Updates
+- Added professional README with badges, technology stack, and clear setup instructions
+- Created detailed CONTRIBUTING.md guide for new contributors
+- Updated CHANGELOG to follow "Keep a Changelog" standard
+- Enhanced SECURITY.md with MITRE SAF team contacts
+- Fixed documentation typos and improved clarity throughout
+
+### MITRE SAF Integration
+- Added proper attribution to MITRE Security Automation Framework
+- Updated contact emails: saf@mitre.org (general), saf-security@mitre.org (security)
+- Enhanced project description and purpose
+
+## 🔧 Technical Improvements
+
+### Build System
+- Removed deprecated Spring gem (Rails 8 has built-in reloader)
+- Fixed fixture_paths deprecation warning
+- Updated esbuild configuration for modern JavaScript bundling
+- Enhanced pre-commit hooks with RuboCop and ESLint integration
+
+### Code Organization
+- Archived MDI icon backup files for recovery purposes
+- Cleaned up unused code and dead references
+- Improved error handling throughout the application
+- Enhanced SonarCloud integration with proper exclusions
+
+## 📈 Performance Metrics
+
+- **Docker Image**: 73% size reduction (1.76GB vs 6.5GB)
+- **Test Suite**: All 190 tests passing
+- **Code Quality**: 0 security issues, reduced code complexity
+- **Dependencies**: 63 vulnerabilities addressed (many false positives from old Docker images)
+
+## 🔮 What's Next
+
+### Planned for Future Releases
+- **Vue 3 Migration**: Complete migration from Vue 2.6.11 to Vue 3
+- **Bootstrap 5 Upgrade**: Migrate from Bootstrap 4 + Bootstrap-Vue to native Bootstrap 5
+- **Turbolinks Removal**: Remove deprecated Turbolinks in favor of modern alternatives
+- **Continued Performance Optimization**: Further Docker and application performance improvements
+
+## 📝 Migration Notes
+
+### For Developers
+- Controller specs have been replaced with request specs
+- Feature specs have been replaced with system specs
+- Ensure Ruby 3.3.9 and Node.js 22 are installed for local development
+- Run `bundle install` and `yarn install` after pulling this version
+
+### For Production Deployments
+- Docker images are now significantly smaller and more efficient
+- Environment variables remain unchanged
+- Database migrations are backward compatible
+
+## 🙏 Acknowledgments
+
+Thank you to all contributors and the MITRE SAF team for their continued support and dedication to improving Vulcan.
+
+## 📊 Full Changelog
+
+For a detailed list of all changes, see the [CHANGELOG.md](CHANGELOG.md) file.
+
+---
+
+**Release Date**: August 16, 2025
+**Release Manager**: Aaron Lippold
+**Version**: v2.2.0

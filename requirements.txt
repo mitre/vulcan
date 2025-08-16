@@ -1,0 +1,6 @@
+# Documentation dependencies
+mkdocs>=1.6.1
+mkdocs-material>=9.5.0
+mkdocs-git-revision-date-localized-plugin>=1.2.0
+pymdown-extensions>=10.0
+mike>=2.0.0

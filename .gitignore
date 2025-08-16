@@ -67,3 +67,6 @@ vulcan-wiki-local/
 /certs/*
 !/certs/README.md
 !/certs/.gitkeep
+
+# MkDocs build output
+site/
