@@ -11,6 +11,7 @@ AllCops:
     - db/migrate/*
     # - config/initializers/*
     - node_modules/**/*
+    - docs/node_modules/**/*
     - "vendor/**/*"
 Layout/LineLength:
   Max: 200
