@@ -39,10 +39,12 @@ theme:
 
 plugins:
   - search
-  - git-revision-date-localized:
-      enable_creation_date: true
-      enable_git_follow: false
-      enable_parallel_processing: false
+  # Temporarily disabled until files are in git
+  # - git-revision-date-localized:
+  #     enable_creation_date: true
+  #     enable_git_follow: false
+  #     enable_parallel_processing: false
+  #     fallback_to_build_date: true
 
 markdown_extensions:
   - admonition
@@ -82,13 +84,7 @@ nav:
     - Installation: getting-started/installation.md
     - Configuration: getting-started/configuration.md
     - Environment Variables: getting-started/environment-variables.md
-  - User Guide:
-    - Overview: user-guide/overview.md
-    - Projects & Components: user-guide/projects-components.md
-    - Rules & Controls: user-guide/rules-controls.md
-    - STIGs & SRGs: user-guide/stigs-srgs.md
-    - InSpec Integration: user-guide/inspec-integration.md
-    - Collaboration: user-guide/collaboration.md
+  - User Guide: user-guide/overview.md
   - Deployment:
     - Docker: deployment/docker.md
     - Heroku: deployment/heroku.md

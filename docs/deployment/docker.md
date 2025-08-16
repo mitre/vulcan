@@ -99,10 +99,10 @@ For HTTPS, use a reverse proxy like nginx:
 server {
     listen 443 ssl;
     server_name vulcan.example.com;
-
+    
     ssl_certificate /etc/ssl/certs/vulcan.crt;
     ssl_certificate_key /etc/ssl/private/vulcan.key;
-
+    
     location / {
         proxy_pass http://localhost:3000;
         proxy_set_header Host $host;

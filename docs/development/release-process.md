@@ -42,13 +42,13 @@ We will need to edit and review the draft release to add the release notes and a
  2. Update the necessary files:
 
       a. Update `VERSION` file with the new version number.
-
+      
       b. Update `package.json` file: update the `version` field in this file with the new version number
 
       c. Update `README.md` file: update the `Latest Release` section by updating the version number to the new one
 
       <img width="1010" alt="Screenshot 2023-10-02 at 2 27 30 PM" src="https://github.com/mitre/vulcan/assets/46642178/70e7f830-490e-4a70-9881-36cca43918a4">
-
+      
 
       d. Update the `CHANGELOG.md` file: This is done using the `github_changelog_generator` gem.
 

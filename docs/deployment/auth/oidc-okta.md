@@ -133,14 +133,14 @@ class SessionsController < Devise::SessionsController
     id_token = session[:id_token]
     session.clear
     reset_session
-
+    
     if Settings.oidc.enabled && id_token
       # Construct Okta logout URL
       okta_logout_params = {
         id_token_hint: id_token,
         post_logout_redirect_uri: root_url
       }.to_query
-
+      
       okta_logout_url = "https://#{ENV['VULCAN_OIDC_HOST']}/oauth2/default/v1/logout?#{okta_logout_params}"
       redirect_to okta_logout_url, allow_other_host: true
     else
@@ -169,10 +169,10 @@ Modify the OmniAuth callback to store the ID token:
 def oidc
   auth = request.env['omniauth.auth']
   user = User.from_omniauth(auth)
-
+  
   # Store ID token for logout
   session[:id_token] = auth.credentials.id_token if auth.credentials.id_token
-
+  
   flash.notice = I18n.t('devise.sessions.signed_in')
   sign_in_and_redirect(user)
 end
@@ -198,7 +198,7 @@ Add session security settings:
 
 ```ruby
 # config/initializers/session_store.rb
-Rails.application.config.session_store :cookie_store,
+Rails.application.config.session_store :cookie_store, 
   key: '_vulcan_session',
   secure: Rails.env.production?, # HTTPS only in production
   httponly: true,
@@ -257,7 +257,7 @@ Rails.application.config.session_store :cookie_store,
    def after_sign_in_path_for(resource)
      stored_location_for(resource) || projects_path
    end
-
+   
    def after_sign_out_path_for(resource_or_scope)
      new_user_session_path
    end
