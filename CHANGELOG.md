@@ -5,7 +5,23 @@ All notable changes to Vulcan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v2.2.0] - 2025-01-16
+## [v2.2.1] - 2025-08-16
+
+### Changed
+- Improved Heroku Review App deployment configuration
+- Enhanced Kubernetes deployment examples with better security practices
+- Strengthened environment validation in utility scripts
+
+### Fixed
+- Email template accessibility improvements (added missing HTML attributes)
+- Deployment configuration issues in app.json
+- Minor formatting issues in Kubernetes YAML examples
+
+### Security
+- Enhanced deployment security configurations
+- Improved environment checks for utility scripts
+
+## [v2.2.0] - 2025-08-16
 
 This release represents a major modernization of the Vulcan platform, bringing it up to the latest versions of Ruby, Rails, and Node.js while significantly improving performance, security, and developer experience.
 
