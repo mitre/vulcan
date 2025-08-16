@@ -20,6 +20,7 @@ spec:
       labels:
         app: vulcan-web
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: vulcan-web
         image: mitre/vulcan:latest
@@ -74,7 +75,7 @@ spec:
           - name: VULCAN_LDAP_HOST
             value: "ldap.host.example.com"
           - name: VULCAN_LDAP_PORT
-            value: "636"             
+            value: "636"
           - name: VULCAN_LDAP_TITLE
             value: "LDAP Login"
           - name: VULCAN_LDAP_ATTRIBUTE # LDAP attribute name for the user name in the login form. typically AD would be 'sAMAccountName' or 'UserPrincipalName', while OpenLDAP is 'uid'.
