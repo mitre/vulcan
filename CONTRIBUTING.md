@@ -4,7 +4,7 @@ First off, thank you for considering contributing to Vulcan! It's people like yo
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md):
+By participating in this project, you are expected to uphold our [Code of Conduct](./CODE_OF_CONDUCT.md):
 
 - Use welcoming and inclusive language
 - Be respectful of differing viewpoints and experiences

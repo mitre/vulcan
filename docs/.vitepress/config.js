@@ -265,4 +265,16 @@ export default defineConfig({
   vite: {
     // Vite options
   },
+
+  // Ignore dead links for localhost URLs and root markdown files
+  ignoreDeadLinks: [
+    // Ignore localhost URLs
+    /^https?:\/\/localhost/,
+    // Ignore relative links to root markdown files (they work in GitHub)
+    './CHANGELOG',
+    './CONTRIBUTING',
+    './ROADMAP',
+    './LICENSE',
+    './CODE_OF_CONDUCT',
+  ],
 });

@@ -46,7 +46,7 @@ Default credentials for testing:
 - **Email**: admin@example.com
 - **Password**: 1234567ab!
 
-For detailed release notes, see the [Changelog](CHANGELOG.md).
+For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
 ## 📚 Documentation
 
@@ -55,7 +55,7 @@ For detailed release notes, see the [Changelog](CHANGELOG.md).
 - [Configuration Reference](https://mitre.github.io/vulcan/getting-started/environment-variables/)
 - [User Guide](https://mitre.github.io/saf-training/courses/guidance/) - Complete training materials
 - [API Documentation](https://mitre.github.io/vulcan/api/overview/)
-- [Contributing Guidelines](CONTRIBUTING.md)
+- [Contributing Guidelines](./CONTRIBUTING.md)
 
 ## 🛠️ Technology Stack
 
@@ -222,7 +222,7 @@ bundle exec rails stig_and_srg_puller:pull
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTING.md) for details.
 
 ### Development Workflow
 
@@ -251,13 +251,13 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - **Multi-tenancy**: Support for multiple organizations
 - **Advanced Reporting**: Custom dashboards and metrics
 
-See our [detailed roadmap](ROADMAP.md) for more information.
+See our [detailed roadmap](./ROADMAP.md) for more information.
 
 ## 📄 License
 
 © 2022-2025 The MITRE Corporation.
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE.md) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE.md) file for details.
 
 **Approved for Public Release; Distribution Unlimited. Case Number 18-3678.**
 
