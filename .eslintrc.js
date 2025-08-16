@@ -9,7 +9,7 @@ module.exports = {
     "docs/.vitepress/cache/**",
     "docs/.vitepress/dist/**",
     "node_modules/**",
-    "app/assets/builds/**"
+    "app/assets/builds/**",
   ],
   rules: {
     "max-len": "off",
