@@ -107,6 +107,7 @@ nav:
     - Endpoints: api/endpoints.md
   - Security:
     - Security Policy: SECURITY.md
+    - Compliance & Controls: security/compliance.md
     - Security Controls: security/security-controls.md
     - Data Encryption: security/data-encryption.md
   - Project:

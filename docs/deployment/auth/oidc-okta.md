@@ -39,6 +39,33 @@ VULCAN_OIDC_REDIRECT_URI=https://your-vulcan-app.com/users/auth/oidc/callback
 # prompt: 'login'
 ```
 
+## Okta Application Setup
+
+### 1. Create Application in Okta Admin Console
+
+1. Navigate to Applications > Create App Integration
+2. Configure with these settings:
+   - **Sign-in method**: OIDC - OpenID Connect
+   - **Application type**: Web Application
+   - **Grant type**: Authorization Code
+   - **Sign-in redirect URIs**: `https://your-vulcan-app.com/users/auth/oidc/callback`
+   - **Sign-out redirect URIs**: `https://your-vulcan-app.com/`
+   - **Controlled access**: Configure based on your organization's policies
+
+3. Save and note the Client ID and Client Secret
+
+### 2. Configure Authorization Server
+
+- Using the default authorization server (`/oauth2/default`) is recommended
+- For custom authorization servers, adjust the URLs accordingly
+- Ensure the following scopes are granted: `openid`, `profile`, `email`
+
+### 3. Important Configuration Notes
+
+- The redirect URI must match EXACTLY (protocol, domain, path, no trailing slash)
+- Always use HTTPS in production environments
+- Configure Okta policies to enforce MFA as needed
+
 ## Kubernetes ConfigMap Example
 
 ```yaml

@@ -7,9 +7,23 @@ Vulcan can be deployed to Kubernetes using the provided example manifests. This 
 ## Prerequisites
 
 - Kubernetes cluster (1.21+)
-- kubectl configured
+- kubectl configured with cluster access
 - PostgreSQL database (can be in-cluster or external)
 - Ingress controller (nginx recommended)
+- Persistent storage provisioner (for database if in-cluster)
+- SSL/TLS certificates (cert-manager recommended)
+
+## Architecture
+
+### Components
+
+1. **Vulcan Web Application** - Rails application pods
+2. **PostgreSQL Database** - Data persistence layer
+3. **Ingress Controller** - External access and SSL termination
+4. **ConfigMaps** - Application configuration
+5. **Secrets** - Sensitive credentials
+6. **Services** - Internal networking
+7. **PersistentVolumeClaims** - Database storage
 
 ## Quick Start
 
@@ -21,20 +35,33 @@ kubectl create namespace vulcan
 
 ### 2. Configure Secrets
 
-Create a secret with your configuration:
+Create comprehensive secrets for your deployment:
 
 ```yaml
 # k8s-vulcan-secrets.yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: vulcan-secrets
+  name: vulcansecrets
   namespace: vulcan
 type: Opaque
 stringData:
-  DATABASE_URL: "postgresql://user:pass@postgres:5432/vulcan"
-  SECRET_KEY_BASE: "your-secret-key-base"
-  VULCAN_OIDC_CLIENT_SECRET: "your-oidc-secret"
+  postgresql-password: "secure_database_password"
+  key-base: "$(openssl rand -hex 64)"
+  cipher-password: "$(openssl rand -hex 32)"
+  cipher-salt: "$(openssl rand -hex 32)"
+  ldap-password: "ldap_service_account_password"
+  oidc-client-secret: "your_oidc_client_secret"
+```
+
+Generate secure values:
+```bash
+# Generate SECRET_KEY_BASE
+echo "key-base: $(openssl rand -hex 64)"
+
+# Generate cipher keys
+echo "cipher-password: $(openssl rand -hex 32)"
+echo "cipher-salt: $(openssl rand -hex 32)"
 ```
 
 Apply the secret:
@@ -42,62 +69,207 @@ Apply the secret:
 kubectl apply -f k8s-vulcan-secrets.yaml
 ```
 
-### 3. Deploy Vulcan
+### 3. Create ConfigMap
+
+```yaml
+# k8s-vulcan-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vulcan-config
+  namespace: vulcan
+data:
+  vulcan-config.yml: |
+    production:
+      welcome_text: "Welcome to Vulcan"
+      contact_email: "admin@example.com"
+      app_url: "https://vulcan.example.com"
+      
+      smtp:
+        enabled: true
+        settings:
+          address: smtp.example.com
+          port: 587
+          domain: example.com
+          authentication: plain
+          enable_starttls_auto: true
+      
+      local_login:
+        enabled: true
+        email_confirmation: false
+        session_timeout: 60
+      
+      user_registration:
+        enabled: true
+      
+      project_create_permission:
+        enabled: true
+```
+
+Apply the ConfigMap:
+```bash
+kubectl apply -f k8s-vulcan-config.yaml
+```
+
+### 4. Deploy Vulcan
+
+Complete deployment with all production settings:
 
 ```yaml
 # k8s-vulcan-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vulcan
+  name: vulcan-web
   namespace: vulcan
+  labels:
+    app: vulcan-web
 spec:
   replicas: 2
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
-      app: vulcan
+      app: vulcan-web
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
-        app: vulcan
+        app: vulcan-web
     spec:
       automountServiceAccountToken: false  # Security best practice
       containers:
-      - name: vulcan
+      - name: vulcan-web
         image: mitre/vulcan:v2.2.1
+        imagePullPolicy: Always
         ports:
         - containerPort: 3000
-        envFrom:
-        - secretRef:
-            name: vulcan-secrets
-        - configMapRef:
-            name: vulcan-config
+          name: vulcan-web
+        resources:
+          requests:
+            cpu: "500m"
+            memory: 1Gi
+          limits:
+            cpu: "1000m"
+            memory: 2Gi
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config/vulcan.yml
+          subPath: vulcan-config.yml
         env:
+        # Database Configuration
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vulcansecrets
+              key: postgresql-password
+        - name: DATABASE_URL
+          value: postgres://vulcan:$(DATABASE_PASSWORD)@postgresql:5432/vulcan_production
+        
+        # Rails Configuration
         - name: RAILS_ENV
           value: production
-        - name: RAILS_LOG_TO_STDOUT
-          value: "true"
         - name: RAILS_SERVE_STATIC_FILES
           value: "true"
+        - name: RAILS_LOG_TO_STDOUT
+          value: "true"
+        - name: SECRET_KEY_BASE
+          valueFrom:
+            secretKeyRef:
+              name: vulcansecrets
+              key: key-base
+        
+        # Security Keys
+        - name: CIPHER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vulcansecrets
+              key: cipher-password
+        - name: CIPHER_SALT
+          valueFrom:
+            secretKeyRef:
+              name: vulcansecrets
+              key: cipher-salt
+        
+        # Application Configuration
+        - name: VULCAN_WELCOME_TEXT
+          value: "Welcome to Vulcan - Kubernetes Deployment"
+        - name: VULCAN_CONTACT_EMAIL
+          value: "vulcan-admin@example.com"
+        - name: VULCAN_APP_URL
+          value: "https://vulcan.example.com"
+        - name: VULCAN_SESSION_TIMEOUT
+          value: "10"
+        
+        # LDAP Configuration (if using)
+        - name: VULCAN_ENABLE_LDAP
+          value: "true"
+        - name: VULCAN_LDAP_HOST
+          value: "ldap.example.com"
+        - name: VULCAN_LDAP_PORT
+          value: "636"
+        - name: VULCAN_LDAP_TITLE
+          value: "Corporate LDAP"
+        - name: VULCAN_LDAP_ATTRIBUTE
+          value: "sAMAccountName"
+        - name: VULCAN_LDAP_ENCRYPTION
+          value: "simple_tls"
+        - name: VULCAN_LDAP_BIND_DN
+          value: "CN=vulcan.svcacct,OU=Service Accounts,DC=example,DC=com"
+        - name: VULCAN_LDAP_ADMIN_PASS
+          valueFrom:
+            secretKeyRef:
+              name: vulcansecrets
+              key: ldap-password
+        - name: VULCAN_LDAP_BASE
+          value: "DC=example,DC=com"
+        
+        # OIDC Configuration (if using)
+        - name: VULCAN_ENABLE_OIDC
+          value: "false"
+        - name: VULCAN_OIDC_ISSUER_URL
+          value: "https://your-idp.example.com"
+        - name: VULCAN_OIDC_CLIENT_ID
+          value: "vulcan-kubernetes"
+        - name: VULCAN_OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: vulcansecrets
+              key: oidc-client-secret
+        
+        # Health Checks
         livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
           httpGet:
             path: /health
             port: 3000
           initialDelaySeconds: 30
           periodSeconds: 10
-        readinessProbe:
+          timeoutSeconds: 5
+          successThreshold: 1
+        startupProbe:
           httpGet:
             path: /health
             port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+      
+      volumes:
+      - name: config-volume
+        configMap:
+          name: vulcan-config
 ---
 apiVersion: v1
 kind: Service
