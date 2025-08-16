@@ -10,6 +10,11 @@
 
 Vulcan is a comprehensive tool designed to streamline the creation of STIG-ready security guidance documentation and InSpec automated validation profiles. It bridges the gap between security requirements and practical implementation, enabling organizations to develop both human-readable instructions and machine-readable validation code simultaneously.
 
+### Live Deployments
+
+- **Production**: [https://mitre-vulcan-prod.herokuapp.com](https://mitre-vulcan-prod.herokuapp.com/users/sign_in)
+- **Staging**: [https://mitre-vulcan-staging.herokuapp.com](https://mitre-vulcan-staging.herokuapp.com/users/sign_in)
+
 ### What is Vulcan?
 
 Vulcan models the Security Technical Implementation Guide (STIG) creation process, facilitating the alignment of security controls from high-level DISA Security Requirements Guides (SRGs) into [STIGs](https://public.cyber.mil/stigs/) tailored to specific system components. Content developed with Vulcan can be submitted to DISA for peer review and formal publication as official STIGs.
@@ -46,15 +51,37 @@ Default credentials for testing:
 - **Email**: admin@example.com
 - **Password**: 1234567ab!
 
-For detailed release notes, see the [Changelog](CHANGELOG.md).
+For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
 ## 📚 Documentation
 
-- [Installation Guide](https://vulcan.mitre.org/docs/installation)
-- [Configuration Reference](ENVIRONMENT_VARIABLES.md)
-- [API Documentation](https://vulcan.mitre.org/docs/api)
-- [Wiki](https://github.com/mitre/vulcan/wiki)
-- [Contributing Guidelines](CONTRIBUTING.md)
+- **[📖 Full Documentation](https://mitre.github.io/vulcan/)** - Comprehensive guides and references
+- [Installation Guide](https://mitre.github.io/vulcan/getting-started/installation/)
+- [Configuration Reference](https://mitre.github.io/vulcan/getting-started/environment-variables/)
+- [User Guide](https://mitre.github.io/saf-training/courses/guidance/) - Complete training materials
+- [API Documentation](https://mitre.github.io/vulcan/api/overview/)
+- [Contributing Guidelines](./CONTRIBUTING.md)
+
+### Working with Documentation
+
+The documentation uses [VitePress](https://vitepress.dev/) and is located in the `docs/` directory.
+
+**Important:** The documentation has its own `package.json` separate from the main application to avoid Vue version conflicts (main app uses Vue 2, VitePress uses Vue 3). This separation will be removed once the main application migrates to Vue 3.
+
+```bash
+# Start documentation dev server
+yarn docs:dev  # Runs at http://localhost:5173/vulcan/
+
+# Build documentation (only works in CI/CD currently)
+yarn docs:build
+
+# Work directly in docs directory
+cd docs
+yarn install  # Install docs-specific dependencies
+yarn dev      # Start dev server
+```
+
+See [docs/README.md](./docs/README.md) for more details about the documentation system.
 
 ## 🛠️ Technology Stack
 
@@ -221,7 +248,7 @@ bundle exec rails stig_and_srg_puller:pull
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTING.md) for details.
 
 ### Development Workflow
 
@@ -250,13 +277,13 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - **Multi-tenancy**: Support for multiple organizations
 - **Advanced Reporting**: Custom dashboards and metrics
 
-See our [detailed roadmap](ROADMAP.md) for more information.
+See our [detailed roadmap](./ROADMAP.md) for more information.
 
 ## 📄 License
 
 © 2022-2025 The MITRE Corporation.
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE.md) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE.md) file for details.
 
 **Approved for Public Release; Distribution Unlimited. Case Number 18-3678.**
 

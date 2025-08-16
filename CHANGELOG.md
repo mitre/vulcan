@@ -5,6 +5,25 @@ All notable changes to Vulcan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- VitePress documentation system replacing MkDocs for better Vue ecosystem alignment
+- Mermaid diagram support in documentation with custom Vue component
+- Comprehensive documentation guide at `/development/documentation`
+- Production and staging deployment links in documentation
+- Separate package.json for docs to isolate dependencies (temporary until Vue 3 migration)
+
+### Changed
+- Documentation navigation reorganized with top-level Deployment, Authentication, and Security sections
+- Improved compliance documentation with source code verification and cross-references
+- Documentation dependencies isolated from main application to avoid Vue 2/3 conflicts
+
+### Fixed
+- Documentation build issues with dead links and localhost URLs
+- ESLint configuration to properly handle VitePress files
+- Trailing whitespace issues in configuration files
+
 ## [v2.2.1] - 2025-08-16
 
 ### Changed

@@ -1,69 +1,231 @@
-# Vulcan Installation
+---
+layout: home
 
-Vulcan can be set up in a few different ways. It can be done by having a vulcan.yml file that has settings for many different configurations. If there is no vulcan.yml file then the configurations will be read in from vulcan.default.yml that has default configuration as well as the ability for the configurations to be set by environment variables.
+hero:
+  name: "Vulcan"
+  text: "STIG-Ready Security Guidance"
+  tagline: Streamline the creation of STIG documentation and InSpec validation profiles
+  image:
+    src: /logo.png
+    alt: Vulcan
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /getting-started/quick-start
+    - theme: alt
+      text: Try Production
+      link: https://mitre-vulcan-prod.herokuapp.com/users/sign_in
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/mitre/vulcan
 
-[**Installation**](index.md) | [**Configuration**](config.md)
+features:
+  - icon: 📋
+    title: STIG Process Modeling
+    details: Manage the complete workflow between vendors and sponsors for STIG creation
+  - icon: 🔍
+    title: InSpec Integration
+    details: Write and test validation code locally or across SSH, AWS, and Docker targets
+  - icon: 📊
+    title: Control Management
+    details: Track control status, revision history, and relationships between requirements
+  - icon: 👥
+    title: Collaborative Authoring
+    details: Multiple authors can work on control sets with built-in review workflows
+  - icon: 🔗
+    title: Cross-Reference STIGs
+    details: Look up related controls across all published STIGs for consistency
+  - icon: 🔐
+    title: Enterprise Security
+    details: Database encryption, flexible authentication with OIDC, LDAP, and GitHub
+---
 
-## Index
-* [Dependencies](#dependencies)
-* [Run with Docker](#run-with-docker)
-* [Tasks](#tasks)
+## Quick Start
 
-## Installation
+### Quick Test with Docker
 
-### Dependencies
-
-For Docker:
-  * Docker
-  * docker-compose
-
-### Run With Docker
-
-Given that Vulcan requires at least a database service, we use Docker Compose.
-
-#### Setup Docker Container (Clean Install)
-
-1. Install Docker
-2. Download vulcan by running `git clone https://github.com/mitre/vulcan.git`.
-3. Navigate to the base folder where `docker-compose.yml` is located
-4. Run the following commands in a terminal window from the vulcan source directory:
-   1. `./setup-docker-secrets.sh`
-   2. `docker-compose up -d`
-   3. `docker-compose run --rm web rake db:create db:schema:load db:migrate`
-   4. `docker-compose run --rm web rake db:create_admin`
-5. Navigate to `http://127.0.0.1:3000`
-
-#### Managing Docker Container
-
-The following commands are useful for managing the data in your docker container:
-
-- `docker-compose run --rm web rake db:reset` **This destroys and rebuilds the db**
-- `docker-compose run --rm web rake db:migrate` **This updates the db**
-
-#### Running Docker Container
-
-Make sure you have run the setup steps at least once before following these steps!
-
-1. Run the following command in a terminal window:
-   - `docker-compose up -d`
-2. Go to `127.0.0.1:3000` in a web browser
-
-#### Updating Docker Container
-
-A new version of the docker container can be retrieved by running:
-
-```
-docker-compose pull
-docker-compose up -d
-docker-compose run web rake db:migrate
+```bash
+docker pull mitre/vulcan:latest
+docker run -p 3000:3000 mitre/vulcan:latest
 ```
 
-This will fetch the latest version of the container, redeploy if a newer version exists, and then apply any database migrations if applicable. No data should be lost by this operation.
+### Full Setup with Docker Compose
 
-#### Stopping the Container
+```bash
+# Clone the repository
+git clone https://github.com/mitre/vulcan.git
+cd vulcan
 
-`docker-compose down` # From the source directory you started from.
+# Generate secure configuration
+./.github/setup-docker-secrets.sh
 
-### Tasks
+# Start the application stack
+docker-compose -f .github/docker-compose.yml up
+```
 
-Refer to the [main page](https://vulcan.mitre.org/#tasks) to see the available rake tasks that can be scheduled in production.
+## Latest Release
+
+::: info Current Version
+**v2.2.1** - Released August 16, 2025
+
+Security patch release addressing critical vulnerability fixes.
+[View Release Notes →](/release-notes/v2.2.1)
+:::
+
+## Why Vulcan?
+
+Vulcan bridges the gap between security requirements and practical implementation, enabling organizations to:
+
+- **Accelerate STIG Development**: Reduce time from months to weeks
+- **Ensure Consistency**: Maintain alignment with DISA standards
+- **Automate Validation**: Generate InSpec profiles alongside documentation
+- **Collaborate Effectively**: Built-in workflows for multi-team environments
+- **Track Compliance**: Full audit trail and revision history
+
+## Technology Stack
+
+<div class="tech-stack">
+  <div class="tech-section">
+    <h3>Backend</h3>
+    <ul>
+      <li>Ruby 3.3.9 with Rails 8.0.2.1</li>
+      <li>PostgreSQL 12+</li>
+      <li>Redis for caching</li>
+    </ul>
+  </div>
+  <div class="tech-section">
+    <h3>Frontend</h3>
+    <ul>
+      <li>Vue 2.6.11</li>
+      <li>Bootstrap 4.4.1</li>
+      <li>Turbolinks 5.2.0</li>
+    </ul>
+  </div>
+  <div class="tech-section">
+    <h3>DevOps</h3>
+    <ul>
+      <li>Docker optimized images</li>
+      <li>GitHub Actions CI/CD</li>
+      <li>Kubernetes ready</li>
+    </ul>
+  </div>
+</div>
+
+## Part of MITRE SAF
+
+Vulcan is a core component of the [MITRE Security Automation Framework (SAF)](https://saf.mitre.org/), a comprehensive suite of tools designed to automate security validation and compliance checking.
+
+<div class="saf-ecosystem">
+  <a href="https://www.inspec.io/" class="saf-tool">
+    <h4>InSpec</h4>
+    <p>Compliance automation framework</p>
+  </a>
+  <a href="https://github.com/mitre/heimdall2" class="saf-tool">
+    <h4>Heimdall</h4>
+    <p>Security results visualization</p>
+  </a>
+  <a href="https://github.com/mitre/saf-cli" class="saf-tool">
+    <h4>SAF CLI</h4>
+    <p>Command-line security tools</p>
+  </a>
+</div>
+
+## Get Involved
+
+<div class="action-cards">
+  <div class="action-card">
+    <h3>📚 Documentation</h3>
+    <p>Comprehensive guides for users and developers</p>
+    <a href="/getting-started/installation">Read the Docs →</a>
+  </div>
+  <div class="action-card">
+    <h3>🤝 Contributing</h3>
+    <p>Help improve Vulcan with code, docs, or feedback</p>
+    <a href="https://github.com/mitre/vulcan/blob/master/CONTRIBUTING.md">Contribution Guide →</a>
+  </div>
+  <div class="action-card">
+    <h3>💬 Community</h3>
+    <p>Get help and discuss with other users</p>
+    <a href="https://github.com/mitre/vulcan/discussions">Join Discussions →</a>
+  </div>
+</div>
+
+<style>
+.tech-stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.tech-section h3 {
+  color: var(--vp-c-brand);
+  margin-bottom: 0.5rem;
+}
+
+.tech-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tech-section li {
+  padding: 0.25rem 0;
+}
+
+.saf-ecosystem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.saf-tool {
+  padding: 1.5rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.saf-tool:hover {
+  border-color: var(--vp-c-brand);
+  transform: translateY(-2px);
+}
+
+.saf-tool h4 {
+  color: var(--vp-c-brand);
+  margin: 0 0 0.5rem 0;
+}
+
+.saf-tool p {
+  color: var(--vp-c-text-2);
+  margin: 0;
+}
+
+.action-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.action-card {
+  padding: 1.5rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+}
+
+.action-card h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.action-card p {
+  color: var(--vp-c-text-2);
+  margin: 0.5rem 0 1rem 0;
+}
+
+.action-card a {
+  color: var(--vp-c-brand);
+  font-weight: 500;
+}
+</style>
