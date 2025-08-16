@@ -71,6 +71,7 @@
 </template>
 
 <script>
+import semver from "semver";
 import NavbarItem from "./NavbarItem.vue";
 import SrgIdSearch from "./SrgIdSearch.vue";
 import { version } from "../../../../package.json";
@@ -131,7 +132,19 @@ export default {
         });
     },
     checkUpdateAvailable() {
-      return this.latestRelease.trim() !== "" && this.latestRelease !== this.currentVersion;
+      if (!this.latestRelease || this.latestRelease.trim() === "") return false;
+
+      // Use semver.gt to check if latest is greater than current
+      // Clean versions by removing 'v' prefix if present
+      const latest = this.latestRelease.replace(/^v/, "");
+      const current = this.currentVersion.replace(/^v/, "");
+
+      try {
+        return semver.gt(latest, current);
+      } catch (error) {
+        console.error("Error comparing versions:", error);
+        return false;
+      }
     },
   },
 };
