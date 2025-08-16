@@ -38,13 +38,12 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Install dependencies
-        run: yarn install
-
-      - name: Build with VitePress
-        # Note: May fail due to Vue 2/3 conflict until main app migrates to Vue 3
-        # Dev server works fine: yarn docs:dev
-        run: yarn docs:build
+      - name: Install and build docs
+        run: |
+          # DO NOT install main dependencies - they cause Vue 2/3 conflict
+          cd docs
+          yarn install
+          yarn build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
