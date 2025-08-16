@@ -2,7 +2,7 @@
 
 Vulcan can be set up in a few different ways. It can be done by having a vulcan.yml file that has settings for many different configurations. If there is no vulcan.yml file then the configurations will be read in from vulcan.default.yml that has default configuration as well as the ability for the configurations to be set by environment variables.
 
-[**Installation**](Installing-Vulcan) | [**Configuration**](Configuring-Vulcan)
+[**Installation**](installation.md) | **Configuration**
 
 ## Index
 
@@ -14,7 +14,6 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure LDAP:](#configure-ldap)
 - [Configure OIDC:](#configure-oidc)
 - [Configure Slack:](#configure-slack)
-- [Configure Providers:](#configure-providers)
 
 ## Configure Welcome Text and Contact Email:
 
