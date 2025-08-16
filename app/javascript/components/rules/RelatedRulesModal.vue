@@ -335,10 +335,8 @@ export default {
       switch (this.fields.length) {
         case 1:
           return "col-xl-12";
-          break;
         case 2:
           return "col-xl-6";
-          break;
         default:
           return "col-xl-4";
       }
@@ -414,7 +412,7 @@ export default {
       this.filteredRules = rules;
     },
     addKeywordSearchToList: function (e) {
-      e.preventDefault;
+      e.preventDefault();
       if (this.keywordSearch.trim()) {
         this.keywordList.push(this.keywordSearch.trim());
         this.keywordSearch = "";
