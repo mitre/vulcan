@@ -1,5 +1,11 @@
-|Associated NIST SP 800-53 Revision 5 Security Control Reference ID|General Security Control Requirement|General Security Control Implementation |Vulcan Server Security Control Response|WIP|Update|Associated Application Security & Development STIG Vulnerability ID|
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+# Application Security & Development SRG Responses
+
+This document provides Vulcan's responses to the Application Security and Development Security Requirements Guide (ASD SRG) controls, which are mapped to NIST SP 800-53 Revision 5 security controls.
+
+## Control Response Matrix
+
+| NIST Control | Requirement | Implementation | Vulcan Response | Status | Updated | STIG ID |
+|:---:|:---|:---|:---|:---:|:---:|:---:|
 |AC-02 f|Ensure an account management process is implemented, verifying only authorized users can gain access to the application, and individual accounts designated as inactive, suspended, or terminated are promptly removed.|Establish an account management process.|Vulcan Server provides a user management page where application administrators can deprovision user accounts based on organizational policy.||10/11/2024|V-222619|
 |AC-02 (01)|The application must provide automated mechanisms for supporting account management functions.|Use automated processes and mechanisms for account management functions.|Achieved by integrating your organization's existing external account and authentication mechanisms for user access. Local accounts should only be used for administration and troubleshooting. Local accounts must be managed using manual procedures per organizational requirements.||10/11/2024|V-222407|
 |AC-02 (02)|The application must automatically remove or disable temporary user accounts 72 hours after account creation.|Configure temporary accounts to be automatically removed or disabled after 72 hours after account creation.|Achieved by integrating your organization's existing external account and authentication mechanisms for user access. Local accounts should only be used for administration and troubleshooting. Local accounts must be managed using manual procedures per organizational requirements.||10/11/2024|V-222409|

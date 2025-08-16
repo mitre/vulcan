@@ -17,7 +17,7 @@ hero:
       link: https://github.com/mitre/vulcan
     - theme: alt
       text: Project README
-      link: https://github.com/mitre/vulcan/blob/master/README.md
+      link: /README.md
 
 features:
   - icon: 📋

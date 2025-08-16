@@ -34,8 +34,15 @@ export default defineConfig({
           { text: 'Docker', link: '/deployment/docker' },
           { text: 'Kubernetes', link: '/deployment/kubernetes' },
           { text: 'Heroku', link: '/deployment/heroku' },
-          { text: 'Bare Metal', link: '/deployment/bare-metal' },
-          { text: 'Authentication Setup', link: '/deployment/auth/overview' }
+          { text: 'Bare Metal', link: '/deployment/bare-metal' }
+        ]
+      },
+      {
+        text: 'Authentication',
+        items: [
+          { text: 'OIDC/OKTA', link: '/deployment/auth/oidc-okta' },
+          { text: 'LDAP', link: '/deployment/auth/ldap' },
+          { text: 'GitHub OAuth', link: '/deployment/auth/github' }
         ]
       },
       {
@@ -44,17 +51,45 @@ export default defineConfig({
           { text: 'Setup', link: '/development/setup' },
           { text: 'Architecture', link: '/development/architecture' },
           { text: 'Testing', link: '/development/testing' },
+          { text: 'Release Process', link: '/development/release-process' },
           { text: 'Contributing', link: '/CONTRIBUTING.md' }
         ]
       },
-      { text: 'API', link: '/api/overview' },
+      {
+        text: 'API',
+        items: [
+          { text: 'Overview', link: '/api/overview' },
+          { text: 'Authentication', link: '/api/authentication' },
+          { text: 'Endpoints', link: '/api/endpoints' }
+        ]
+      },
+      {
+        text: 'Security',
+        items: [
+          { text: 'Security Policy', link: '/SECURITY.md' },
+          { text: 'Compliance Guide', link: '/security/compliance-improved' },
+          { text: 'Compliance (Original)', link: '/security/compliance' },
+          { text: 'ASD SRG Responses', link: '/security/security-controls' }
+        ]
+      },
+      {
+        text: 'Project',
+        items: [
+          { text: 'About', link: '/README.md' },
+          { text: 'Changelog', link: '/CHANGELOG.md' },
+          { text: 'Roadmap', link: '/ROADMAP.md' },
+          { text: 'License', link: '/LICENSE.md' },
+          { text: 'Notice', link: '/NOTICE.md' },
+          { text: 'Security Policy', link: '/SECURITY.md' },
+          { text: 'Code of Conduct', link: '/CODE_OF_CONDUCT.md' }
+        ]
+      },
       {
         text: 'v2.2.1',
         items: [
           { text: 'Release Notes', link: '/release-notes/v2.2.1' },
-          { text: 'All Releases', link: '/release-notes/' },
-          { text: 'Changelog', link: '/CHANGELOG.md' },
-          { text: 'Roadmap', link: '/ROADMAP.md' }
+          { text: 'v2.2.0', link: '/release-notes/v2.2.0' },
+          { text: 'All Releases', link: '/release-notes/' }
         ]
       }
     ],
@@ -126,8 +161,7 @@ export default defineConfig({
           items: [
             { text: 'Security Policy', link: '/SECURITY.md' },
             { text: 'Compliance & Controls', link: '/security/compliance' },
-            { text: 'Security Controls', link: '/security/security-controls' },
-            { text: 'Data Encryption', link: '/security/data-encryption' }
+            { text: 'ASD SRG Responses', link: '/security/security-controls' }
           ]
         }
       ],
@@ -135,7 +169,7 @@ export default defineConfig({
         {
           text: 'Overview',
           items: [
-            { text: 'About Vulcan', link: '/README' },
+            { text: 'About Vulcan', link: '/README.md' },
             { text: 'Quick Start', link: '/getting-started/quick-start' }
           ]
         },
@@ -152,6 +186,7 @@ export default defineConfig({
         {
           text: 'Project Info',
           items: [
+            { text: 'README', link: '/README.md' },
             { text: 'Changelog', link: '/CHANGELOG.md' },
             { text: 'Roadmap', link: '/ROADMAP.md' },
             { text: 'License', link: '/LICENSE.md' },
