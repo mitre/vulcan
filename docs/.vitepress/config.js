@@ -49,6 +49,7 @@ export default defineConfig({
         text: "Development",
         items: [
           { text: "Setup", link: "/development/setup" },
+          { text: "Documentation", link: "/development/documentation" },
           { text: "Architecture", link: "/development/architecture" },
           { text: "Testing", link: "/development/testing" },
           { text: "Release Process", link: "/development/release-process" },
@@ -130,6 +131,7 @@ export default defineConfig({
           text: "Development",
           items: [
             { text: "Development Setup", link: "/development/setup" },
+            { text: "Documentation Guide", link: "/development/documentation" },
             { text: "Architecture", link: "/development/architecture" },
             { text: "Testing", link: "/development/testing" },
             { text: "Release Process", link: "/development/release-process" },

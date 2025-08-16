@@ -57,6 +57,27 @@ For detailed release notes, see the [Changelog](./CHANGELOG.md).
 - [API Documentation](https://mitre.github.io/vulcan/api/overview/)
 - [Contributing Guidelines](./CONTRIBUTING.md)
 
+### Working with Documentation
+
+The documentation uses [VitePress](https://vitepress.dev/) and is located in the `docs/` directory.
+
+**Important:** The documentation has its own `package.json` separate from the main application to avoid Vue version conflicts (main app uses Vue 2, VitePress uses Vue 3). This separation will be removed once the main application migrates to Vue 3.
+
+```bash
+# Start documentation dev server
+yarn docs:dev  # Runs at http://localhost:5173/vulcan/
+
+# Build documentation (only works in CI/CD currently)
+yarn docs:build
+
+# Work directly in docs directory
+cd docs
+yarn install  # Install docs-specific dependencies
+yarn dev      # Start dev server
+```
+
+See [docs/README.md](./docs/README.md) for more details about the documentation system.
+
 ## 🛠️ Technology Stack
 
 ### Core Framework
