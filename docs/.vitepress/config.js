@@ -67,8 +67,7 @@ export default defineConfig({
         text: 'Security',
         items: [
           { text: 'Security Policy', link: '/SECURITY.md' },
-          { text: 'Compliance Guide', link: '/security/compliance-improved' },
-          { text: 'Compliance (Original)', link: '/security/compliance' },
+          { text: 'Compliance Guide', link: '/security/compliance' },
           { text: 'ASD SRG Responses', link: '/security/security-controls' }
         ]
       },
@@ -160,7 +159,7 @@ export default defineConfig({
           text: 'Security',
           items: [
             { text: 'Security Policy', link: '/SECURITY.md' },
-            { text: 'Compliance & Controls', link: '/security/compliance' },
+            { text: 'Compliance Guide', link: '/security/compliance' },
             { text: 'ASD SRG Responses', link: '/security/security-controls' }
           ]
         }

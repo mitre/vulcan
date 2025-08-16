@@ -1,368 +1,599 @@
-# Security Compliance and Control Responses
-
-This document provides Vulcan's security control implementation responses for NIST SP 800-53 Revision 5 controls and their associated Application Security & Development STIG requirements.
+# Security Compliance Guide
 
 ## Overview
 
-Vulcan Server implements security controls in accordance with NIST SP 800-53 Rev 5 and the Application Security and Development STIG. This document details how Vulcan addresses each control requirement and provides guidance for proper configuration.
+Vulcan implements comprehensive security controls aligned with **NIST SP 800-53 Revision 5** and the **Application Security & Development STIG**. This guide provides practical implementation details and configuration requirements for deploying Vulcan in compliance with federal security standards.
 
-## Implementation Philosophy
+## Quick Start Security Configuration
 
-Vulcan's security implementation follows these principles:
-
-1. **Defense in Depth**: Multiple layers of security controls
-2. **Least Privilege**: Minimal permissions by default
-3. **External Integration**: Leverages organizational authentication and logging systems
-4. **Audit Trail**: Comprehensive logging of all security-relevant events
-5. **Role-Based Access Control**: Granular permission management
-
-## Control Categories
-
-### Access Control (AC)
-
-#### Account Management (AC-02)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AC-02 f | Account management process | Vulcan provides user management interface for administrators to provision/deprovision accounts per organizational policy |
-| AC-02(01) | Automated account management | Integrate with organizational LDAP/OIDC/OAuth for automated account management |
-| AC-02(02) | Temporary account removal | Leverage organizational identity provider for temporary account management |
-| AC-02(03) | Account inactivity | Organizational identity provider handles account inactivity policies |
-| AC-02(04) | Audit account actions | Account events logged when using local accounts; external providers handle their own auditing |
-
-**Configuration**: Use external authentication providers (LDAP, OIDC, GitHub OAuth) for automated account management. Local accounts should only be used for administration and troubleshooting.
-
-#### Authorization and Access Enforcement (AC-03, AC-04)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AC-03 | Logical access control | Role-based access control for users, administrators, and project members |
-| AC-03(04) | Discretionary access control | Project-level permissions with owner/editor/viewer roles |
-| AC-04 | Information flow control | RBAC enforced at GUI and API levels |
-
-#### Privilege Management (AC-06)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AC-06(04) | Network segmentation | Supports tiered deployment with separate database server |
-| AC-06(08) | Minimal privileges | Application runs with non-root user; database uses limited account |
-| AC-06(09) | Audit privileged functions | All administrative actions logged with user ID and timestamp |
-| AC-06(10) | Prevent privilege escalation | RBAC prevents non-privileged users from accessing admin functions |
-
-#### Unsuccessful Login Attempts (AC-07)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AC-07 a | Login attempt limits | Configure through external identity provider |
-| AC-07 b | Account unlock process | Managed through organizational identity provider |
-
-**Configuration**: Set login policies in your LDAP/OIDC provider. For local accounts, implement organizational unlock procedures.
-
-#### System Use Notification (AC-08)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AC-08 a,b,c | Organization banner | Configure via `VULCAN_WELCOME_TEXT` environment variable |
-
-**Configuration**:
-```bash
-export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. By accessing this system, you agree to comply with all organizational policies..."
-```
-
-#### Session Management (AC-10, AC-12)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AC-10 | Session limits | Under development (Issue #634) |
-| AC-12 | Session termination | Configure via `VULCAN_SESSION_TIMEOUT` environment variable |
-| AC-12(01) | User logoff | Log Out button provided in interface |
-| AC-12(02) | Logoff message | Under development (Issue #635) |
-
-**Configuration**:
-```bash
-# Set 10-minute timeout for compliance
-export VULCAN_SESSION_TIMEOUT=10
-```
-
-#### Remote Access (AC-17)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AC-17(02) | Encryption for remote access | Deploy behind TLS-terminating reverse proxy |
-
-**Configuration**: Always deploy Vulcan behind HTTPS using nginx, Apache, or cloud load balancer with valid TLS certificates.
-
-### Audit and Accountability (AU)
-
-#### Audit Content (AU-03)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AU-03 a | Log events | Application startup/shutdown, data access, data changes logged |
-| AU-03 b | Timestamps | Date/time recorded for all events |
-| AU-03 c | Event source | URI paths map to application modules |
-| AU-03 d | Unique identifier | Configure centralized logging to add application identifier |
-| AU-03 e | Event outcome | Success/failure status logged |
-| AU-03 f | User identity | User ID logged with each action |
-
-#### Audit Storage and Protection (AU-04, AU-09)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AU-04(01) | Off-load audit records | Logs to stdout for collection by centralized system |
-| AU-09 | Protect audit information | Integrate with organizational log management system |
-| AU-09(02) | Backup audit records | Organizational log system handles backup |
-| AU-09(03) | Cryptographic protection | Organizational log system provides integrity protection |
-
-**Configuration**: 
-- Application logs to stdout
-- PostgreSQL can use pgaudit extension for database auditing
-- Forward logs to organizational SIEM/log management system
-
-#### Audit Analysis and Reporting (AU-06, AU-07)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| AU-06(04) | Centralized review | Logs designed for centralized collection and analysis |
-| AU-07 a | Reduction and reporting | Leverage organizational log analysis tools |
-| AU-07 b | Original content preservation | Logs are append-only, no modification capability |
-
-### Identification and Authentication (IA)
-
-#### Authentication Management
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| IA-02 | Unique identification | Each user has unique account ID |
-| IA-02(01) | Multifactor authentication | Supported via OIDC/SAML providers |
-| IA-02(12) | PIV/CAC authentication | Supported via configured OIDC provider |
-| IA-05 | Authenticator management | Leverages external provider policies |
-
-**Configuration Options**:
-- Local authentication with email/password
-- LDAP/Active Directory integration
-- OIDC/SAML (supports MFA, PIV/CAC)
-- GitHub OAuth
-
-### System and Communications Protection (SC)
-
-#### Transmission Protection (SC-08, SC-13)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| SC-08 | Transmission confidentiality | Deploy with TLS reverse proxy |
-| SC-13 | Cryptographic protection | TLS 1.2+ with strong ciphers |
-| SC-23 | Session authenticity | Rails CSRF tokens protect session integrity |
-
-**Configuration**: Configure reverse proxy with:
-- TLS 1.2 minimum
-- Strong cipher suites only
-- Valid certificates from trusted CA
-- HSTS headers enabled
-
-### System and Information Integrity (SI)
-
-#### Input Validation (SI-10)
-
-| Control | Requirement | Vulcan Implementation |
-|---------|-------------|----------------------|
-| SI-10 | Input validation | Rails strong parameters, XSS protection |
-| SI-11 | Error handling | Generic error messages to users, detailed logs for admins |
-
-## Configuration Best Practices
-
-### Essential Security Configuration
+For organizations requiring immediate compliance, apply these essential settings:
 
 ```bash
-# Session Management
-export VULCAN_SESSION_TIMEOUT=10  # 10 minutes for compliance
+# Core Security Settings
+export VULCAN_SESSION_TIMEOUT=10               # Set to 10 minutes (STIG requirement - default is 60)
+export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. By accessing this system, you agree to comply with all organizational security policies. All activities are monitored and logged."
+export RAILS_FORCE_SSL=true                    # Force HTTPS
+export RAILS_ENV=production                    # Production mode
+export SECRET_KEY_BASE=$(rails secret)         # Generate secure key
 
-# Authentication
+# Authentication (Choose One)
+# Option 1: OIDC/SAML
 export VULCAN_ENABLE_OIDC=true
 export VULCAN_OIDC_ISSUER_URL=https://your-idp.example.com
 export VULCAN_OIDC_CLIENT_ID=vulcan
 export VULCAN_OIDC_CLIENT_SECRET=<secure-secret>
 
-# Welcome Banner
-export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. This system is subject to monitoring."
-
-# Application Security
-export RAILS_ENV=production
-export RAILS_FORCE_SSL=true
-export SECRET_KEY_BASE=<generate-with-rails-secret>
-
-# Logging
-export RAILS_LOG_TO_STDOUT=true
-export RAILS_LOG_LEVEL=info
+# Option 2: LDAP
+export VULCAN_ENABLE_LDAP=true
+export VULCAN_LDAP_HOST=ldap.example.com
+export VULCAN_LDAP_PORT=636
+export VULCAN_LDAP_BASE="dc=example,dc=com"
 ```
 
-### Database Security
+## Security Architecture
+
+### Defense in Depth Strategy
+
+```
+┌─────────────────────────────────────────┐
+│         External Users                   │
+└─────────────┬───────────────────────────┘
+              │ HTTPS/TLS 1.2+
+┌─────────────▼───────────────────────────┐
+│     Load Balancer / Reverse Proxy       │
+│     • TLS Termination                   │
+│     • DDoS Protection                   │
+│     • Rate Limiting                     │
+└─────────────┬───────────────────────────┘
+              │ Private Network
+┌─────────────▼───────────────────────────┐
+│        Application Tier (Vulcan)        │
+│     • RBAC Authorization               │
+│     • Session Management               │
+│     • Input Validation                 │
+└─────────────┬───────────────────────────┘
+              │ Encrypted Connection
+┌─────────────▼───────────────────────────┐
+│         Database Tier (PostgreSQL)      │
+│     • Encrypted at Rest                │
+│     • Audit Logging                    │
+│     • Limited Permissions              │
+└─────────────────────────────────────────┘
+```
+
+## Control Implementation Details
+
+### 🔐 Access Control (AC)
+
+#### Account Management (AC-02)
+
+**What's Required:** Automated account lifecycle management with audit trails
+
+**How Vulcan Implements It:**
+- **External Integration:** Leverages your organization's existing identity provider (LDAP, OIDC, GitHub OAuth)
+- **Local Account Management:** Admin interface for manual account control when needed
+- **Audit Trail:** All account actions logged with timestamp and user ID
+
+**Your Action Items:**
+✅ Configure external authentication provider  
+✅ Disable local registration in production  
+✅ Document account provisioning procedures  
+
+#### Session Management (AC-12)
+
+**What's Required:** Automatic session termination after inactivity
+
+**How Vulcan Implements It:**
+- Configurable timeout via `VULCAN_SESSION_TIMEOUT`
+- Secure session cookies with Rails session management
+- Manual logout capability with session invalidation
+
+**Configuration:**
+```bash
+# STIG Requirements (value is in minutes)
+VULCAN_SESSION_TIMEOUT=10      # Required: 10 min for admin, 15 min for users
+                               # Default: 60 minutes if not set
+                               # Note: Single timeout for all user types
+```
+
+⚠️ **Known Gaps:**
+- Session limit per user (Issue #634) - In development
+- Logout confirmation message (Issue #635) - In development
+
+#### System Use Notification (AC-08)
+
+**What's Required:** Display approved banner before system access
+
+**How Vulcan Implements It:**
+- Customizable banner via `VULCAN_WELCOME_TEXT`
+- Displayed on login page before authentication
+- Must be acknowledged to proceed
+
+**Example Banner:**
+```bash
+export VULCAN_WELCOME_TEXT="
+╔══════════════════════════════════════════════════════════════╗
+║                    AUTHORIZED USE ONLY                       ║
+║                                                              ║
+║ This U.S. Government system is for authorized use only.     ║
+║ By accessing this system, you consent to monitoring and     ║
+║ recording of all activities. Unauthorized use is prohibited ║
+║ and subject to criminal and civil penalties.                ║
+╚══════════════════════════════════════════════════════════════╝
+"
+```
+
+### 📝 Audit & Accountability (AU)
+
+#### What Gets Logged
+
+| Event Type | Information Captured | Retention |
+|------------|---------------------|-----------|
+| **Authentication** | User ID, IP, Success/Failure, Timestamp | 90 days minimum |
+| **Authorization** | User ID, Resource, Action, Decision | 90 days minimum |
+| **Data Changes** | User ID, Before/After Values, Timestamp | 1 year minimum |
+| **Admin Actions** | User ID, Action, Target, Result | 1 year minimum |
+| **System Events** | Service Start/Stop, Errors, Config Changes | 30 days minimum |
+
+#### Log Format
+
+```json
+{
+  "timestamp": "2024-10-11T14:30:00Z",
+  "level": "INFO",
+  "user_id": "user@example.com",
+  "session_id": "abc123",
+  "ip_address": "192.168.1.100",
+  "method": "POST",
+  "path": "/api/projects/123",
+  "status": 200,
+  "message": "Project updated successfully",
+  "duration_ms": 145
+}
+```
+
+#### Database Audit Configuration
+
+Enable comprehensive database auditing with pgAudit:
 
 ```sql
--- Create limited database user
-CREATE USER vulcan_app WITH PASSWORD 'secure_password';
-GRANT CONNECT ON DATABASE vulcan_production TO vulcan_app;
-GRANT USAGE ON SCHEMA public TO vulcan_app;
-GRANT CREATE ON SCHEMA public TO vulcan_app;
-
--- Enable pgaudit for compliance logging
+-- Install and configure pgAudit extension
 CREATE EXTENSION IF NOT EXISTS pgaudit;
-```
 
-### Deployment Security
-
-1. **Network Segmentation**
-   - Deploy application tier separate from database tier
-   - Use private networks for inter-tier communication
-   - Expose only HTTPS endpoint through load balancer
-
-2. **Reverse Proxy Configuration**
-   ```nginx
-   # Strong TLS configuration
-   ssl_protocols TLSv1.2 TLSv1.3;
-   ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
-   ssl_prefer_server_ciphers off;
-   
-   # Security headers
-   add_header Strict-Transport-Security "max-age=63072000" always;
-   add_header X-Frame-Options "DENY" always;
-   add_header X-Content-Type-Options "nosniff" always;
-   ```
-
-3. **Container Security**
-   ```dockerfile
-   # Run as non-root user
-   USER app
-   
-   # Minimal attack surface
-   RUN apt-get remove --purge -y $BUILD_PACKAGES
-   ```
-
-## Compliance Status
-
-### Fully Compliant Controls
-
-- Access Control (AC-02, AC-03, AC-04, AC-06)
-- Audit Generation (AU-03, AU-12)
-- Session Management (AC-12 partial)
-- Authentication (IA-02, IA-05)
-- Transmission Protection (SC-08, SC-13)
-
-### In Development
-
-- Session Limits (AC-10) - Issue #634
-- Logoff Confirmation (AC-12(02)) - Issue #635
-
-### Requires External Integration
-
-- Account lifecycle management (via LDAP/OIDC)
-- Multifactor authentication (via OIDC provider)
-- Centralized logging and analysis
-- Certificate management
-
-## Audit Configuration
-
-### Application Logging
-
-Vulcan logs the following security-relevant events:
-- Authentication attempts (success/failure)
-- Authorization decisions
-- Data access and modifications
-- Administrative actions
-- Session management events
-- System errors and exceptions
-
-### Database Auditing
-
-Enable PostgreSQL audit logging:
-
-```sql
--- Install pgaudit
-CREATE EXTENSION pgaudit;
-
--- Configure audit logging
+-- Set audit parameters
 ALTER SYSTEM SET pgaudit.log = 'ALL';
 ALTER SYSTEM SET pgaudit.log_catalog = off;
 ALTER SYSTEM SET pgaudit.log_parameter = on;
 ALTER SYSTEM SET pgaudit.log_statement_once = on;
+ALTER SYSTEM SET pgaudit.log_relation = on;
 
--- Reload configuration
+-- Apply configuration
 SELECT pg_reload_conf();
 ```
 
-### Log Format
+### 🔑 Identification & Authentication (IA)
 
-Logs are structured for easy parsing:
+#### Supported Authentication Methods
+
+| Method | MFA Support | PIV/CAC | SSO | Recommendation |
+|--------|------------|---------|-----|----------------|
+| **OIDC/SAML** | ✅ Yes | ✅ Yes | ✅ Yes | **Preferred** for enterprise |
+| **LDAP/AD** | ⚠️ Via LDAP | ❌ No | ✅ Yes | Good for on-premise |
+| **GitHub OAuth** | ✅ Yes | ❌ No | ✅ Yes | Good for development teams |
+| **Local Accounts** | ❌ No | ❌ No | ❌ No | Admin/emergency only |
+
+#### OIDC Configuration Example
+
+```yaml
+# config/vulcan.yml
+oidc:
+  enabled: true
+  issuer_url: https://login.example.com
+  client_id: vulcan-prod
+  client_secret: <%= ENV['OIDC_SECRET'] %>
+  scope: "openid profile email"
+  
+  # Advanced Settings
+  discovery: true                    # Auto-discover endpoints
+  response_type: "code"              # Authorization code flow
+  prompt: "select_account"           # Force account selection
+  max_age: 3600                      # Force re-auth after 1 hour
+  
+  # Attribute Mapping
+  uid_field: "preferred_username"
+  email_field: "email"
+  name_field: "name"
 ```
-[timestamp] [level] [user_id] [session_id] [ip_address] [method] [path] [status] [message]
+
+### 🛡️ System & Communications Protection (SC)
+
+#### TLS Configuration
+
+**Minimum Requirements:**
+- TLS 1.2 or higher
+- Strong cipher suites only
+- Valid certificates from trusted CA
+- HSTS enabled with 1-year max-age
+
+**NGINX Configuration:**
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name vulcan.example.com;
+    
+    # TLS Configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';" always;
+    
+    # Rate Limiting
+    limit_req zone=vulcan_api burst=20 nodelay;
+    limit_req_status 429;
+    
+    location / {
+        proxy_pass http://vulcan_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
-## Monitoring and Alerting
+## Deployment Configurations
 
-### Key Security Metrics
+### Production Deployment Checklist
 
-Monitor these events for security incidents:
-- Failed authentication attempts > 5 in 15 minutes
-- Privilege escalation attempts
-- Unauthorized data access attempts
-- Mass data exports
-- Configuration changes
-- Account creation/deletion
+#### Pre-Deployment
+- [ ] Security review completed
+- [ ] Penetration testing performed
+- [ ] STIG compliance validated
+- [ ] Backup procedures tested
+- [ ] Incident response plan documented
 
-### Integration with SIEM
+#### Application Configuration
+- [ ] Production environment variables set
+- [ ] TLS certificates installed and valid
+- [ ] Session timeout configured (≤10 minutes)
+- [ ] Welcome banner configured
+- [ ] External authentication enabled
+- [ ] Local registration disabled
+- [ ] Debug mode disabled
+- [ ] Error messages sanitized
 
-Forward logs to your SIEM with:
+#### Infrastructure Security
+- [ ] Network segmentation implemented
+- [ ] Firewall rules configured (allow only 443)
+- [ ] Database on separate network segment
+- [ ] Load balancer configured with TLS
+- [ ] DDoS protection enabled
+- [ ] Rate limiting configured
+- [ ] WAF rules applied
+
+#### Monitoring & Logging
+- [ ] Centralized logging configured
+- [ ] Log retention policies set
+- [ ] SIEM integration tested
+- [ ] Alert rules configured
+- [ ] Audit log review process established
+
+### Container Security
+
+```dockerfile
+# Secure Dockerfile Example
+FROM ruby:3.3.9-slim AS production
+
+# Security: Run as non-root user
+RUN groupadd -r app && useradd -r -g app app
+
+# Security: Install only required packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        postgresql-client \
+        nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Security: Set secure permissions
+WORKDIR /app
+COPY --chown=app:app . .
+
+# Security: No secrets in image
+RUN bundle config set --local without 'development test' && \
+    bundle install --jobs 4 --retry 3
+
+# Security: Run as non-root
+USER app
+
+# Security: Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Security: Minimal exposure
+EXPOSE 3000
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+```
+
+### Kubernetes Security
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vulcan
+spec:
+  template:
+    spec:
+      # Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        
+      containers:
+      - name: vulcan
+        image: mitre/vulcan:latest
+        
+        # Security Settings
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        
+        # Resource Limits
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+        
+        # Liveness/Readiness
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vulcan-netpol
+spec:
+  podSelector:
+    matchLabels:
+      app: vulcan
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: nginx
+    ports:
+    - port: 3000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - port: 5432
+```
+
+## Monitoring & Incident Response
+
+### Security Metrics Dashboard
+
+Monitor these key security indicators:
+
+| Metric | Threshold | Alert Level | Response |
+|--------|-----------|-------------|----------|
+| Failed login attempts | >5 in 15 min | High | Lock account, investigate |
+| Privilege escalation attempts | Any | Critical | Immediate investigation |
+| Mass data export | >1000 records | Medium | Review and validate |
+| Configuration changes | Any | Low | Log and review daily |
+| New admin accounts | Any | High | Verify authorization |
+| Unusual access patterns | Deviation >3σ | Medium | Investigate anomaly |
+
+### Incident Response Playbook
+
+#### 1. Detection & Analysis
 ```bash
-# Syslog forwarding
-*.* @@siem.example.com:514
+# Check recent authentication failures
+grep "authentication_failed" /var/log/vulcan/production.log | tail -100
 
-# Or use log shipper (Filebeat, Fluentd, etc.)
+# Review admin actions
+grep "admin_action" /var/log/vulcan/audit.log | tail -50
+
+# Check for data exfiltration
+grep "export\|download" /var/log/vulcan/access.log | awk '{print $1}' | sort | uniq -c
 ```
 
-## Incident Response
+#### 2. Containment
+```bash
+# Disable compromised account
+rails console
+User.find_by(email: 'compromised@example.com').lock_access!
 
-### Security Event Procedures
+# Block IP address
+iptables -A INPUT -s <malicious_ip> -j DROP
 
-1. **Detection**: Monitor logs for anomalous activity
-2. **Containment**: Disable affected accounts
-3. **Investigation**: Review audit logs for scope
-4. **Remediation**: Apply fixes, rotate credentials
-5. **Recovery**: Restore normal operations
-6. **Lessons Learned**: Update procedures
+# Revoke all sessions
+Rails.cache.clear
+```
 
-### Contact Information
+#### 3. Eradication & Recovery
+- Reset affected passwords
+- Review and revoke API keys
+- Patch identified vulnerabilities
+- Restore from clean backups if needed
 
-- Security Team: saf-security@mitre.org
-- General Support: saf@mitre.org
-- GitHub Issues: https://github.com/mitre/vulcan/issues
+#### 4. Post-Incident
+- Document timeline and actions
+- Update security controls
+- Conduct lessons learned session
+- Update incident response procedures
 
-## Compliance Documentation
+## Compliance Validation
 
-### Required Records
+### Automated Compliance Checks
 
-Maintain these records for compliance:
-- User access reviews (quarterly)
-- Audit log reviews (monthly)
-- Security incident reports
-- Configuration change logs
-- Vulnerability scan results
+```ruby
+# spec/compliance/nist_spec.rb
+require 'rails_helper'
 
-### Audit Support
+RSpec.describe "NIST SP 800-53 Compliance" do
+  describe "AC-12: Session Termination" do
+    it "enforces session timeout" do
+      expect(Settings.session_timeout).to be <= 10.minutes
+    end
+    
+    it "provides logout capability" do
+      expect(page).to have_button("Log Out")
+    end
+  end
+  
+  describe "AU-03: Audit Content" do
+    it "logs required event attributes" do
+      log_entry = JSON.parse(File.read('/var/log/vulcan/audit.log').last)
+      expect(log_entry).to include("timestamp", "user_id", "action", "result")
+    end
+  end
+end
+```
 
-For compliance audits, provide:
-- This security control documentation
-- Current configuration settings
-- Sample audit logs
-- User access lists
-- Security incident history
+### Manual Validation Checklist
 
-## Updates and Maintenance
+**Quarterly Reviews:**
+- [ ] User access review
+- [ ] Privileged account audit
+- [ ] Log retention verification
+- [ ] Certificate expiration check
+- [ ] Security patch status
 
-This document is maintained as part of the Vulcan project. Updates are made when:
-- New security controls are implemented
-- Security vulnerabilities are addressed
-- Compliance requirements change
-- Best practices evolve
+**Annual Requirements:**
+- [ ] Penetration testing
+- [ ] Security control assessment
+- [ ] Disaster recovery test
+- [ ] Security awareness training
+- [ ] Policy and procedure review
 
-Last Updated: October 11, 2024
-Version: 2.2.1
+## Known Limitations & Roadmap
+
+### Current Limitations
+
+| Control | Gap | Workaround | Target Resolution |
+|---------|-----|------------|-------------------|
+| AC-10 | No session limits per user | Monitor via SIEM | Q1 2025 (Issue #634) |
+| AC-12(02) | No logout confirmation | Check audit logs | Q1 2025 (Issue #635) |
+| AU-05 | No built-in log overflow handling | External log rotation | Use log management system |
+
+### Security Roadmap
+
+**Q4 2024:**
+- ✅ OIDC auto-discovery
+- ✅ Enhanced audit logging
+- ✅ Container security hardening
+
+**Q1 2025:**
+- ⏳ Session limits per user
+- ⏳ Logout confirmation
+- ⏳ FIPS 140-2 cryptography mode
+- ⏳ Built-in MFA for local accounts
+
+**Q2 2025:**
+- 📋 Zero Trust architecture support
+- 📋 Enhanced RBAC with custom roles
+- 📋 Automated compliance reporting
+
+## Configuration Verification & Cross-References
+
+### Source Code Validation
+
+This table provides direct links to the Vulcan source code that implements each security control:
+
+| Control Category | Feature | Implementation Location | Status |
+|-----------------|---------|------------------------|--------|
+| **Session Management** | Session Timeout | [`config/vulcan.default.yml:29`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L29)<br>[`config/initializers/devise.rb:161`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb#L161) | ✅ Implemented<br>⚠️ Note: Defaults to 60 min, set to 10 min for compliance |
+| **System Banner** | Welcome Text | [`config/vulcan.default.yml:11`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L11)<br>[`app/views/devise/shared/_what_is_vulcan.html.haml:4`](https://github.com/mitre/vulcan/blob/master/app/views/devise/shared/_what_is_vulcan.html.haml#L4) | ✅ Implemented |
+| **Audit Logging** | User Auditing | [`app/models/user.rb:8`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb#L8) | ✅ Implemented |
+| **Audit Logging** | Component Auditing | [`app/models/component.rb:42`](https://github.com/mitre/vulcan/blob/master/app/models/component.rb#L42) | ✅ Implemented |
+| **OIDC** | Auto-Discovery | [`config/initializers/oidc_startup_validation.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/oidc_startup_validation.rb) | ✅ Implemented |
+| **LDAP** | Configuration | [`config/vulcan.default.yml:35-44`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L35) | ✅ Implemented |
+| **Authorization** | RBAC | [`app/controllers/application_controller.rb:16-22`](https://github.com/mitre/vulcan/blob/master/app/controllers/application_controller.rb#L16) | ✅ Implemented |
+| **Session Limits** | Per-User Limits | [Issue #634](https://github.com/mitre/vulcan/issues/634) | 🚧 In Development |
+| **Logout Message** | Confirmation | [Issue #635](https://github.com/mitre/vulcan/issues/635) | 🚧 In Development |
+| **Session Timeout Default** | 10 min default | [Issue #685](https://github.com/mitre/vulcan/issues/685) | 📋 Planned |
+| **CSRF Documentation** | Explicit validation | [Issue #686](https://github.com/mitre/vulcan/issues/686) | 📋 Planned |
+
+### Configuration Clarifications
+
+Based on source code analysis, the following clarifications apply:
+
+| Configuration | Documentation States | Actual Implementation | Action Required |
+|--------------|---------------------|----------------------|-----------------|
+| **Session Timeout** | 10 minutes required | Defaults to 60 minutes | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` |
+| **Admin Timeout** | Separate timeout | Uses same timeout | ℹ️ No separate admin timeout available |
+| **CSRF Protection** | Enabled | Rails default (enabled) | ✅ No action needed |
+| **Strong Parameters** | Required | Rails default (enabled) | ✅ No action needed |
+| **Log Rotation** | External required | Logs to stdout | ⚠️ **Must configure** log management system |
+
+### Implementation Roadmap
+
+The following improvements are tracked as GitHub issues:
+
+| Priority | Issue | Description | Target |
+|----------|-------|-------------|--------|
+| **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | v2.3.0 |
+| **High** | [#635](https://github.com/mitre/vulcan/issues/635) | Add logout confirmation message | v2.3.0 |
+| **Medium** | [#634](https://github.com/mitre/vulcan/issues/634) | Implement per-user session limits | v2.3.0 |
+| **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v2.3.0 |
+
+These improvements will be addressed as part of the Vue 3 migration and Turbolinks removal work in v2.3.0.
+
+## Resources & Support
+
+### Documentation
+- [NIST SP 800-53 Rev 5](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final)
+- [Application Security & Development STIG](https://public.cyber.mil/stigs/)
+- [Vulcan Security Updates](https://github.com/mitre/vulcan/security)
+
+### Support Contacts
+- **Security Issues:** saf-security@mitre.org
+- **General Support:** saf@mitre.org
+- **GitHub Issues:** https://github.com/mitre/vulcan/issues
+
+### Compliance Artifacts
+Available in `/docs/compliance/`:
+- Security Control Matrix (Excel)
+- POAM Template
+- Risk Assessment Template
+- Incident Response Plan Template
+- Configuration Baseline
+
+---
+
+**Document Version:** 2.3.0  
+**Last Updated:** December 2024  
+**Classification:** UNCLASSIFIED  
+**Distribution:** Public Release
+
+*This document is maintained as part of the Vulcan project and updated with each security-relevant release.*
