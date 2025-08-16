@@ -142,7 +142,8 @@ export default {
       try {
         return semver.gt(latest, current);
       } catch (error) {
-        console.error("Error comparing versions:", error);
+        // Silently handle version comparison errors - likely malformed version strings
+        // In this case, don't show the update banner
         return false;
       }
     },
