@@ -34,31 +34,27 @@ export VULCAN_LDAP_BASE="dc=example,dc=com"
 
 ### Defense in Depth Strategy
 
-```
-┌─────────────────────────────────────────┐
-│         External Users                   │
-└─────────────┬───────────────────────────┘
-              │ HTTPS/TLS 1.2+
-┌─────────────▼───────────────────────────┐
-│     Load Balancer / Reverse Proxy       │
-│     • TLS Termination                   │
-│     • DDoS Protection                   │
-│     • Rate Limiting                     │
-└─────────────┬───────────────────────────┘
-              │ Private Network
-┌─────────────▼───────────────────────────┐
-│        Application Tier (Vulcan)        │
-│     • RBAC Authorization               │
-│     • Session Management               │
-│     • Input Validation                 │
-└─────────────┬───────────────────────────┘
-              │ Encrypted Connection
-┌─────────────▼───────────────────────────┐
-│         Database Tier (PostgreSQL)      │
-│     • Encrypted at Rest                │
-│     • Audit Logging                    │
-│     • Limited Permissions              │
-└─────────────────────────────────────────┘
+```mermaid
+graph TD
+    Users[External Users] -->|HTTPS/TLS 1.2+| LB[Load Balancer / Reverse Proxy]
+    
+    LB -->|Private Network| App[Application Tier - Vulcan]
+    App -->|Encrypted Connection| DB[(Database Tier - PostgreSQL)]
+    
+    LB:::security
+    App:::application
+    DB:::database
+    
+    LB -.- LB_Features[• TLS Termination<br/>• DDoS Protection<br/>• Rate Limiting]
+    App -.- App_Features[• RBAC Authorization<br/>• Session Management<br/>• Input Validation]
+    DB -.- DB_Features[• Encrypted at Rest<br/>• Audit Logging<br/>• Limited Permissions]
+    
+    classDef security fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    classDef application fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    classDef database fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    classDef features fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px,stroke-dasharray: 5 5
+    
+    class LB_Features,App_Features,DB_Features features
 ```
 
 ## Control Implementation Details

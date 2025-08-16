@@ -2,8 +2,15 @@ module.exports = {
   env: {
     browser: true,
     es6: true,
+    node: true,
   },
   extends: ["plugin:vue/recommended", "prettier", "plugin:prettier/recommended"],
+  ignorePatterns: [
+    "docs/.vitepress/cache/**",
+    "docs/.vitepress/dist/**",
+    "node_modules/**",
+    "app/assets/builds/**"
+  ],
   rules: {
     "max-len": "off",
     "no-console": "warn",

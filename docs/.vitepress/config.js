@@ -1,10 +1,10 @@
-import { defineConfig } from 'vitepress'
+import { defineConfig } from "vitepress";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: 'Vulcan',
-  description: 'Security Technical Implementation Guide (STIG) creation and validation platform',
-  base: '/vulcan/',
+  title: "Vulcan",
+  description: "Security Technical Implementation Guide (STIG) creation and validation platform",
+  base: "/vulcan/",
 
   // Clean URLs without .html extension
   cleanUrls: true,
@@ -14,223 +14,223 @@ export default defineConfig({
 
   // Head tags
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
-    ['meta', { name: 'theme-color', content: '#3eaf7c' }],
+    ["link", { rel: "icon", href: "/favicon.ico" }],
+    ["meta", { name: "theme-color", content: "#3eaf7c" }],
   ],
 
   // Theme configuration
   themeConfig: {
     // Logo in nav bar
-    logo: '/logo.png',
+    logo: "/logo.png",
 
     // Navigation bar
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Getting Started', link: '/getting-started/quick-start' },
-      { text: 'User Guide', link: 'https://mitre.github.io/saf-training/courses/guidance/' },
+      { text: "Home", link: "/" },
+      { text: "Getting Started", link: "/getting-started/quick-start" },
+      { text: "User Guide", link: "https://mitre.github.io/saf-training/courses/guidance/" },
       {
-        text: 'Deployment',
+        text: "Deployment",
         items: [
-          { text: 'Docker', link: '/deployment/docker' },
-          { text: 'Kubernetes', link: '/deployment/kubernetes' },
-          { text: 'Heroku', link: '/deployment/heroku' },
-          { text: 'Bare Metal', link: '/deployment/bare-metal' }
-        ]
+          { text: "Docker", link: "/deployment/docker" },
+          { text: "Kubernetes", link: "/deployment/kubernetes" },
+          { text: "Heroku", link: "/deployment/heroku" },
+          { text: "Bare Metal", link: "/deployment/bare-metal" },
+        ],
       },
       {
-        text: 'Authentication',
+        text: "Authentication",
         items: [
-          { text: 'OIDC/OKTA', link: '/deployment/auth/oidc-okta' },
-          { text: 'LDAP', link: '/deployment/auth/ldap' },
-          { text: 'GitHub OAuth', link: '/deployment/auth/github' }
-        ]
+          { text: "OIDC/OKTA", link: "/deployment/auth/oidc-okta" },
+          { text: "LDAP", link: "/deployment/auth/ldap" },
+          { text: "GitHub OAuth", link: "/deployment/auth/github" },
+        ],
       },
       {
-        text: 'Development',
+        text: "Development",
         items: [
-          { text: 'Setup', link: '/development/setup' },
-          { text: 'Architecture', link: '/development/architecture' },
-          { text: 'Testing', link: '/development/testing' },
-          { text: 'Release Process', link: '/development/release-process' },
-          { text: 'Contributing', link: '/CONTRIBUTING.md' }
-        ]
+          { text: "Setup", link: "/development/setup" },
+          { text: "Architecture", link: "/development/architecture" },
+          { text: "Testing", link: "/development/testing" },
+          { text: "Release Process", link: "/development/release-process" },
+          { text: "Contributing", link: "/CONTRIBUTING.md" },
+        ],
       },
       {
-        text: 'API',
+        text: "API",
         items: [
-          { text: 'Overview', link: '/api/overview' },
-          { text: 'Authentication', link: '/api/authentication' },
-          { text: 'Endpoints', link: '/api/endpoints' }
-        ]
+          { text: "Overview", link: "/api/overview" },
+          { text: "Authentication", link: "/api/authentication" },
+          { text: "Endpoints", link: "/api/endpoints" },
+        ],
       },
       {
-        text: 'Security',
+        text: "Security",
         items: [
-          { text: 'Security Policy', link: '/SECURITY.md' },
-          { text: 'Compliance Guide', link: '/security/compliance' },
-          { text: 'ASD SRG Responses', link: '/security/security-controls' }
-        ]
+          { text: "Security Policy", link: "/SECURITY.md" },
+          { text: "Compliance Guide", link: "/security/compliance" },
+          { text: "ASD SRG Responses", link: "/security/security-controls" },
+        ],
       },
       {
-        text: 'Project',
+        text: "Project",
         items: [
-          { text: 'About', link: '/README.md' },
-          { text: 'Changelog', link: '/CHANGELOG.md' },
-          { text: 'Roadmap', link: '/ROADMAP.md' },
-          { text: 'License', link: '/LICENSE.md' },
-          { text: 'Notice', link: '/NOTICE.md' },
-          { text: 'Security Policy', link: '/SECURITY.md' },
-          { text: 'Code of Conduct', link: '/CODE_OF_CONDUCT.md' }
-        ]
+          { text: "About", link: "/README.md" },
+          { text: "Changelog", link: "/CHANGELOG.md" },
+          { text: "Roadmap", link: "/ROADMAP.md" },
+          { text: "License", link: "/LICENSE.md" },
+          { text: "Notice", link: "/NOTICE.md" },
+          { text: "Security Policy", link: "/SECURITY.md" },
+          { text: "Code of Conduct", link: "/CODE_OF_CONDUCT.md" },
+        ],
       },
       {
-        text: 'v2.2.1',
+        text: "v2.2.1",
         items: [
-          { text: 'Release Notes', link: '/release-notes/v2.2.1' },
-          { text: 'v2.2.0', link: '/release-notes/v2.2.0' },
-          { text: 'All Releases', link: '/release-notes/' }
-        ]
-      }
+          { text: "Release Notes", link: "/release-notes/v2.2.1" },
+          { text: "v2.2.0", link: "/release-notes/v2.2.0" },
+          { text: "All Releases", link: "/release-notes/" },
+        ],
+      },
     ],
 
     // Sidebar navigation
     sidebar: {
-      '/getting-started/': [
+      "/getting-started/": [
         {
-          text: 'Getting Started',
+          text: "Getting Started",
           items: [
-            { text: 'Quick Start', link: '/getting-started/quick-start' },
-            { text: 'Installation', link: '/getting-started/installation' },
-            { text: 'Configuration', link: '/getting-started/configuration' },
-            { text: 'Environment Variables', link: '/getting-started/environment-variables' }
-          ]
-        }
+            { text: "Quick Start", link: "/getting-started/quick-start" },
+            { text: "Installation", link: "/getting-started/installation" },
+            { text: "Configuration", link: "/getting-started/configuration" },
+            { text: "Environment Variables", link: "/getting-started/environment-variables" },
+          ],
+        },
       ],
-      '/deployment/': [
+      "/deployment/": [
         {
-          text: 'Deployment Options',
+          text: "Deployment Options",
           items: [
-            { text: 'Docker', link: '/deployment/docker' },
-            { text: 'Bare Metal', link: '/deployment/bare-metal' },
-            { text: 'Heroku', link: '/deployment/heroku' },
-            { text: 'Kubernetes', link: '/deployment/kubernetes' }
-          ]
+            { text: "Docker", link: "/deployment/docker" },
+            { text: "Bare Metal", link: "/deployment/bare-metal" },
+            { text: "Heroku", link: "/deployment/heroku" },
+            { text: "Kubernetes", link: "/deployment/kubernetes" },
+          ],
         },
         {
-          text: 'Authentication Setup',
+          text: "Authentication Setup",
           items: [
-            { text: 'OIDC/OKTA', link: '/deployment/auth/oidc-okta' },
-            { text: 'LDAP', link: '/deployment/auth/ldap' },
-            { text: 'GitHub OAuth', link: '/deployment/auth/github' }
-          ]
-        }
+            { text: "OIDC/OKTA", link: "/deployment/auth/oidc-okta" },
+            { text: "LDAP", link: "/deployment/auth/ldap" },
+            { text: "GitHub OAuth", link: "/deployment/auth/github" },
+          ],
+        },
       ],
-      '/development/': [
+      "/development/": [
         {
-          text: 'Development',
+          text: "Development",
           items: [
-            { text: 'Development Setup', link: '/development/setup' },
-            { text: 'Architecture', link: '/development/architecture' },
-            { text: 'Testing', link: '/development/testing' },
-            { text: 'Release Process', link: '/development/release-process' },
-            { text: 'Vue 3 Migration', link: '/development/vue3-migration' }
-          ]
+            { text: "Development Setup", link: "/development/setup" },
+            { text: "Architecture", link: "/development/architecture" },
+            { text: "Testing", link: "/development/testing" },
+            { text: "Release Process", link: "/development/release-process" },
+            { text: "Vue 3 Migration", link: "/development/vue3-migration" },
+          ],
         },
         {
-          text: 'Contributing',
+          text: "Contributing",
           items: [
-            { text: 'Contributing Guide', link: '/CONTRIBUTING.md' },
-            { text: 'Code of Conduct', link: '/CODE_OF_CONDUCT.md' }
-          ]
-        }
+            { text: "Contributing Guide", link: "/CONTRIBUTING.md" },
+            { text: "Code of Conduct", link: "/CODE_OF_CONDUCT.md" },
+          ],
+        },
       ],
-      '/api/': [
+      "/api/": [
         {
-          text: 'API Reference',
+          text: "API Reference",
           items: [
-            { text: 'Overview', link: '/api/overview' },
-            { text: 'Authentication', link: '/api/authentication' },
-            { text: 'Endpoints', link: '/api/endpoints' }
-          ]
-        }
+            { text: "Overview", link: "/api/overview" },
+            { text: "Authentication", link: "/api/authentication" },
+            { text: "Endpoints", link: "/api/endpoints" },
+          ],
+        },
       ],
-      '/security/': [
+      "/security/": [
         {
-          text: 'Security',
+          text: "Security",
           items: [
-            { text: 'Security Policy', link: '/SECURITY.md' },
-            { text: 'Compliance Guide', link: '/security/compliance' },
-            { text: 'ASD SRG Responses', link: '/security/security-controls' }
-          ]
-        }
+            { text: "Security Policy", link: "/SECURITY.md" },
+            { text: "Compliance Guide", link: "/security/compliance" },
+            { text: "ASD SRG Responses", link: "/security/security-controls" },
+          ],
+        },
       ],
-      '/': [
+      "/": [
         {
-          text: 'Overview',
+          text: "Overview",
           items: [
-            { text: 'About Vulcan', link: '/README.md' },
-            { text: 'Quick Start', link: '/getting-started/quick-start' }
-          ]
+            { text: "About Vulcan", link: "/README.md" },
+            { text: "Quick Start", link: "/getting-started/quick-start" },
+          ],
         },
         {
-          text: 'Documentation',
+          text: "Documentation",
           items: [
-            { text: 'Getting Started', link: '/getting-started/quick-start' },
-            { text: 'Deployment', link: '/deployment/docker' },
-            { text: 'Development', link: '/development/setup' },
-            { text: 'API Reference', link: '/api/overview' },
-            { text: 'Security', link: '/security/compliance' }
-          ]
+            { text: "Getting Started", link: "/getting-started/quick-start" },
+            { text: "Deployment", link: "/deployment/docker" },
+            { text: "Development", link: "/development/setup" },
+            { text: "API Reference", link: "/api/overview" },
+            { text: "Security", link: "/security/compliance" },
+          ],
         },
         {
-          text: 'Project Info',
+          text: "Project Info",
           items: [
-            { text: 'README', link: '/README.md' },
-            { text: 'Changelog', link: '/CHANGELOG.md' },
-            { text: 'Roadmap', link: '/ROADMAP.md' },
-            { text: 'License', link: '/LICENSE.md' },
-            { text: 'Notice', link: '/NOTICE.md' },
-            { text: 'Contributing', link: '/CONTRIBUTING.md' },
-            { text: 'Security Policy', link: '/SECURITY.md' }
-          ]
-        }
-      ]
+            { text: "README", link: "/README.md" },
+            { text: "Changelog", link: "/CHANGELOG.md" },
+            { text: "Roadmap", link: "/ROADMAP.md" },
+            { text: "License", link: "/LICENSE.md" },
+            { text: "Notice", link: "/NOTICE.md" },
+            { text: "Contributing", link: "/CONTRIBUTING.md" },
+            { text: "Security Policy", link: "/SECURITY.md" },
+          ],
+        },
+      ],
     },
 
     // Social links
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/mitre/vulcan' },
-      { icon: 'docker', link: 'https://hub.docker.com/r/mitre/vulcan' }
+      { icon: "github", link: "https://github.com/mitre/vulcan" },
+      { icon: "docker", link: "https://hub.docker.com/r/mitre/vulcan" },
     ],
 
     // Search
     search: {
-      provider: 'local'
+      provider: "local",
     },
 
     // Edit link
     editLink: {
-      pattern: 'https://github.com/mitre/vulcan/edit/master/docs/:path',
-      text: 'Edit this page on GitHub'
+      pattern: "https://github.com/mitre/vulcan/edit/master/docs/:path",
+      text: "Edit this page on GitHub",
     },
 
     // Footer
     footer: {
-      message: 'Part of the MITRE Security Automation Framework (SAF)',
-      copyright: 'Copyright © 2025 MITRE Corporation'
+      message: "Part of the MITRE Security Automation Framework (SAF)",
+      copyright: "Copyright © 2025 MITRE Corporation",
     },
 
     // Page navigation
     docFooter: {
-      prev: 'Previous',
-      next: 'Next'
+      prev: "Previous",
+      next: "Next",
     },
 
     // Outline
     outline: {
       level: [2, 3],
-      label: 'On this page'
-    }
+      label: "On this page",
+    },
   },
 
   // Markdown configuration
@@ -240,16 +240,29 @@ export default defineConfig({
 
     // Custom containers
     container: {
-      tipLabel: 'TIP',
-      warningLabel: 'WARNING',
-      dangerLabel: 'DANGER',
-      infoLabel: 'INFO',
-      detailsLabel: 'Details'
-    }
+      tipLabel: "TIP",
+      warningLabel: "WARNING",
+      dangerLabel: "DANGER",
+      infoLabel: "INFO",
+      detailsLabel: "Details",
+    },
+
+    // Custom markdown-it configuration for Mermaid
+    config: (md) => {
+      const fence = md.renderer.rules.fence;
+      md.renderer.rules.fence = (tokens, idx, options, env, renderer) => {
+        const token = tokens[idx];
+        if (token.info === "mermaid") {
+          const code = token.content.trim();
+          return `<Mermaid :graph="\`${code.replace(/`/g, "\\`")}\`" />`;
+        }
+        return fence(tokens, idx, options, env, renderer);
+      };
+    },
   },
 
   // Build configuration
   vite: {
     // Vite options
-  }
-})
+  },
+});

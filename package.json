@@ -36,9 +36,11 @@
     "eslint-plugin-prettier": "5.2.1",
     "eslint-plugin-prettier-vue": "^3.1.0",
     "eslint-plugin-vue": "^9.6.0",
+    "mermaid": "^11.9.0",
     "prettier": "3.6.2",
     "sass": "^1.85.1",
-    "vitepress": "2.0.0-alpha.11"
+    "vitepress": "2.0.0-alpha.11",
+    "vitepress-plugin-mermaid": "^2.0.17"
   },
   "scripts": {
     "lint": "eslint --fix --ext .js,.vue app/javascript",
