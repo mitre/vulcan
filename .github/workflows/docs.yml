@@ -42,6 +42,8 @@ jobs:
         run: yarn install
 
       - name: Build with VitePress
+        # Note: May fail due to Vue 2/3 conflict until main app migrates to Vue 3
+        # Dev server works fine: yarn docs:dev
         run: yarn docs:build
 
       - name: Upload artifact
