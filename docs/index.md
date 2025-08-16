@@ -42,21 +42,25 @@ features:
 
 ## Quick Start
 
-Get Vulcan running in minutes with Docker:
+### Quick Test with Docker
 
 ```bash
 docker pull mitre/vulcan:latest
 docker run -p 3000:3000 mitre/vulcan:latest
 ```
 
-Or use our complete docker-compose setup:
+### Full Setup with Docker Compose
 
 ```bash
-wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
-wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
-chmod +x setup-docker-secrets.sh
-./setup-docker-secrets.sh
-docker-compose up
+# Clone the repository
+git clone https://github.com/mitre/vulcan.git
+cd vulcan
+
+# Generate secure configuration
+./.github/setup-docker-secrets.sh
+
+# Start the application stack
+docker-compose -f .github/docker-compose.yml up
 ```
 
 ## Latest Release

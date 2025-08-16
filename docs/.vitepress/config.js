@@ -27,23 +27,34 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Getting Started', link: '/getting-started/quick-start' },
-      { text: 'User Guide', link: '/user-guide/overview' },
+      { text: 'User Guide', link: 'https://mitre.github.io/saf-training/courses/guidance/' },
+      {
+        text: 'Deployment',
+        items: [
+          { text: 'Docker', link: '/deployment/docker' },
+          { text: 'Kubernetes', link: '/deployment/kubernetes' },
+          { text: 'Heroku', link: '/deployment/heroku' },
+          { text: 'Bare Metal', link: '/deployment/bare-metal' },
+          { text: 'Authentication Setup', link: '/deployment/auth/overview' }
+        ]
+      },
       {
         text: 'Development',
         items: [
           { text: 'Setup', link: '/development/setup' },
           { text: 'Architecture', link: '/development/architecture' },
           { text: 'Testing', link: '/development/testing' },
-          { text: 'Contributing', link: '/CONTRIBUTING' }
+          { text: 'Contributing', link: '/CONTRIBUTING.md' }
         ]
       },
       { text: 'API', link: '/api/overview' },
       {
         text: 'v2.2.1',
         items: [
-          { text: 'Changelog', link: '/CHANGELOG' },
           { text: 'Release Notes', link: '/release-notes/v2.2.1' },
-          { text: 'v2.2.0', link: '/release-notes/v2.2.0' }
+          { text: 'All Releases', link: '/release-notes/' },
+          { text: 'Changelog', link: '/CHANGELOG.md' },
+          { text: 'Roadmap', link: '/ROADMAP.md' }
         ]
       }
     ],
@@ -94,8 +105,8 @@ export default defineConfig({
         {
           text: 'Contributing',
           items: [
-            { text: 'Contributing Guide', link: '/CONTRIBUTING' },
-            { text: 'Code of Conduct', link: '/CODE_OF_CONDUCT' }
+            { text: 'Contributing Guide', link: '/CONTRIBUTING.md' },
+            { text: 'Code of Conduct', link: '/CODE_OF_CONDUCT.md' }
           ]
         }
       ],
@@ -113,7 +124,7 @@ export default defineConfig({
         {
           text: 'Security',
           items: [
-            { text: 'Security Policy', link: '/SECURITY' },
+            { text: 'Security Policy', link: '/SECURITY.md' },
             { text: 'Compliance & Controls', link: '/security/compliance' },
             { text: 'Security Controls', link: '/security/security-controls' },
             { text: 'Data Encryption', link: '/security/data-encryption' }
@@ -124,28 +135,29 @@ export default defineConfig({
         {
           text: 'Overview',
           items: [
-            { text: 'About Vulcan', link: '/about' },
-            { text: 'Quick Start', link: '/getting-started/quick-start' },
-            { text: 'User Guide', link: '/user-guide/overview' }
+            { text: 'About Vulcan', link: '/README' },
+            { text: 'Quick Start', link: '/getting-started/quick-start' }
           ]
         },
         {
-          text: 'Deployment',
-          collapsed: true,
+          text: 'Documentation',
           items: [
-            { text: 'Docker', link: '/deployment/docker' },
-            { text: 'Kubernetes', link: '/deployment/kubernetes' },
-            { text: 'Heroku', link: '/deployment/heroku' },
-            { text: 'Bare Metal', link: '/deployment/bare-metal' }
+            { text: 'Getting Started', link: '/getting-started/quick-start' },
+            { text: 'Deployment', link: '/deployment/docker' },
+            { text: 'Development', link: '/development/setup' },
+            { text: 'API Reference', link: '/api/overview' },
+            { text: 'Security', link: '/security/compliance' }
           ]
         },
         {
           text: 'Project Info',
           items: [
-            { text: 'Changelog', link: '/CHANGELOG' },
-            { text: 'Roadmap', link: '/ROADMAP' },
-            { text: 'License', link: '/LICENSE' },
-            { text: 'Notice', link: '/NOTICE' }
+            { text: 'Changelog', link: '/CHANGELOG.md' },
+            { text: 'Roadmap', link: '/ROADMAP.md' },
+            { text: 'License', link: '/LICENSE.md' },
+            { text: 'Notice', link: '/NOTICE.md' },
+            { text: 'Contributing', link: '/CONTRIBUTING.md' },
+            { text: 'Security Policy', link: '/SECURITY.md' }
           ]
         }
       ]
