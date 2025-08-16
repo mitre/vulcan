@@ -129,15 +129,20 @@ export default {
       }
     },
     checkFormFields: function () {
-      return {
-        displayed: [
-          // "system",
-          // "content_ref_name",
-          // "content_ref_href",
-          "content",
-        ],
-        disabled: [],
-      };
+      // Only show check fields for 'Applicable - Configurable' status
+      if (this.rule.status == "Applicable - Configurable") {
+        return {
+          displayed: [
+            // "system",
+            // "content_ref_name",
+            // "content_ref_href",
+            "content",
+          ],
+          disabled: [],
+        };
+      }
+      // For all other statuses, don't show check fields
+      return { displayed: [], disabled: [] };
     },
   },
 };
