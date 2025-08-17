@@ -8,14 +8,14 @@
 3. **CHECK MCP**: `mcp__server-memory__open_nodes` with names: `["Vulcan Rails 7 Upgrade", "Vulcan Bugs to Fix Post-Rails7"]`
 
 ## Current Status
-- **Branch**: `upgrade-rails7-ruby33`
+- **Branch**: `upgrade-rails7-ruby33` 
 - **PR**: #680 - https://github.com/mitre/vulcan/pull/680
 - **CI Status**: ✅ Tests passing (197/198, 1 skipped)
 - **SonarCloud**: ❌ Failing due to `curl -k` in Dockerfile
 
 ## Completed Upgrades
 - Rails 6.1.4 → 7.0.8.7 ✅
-- Ruby 2.7.5 → 3.3.9 ✅
+- Ruby 2.7.5 → 3.3.9 ✅  
 - Node 16 → 22 LTS ✅
 - Webpacker → jsbundling-rails + esbuild ✅
 - All 84 MDI icons → Bootstrap Icons ✅

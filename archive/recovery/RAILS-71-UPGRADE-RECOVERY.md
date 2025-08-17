@@ -2,13 +2,13 @@
 
 ## CRITICAL - Read These First
 1. **ALWAYS READ**: `/Users/alippold/.claude/CLAUDE.md` - User's strict preferences
-   - NO Claude signatures in commits
+   - NO Claude signatures in commits  
    - Always use: `Authored by: Aaron Lippold<lippold@gmail.com>`
    - Test BEFORE committing
    - Find root causes, don't work around problems
    - User wants direct communication about actions
 
-2. **CHECK MCP MEMORY**:
+2. **CHECK MCP MEMORY**: 
 ```
 mcp__server-memory__open_nodes with names:
 ["Rails 7.1 Upgrade Session", "Vulcan Technical Learnings", "Vulcan Post-Merge Issues"]
@@ -32,7 +32,7 @@ mcp__server-memory__open_nodes with names:
 ### All test failures have been fixed:
 1. **Mail Delivery Tests** - FIXED
    - Added Settings mock to update user test context
-
+   
 2. **OIDC Cache Tests** - FIXED
    - Changed test environment cache_store from :null_store to :memory_store
    - Enabled perform_caching in test environment
@@ -55,8 +55,8 @@ bundle exec rspec --format progress
 1. Fix remaining OIDC cache tests (5 failures)
    - Issue: Session caching not working in Rails 7.1
    - Files: spec/controllers/sessions_controller_spec.rb
-
-2. Fix last mail delivery test
+   
+2. Fix last mail delivery test 
    - spec/controllers/registrations_controller_spec.rb:135
    - Need to add Settings mock for update action
 

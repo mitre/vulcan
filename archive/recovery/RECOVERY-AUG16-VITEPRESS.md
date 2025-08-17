@@ -1,7 +1,7 @@
 # Recovery Context - August 16, 2025 - VitePress Documentation Migration
 
 ## 🔴 CRITICAL - READ FIRST
-**MUST READ THESE FILES**:
+**MUST READ THESE FILES**: 
 1. `/Users/alippold/.claude/CLAUDE.md` - Global Claude settings (NEVER use git add -A)
 2. `/Users/alippold/github/mitre/vulcan/CLAUDE.md` - Project-specific settings
 3. This recovery file for current context
@@ -111,7 +111,7 @@ git status
 ## 🔍 MCP MEMORY KEYS
 ```ruby
 mcp__server-memory__open_nodes with names:
-["Vulcan Technical Learnings", "Next Steps Vulcan",
+["Vulcan Technical Learnings", "Next Steps Vulcan", 
  "VitePress Documentation"]
 ```
 

@@ -7,7 +7,7 @@ This file documented the migration from Webpacker to jsbundling-rails that was c
 ## Migration Summary
 
 All Webpacker pack tags have been successfully replaced:
-- `javascript_pack_tag` → `javascript_include_tag`
+- `javascript_pack_tag` → `javascript_include_tag` 
 - `stylesheet_pack_tag` → `stylesheet_link_tag`
 - Webpacker removed from Gemfile
 - Assets now compiled with esbuild via jsbundling-rails

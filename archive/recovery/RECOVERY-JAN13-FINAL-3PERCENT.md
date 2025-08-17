@@ -6,14 +6,14 @@
 1. **MUST READ**: `/Users/alippold/.claude/CLAUDE.md` - NO Claude signatures in commits!
 2. **MUST READ**: `/Users/alippold/github/mitre/vulcan/CLAUDE.md` - Project context
 3. **CHECK MCP**: `mcp__server-memory__open_nodes` with names:
-   - "Vulcan Rails 7 Upgrade"
+   - "Vulcan Rails 7 Upgrade" 
    - "Vulcan Bugs to Fix Post-Rails7"
 4. **VERIFY**: On branch `upgrade-settingslogic-ruby31`
 
 ### 📍 CURRENT STATE
 ```bash
 pwd: /Users/alippold/github/mitre/vulcan
-branch: upgrade-settingslogic-ruby31
+branch: upgrade-settingslogic-ruby31  
 server: http://localhost:3000 (foreman start -f Procfile.dev)
 login: admin@example.com / 1234567ab!
 Ruby: 3.1.6
@@ -53,7 +53,7 @@ Tests: ALL 198 PASSING
     # Prevent concurrent requests using Rails.cache
     discovery_url = "#{normalized_issuer}/.well-known/openid-configuration"
     request_lock_key = "oidc_discovery:lock:#{normalized_issuer}"
-
+    
     # Check if a request is already in progress
     if Rails.cache.read(request_lock_key)
       log_oidc_discovery_event('concurrent_request_blocked', normalized_issuer, {
@@ -62,10 +62,10 @@ Tests: ALL 198 PASSING
                                })
       return nil
     end
-
+    
     # Mark request in progress with short TTL
     Rails.cache.write(request_lock_key, true, expires_in: 10.seconds)
-
+    
     begin
 ```
 
@@ -113,7 +113,7 @@ After fixing oidc_discovery_helper.rb, update these tests to check Rails.cache i
    - Prevents cookie overflow when discovery document exceeds 4KB
    - Uses Rails.cache for both document storage and request locking
    - Preserves all security and concurrent request prevention
-
+   
    Authored by: Aaron Lippold<lippold@gmail.com>"
    ```
 

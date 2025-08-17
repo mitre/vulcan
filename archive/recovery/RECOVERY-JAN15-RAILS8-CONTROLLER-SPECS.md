@@ -2,7 +2,7 @@
 
 ## 🔴 CRITICAL - READ FIRST
 **ALWAYS READ**: `/Users/alippold/.claude/CLAUDE.md` - User's STRICT preferences including:
-- **NEVER use `git add -A` or `git add .`** - ALWAYS add files individually
+- **NEVER use `git add -A` or `git add .`** - ALWAYS add files individually  
 - **WE DO NOT COMMIT BROKEN CODE EVER** - all tests and linting must pass
 - Git commits use: `Authored by: Aaron Lippold<lippold@gmail.com>` - NO Claude signatures
 - Find and fix ROOT CAUSES, never work around problems
@@ -19,7 +19,7 @@
 
 ### What Happened
 Rails 8 introduced **lazy route loading** via `Rails::Engine::LazyRouteSet` for performance. This fundamentally breaks controller specs when combined with:
-- Devise authentication
+- Devise authentication 
 - factory_bot 6
 - File uploads or complex parameters
 
@@ -72,7 +72,7 @@ ActionController::UrlGenerationError:
 
 All failing with `ActionController::UrlGenerationError`:
 - `spec/controllers/stigs_controller_spec.rb` (3 failures)
-- `spec/controllers/registrations_controller_spec.rb` (8 failures)
+- `spec/controllers/registrations_controller_spec.rb` (8 failures)  
 - `spec/controllers/sessions_controller_spec.rb` (4 failures)
 - `spec/controllers/project_access_requests_controller_spec.rb` (4 failures)
 
@@ -86,7 +86,7 @@ Controller specs are **effectively dead in Rails 8**. The Rails team's position:
    # OLD (broken in Rails 8)
    RSpec.describe StigsController, type: :controller do
      post :create, params: { file: file }
-
+   
    # NEW (Rails 8 compatible)
    RSpec.describe 'Stigs', type: :request do
      post '/stigs', params: { file: file }

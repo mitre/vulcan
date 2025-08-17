@@ -23,7 +23,7 @@
 
 ### 3. Dockerfile.production (Rails 7.2+ best practices)
 - **Size**: ~600MB
-- **Pros**:
+- **Pros**: 
   - Multi-stage build
   - Slim base image
   - jemalloc for 20-40% memory reduction

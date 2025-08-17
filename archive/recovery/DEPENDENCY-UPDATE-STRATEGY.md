@@ -21,7 +21,7 @@ These can be done safely on the current `security/dependency-updates-jan2025` br
 - `axios`: 1.6.8 → 1.11.0 (HTTP client, minor breaking changes to review)
 
 ## 🟡 Short-term Updates (Medium Risk - Separate PR)
-**Timeline**: Next 2-4 weeks
+**Timeline**: Next 2-4 weeks  
 **Branch**: `chore/q1-2025-dependency-updates`
 
 ### Ruby Gems
@@ -44,7 +44,7 @@ These can be done safely on the current `security/dependency-updates-jan2025` br
 ## 🔴 Long-term Updates (High Risk - Major Projects)
 
 ### Phase 1: Bootstrap 5 Migration (Q1 2025)
-**Branch**: `feature/bootstrap-5-migration`
+**Branch**: `feature/bootstrap-5-migration`  
 **Dependencies**:
 - `bootstrap`: 4.6.2 → 5.3.7
 - `bootstrap-vue`: INCOMPATIBLE - needs replacement
@@ -52,7 +52,7 @@ These can be done safely on the current `security/dependency-updates-jan2025` br
 - **Blocker for**: Many security vulnerabilities
 
 ### Phase 2: Vue 3 Migration (Q2 2025)
-**Branch**: `feature/vue-3-migration`
+**Branch**: `feature/vue-3-migration`  
 **Dependencies**:
 - `vue`: 2.7.16 → 3.5.18
 - `vue-loader`: 15.x → 17.x
@@ -61,7 +61,7 @@ These can be done safely on the current `security/dependency-updates-jan2025` br
 - **Blocker for**: Most remaining vulnerabilities
 
 ### Phase 3: Rack 3 Upgrade (Q2-Q3 2025)
-**Branch**: `feature/rack-3-upgrade`
+**Branch**: `feature/rack-3-upgrade`  
 **Dependencies**:
 - `rack`: 2.2.17 → 3.2.0
 - `rack-protection`: 3.2.0 → 4.1.1

@@ -195,7 +195,7 @@ foreman start -f Procfile.dev                    # Start app
   ```ruby
   context "when user exists with matching email" do
     let!(:user) { create(:user, email: auth_email) }
-
+    
     it "updates provider and uid" do
       expect { post_callback }
         .to change { user.reload.provider }.from(nil).to('oidc')
@@ -221,7 +221,7 @@ foreman start -f Procfile.dev                    # Start app
     OmniAuth.config.test_mode = true
     OmniAuth.config.mock_auth[:id_austria] = auth_hash
   end
-
+  
   after do
     OmniAuth.config.test_mode = false
     OmniAuth.config.mock_auth[:id_austria] = nil
@@ -269,7 +269,7 @@ OmniAuth.config.mock_auth[:oidc] = nil
 ## Summary for PR:
 The OKTA authentication fixes are complete and tested:
 - Existing users can now log in with OKTA (provider/uid update)
-- ID token stored for proper OKTA logout
+- ID token stored for proper OKTA logout  
 - Logout redirects to OKTA and clears both sessions
 - All flows tested manually and with unit tests
 - Environment configuration improved with dotenv-rails
@@ -311,7 +311,7 @@ The OKTA authentication fixes are complete and tested:
    - Missing `VULCAN_LDAP_HOST` environment variable in CI workflow
    - Test expects `ldap` service but host not configured
    - Not related to our OKTA changes
-
+   
 2. **Rule Duplication Test** - Appears to be timing/data related
    - Passes locally but fails in CI
    - Test creates test data with "this is a test" but expects original SRG data
@@ -351,17 +351,17 @@ The OKTA authentication fixes are complete and tested:
    - Added missing `VULCAN_LDAP_HOST` environment variable
    - Changed host from 'ldap' to 'localhost' (services accessed via localhost in non-container jobs)
    - Fixed port mapping to 10389:10389 (rroemhild/test-openldap exposes LDAP on port 10389, not 389)
-
+   
 2. **Rule Duplication Test Fix**:
    - Added code to clear pre-existing SRG data before test
    - Prevents conflict between XML-loaded descriptions and test data
-
+   
 3. **SonarCloud Code Quality Fixes**:
    - Added constants to replace duplicated string literals:
      - `BASE_URL` in sessions_controller_spec.rb
-     - `OKTA_UID` in user_okta_spec.rb
+     - `OKTA_UID` in user_okta_spec.rb  
      - `LOCAL_LOGIN_TAB` in local_login_spec.rb
-
+   
 4. **Development Setup Improvements**:
    - Added .nvmrc file for Node.js version consistency
    - Updated .gitignore to exclude development files and logs

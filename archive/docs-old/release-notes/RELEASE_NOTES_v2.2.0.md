@@ -117,6 +117,6 @@ For a detailed list of all changes, see the [CHANGELOG.md](CHANGELOG.md) file.
 
 ---
 
-**Release Date**: August 16, 2025
-**Release Manager**: Aaron Lippold
+**Release Date**: August 16, 2025  
+**Release Manager**: Aaron Lippold  
 **Version**: v2.2.0

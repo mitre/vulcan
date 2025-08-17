@@ -1,7 +1,7 @@
 # Recovery Context - August 16, 2025 - v2.2.1 Security Release
 
 ## 🔴 CRITICAL - READ FIRST
-**MUST READ**:
+**MUST READ**: 
 1. `/Users/alippold/.claude/CLAUDE.md` - Global Claude settings
 2. `/Users/alippold/github/mitre/vulcan/CLAUDE.md` - Project-specific Claude settings
 
@@ -89,7 +89,7 @@ git checkout -b feature/vue3-bootstrap5-migration/remove-turbolinks
 ## 🔍 MCP MEMORY KEYS
 ```ruby
 mcp__server-memory__open_nodes with names:
-["Vulcan Technical Learnings", "Next Steps Vulcan",
+["Vulcan Technical Learnings", "Next Steps Vulcan", 
  "Vue 3 Migration Plan", "Vue 3 Migration Progress",
  "Vulcan v2.2.0 Release", "Vulcan v2.2.1 Release",
  "Security Fixes Applied"]

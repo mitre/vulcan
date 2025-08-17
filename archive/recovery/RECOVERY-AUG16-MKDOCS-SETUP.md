@@ -1,7 +1,7 @@
 # Recovery Context - August 16, 2025 - MkDocs Documentation Setup
 
 ## 🔴 CRITICAL - READ FIRST
-**MUST READ THESE FILES**:
+**MUST READ THESE FILES**: 
 1. `/Users/alippold/.claude/CLAUDE.md` - Global Claude settings (NEVER use git add -A)
 2. `/Users/alippold/github/mitre/vulcan/CLAUDE.md` - Project-specific settings
 3. `/Users/alippold/github/mitre/vulcan/RECOVERY-AUG16-V2.2.1-SECURITY.md` - Today's earlier work
@@ -48,7 +48,7 @@
 docs/
 ├── about.md                          ✓ Created
 ├── api/
-│   ├── authentication.md              ✓ Created
+│   ├── authentication.md              ✓ Created  
 │   ├── endpoints.md                   ✓ Created
 │   └── overview.md                    ✓ Created
 ├── deployment/
@@ -127,7 +127,7 @@ docs/
 ## 🔍 MCP MEMORY KEYS
 ```ruby
 mcp__server-memory__open_nodes with names:
-["Vulcan Technical Learnings", "Next Steps Vulcan",
+["Vulcan Technical Learnings", "Next Steps Vulcan", 
  "MkDocs Documentation Setup", "Vulcan v2.2.1 Release"]
 ```
 

@@ -201,10 +201,10 @@ class MigrateToRails8Schema < ActiveRecord::Migration[8.0]
   def change
     # Add missing timestamps
     add_timestamps :legacy_tables, null: true
-
+    
     # Update STI column if needed
     rename_column :base_rules, :sti_type, :type
-
+    
     # Add missing foreign key constraints
     add_foreign_key :rules, :projects
   end

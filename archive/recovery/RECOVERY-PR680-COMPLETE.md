@@ -14,7 +14,7 @@
 ## Major Accomplishments Completed
 
 ### 1. Rails/Ruby/Node Upgrade ✅
-- Rails 6.1 → 7.0.8.7
+- Rails 6.1 → 7.0.8.7 
 - Ruby 2.7.5 → 3.3.9
 - Node 16.x → 22.x LTS
 - Webpacker → jsbundling-rails with esbuild
@@ -64,7 +64,7 @@
 1. **Merge PR #680** to master branch
 2. **Create release** following wiki process:
    - Update VERSION file
-   - Update package.json version
+   - Update package.json version  
    - Generate CHANGELOG.md
    - Create GitHub release (triggers Docker publish)
 3. **Address any Dependabot alerts** (102 vulnerabilities in main branch)

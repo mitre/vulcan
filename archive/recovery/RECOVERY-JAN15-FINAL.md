@@ -27,7 +27,7 @@
 ```bash
 # Deleted (old controller specs)
 - spec/controllers/stigs_controller_spec.rb
-- spec/controllers/registrations_controller_spec.rb
+- spec/controllers/registrations_controller_spec.rb  
 - spec/controllers/sessions_controller_spec.rb
 - spec/controllers/project_access_requests_controller_spec.rb
 

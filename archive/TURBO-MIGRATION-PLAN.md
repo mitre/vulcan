@@ -43,7 +43,7 @@
    ```ruby
    # Remove
    gem 'turbolinks', '~> 5'
-
+   
    # Add
    gem 'turbo-rails', '~> 2.0'
    ```
@@ -70,7 +70,7 @@
    // Remove
    "turbolinks": "^5.2.0",
    "vue-turbolinks": "^2.1.0"
-
+   
    // Add
    "@hotwired/turbo": "^8.0.0"
    ```
@@ -80,14 +80,14 @@
    export default {
      install(Vue) {
        let instances = [];
-
+       
        // Store Vue instances for cleanup
        Vue.mixin({
          beforeMount() {
            instances.push(this);
          }
        });
-
+       
        // Clean up before cache
        document.addEventListener('turbo:before-cache', () => {
          instances.forEach(instance => {
@@ -95,7 +95,7 @@
          });
          instances = [];
        });
-
+       
        // Handle form submissions
        document.addEventListener('turbo:submit-end', (event) => {
          if (!event.detail.success) return;
@@ -110,7 +110,7 @@
    // Before
    import TurbolinksAdapter from "vue-turbolinks";
    document.addEventListener("turbolinks:load", () => {
-
+   
    // After
    import VueTurboAdapter from "../utils/vue-turbo-adapter";
    document.addEventListener("turbo:load", () => {
@@ -126,7 +126,7 @@
    ```bash
    # Find all turbolinks references
    grep -r "turbolinks" app/views/
-
+   
    # Update data attributes
    data: { turbolinks: false } → data: { turbo: false }
    ```

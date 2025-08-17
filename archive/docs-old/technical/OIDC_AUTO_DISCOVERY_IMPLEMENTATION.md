@@ -1,8 +1,8 @@
 # OIDC Auto-Discovery Implementation Plan
 
-**Issue**: [#667 - Implement OIDC auto-discovery to simplify configuration](https://github.com/mitre/vulcan/issues/667)
-**Branch**: `okta-discovery-enhancement`
-**LOE**: 4-8 hours
+**Issue**: [#667 - Implement OIDC auto-discovery to simplify configuration](https://github.com/mitre/vulcan/issues/667)  
+**Branch**: `okta-discovery-enhancement`  
+**LOE**: 4-8 hours  
 **Status**: Ready for implementation
 
 ## Overview
@@ -65,7 +65,7 @@ oidc:
       jwks_uri: <%= ENV['VULCAN_OIDC_JWKS_URI'] %>
 ```
 
-#### 1.2 Update Settings Initialization
+#### 1.2 Update Settings Initialization  
 **File**: `config/initializers/0_settings.rb`
 
 ```ruby
@@ -92,18 +92,18 @@ module OidcDiscoveryHelper
     return cached if cached&.[]('expires_at')&.> Time.current
 
     discovery_url = "#{issuer_url.to_s.chomp('/')}/.well-known/openid-configuration"
-
+    
     begin
       response = Net::HTTP.get_response(URI(discovery_url))
-
+      
       if response.is_a?(Net::HTTPSuccess)
         config = JSON.parse(response.body)
         validate_discovery_document(config, issuer_url)
-
+        
         # Cache with expiration
         config['expires_at'] = 1.hour.from_now
         session[cache_key] = config
-
+        
         Rails.logger.info "OIDC Discovery successful for #{issuer_url}"
         return config
       else
@@ -125,21 +125,21 @@ module OidcDiscoveryHelper
     unless actual_issuer == expected_issuer
       raise "OIDC Discovery: Issuer mismatch. Expected '#{expected_issuer}', got '#{actual_issuer}'"
     end
-
+    
     # Check required fields per OIDC spec
     required_fields = %w[
-      issuer
-      authorization_endpoint
-      response_types_supported
-      subject_types_supported
+      issuer 
+      authorization_endpoint 
+      response_types_supported 
+      subject_types_supported 
       id_token_signing_alg_values_supported
     ]
-
+    
     missing_fields = required_fields - config.keys
     if missing_fields.any?
       raise "OIDC Discovery: Missing required fields: #{missing_fields.join(', ')}"
     end
-
+    
     true
   end
 
@@ -188,11 +188,11 @@ end
 describe '#fetch_oidc_logout_endpoint' do
   context 'when discovery is enabled' do
     before { Settings.oidc.discovery = true }
-
+    
     it 'uses discovered endpoint when available' do
       # Test discovery success
     end
-
+    
     it 'falls back to manual config when discovery fails' do
       # Test discovery failure fallback
     end
@@ -200,7 +200,7 @@ describe '#fetch_oidc_logout_endpoint' do
 
   context 'when discovery is disabled' do
     before { Settings.oidc.discovery = false }
-
+    
     it 'uses manual configuration' do
       # Test manual config path
     end
@@ -290,7 +290,7 @@ VULCAN_OIDC_REDIRECT_URI="https://vulcan.example.com/users/auth/oidc/callback"
 
 ### 1. Discovery Failure Scenarios
 - **Network timeout**: Fall back to manual configuration
-- **Invalid JSON**: Log error, use manual configuration
+- **Invalid JSON**: Log error, use manual configuration  
 - **Missing required fields**: Log validation error, use manual configuration
 - **Issuer mismatch**: Log security warning, use manual configuration
 
@@ -422,7 +422,7 @@ VULCAN_OIDC_REDIRECT_URI="https://vulcan.example.com/users/auth/oidc/callback"
    - Implement cache invalidation when issuer URL changes
    - Add cache metadata and version tracking
 
-2. **Partial Discovery Document Support**
+2. **Partial Discovery Document Support** 
    - Handle discovery documents missing optional fields gracefully
    - Provide detailed warnings for missing recommended fields
    - Ensure core functionality works with minimal discovery data
@@ -504,9 +504,9 @@ VULCAN_OIDC_REDIRECT_URI="https://vulcan.example.com/users/auth/oidc/callback"
 
 ---
 
-**Implementation Status**:
+**Implementation Status**: 
 - ✅ **Phase 1 Complete**: Core infrastructure, enhanced error handling, comprehensive documentation, edge case resilience, AND container logging
-- ✅ **Phase 3 Complete**: Configuration validation at startup, migration warnings, deprecated pattern detection
+- ✅ **Phase 3 Complete**: Configuration validation at startup, migration warnings, deprecated pattern detection  
 - ✅ **Phase 4 Complete**: Real provider testing with live Okta instance, comprehensive compatibility validation
 - 🎉 **100% COMPLETE**: Enterprise-ready implementation with robust caching, security, fallback mechanisms, structured logging, startup validation, AND real-world testing
 - 🚀 **Production Ready**: Fully validated with live provider, ready for production deployment

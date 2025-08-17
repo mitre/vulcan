@@ -163,7 +163,7 @@ Three viable paths:
 
 **Vulcan is more complex than initially apparent.** It's not just a CRUD app - it's a domain-specific compliance platform with unique business logic that took years to develop.
 
-**Recommendation**:
+**Recommendation**: 
 1. **Don't do a full greenfield rewrite** - Too much domain logic to recreate
 2. **Do incremental modernization** - Ruby/Rails first, then frontend
 3. **Consider Inertia.js** - Best middle ground for Vue components

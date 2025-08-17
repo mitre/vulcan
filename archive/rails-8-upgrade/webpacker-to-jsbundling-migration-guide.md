@@ -97,7 +97,7 @@ git commit -m "Checkpoint before migrating from Webpacker to jsbundling-rails + 
    # In config/application.rb, ensure you have:
    config.assets.paths << Rails.root.join("app", "assets", "builds")
    config.assets.paths << Rails.root.join("app", "javascript")
-
+   
    # Remove any Sprockets-specific configuration if present
    ```
 
@@ -151,12 +151,12 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
 
    ```bash
    # For each entry point in app/javascript/packs/*.js
-
+   
    # Example for application.js
    # Compare with the newly generated file
    cat app/javascript/packs/application.js
    cat app/javascript/application.js
-
+   
    # Merge the content from your Webpacker entry point
    # into the new application.js
    ```
@@ -167,7 +167,7 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
    # Move Vue components to app/javascript
    mkdir -p app/javascript/components
    cp -r app/javascript/packs/components/* app/javascript/components/
-
+   
    # Update import paths in all files
    find app/javascript -name "*.js" -o -name "*.vue" | xargs sed -i 's/from "..\/packs\/components/from "..\/components/g'
    ```
@@ -178,7 +178,7 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
    # Move CSS/SCSS files
    mkdir -p app/assets/stylesheets
    cp -r app/javascript/packs/stylesheets/* app/assets/stylesheets/
-
+   
    # Update application.js to import CSS
    # For example:
    # import "../stylesheets/application.scss"
@@ -190,13 +190,13 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
 
    ```javascript
    // Configure your imports here
-
+   
    // Core dependencies
    import { createApp } from 'vue'
-
+   
    // Your Vue components
    import ExampleComponent from './components/ExampleComponent.vue'
-
+   
    // Initialize your application
    document.addEventListener('DOMContentLoaded', () => {
      // Mount Vue components
@@ -204,12 +204,12 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
      elements.forEach(element => {
        const componentName = element.dataset.vueComponent
        let component
-
+       
        // Match component names to imports
        if (componentName === 'ExampleComponent') {
          component = ExampleComponent
        }
-
+       
        if (component) {
          createApp(component, {
            ...element.dataset
@@ -289,7 +289,7 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
    <%# Before %>
    <%= javascript_pack_tag 'application' %>
    <%= stylesheet_pack_tag 'application' %>
-
+   
    <%# After %>
    <%= javascript_include_tag 'application', 'data-turbo-track': 'reload', defer: true %>
    <%= stylesheet_link_tag 'application', 'data-turbo-track': 'reload' %>
@@ -299,13 +299,13 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
 
    ```erb
    <%# Before %>
-   <%= content_tag :div, '',
-         id: 'example-component',
+   <%= content_tag :div, '', 
+         id: 'example-component', 
          data: { options: { prop1: 'value1' }.to_json } %>
-
+   
    <%# After %>
-   <%= content_tag :div, '',
-         data: {
+   <%= content_tag :div, '', 
+         data: { 
            vue_component: 'ExampleComponent',
            prop1: 'value1'
          } %>
@@ -326,7 +326,7 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
    ```scss
    // Before
    background-image: url('~images/logo.png');
-
+   
    // After
    background-image: url('logo.png');
    ```
@@ -336,7 +336,7 @@ Now comes the most critical part - migrating your JavaScript from Webpacker to j
    ```javascript
    // Before
    import logo from '../images/logo.png'
-
+   
    // After
    // Use asset_path in your views instead, or
    const logo = '/assets/logo.png'

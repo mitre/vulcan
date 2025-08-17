@@ -10,7 +10,7 @@
 
 2. **PROJECT CONTEXT**: `/Users/alippold/github/mitre/vulcan/CLAUDE.md`
 
-3. **CHECK MCP MEMORY**:
+3. **CHECK MCP MEMORY**: 
 ```
 mcp__server-memory__open_nodes with names:
 ["Vulcan Post-Merge Issues", "Vulcan Fixes Applied Jan 14", "Vulcan PR 680 Status"]
@@ -25,7 +25,7 @@ mcp__server-memory__open_nodes with names:
 ## Fixes Applied Today
 
 ### 1. Docker Build Failures ✅ FIXED & PUSHED
-- **Issue**: CI/CD workflows failing with "apt-key: not found"
+- **Issue**: CI/CD workflows failing with "apt-key: not found" 
 - **Root Cause**: Ruby 3.3.9 uses Debian Trixie which removed apt-key command
 - **Additional Issue**: Dockerfile line 8 had comment in RUN command preventing SSL certs installation
 - **Fix Applied**:
@@ -37,7 +37,7 @@ mcp__server-memory__open_nodes with names:
 
 ### 2. Bundler Deprecation Warning ✅ FIXED
 - **Issue**: `--without` flag deprecated in bundle install
-- **Fix Applied**:
+- **Fix Applied**: 
   ```dockerfile
   RUN bundle config set --local without 'development test' && \
       bundle install
@@ -45,7 +45,7 @@ mcp__server-memory__open_nodes with names:
 - **Commit**: 32f6075 (ready to push)
 - **Tested**: Docker build successful, no deprecation warning
 
-### 3. Overlay Component 0 Controls ✅ FIXED
+### 3. Overlay Component 0 Controls ✅ FIXED  
 - **Issue**: Overlay components showing 0 controls in seed data
 - **Fix Applied**: Added rule duplication in db/seeds.rb:
   ```ruby
@@ -81,7 +81,7 @@ git log --oneline origin/master..HEAD
    - Should only deploy via manual promotion from staging
    - Requires Heroku dashboard access to fix
 
-### Medium Priority
+### Medium Priority  
 2. **Dependabot Security Vulnerabilities**
    - 64 total: 5 critical, 12 high, 36 moderate, 11 low
    - Check with: `gh api /repos/mitre/vulcan/dependabot/alerts`
@@ -148,12 +148,12 @@ I need to continue work on Vulcan post-fixes. We just fixed Docker build issues,
 bundler deprecation, and overlay component seed data.
 
 CRITICAL: First read /Users/alippold/.claude/CLAUDE.md for my preferences.
-Then read /Users/alippold/github/mitre/vulcan/RECOVERY-JAN14-POST-FIXES.md
+Then read /Users/alippold/github/mitre/vulcan/RECOVERY-JAN14-POST-FIXES.md 
 for current state.
 
-Check MCP memory: mcp__server-memory__open_nodes with
+Check MCP memory: mcp__server-memory__open_nodes with 
 ["Vulcan Post-Merge Issues", "Vulcan Fixes Applied Jan 14"]
 
-We have 2 commits ready to push (32f6075 and 017ead2).
+We have 2 commits ready to push (32f6075 and 017ead2). 
 Should we push them or work on other issues first?
 ```

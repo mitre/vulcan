@@ -67,7 +67,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **enabled:** `(ENV: VULCAN_ENABLE_OIDC)(default: false)`
 - **strategy:** :openid_connect `Omniauth Strategy for working with OIDC providers`
 - **title:** : Description or Title for the OIDC Provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
-- **args:**
+- **args:** 
   - **name:** Name of the OIDC provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
   - **scope:** Which OpenID scope to include (:openid is always required) `default: [:openid]`
   - **uid_field:** The field of the user info response to be used as a unique id
@@ -75,7 +75,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
   - **issuer:** Root url for the authorization server `(ENV: VULCAN_OIDC_ISSUER_URL)`
   - **client_auth_method:** Which authentication method to use to authenticate your app with the authorization server `default: :secret`
   - **client_signing_alg:** Signing algorithms, specify the base64-encoded secret used to sign the JWT token `(ENV: VULCAN_OIDC_CLIENT_SIGNING_ALG)`
-  - **nonce:**
+  - **nonce:** 
   - **client_options:**
       - **port:** The port for the authorization server `(ENV: VULCAN_OIDC_PORT)(default: 443)`
       - **scheme:** The http scheme to use `(ENV: VULCAN_OIDC_SCHEME)(default: https)`
@@ -130,15 +130,15 @@ defaults: &defaults
         password:
         base:
   oidc:
-    enabled:
+    enabled: 
     strategy:
     title:
     args:
-      name:
+      name: 
       scope:
-      uid_field:
+      uid_field: 
       response_type:
-      issuer:
+      issuer: 
       client_auth_method:
       client_signing_alg:
       nonce:
