@@ -1,6 +1,6 @@
 class MakeProjectMembersPolymorphic < ActiveRecord::Migration[6.1]
   def change
-    # Remove this uniqueness index because it needs to be replaced later in the migration 
+    # Remove this uniqueness index because it needs to be replaced later in the migration
     remove_index :project_members, column: %i[user_id project_id]
 
     # Memberships are becoming polymorphic, and can now be related to either
