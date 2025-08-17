@@ -71,4 +71,3 @@ vulcan-wiki-local/
 /certs/*
 !/certs/README.md
 !/certs/.gitkeep
-

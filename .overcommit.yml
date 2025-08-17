@@ -87,14 +87,18 @@ PreCommit:
 
   # General hooks
   TrailingWhitespace:
-    enabled: false  # Using FixTrailingWhitespace instead
+    enabled: false  # Using FixWhitespace instead
 
-  FixTrailingWhitespace:
+  HardTabs:
+    enabled: false  # FixWhitespace handles this
+
+  FixWhitespace:
     enabled: true
     exclude:
       - '**/db/schema.rb'
       - '**/db/structure.sql'
       - '**/*.md'
+      - '**/Makefile'  # Makefiles require tabs
 
   MergeConflicts:
     enabled: true
