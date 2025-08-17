@@ -94,6 +94,7 @@ PreCommit:
     exclude:
       - '**/db/schema.rb'
       - '**/db/structure.sql'
+      - '**/db/migrate/*.rb'  # Don't modify old migrations
       - '**/*.md'
       - '**/Makefile'  # Makefiles require tabs
 

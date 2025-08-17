@@ -47,9 +47,9 @@ If any of the configured SLB SSL templates list version 30, 31, 32, this is a fi
 
 If any of the configured SLB SSL templates contain any cipher suites that are not in compliance, this is a finding.</check-content></check></Rule></Group><Group id="V-237033"><title>SRG-NET-000077-ALG-000046</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237033r639546_rule" weight="10.0" severity="low"><version>AADC-AG-000023</version><title>The A10 Networks ADC, when used to load balance web applications, must enable external logging for accessing Web Application Firewall data event messages.</title><description>&lt;VulnDiscussion&gt;Without establishing where events occurred, it is impossible to establish, correlate, and investigate the events leading up to an outage or attack.
 
-External logging must be enabled for WAF data event messages. Create a server configuration for each log server, and then add a TCP or UDP port to each server configuration, with the port number on which the external log server listens for log messages.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82449</ident><ident system="http://cyber.mil/legacy">V-67959</ident><ident system="http://cyber.mil/cci">CCI-000133</ident><fixtext fixref="F-40215r639545_fix">If the device is used to load balance web servers, configure external logging for WAF data event messages. 
+External logging must be enabled for WAF data event messages. Create a server configuration for each log server, and then add a TCP or UDP port to each server configuration, with the port number on which the external log server listens for log messages.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82449</ident><ident system="http://cyber.mil/legacy">V-67959</ident><ident system="http://cyber.mil/cci">CCI-000133</ident><fixtext fixref="F-40215r639545_fix">If the device is used to load balance web servers, configure external logging for WAF data event messages.
 
-Create a server configuration for each log server. 
+Create a server configuration for each log server.
 The following command adds a server:
 slb server [server-name] [ipaddr]
 
@@ -74,7 +74,7 @@ The following commands bind the logging template to the WAF template:
 slb template waf [template-name]
 template logging [template-name]</fixtext><fix id="F-40215r639545_fix" /><check system="C-40252r639544_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>If the device is not used to load balance web servers, this is not applicable.
 
-Review the device configuration and ask the device Administrator which templates are used. 
+Review the device configuration and ask the device Administrator which templates are used.
 
 If no SLB instance for the log server(s) is configured, this is a finding.
 
@@ -117,7 +117,7 @@ The A10 Networks ADC can use a TCL-based scripting language called aFleX. Script
 The following command displays all of the configured aFleX scripts:
 show aflex all
 
-If any scripts are present, ask the Administrator for documentation of each script. 
+If any scripts are present, ask the Administrator for documentation of each script.
 
 If no documents can be provided explaining the script and showing where the ISSM or other responsible Security personnel acknowledged the script is being used, this is a finding.</check-content></check></Rule></Group><Group id="V-237036"><title>SRG-NET-000131-ALG-000086</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237036r639555_rule" weight="10.0" severity="medium"><version>AADC-AG-000035</version><title>The A10 Networks ADC must use DNS Proxy mode when Global Server Load Balancing is used.</title><description>&lt;VulnDiscussion&gt;Unrelated or unneeded proxy services increase the attack vector and add excessive complexity to the securing of the device. Multiple application proxies can be installed on many devices. However, proxy types must be limited to related functions.
 
@@ -125,13 +125,13 @@ The A10 Networks ADC is capable of DNS-based Global Server Load Balancing (GSLB)
 
 To configure Proxy mode, follow standard SLB configuration steps (Servers, Service Groups, VIP, etc.) that utilize “external” DNS servers and enable it for GSLB when configuring the virtual port.</fixtext><fix id="F-40218r639554_fix" /><check system="C-40255r639553_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>If DNS-based Global Server Load Balancing is not configured, this is not applicable.
 
-If DNS-based Global Server Load Balancing is configured, review the configuration. 
+If DNS-based Global Server Load Balancing is configured, review the configuration.
 
 Check if real servers are configured for DNS. If they are not, then the device is in Server mode, and this is a finding.</check-content></check></Rule></Group><Group id="V-237037"><title>SRG-NET-000132-ALG-000087</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237037r639558_rule" weight="10.0" severity="medium"><version>AADC-AG-000036</version><title>The A10 Networks ADC must be configured to prohibit or restrict the use of functions, ports, protocols, and/or services as defined in the PPSM CAL and vulnerability assessments.</title><description>&lt;VulnDiscussion&gt;In order to prevent unauthorized connection of devices, unauthorized transfer of information, or unauthorized tunneling (i.e., embedding of data types within data types); organizations must disable or restrict unused or unnecessary physical and logical ports/protocols on information systems.
 
 The device must be configured to prevent or restrict the use of prohibited ports, protocols, and services throughout the network by filtering the network traffic and disallowing or redirecting traffic as necessary. Default and updated policy filters from the vendors will disallow older version of protocols and applications and will address most known non-secure ports, protocols, and/or services. However, sources for further policy filters are the IAVMs and the PPSM requirements.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82457</ident><ident system="http://cyber.mil/legacy">V-67967</ident><ident system="http://cyber.mil/cci">CCI-000382</ident><fixtext fixref="F-40219r639557_fix">Do not configure a server, service group, or virtual server for any port, protocol, or service that is prohibited by the PPSM CAL.</fixtext><fix id="F-40219r639557_fix" /><check system="C-40256r639556_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>Review the list of authorized applications, endpoints, services, and protocols that have been added to the PPSM database.
 
-Review the configured servers, service groups, and virtual servers. 
+Review the configured servers, service groups, and virtual servers.
 
 The following command shows information for SLB servers:
 show slb server
@@ -155,7 +155,7 @@ Verify the ALG validates certificates used for TLS functions by performing RFC 5
 
 If the ALG does not validate certificates used for TLS functions by performing RFC 5280-compliant certification path validation, this is a finding.</check-content></check></Rule></Group><Group id="V-237039"><title>SRG-NET-000202-ALG-000124</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237039r639564_rule" weight="10.0" severity="medium"><version>AADC-AG-000047</version><title>The A10 Networks ADC must not have any unnecessary or unapproved virtual servers configured.</title><description>&lt;VulnDiscussion&gt;A deny-all, permit-by-exception network communications traffic policy ensures that only those connections which are essential and approved are allowed.
 
-A virtual server is an instance where the device accepts traffic from outside hosts and redirects traffic to one or more real servers. In keeping with a deny-all, permit-by-exception policy, the services that the device provides to outside hosts must be only those that are necessary, documented, and approved.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82463</ident><ident system="http://cyber.mil/legacy">V-67973</ident><ident system="http://cyber.mil/cci">CCI-001109</ident><fixtext fixref="F-40221r639563_fix">Do not configure a server, service group, or virtual server for any unnecessary or unapproved service.</fixtext><fix id="F-40221r639563_fix" /><check system="C-40258r639562_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>Review the configured servers, service groups, and virtual servers. 
+A virtual server is an instance where the device accepts traffic from outside hosts and redirects traffic to one or more real servers. In keeping with a deny-all, permit-by-exception policy, the services that the device provides to outside hosts must be only those that are necessary, documented, and approved.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82463</ident><ident system="http://cyber.mil/legacy">V-67973</ident><ident system="http://cyber.mil/cci">CCI-001109</ident><fixtext fixref="F-40221r639563_fix">Do not configure a server, service group, or virtual server for any unnecessary or unapproved service.</fixtext><fix id="F-40221r639563_fix" /><check system="C-40258r639562_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>Review the configured servers, service groups, and virtual servers.
 
 The following command shows information for SLB servers:
 show slb server
@@ -166,13 +166,13 @@ show slb service-group
 The following command shows information for virtual servers (the services visible to outside hosts):
 show slb virtual-server
 
-Ask the Administrator for the list of approved services being provided by the device and compare this against the output of the command listed above. 
+Ask the Administrator for the list of approved services being provided by the device and compare this against the output of the command listed above.
 
 If there are more configured virtual servers than are approved, this is a finding.</check-content></check></Rule></Group><Group id="V-237040"><title>SRG-NET-000273-ALG-000129</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237040r639567_rule" weight="10.0" severity="medium"><version>AADC-AG-000062</version><title>The A10 Networks ADC, when used to load balance web applications, must strip HTTP response headers.</title><description>&lt;VulnDiscussion&gt;Providing too much information in error messages risks compromising the data and security of the application and system. HTTP response headers can disclose vulnerabilities about a web server. This information can be used by an attacker. The A10 Networks ADC can filter response headers; this removes the web server’s identifying headers in outgoing responses (such as Server, X-Powered-By, and X-AspNet-Version).&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82465</ident><ident system="http://cyber.mil/legacy">V-67975</ident><ident system="http://cyber.mil/cci">CCI-001312</ident><fixtext fixref="F-40222r639566_fix">If the device is used to load balance web servers, configure the device to strip HTTP response headers.
 
 The following command configures a WAF template and includes the option to strip HTTP response headers:
 slb template waf
-filter-resp-hdrs</fixtext><fix id="F-40222r639566_fix" /><check system="C-40259r639565_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>If the device is not used to load balance web servers, this is not applicable. If the device is used to load balance web servers, verify that the A10 Networks ADC strips HTTP response headers. 
+filter-resp-hdrs</fixtext><fix id="F-40222r639566_fix" /><check system="C-40259r639565_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>If the device is not used to load balance web servers, this is not applicable. If the device is used to load balance web servers, verify that the A10 Networks ADC strips HTTP response headers.
 
 The following command displays WAF templates:
 show slb template waf
@@ -211,7 +211,7 @@ Injection attacks allow an attacker to inject code into a program or query or in
 
 A Web Application Firewall (WAF) template is configured and bound to a virtual port.
 
-The following command configures a WAF template with the SQLIA Check option: 
+The following command configures a WAF template with the SQLIA Check option:
 slb template waf &lt;template name&gt;
 sqlia-check [reject | sanitize]
 
@@ -245,7 +245,7 @@ Injection attacks allow an attacker to inject code into a program or query or in
 
 A Web Application Firewall (WAF) template is configured and bound to a virtual port.
 
-The following command configures a WAF template with the SQLIA Check option: 
+The following command configures a WAF template with the SQLIA Check option:
 slb template waf &lt;template name&gt;
 sqlia-check [reject | sanitize]
 
@@ -262,7 +262,7 @@ SQL injection attacks are the most prevalent attacks against web applications an
 
 A Web Application Firewall (WAF) template is configured and bound to a virtual port.
 
-The following command configures a WAF template with the SQLIA Check option: 
+The following command configures a WAF template with the SQLIA Check option:
 slb template waf &lt;template name&gt;
 sqlia-check [reject | sanitize]
 
@@ -369,9 +369,9 @@ show slb template waf
 
 If the configured WAF template does not have the "uri-wlistcheck" option configured, this is a finding.</check-content></check></Rule></Group><Group id="V-237053"><title>SRG-NET-000383-ALG-000135</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237053r639606_rule" weight="10.0" severity="low"><version>AADC-AG-000107</version><title>The A10 Networks ADC, when used to load balance web applications, must enable external logging for WAF data event messages.</title><description>&lt;VulnDiscussion&gt;Without coordinated reporting between separate devices, it is not possible to identify the true scale and possible target of an attack.
 
-External logging must be enabled for WAF data event messages. External logging is activated once the WAF template that uses the logging template is bound to an HTTP/HTTPS virtual port.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82495</ident><ident system="http://cyber.mil/legacy">V-68005</ident><ident system="http://cyber.mil/cci">CCI-002656</ident><fixtext fixref="F-40235r639605_fix">If the device is used to load balance web servers, configure external logging for WAF data event messages. 
+External logging must be enabled for WAF data event messages. External logging is activated once the WAF template that uses the logging template is bound to an HTTP/HTTPS virtual port.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82495</ident><ident system="http://cyber.mil/legacy">V-68005</ident><ident system="http://cyber.mil/cci">CCI-002656</ident><fixtext fixref="F-40235r639605_fix">If the device is used to load balance web servers, configure external logging for WAF data event messages.
 
-Create a server configuration for each log server. 
+Create a server configuration for each log server.
 The following command adds a server:
 slb server [server-name] [ipaddr]
 
@@ -396,7 +396,7 @@ The following commands bind the logging template to the WAF template:
 slb template waf [template-name]
 template logging [template-name]</fixtext><fix id="F-40235r639605_fix" /><check system="C-40272r639604_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>If the device is not used to load balance web servers, this is not applicable.
 
-Review the device configuration and ask the device Administrator which templates are used. 
+Review the device configuration and ask the device Administrator which templates are used.
 
 If no SLB instance for the log server(s) is configured, this is a finding.
 
@@ -423,10 +423,10 @@ The following command enables SNMP traps:
 
 snmp-server enable traps
 
-Note: This will enable sending all traps. 
+Note: This will enable sending all traps.
 
 The following command configures the SNMPv3 trap receiver (target):
- 
+
 snmp-server host trap-receiver version v3
 
 Up to 16 trap receivers can be configured.
@@ -439,11 +439,11 @@ By default, emailing of log messages is disabled. If this is enabled, the buffer
 
 The following command configures an email filter:
 logging email filter filter-num conditions operators [trigger]
-Since there are alerts that require immediate action, use the "trigger" option. This immediately sends the messages rather than buffering them. 
+Since there are alerts that require immediate action, use the "trigger" option. This immediately sends the messages rather than buffering them.
 
 The following command specifies the email address to which to email the log messages:
 logging email-address [address]
-More than one email address can be set.</fixtext><fix id="F-40237r639611_fix" /><check system="C-40274r639610_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>Ask the device administrator which method is used to send messages when threats are detected. 
+More than one email address can be set.</fixtext><fix id="F-40237r639611_fix" /><check system="C-40274r639610_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>Ask the device administrator which method is used to send messages when threats are detected.
 
 Review the device configuration.
 
@@ -461,7 +461,7 @@ Although the HTTP TRACE method is useful for debugging, it enables cross-site sc
 slb template waf [template-name]
 allowed-http-methods GET POST HEAD PUT DELETE CONNECT PURGE
 
-Note: GET and POST are the default values and are the safest choices. Restricting the methods to GET and POST is recommended.</fixtext><fix id="F-40239r639617_fix" /><check system="C-40276r639616_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>If the ADC is not used to load balance web servers, this is not applicable. Interview the device administrator to determine which WAF template is used for web servers. 
+Note: GET and POST are the default values and are the safest choices. Restricting the methods to GET and POST is recommended.</fixtext><fix id="F-40239r639617_fix" /><check system="C-40276r639616_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>If the ADC is not used to load balance web servers, this is not applicable. Interview the device administrator to determine which WAF template is used for web servers.
 
 Review the device configuration.
 
@@ -477,7 +477,7 @@ In the A10 Networks ADC, the audit log is maintained in a separate file separate
 Enter the following command to view detailed information about the administrative accounts:
 show admin detail
 
-The output of this command will show the Access type, the Privilege level, and GUI role among other parameters. 
+The output of this command will show the Access type, the Privilege level, and GUI role among other parameters.
 
 If persons other than other than the authorized individuals (ISSO, ISSM, and SA) have Root, Read Write, or Read Only privileges, this is a finding.</check-content></check></Rule></Group><Group id="V-237059"><title>SRG-NET-000511-ALG-000051</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237059r639624_rule" weight="10.0" severity="low"><version>AADC-AG-000140</version><title>The A10 Networks ADC must, at a minimum, off-load audit log records onto a centralized log server.</title><description>&lt;VulnDiscussion&gt;Off-loading ensures audit information does not get overwritten if the limited audit storage capacity is reached and also protects the audit record in case the system/component being audited is compromised.
 
@@ -508,7 +508,7 @@ If the output contains either "deploy-mode passive" or "deploy-mode learning", t
 
 Note: Since deploy-mode active is the default value, it will not appear in the output.</check-content></check></Rule></Group><Group id="V-237061"><title>SRG-NET-000512-ALG-000062</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237061r639630_rule" weight="10.0" severity="medium"><version>AADC-AG-000154</version><title>If the Data Owner requires it, the A10 Networks ADC must be configured to perform CCN Mask, SSN Mask, and PCRE Mask Request checks.</title><description>&lt;VulnDiscussion&gt;If outbound communications traffic is not continuously monitored, hostile activity may not be detected and prevented. Output from application and traffic monitoring serves as input to continuous monitoring and incident response programs.
 
-The A10 Networks ADC can be configured to mask data traversing outbound through the device. This is useful in preventing data exfiltration. If any data must be masked before it leaves the enclave (such as Credit Card Numbers, Social Security Numbers, or other sensitive information), a WAF template can be configured with CCN Mask, SSN Mask, and PCRE Mask Request checks. The Mask Request check depends on what information must be masked. This includes using Perl Compatible Regular Expressions (PCRE) for custom masks.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82513</ident><ident system="http://cyber.mil/legacy">V-68023</ident><ident system="http://cyber.mil/cci">CCI-000366</ident><fixtext fixref="F-40243r639629_fix">Review the system or enclave documentation and confer with the data owner(s) if necessary. If any data must be masked before it leaves the enclave (such as credit card numbers, Social Security numbers, or other sensitive information), configure the CCN Mask, SSN Mask, and PCRE Mask Request checks. 
+The A10 Networks ADC can be configured to mask data traversing outbound through the device. This is useful in preventing data exfiltration. If any data must be masked before it leaves the enclave (such as Credit Card Numbers, Social Security Numbers, or other sensitive information), a WAF template can be configured with CCN Mask, SSN Mask, and PCRE Mask Request checks. The Mask Request check depends on what information must be masked. This includes using Perl Compatible Regular Expressions (PCRE) for custom masks.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82513</ident><ident system="http://cyber.mil/legacy">V-68023</ident><ident system="http://cyber.mil/cci">CCI-000366</ident><fixtext fixref="F-40243r639629_fix">Review the system or enclave documentation and confer with the data owner(s) if necessary. If any data must be masked before it leaves the enclave (such as credit card numbers, Social Security numbers, or other sensitive information), configure the CCN Mask, SSN Mask, and PCRE Mask Request checks.
 
 These checks are applied to a WAF template.
 
@@ -526,7 +526,7 @@ show run | sec slb template waf
 
 If there is no WAF template with the required Mask Request checks, this is a finding.</check-content></check></Rule></Group><Group id="V-237062"><title>SRG-NET-000362-ALG-000112</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-237062r639633_rule" weight="10.0" severity="high"><version>AADC-AG-000155</version><title>The A10 Networks ADC must protect against ICMP-based Denial of Service (DoS) attacks by employing ICMP Rate Limiting.</title><description>&lt;VulnDiscussion&gt;If the network does not provide safeguards against DoS attacks, network resources will be unavailable to users. Installation of content filtering gateways and application layer firewalls at key boundaries in the architecture mitigates the risk of DoS attacks. These attacks can be detected by matching observed communications traffic with patterns of known attacks and monitoring for anomalies in traffic volume/type.
 
-Detection components that use rate-based behavior analysis can detect attacks when signatures for the attack do not exist or are not installed. These attacks include zero-day attacks which are new attacks for which vendors have not yet developed signatures. Rate-based behavior analysis can detect sophisticated, Distributed DoS (DDoS) attacks by correlating traffic information from multiple network segments or components. 
+Detection components that use rate-based behavior analysis can detect attacks when signatures for the attack do not exist or are not installed. These attacks include zero-day attacks which are new attacks for which vendors have not yet developed signatures. Rate-based behavior analysis can detect sophisticated, Distributed DoS (DDoS) attacks by correlating traffic information from multiple network segments or components.
 
 The A10 Networks ADC provides an ICMP Rate Limiting feature that monitors the rate of ICMP traffic and drops ICMP packets when the configured thresholds (the normal rate) are exceeded.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description><reference><dc:title>DPMS Target A10 Networks ADC ALG</dc:title><dc:publisher>DISA</dc:publisher><dc:type>DPMS Target</dc:type><dc:subject>A10 Networks ADC ALG</dc:subject><dc:identifier>5285</dc:identifier></reference><ident system="http://cyber.mil/legacy">SV-82515</ident><ident system="http://cyber.mil/legacy">V-68025</ident><ident system="http://cyber.mil/cci">CCI-002385</ident><fixtext fixref="F-40244r639632_fix">The following command configures ICMP rate limiting:
 icmp-rate-limit [normal-rate] lockup [max-rate] [lockup-time]</fixtext><fix id="F-40244r639632_fix" /><check system="C-40281r639631_chk"><check-content-ref href="A10_Networks_ADC_ALG_STIG.xml" name="M" /><check-content>Review the device configuration.

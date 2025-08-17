@@ -14,7 +14,9 @@ module Overcommit
             # Read file with proper encoding handling
             begin
               original_contents = File.read(file, encoding: 'UTF-8')
-            rescue Encoding::InvalidByteSequenceError
+              # Force valid encoding, replacing invalid sequences
+              original_contents = original_contents.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '') unless original_contents.valid_encoding?
+            rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
               # Skip binary files or files with encoding issues
               next
             end
