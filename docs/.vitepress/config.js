@@ -1,4 +1,5 @@
 import { defineConfig } from "vitepress";
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -15,8 +16,10 @@ export default defineConfig({
 
   // Head tags
   head: [
-    ["link", { rel: "icon", href: "/favicon.ico" }],
-    ["meta", { name: "theme-color", content: "#3eaf7c" }],
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
+    ["link", { rel: "alternate icon", href: "/favicon.ico" }],
+    ["link", { rel: "apple-touch-icon", href: "/app-icon.svg" }],
+    ["meta", { name: "theme-color", content: "#3498db" }],
   ],
 
   // Theme configuration
@@ -79,10 +82,11 @@ export default defineConfig({
           { text: "About", link: "/README.md" },
           { text: "Changelog", link: "/CHANGELOG.md" },
           { text: "Roadmap", link: "/ROADMAP.md" },
+          { text: "Contributing", link: "/CONTRIBUTING.md" },
+          { text: "Code of Conduct", link: "/CODE_OF_CONDUCT.md" },
           { text: "License", link: "/LICENSE.md" },
           { text: "Notice", link: "/NOTICE.md" },
           { text: "Security Policy", link: "/SECURITY.md" },
-          { text: "Code of Conduct", link: "/CODE_OF_CONDUCT.md" },
         ],
       },
       {
@@ -142,7 +146,7 @@ export default defineConfig({
         {
           text: "Contributing",
           items: [
-            { text: "Contributing Guide", link: "/CONTRIBUTING.md" },
+            { text: "Contributing Guide", link: "https://github.com/mitre/vulcan/blob/master/CONTRIBUTING.md" },
             { text: "Code of Conduct", link: "/CODE_OF_CONDUCT.md" },
           ],
         },
@@ -171,7 +175,8 @@ export default defineConfig({
         {
           text: "Overview",
           items: [
-            { text: "About Vulcan", link: "/README.md" },
+            { text: "About Vulcan", link: "https://github.com/mitre/vulcan" },
+            { text: "Media Kit & Branding", link: "/about/media-kit" },
             { text: "Quick Start", link: "/getting-started/quick-start" },
           ],
         },
@@ -188,7 +193,7 @@ export default defineConfig({
         {
           text: "Project Info",
           items: [
-            { text: "README", link: "/README.md" },
+            { text: "README", link: "https://github.com/mitre/vulcan/blob/master/README.md" },
             { text: "Changelog", link: "/CHANGELOG.md" },
             { text: "Roadmap", link: "/ROADMAP.md" },
             { text: "License", link: "/LICENSE.md" },
@@ -236,6 +241,51 @@ export default defineConfig({
     },
   },
 
+  // Vite configuration
+  vite: {
+    resolve: {
+      preserveSymlinks: true
+    },
+    plugins: [
+      ViteImageOptimizer({
+        svg: {
+          multipass: true,
+          plugins: [
+            {
+              name: "preset-default",
+              params: {
+                overrides: {
+                  // Clean up IDs
+                  cleanupIds: {
+                    minify: true,
+                  },
+                  // Optimize paths
+                  convertPathData: {
+                    floatPrecision: 2,
+                  },
+                },
+              },
+            },
+            // Keep viewBox for scaling
+            {
+              name: "removeViewBox",
+              active: false,
+            },
+            // Keep title and desc for accessibility
+            {
+              name: "removeTitle",
+              active: false,
+            },
+            {
+              name: "removeDesc",
+              active: false,
+            },
+          ],
+        },
+      }),
+    ],
+  },
+
   // Markdown configuration
   markdown: {
     lineNumbers: true,
@@ -264,20 +314,9 @@ export default defineConfig({
     },
   },
 
-  // Build configuration
-  vite: {
-    // Vite options
-  },
-
-  // Ignore dead links for localhost URLs and root markdown files
+  // Ignore dead links for localhost URLs
   ignoreDeadLinks: [
     // Ignore localhost URLs
     /^https?:\/\/localhost/,
-    // Ignore relative links to root markdown files (they work in GitHub)
-    './CHANGELOG',
-    './CONTRIBUTING',
-    './ROADMAP',
-    './LICENSE',
-    './CODE_OF_CONDUCT',
   ],
 });

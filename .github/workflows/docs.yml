@@ -44,10 +44,6 @@ jobs:
         run: |
           # DO NOT install main dependencies - they cause Vue 2/3 conflict
           cd docs
-
-          # Prepare build by replacing symlinks and fixing self-referential links
-          ./prepare-build.sh
-
           yarn install
           yarn build
 

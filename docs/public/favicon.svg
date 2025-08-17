@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <!-- Gradient for shield -->
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
+    </linearGradient>
+    <!-- Metal gradient for hammer -->
+    <linearGradient id="iconMetal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#bdc3c7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7f8c8d;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#iconGradient)"/>
+
+  <!-- Shield shape (simplified) -->
+  <path d="M16 6 L24 9 L24 18 C24 22 20 25 16 26 C12 25 8 22 8 18 L8 9 Z"
+        fill="white"
+        opacity="0.95"/>
+
+  <!-- Hammer (simplified and centered) -->
+  <g transform="translate(16, 15)">
+    <!-- Handle -->
+    <rect x="-1" y="-4" width="2" height="8" fill="#8b6f47"/>
+    <!-- Head -->
+    <rect x="-3" y="-5" width="6" height="3" fill="url(#iconMetal)"/>
+  </g>
+
+  <!-- V overlay (subtle) -->
+  <text x="16" y="20"
+        font-family="Arial, sans-serif"
+        font-size="12"
+        font-weight="bold"
+        fill="#2980b9"
+        text-anchor="middle"
+        opacity="0.3">V</text>
+</svg>

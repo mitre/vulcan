@@ -9,6 +9,8 @@
     "preview": "vitepress preview ."
   },
   "devDependencies": {
+    "svgo": "^4.0.0",
+    "vite-plugin-image-optimizer": "^2.0.2",
     "vitepress": "2.0.0-alpha.11",
     "vue": "^3.5.18"
   },

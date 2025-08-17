@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Gradient for hexagon -->
+    <linearGradient id="transparentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
+    </linearGradient>
+    <!-- Metal gradient for hammer head -->
+    <linearGradient id="transparentMetalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#bdc3c7;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#95a5a6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7f8c8d;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Hexagon shape only (no background) -->
+  <polygon points="100,30 150,55 150,105 100,130 50,105 50,55"
+           fill="url(#transparentGradient)"
+           stroke="#2c3e50"
+           stroke-width="3"/>
+
+  <!-- Shield icon inside -->
+  <path d="M100 50 L120 60 L120 85 C120 100 110 110 100 115 C90 110 80 100 80 85 L80 60 Z"
+        fill="#fff"
+        opacity="0.9"/>
+
+  <!-- Hammer symbol in center -->
+  <g transform="translate(100, 77)">
+    <!-- Hammer handle (light brown wood color) -->
+    <rect x="-3" y="-12" width="6" height="24" fill="#8b6f47" rx="1"/>
+    <!-- Hammer head (metallic gradient) -->
+    <rect x="-10" y="-15" width="20" height="8" fill="url(#transparentMetalGradient)" rx="1"/>
+  </g>
+
+  <!-- V letter overlay for Vulcan -->
+  <text x="100" y="100"
+        font-family="Arial, sans-serif"
+        font-size="36"
+        font-weight="bold"
+        fill="#3498db"
+        text-anchor="middle"
+        opacity="0.4">V</text>
+
+  <!-- Text: VULCAN (no background, works on any color) -->
+  <text x="100" y="160"
+        font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+        font-size="24"
+        font-weight="600"
+        fill="#2c3e50"
+        text-anchor="middle">VULCAN</text>
+
+  <!-- Subtitle with darker color for visibility -->
+  <text x="100" y="178"
+        font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+        font-size="10"
+        fill="#34495e"
+        text-anchor="middle">Security Guidance Platform</text>
+</svg>

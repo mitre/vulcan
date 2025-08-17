@@ -81,8 +81,6 @@ yarn install  # Install docs-specific dependencies
 yarn dev      # Start dev server
 ```
 
-See [docs/README.md](./docs/README.md) for more details about the documentation system.
-
 ## 🛠️ Technology Stack
 
 ### Core Framework

@@ -13,16 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation guide at `/development/documentation`
 - Production and staging deployment links in documentation
 - Separate package.json for docs to isolate dependencies (temporary until Vue 3 migration)
+- Custom Vulcan branding with SVG logos and Media Kit page
+- Automatic SVG optimization using vite-plugin-image-optimizer
+- Media Kit & Branding page at `/about/media-kit` with logos, colors, and usage guidelines
 
 ### Changed
 - Documentation navigation reorganized with top-level Deployment, Authentication, and Security sections
 - Improved compliance documentation with source code verification and cross-references
 - Documentation dependencies isolated from main application to avoid Vue 2/3 conflicts
+- LICENSE file renamed to LICENSE.md for consistency with other project documentation
+- Simplified CI/CD workflow by removing symlink preprocessing script (no longer needed)
+- All project documentation files now use consistent .md extensions
 
 ### Fixed
 - Documentation build issues with dead links and localhost URLs
 - ESLint configuration to properly handle VitePress files
 - Trailing whitespace issues in configuration files
+- VitePress symlink handling with proper configuration
+- Circular reference in README.md documentation link removed
 
 ## [v2.2.1] - 2025-08-16
 

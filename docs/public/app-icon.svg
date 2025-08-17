@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Gradient for background -->
+    <linearGradient id="appIconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
+    </linearGradient>
+    <!-- Metal gradient -->
+    <linearGradient id="appIconMetal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ecf0f1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#bdc3c7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#95a5a6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#appIconGradient)"/>
+
+  <!-- Shield (centered and sized for clarity) -->
+  <path d="M32 14 L46 20 L46 36 C46 44 39 50 32 52 C25 50 18 44 18 36 L18 20 Z"
+        fill="white"
+        opacity="0.9"/>
+
+  <!-- Hammer (more detailed) -->
+  <g transform="translate(32, 30)">
+    <!-- Handle -->
+    <rect x="-2" y="-8" width="4" height="16" fill="#8b6f47" rx="0.5"/>
+    <!-- Head -->
+    <rect x="-7" y="-10" width="14" height="6" fill="url(#appIconMetal)" rx="1"/>
+    <!-- Head detail line -->
+    <line x1="-7" y1="-7" x2="7" y2="-7" stroke="#7f8c8d" stroke-width="0.5"/>
+  </g>
+
+  <!-- Bold V -->
+  <text x="32" y="42"
+        font-family="Arial Black, sans-serif"
+        font-size="24"
+        font-weight="900"
+        fill="#2980b9"
+        text-anchor="middle"
+        opacity="0.4">V</text>
+</svg>

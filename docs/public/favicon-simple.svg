@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <!-- Simplified for 16x16 favicon -->
+  <defs>
+    <linearGradient id="faviconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect x="1" y="1" width="14" height="14" rx="3" fill="url(#faviconGrad)"/>
+
+  <!-- Simple shield -->
+  <path d="M8 3 L12 5 L12 9 C12 11 10 12.5 8 13 C6 12.5 4 11 4 9 L4 5 Z"
+        fill="white"
+        opacity="0.9"/>
+
+  <!-- Tiny hammer -->
+  <rect x="7" y="6" width="2" height="5" fill="#8b6f47"/>
+  <rect x="6" y="5" width="4" height="2" fill="#95a5a6"/>
+
+  <!-- V -->
+  <text x="8" y="11"
+        font-family="Arial"
+        font-size="6"
+        font-weight="bold"
+        fill="#2980b9"
+        text-anchor="middle"
+        opacity="0.5">V</text>
+</svg>

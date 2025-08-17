@@ -6,7 +6,7 @@ hero:
   text: "STIG-Ready Security Guidance"
   tagline: Streamline the creation of STIG documentation and InSpec validation profiles
   image:
-    src: /logo.png
+    src: /logo.svg
     alt: Vulcan
   actions:
     - theme: brand
