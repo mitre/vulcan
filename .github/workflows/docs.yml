@@ -43,12 +43,8 @@ jobs:
           # DO NOT install main dependencies - they cause Vue 2/3 conflict
           cd docs
 
-          # Replace symlinks with actual files to avoid VitePress resolution issues
-          for file in *.md; do
-            if [ -L "$file" ]; then
-              cp --remove-destination "$(readlink "$file")" "$file"
-            fi
-          done
+          # Prepare build by replacing symlinks and fixing self-referential links
+          ./prepare-build.sh
 
           yarn install
           yarn build
