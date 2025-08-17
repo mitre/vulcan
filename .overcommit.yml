@@ -87,6 +87,9 @@ PreCommit:
 
   # General hooks
   TrailingWhitespace:
+    enabled: false  # Using FixTrailingWhitespace instead
+
+  FixTrailingWhitespace:
     enabled: true
     exclude:
       - '**/db/schema.rb'
