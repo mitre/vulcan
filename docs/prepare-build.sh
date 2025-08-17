@@ -26,7 +26,7 @@ fi
 # Count symlinks (all files, not just .md)
 symlink_count=0
 for file in *; do
-  [ -L "$file" ] && ((symlink_count++)) || true
+  [ -L "$file" ] && symlink_count=$((symlink_count + 1)) || true
 done
 
 if [ "$symlink_count" -eq 0 ]; then
@@ -70,7 +70,7 @@ for file in *.md; do
       fi
       rm -f "$file.bak"
       log_info "Fixed docs/ references in $file"
-      ((files_fixed++))
+      files_fixed=$((files_fixed + 1))
     fi
   fi
 done
