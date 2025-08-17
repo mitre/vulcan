@@ -4,7 +4,8 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
   title: "Vulcan",
   description: "Security Technical Implementation Guide (STIG) creation and validation platform",
-  base: "/vulcan/",
+  // Use / for GitHub Pages with custom domain (vulcan.mitre.org), /vulcan/ for local dev
+  base: process.env.GITHUB_DEPLOY === "true" ? "/" : "/vulcan/",
 
   // Clean URLs without .html extension
   cleanUrls: true,

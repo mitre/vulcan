@@ -39,6 +39,8 @@ jobs:
         uses: actions/configure-pages@v4
 
       - name: Install and build docs
+        env:
+          GITHUB_DEPLOY: "true"  # Tell VitePress to use / base for custom domain
         run: |
           # DO NOT install main dependencies - they cause Vue 2/3 conflict
           cd docs
