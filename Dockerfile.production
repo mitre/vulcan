@@ -17,6 +17,7 @@ RUN apt-get update -qq && \
       ca-certificates \
       curl \
       libjemalloc2 \
+      libyaml-0-2 \
       libvips \
       postgresql-client && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
@@ -56,6 +57,7 @@ RUN apt-get update -qq && \
       git \
       gnupg \
       libpq-dev \
+      libyaml-dev \
       pkg-config \
       zlib1g-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
