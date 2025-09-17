@@ -5,10 +5,15 @@
 # loaded at that point.
 
 if Rails.env.production? && Settings.smtp.enabled
+  # Default SMTP username to contact_email if not explicitly configured
+  # This ensures authentication alignment and simplifies deployment
+  smtp_settings = Settings.smtp.settings.dup
+  smtp_settings['user_name'] ||= Settings.contact_email
+
   Rails.application.config.action_mailer.delivery_method = :smtp
   Rails.application.config.action_mailer.perform_deliveries = true
   Rails.application.config.action_mailer.raise_delivery_errors = true
   Rails.application.config.action_mailer.default_url_options = { host: URI.parse(Settings.app_url).host } if Settings.app_url.present?
   ActionMailer::Base.delivery_method = :smtp
-  ActionMailer::Base.smtp_settings = Settings.smtp.settings.transform_keys(&:to_sym)
+  ActionMailer::Base.smtp_settings = smtp_settings.transform_keys(&:to_sym)
 end

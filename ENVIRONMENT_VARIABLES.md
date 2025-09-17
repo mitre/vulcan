@@ -22,7 +22,7 @@ This document lists all environment variables that can be used to configure Vulc
 |----------|-------------|---------|---------|
 | `VULCAN_APP_URL` | Application URL | `http://localhost:3000` | `https://vulcan.example.com` |
 | `VULCAN_WELCOME_TEXT` | Welcome message on login page | `Welcome to Vulcan` | `Welcome to MITRE Vulcan` |
-| `VULCAN_CONTACT_EMAIL` | Contact email for notifications | `do_not_reply@vulcan` | `admin@example.com` |
+| `VULCAN_CONTACT_EMAIL` | Contact email for notifications and default SMTP username | `vulcan-support@example.com` | `support@mycompany.com` |
 
 ## Authentication Settings
 
@@ -124,7 +124,7 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SMTP_ADDRESS` | SMTP server address | - | `smtp.gmail.com` |
 | `VULCAN_SMTP_PORT` | SMTP server port | - | `587` |
 | `VULCAN_SMTP_DOMAIN` | SMTP domain | - | `example.com` |
-| `VULCAN_SMTP_SERVER_USERNAME` | SMTP username | - | `notifications@example.com` |
+| `VULCAN_SMTP_SERVER_USERNAME` | SMTP username (defaults to VULCAN_CONTACT_EMAIL if not set) | - | `notifications@example.com` |
 | `VULCAN_SMTP_SERVER_PASSWORD` | SMTP password | - | `smtp_password` |
 | `VULCAN_SMTP_AUTHENTICATION` | SMTP authentication method | - | `plain` |
 | `VULCAN_SMTP_OPENSSL_VERIFY_MODE` | OpenSSL verify mode for SMTP | - | `none` |

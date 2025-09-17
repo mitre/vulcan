@@ -81,12 +81,17 @@ VULCAN_CONTACT_EMAIL=admin@example.com
 VULCAN_APP_URL=https://your-app.herokuapp.com
 VULCAN_WELCOME_TEXT="Welcome to Vulcan"
 
-# Email configuration (if using SendGrid)
+# Email configuration
+# Simple setup: Most deployments only need to set VULCAN_CONTACT_EMAIL
+# The SMTP username will automatically default to this value
+VULCAN_CONTACT_EMAIL=support@yourcompany.com
+
+# Advanced SMTP setup (if using external email service like SendGrid)
 VULCAN_ENABLE_SMTP=true
 VULCAN_SMTP_ADDRESS=smtp.sendgrid.net
 VULCAN_SMTP_PORT=587
 VULCAN_SMTP_AUTHENTICATION=plain
-VULCAN_SMTP_SERVER_USERNAME=apikey
+VULCAN_SMTP_SERVER_USERNAME=apikey  # Override if different from contact_email
 VULCAN_SMTP_SERVER_PASSWORD=your-sendgrid-api-key
 VULCAN_SMTP_DOMAIN=heroku.com
 VULCAN_SMTP_ENABLE_STARTTLS_AUTO=true
