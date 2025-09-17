@@ -6,7 +6,7 @@ class ApplicationMailer < ActionMailer::Base
   default from: lambda { |*|
     # Use SMTP username as from address when available to ensure authentication alignment
     # This prevents domain mismatch issues between 'from' and SMTP authentication
-    if Settings.smtp.enabled && Settings.smtp.settings['user_name'].present?
+    if Settings.smtp.enabled && Settings.smtp.settings&.dig('user_name').present?
       Settings.smtp.settings['user_name']
     else
       Settings.contact_email
