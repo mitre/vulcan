@@ -5,85 +5,79 @@ require 'rails_helper'
 RSpec.describe ApplicationMailer, type: :mailer do
   describe 'default from address' do
     let(:mailer) { ApplicationMailer.new }
+    let(:from_address) { mailer.default_params[:from].call }
+
+    # Helper method to setup SMTP and contact email configuration
+    def setup_email_config(smtp_enabled: false, smtp_username: nil, contact_email: 'contact@example.com')
+      smtp_settings = smtp_username ? { 'user_name' => smtp_username } : {}
+      allow(Settings.smtp).to receive_messages(enabled: smtp_enabled, settings: smtp_settings)
+      allow(Settings).to receive(:contact_email).and_return(contact_email)
+    end
+
+    # Helper method to expect from address equals expected email
+    def expect_from_address(expected_email)
+      expect(from_address).to eq(expected_email)
+    end
 
     context 'when SMTP is disabled' do
-      before do
-        allow(Settings.smtp).to receive(:enabled).and_return(false)
-        allow(Settings).to receive(:contact_email).and_return('contact@example.com')
-      end
+      before { setup_email_config }
 
       it 'uses contact_email as from address' do
-        from_address = mailer.default_params[:from].call
-        expect(from_address).to eq('contact@example.com')
+        expect_from_address('contact@example.com')
       end
     end
 
     context 'when SMTP is enabled but no username configured' do
-      before do
-        allow(Settings.smtp).to receive_messages(enabled: true, settings: {})
-        allow(Settings).to receive(:contact_email).and_return('contact@example.com')
-      end
+      before { setup_email_config(smtp_enabled: true) }
 
       it 'falls back to contact_email' do
-        from_address = mailer.default_params[:from].call
-        expect(from_address).to eq('contact@example.com')
+        expect_from_address('contact@example.com')
       end
     end
 
     context 'when SMTP is enabled with username configured' do
       before do
-        allow(Settings.smtp).to receive_messages(
-          enabled: true,
-          settings: { 'user_name' => 'smtp-user@mailserver.com' }
+        setup_email_config(
+          smtp_enabled: true,
+          smtp_username: 'smtp-user@mailserver.com'
         )
-        allow(Settings).to receive(:contact_email).and_return('contact@example.com')
       end
 
       it 'uses SMTP username as from address for authentication alignment' do
-        from_address = mailer.default_params[:from].call
-        expect(from_address).to eq('smtp-user@mailserver.com')
+        expect_from_address('smtp-user@mailserver.com')
       end
     end
 
     context 'when SMTP is enabled with blank username' do
-      before do
-        allow(Settings.smtp).to receive_messages(
-          enabled: true,
-          settings: { 'user_name' => '' }
-        )
-        allow(Settings).to receive(:contact_email).and_return('contact@example.com')
-      end
+      before { setup_email_config(smtp_enabled: true, smtp_username: '') }
 
       it 'falls back to contact_email when username is blank' do
-        from_address = mailer.default_params[:from].call
-        expect(from_address).to eq('contact@example.com')
+        expect_from_address('contact@example.com')
       end
     end
 
     context 'real-world email alignment scenarios' do
       it 'prevents Gmail/domain mismatch issues' do
         # Simulate the original problematic configuration
-        allow(Settings.smtp).to receive_messages(
-          enabled: true,
-          settings: { 'user_name' => 'donotreply.vulcan@gmail.com' }
+        setup_email_config(
+          smtp_enabled: true,
+          smtp_username: 'donotreply.vulcan@gmail.com',
+          contact_email: 'saf@mitre.org'
         )
-        allow(Settings).to receive(:contact_email).and_return('saf@mitre.org')
 
-        from_address = mailer.default_params[:from].call
         # Should use SMTP username to prevent authentication mismatch
-        expect(from_address).to eq('donotreply.vulcan@gmail.com')
+        expect_from_address('donotreply.vulcan@gmail.com')
       end
 
       it 'works correctly with professional email services' do
         # Simulate proper Mailgun/SendGrid setup
-        allow(Settings.smtp).to receive_messages(
-          enabled: true,
-          settings: { 'user_name' => 'support@company.com' }
+        setup_email_config(
+          smtp_enabled: true,
+          smtp_username: 'support@company.com',
+          contact_email: 'support@company.com'
         )
-        allow(Settings).to receive(:contact_email).and_return('support@company.com')
 
-        from_address = mailer.default_params[:from].call
-        expect(from_address).to eq('support@company.com')
+        expect_from_address('support@company.com')
       end
     end
   end
