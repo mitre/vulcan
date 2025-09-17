@@ -95,7 +95,7 @@ RSpec.describe 'SMTP Settings Initializer' do
       original_delivery_method = ActionMailer::Base.delivery_method
 
       # Reload the initializer
-      load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
+      load smtp_initializer_path
 
       expect(ActionMailer::Base.delivery_method).to eq(original_delivery_method)
     end
@@ -118,7 +118,7 @@ RSpec.describe 'SMTP Settings Initializer' do
       allow(Settings).to receive(:contact_email).and_return(test_contact_email)
 
       # Reload the initializer
-      load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
+      load smtp_initializer_path
 
       # Should automatically use contact_email for SMTP authentication
       expect(ActionMailer::Base.smtp_settings[:user_name]).to eq(test_contact_email)
@@ -135,7 +135,7 @@ RSpec.describe 'SMTP Settings Initializer' do
       allow(Settings).to receive(:contact_email).and_return(test_contact_email)
 
       # Reload the initializer
-      load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
+      load smtp_initializer_path
 
       # Should preserve the explicit SMTP username
       expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('apikey')
