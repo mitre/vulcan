@@ -23,39 +23,41 @@ RSpec.describe 'SMTP Settings Initializer' do
 
     context 'when SMTP is enabled' do
       before do
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({
-          'address' => 'smtp.example.com',
-          'port' => 587,
-          'authentication' => 'plain'
-        })
+        allow(Settings.smtp).to receive_messages(
+          enabled: true,
+          settings: {
+            'address' => 'smtp.example.com',
+            'port' => 587,
+            'authentication' => 'plain'
+          }
+        )
         allow(Settings).to receive(:contact_email).and_return('default@example.com')
       end
 
       it 'defaults SMTP username to contact_email when not configured' do
         # Reload the initializer
-        load Rails.root.join('config/initializers/smtp_settings.rb')
+        load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
 
         expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('default@example.com')
       end
 
       it 'preserves explicit SMTP username when configured' do
         allow(Settings.smtp).to receive(:settings).and_return({
-          'address' => 'smtp.example.com',
-          'port' => 587,
-          'authentication' => 'plain',
-          'user_name' => 'explicit@example.com'
-        })
+                                                                'address' => 'smtp.example.com',
+                                                                'port' => 587,
+                                                                'authentication' => 'plain',
+                                                                'user_name' => 'explicit@example.com'
+                                                              })
 
         # Reload the initializer
-        load Rails.root.join('config/initializers/smtp_settings.rb')
+        load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
 
         expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('explicit@example.com')
       end
 
       it 'configures ActionMailer correctly' do
         # Reload the initializer
-        load Rails.root.join('config/initializers/smtp_settings.rb')
+        load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
 
         expect(ActionMailer::Base.delivery_method).to eq(:smtp)
         expect(Rails.application.config.action_mailer.delivery_method).to eq(:smtp)
@@ -73,7 +75,7 @@ RSpec.describe 'SMTP Settings Initializer' do
         original_delivery_method = ActionMailer::Base.delivery_method
 
         # Reload the initializer
-        load Rails.root.join('config/initializers/smtp_settings.rb')
+        load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
 
         expect(ActionMailer::Base.delivery_method).to eq(original_delivery_method)
         expect(ActionMailer::Base.smtp_settings).to be_empty
@@ -91,7 +93,7 @@ RSpec.describe 'SMTP Settings Initializer' do
       original_delivery_method = ActionMailer::Base.delivery_method
 
       # Reload the initializer
-      load Rails.root.join('config/initializers/smtp_settings.rb')
+      load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
 
       expect(ActionMailer::Base.delivery_method).to eq(original_delivery_method)
     end
@@ -106,15 +108,15 @@ RSpec.describe 'SMTP Settings Initializer' do
     it 'supports simple deployment with just contact_email' do
       # Simulate simple deployment: only contact_email set
       allow(Settings.smtp).to receive(:settings).and_return({
-        'address' => 'smtp.mailgun.org',
-        'port' => 587,
-        'authentication' => 'plain'
-        # No user_name configured
-      })
+                                                              'address' => 'smtp.mailgun.org',
+                                                              'port' => 587,
+                                                              'authentication' => 'plain'
+                                                              # No user_name configured
+                                                            })
       allow(Settings).to receive(:contact_email).and_return('support@myapp.com')
 
       # Reload the initializer
-      load Rails.root.join('config/initializers/smtp_settings.rb')
+      load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
 
       # Should automatically use contact_email for SMTP authentication
       expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('support@myapp.com')
@@ -123,15 +125,15 @@ RSpec.describe 'SMTP Settings Initializer' do
     it 'supports complex deployment with separate SMTP username' do
       # Simulate complex deployment: different SMTP username
       allow(Settings.smtp).to receive(:settings).and_return({
-        'address' => 'smtp.sendgrid.net',
-        'port' => 587,
-        'authentication' => 'plain',
-        'user_name' => 'apikey'  # SendGrid uses 'apikey' as username
-      })
+                                                              'address' => 'smtp.sendgrid.net',
+                                                              'port' => 587,
+                                                              'authentication' => 'plain',
+                                                              'user_name' => 'apikey' # SendGrid uses 'apikey' as username
+                                                            })
       allow(Settings).to receive(:contact_email).and_return('support@myapp.com')
 
       # Reload the initializer
-      load Rails.root.join('config/initializers/smtp_settings.rb')
+      load Rails.root.join('config', 'initializers', 'smtp_settings.rb', 'smtp_settings.rb')
 
       # Should preserve the explicit SMTP username
       expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('apikey')

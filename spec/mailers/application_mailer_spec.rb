@@ -20,8 +20,7 @@ RSpec.describe ApplicationMailer, type: :mailer do
 
     context 'when SMTP is enabled but no username configured' do
       before do
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({})
+        allow(Settings.smtp).to receive_messages(enabled: true, settings: {})
         allow(Settings).to receive(:contact_email).and_return('contact@example.com')
       end
 
@@ -33,10 +32,10 @@ RSpec.describe ApplicationMailer, type: :mailer do
 
     context 'when SMTP is enabled with username configured' do
       before do
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({
-          'user_name' => 'smtp-user@mailserver.com'
-        })
+        allow(Settings.smtp).to receive_messages(
+          enabled: true,
+          settings: { 'user_name' => 'smtp-user@mailserver.com' }
+        )
         allow(Settings).to receive(:contact_email).and_return('contact@example.com')
       end
 
@@ -48,10 +47,10 @@ RSpec.describe ApplicationMailer, type: :mailer do
 
     context 'when SMTP is enabled with blank username' do
       before do
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({
-          'user_name' => ''
-        })
+        allow(Settings.smtp).to receive_messages(
+          enabled: true,
+          settings: { 'user_name' => '' }
+        )
         allow(Settings).to receive(:contact_email).and_return('contact@example.com')
       end
 
@@ -64,10 +63,10 @@ RSpec.describe ApplicationMailer, type: :mailer do
     context 'real-world email alignment scenarios' do
       it 'prevents Gmail/domain mismatch issues' do
         # Simulate the original problematic configuration
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({
-          'user_name' => 'donotreply.vulcan@gmail.com'
-        })
+        allow(Settings.smtp).to receive_messages(
+          enabled: true,
+          settings: { 'user_name' => 'donotreply.vulcan@gmail.com' }
+        )
         allow(Settings).to receive(:contact_email).and_return('saf@mitre.org')
 
         from_address = mailer.default_params[:from].call
@@ -77,10 +76,10 @@ RSpec.describe ApplicationMailer, type: :mailer do
 
       it 'works correctly with professional email services' do
         # Simulate proper Mailgun/SendGrid setup
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({
-          'user_name' => 'support@company.com'
-        })
+        allow(Settings.smtp).to receive_messages(
+          enabled: true,
+          settings: { 'user_name' => 'support@company.com' }
+        )
         allow(Settings).to receive(:contact_email).and_return('support@company.com')
 
         from_address = mailer.default_params[:from].call
