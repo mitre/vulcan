@@ -6,12 +6,15 @@ RSpec.describe ApplicationMailer, type: :mailer do
   describe 'default from address' do
     let(:mailer) { ApplicationMailer.new }
     let(:from_address) { mailer.default_params[:from].call }
+    let(:contact_email) { 'contact@example.com' }
+    let(:company_email) { 'support@company.com' }
 
     # Helper method to setup SMTP and contact email configuration
-    def setup_email_config(smtp_enabled: false, smtp_username: nil, contact_email: 'contact@example.com')
+    def setup_email_config(smtp_enabled: false, smtp_username: nil, contact_email_override: nil)
       smtp_settings = smtp_username ? { 'user_name' => smtp_username } : {}
+      email_to_use = contact_email_override || contact_email
       allow(Settings.smtp).to receive_messages(enabled: smtp_enabled, settings: smtp_settings)
-      allow(Settings).to receive(:contact_email).and_return(contact_email)
+      allow(Settings).to receive(:contact_email).and_return(email_to_use)
     end
 
     # Helper method to expect from address equals expected email
@@ -23,7 +26,7 @@ RSpec.describe ApplicationMailer, type: :mailer do
       before { setup_email_config }
 
       it 'uses contact_email as from address' do
-        expect_from_address('contact@example.com')
+        expect_from_address(contact_email)
       end
     end
 
@@ -31,7 +34,7 @@ RSpec.describe ApplicationMailer, type: :mailer do
       before { setup_email_config(smtp_enabled: true) }
 
       it 'falls back to contact_email' do
-        expect_from_address('contact@example.com')
+        expect_from_address(contact_email)
       end
     end
 
@@ -52,7 +55,7 @@ RSpec.describe ApplicationMailer, type: :mailer do
       before { setup_email_config(smtp_enabled: true, smtp_username: '') }
 
       it 'falls back to contact_email when username is blank' do
-        expect_from_address('contact@example.com')
+        expect_from_address(contact_email)
       end
     end
 
@@ -62,7 +65,7 @@ RSpec.describe ApplicationMailer, type: :mailer do
         setup_email_config(
           smtp_enabled: true,
           smtp_username: 'donotreply.vulcan@gmail.com',
-          contact_email: 'saf@mitre.org'
+          contact_email_override: 'saf@mitre.org'
         )
 
         # Should use SMTP username to prevent authentication mismatch
@@ -73,11 +76,11 @@ RSpec.describe ApplicationMailer, type: :mailer do
         # Simulate proper Mailgun/SendGrid setup
         setup_email_config(
           smtp_enabled: true,
-          smtp_username: 'support@company.com',
-          contact_email: 'support@company.com'
+          smtp_username: company_email,
+          contact_email_override: company_email
         )
 
-        expect_from_address('support@company.com')
+        expect_from_address(company_email)
       end
     end
   end
