@@ -29,4 +29,4 @@ Settings.slack['enabled'] = false if Settings.slack['enabled'].nil?
 
 Settings['providers'] ||= Settingslogic.new({})
 
-Settings['contact_email'] = 'do_not_reply@vulcan' if Settings['contact_email'].blank?
+Settings['contact_email'] = 'vulcan-support@example.com' if Settings['contact_email'].blank?
