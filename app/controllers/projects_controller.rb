@@ -75,10 +75,27 @@ class ProjectsController < ApplicationController
     # First save ensures base Project is acceptable.
     if project.save
       send_slack_notification(:create_project, project) if Settings.slack.enabled
-      redirect_to project
+
+      respond_to do |format|
+        format.html { redirect_to project }
+        format.json { render json: { redirect_url: project_path(project), toast: 'Successfully created project' } }
+      end
     else
-      flash.alert = "Unable to create project. #{project.errors.full_messages}"
-      redirect_to action: 'new'
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to create project. #{project.errors.full_messages}"
+          redirect_to action: 'new'
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not create project.',
+              message: project.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
   end
 

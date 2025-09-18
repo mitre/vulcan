@@ -58,11 +58,14 @@
 </template>
 
 <script>
-import FormMixinVue from "../../mixins/FormMixin.vue";
-
 export default {
   name: "NewProject",
-  mixins: [FormMixinVue],
+  computed: {
+    // Only include CSRF token, not JSON headers since this is HTML form submission
+    authenticityToken: function () {
+      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
+    },
+  },
   methods: {
     formAction: function () {
       return "/projects";
