@@ -171,7 +171,7 @@ RAILS_ENV=development
 
 # Email (optional)
 VULCAN_ENABLE_SMTP=false
-VULCAN_CONTACT_EMAIL=dev@localhost
+VULCAN_CONTACT_EMAIL=dev@localhost  # Also used as default SMTP username when SMTP enabled
 
 # Authentication (optional)
 VULCAN_ENABLE_USER_REGISTRATION=true
