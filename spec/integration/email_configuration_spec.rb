@@ -6,6 +6,22 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
   # Simple integration tests that validate our email configuration fixes work
   # Focus on configuration validation rather than complex email rendering
 
+  # Helper methods to eliminate code duplication
+  def reload_smtp_settings
+    load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
+  end
+
+  def setup_production_smtp(smtp_settings, contact_email)
+    allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new('production'))
+    allow(Settings.smtp).to receive_messages(enabled: true, settings: smtp_settings)
+    allow(Settings).to receive(:contact_email).and_return(contact_email)
+  end
+
+  def test_application_mailer_from_address
+    mailer = ApplicationMailer.new
+    mailer.default_params[:from].call
+  end
+
   after do
     # Reset ActionMailer settings after each test
     ActionMailer::Base.smtp_settings = {}
@@ -14,21 +30,19 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
   describe 'Production SMTP Configuration Fix (Core Issue Resolution)' do
     context 'Gmail/MITRE authentication mismatch scenario (original production bug)' do
       before do
-        # Simulate exact production environment that was broken
-        allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new('production'))
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({
-          'address' => 'smtp.gmail.com',
-          'port' => 587,
-          'authentication' => 'plain'
-          # NO explicit user_name - this was the original problem
-        })
-        allow(Settings).to receive(:contact_email).and_return('saf@mitre.org')
+        setup_production_smtp(
+          {
+            'address' => 'smtp.gmail.com',
+            'port' => 587,
+            'authentication' => 'plain'
+            # NO explicit user_name - this was the original problem
+          },
+          'saf@mitre.org'
+        )
       end
 
       it 'resolves SMTP authentication mismatch by defaulting username to contact_email' do
-        # Apply our fix
-        load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
+        reload_smtp_settings
 
         # Verify our fix worked - SMTP username should default to contact_email
         expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('saf@mitre.org')
@@ -36,12 +50,10 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
       end
 
       it 'ensures ApplicationMailer from address matches SMTP authentication' do
-        # Apply our fix
-        load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
+        reload_smtp_settings
 
         # Test ApplicationMailer from address
-        mailer = ApplicationMailer.new
-        from_address = mailer.default_params[:from].call
+        from_address = test_application_mailer_from_address
 
         # Both should use the same email - no more mismatch!
         smtp_username = ActionMailer::Base.smtp_settings[:user_name]
@@ -53,19 +65,18 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
 
     context 'Professional email service scenario (recommended approach)' do
       before do
-        allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new('production'))
-        allow(Settings.smtp).to receive(:enabled).and_return(true)
-        allow(Settings.smtp).to receive(:settings).and_return({
-          'address' => 'smtp.mailgun.org',
-          'port' => 587,
-          'authentication' => 'plain'
-          # No explicit user_name - should default to contact_email
-        })
-        allow(Settings).to receive(:contact_email).and_return('vulcan-demo@mitre.org')
+        setup_production_smtp(
+          {
+            'address' => 'smtp.mailgun.org',
+            'port' => 587,
+            'authentication' => 'plain'
+          },
+          'vulcan-demo@mitre.org'
+        )
       end
 
       it 'defaults SMTP username to contact_email for professional services' do
-        load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
+        reload_smtp_settings
 
         expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('vulcan-demo@mitre.org')
         expect(ActionMailer::Base.smtp_settings[:address]).to eq('smtp.mailgun.org')
@@ -74,11 +85,11 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
       it 'preserves explicit SMTP username when provided (backward compatibility)' do
         # Test complex deployment scenario
         allow(Settings.smtp).to receive(:settings).and_return({
-          'address' => 'smtp.sendgrid.net',
-          'port' => 587,
-          'authentication' => 'plain',
-          'user_name' => 'apikey'  # Explicit username provided
-        })
+                                                                'address' => 'smtp.sendgrid.net',
+                                                                'port' => 587,
+                                                                'authentication' => 'plain',
+                                                                'user_name' => 'apikey' # Explicit username provided
+                                                              })
 
         load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
 
@@ -93,8 +104,7 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
       allow(Settings).to receive(:contact_email).and_return('community-test@example.com')
 
       # Test that ApplicationMailer uses simple, direct configuration
-      mailer = ApplicationMailer.new
-      from_address = mailer.default_params[:from].call
+      from_address = test_application_mailer_from_address
 
       expect(from_address).to eq('community-test@example.com')
     end
@@ -113,7 +123,7 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
         from_address = mailer.default_params[:from].call
 
         expect(from_address).to eq(test_email),
-               "ApplicationMailer should handle contact_email: #{test_email}"
+                                "ApplicationMailer should handle contact_email: #{test_email}"
       end
     end
   end
@@ -137,11 +147,13 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
   describe 'Environment-Specific Behavior Validation' do
     it 'SMTP settings only apply in production environment' do
       # Test that non-production environments don't get SMTP configuration
-      allow(Settings.smtp).to receive(:enabled).and_return(true)
-      allow(Settings.smtp).to receive(:settings).and_return({
-        'address' => 'smtp.example.com',
-        'user_name' => 'should-not-be-used'
-      })
+      allow(Settings.smtp).to receive_messages(
+        enabled: true,
+        settings: {
+          'address' => 'smtp.example.com',
+          'user_name' => 'should-not-be-used'
+        }
+      )
 
       %w[development test].each do |env|
         allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new(env))
@@ -154,7 +166,7 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
 
         # Non-production environments should not get SMTP settings
         expect(ActionMailer::Base.smtp_settings).to be_empty,
-               "#{env} environment should not configure SMTP settings"
+                                                    "#{env} environment should not configure SMTP settings"
       end
     end
   end
