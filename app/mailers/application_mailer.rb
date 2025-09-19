@@ -5,6 +5,6 @@
 class ApplicationMailer < ActionMailer::Base
   # Follow community standard: simple, direct configuration like OpenProject/Alonetone
   # SMTP authentication alignment handled in smtp_settings.rb initializer
-  default from: ->(*) { Settings.contact_email }
+  default from: ->(*) { Settings.contact_email || 'vulcan-support@example.com' }
   layout 'mailer'
 end
