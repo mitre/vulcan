@@ -6,16 +6,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
   # Regression tests to ensure all controllers properly handle HTML vs JSON format requests
   # This prevents the FormMixin JSON header vs redirect_to mismatch issues
 
-  before do
-    Rails.application.reload_routes!
-    sign_in admin_user
-  end
-
-  let(:admin_user) { create(:user, admin: true) }
-  let(:project) { create(:project) }
-  let(:component) { create(:component, project: project) }
-  let(:membership) { Membership.create!(user: admin_user, membership: project, role: 'admin') }
-  let(:srg) { create(:security_requirements_guide) }
+  include_context 'format handling test setup'
 
   describe 'ProjectsController#create' do
     let(:valid_params) { { project: { name: 'Test Project', description: 'Test Description', visibility: 'discoverable' } } }
@@ -46,7 +37,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to include('application/json')
 
-        json_response = JSON.parse(response.body)
+        json_response = response.parsed_body
         expect(json_response['redirect_url']).to be_present
         expect(json_response['toast']).to eq('Successfully created project')
       end
@@ -57,7 +48,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to include('application/json')
 
-        json_response = JSON.parse(response.body)
+        json_response = response.parsed_body
         expect(json_response['toast']['variant']).to eq('danger')
       end
     end
@@ -85,7 +76,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to include('application/json')
 
-        json_response = JSON.parse(response.body)
+        json_response = response.parsed_body
         expect(json_response['toast']).to eq('Successfully updated user')
       end
     end
@@ -112,7 +103,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to include('application/json')
 
-        json_response = JSON.parse(response.body)
+        json_response = response.parsed_body
         expect(json_response['toast']).to eq('Successfully updated membership')
       end
     end
@@ -137,7 +128,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to include('application/json')
 
-        json_response = JSON.parse(response.body)
+        json_response = response.parsed_body
         expect(json_response['toast']).to eq('Successfully removed SRG')
       end
     end
@@ -156,7 +147,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to include('application/json')
 
-        json_response = JSON.parse(response.body)
+        json_response = response.parsed_body
         expect(json_response['toast']).to be_present
       end
     end
@@ -207,11 +198,11 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
       expect(response).to have_http_status(:redirect), 'SRG deletion should redirect for HTML'
 
       # Create fresh SRG for JSON test (since first one was deleted)
-      test_srg_2 = create(:security_requirements_guide)
+      test_srg_second = create(:security_requirements_guide)
 
       # Test JSON format
       json_headers = { 'Accept' => 'application/json', 'Content-Type' => 'application/json' }
-      delete "/srgs/#{test_srg_2.id}", headers: json_headers
+      delete "/srgs/#{test_srg_second.id}", headers: json_headers
       expect(response.content_type).to include('application/json'), 'SRG deletion should return JSON'
       expect(response.status).to eq(200), 'SRG deletion should succeed for JSON'
     end
