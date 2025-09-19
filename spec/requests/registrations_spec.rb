@@ -65,6 +65,10 @@ RSpec.describe 'User Registrations', type: :request do
         local_login: double('local_login', enabled: true, email_confirmation: true),
         contact_email: 'admin@example.com'
       )
+
+      # Ensure email delivery is enabled for this test
+      ActionMailer::Base.perform_deliveries = true
+      ActionMailer::Base.delivery_method = :test
       ActionMailer::Base.deliveries.clear
     end
 
@@ -149,6 +153,12 @@ RSpec.describe 'User Registrations', type: :request do
         local_login: double('local_login', enabled: true, email_confirmation: true),
         contact_email: 'admin@example.com'
       )
+
+      # Ensure email delivery is enabled for this test
+      ActionMailer::Base.perform_deliveries = true
+      ActionMailer::Base.delivery_method = :test
+      ActionMailer::Base.deliveries.clear
+
       sign_in existing_user
     end
 

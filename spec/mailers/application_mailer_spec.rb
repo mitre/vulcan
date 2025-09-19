@@ -19,10 +19,10 @@ RSpec.describe ApplicationMailer, type: :mailer do
       expect(from_address).to eq('notifications@company.org')
     end
 
-    it 'handles nil contact_email gracefully' do
+    it 'handles nil contact_email gracefully with fallback' do
       allow(Settings).to receive(:contact_email).and_return(nil)
 
-      expect(from_address).to be_nil
+      expect(from_address).to eq('vulcan-support@example.com')
     end
   end
 end
