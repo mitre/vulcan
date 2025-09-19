@@ -18,7 +18,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 ## Configure Welcome Text and Contact Email:
 
 - **welcome_text:** Welcome text is the text shown on the homepage below the "What is Vulcan" blurb on the homepage. It can be configured by the administrator to provide users with any information that may be relevant to their access and usage of the Vulcan application. `(ENV: VULCAN_WELCOME_TEXT)(default: nil)`
-- **contact_email:** Contact email is the reply email shown to users on confirmation and notification emails. By default this will revert to `do_not_reply@vulcan` if no email is specified. Is the default email for ApplicationMailer to use. `(ENV: VULCAN_CONTACT_EMAIL)(default: do_not_reply@vulcan)`
+- **contact_email:** Contact email is the reply email shown to users on confirmation and notification emails. Also serves as the default SMTP username when not explicitly configured, ensuring authentication alignment. By default this will revert to `vulcan-support@example.com` if no email is specified. `(ENV: VULCAN_CONTACT_EMAIL)(default: vulcan-support@example.com)`
 - **app_url:** Allows hyper-linking of vulcan urls when notifications are sent `(ENV: VULCAN_APP_URL)`
 
 ## Configure SMTP:
@@ -32,7 +32,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
   - **tls:** Enables SMTP to connect with SMTP/TLS `(ENV: VULCAN_SMTP_TLS)`
   - **openssl_verify_mode:** For specifying how OpenSSL checks certificates `(ENV: VULCAN_SMTP_OPENSSL_VERIFY_MODE)`
   - **enable_starttls_auto:** Checks if SMTP has STARTTLS enabled and starts to use it `(ENV: VULCAN_SMTP_ENABLE_STARTTLS_AUTO)`
-  - **user_name:** For mail server authentication `(ENV: VULCAN_SMTP_SERVER_USERNAME)`
+  - **user_name:** For mail server authentication. Defaults to contact_email if not specified. `(ENV: VULCAN_SMTP_SERVER_USERNAME)`
   - **password:** For mail server authentication `(ENV: VULCAN_SMTP_SERVER_PASSWORD)`
 
 ## Configure Local Login

@@ -92,6 +92,8 @@ data:
           port: 587
           domain: example.com
           authentication: plain
+          # user_name automatically defaults to contact_email if not specified
+          # user_name: admin@example.com  # Override only if different from contact_email
           enable_starttls_auto: true
       
       local_login:

@@ -81,12 +81,29 @@ VULCAN_CONTACT_EMAIL=admin@example.com
 VULCAN_APP_URL=https://your-app.herokuapp.com
 VULCAN_WELCOME_TEXT="Welcome to Vulcan"
 
-# Email configuration (if using SendGrid)
+# Email configuration (Community Best Practice)
+# Simple setup: Most deployments only need VULCAN_CONTACT_EMAIL
+# Following Rails community standard like OpenProject/Alonetone
+VULCAN_CONTACT_EMAIL=support@yourcompany.com
+
+# Recommended: Use professional email service (avoid Gmail SMTP)
+# Option 1: Mailgun (Free tier: 100 emails/day)
+heroku addons:create mailgun:starter
+VULCAN_ENABLE_SMTP=true
+VULCAN_SMTP_ADDRESS=smtp.mailgun.org
+VULCAN_SMTP_PORT=587
+VULCAN_SMTP_AUTHENTICATION=plain
+# VULCAN_SMTP_SERVER_USERNAME automatically defaults to VULCAN_CONTACT_EMAIL
+VULCAN_SMTP_SERVER_PASSWORD=your-mailgun-password
+VULCAN_SMTP_DOMAIN=your-app.herokuapp.com
+VULCAN_SMTP_ENABLE_STARTTLS_AUTO=true
+
+# Option 2: SendGrid (if you need different SMTP username)
 VULCAN_ENABLE_SMTP=true
 VULCAN_SMTP_ADDRESS=smtp.sendgrid.net
 VULCAN_SMTP_PORT=587
 VULCAN_SMTP_AUTHENTICATION=plain
-VULCAN_SMTP_SERVER_USERNAME=apikey
+VULCAN_SMTP_SERVER_USERNAME=apikey  # Override when different from contact_email
 VULCAN_SMTP_SERVER_PASSWORD=your-sendgrid-api-key
 VULCAN_SMTP_DOMAIN=heroku.com
 VULCAN_SMTP_ENABLE_STARTTLS_AUTO=true

@@ -17,13 +17,33 @@ class UsersController < ApplicationController
 
   def update
     if @user.update(user_update_params)
-      flash.notice = 'Successfully updated user.'
       notification_type = @user.admin ? :assign_vulcan_admin : :remove_vulcan_admin
       send_slack_notification(notification_type, @user) if Settings.slack.enabled
+
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully updated user.'
+          redirect_to action: 'index'
+        end
+        format.json { render json: { toast: 'Successfully updated user' } }
+      end
     else
-      flash.alert = "Unable to updated user. #{@user.errors.full_messages}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to update user. #{@user.errors.full_messages}"
+          redirect_to action: 'index'
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not update user.',
+              message: @user.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to action: 'index'
   end
 
   def destroy

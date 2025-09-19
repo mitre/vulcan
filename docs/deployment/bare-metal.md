@@ -148,8 +148,15 @@ DATABASE_URL=postgresql://vulcan_user:secure_password@localhost/vulcan_productio
 SECRET_KEY_BASE=$(bundle exec rails secret)
 RAILS_SERVE_STATIC_FILES=true
 RAILS_LOG_TO_STDOUT=false
-VULCAN_CONTACT_EMAIL=admin@example.com
+VULCAN_CONTACT_EMAIL=admin@example.com  # Also used as default SMTP username
 VULCAN_APP_URL=https://vulcan.example.com
+# For SMTP email delivery, add:
+# VULCAN_ENABLE_SMTP=true
+# VULCAN_SMTP_ADDRESS=smtp.example.com
+# VULCAN_SMTP_PORT=587
+# VULCAN_SMTP_AUTHENTICATION=plain
+# VULCAN_SMTP_SERVER_PASSWORD=your_smtp_password
+# Note: VULCAN_SMTP_SERVER_USERNAME defaults to VULCAN_CONTACT_EMAIL
 EOF
 ```
 

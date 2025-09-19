@@ -3,6 +3,8 @@
 # This is the base mailer for the application. Things should only be
 # placed here if they are shared between multiple mailers
 class ApplicationMailer < ActionMailer::Base
-  default from: ->(*) { Settings.contact_email }
+  # Follow community standard: simple, direct configuration like OpenProject/Alonetone
+  # SMTP authentication alignment handled in smtp_settings.rb initializer
+  default from: ->(*) { Settings.contact_email || 'vulcan-support@example.com' }
   layout 'mailer'
 end

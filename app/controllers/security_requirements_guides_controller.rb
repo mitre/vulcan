@@ -37,12 +37,32 @@ class SecurityRequirementsGuidesController < ApplicationController
 
   def destroy
     if @srg.destroy
-      flash.notice = 'Successfully removed SRG.'
       send_slack_notification(:remove_srg, @srg) if Settings.slack.enabled
+
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully removed SRG.'
+          redirect_to action: 'index'
+        end
+        format.json { render json: { toast: 'Successfully removed SRG' } }
+      end
     else
-      flash.alert = "Unable to remove SRG. #{@srg.errors.full_messages.join(', ')}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to remove SRG. #{@srg.errors.full_messages.join(', ')}"
+          redirect_to action: 'index'
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not remove SRG.',
+              message: @srg.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to action: 'index'
   end
 
   private

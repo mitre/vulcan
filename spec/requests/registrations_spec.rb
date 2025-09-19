@@ -10,7 +10,7 @@ RSpec.describe 'User Registrations', type: :request do
     Rails.application.reload_routes!
   end
 
-  let(:user1) { build(:user) }
+  let(:user1) { build(:user, email: "registration-test-#{SecureRandom.hex(4)}@example.com") }
 
   context 'when local login is disabled' do
     before do
@@ -65,6 +65,10 @@ RSpec.describe 'User Registrations', type: :request do
         local_login: double('local_login', enabled: true, email_confirmation: true),
         contact_email: 'admin@example.com'
       )
+
+      # Ensure email delivery is enabled for this test
+      ActionMailer::Base.perform_deliveries = true
+      ActionMailer::Base.delivery_method = :test
       ActionMailer::Base.deliveries.clear
     end
 
@@ -85,8 +89,9 @@ RSpec.describe 'User Registrations', type: :request do
       expect(created_user.confirmed?).to be false
 
       expect(response).to have_http_status(:redirect)
-      # Check flash message is set (even if not visible in redirect body)
-      expect(flash[:notice]).to eq(I18n.t('devise.registrations.signed_up_but_unconfirmed'))
+      # Check that confirmation email was sent (indicates successful registration)
+      expect(ActionMailer::Base.deliveries.count).to eq(1)
+      expect(ActionMailer::Base.deliveries.last.subject).to include('Confirmation')
     end
   end
 
@@ -140,7 +145,7 @@ RSpec.describe 'User Registrations', type: :request do
 
   context 'update user info', :truncation do
     let(:existing_user) { create(:user) }
-    let(:new_user_data) { build(:user) }
+    let(:new_user_data) { build(:user, email: "update-test-#{SecureRandom.hex(4)}@example.com") }
 
     before do
       stub_local_login_setting(enabled: true, email_confirmation: true)
@@ -148,6 +153,12 @@ RSpec.describe 'User Registrations', type: :request do
         local_login: double('local_login', enabled: true, email_confirmation: true),
         contact_email: 'admin@example.com'
       )
+
+      # Ensure email delivery is enabled for this test
+      ActionMailer::Base.perform_deliveries = true
+      ActionMailer::Base.delivery_method = :test
+      ActionMailer::Base.deliveries.clear
+
       sign_in existing_user
     end
 
@@ -163,8 +174,11 @@ RSpec.describe 'User Registrations', type: :request do
       }
 
       expect(response).to have_http_status(:redirect)
-      follow_redirect!
-      expect(response.body).to include(I18n.t('devise.registrations.update_needs_confirmation'))
+      # Check that confirmation email was sent for email change
+      expect(ActionMailer::Base.deliveries.count).to eq(1)
+      confirmation_email = ActionMailer::Base.deliveries.last
+      expect(confirmation_email.to).to include(new_user_data.email)
+      expect(confirmation_email.subject).to include('Confirmation')
 
       existing_user.reload.confirm
 

@@ -43,7 +43,6 @@ class MembershipsController < ApplicationController
 
   def update
     if @membership.update(membership_update_params)
-      flash.notice = 'Successfully updated membership.'
       send_smtp_notification(UserMailer, 'update_membership', current_user, @membership) if Settings.smtp.enabled
       case @membership.membership_type
       when 'Project'
@@ -51,10 +50,31 @@ class MembershipsController < ApplicationController
       when 'Component'
         send_membership_notification(:update_component_membership, @membership)
       end
+
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully updated membership.'
+          redirect_to @membership.membership
+        end
+        format.json { render json: { toast: 'Successfully updated membership' } }
+      end
     else
-      flash.alert = "Unable to updated membership. #{@membership.errors.full_messages}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to update membership. #{@membership.errors.full_messages}"
+          redirect_to @membership.membership
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not update membership.',
+              message: @membership.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to @membership.membership
   end
 
   def destroy
