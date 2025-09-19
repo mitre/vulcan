@@ -68,6 +68,14 @@ This document lists all environment variables that can be used to configure Vulc
 | `VULCAN_OIDC_TOKEN_URL` | OIDC token endpoint | `https://dev-12345.okta.com/oauth2/default/v1/token` |
 | `VULCAN_OIDC_USERINFO_URL` | OIDC userinfo endpoint | `https://dev-12345.okta.com/oauth2/default/v1/userinfo` |
 | `VULCAN_OIDC_JWKS_URI` | OIDC JWKS endpoint | `https://dev-12345.okta.com/oauth2/default/v1/keys` |
+| `VULCAN_OIDC_POST_LOGOUT_REDIRECT_URI` | Post-logout redirect URI | `/` | `https://vulcan.example.com/dashboard` |
+
+#### Security Options (Recommended)
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_OIDC_PKCE` | Enable PKCE for enhanced security | `true` | `false` (to disable) |
+| `VULCAN_OIDC_REQUIRE_STATE` | Require state parameter for CSRF protection | `true` | `false` (to disable) |
+| `VULCAN_OIDC_SEND_NONCE` | Send nonce for replay attack protection | `true` | `false` (to disable) |
 
 #### Deprecated Variables
 *These variables are no longer needed with auto-discovery enabled*
