@@ -23,19 +23,19 @@ RSpec.describe 'OIDC Security Configuration' do
       end
     end
 
-    it 'validates PKCE defaults to enabled for security' do
-      # Test default (when env var not set, should default to true)
+    it 'validates PKCE defaults appropriately for confidential clients' do
+      # Test default (when env var not set, should default to false for confidential clients)
       ClimateControl.modify(VULCAN_OIDC_PKCE: nil) do
-        template = "<%= ENV['VULCAN_OIDC_PKCE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_PKCE']) : true %>"
-        result = ERB.new(template).result
-        expect(result).to eq('true')
-      end
-
-      # Test explicit disable
-      ClimateControl.modify(VULCAN_OIDC_PKCE: 'false') do
-        template = "<%= ENV['VULCAN_OIDC_PKCE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_PKCE']) : true %>"
+        template = "<%= ENV['VULCAN_OIDC_PKCE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_PKCE']) : false %>"
         result = ERB.new(template).result
         expect(result).to eq('false')
+      end
+
+      # Test explicit enable (for specific security requirements)
+      ClimateControl.modify(VULCAN_OIDC_PKCE: 'true') do
+        template = "<%= ENV['VULCAN_OIDC_PKCE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_PKCE']) : false %>"
+        result = ERB.new(template).result
+        expect(result).to eq('true')
       end
     end
 
@@ -76,7 +76,7 @@ RSpec.describe 'OIDC Security Configuration' do
 
       required_oidc_vars.each do |var|
         expect(env_vars_content).to include(var),
-               "ENVIRONMENT_VARIABLES.md should document #{var}"
+                                    "ENVIRONMENT_VARIABLES.md should document #{var}"
       end
     end
 
@@ -84,14 +84,14 @@ RSpec.describe 'OIDC Security Configuration' do
       env_vars_content = File.read('ENVIRONMENT_VARIABLES.md')
 
       security_features = [
-        'PKCE for enhanced security',
+        'PKCE (Proof Key for Code Exchange)',
         'state parameter for CSRF protection',
         'nonce for replay attack protection'
       ]
 
       security_features.each do |feature|
         expect(env_vars_content).to include(feature),
-               "Security feature should be documented: #{feature}"
+                                    "Security feature should be documented: #{feature}"
       end
     end
   end

@@ -70,12 +70,14 @@ This document lists all environment variables that can be used to configure Vulc
 | `VULCAN_OIDC_JWKS_URI` | OIDC JWKS endpoint | `https://dev-12345.okta.com/oauth2/default/v1/keys` |
 | `VULCAN_OIDC_POST_LOGOUT_REDIRECT_URI` | Post-logout redirect URI | `/` | `https://vulcan.example.com/dashboard` |
 
-#### Security Options (Recommended)
+#### Security Options
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `VULCAN_OIDC_PKCE` | Enable PKCE for enhanced security | `true` | `false` (to disable) |
+| `VULCAN_OIDC_PKCE` | Enable PKCE (Proof Key for Code Exchange) | `false` | `true` (for public clients) |
 | `VULCAN_OIDC_REQUIRE_STATE` | Require state parameter for CSRF protection | `true` | `false` (to disable) |
 | `VULCAN_OIDC_SEND_NONCE` | Send nonce for replay attack protection | `true` | `false` (to disable) |
+
+**PKCE Guidance**: Vulcan is a **confidential client** (server-side web application) that can securely store client secrets. PKCE is primarily designed for **public clients** (SPAs, mobile apps) that cannot securely store secrets. For confidential clients like Vulcan, **client secret authentication is the standard and more appropriate security mechanism**. Enable PKCE only if your security requirements specifically mandate it or if deploying in environments where secret storage is a concern.
 
 #### Deprecated Variables
 *These variables are no longer needed with auto-discovery enabled*

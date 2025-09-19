@@ -63,7 +63,7 @@ defaults: &defaults
       nonce: <%= proc { SecureRandom.hex(32) } %>
       prompt: <%= ENV['VULCAN_OIDC_PROMPT'] || nil %>
       # Security enhancements
-      pkce: <%= ENV['VULCAN_OIDC_PKCE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_PKCE']) : true %>
+      pkce: <%= ENV['VULCAN_OIDC_PKCE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_PKCE']) : false %>
       require_state: <%= ENV['VULCAN_OIDC_REQUIRE_STATE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_REQUIRE_STATE']) : true %>
       send_nonce: <%= ENV['VULCAN_OIDC_SEND_NONCE'].present? ? ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_SEND_NONCE']) : true %>
       client_options:
