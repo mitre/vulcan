@@ -2,7 +2,7 @@ import TurbolinksAdapter from "vue-turbolinks";
 import Vue from "vue";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
 import Project from "../components/project/Project.vue";
-import linkify from "vue-linkify";
+import linkify from "v-linkify";
 
 Vue.use(TurbolinksAdapter);
 Vue.use(BootstrapVue);
