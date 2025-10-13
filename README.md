@@ -277,18 +277,6 @@ We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTIN
 
 See our [detailed roadmap](./ROADMAP.md) for more information.
 
-## 📄 License
-
-© 2022-2025 The MITRE Corporation.
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE.md) file for details.
-
-**Approved for Public Release; Distribution Unlimited. Case Number 18-3678.**
-
-### Notice
-
-This software was produced for the U.S. Government under Contract Number HHSM-500-2012-00008I, and is subject to Federal Acquisition Regulation Clause 52.227-14, Rights in Data-General.
-
 ## 🙏 Acknowledgments
 
 - DISA for STIG and SRG specifications
