@@ -75,3 +75,28 @@ RSpec.describe User, type: :model do
     end
   end
 end
+
+  describe 'email validation' do
+    it 'rejects disposable email addresses' do
+      user = build(:user, email: 'test@mailinator.com')
+      expect(user).not_to be_valid
+      expect(user.errors[:email]).to include('is invalid')
+    end
+
+    it 'rejects invalid email format' do
+      user = build(:user, email: 'not-an-email')
+      expect(user).not_to be_valid
+      expect(user.errors[:email]).to be_present
+    end
+
+    it 'accepts valid email addresses' do
+      user = build(:user, email: 'admin@company.com')
+      expect(user).to be_valid
+    end
+
+    it 'accepts example.com in test environment' do
+      # Test factories use @example.com which should be allowed in test
+      user = build(:user, email: 'test@example.com')
+      expect(user).to be_valid
+    end
+  end

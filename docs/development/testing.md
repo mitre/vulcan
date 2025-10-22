@@ -11,6 +11,25 @@ Comprehensive guide for testing Vulcan application code, including unit tests, i
 - **DatabaseCleaner** - Test database management
 - **VCR** - HTTP interaction recording
 
+## Prerequisites
+
+Before running tests, ensure PostgreSQL is running and the test database is set up:
+
+```bash
+# 1. Start PostgreSQL (one-time, keeps running)
+docker-compose -f docker-compose.dev.yml up -d
+
+# 2. Create and migrate test database (one-time, or after schema changes)
+bundle exec rails db:create RAILS_ENV=test
+bundle exec rails db:migrate RAILS_ENV=test
+
+# 3. Verify database is ready
+docker-compose -f docker-compose.dev.yml ps
+# Should show db service as "Up" and healthy
+```
+
+**Note:** The test suite uses a separate `vulcan_vue_test` database on the same PostgreSQL server as development. Tests will fail if PostgreSQL is not running.
+
 ## Running Tests
 
 ### Quick Commands
