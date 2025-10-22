@@ -198,8 +198,56 @@ bundle exec bundler-audit
 - **Optimized size**: 1.76GB (reduced from 6.5GB)
 - **Memory efficiency**: jemalloc for 20-40% reduction
 - **Multi-stage builds** for security and size
-- **Health checks** configured
+- **Health checks** configured (see below)
 - **Non-root user** execution
+
+## 🏥 Health Check Endpoints
+
+Vulcan provides comprehensive health check endpoints for Kubernetes probes and monitoring:
+
+### `/up` - Basic Liveness Check
+Rails 8 built-in endpoint. Returns 200 if application is running.
+```bash
+curl http://localhost:3000/up
+# Returns: green HTML page with 200 status
+```
+
+**Use for:** Kubernetes liveness probes
+
+### `/health_check` - Comprehensive Health Check
+Validates database connectivity and migration status.
+```bash
+curl http://localhost:3000/health_check
+# Returns: "ok" or error message
+
+curl http://localhost:3000/health_check.json
+# Returns: {"healthy":true,"message":"success"}
+```
+
+**Use for:** Kubernetes readiness probes, monitoring dashboards
+
+### `/health_check/database` - Database-Specific Check
+Checks only database connectivity.
+```bash
+curl http://localhost:3000/health_check/database
+# Returns: "ok" if database is accessible
+```
+
+**Use for:** Troubleshooting database issues
+
+### `/status` - Application Status
+Detailed application status including configuration and setup state.
+```bash
+curl http://localhost:3000/status | jq
+```
+
+Returns:
+- Application version and environment
+- Health status (database, LDAP, OIDC)
+- Setup state (admin user, auth providers, features)
+- System metrics (uptime, database connections)
+
+**Use for:** Deployment verification, support troubleshooting
 
 ## 🔐 Authentication Configuration
 
