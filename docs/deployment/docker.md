@@ -54,6 +54,7 @@ Key variables for Docker:
 - `SECRET_KEY_BASE` - Rails secret key
 - `RAILS_ENV` - Set to `production`
 - `RAILS_LOG_TO_STDOUT` - Set to `true` for container logs
+- `FORCE_SSL` - Set to `true` for production with HTTPS, `false` for local dev
 
 ### Volumes
 

@@ -178,6 +178,8 @@ spec:
           value: "true"
         - name: RAILS_LOG_TO_STDOUT
           value: "true"
+        - name: FORCE_SSL
+          value: "true"  # Set to false for local/dev clusters without ingress TLS
         - name: SECRET_KEY_BASE
           valueFrom:
             secretKeyRef:
@@ -245,24 +247,27 @@ spec:
         # Health Checks
         livenessProbe:
           httpGet:
-            path: /health
+            path: /up
             port: 3000
-          initialDelaySeconds: 60
-          periodSeconds: 30
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
+            path: /health_check/database
             port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         startupProbe:
           httpGet:
-            path: /health
+            path: /health_check
             port: 3000
+            scheme: HTTP
           initialDelaySeconds: 0
           periodSeconds: 10
           timeoutSeconds: 5

@@ -22,6 +22,12 @@ gem 'jbuilder', '~> 2.7'
 gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
 gem 'devise'
+# Health check endpoints for Kubernetes and monitoring
+gem 'health_check'
+# Email validation (format, MX records, disposable email detection)
+gem 'valid_email2'
+# Application version management (standardized version handling)
+gem 'rails_app_version'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
 # LDAP Auth
