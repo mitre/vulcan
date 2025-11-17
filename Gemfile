@@ -59,6 +59,7 @@ gem 'bootsnap', '>= 1.4.2', require: false
 # Ruby 3.4 compatibility - these will be removed from stdlib
 gem 'abbrev'
 gem 'csv'
+gem 'nkf'
 
 gem 'audited', '~> 5.8.0'
 

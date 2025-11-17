@@ -335,6 +335,7 @@ GEM
     net-ssh (7.3.0)
     netrc (0.11.0)
     nio4r (2.7.4)
+    nkf (0.2.0)
     nokogiri (1.18.9-aarch64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.18.9-arm64-darwin)
@@ -694,6 +695,7 @@ DEPENDENCIES
   listen (~> 3.7)
   mitre-inspec-objects
   mitre-settingslogic (~> 3.0)
+  nkf
   nokogiri
   nokogiri-happymapper
   omniauth (~> 2.1)
