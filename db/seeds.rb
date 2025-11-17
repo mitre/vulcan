@@ -5,6 +5,17 @@
 # Populate the database for demonstration use.
 raise 'This task is only for use in a development environment' unless Rails.env.development? || ENV.fetch('DISABLE_DATABASE_ENVIRONMENT_CHECK', false)
 
+# Check if database has already been seeded
+# Seeds are meant to run once on a fresh database (Rails convention)
+if User.exists?(email: 'admin@example.com')
+  puts "\n✅ Database already contains seed data"
+  puts ""
+  puts "To reset and reseed the database, use:"
+  puts "  bin/rails db:reset"
+  puts ""
+  exit 0
+end
+
 puts "Populating database for demo use:\n\n"
 
 # --------------- #
