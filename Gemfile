@@ -94,6 +94,8 @@ group :development do
   gem 'letter_opener'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
+  # Dockerfile generator following Rails/Docker best practices
+  gem 'dockerfile-rails'
   # Git hooks management
   gem 'overcommit', require: false
   # Security vulnerability scanner for Ruby dependencies
