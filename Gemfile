@@ -24,6 +24,9 @@ gem 'haml-rails', '~> 2.0'
 gem 'devise'
 # Health check endpoints for Kubernetes and monitoring
 gem 'health_check'
+
+# Prometheus metrics exporter for monitoring and observability
+gem 'prometheus_exporter'
 # Email validation (format, MX records, disposable email detection)
 gem 'valid_email2'
 # Application version management (standardized version handling)

@@ -402,6 +402,8 @@ GEM
       prettyprint
     prettyprint (0.2.0)
     prism (1.4.0)
+    prometheus_exporter (2.3.1)
+      webrick
     propshaft (1.2.1)
       actionpack (>= 7.0.0)
       activesupport (>= 7.0.0)
@@ -698,6 +700,7 @@ DEPENDENCIES
   overcommit
   ox
   pg (>= 0.18, < 2.0)
+  prometheus_exporter
   propshaft
   puma (~> 5.6)
   rails (~> 8.0.0)

@@ -10,6 +10,10 @@ Rails.application.routes.draw do
 
   # Application status endpoint
   get '/status' => 'status#show'
+
+  # Prometheus metrics are served on port 9394 by prometheus_exporter
+  # Access at: http://localhost:9394/metrics (in development)
+  # In Kubernetes: prometheus_exporter runs in same container, port 9394
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
     registrations: 'users/registrations',
