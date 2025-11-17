@@ -62,12 +62,14 @@ RUN apt-get update -qq && \
       zlib1g-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-# Install Node.js and Yarn
+# Install Node.js and Yarn using official binaries
 ARG NODE_VERSION=22
-RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g yarn && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+ARG TARGETARCH
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}.13.0/node-v${NODE_VERSION}.13.0-linux-${ARCH}.tar.xz -o node.tar.xz && \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
+    rm node.tar.xz && \
+    npm install -g yarn
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./
@@ -113,7 +115,7 @@ COPY --from=build --chown=rails:rails /rails /rails
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/up || exit 1
 
-EXPOSE 3000
+EXPOSE 3000 9394
 
 # Use exec form for better signal handling
 CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

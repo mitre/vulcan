@@ -269,3 +269,128 @@ If LDAP/OIDC checks fail:
 - Check firewall rules
 - Validate credentials
 - Review provider-specific logs
+
+## Prometheus Metrics
+
+Vulcan v2.3.0+ includes Prometheus metrics exporter for comprehensive application and infrastructure monitoring.
+
+### Metrics Endpoint
+
+**Endpoint:** `http://localhost:9394/metrics`
+
+The metrics server runs in a background thread within the Rails process and exposes metrics on port 9394.
+
+```bash
+# Access metrics locally
+curl http://localhost:9394/metrics
+
+# In Kubernetes (from another pod)
+curl http://saf-vulcan.vulcan.svc.cluster.local:9394/metrics
+```
+
+### Available Metrics
+
+**HTTP Request Metrics:**
+- `http_requests_total` - Total requests (labels: controller, action, status)
+- `http_request_duration_seconds` - Request latency with quantiles (p99, p90, p50, p10, p01)
+- `http_request_sql_duration_seconds` - Database query time
+- `http_request_queue_duration_seconds` - Time spent in load balancer queue
+
+**Process Metrics:**
+- `rss` - Total RSS memory used
+- `heap_free_slots` - Free Ruby heap slots
+- `heap_live_slots` - Used Ruby heap slots
+- `major_gc_ops_total` - Major garbage collections
+- `minor_gc_ops_total` - Minor garbage collections
+- `allocated_objects_total` - Total allocated objects
+
+**ActiveRecord Metrics:**
+- `active_record_connection_pool_connections` - Total connections
+- `active_record_connection_pool_busy` - Busy connections
+- `active_record_connection_pool_idle` - Idle connections
+- `active_record_connection_pool_waiting` - Waiting requests
+- `active_record_connection_pool_size` - Pool size limit
+
+### Kubernetes Integration
+
+When deploying to Kubernetes with the Vulcan Helm chart, enable the ServiceMonitor:
+
+```yaml
+# values.yaml
+vulcan:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+```
+
+This creates a ServiceMonitor resource that Prometheus Operator automatically discovers.
+
+**Verify in Prometheus:**
+1. Access Prometheus UI
+2. Go to Status → Targets
+3. Look for `vulcan/saf-vulcan` - should show "UP"
+
+### Grafana Dashboards
+
+After enabling Prometheus scraping, you can create Grafana dashboards.
+
+**Example Queries:**
+
+**Request Rate:**
+```promql
+rate(http_requests_total{job="saf-vulcan"}[5m])
+```
+
+**P95 Response Time:**
+```promql
+histogram_quantile(0.95,
+  rate(http_request_duration_seconds_bucket{job="saf-vulcan"}[5m]))
+```
+
+**Database Connection Pool Usage:**
+```promql
+active_record_connection_pool_busy{job="saf-vulcan"} /
+active_record_connection_pool_size{job="saf-vulcan"}
+```
+
+**Memory Usage:**
+```promql
+rss{job="saf-vulcan"}
+```
+
+### Configuration
+
+Prometheus metrics are enabled by default in development and production. They are disabled in test environment for performance.
+
+**To disable metrics** (not recommended):
+- Remove or comment out `config/initializers/prometheus.rb`
+- Remove `prometheus_exporter` gem from Gemfile
+
+**Port Configuration:**
+
+The metrics server runs on port 9394 by default. To change:
+
+```ruby
+# config/initializers/prometheus.rb
+server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9999
+```
+
+### Troubleshooting
+
+**Metrics endpoint returns 404:**
+- Verify prometheus_exporter gem is installed
+- Check `config/initializers/prometheus.rb` exists
+- Ensure not running in test environment
+
+**Port 9394 already in use:**
+- Another Rails instance may be running
+- Check: `lsof -i:9394`
+- Change port in initializer if needed
+
+**No metrics in Prometheus:**
+- Verify ServiceMonitor is created: `kubectl get servicemonitor -n vulcan`
+- Check Prometheus targets: Status → Targets in Prometheus UI
+- Verify service has metrics port exposed
+- Check Prometheus logs for scrape errors

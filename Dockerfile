@@ -75,4 +75,6 @@ ENV NODE_ENV=production
 RUN chown -R 1000:2000 /app
 USER 1000
 
+EXPOSE 3000 9394
+
 CMD ["rails","server","-b","0.0.0.0"]
