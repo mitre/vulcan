@@ -266,14 +266,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_154605) do
     t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
   end
 
-  create_table "settings", force: :cascade do |t|
-    t.string "var", null: false
-    t.text "value"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["var"], name: "index_settings_on_var", unique: true
-  end
-
   create_table "stigs", force: :cascade do |t|
     t.string "stig_id"
     t.string "title"
