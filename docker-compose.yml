@@ -1,46 +1,43 @@
-services:
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    volumes:
-      - vulcan_dbdata:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: vulcan_postgres_production
-    expose:
-      - "5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+# Full-stack Docker Compose for testing/deployment
+# For local development with database only, use: docker-compose -f docker-compose.dev.yml up
 
+services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.production
-    environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db/vulcan_postgres_production
-      RAILS_SERVE_STATIC_FILES: "true"
-      RAILS_ENV: production
-      NODE_ENV: production
-      # jemalloc is enabled in the Dockerfile
-      LD_PRELOAD: /usr/local/lib/libjemalloc.so
-      MALLOC_ARENA_MAX: "2"
-    env_file: .env
-    restart: unless-stopped
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-${UID:-1000}}
+    volumes:
+      - ./log:/rails/log
+      - ./storage:/rails/storage
     ports:
-      - "3000:3000"
+      - "${VULCAN_RAILS_PORT:-3000}:${VULCAN_RAILS_PORT:-3000}"
+      - "${VULCAN_PROMETHEUS_PORT:-9394}:${VULCAN_PROMETHEUS_PORT:-9394}"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres-db/vulcan_vue_production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:?SECRET_KEY_BASE must be set}
+      - RAILS_ENV=production
+      - VULCAN_RAILS_PORT=${VULCAN_RAILS_PORT:-3000}
+      - VULCAN_PROMETHEUS_PORT=${VULCAN_PROMETHEUS_PORT:-9394}
+      - VULCAN_PROMETHEUS_BIND=${VULCAN_PROMETHEUS_BIND:-0.0.0.0}
     depends_on:
-      db:
+      postgres-db:
         condition: service_healthy
+
+  postgres-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: vulcan_vue_production
+    volumes:
+      - vulcan_production_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/users/sign_in || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  vulcan_dbdata:
+  vulcan_production_data:
