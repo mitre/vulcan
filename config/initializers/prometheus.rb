@@ -16,22 +16,26 @@ unless Rails.env.test?
   if defined?(Rails::Server) || File.basename($0) == 'puma'
     # Start metrics server in background thread (single-process mode)
     # This is simpler than running separate prometheus_exporter process
-    server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9394
+    # Port and bind address configurable via PROMETHEUS_PORT and PROMETHEUS_BIND env vars
+    server = PrometheusExporter::Server::WebServer.new(
+      bind: Vulcan::Config.prometheus_bind,
+      port: Vulcan::Config.prometheus_port
+    )
     Thread.new { server.start }
 
     # Wire up a local client that sends to the in-process server
     PrometheusExporter::Client.default = PrometheusExporter::LocalClient.new(collector: server.collector)
+
+    # Middleware to track HTTP request metrics (requests/sec, duration, etc.)
+    Rails.application.middleware.unshift PrometheusExporter::Middleware
+
+    # Instrument Active Record queries (connection pool, query time)
+    PrometheusExporter::Instrumentation::ActiveRecord.start(
+      custom_labels: { app: 'vulcan' },
+      config_labels: [:database, :host]
+    )
+
+    # Instrument Process metrics (memory, GC, heap, RSS)
+    PrometheusExporter::Instrumentation::Process.start(type: 'web')
   end
-
-  # Middleware to track HTTP request metrics (requests/sec, duration, etc.)
-  Rails.application.middleware.unshift PrometheusExporter::Middleware
-
-  # Instrument Active Record queries (connection pool, query time)
-  PrometheusExporter::Instrumentation::ActiveRecord.start(
-    custom_labels: { app: 'vulcan' },
-    config_labels: [:database, :host]
-  )
-
-  # Instrument Process metrics (memory, GC, heap, RSS)
-  PrometheusExporter::Instrumentation::Process.start(type: 'web')
 end

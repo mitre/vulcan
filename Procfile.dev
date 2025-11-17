@@ -1,2 +1,12 @@
-web: bundle exec rails s -p 3000
+# Vulcan Development Processes
+# Started via: foreman start -f Procfile.dev
+
+# Rails development server (configurable via VULCAN_RAILS_PORT, defaults to 3000)
+web: bundle exec rails s -p ${VULCAN_RAILS_PORT:-${PORT:-3000}}
+
+# JavaScript bundler with live reload (esbuild)
 js: yarn build:watch
+
+# Prometheus metrics exporter (configurable via VULCAN_PROMETHEUS_PORT, defaults to 9394)
+# Uncomment if you need metrics in local development
+# prometheus: bundle exec prometheus_exporter -p ${VULCAN_PROMETHEUS_PORT:-9394}

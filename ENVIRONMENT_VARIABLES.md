@@ -8,6 +8,9 @@ This document lists all environment variables that can be used to configure Vulc
 |----------|-------------|---------|---------|
 | `VULCAN_CONFIG` | Override path to vulcan.yml config file | `config/vulcan.yml` | `/etc/vulcan/config.yml` |
 | `VULCAN_ENV` | Override Rails environment | Uses `RAILS_ENV` | `production` |
+| `VULCAN_RAILS_PORT` | Rails web server port (falls back to `PORT` for Heroku compatibility) | `3000` | `8080` |
+| `VULCAN_PROMETHEUS_PORT` | Prometheus metrics port | `9394` | `9090` |
+| `VULCAN_PROMETHEUS_BIND` | Prometheus bind address | `0.0.0.0` | `127.0.0.1` |
 
 ## Database Configuration
 

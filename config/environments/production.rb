@@ -61,7 +61,11 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: 'example.com' }
+  # Uses VULCAN_APP_URL environment variable
+  config.action_mailer.default_url_options = {
+    host: ENV.fetch('VULCAN_APP_URL', 'http://localhost:3000').then { |url| URI.parse(url).host },
+    port: ENV.fetch('VULCAN_APP_URL', 'http://localhost:3000').then { |url| URI.parse(url).port }
+  }
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
   # config.action_mailer.smtp_settings = {
