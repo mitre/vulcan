@@ -12,4 +12,5 @@ options:
     - zlib1g-dev
   instructions:
     base: config/dockerfile-instructions-base.dockerfile
+    build: config/dockerfile-instructions-build.dockerfile
     deploy: config/dockerfile-instructions-deploy.dockerfile
