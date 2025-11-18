@@ -23,7 +23,12 @@ ENV BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test" \
     RAILS_ENV="production"
 
-# Custom instructions for base stage: Install corporate CA certificates
+# Custom instructions for base stage: Install corporate CA certificates and proxy support
+
+# Proxy support for corporate environments (optional build args)
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
 
 # Install custom SSL certificates from certs/ directory
 COPY certs/ /usr/local/share/ca-certificates/custom/
@@ -39,10 +44,18 @@ RUN cd /usr/local/share/ca-certificates/custom && \
     fi && \
     cd /rails
 
-# Set Node and Ruby to use custom certificates
+# Configure all tools to use system CA certificates
+# Supports multiple standards so it works regardless of user's environment
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
-    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    SSL_CERT_DIR=/etc/ssl/certs \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
+# Set proxy env vars if provided (for yarn/npm behind corporate proxy)
+ENV HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    NO_PROXY=${NO_PROXY}
 
 
 
@@ -75,6 +88,13 @@ RUN yarn install --frozen-lockfile
 
 # Copy application code
 COPY . .
+
+# Build stage instructions: Configure npm/yarn for CA certificates
+
+# Configure npm and yarn to use system CA certificates (after Node.js is installed)
+RUN npm config set cafile /etc/ssl/certs/ca-certificates.crt && \
+    yarn config set cafile /etc/ssl/certs/ca-certificates.crt
+
 
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/

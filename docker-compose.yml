@@ -1,5 +1,4 @@
-# Full-stack Docker Compose for testing/deployment
-# For local development with database only, use: docker-compose -f docker-compose.dev.yml up
+version: "3.8"
 
 services:
   web:
@@ -12,32 +11,29 @@ services:
       - ./log:/rails/log
       - ./storage:/rails/storage
     ports:
-      - "${VULCAN_RAILS_PORT:-3000}:${VULCAN_RAILS_PORT:-3000}"
-      - "${VULCAN_PROMETHEUS_PORT:-9394}:${VULCAN_PROMETHEUS_PORT:-9394}"
+      - "3000:3000"
     environment:
-      - DATABASE_URL=postgres://postgres:password@postgres-db/vulcan_vue_production
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:?SECRET_KEY_BASE must be set}
-      - RAILS_ENV=production
-      - VULCAN_RAILS_PORT=${VULCAN_RAILS_PORT:-3000}
-      - VULCAN_PROMETHEUS_PORT=${VULCAN_PROMETHEUS_PORT:-9394}
-      - VULCAN_PROMETHEUS_BIND=${VULCAN_PROMETHEUS_BIND:-0.0.0.0}
+      - DATABASE_URL=postgres://root:password@postgres-db/
+    secrets:
+      - source: RAILS_MASTER_KEY
+        target: /rails/config/master.key
     depends_on:
       postgres-db:
         condition: service_healthy
 
   postgres-db:
-    image: postgres:16-alpine
+    image: postgres
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: root
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: vulcan_vue_production
     volumes:
-      - vulcan_production_data:/var/lib/postgresql/data
+      - ./tmp/postgres-db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: pg_isready
+      interval: 2s
       timeout: 5s
-      retries: 5
+      retries: 30
 
-volumes:
-  vulcan_production_data:
+secrets:
+  RAILS_MASTER_KEY
+    file: ./config/master.key
