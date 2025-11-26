@@ -251,6 +251,13 @@
           @click="ruleSelected(rule)"
         >
           <span>
+            <!-- Expand/collapse icon for parents with nested controls -->
+            <b-icon
+              v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+              :icon="isParentExpanded(rule.id) ? 'chevron-down' : 'chevron-right'"
+              class="clickable"
+              @click.stop="toggleParentExpand(rule.id)"
+            />
             <span v-if="filters.showSRGIdChecked">
               {{ rule.version }}
             </span>
@@ -297,7 +304,12 @@
             />
           </span>
         </div>
-        <div v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
+        <!-- Collapsible nested controls -->
+        <b-collapse
+          v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+          :id="`collapse-parent-${rule.id}`"
+          v-model="expandedParents[rule.id]"
+        >
           <div
             v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
@@ -306,7 +318,7 @@
             @click="ruleSelected(satisfies)"
           >
             <span>
-              <b-icon icon="chevron-right" />
+              <b-icon icon="chevron-right" class="ml-3" />
               <span v-if="filters.showSRGIdChecked">
                 {{ satisfies.version }}
               </span>
@@ -338,7 +350,7 @@
               />
             </span>
           </div>
-        </div>
+        </b-collapse>
       </div>
     </div>
   </div>
@@ -394,6 +406,7 @@ export default {
     return {
       rule_form_rule_id: "",
       sidebarOffset: 0, // How far the sidebar is from the top of the screen
+      expandedParents: {}, // Track which parent controls are expanded (rule.id => boolean)
       filters: {
         search: "",
         acFilterChecked: true, // Applicable - Configurable
@@ -688,6 +701,14 @@ export default {
         // the scrollbar from going off the page
         this.sidebarOffset = top > 0 ? top : 0;
       });
+    },
+    toggleParentExpand: function (parentId) {
+      // Toggle the expanded state for this parent
+      this.$set(this.expandedParents, parentId, !this.expandedParents[parentId]);
+    },
+    isParentExpanded: function (parentId) {
+      // Return true if this parent is expanded (defaults to false/collapsed)
+      return this.expandedParents[parentId] || false;
     },
   },
 };
