@@ -183,27 +183,56 @@
           id="also-satisfies-modal"
           title="Also Satisfies"
           centered
-          @ok="$root.$emit('addSatisfied:rule', satisfies_rule_id, rule.id)"
+          size="lg"
+          @ok="addMultipleSatisfiedRules"
+          @hidden="clearSelectedRules"
         >
-          <b-form-group label="Select a control that this one satisfies:">
-            <vue-simple-suggest
-              :key="`componentKey-${rules[0].component_id}`"
-              ref="controlSearch"
-              :list="filteredSelectRules"
-              display-attribute="text"
-              value-attribute="value"
-              placeholder="Search for eligible control..."
-              :filter-by-query="true"
-              :min-length="0"
-              :max-suggestions="0"
-              :number="0"
-              @select="satisfies_rule_id = $refs.controlSearch.selected.value"
+          <b-form-group label="Select controls that this one satisfies:">
+            <!-- Search filter -->
+            <b-form-input
+              v-model="satisfiesSearchText"
+              placeholder="Search controls..."
+              class="mb-3"
             />
+
+            <!-- Scrollable checkbox list using Bootstrap-Vue options -->
+            <div
+              style="
+                max-height: 400px;
+                overflow-y: auto;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 10px;
+              "
+            >
+              <b-form-checkbox-group
+                v-model="selectedSatisfiesRuleIds"
+                :options="filteredSelectRulesForCheckbox"
+                value-field="value"
+                text-field="text"
+                stacked
+              />
+              <div
+                v-if="filteredSelectRulesForCheckbox.length === 0"
+                class="text-muted text-center py-3"
+              >
+                No matching controls found
+              </div>
+            </div>
+
+            <div class="mt-2 text-muted">
+              <small>{{ selectedSatisfiesRuleIds.length }} control(s) selected</small>
+            </div>
           </b-form-group>
           <template #modal-footer="{ cancel, ok }">
-            <!-- Emulate built in modal footer ok and cancel button actions -->
             <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="info" @click="ok()"> OK </b-button>
+            <b-button
+              variant="info"
+              :disabled="selectedSatisfiesRuleIds.length === 0"
+              @click="ok()"
+            >
+              Add {{ selectedSatisfiesRuleIds.length }} Control(s)
+            </b-button>
           </template>
         </b-modal>
       </div>
@@ -218,12 +247,10 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal, NewRuleModalForm, VueSimpleSuggest },
+  components: { CommentModal, NewRuleModalForm },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
@@ -256,6 +283,8 @@ export default {
       showSRGIdChecked: localStorage.getItem(`showSRGIdChecked-${this.rules[0].component_id}`),
       filteredSelectRules: [],
       satisfies_rule_id: null,
+      selectedSatisfiesRuleIds: [], // Array for multi-select
+      satisfiesSearchText: "", // Search filter text
       selectedReviewAction: null,
       showReviewPane: false,
       reviewComment: "",
@@ -268,6 +297,15 @@ export default {
         return histories[0].name || "Unknown User";
       }
       return "Unknown User";
+    },
+    filteredSelectRulesForCheckbox: function () {
+      const searchLower = this.satisfiesSearchText.toLowerCase();
+      if (!searchLower) {
+        return this.filteredSelectRules;
+      }
+      return this.filteredSelectRules.filter((rule) =>
+        rule.text.toLowerCase().includes(searchLower),
+      );
     },
     reviewActions: function () {
       // Set some helper variables for readability
@@ -429,6 +467,17 @@ export default {
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
+    },
+    addMultipleSatisfiedRules: function () {
+      // Add all selected rules as satisfied by this rule
+      this.selectedSatisfiesRuleIds.forEach((satisfiesRuleId) => {
+        this.$root.$emit("addSatisfied:rule", satisfiesRuleId, this.rule.id);
+      });
+    },
+    clearSelectedRules: function () {
+      // Clear selections when modal is hidden
+      this.selectedSatisfiesRuleIds = [];
+      this.satisfiesSearchText = "";
     },
     commentFormSubmitted: function (comment) {
       // guard against invalid comment body
