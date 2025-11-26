@@ -51,6 +51,7 @@
       <!-- disa_rule_description -->
       <template
         v-if="
+          rule.satisfied_by.length > 0 ||
           rule.status == 'Applicable - Configurable' ||
           rule.status == 'Applicable - Does Not Meet' ||
           rule.status == 'Not Yet Determined'
@@ -96,7 +97,7 @@
       </template>
 
       <!-- checks -->
-      <template v-if="rule.status == 'Applicable - Configurable'">
+      <template v-if="rule.satisfied_by.length > 0 || rule.status == 'Applicable - Configurable'">
         <div class="clickable mb-2" @click="showChecks = !showChecks">
           <h2 class="m-0 d-inline-block">Checks</h2>
           <b-badge pill class="superVerticalAlign">{{
@@ -140,7 +141,7 @@
     />
 
     <!-- Some fields are only applicable if status is 'Applicable - Configurable' -->
-    <div v-if="rule.status != 'Applicable - Configurable'">
+    <div v-if="rule.satisfied_by.length === 0 && rule.status != 'Applicable - Configurable'">
       <hr />
       <p>
         <small>Some fields are hidden due to the control's status.</small>
@@ -246,7 +247,8 @@ export default {
       return { displayed: [], disabled: [] };
     },
     disaDescriptionFormFields: function () {
-      if (this.rule.status == "Applicable - Configurable") {
+      // Rules with satisfied_by relationships behave like Applicable - Configurable
+      if (this.rule.satisfied_by.length > 0 || this.rule.status == "Applicable - Configurable") {
         return {
           displayed: [
             "documentable",

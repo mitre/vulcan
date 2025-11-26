@@ -171,12 +171,14 @@ export default {
       ).checks_attributes[0];
     },
     tooltips: function () {
+      // Rules with satisfied_by behave like Applicable - Configurable
+      const isConfigurable = this.rule.satisfied_by.length > 0 || this.rule.status === "Applicable - Configurable";
       return {
         system: null,
         content_ref_name: null,
         content_ref_href: null,
         content:
-          this.rule.status === "Applicable - Configurable"
+          isConfigurable
             ? "Describe how to validate that the remediation has been properly implemented"
             : [
                   "Applicable - Does Not Meet",

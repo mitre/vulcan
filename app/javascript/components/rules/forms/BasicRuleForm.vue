@@ -115,7 +115,8 @@ export default {
       return { displayed: [], disabled: [] };
     },
     disaDescriptionFormFields: function () {
-      if (this.rule.status == "Applicable - Configurable") {
+      // Rules with satisfied_by relationships behave like Applicable - Configurable
+      if (this.rule.satisfied_by.length > 0 || this.rule.status == "Applicable - Configurable") {
         return { displayed: ["vuln_discussion"], disabled: [] };
       } else if (this.rule.status == "Applicable - Does Not Meet") {
         return {
@@ -129,8 +130,8 @@ export default {
       }
     },
     checkFormFields: function () {
-      // Only show check fields for 'Applicable - Configurable' status
-      if (this.rule.status == "Applicable - Configurable") {
+      // Only show check fields for 'Applicable - Configurable' status or rules with satisfied_by
+      if (this.rule.satisfied_by.length > 0 || this.rule.status == "Applicable - Configurable") {
         return {
           displayed: [
             // "system",
