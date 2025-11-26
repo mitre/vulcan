@@ -143,5 +143,37 @@ RSpec.describe Component, type: :model do
       @p1_c1.create_rule_satisfactions
       expect(@p1_c1.rules.last.satisfied_by.size).to eq(1)
     end
+
+    it 'parses satisfied by list with trailing period' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      rule_id_two = @p1_c1.rules.second.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}, #{pref}-#{rule_id_two}."
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(@p1_c1.rules.last.satisfied_by.size).to eq(2)
+    end
+
+    it 'parses satisfied by list without trailing period' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      rule_id_two = @p1_c1.rules.second.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}, #{pref}-#{rule_id_two}"
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(@p1_c1.rules.last.satisfied_by.size).to eq(2)
+    end
+
+    it 'parses satisfied by list with extra whitespace' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}   ."
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(@p1_c1.rules.last.satisfied_by.size).to eq(1)
+    end
   end
 end

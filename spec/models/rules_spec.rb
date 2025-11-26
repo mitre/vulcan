@@ -273,4 +273,64 @@ RSpec.describe Review, type: :model do
       expect(@p1r1.ident).to eq('CCI-000054, CCI-000068')
     end
   end
+
+  context 'satisfied_by relationship and status' do
+    it 'preserves parent status when adding satisfied_by relationship' do
+      # Use existing rules from the component
+      parent_rule = @p1_c1.rules[0]
+      child_rule = @p1_c1.rules[1]
+
+      # Store original database status
+      original_db_status = parent_rule[:status]
+
+      # Set parent to Applicable - Configurable
+      parent_rule.update!(status: 'Applicable - Configurable')
+      parent_rule.reload
+      expect(parent_rule.status).to eq('Applicable - Configurable')
+      expect(parent_rule[:status]).to eq('Applicable - Configurable')
+
+      # Add child to parent's satisfied_by list
+      parent_rule.satisfied_by << child_rule
+      child_rule.save! # Trigger callbacks as per controller
+      parent_rule.reload
+
+      # Status getter should return Applicable - Configurable
+      expect(parent_rule.status).to eq('Applicable - Configurable')
+      # Database status should still be Applicable - Configurable, not reset
+      expect(parent_rule[:status]).to eq('Applicable - Configurable')
+      expect(parent_rule[:status]).not_to eq(original_db_status) unless original_db_status == 'Applicable - Configurable'
+    end
+
+    it 'automatically sets status to Applicable - Configurable when satisfied_by exists' do
+      parent_rule = @p1_c1.rules[2]
+      child_rule = @p1_c1.rules[3]
+
+      # Add satisfied_by relationship
+      parent_rule.satisfied_by << child_rule
+      child_rule.save!
+      parent_rule.reload
+
+      # Status getter should return Applicable - Configurable regardless of stored value
+      expect(parent_rule.status).to eq('Applicable - Configurable')
+    end
+
+    it 'prevents status changes when satisfied_by exists' do
+      parent_rule = @p1_c1.rules[4]
+      child_rule = @p1_c1.rules[5]
+
+      # Add satisfied_by relationship
+      parent_rule.satisfied_by << child_rule
+      child_rule.save!
+      parent_rule.reload
+      expect(parent_rule.status).to eq('Applicable - Configurable')
+
+      # Try to change status - should be prevented by setter
+      parent_rule.status = 'Not Applicable'
+      parent_rule.save!
+      parent_rule.reload
+
+      # Status should still be Applicable - Configurable (via getter)
+      expect(parent_rule.status).to eq('Applicable - Configurable')
+    end
+  end
 end
