@@ -124,6 +124,11 @@ class Component < ApplicationRecord
   # Fill out component based on spreadsheet
   def from_spreadsheet(spreadsheet)
     self.skip_import_srg_rules = true
+
+    # Validate file type before processing
+    validate_spreadsheet_file(spreadsheet)
+    return if errors.any?
+
     # Parse the spreadsheet and extract data from the first sheet. Include headers so data is of the form
     # {VulDiscussion: 'Value', SRG ID: 'Value', etc...}
     parsed = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
@@ -546,3 +551,22 @@ class Component < ApplicationRecord
     errors.add(:base, 'Cannot release a component that contains rules that are not yet locked')
   end
 end
+
+  def validate_spreadsheet_file(file)
+    # Security: Validate file type before processing
+    return unless file
+
+    file_path = file.respond_to?(:path) ? file.path : file.to_s
+    extension = File.extname(file_path).downcase.delete('.')
+
+    allowed_extensions = %w[xlsx xls csv ods]
+    unless allowed_extensions.include?(extension)
+      errors.add(:file, "must be a spreadsheet file (#{allowed_extensions.join(', ')})")
+      return
+    end
+
+    # Additional safety: Check file isn't too large (100MB max)
+    if file.respond_to?(:size) && file.size > 100.megabytes
+      errors.add(:file, 'is too large (maximum 100MB)')
+    end
+  end

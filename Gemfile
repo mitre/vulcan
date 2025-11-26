@@ -9,7 +9,7 @@ gem 'rails', '~> 8.0.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
-gem 'puma', '~> 5.6'
+gem 'puma', '~> 6.4'
 # Asset pipeline for JavaScript bundling
 gem 'jsbundling-rails'
 # Asset pipeline for Rails
@@ -137,3 +137,6 @@ gem 'highline', '~> 2.0'
 gem 'slack-ruby-client', '1.0.0'
 # Slack notification formatting
 gem 'slack_block_kit', '0.3.3'
+
+# Rate limiting and abuse prevention
+gem 'rack-attack'
