@@ -222,4 +222,61 @@ RSpec.describe Component, type: :model do
       expect(json['parent_rules_count']).to eq(1)
     end
   end
+
+  context 'spreadsheet file validation' do
+    let(:component) { Component.new(project: @p1, prefix: 'TEST', based_on: @srg) }
+
+    describe 'file extension validation' do
+      it 'rejects non-spreadsheet files (exe)' do
+        file = Rack::Test::UploadedFile.new(
+          Rails.root.join('spec/fixtures/files/malicious.exe'),
+          'application/x-msdownload'
+        )
+
+        component.from_spreadsheet(file)
+
+        expect(component.errors[:file]).to include('must be a spreadsheet file (xlsx, xls, csv, ods)')
+      end
+
+      it 'accepts CSV files' do
+        file = Rack::Test::UploadedFile.new(
+          Rails.root.join('spec/fixtures/files/test.csv'),
+          'text/csv'
+        )
+
+        # Will fail with other errors (missing headers) but not file validation
+        component.from_spreadsheet(file)
+
+        expect(component.errors[:file]).to be_empty
+      end
+    end
+
+    describe 'file size validation' do
+      it 'rejects files over 100MB' do
+        # Create a mock file object with large size
+        file = Rack::Test::UploadedFile.new(
+          Rails.root.join('spec/fixtures/files/test.csv'),
+          'text/csv'
+        )
+        allow(file).to receive(:size).and_return(101.megabytes)
+
+        component.from_spreadsheet(file)
+
+        expect(component.errors[:file]).to include('is too large (maximum 100MB)')
+      end
+
+      it 'allows files under 100MB' do
+        file = Rack::Test::UploadedFile.new(
+          Rails.root.join('spec/fixtures/files/test.csv'),
+          'text/csv'
+        )
+        # Default size is small, under limit
+
+        component.from_spreadsheet(file)
+
+        # No size error (will have other validation errors)
+        expect(component.errors[:file]).to be_empty
+      end
+    end
+  end
 end

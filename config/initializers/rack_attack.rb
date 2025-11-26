@@ -41,9 +41,11 @@ class Rack::Attack
 
   ### Safelist ###
 
-  # Always allow requests from localhost
+  # Allow requests from localhost (except in test environment for testing rate limits)
   safelist('allow localhost') do |req|
-    req.ip == '127.0.0.1' || req.ip == '::1'
+    unless Rails.env.test?
+      req.ip == '127.0.0.1' || req.ip == '::1'
+    end
   end
 
   # Allow health check endpoints
@@ -68,5 +70,4 @@ class Rack::Attack
   end
 end
 
-# Enable Rack::Attack middleware
-Rails.application.config.middleware.use Rack::Attack
+# Note: Middleware is enabled in config/application.rb
