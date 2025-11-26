@@ -465,19 +465,17 @@ class Component < ApplicationRecord
   ##
   # Available members for a component are:
   # - not an admin on the project (due to equal or lesser permissions constraint)
-  # - not already memebers of the component
+  # - not already members of the component
+  # Limited to project members only to prevent email enumeration
   def available_members
-    exclude_user_ids = Membership.where(
-      membership_type: 'Project',
-      membership_id: project_id,
-      role: 'admin'
-    ).or(
-      Membership.where(
+    # Only show users who are already project members
+    # This prevents exposing all registered users' emails
+    project.users.where.not(
+      id: Membership.where(
         membership_type: 'Component',
         membership_id: id
-      )
-    ).pluck(:user_id)
-    User.where.not(id: exclude_user_ids).select(:id, :name, :email)
+      ).pluck(:user_id)
+    ).select(:id, :name, :email)
   end
 
   def reviews

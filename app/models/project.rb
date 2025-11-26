@@ -46,9 +46,13 @@ class Project < ApplicationRecord
 
   ##
   # Get a list of Users that are not yet members of this project
+  # Returns empty array to prevent email enumeration vulnerability
+  # Admins should add members directly via user search or invitation
   #
   def available_members
-    (User.select(:id, :name, :email) - users.select(:id, :name, :email))
+    # SECURITY: Don't expose all registered users' emails
+    # Return empty array - use admin-only user search instead
+    []
   end
 
   def details

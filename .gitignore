@@ -72,3 +72,9 @@ vulcan-wiki-local/
 /certs/*
 !/certs/README.md
 !/certs/.gitkeep
+
+# Security audit files - DO NOT COMMIT
+SECURITY-*.md
+security-audit*.md
+*-security-audit.md
+
