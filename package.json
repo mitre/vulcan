@@ -26,6 +26,10 @@
   "version": "2.3.0",
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@vitejs/plugin-vue2": "^2.3.4",
+    "@vitest/ui": "^4.0.14",
+    "@vue/server-renderer": "npm:vue-server-renderer@2.7.16",
+    "@vue/test-utils": "1.3.6",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.1.2",
     "esbuild": "^0.25.0",
@@ -36,8 +40,16 @@
     "eslint-plugin-prettier": "5.2.1",
     "eslint-plugin-prettier-vue": "^3.1.0",
     "eslint-plugin-vue": "^9.6.0",
+    "happy-dom": "^20.0.10",
+    "jsdom": "^27.2.0",
+    "postcss-flexbugs-fixes": "^5.0.2",
+    "postcss-import": "^16.1.1",
+    "postcss-preset-env": "^10.4.0",
+    "postcss-url": "^10.1.3",
     "prettier": "3.6.2",
-    "sass": "^1.85.1"
+    "sass": "^1.85.1",
+    "vite-plugin-vue2": "^2.0.3",
+    "vitest": "^4.0.14"
   },
   "scripts": {
     "lint": "eslint --fix --ext .js,.vue app/javascript",
@@ -46,6 +58,9 @@
     "build:css": "sass ./app/javascript/application.scss:./app/assets/builds/application.css --load-path=node_modules",
     "build:watch": "chokidar 'app/javascript/**/*' -c 'yarn build'",
     "dev": "concurrently \"rails server\" \"yarn build:watch\"",
+    "test:unit": "vitest",
+    "test:unit:ui": "vitest --ui",
+    "test:unit:run": "vitest run",
     "docs:dev": "cd docs && yarn dev",
     "docs:build": "cd docs && yarn build",
     "docs:preview": "cd docs && yarn preview"
