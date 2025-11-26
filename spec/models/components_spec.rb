@@ -176,4 +176,50 @@ RSpec.describe Component, type: :model do
       expect(@p1_c1.rules.last.satisfied_by.size).to eq(1)
     end
   end
+
+  context 'parent_rules_count' do
+    it 'returns 0 when no rules have satisfies relationships' do
+      expect(@p1_c1.parent_rules_count).to eq(0)
+    end
+
+    it 'returns count of rules that satisfy other rules' do
+      parent1 = @p1_c1.rules.first
+      parent2 = @p1_c1.rules.second
+      child1 = @p1_c1.rules.third
+      child2 = @p1_c1.rules.fourth
+      child3 = @p1_c1.rules.fifth
+
+      # parent1 satisfies child1 and child2
+      child1.satisfied_by << parent1
+      child2.satisfied_by << parent1
+
+      # parent2 satisfies child3
+      child3.satisfied_by << parent2
+
+      expect(@p1_c1.parent_rules_count).to eq(2)
+    end
+
+    it 'counts each parent only once even if it satisfies multiple children' do
+      parent = @p1_c1.rules.first
+      child1 = @p1_c1.rules.second
+      child2 = @p1_c1.rules.third
+      child3 = @p1_c1.rules.fourth
+
+      child1.satisfied_by << parent
+      child2.satisfied_by << parent
+      child3.satisfied_by << parent
+
+      expect(@p1_c1.parent_rules_count).to eq(1)
+    end
+
+    it 'includes parent_rules_count in as_json output' do
+      parent = @p1_c1.rules.first
+      child = @p1_c1.rules.second
+      child.satisfied_by << parent
+
+      json = @p1_c1.as_json
+      expect(json).to have_key('parent_rules_count')
+      expect(json['parent_rules_count']).to eq(1)
+    end
+  end
 end

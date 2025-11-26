@@ -32,18 +32,6 @@
               title="Component Released"
             />
           </div>
-          <!-- Rules count info -->
-          <div class="text-right">
-            <b-badge v-if="component.rules_count > 0" variant="info" pill class="px-3 py-2">
-              <b-icon icon="shield-check" class="mr-1" />
-              {{ component.rules_count }} Control{{ component.rules_count !== 1 ? "s" : "" }}
-              <span v-if="component.component_id" class="ml-1">(Overlaid)</span>
-            </b-badge>
-            <b-badge v-else variant="secondary" pill class="px-3 py-2">
-              <b-icon icon="gear" class="mr-1" />
-              Not Configured
-            </b-badge>
-          </div>
         </div>
       </b-card-title>
       <b-card-sub-title class="mb-2">
@@ -52,6 +40,72 @@
       <b-card-sub-title v-if="component.description" class="my-2">
         {{ component.description }}
       </b-card-sub-title>
+
+      <!-- Metrics Section -->
+      <div v-if="component.rules_summary" class="mt-3 mb-3">
+        <b-table-simple borderless small class="mb-0">
+          <b-tbody>
+            <b-tr>
+              <b-td class="text-muted">
+                <b-icon icon="folder" class="mr-2" />
+                Primary Controls
+              </b-td>
+              <b-td class="text-right">
+                <h4 class="mb-0 text-primary">{{ component.rules_summary.primary_count }}</h4>
+              </b-td>
+            </b-tr>
+            <b-tr v-if="component.rules_summary.nested_count > 0">
+              <b-td class="text-muted">
+                <b-icon icon="arrow-return-right" class="mr-2" />
+                Inherited
+              </b-td>
+              <b-td class="text-right">
+                <h4 class="mb-0 text-secondary">{{ component.rules_summary.nested_count }}</h4>
+              </b-td>
+            </b-tr>
+            <b-tr class="border-top">
+              <b-td class="text-muted">
+                <b-icon icon="shield-check" class="mr-2" />
+                <strong>Total Requirements</strong>
+              </b-td>
+              <b-td class="text-right">
+                <h4 class="mb-0">{{ component.rules_summary.total }}</h4>
+              </b-td>
+            </b-tr>
+          </b-tbody>
+        </b-table-simple>
+
+        <!-- Progress Bar -->
+        <div class="mt-3">
+          <small class="text-muted">Completion Progress:</small>
+          <b-progress :max="component.rules_summary.total" height="1.5rem" class="mt-2">
+            <b-progress-bar
+              :value="component.rules_summary.locked"
+              variant="success"
+              :label="`${component.rules_summary.locked} Locked`"
+            />
+            <b-progress-bar
+              :value="component.rules_summary.under_review"
+              variant="warning"
+              :label="
+                component.rules_summary.under_review > 0
+                  ? `${component.rules_summary.under_review} Review`
+                  : ''
+              "
+            />
+            <b-progress-bar
+              :value="component.rules_summary.not_under_review"
+              variant="info"
+              :label="
+                component.rules_summary.not_under_review > 0
+                  ? `${component.rules_summary.not_under_review} Draft`
+                  : ''
+              "
+            />
+          </b-progress>
+        </div>
+      </div>
+
       <p class="mt-4">
         <span v-if="component.admin_name">
           PoC: {{ component.admin_name }}

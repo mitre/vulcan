@@ -72,13 +72,53 @@ class Component < ApplicationRecord
            :cannot_overlay_self
 
   def as_json(options = {})
-    methods = (options[:methods] || []) + %i[releasable additional_questions]
+    methods = (options[:methods] || []) + %i[releasable additional_questions parent_rules_count primary_controls_count rules_summary]
     super(options.merge(methods: methods)).merge(
       {
         based_on_title: based_on.title,
         based_on_version: based_on.version
       }
     )
+  end
+
+  # Count of primary controls (rules that satisfy/consolidate other rules)
+  # These are the controls that actually need implementation work
+  # Used to show "15 primary / 273 total" on component cards
+  def parent_rules_count
+    rules.where(deleted_at: nil).joins(:satisfies).distinct.count
+  end
+
+  # Count of controls that need individual implementation
+  # This is total minus nested (controls covered by primary controls)
+  def primary_controls_count
+    active_rules = rules.where(deleted_at: nil)
+    total = active_rules.count
+    nested = active_rules.joins(:satisfied_by).distinct.count
+    total - nested
+  end
+
+  # Status and review counts for component overview
+  # Returns hash with all counts needed for component card metrics
+  # Mirrors the logic in RuleNavigator.vue ruleStatusCounts
+  def rules_summary
+    active_rules = rules.where(deleted_at: nil)
+
+    {
+      total: active_rules.count,
+      primary_count: primary_controls_count,
+      nested_count: active_rules.joins(:satisfied_by).distinct.count,
+      # Review states (mutually exclusive)
+      locked: active_rules.where(locked: true).count,
+      under_review: active_rules.where(locked: false).where.not(review_requestor_id: nil).count,
+      not_under_review: active_rules.where(locked: false, review_requestor_id: nil).count,
+      changes_requested: active_rules.where(changes_requested: true).count,
+      # Status breakdown
+      not_yet_determined: active_rules.where(status: 'Not Yet Determined').count,
+      applicable_configurable: active_rules.where(status: 'Applicable - Configurable').count,
+      applicable_inherently_meets: active_rules.where(status: 'Applicable - Inherently Meets').count,
+      applicable_does_not_meet: active_rules.where(status: 'Applicable - Does Not Meet').count,
+      not_applicable: active_rules.where(status: 'Not Applicable').count
+    }
   end
 
   # Fill out component based on spreadsheet
