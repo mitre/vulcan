@@ -24,6 +24,7 @@
     "vue-turbolinks": "^2.1.0"
   },
   "version": "2.3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@vitejs/plugin-vue2": "^2.3.4",
