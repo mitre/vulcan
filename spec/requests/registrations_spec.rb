@@ -3,6 +3,10 @@
 require 'rails_helper'
 
 RSpec.describe 'User Registrations', type: :request do
+  before(:each) do
+    # Clear Rack::Attack cache before each test to avoid rate limiting
+    Rack::Attack.cache.store.clear if Rack::Attack.cache.store
+  end
   include LoginHelpers
   include ActiveJob::TestHelper
 

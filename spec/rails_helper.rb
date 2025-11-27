@@ -52,6 +52,9 @@ rescue ActiveRecord::PendingMigrationError => e
   exit 1
 end
 RSpec.configure do |config|
+  # Track test failures for --only-failures flag
+  config.example_status_persistence_file_path = 'spec/examples.txt'
+
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [Rails.root.join('spec', 'fixtures', 'fixtures').to_s]
 
