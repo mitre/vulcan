@@ -75,7 +75,7 @@ Please include:
 1. **Install dependencies**:
    ```bash
    bundle install
-   yarn install
+   pnpm install
    ```
 
 2. **Setup database**:
@@ -93,7 +93,7 @@ Please include:
 
 1. **Follow the coding standards**:
    - Ruby: Follow RuboCop rules (run `bundle exec rubocop`)
-   - JavaScript: Follow ESLint rules (run `yarn lint`)
+   - JavaScript: Follow ESLint rules (run `pnpm lint`)
    - Vue: Follow Vue style guide
    - Write clear, self-documenting code
    - Add comments for complex logic
@@ -200,10 +200,10 @@ We use ESLint and Prettier:
 
 ```bash
 # Check and fix JavaScript
-yarn lint
+pnpm lint
 
 # Format code
-yarn format
+pnpm format
 ```
 
 Key conventions:

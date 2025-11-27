@@ -70,15 +70,15 @@ The documentation uses [VitePress](https://vitepress.dev/) and is located in the
 
 ```bash
 # Start documentation dev server
-yarn docs:dev  # Runs at http://localhost:5173/vulcan/
+pnpm docs:dev  # Runs at http://localhost:5173/vulcan/
 
 # Build documentation (only works in CI/CD currently)
-yarn docs:build
+pnpm docs:build
 
 # Work directly in docs directory
 cd docs
-yarn install  # Install docs-specific dependencies
-yarn dev      # Start dev server
+pnpm install  # Install docs-specific dependencies
+pnpm dev      # Start dev server
 ```
 
 ## 🛠️ Technology Stack
@@ -127,7 +127,7 @@ cd vulcan
 bundle install
 
 # Install JavaScript dependencies
-yarn install
+pnpm install
 
 # Setup database
 bin/setup
@@ -140,7 +140,7 @@ foreman start -f Procfile.dev
 
 # Or start services separately
 rails server
-yarn build:watch
+pnpm build:watch
 ```
 
 Access the application at `http://localhost:3000`
@@ -156,7 +156,7 @@ bundle exec rspec spec/models/user_spec.rb
 
 # Run linters
 bundle exec rubocop --autocorrect-all
-yarn lint
+pnpm lint
 
 # Security scanning
 bundle exec brakeman
