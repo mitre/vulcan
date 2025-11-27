@@ -68,11 +68,12 @@ class ComponentsController < ApplicationController
     # When importing from an existing spreadsheet, some errors are set before
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
-    if component.errors.empty? && component.save
+    # Note: XCCDF imports save early (need ID for from_mapping), so check persisted? too
+    if component.errors.empty? && (component.save || component.persisted?)
       component.admin_name = component_create_params[:admin_name].presence || current_user.name
       component.admin_email = component_create_params[:admin_email].presence || current_user.email
       component.duplicate_reviews_and_history(component_create_params[:id])
-      component.create_rule_satisfactions if component_create_params[:file]
+      component.create_rule_satisfactions if component_create_params[:file] && !component_create_params[:file].original_filename.end_with?('.xml')
       component.rules_count = component.rules.where(deleted_at: nil).size
       if component_create_params[:slack_channel_id].present?
         component.component_metadata_attributes = { data: {
@@ -264,10 +265,40 @@ class ComponentsController < ApplicationController
     elsif component_create_params[:component_id]
       Component.find(component_create_params[:component_id]).overlay(@project.id)
     elsif component_create_params[:file]
-      # Create a new component from the provided parameters and then pass the spreadsheet
-      # to the component for further parsing
+      # Create a new component from the provided parameters
       component = @project.components.new(component_create_params.except(:id, :duplicate, :file))
-      component.from_spreadsheet(component_create_params[:file])
+      file = component_create_params[:file]
+
+      # Detect file type and route to appropriate import method
+      Rails.logger.info "File type: #{file.content_type}, filename: #{file.original_filename}"
+      if file.content_type.in?(['application/xml', 'text/xml']) || file.original_filename.end_with?('.xml')
+        Rails.logger.info "Routing to from_xccdf"
+        # XCCDF import requires component to be saved first (needs ID for from_mapping)
+        # But we need to extract prefix first before validation
+        parsed_benchmark = Xccdf::Benchmark.parse(file.read)
+        component.name ||= parsed_benchmark.title&.first || 'Imported Component'
+
+        # Extract prefix from first rule
+        if parsed_benchmark.group&.any?
+          first_group = parsed_benchmark.group.first
+          first_rule_id = first_group.rule&.first&.id
+          if first_rule_id
+            prefix_match = first_rule_id.match(/SV-([A-Z]+-\d+)-/)
+            component.prefix = prefix_match[1] if prefix_match
+          end
+        end
+
+        component.skip_import_srg_rules = true
+        component.save! # Save with prefix
+
+        # Rewind file and import
+        file.rewind
+        component.from_xccdf(file)
+      else
+        Rails.logger.info "Routing to from_spreadsheet"
+        component.from_spreadsheet(file)
+      end
+      Rails.logger.info "Component errors: #{component.errors.full_messages}"
       component
     else
       Component.new(component_create_params.except(:id, :duplicate, :component_id, :file).merge({ project: @project }))

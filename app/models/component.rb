@@ -412,11 +412,224 @@ class Component < ApplicationRecord
     end
   end
 
+  def create_rule_satisfactions_from_xccdf
+    # Parse satisfaction relationships from VulnDiscussion field in XCCDF imports
+    # Handle multiple formats:
+    # - "Satisfies: SRG-OS-000024, SRG-OS-000027" (this control satisfies these requirements)
+    # - "Satisfied By: CTRL-1, CTRL-2" (this requirement is satisfied by these controls)
+    rules.includes(:disa_rule_descriptions, :srg_rule).find_each do |rule|
+      # Find description with actual content (not empty template from SRG)
+      desc_with_content = rule.disa_rule_descriptions.find { |d| d.vuln_discussion.present? }
+      next unless desc_with_content
+
+      vuln_discussion = desc_with_content.vuln_discussion
+      next unless vuln_discussion
+
+      # Check for "Satisfies:" pattern (control satisfies requirements)
+      if vuln_discussion.include?('Satisfies:')
+        satisfies_match = vuln_discussion.match(/Satisfies:\s*(.+?)(?:\n\n|<\/VulnDiscussion>|$)/m)
+        if satisfies_match
+          satisfies_list = satisfies_match[1].strip.split(/[,\s]+/).uniq
+
+          satisfies_list.each do |satisfied_id|
+            satisfied_id = satisfied_id.strip
+
+            # Find the rule this satisfies (can be SRG ID or component version)
+            if satisfied_id.start_with?('SRG-')
+              # Find SRG requirement by its srg_rule version
+              satisfied_rule = rules.includes(:srg_rule).find { |r| r.srg_rule&.version == satisfied_id }
+            else
+              # Find component rule by version
+              satisfied_rule = rules.find_by(version: satisfied_id)
+            end
+
+            next if satisfied_rule.nil?
+
+            # This rule SATISFIES the found rule
+            rule.satisfies << satisfied_rule unless rule.satisfies.include?(satisfied_rule)
+            satisfied_rule.save
+          end
+
+          # Clean up
+          clean_vuln = vuln_discussion.gsub(/Satisfies:\s*.+?(?=<\/VulnDiscussion>|$)/m, '').strip
+          desc_with_content.update(vuln_discussion: clean_vuln)
+        end
+      end
+
+      # Check for "Satisfied By:" pattern (requirement is satisfied by controls)
+      if vuln_discussion.include?('Satisfied By:')
+        satisfied_by_match = vuln_discussion.match(/Satisfied By:\s*(.+?)(?:\n\n|<\/VulnDiscussion>|$)/m)
+        if satisfied_by_match
+          satisfied_by_list = satisfied_by_match[1].strip.split(/[,\s]+/).uniq
+
+          satisfied_by_list.each do |satisfier_id|
+            satisfier_id = satisfier_id.strip
+
+            # Find the control that satisfies this requirement
+            satisfier_rule = if satisfier_id.start_with?('SRG-')
+                               rules.includes(:srg_rule).find { |r| r.srg_rule&.version == satisfier_id }
+                             else
+                               rules.find_by(version: satisfier_id)
+                             end
+
+            next if satisfier_rule.nil?
+
+            # This rule IS SATISFIED BY the found rule
+            rule.satisfied_by << satisfier_rule unless rule.satisfied_by.include?(satisfier_rule)
+            satisfier_rule.save
+          end
+
+          # Clean up
+          clean_vuln = vuln_discussion.gsub(/Satisfied By:\s*.+?(?=<\/VulnDiscussion>|$)/m, '').strip
+          desc_with_content.update(vuln_discussion: clean_vuln)
+        end
+      end
+    end
+  end
+
   def overlay(project_id)
     new_component = amoeba_dup
     new_component.project_id = project_id
     new_component.component_id = id
     new_component
+  end
+
+  def from_xccdf(xccdf_file)
+    self.skip_import_srg_rules = true
+
+    # Validate file type before processing
+    unless xccdf_file.content_type.in?(['application/xml', 'text/xml']) ||
+           xccdf_file.original_filename.end_with?('.xml')
+      errors.add(:base, 'File must be an XCCDF XML file')
+      return
+    end
+
+    # Parse XCCDF
+    Rails.logger.info "Parsing XCCDF file: #{xccdf_file.original_filename}"
+    parsed_benchmark = Xccdf::Benchmark.parse(xccdf_file.read)
+    Rails.logger.info "Parsed #{parsed_benchmark.group&.count} groups from XCCDF"
+
+    # Extract component metadata from benchmark
+    self.name ||= parsed_benchmark.title&.first || 'Imported Component'
+    self.title = parsed_benchmark.title&.first
+    self.description = parsed_benchmark.description&.first
+    self.version ||= parsed_benchmark.version&.version&.to_i || 1
+
+    # Extract prefix from first rule ID (e.g., "SV-PHOS-03-000001" → "PHOS-03")
+    if parsed_benchmark.group&.any?
+      first_group = parsed_benchmark.group.first
+      first_rule_id = first_group.rule&.first&.id
+      if first_rule_id
+        # Extract prefix from format "SV-PREFIX-RULEID"
+        prefix_match = first_rule_id.match(/SV-([A-Z]+-\d+)-/)
+        self.prefix = prefix_match[1] if prefix_match
+      end
+    end
+
+    # Component must be saved first before we can import rules
+    unless persisted?
+      errors.add(:base, 'Component must be saved before importing XCCDF content')
+      return false
+    end
+
+    # Get SRG rules for mapping (from the selected SRG)
+    srg = SecurityRequirementsGuide.find(security_requirements_guide_id)
+    srg_rules_map = srg.srg_rules.pluck(:version, :id).to_h
+
+    # STEP 1: Parse all "Satisfies:" lists to find which SRG requirements we need to import
+    all_satisfied_srg_ids = Set.new
+    parsed_benchmark.group.each do |group|
+      rule_xml = group.rule.first
+      desc_xml = rule_xml.description&.first
+      next unless desc_xml
+
+      # Extract Satisfies section
+      if desc_xml.include?('Satisfies:')
+        satisfies_match = desc_xml.match(/Satisfies:\s*(.+?)(?:<\/VulnDiscussion>|$)/m)
+        if satisfies_match
+          srg_ids = satisfies_match[1].strip.split(/[,\s]+/).uniq
+          all_satisfied_srg_ids.merge(srg_ids.select { |id| id.start_with?('SRG-') })
+        end
+      end
+    end
+
+    Rails.logger.info "Found #{all_satisfied_srg_ids.size} SRG requirements to import from Satisfies: lists"
+
+    # STEP 2: Import only the SRG requirements that are mentioned in Satisfies lists
+    if all_satisfied_srg_ids.any?
+      from_mapping(srg, all_satisfied_srg_ids.to_a, 0)
+      reload
+    end
+
+    # STEP 3: Import the authored controls from XCCDF
+    Rails.logger.info "Importing #{parsed_benchmark.group.count} authored controls from XCCDF"
+    starting_rule_id = (rules.maximum(:rule_id)&.to_i || 0) + 1
+
+    parsed_benchmark.group.each_with_index do |group, idx|
+      rule_xml = group.rule.first
+      srg_version = group.title&.first # e.g., "SRG-OS-000023"
+
+      # Find matching SRG rule for reference
+      srg_rule_id = srg_rules_map[srg_version]
+
+      # CREATE a new rule with authored content (don't update existing)
+      # Use SRG version as the rule version (matching XLSX import behavior)
+      new_rule = rules.create!(
+        rule_id: (starting_rule_id + idx).to_s.rjust(6, '0'),
+        srg_rule_id: srg_rule_id,
+        status: rule_xml.status&.first&.status || 'Applicable - Configurable',
+        rule_severity: rule_xml.severity || 'medium',
+        rule_weight: rule_xml.weight || '10.0',
+        version: srg_version, # Use SRG ID as version (SRG-OS-000023) like XLSX import
+        title: rule_xml.title&.first,
+        ident: rule_xml.ident&.reject(&:legacy)&.map(&:ident)&.join(', '),
+        legacy_ids: rule_xml.ident&.select(&:legacy)&.map(&:ident)&.join(', '),
+        ident_system: rule_xml.ident&.reject(&:legacy)&.first&.system,
+        fixtext: rule_xml.fixtext&.first&.fixtext,
+        fixtext_fixref: rule_xml.fixtext&.first&.fixref,
+        fix_id: rule_xml.fix&.first&.id
+      )
+
+      # Add/update description
+      if rule_xml.description&.first
+        desc_data = DisaRuleDescription.from_mapping(rule_xml.description.first)
+
+        # Update existing description if present (from SRG import), otherwise create new
+        if new_rule.disa_rule_descriptions.any?
+          new_rule.disa_rule_descriptions.first.update!(desc_data)
+        else
+          new_rule.disa_rule_descriptions.create!(desc_data)
+        end
+      end
+
+      # Add/update check
+      if rule_xml.check&.first
+        check_data = Check.from_mapping(rule_xml.check.first)
+        Rails.logger.info "Adding check for #{new_rule.version}: content length = #{check_data[:content]&.length || 'NIL'}"
+
+        # Update existing check if present (from SRG import), otherwise create new
+        if new_rule.checks.any?
+          new_rule.checks.first.update!(check_data)
+        else
+          new_rule.checks.create!(check_data)
+        end
+      end
+
+      # Add reference
+      if rule_xml.reference&.first
+        new_rule.references.create!(Reference.from_mapping(rule_xml.reference.first))
+      end
+    end
+
+    reload
+    # Parse "Satisfies:" relationships from VulnDiscussion field
+    create_rule_satisfactions_from_xccdf
+    true
+  rescue StandardError => e
+    message = e.message[0, 100]
+    message += '...' if e.message.size >= 100
+    errors.add(:base, "Error parsing XCCDF file: #{message}")
+    false
   end
 
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))

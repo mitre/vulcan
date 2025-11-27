@@ -13,7 +13,7 @@
       :title="submitText"
       size="lg"
       :ok-title="loading ? 'Loading...' : submitText"
-      :ok-disabled="loading || !(security_requirements_guide_id || component_to_duplicate)"
+      :ok-disabled="loading || !(security_requirements_guide_id || component_to_duplicate) || (spreadsheet_import && !file)"
       @show="fetchData"
       @ok="createComponent"
     >
@@ -105,14 +105,14 @@
             <!-- Import from existing spreadsheet -->
             <b-form-group
               v-if="spreadsheet_import"
-              label="Import Existing SRG Spreadsheet"
-              description="Provide an existing filled out SRG Spreadsheet for import into the Vulcan application"
+              label="Import Component from File"
+              description="Import from SRG Spreadsheet (.xlsx, .xls, .csv, .ods) or XCCDF/STIG XML (.xml)"
             >
               <b-form-file
                 v-model="file"
-                placeholder="Choose or drop a filled out SRG Spreadsheet here..."
-                drop-placeholder="Drop SRG Spreadsheet here..."
-                accept="appliction/xlsx, application/xls"
+                placeholder="Choose a spreadsheet or XCCDF file..."
+                drop-placeholder="Drop file here..."
+                accept=".xlsx,.xls,.csv,.ods,.xml"
               />
             </b-form-group>
             <!-- Set the prefix -->
@@ -256,7 +256,7 @@ export default {
   computed: {
     buttonText: function () {
       if (this.spreadsheet_import) {
-        return "Import From Spreadsheet";
+        return "Import Component from File";
       } else if (this.copy_component) {
         return "Copy Component";
       } else if (this.newComponent) {
