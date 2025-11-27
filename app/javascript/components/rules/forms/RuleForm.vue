@@ -177,7 +177,10 @@
       <template v-if="check_fields">
         <!-- checks -->
         <CheckForm
-          v-if="(rule.satisfied_by.length > 0 || rule.status == 'Applicable - Configurable') && rule.checks_attributes.length >= 1"
+          v-if="
+            (rule.satisfied_by.length > 0 || rule.status == 'Applicable - Configurable') &&
+            rule.checks_attributes.length >= 1
+          "
           :rule="rule"
           :index="0"
           :disabled="disabled"
