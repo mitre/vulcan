@@ -6,29 +6,21 @@
     %title Vulcan Profile Builder
     = csrf_meta_tags
     = csp_meta_tag
-    = stylesheet_link_tag 'application', 'data-turbolinks-track': 'reload'
-    = stylesheet_link_tag 'bootstrap-vue', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'application', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'navbar', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'toaster', 'data-turbolinks-track': 'reload'
+    = stylesheet_link_tag 'application'
+    = stylesheet_link_tag 'bootstrap-vue'
+    = javascript_include_tag 'application', defer: true
 
-    / CSS customizations can be added here if needed
-
-    = yield :assets
+    :javascript
+      window.vueAppData = {
+        navigation: #{@navigation.to_json},
+        signedIn: #{user_signed_in?.to_json},
+        usersPath: '#{current_user&.admin ? users_path : ''}',
+        profilePath: '#{edit_user_registration_path}',
+        signOutPath: '#{destroy_user_session_path}',
+        accessRequests: #{@access_requests.to_json},
+        notice: #{notice.to_json},
+        alert: #{alert.to_json},
+        currentUser: #{current_user.to_json}
+      };
   %body
-    #navbar
-      %navbar{
-        'v-bind:navigation': @navigation.to_json,
-        'v-bind:signed_in': user_signed_in?.to_json,
-        'v-bind:users_path': (current_user&.admin ? users_path : '').to_json,
-        'v-bind:profile_path': edit_user_registration_path.to_json,
-        'v-bind:sign_out_path': destroy_user_session_path.to_json,
-        'v-bind:access_requests': @access_requests.to_json
-      }
-    #Toaster
-      %toaster{
-        'v-bind:notice': notice.to_json,
-        'v-bind:alert': alert.to_json
-      }
-    .pt-3.container-fluid{"data-behavior" => "vue"}
-      = yield
+    #app

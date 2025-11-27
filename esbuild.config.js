@@ -4,21 +4,8 @@ const vuePlugin = require("esbuild-plugin-vue3");
 
 // List all of our entry points with output names
 const entryPoints = {
-  application: "app/javascript/packs/application.js", // This imports application.scss
+  application: "app/javascript/entrypoints/application.ts", // Main SPA entry point
   "bootstrap-vue": "app/javascript/bootstrap-vue.scss",
-  navbar: "app/javascript/packs/navbar.js",
-  toaster: "app/javascript/packs/toaster.js",
-  login: "app/javascript/packs/login.js",
-  projects: "app/javascript/packs/projects.js",
-  project: "app/javascript/packs/project.js",
-  project_components: "app/javascript/packs/project_components.js",
-  project_component: "app/javascript/packs/project_component.js",
-  rules: "app/javascript/packs/rules.js",
-  security_requirements_guides: "app/javascript/packs/security_requirements_guides.js",
-  stig: "app/javascript/packs/stig.js",
-  stigs: "app/javascript/packs/stigs.js",
-  users: "app/javascript/packs/users.js",
-  new_project: "app/javascript/packs/new_project.js",
 };
 
 // Check if we're in watch mode
@@ -46,6 +33,8 @@ const buildOptions = {
     ".woff2": "file",
     ".ttf": "file",
     ".eot": "file",
+    ".ts": "ts",
+    ".tsx": "tsx",
   },
 
   // Make files available at their expected paths with correct prefix
@@ -69,11 +58,12 @@ const buildOptions = {
   },
   alias: {
     vue: "@vue/compat", // Use Vue 3 compat build for gradual migration
+    "@": path.resolve(__dirname, "app/javascript"),
   },
   // Add inject option to automatically add needed polyfills
   inject: ["./node_modules/bootstrap/dist/js/bootstrap.js"],
   // Fix for CSS paths - allow both node_modules and relative paths
-  resolveExtensions: [".js", ".json", ".vue", ".css", ".scss"],
+  resolveExtensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".vue", ".css", ".scss"],
   // Don't hash asset names in development for simpler Rails asset pipeline
   assetNames: "[name]",
   entryNames: "[name]",

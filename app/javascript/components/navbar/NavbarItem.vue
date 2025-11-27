@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-nav-item :href="link" class="mx-3">
+    <b-nav-item :to="link" class="mx-3">
       <i :class="'bi bi-' + icon" aria-hidden="true"></i>
       <span class="d-sm-inline-block d-lg-block ms-1">{{ name }}</span>
     </b-nav-item>
