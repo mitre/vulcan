@@ -9,5 +9,9 @@ FactoryBot.define do
     version { "V#{rand(0..9)}R#{rand(0..9)}" }
     xml { XML_FILE }
     release_date { Time.zone.today }
+
+    after(:create) do |srg|
+      srg.import_srg_rules if srg.srg_rules.empty?
+    end
   end
 end
