@@ -69,7 +69,7 @@ RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
     curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}.13.0/node-v${NODE_VERSION}.13.0-linux-${ARCH}.tar.xz -o node.tar.xz && \
     tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
     rm node.tar.xz && \
-    npm install -g yarn
+    npm install -g pnpm@10
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./
@@ -78,8 +78,8 @@ RUN bundle install && \
     bundle exec bootsnap precompile --gemfile
 
 # Install node modules (including dev dependencies for build)
-COPY package.json yarn.lock esbuild.config.js ./
-RUN yarn install --frozen-lockfile --network-timeout 100000
+COPY package.json pnpm-lock.yaml esbuild.config.js ./
+RUN pnpm install --frozen-lockfile
 
 # Copy application code
 COPY . .
