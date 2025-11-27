@@ -1,16 +1,14 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
+import { createApp } from "vue";
+import { createBootstrap } from "bootstrap-vue-next";
 import SecurityRequirementsGuides from "../components/security_requirements_guides/SecurityRequirementsGuides.vue";
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue);
-Vue.use(IconsPlugin);
-
-Vue.component("Securityrequirementsguides", SecurityRequirementsGuides);
-
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
-    el: "#SecurityRequirementsGuides",
+document.addEventListener("DOMContentLoaded", () => {
+  const app = createApp({
+    components: {
+      Securityrequirementsguides: SecurityRequirementsGuides
+    }
   });
+
+  app.use(createBootstrap());
+  app.mount("#SecurityRequirementsGuides");
 });

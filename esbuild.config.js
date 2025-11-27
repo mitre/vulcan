@@ -1,6 +1,6 @@
 const path = require("path");
 const { sassPlugin } = require("esbuild-sass-plugin");
-const vuePlugin = require("esbuild-vue");
+const vuePlugin = require("esbuild-plugin-vue3");
 
 // List all of our entry points with output names
 const entryPoints = {
@@ -35,11 +35,7 @@ const buildOptions = {
       loadPaths: ["node_modules"],
       style: "expanded", // Use expanded style for better debugging
     }),
-    vuePlugin({
-      enableDevtools: true, // Enable Vue devtools for development
-      cssInline: true, // Extract CSS for better loading performance
-      useFullVue: true, // Use full Vue build with template compiler
-    }),
+    vuePlugin(),
   ],
   loader: {
     ".png": "file",
@@ -58,11 +54,12 @@ const buildOptions = {
   define: {
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
     "process.env": JSON.stringify({ NODE_ENV: process.env.NODE_ENV || "development" }),
-    __VUE_OPTIONS_API__: "true", // Enable Vue Options API
-    __VUE_PROD_DEVTOOLS__: "true", // Enable Vue devtools even in production
+    __VUE_OPTIONS_API__: "true", // Enable Vue 3 Options API
+    __VUE_PROD_DEVTOOLS__: "false", // Disable devtools in production
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: "false",
   },
   alias: {
-    vue: "vue/dist/vue.esm.js", // Use the full build with template compiler
+    vue: "@vue/compat", // Use Vue 3 compat build for gradual migration
   },
   // Add inject option to automatically add needed polyfills
   inject: ["./node_modules/bootstrap/dist/js/bootstrap.js"],

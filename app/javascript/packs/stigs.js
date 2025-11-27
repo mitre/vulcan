@@ -1,16 +1,14 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
+import { createApp } from "vue";
+import { createBootstrap } from "bootstrap-vue-next";
 import Stigs from "../components/stigs/Stigs.vue";
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue);
-Vue.use(IconsPlugin);
-
-Vue.component("Stigs", Stigs);
-
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
-    el: "#Stigs",
+document.addEventListener("DOMContentLoaded", () => {
+  const app = createApp({
+    components: {
+      Stigs
+    }
   });
+
+  app.use(createBootstrap());
+  app.mount("#Stigs");
 });

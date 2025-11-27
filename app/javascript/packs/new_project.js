@@ -1,16 +1,14 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
+import { createApp } from "vue";
+import { createBootstrap } from "bootstrap-vue-next";
 import NewProject from "../components/project/NewProject.vue";
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue);
-Vue.use(IconsPlugin);
-
-Vue.component("Newproject", NewProject);
-
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
-    el: "#NewProject",
+document.addEventListener("DOMContentLoaded", () => {
+  const app = createApp({
+    components: {
+      Newproject: NewProject
+    }
   });
+
+  app.use(createBootstrap());
+  app.mount("#NewProject");
 });

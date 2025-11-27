@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import vue from '@vitejs/plugin-vue2'
+import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -10,7 +10,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'app/javascript'),
-      '~': path.resolve(__dirname, 'node_modules')
+      '~': path.resolve(__dirname, 'node_modules'),
+      vue: '@vue/compat' // Use Vue 3 compat build for tests
     },
     extensions: ['.mjs', '.js', '.jsx', '.json', '.vue']
   },
