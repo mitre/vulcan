@@ -1,11 +1,11 @@
 <template>
   <div>
     <b-input-group class="search-input">
-      <b-input-group-prepend>
-        <b-input-group-text class="form-control">
+      <template #prepend>
+        <span class="input-group-text">
           <i class="bi bi-search" aria-hidden="true"></i>
-        </b-input-group-text>
-      </b-input-group-prepend>
+        </span>
+      </template>
       <b-form-input
         id="srg-id-search"
         v-model="searchText"

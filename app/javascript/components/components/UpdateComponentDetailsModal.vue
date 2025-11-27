@@ -15,7 +15,7 @@
           <b-form-input v-model="name" placeholder="Component Name" required autocomplete="off" />
         </b-form-group>
         <!-- Version and Release -->
-        <b-form-row>
+        <b-row>
           <b-col>
             <b-form-group label="Version">
               <b-form-input v-model="version" autocomplete="off" />
@@ -26,7 +26,7 @@
               <b-form-input v-model="release" autocomplete="off" />
             </b-form-group>
           </b-col>
-        </b-form-row>
+        </b-row>
         <!-- STIG ID Prefix -->
         <b-form-group
           label="STIG ID Prefix"

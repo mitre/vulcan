@@ -1,6 +1,9 @@
 // Shared Bootstrap-Vue-Next component imports
 // Import all commonly used components to avoid repetition
 import {
+  // App wrapper
+  BApp,
+
   // Layout
   BContainer,
   BRow,
@@ -87,6 +90,9 @@ import {
 } from 'bootstrap-vue-next';
 
 export function registerComponents(app) {
+  // App wrapper
+  app.component('BApp', BApp);
+
   // Layout
   app.component('BContainer', BContainer);
   app.component('BRow', BRow);

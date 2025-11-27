@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-navbar toggleable="lg" type="dark" variant="dark">
+    <b-navbar toggleable="lg" variant="dark" v-b-color-mode="'dark'">
       <b-navbar-brand id="heading" href="/">
         <i class="bi bi-broadcast" aria-hidden="true"></i>
         VULCAN
