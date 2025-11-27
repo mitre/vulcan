@@ -37,11 +37,11 @@ export default {
       }
 
       // If toast is an object, then gather its parameters with some defaults
-      if (_.isPlainObject(toast)) {
+      if (toast && typeof toast === "object" && !Array.isArray(toast)) {
         const title = toast["title"] || "Success";
         const variant = toast["variant"] || "success";
         let message = toast["message"];
-        if (_.isArray(message)) {
+        if (Array.isArray(message)) {
           message = this.arrayToMessage(message);
         }
 

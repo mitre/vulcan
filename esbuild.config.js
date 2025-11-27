@@ -57,6 +57,7 @@ const buildOptions = {
   format: "iife", // IIFE format for Vue 2 browser compatibility
   define: {
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+    "process.env": JSON.stringify({ NODE_ENV: process.env.NODE_ENV || "development" }),
     __VUE_OPTIONS_API__: "true", // Enable Vue Options API
     __VUE_PROD_DEVTOOLS__: "true", // Enable Vue devtools even in production
   },
