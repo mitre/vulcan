@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import { createBootstrap } from "bootstrap-vue-next";
+import { registerComponents } from "../bootstrap-vue-next-components";
 import ProjectComponent from "../components/components/ProjectComponent.vue";
 import linkify from "v-linkify";
 
@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  app.use(createBootstrap());
+  registerComponents(app);
   app.directive("linkified", linkify);
   app.mount("#projectcomponent");
 });

@@ -52,7 +52,7 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
     REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
     CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
-# Set proxy env vars if provided (for yarn/npm behind corporate proxy)
+# Set proxy env vars if provided (for pnpm/npm behind corporate proxy)
 ENV HTTP_PROXY=${HTTP_PROXY} \
     HTTPS_PROXY=${HTTPS_PROXY} \
     NO_PROXY=${NO_PROXY}
@@ -73,7 +73,7 @@ ARG YARN_VERSION=1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b
 ENV PATH=/usr/local/node/bin:$PATH
 RUN curl -sL https://github.com/nodenv/node-build/archive/master.tar.gz | tar xz -C /tmp/ && \
     /tmp/node-build-master/bin/node-build "${NODE_VERSION}" /usr/local/node && \
-    npm install -g yarn@$YARN_VERSION && \
+    npm install -g pnpm@10 && \
     rm -rf /tmp/node-build-master
 
 # Install application gems
@@ -83,17 +83,17 @@ RUN bundle install && \
     bundle exec bootsnap precompile --gemfile
 
 # Install node modules
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Copy application code
 COPY . .
 
-# Build stage instructions: Configure npm/yarn for CA certificates
+# Build stage instructions: Configure npm/pnpm for CA certificates
 
-# Configure npm and yarn to use system CA certificates (after Node.js is installed)
+# Configure npm and pnpm to use system CA certificates (after Node.js is installed)
 RUN npm config set cafile /etc/ssl/certs/ca-certificates.crt && \
-    yarn config set cafile /etc/ssl/certs/ca-certificates.crt
+    pnpm config set ca /etc/ssl/certs/ca-certificates.crt
 
 
 # Precompile bootsnap code for faster boot times

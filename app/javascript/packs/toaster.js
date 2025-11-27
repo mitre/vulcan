@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import { createBootstrap } from "bootstrap-vue-next";
+import { registerComponents } from "../bootstrap-vue-next-components";
 import Toaster from "../components/toaster/Toaster.vue";
 
 // Import Bootstrap and BootstrapVueNext styles
@@ -13,6 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  app.use(createBootstrap());
+  registerComponents(app);
   app.mount("#Toaster");
 });

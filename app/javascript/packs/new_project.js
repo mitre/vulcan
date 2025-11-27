@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import { createBootstrap } from "bootstrap-vue-next";
+import { registerComponents } from "../bootstrap-vue-next-components";
 import NewProject from "../components/project/NewProject.vue";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -9,6 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  app.use(createBootstrap());
+  registerComponents(app);
   app.mount("#NewProject");
 });

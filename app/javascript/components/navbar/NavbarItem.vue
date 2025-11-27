@@ -1,8 +1,8 @@
 <template>
   <div>
     <b-nav-item :href="link" class="mx-3">
-      <b-icon :icon="icon" aria-hidden="true" />
-      <div class="d-sm-inline-block d-lg-block">{{ name }}</div>
+      <i :class="'bi bi-' + icon" aria-hidden="true"></i>
+      <span class="d-sm-inline-block d-lg-block ms-1">{{ name }}</span>
     </b-nav-item>
   </div>
 </template>

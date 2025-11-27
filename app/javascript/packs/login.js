@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import { createBootstrap } from "bootstrap-vue-next";
+import { registerComponents } from "../bootstrap-vue-next-components";
 
 // Import Bootstrap and BootstrapVueNext styles
 import "bootstrap/dist/css/bootstrap.css";
@@ -7,6 +7,6 @@ import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
 
 document.addEventListener("DOMContentLoaded", () => {
   const app = createApp({});
-  app.use(createBootstrap());
+  registerComponents(app);
   app.mount("#login");
 });

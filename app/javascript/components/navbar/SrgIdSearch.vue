@@ -3,7 +3,7 @@
     <b-input-group class="search-input">
       <b-input-group-prepend>
         <b-input-group-text class="form-control">
-          <b-icon icon="search" aria-hidden="true" />
+          <i class="bi bi-search" aria-hidden="true"></i>
         </b-input-group-text>
       </b-input-group-prepend>
       <b-form-input

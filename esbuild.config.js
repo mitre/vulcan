@@ -34,6 +34,7 @@ const buildOptions = {
     sassPlugin({
       loadPaths: ["node_modules"],
       style: "expanded", // Use expanded style for better debugging
+      quietDeps: true, // Suppress deprecation warnings from dependencies
     }),
     vuePlugin(),
   ],
@@ -57,6 +58,14 @@ const buildOptions = {
     __VUE_OPTIONS_API__: "true", // Enable Vue 3 Options API
     __VUE_PROD_DEVTOOLS__: "false", // Disable devtools in production
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: "false",
+    __VUE_OPTIONS_COMPAT_MODE__: JSON.stringify({
+      MODE: 2, // Vue 2 compat mode globally
+      ATTR_FALSE_VALUE: false, // Suppress false attribute warnings
+      CONFIG_WHITESPACE: false, // Suppress whitespace warnings
+      WATCH_ARRAY: false, // Suppress watch array warnings
+      INSTANCE_SET: false, // Suppress $set warnings
+      OPTIONS_DESTROYED: false // Suppress destroyed→unmounted warnings
+    }),
   },
   alias: {
     vue: "@vue/compat", // Use Vue 3 compat build for gradual migration
@@ -65,8 +74,9 @@ const buildOptions = {
   inject: ["./node_modules/bootstrap/dist/js/bootstrap.js"],
   // Fix for CSS paths - allow both node_modules and relative paths
   resolveExtensions: [".js", ".json", ".vue", ".css", ".scss"],
-  // Standard asset naming with content hash for proper caching
-  assetNames: "[name]-[hash]",
+  // Don't hash asset names in development for simpler Rails asset pipeline
+  assetNames: "[name]",
+  entryNames: "[name]",
 };
 
 // Add watch option only if in watch mode

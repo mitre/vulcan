@@ -80,7 +80,7 @@ PreCommit:
       - '**/bin/rake'
       - '**/bin/webpack'
       - '**/bin/webpack-dev-server'
-      - '**/bin/yarn'
+      - '**/bin/pnpm'
 
   # General hooks
   TrailingWhitespace:

@@ -2,7 +2,7 @@
   <div>
     <b-navbar toggleable="lg" type="dark" variant="dark">
       <b-navbar-brand id="heading" href="/">
-        <b-icon icon="broadcast" aria-hidden="true" />
+        <i class="bi bi-broadcast" aria-hidden="true"></i>
         VULCAN
         <b-link href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
           <span class="latest-release">{{ currentVersion }}</span>
@@ -26,7 +26,7 @@
           <b-navbar-nav class="ml-auto">
             <b-nav-item-dropdown right no-caret class="position-relative ml-3">
               <template #button-content>
-                <b-icon icon="bell" aria-hidden="true" />
+                <i class="bi bi-bell" aria-hidden="true"></i>
                 <b-badge
                   v-if="access_requests.length"
                   variant="danger"
@@ -48,7 +48,7 @@
             </b-nav-item-dropdown>
             <b-nav-item-dropdown right>
               <template #button-content>
-                <b-icon icon="person-circle" aria-hidden="true" />
+                <i class="bi bi-person-circle" aria-hidden="true"></i>
               </template>
               <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
               <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
