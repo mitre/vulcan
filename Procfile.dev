@@ -5,7 +5,7 @@
 web: bundle exec rails s -p ${VULCAN_RAILS_PORT:-${PORT:-3000}}
 
 # JavaScript bundler with live reload (esbuild)
-js: yarn build:watch
+js: pnpm build:watch
 
 # Prometheus metrics exporter (configurable via VULCAN_PROMETHEUS_PORT, defaults to 9394)
 # Uncomment if you need metrics in local development
