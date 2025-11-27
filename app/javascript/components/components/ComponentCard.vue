@@ -106,13 +106,21 @@
         </div>
       </div>
 
-      <p class="mt-4">
-        <span v-if="component.admin_name">
-          PoC: {{ component.admin_name }}
-          {{ component.admin_email ? `(${component.admin_email})` : "" }}
-        </span>
-        <em v-else>No Component Admin</em>
-      </p>
+      <div class="mt-4">
+        <p class="mb-1">
+          <span v-if="component.admin_name">
+            PoC: {{ component.admin_name }}
+            {{ component.admin_email ? `(${component.admin_email})` : "" }}
+          </span>
+          <em v-else>No Component Admin</em>
+        </p>
+        <p v-if="component.created_at" class="text-muted mb-0">
+          <small>
+            <b-icon icon="calendar-plus" class="mr-1" />
+            Created {{ friendlyDateTime(component.created_at) }}
+          </small>
+        </p>
+      </div>
       <!-- Component actions -->
       <div class="mt-3 pt-3 border-top">
         <!-- Primary Actions Row -->
@@ -225,6 +233,7 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 
@@ -234,7 +243,7 @@ export default {
     LockControlsModal,
     NewComponentModal,
   },
-  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin, RoleComparisonMixin],
+  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin, RoleComparisonMixin, DateFormatMixinVue],
   props: {
     // Indicate if the card is for "read-only" or can take actions against it
     actionable: {
