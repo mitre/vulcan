@@ -1,13 +1,1 @@
-- content_for :assets do
-  = javascript_include_tag 'project'
-  = stylesheet_link_tag 'project'
-
-#Project
-  %Project{                                                                         |
-    'v-bind:effective_permissions': @effective_permissions.to_json,                     |
-    'v-bind:initial-project-state': @project_json,                                  |
-    'v-bind:current_user_id': current_user.id.to_json,                              |
-    'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |
-    'v-bind:severities': RuleConstants::SEVERITIES.to_json,                         |
-    'v-bind:available_roles': ProjectMemberConstants::PROJECT_MEMBER_ROLES.to_json, |
-  }
+/ SPA handles all content via Vue Router

@@ -11,16 +11,11 @@
     = javascript_include_tag 'application', defer: true
 
     :javascript
+      // Minimal bootstrap data for SPA - auth state only
       window.vueAppData = {
-        navigation: #{@navigation.to_json},
         signedIn: #{user_signed_in?.to_json},
-        usersPath: '#{current_user&.admin ? users_path : ''}',
-        profilePath: '#{edit_user_registration_path}',
-        signOutPath: '#{destroy_user_session_path}',
-        accessRequests: #{@access_requests.to_json},
-        notice: #{notice.to_json},
-        alert: #{alert.to_json},
-        currentUser: #{current_user.to_json}
+        currentUser: #{current_user.to_json},
+        csrfToken: '#{form_authenticity_token}'
       };
   %body
     #app
