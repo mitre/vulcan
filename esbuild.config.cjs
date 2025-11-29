@@ -40,24 +40,16 @@ const buildOptions = {
   // Make files available at their expected paths with correct prefix
   publicPath: "/assets",
   sourcemap: true,
-  format: "iife", // IIFE format for Vue 2 browser compatibility
+  format: "iife", // IIFE format for browser compatibility
   define: {
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
     "process.env": JSON.stringify({ NODE_ENV: process.env.NODE_ENV || "development" }),
     __VUE_OPTIONS_API__: "true", // Enable Vue 3 Options API
     __VUE_PROD_DEVTOOLS__: "false", // Disable devtools in production
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: "false",
-    __VUE_OPTIONS_COMPAT_MODE__: JSON.stringify({
-      MODE: 2, // Vue 2 compat mode globally
-      ATTR_FALSE_VALUE: false, // Suppress false attribute warnings
-      CONFIG_WHITESPACE: false, // Suppress whitespace warnings
-      WATCH_ARRAY: false, // Suppress watch array warnings
-      INSTANCE_SET: false, // Suppress $set warnings
-      OPTIONS_DESTROYED: false // Suppress destroyed→unmounted warnings
-    }),
   },
   alias: {
-    vue: "@vue/compat", // Use Vue 3 compat build for gradual migration
+    vue: "vue", // Native Vue 3
     "@": path.resolve(__dirname, "app/javascript"),
   },
   // Add inject option to automatically add needed polyfills

@@ -11,16 +11,15 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'app/javascript'),
       '~': path.resolve(__dirname, 'node_modules'),
-      vue: '@vue/compat' // Use Vue 3 compat build for tests
     },
-    extensions: ['.mjs', '.js', '.jsx', '.json', '.vue']
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue']
   },
   test: {
     css: false,
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./vitest.setup.js'],
-    include: ['app/javascript/**/*.{test,spec}.{js,jsx}'],
+    setupFiles: ['./vitest.setup.ts'],
+    include: ['app/javascript/**/*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: ['node_modules', 'dist', 'app/assets']
   }
 })
