@@ -3,19 +3,19 @@
 export default {
   methods: {
     // Display component version and release if present
-    addDisplayNameToComponents: function (components) {
+    addDisplayNameToComponents(components) {
       return components.map((component) => {
         component.displayed = `${component.name} ${
           component.version || component.release
             ? `(${[
-                component.version ? `Version ${component.version}` : "",
-                component.release ? `Release ${component.release}` : "",
-              ].join(", ")})`
-            : ""
-        }`;
-        return component;
-      });
+              component.version ? `Version ${component.version}` : '',
+              component.release ? `Release ${component.release}` : '',
+            ].join(', ')})`
+            : ''
+        }`
+        return component
+      })
     },
   },
-};
+}
 </script>

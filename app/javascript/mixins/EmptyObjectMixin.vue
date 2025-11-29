@@ -6,10 +6,10 @@ export default {
     isEmpty(o) {
       // Guard for the case where the object is null or undefined
       if (!o) {
-        return true;
+        return true
       }
-      return Object.keys(o).length === 0;
+      return Object.keys(o).length === 0
     },
   },
-};
+}
 </script>

@@ -1,14 +1,14 @@
-import { createApp } from "vue";
-import { registerComponents } from "../bootstrap-vue-next-components";
-import Users from "../components/users/Users.vue";
+import { createApp } from 'vue'
+import { registerComponents } from '../bootstrap-vue-next-components'
+import Users from '../components/users/Users.vue'
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   const app = createApp({
     components: {
-      Users
-    }
-  });
+      Users,
+    },
+  })
 
-  registerComponents(app);
-  app.mount("#users");
-});
+  registerComponents(app)
+  app.mount('#users')
+})

@@ -1,13 +1,8 @@
-<template>
-  <div />
-</template>
-
 <script>
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import _ from "lodash";
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
 
 export default {
-  name: "Toaster",
+  name: 'Toaster',
   mixins: [AlertMixinVue],
   props: {
     notice: {
@@ -19,28 +14,32 @@ export default {
       required: false,
     },
   },
-  mounted: function () {
+  mounted() {
     if (this.notice) {
       this.alertOrNotifyResponse({
         data: {
           toast: this.notice,
         },
-      });
+      })
     }
 
     if (this.alert) {
       this.alertOrNotifyResponse({
         data: {
           toast: {
-            title: "Error",
-            variant: "danger",
+            title: 'Error',
+            variant: 'danger',
             message: this.alert,
           },
         },
-      });
+      })
     }
   },
-};
+}
 </script>
+
+<template>
+  <div />
+</template>
 
 <style scoped></style>

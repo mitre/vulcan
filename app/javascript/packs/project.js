@@ -1,16 +1,16 @@
-import { createApp } from "vue";
-import { registerComponents } from "../bootstrap-vue-next-components";
-import Project from "../components/project/Project.vue";
-import linkify from "v-linkify";
+import linkify from 'v-linkify'
+import { createApp } from 'vue'
+import { registerComponents } from '../bootstrap-vue-next-components'
+import Project from '../components/project/Project.vue'
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   const app = createApp({
     components: {
-      Project
-    }
-  });
+      Project,
+    },
+  })
 
-  registerComponents(app);
-  app.directive("linkified", linkify);
-  app.mount("#Project");
-});
+  registerComponents(app)
+  app.directive('linkified', linkify)
+  app.mount('#Project')
+})

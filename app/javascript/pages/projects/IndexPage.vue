@@ -1,25 +1,41 @@
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
+import Projects from '@/components/projects/Projects.vue'
+import { useProjects } from '@/composables'
+import { useAuthStore } from '@/stores'
+
+// Use composables
+const { projects, loading, error, refresh } = useProjects()
+
+// Auth state
+const authStore = useAuthStore()
+const { isAdmin } = storeToRefs(authStore)
+
+// Fetch on mount
+onMounted(async () => {
+  await refresh()
+})
+</script>
+
 <template>
   <div>
+    <div v-if="loading" class="text-center py-5">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">
+        Loading projects...
+      </p>
+    </div>
+    <div v-else-if="error" class="alert alert-danger">
+      {{ error }}
+    </div>
     <Projects
+      v-else
       :projects="projects"
-      :is_vulcan_admin="isVulcanAdmin"
+      :is_vulcan_admin="isAdmin"
+      @refresh="refresh"
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import Projects from '@/components/projects/Projects.vue'
-
-// This will come from Rails initially, then we can fetch via API
-const route = useRoute()
-const projects = ref((window as any).vueAppData?.projects || [])
-const isVulcanAdmin = ref((window as any).vueAppData?.isVulcanAdmin || false)
-
-onMounted(() => {
-  // Future: Fetch projects from API if not provided by Rails
-  // const response = await fetch('/api/v1/projects')
-  // projects.value = await response.json()
-})
-</script>

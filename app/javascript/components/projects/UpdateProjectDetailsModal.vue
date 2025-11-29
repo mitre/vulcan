@@ -1,3 +1,52 @@
+<script>
+import axios from 'axios'
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
+import FormMixinVue from '../../mixins/FormMixin.vue'
+
+export default {
+  name: 'UpdateProjectDetailsModal',
+  mixins: [AlertMixinVue, FormMixinVue],
+  props: {
+    project: {
+      type: Object,
+      required: true,
+    },
+    is_project_table: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      name: this.project.name,
+      description: this.project.description,
+    }
+  },
+  methods: {
+    resetModal() {
+      this.name = this.project.name
+      this.description = this.project.description
+    },
+    showModal() {
+      this.$refs.updateProjectDetailsModal.show()
+    },
+    updateProjectDetails() {
+      this.$refs.updateProjectDetailsModal.hide()
+      const payload = { project: { name: this.name, description: this.description } }
+      axios
+        .put(`/projects/${this.project.id}`, payload)
+        .then(this.editProjectSuccess)
+        .catch(this.alertOrNotifyResponse)
+    },
+    editProjectSuccess(response) {
+      this.alertOrNotifyResponse(response)
+      this.$emit('projectUpdated')
+    },
+  },
+}
+</script>
+
 <template>
   <span>
     <b-button
@@ -5,7 +54,7 @@
       :variant="is_project_table ? 'primary' : 'success'"
       @click="showModal()"
     >
-      <b-icon v-if="is_project_table" icon="wrench" aria-hidden="true" />
+      <i v-if="is_project_table" class="bi bi-wrench" aria-hidden="true" />
       {{ is_project_table ? "Update" : "Update Details" }}
     </b-button>
     <b-modal
@@ -27,59 +76,10 @@
         </b-form-group>
 
         <!-- Allow the enter button to submit the form -->
-        <b-btn type="submit" class="d-none" @click.prevent="updateProjectDetails()" />
+        <b-button type="submit" class="d-none" @click.prevent="updateProjectDetails()" />
       </b-form>
     </b-modal>
   </span>
 </template>
-
-<script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-
-export default {
-  name: "UpdateProjectDetailsModal",
-  mixins: [AlertMixinVue, FormMixinVue],
-  props: {
-    project: {
-      type: Object,
-      required: true,
-    },
-    is_project_table: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-  },
-  data: function () {
-    return {
-      name: this.project.name,
-      description: this.project.description,
-    };
-  },
-  methods: {
-    resetModal: function () {
-      this.name = this.project.name;
-      this.description = this.project.description;
-    },
-    showModal: function () {
-      this.$refs["updateProjectDetailsModal"].show();
-    },
-    updateProjectDetails: function () {
-      this.$refs["updateProjectDetailsModal"].hide();
-      let payload = { project: { name: this["name"], description: this["description"] } };
-      axios
-        .put(`/projects/${this.project.id}`, payload)
-        .then(this.editProjectSuccess)
-        .catch(this.alertOrNotifyResponse);
-    },
-    editProjectSuccess: function (response) {
-      this.alertOrNotifyResponse(response);
-      this.$emit("projectUpdated");
-    },
-  },
-};
-</script>
 
 <style scoped></style>

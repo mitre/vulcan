@@ -1,6 +1,72 @@
+<script>
+import axios from 'axios'
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
+import FormMixinVue from '../../mixins/FormMixin.vue'
+
+function initialState(project) {
+  return {
+    metadata: Object.entries(project.metadata || {}).map(([key, value]) => {
+      return { key, value }
+    }),
+  }
+}
+
+export default {
+  name: 'UpdateMetadataModal',
+  mixins: [AlertMixinVue, FormMixinVue],
+  props: {
+    project: {
+      type: Object,
+      required: true,
+    },
+  },
+  data() {
+    return initialState(this.project)
+  },
+  methods: {
+    resetModal() {
+      Object.assign(this.$data, initialState(this.project))
+    },
+    showModal() {
+      this.$refs.updateMetadataModal.show()
+    },
+    addMetadata() {
+      this.metadata.push({ key: '', value: '' })
+    },
+    updateMetadata() {
+      this.$refs.updateMetadataModal.hide()
+      const payload = {
+        project: {
+          project_metadata_attributes: {
+            data: this.metadata.reduce((acc, curr) => {
+              acc[curr.key] = curr.value
+              return acc
+            }, {}),
+          },
+        },
+      }
+
+      axios
+        .put(`/projects/${this.project.id}`, payload)
+        .then(this.updateMetadataSuccess)
+        .catch(this.alertOrNotifyResponse)
+    },
+    updateMetadataSuccess(response) {
+      this.alertOrNotifyResponse(response)
+      this.$emit('projectUpdated')
+    },
+    removeMetadata(index) {
+      this.metadata.splice(index, 1)
+    },
+  },
+}
+</script>
+
 <template>
   <div>
-    <b-button class="px-2 m-2" variant="success" @click="showModal()"> Update Metadata </b-button>
+    <b-button class="px-2 m-2" variant="success" @click="showModal()">
+      Update Metadata
+    </b-button>
     <b-modal
       ref="updateMetadataModal"
       title="Update Project Metadata"
@@ -22,78 +88,16 @@
         </div>
         <b-row>
           <b-col>
-            <b-button @click="addMetadata">Add</b-button>
+            <b-button @click="addMetadata">
+              Add
+            </b-button>
           </b-col>
         </b-row>
         <!-- Allow the enter button to submit the form -->
-        <b-btn type="submit" class="d-none" @click.prevent="updateMetadata()" />
+        <b-button type="submit" class="d-none" @click.prevent="updateMetadata()" />
       </b-form>
     </b-modal>
   </div>
 </template>
-
-<script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-
-function initialState(project) {
-  return {
-    metadata: Object.entries(project.metadata || {}).map(([key, value]) => {
-      return { key: key, value: value };
-    }),
-  };
-}
-
-export default {
-  name: "UpdateMetadataModal",
-  mixins: [AlertMixinVue, FormMixinVue],
-  props: {
-    project: {
-      type: Object,
-      required: true,
-    },
-  },
-  data: function () {
-    return initialState(this.project);
-  },
-  methods: {
-    resetModal: function () {
-      Object.assign(this.$data, initialState(this.project));
-    },
-    showModal: function () {
-      this.$refs["updateMetadataModal"].show();
-    },
-    addMetadata: function () {
-      this.metadata.push({ key: "", value: "" });
-    },
-    updateMetadata: function () {
-      this.$refs["updateMetadataModal"].hide();
-      let payload = {
-        project: {
-          project_metadata_attributes: {
-            data: this.metadata.reduce((acc, curr) => {
-              acc[curr.key] = curr.value;
-              return acc;
-            }, {}),
-          },
-        },
-      };
-
-      axios
-        .put(`/projects/${this.project.id}`, payload)
-        .then(this.updateMetadataSuccess)
-        .catch(this.alertOrNotifyResponse);
-    },
-    updateMetadataSuccess: function (response) {
-      this.alertOrNotifyResponse(response);
-      this.$emit("projectUpdated");
-    },
-    removeMetadata: function (index) {
-      this.metadata.splice(index, 1);
-    },
-  },
-};
-</script>
 
 <style scoped></style>

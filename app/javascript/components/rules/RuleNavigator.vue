@@ -1,3 +1,368 @@
+<script>
+//
+// Expect component to emit `ruleSelected` event when
+// a rule is selected from the list. This event means that
+// the user wants to edit that specific rule.
+// this.$emit('ruleSelected', rule)
+//
+// <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
+//
+import _ from 'lodash'
+import FindAndReplace from './FindAndReplace.vue'
+import NewRuleModalForm from './forms/NewRuleModalForm.vue'
+
+export default {
+  name: 'RuleNavigator',
+  components: { FindAndReplace, NewRuleModalForm },
+  props: {
+    effectivePermissions: {
+      type: String,
+      default: '',
+    },
+    componentId: {
+      type: Number,
+      required: true,
+    },
+    rules: {
+      type: Array,
+      required: true,
+    },
+    selectedRuleId: {
+      type: Number,
+      required: false,
+    },
+    projectPrefix: {
+      type: String,
+      required: true,
+    },
+    openRuleIds: {
+      type: Array,
+      required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      rule_form_rule_id: '',
+      sidebarOffset: 0, // How far the sidebar is from the top of the screen
+      expandedParents: {}, // Track which parent controls are expanded (rule.id => boolean)
+      filters: {
+        search: '',
+        acFilterChecked: true, // Applicable - Configurable
+        aimFilterChecked: true, // Applicable - Inherently Meets
+        adnmFilterChecked: true, // Applicable - Does Not Meet
+        naFilterChecked: true, // Not Applicable
+        nydFilterChecked: true, // Not Yet Determined
+        nurFilterChecked: true, // Not under review
+        urFilterChecked: true, // Under review
+        lckFilterChecked: true, // Locked
+        nestSatisfiedRulesChecked: false, // Nests Satisfied Rules
+        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
+        sortBySRGIdChecked: false, // Sort by SRG ID
+      },
+    }
+  },
+  computed: {
+    sidebarStyle() {
+      return {
+        'max-height': `calc(100vh - ${this.sidebarOffset}px)`,
+      }
+    },
+    // generates the options for the status checkboxes
+    ruleStatusCounts() {
+      // status counts
+      let acCount = 0
+      let aimCount = 0
+      let adnmCount = 0
+      let naCount = 0
+      let nydCount = 0
+      let acSatisfiedByCount = 0
+
+      // review counts
+      let nurCount = 0
+      let urCount = 0
+      let lckCount = 0
+
+      for (let i = 0; i < this.rules.length; i++) {
+        const status = this.rules[i].status
+        const satisfiedByOther = this.rules[i].satisfied_by.length > 0
+        // Status counts
+        if (status == 'Applicable - Configurable') {
+          acCount += 1
+          acSatisfiedByCount += satisfiedByOther ? 1 : 0
+        }
+        else if (status == 'Applicable - Inherently Meets') {
+          aimCount += 1
+        }
+        else if (status == 'Applicable - Does Not Meet') {
+          adnmCount += 1
+        }
+        else if (status == 'Not Applicable') {
+          naCount += 1
+        }
+        else if (status == 'Not Yet Determined') {
+          nydCount += 1
+        }
+
+        // Review counts
+        const hasReviewRequestor = this.rules[i].review_requestor_id != null
+        const isLocked = this.rules[i].locked
+        if (!hasReviewRequestor && !isLocked) {
+          nurCount += 1
+        }
+        else if (hasReviewRequestor) {
+          urCount += 1
+        }
+        else if (isLocked) {
+          lckCount += 1
+        }
+      }
+
+      return {
+        ac: acCount,
+        aim: aimCount,
+        adnm: adnmCount,
+        na: naCount,
+        acsb: acSatisfiedByCount, // applicable - configurable satisfied by other controls.
+        nyd: nydCount,
+        nur: nurCount,
+        ur: urCount,
+        lck: lckCount,
+      }
+    },
+    // Filters down to all rules that apply to search & applied filters
+    filteredRules() {
+      return this.filterRules(this.rules)
+    },
+    // Filters down to open rules that also apply to search & applied filters
+    openRules() {
+      const openRules = this.rules.filter(rule => this.openRuleIds.includes(rule.id))
+      return openRules
+    },
+  },
+  watch: {
+    filters: {
+      handler(_) {
+        localStorage.setItem(
+          `ruleNavigatorFilters-${this.componentId}`,
+          JSON.stringify(this.filters),
+        )
+        localStorage.setItem(`showSRGIdChecked-${this.componentId}`, this.filters.showSRGIdChecked)
+      },
+      deep: true,
+    },
+  },
+  mounted() {
+    // Persist `filters` across page loads
+    if (localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`)) {
+      try {
+        this.filters = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`))
+        this.$refs.ruleSearch.value = this.filters.search
+      }
+      catch (e) {
+        localStorage.removeItem(`ruleNavigatorFilters-${this.componentId}`)
+      }
+    }
+    window.addEventListener('scroll', this.handleScroll)
+    this.handleScroll()
+  },
+  unmounted() {
+    window.removeEventListener('scroll', this.handleScroll)
+  },
+  methods: {
+    searchUpdated: _.debounce(function (newSearch) {
+      this.filters.search = newSearch
+    }, 500),
+    // Event handler for when a rule is selected
+    ruleSelected(rule) {
+      if (!rule.histories) {
+        this.$root.$emit('refresh:rule', rule.id)
+      }
+      this.$emit('ruleSelected', rule.id)
+    },
+    ruleDeselected(rule) {
+      this.$emit('ruleDeselected', rule.id)
+    },
+    rulesDeselected(rules) {
+      rules.forEach((rule) => {
+        this.$emit('ruleDeselected', rule.id)
+      })
+    },
+    // Dynamically set the class of each rule row
+    ruleRowClass(rule) {
+      return {
+        ruleRow: true,
+        clickable: true,
+        selectedRuleRow: this.selectedRuleId == rule.id,
+      }
+    },
+    // Helper to test if a rule's status is a currently selected filter checkboxes
+    doesRuleHaveFilteredStatus(rule) {
+      return (
+        (!this.filters.acFilterChecked
+          && !this.filters.aimFilterChecked
+          && !this.filters.adnmFilterChecked
+          && !this.filters.naFilterChecked
+          && !this.filters.nydFilterChecked)
+        || (this.filters.acFilterChecked && rule.status == 'Applicable - Configurable')
+        || (this.filters.aimFilterChecked && rule.status == 'Applicable - Inherently Meets')
+        || (this.filters.adnmFilterChecked && rule.status == 'Applicable - Does Not Meet')
+        || (this.filters.naFilterChecked && rule.status == 'Not Applicable')
+        || (this.filters.nydFilterChecked && rule.status == 'Not Yet Determined')
+      )
+    },
+    doesRuleHaveFilteredReviewStatus(rule) {
+      return (
+        (!this.filters.nurFilterChecked
+          && !this.filters.urFilterChecked
+          && !this.filters.lckFilterChecked)
+        || (this.filters.nurFilterChecked && !rule.locked && !rule.review_requestor_id)
+        || (this.filters.urFilterChecked && !rule.locked && rule.review_requestor_id)
+        || (this.filters.lckFilterChecked && rule.locked)
+      )
+    },
+    listSatisfiedRule(rule) {
+      let showRule = true
+      if (this.filters.nestSatisfiedRulesChecked) {
+        showRule = rule.satisfied_by.length === 0
+      }
+      return showRule
+    },
+    // Helper to filter & search a group of rules
+    filterRules(rules) {
+      const downcaseSearch = this.filters.search.toLowerCase()
+      const sortedRules = [...rules]
+      if (this.filters.sortBySRGIdChecked) {
+        sortedRules.sort((a, b) => a.version.localeCompare(b.version))
+      }
+
+      return sortedRules.filter((rule) => {
+        return (
+          this.searchTextForRule(rule).includes(downcaseSearch)
+          && this.doesRuleHaveFilteredStatus(rule)
+          && this.doesRuleHaveFilteredReviewStatus(rule)
+          && (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
+        )
+      })
+    },
+    sortAlsoSatisfies(rules) {
+      return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id))
+    },
+    formatRuleId(id) {
+      return `${this.projectPrefix}-${id}`
+    },
+    // This is a super basic function that provides a single searchable string for a given rule
+    // It does not do anything like exclude attributes from search depending on the rule status.
+    // It is unclear at this time if that would be necessary or useful, but if that does become
+    // the case then expect this function to change.
+    searchTextForRule(rule) {
+      const ruleSearchAttrs = [
+        // "artifact_description",
+        // "fix_id",
+        'fixtext',
+        // "fixtext_fixref",
+        // "ident",
+        // "ident_system",
+        // "rule_id",
+        'rule_severity',
+        // "rule_weight",
+        // "status",
+        'status_justification',
+        'title',
+        'vendor_comments',
+        // "version",
+      ]
+      const checkDescriptionSearchAttrs = [
+        'content',
+        // "content_ref_href",
+        // "content_ref_name",
+        // "system",
+      ]
+      const disaDescriptionSearchAttrs = [
+        // "false_negatives",
+        // "false_positives",
+        // "ia_controls",
+        // "mitigation_controls",
+        // "mitigations",
+        // "potential_impacts",
+        // "responsibility",
+        // "security_override_guidance",
+        // "third_party_tools",
+        'vuln_discussion',
+      ]
+      // Start with the rule ID as searchable
+      let searchText = this.formatRuleId(rule.rule_id)
+      // The `|| ''` statements below prevent the literal string 'undefined' from being part of the searchable text
+      // Add all rule attrs for rule
+      for (var attrIndex = 0; attrIndex < ruleSearchAttrs.length; attrIndex++) {
+        searchText += ` | ${rule[ruleSearchAttrs[attrIndex]] || ''}`
+      }
+      // Add all check attrs for each rule check
+      for (var attrIndex = 0; attrIndex < checkDescriptionSearchAttrs.length; attrIndex++) {
+        for (let checkIndex = 0; checkIndex < rule.checks_attributes.length; checkIndex++) {
+          searchText += ` | ${
+            rule.checks_attributes[checkIndex][checkDescriptionSearchAttrs[attrIndex]] || ''
+          }`
+        }
+      }
+      // Add all descriptions attrs for each rule disa description
+      for (var attrIndex = 0; attrIndex < disaDescriptionSearchAttrs.length; attrIndex++) {
+        for (
+          let descIndex = 0;
+          descIndex < rule.disa_rule_descriptions_attributes.length;
+          descIndex++
+        ) {
+          searchText += ` | ${
+            rule.disa_rule_descriptions_attributes[descIndex][
+              disaDescriptionSearchAttrs[attrIndex]
+            ] || ''
+          }`
+        }
+      }
+      return searchText.toLowerCase()
+    },
+    // Helper to clear all filters
+    clearFilters() {
+      this.$refs.ruleSearch.value = ''
+      this.filters = {
+        search: '',
+        acFilterChecked: true, // Applicable - Configurable
+        aimFilterChecked: true, // Applicable - Inherently Meets
+        adnmFilterChecked: true, // Applicable - Does Not Meet
+        naFilterChecked: true, // Not Applicable
+        nydFilterChecked: true, // Not Yet Determined
+        nurFilterChecked: true, // Not under review
+        urFilterChecked: true, // Under review
+        lckFilterChecked: true, // Locked
+        nestSatisfiedRulesChecked: false, // Nests satisfied rules
+        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
+        sortBySRGIdChecked: false, // Sort by SRG ID
+      }
+    },
+    handleScroll() {
+      this.$nextTick(() => {
+        // Get the distance from the top of the sidebar to the top of the page
+        const top = this.$refs.sidebar?.getBoundingClientRect().top
+        // if top is set and greater than 0 then set the sidebar offset to keep
+        // the scrollbar from going off the page
+        this.sidebarOffset = top > 0 ? top : 0
+      })
+    },
+    toggleParentExpand(parentId) {
+      // Toggle the expanded state for this parent
+      this.expandedParents[parentId] = !this.expandedParents[parentId]
+    },
+    isParentExpanded(parentId) {
+      // Return true if this parent is expanded (defaults to false/collapsed)
+      return this.expandedParents[parentId] || false
+    },
+  },
+}
+</script>
+
 <template>
   <div id="scrolling-sidebar" ref="sidebar" :style="sidebarStyle">
     <div class="mr-2">
@@ -23,7 +388,7 @@
           class="form-control"
           placeholder="Search controls..."
           @input="searchUpdated($event.target.value)"
-        />
+        >
       </div>
 
       <!-- Filter by rule status -->
@@ -36,11 +401,9 @@
           name="acFilterChecked-filter"
         >
           <span class="d-flex flex-column align-items-center">
-            <span
-              ><strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
+            <span><strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
             </span>
-            <small v-if="ruleStatusCounts.acsb" class="text-info"
-              >{{ ruleStatusCounts.acsb }} Satisfied by other
+            <small v-if="ruleStatusCounts.acsb" class="text-info">{{ ruleStatusCounts.acsb }} Satisfied by other
             </small>
           </span>
         </b-form-checkbox>
@@ -155,14 +518,14 @@
         </b-form-checkbox>
       </b-form-group>
 
-      <hr class="mt-2 mb-2" />
+      <hr class="mt-2 mb-2">
 
       <!-- Currently opened controls -->
       <p class="mt-0 mb-1 d-flex justify-content-between align-items-center spacing-responsive">
         <strong>Open Controls</strong>
         <template v-if="openRuleIds.length > 0">
           <span class="clickable text-primary" @click="rulesDeselected(openRules)">
-            <b-icon icon="x" class="clickable" />
+            <i class="bi bi-x clickable" />
             close all
           </span>
         </template>
@@ -179,7 +542,7 @@
           @click="ruleSelected(rule)"
         >
           <span>
-            <b-icon icon="x" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
+            <i class="bi bi-x" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
             <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </span>
@@ -187,35 +550,35 @@
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
-              icon="diagram-3"
+              class="bi bi-diagram-3"
               title="Satisfies other"
               aria-hidden="true"
             />
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
-              icon="files"
+              class="bi bi-files"
               title="Satisfied by other"
               aria-hidden="true"
             />
-            <b-icon
+            <i
               v-if="rule.review_requestor_id"
               v-b-tooltip.hover
-              icon="file-earmark-search"
+              class="bi bi-file-earmark-search"
               title="Review requested"
               aria-hidden="true"
             />
-            <b-icon
+            <i
               v-if="rule.locked"
               v-b-tooltip.hover
-              icon="lock"
+              class="bi bi-lock"
               title="Locked"
               aria-hidden="true"
             />
-            <b-icon
+            <i
               v-if="rule.changes_requested"
               v-b-tooltip.hover
-              icon="exclamation-triangle"
+              class="bi bi-exclamation-triangle"
               title="Changes requested"
               aria-hidden="true"
             />
@@ -223,14 +586,14 @@
         </div>
       </div>
 
-      <hr class="mt-2 mb-2" />
+      <hr class="mt-2 mb-2">
 
       <!-- All project controls -->
       <p class="mt-0 mb-0 d-flex justify-content-between align-items-center spacing-responsive">
         <strong>All Controls</strong>
         <template v-if="!readOnly">
           <span v-b-modal.create-rule-modal class="text-primary clickable">
-            <b-icon v-b-modal.create-rule-modal icon="plus" /> add
+            <i v-b-modal.create-rule-modal class="bi bi-plus" /> add
           </span>
         </template>
       </p>
@@ -240,7 +603,7 @@
         title="Create New Control"
         :for-duplicate="false"
         id-prefix="create"
-        @ruleSelected="ruleSelected($event)"
+        @rule-selected="ruleSelected($event)"
       />
 
       <!-- All rules list -->
@@ -252,10 +615,9 @@
         >
           <span>
             <!-- Expand/collapse icon for parents with nested controls -->
-            <b-icon
+            <i
               v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0"
-              :icon="isParentExpanded(rule.id) ? 'chevron-down' : 'chevron-right'"
-              class="clickable"
+              class="bi clickable" :class="[isParentExpanded(rule.id) ? 'bi-chevron-down' : 'bi-chevron-right']"
               @click.stop="toggleParentExpand(rule.id)"
             />
             <span v-if="filters.showSRGIdChecked">
@@ -269,7 +631,7 @@
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
-              icon="diagram-3"
+              class="bi bi-diagram-3"
               title="Satisfies other"
               aria-hidden="true"
             />
@@ -277,28 +639,28 @@
             <i
               v-if="rule.satisfied_by.length > 0"
               v-b-tooltip.hover
-              icon="files"
+              class="bi bi-files"
               title="Satisfied by other"
               aria-hidden="true"
             />
-            <b-icon
+            <i
               v-if="rule.review_requestor_id"
               v-b-tooltip.hover
-              icon="file-earmark-search"
+              class="bi bi-file-earmark-search"
               title="Review requested"
               aria-hidden="true"
             />
-            <b-icon
+            <i
               v-if="rule.locked"
               v-b-tooltip.hover
-              icon="lock"
+              class="bi bi-lock"
               title="Locked"
               aria-hidden="true"
             />
-            <b-icon
+            <i
               v-if="rule.changes_requested"
               v-b-tooltip.hover
-              icon="exclamation-triangle"
+              class="bi bi-exclamation-triangle"
               title="Changes requested"
               aria-hidden="true"
             />
@@ -318,7 +680,7 @@
             @click="ruleSelected(satisfies)"
           >
             <span>
-              <b-icon icon="chevron-right" class="ml-3" />
+              <i class="bi bi-chevron-right ml-3" />
               <span v-if="filters.showSRGIdChecked">
                 {{ satisfies.version }}
               </span>
@@ -327,24 +689,24 @@
               </span>
             </span>
             <span>
-              <b-icon
+              <i
                 v-if="satisfies.review_requestor_id"
                 v-b-tooltip.hover
-                icon="file-earmark-search"
+                class="bi bi-file-earmark-search"
                 title="Review requested"
                 aria-hidden="true"
               />
-              <b-icon
+              <i
                 v-if="satisfies.locked"
                 v-b-tooltip.hover
-                icon="lock"
+                class="bi bi-lock"
                 title="Locked"
                 aria-hidden="true"
               />
-              <b-icon
+              <i
                 v-if="satisfies.changes_requested"
                 v-b-tooltip.hover
-                icon="exclamation-triangle"
+                class="bi bi-exclamation-triangle"
                 title="Changes requested"
                 aria-hidden="true"
               />
@@ -355,364 +717,6 @@
     </div>
   </div>
 </template>
-
-<script>
-//
-// Expect component to emit `ruleSelected` event when
-// a rule is selected from the list. This event means that
-// the user wants to edit that specific rule.
-// this.$emit('ruleSelected', rule)
-//
-// <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
-//
-import _ from "lodash";
-import axios from "axios";
-import FindAndReplace from "./FindAndReplace.vue";
-import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-export default {
-  name: "RuleNavigator",
-  components: { FindAndReplace, NewRuleModalForm },
-  props: {
-    effectivePermissions: {
-      type: String,
-      default: "",
-    },
-    componentId: {
-      type: Number,
-      required: true,
-    },
-    rules: {
-      type: Array,
-      required: true,
-    },
-    selectedRuleId: {
-      type: Number,
-      required: false,
-    },
-    projectPrefix: {
-      type: String,
-      required: true,
-    },
-    openRuleIds: {
-      type: Array,
-      required: true,
-    },
-    readOnly: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  data: function () {
-    return {
-      rule_form_rule_id: "",
-      sidebarOffset: 0, // How far the sidebar is from the top of the screen
-      expandedParents: {}, // Track which parent controls are expanded (rule.id => boolean)
-      filters: {
-        search: "",
-        acFilterChecked: true, // Applicable - Configurable
-        aimFilterChecked: true, // Applicable - Inherently Meets
-        adnmFilterChecked: true, // Applicable - Does Not Meet
-        naFilterChecked: true, // Not Applicable
-        nydFilterChecked: true, // Not Yet Determined
-        nurFilterChecked: true, // Not under review
-        urFilterChecked: true, // Under review
-        lckFilterChecked: true, // Locked
-        nestSatisfiedRulesChecked: false, // Nests Satisfied Rules
-        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
-        sortBySRGIdChecked: false, // Sort by SRG ID
-      },
-    };
-  },
-  computed: {
-    sidebarStyle: function () {
-      return {
-        "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
-      };
-    },
-    // generates the options for the status checkboxes
-    ruleStatusCounts: function () {
-      // status counts
-      let acCount = 0;
-      let aimCount = 0;
-      let adnmCount = 0;
-      let naCount = 0;
-      let nydCount = 0;
-      let acSatisfiedByCount = 0;
-
-      // review counts
-      let nurCount = 0;
-      let urCount = 0;
-      let lckCount = 0;
-
-      for (var i = 0; i < this.rules.length; i++) {
-        const status = this.rules[i].status;
-        const satisfiedByOther = this.rules[i].satisfied_by.length > 0;
-        // Status counts
-        if (status == "Applicable - Configurable") {
-          acCount += 1;
-          acSatisfiedByCount += satisfiedByOther ? 1 : 0;
-        } else if (status == "Applicable - Inherently Meets") {
-          aimCount += 1;
-        } else if (status == "Applicable - Does Not Meet") {
-          adnmCount += 1;
-        } else if (status == "Not Applicable") {
-          naCount += 1;
-        } else if (status == "Not Yet Determined") {
-          nydCount += 1;
-        }
-
-        // Review counts
-        const hasReviewRequestor = this.rules[i].review_requestor_id != null;
-        const isLocked = this.rules[i].locked;
-        if (!hasReviewRequestor && !isLocked) {
-          nurCount += 1;
-        } else if (hasReviewRequestor) {
-          urCount += 1;
-        } else if (isLocked) {
-          lckCount += 1;
-        }
-      }
-
-      return {
-        ac: acCount,
-        aim: aimCount,
-        adnm: adnmCount,
-        na: naCount,
-        acsb: acSatisfiedByCount, // applicable - configurable satisfied by other controls.
-        nyd: nydCount,
-        nur: nurCount,
-        ur: urCount,
-        lck: lckCount,
-      };
-    },
-    // Filters down to all rules that apply to search & applied filters
-    filteredRules: function () {
-      return this.filterRules(this.rules);
-    },
-    // Filters down to open rules that also apply to search & applied filters
-    openRules: function () {
-      const openRules = this.rules.filter((rule) => this.openRuleIds.includes(rule.id));
-      return openRules;
-    },
-  },
-  watch: {
-    filters: {
-      handler(_) {
-        localStorage.setItem(
-          `ruleNavigatorFilters-${this.componentId}`,
-          JSON.stringify(this.filters),
-        );
-        localStorage.setItem(`showSRGIdChecked-${this.componentId}`, this.filters.showSRGIdChecked);
-      },
-      deep: true,
-    },
-  },
-  mounted: function () {
-    // Persist `filters` across page loads
-    if (localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`)) {
-      try {
-        this.filters = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
-        this.$refs.ruleSearch.value = this.filters.search;
-      } catch (e) {
-        localStorage.removeItem(`ruleNavigatorFilters-${this.componentId}`);
-      }
-    }
-    window.addEventListener("scroll", this.handleScroll);
-    this.handleScroll();
-  },
-  destroyed() {
-    window.removeEventListener("scroll", this.handleScroll);
-  },
-  methods: {
-    searchUpdated: _.debounce(function (newSearch) {
-      this.filters.search = newSearch;
-    }, 500),
-    // Event handler for when a rule is selected
-    ruleSelected: function (rule) {
-      if (!rule.histories) {
-        this.$root.$emit("refresh:rule", rule.id);
-      }
-      this.$emit("ruleSelected", rule.id);
-    },
-    ruleDeselected: function (rule) {
-      this.$emit("ruleDeselected", rule.id);
-    },
-    rulesDeselected: function (rules) {
-      rules.forEach((rule) => {
-        this.$emit("ruleDeselected", rule.id);
-      });
-    },
-    // Dynamically set the class of each rule row
-    ruleRowClass: function (rule) {
-      return {
-        ruleRow: true,
-        clickable: true,
-        selectedRuleRow: this.selectedRuleId == rule.id,
-      };
-    },
-    // Helper to test if a rule's status is a currently selected filter checkboxes
-    doesRuleHaveFilteredStatus: function (rule) {
-      return (
-        (!this.filters.acFilterChecked &&
-          !this.filters.aimFilterChecked &&
-          !this.filters.adnmFilterChecked &&
-          !this.filters.naFilterChecked &&
-          !this.filters.nydFilterChecked) ||
-        (this.filters.acFilterChecked && rule.status == "Applicable - Configurable") ||
-        (this.filters.aimFilterChecked && rule.status == "Applicable - Inherently Meets") ||
-        (this.filters.adnmFilterChecked && rule.status == "Applicable - Does Not Meet") ||
-        (this.filters.naFilterChecked && rule.status == "Not Applicable") ||
-        (this.filters.nydFilterChecked && rule.status == "Not Yet Determined")
-      );
-    },
-    doesRuleHaveFilteredReviewStatus: function (rule) {
-      return (
-        (!this.filters.nurFilterChecked &&
-          !this.filters.urFilterChecked &&
-          !this.filters.lckFilterChecked) ||
-        (this.filters.nurFilterChecked && !rule.locked && !rule.review_requestor_id) ||
-        (this.filters.urFilterChecked && !rule.locked && rule.review_requestor_id) ||
-        (this.filters.lckFilterChecked && rule.locked)
-      );
-    },
-    listSatisfiedRule: function (rule) {
-      let showRule = true;
-      if (this.filters.nestSatisfiedRulesChecked) {
-        showRule = rule.satisfied_by.length === 0;
-      }
-      return showRule;
-    },
-    // Helper to filter & search a group of rules
-    filterRules: function (rules) {
-      let downcaseSearch = this.filters.search.toLowerCase();
-      let sortedRules = [...rules];
-      if (this.filters.sortBySRGIdChecked) {
-        sortedRules.sort((a, b) => a.version.localeCompare(b.version));
-      }
-
-      return sortedRules.filter((rule) => {
-        return (
-          this.searchTextForRule(rule).includes(downcaseSearch) &&
-          this.doesRuleHaveFilteredStatus(rule) &&
-          this.doesRuleHaveFilteredReviewStatus(rule) &&
-          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
-        );
-      });
-    },
-    sortAlsoSatisfies: function (rules) {
-      return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
-    },
-    formatRuleId: function (id) {
-      return `${this.projectPrefix}-${id}`;
-    },
-    // This is a super basic function that provides a single searchable string for a given rule
-    // It does not do anything like exclude attributes from search depending on the rule status.
-    // It is unclear at this time if that would be necessary or useful, but if that does become
-    // the case then expect this function to change.
-    searchTextForRule: function (rule) {
-      const ruleSearchAttrs = [
-        // "artifact_description",
-        // "fix_id",
-        "fixtext",
-        // "fixtext_fixref",
-        // "ident",
-        // "ident_system",
-        // "rule_id",
-        "rule_severity",
-        // "rule_weight",
-        // "status",
-        "status_justification",
-        "title",
-        "vendor_comments",
-        // "version",
-      ];
-      const checkDescriptionSearchAttrs = [
-        "content",
-        // "content_ref_href",
-        // "content_ref_name",
-        // "system",
-      ];
-      const disaDescriptionSearchAttrs = [
-        // "false_negatives",
-        // "false_positives",
-        // "ia_controls",
-        // "mitigation_controls",
-        // "mitigations",
-        // "potential_impacts",
-        // "responsibility",
-        // "security_override_guidance",
-        // "third_party_tools",
-        "vuln_discussion",
-      ];
-      // Start with the rule ID as searchable
-      let searchText = this.formatRuleId(rule.rule_id);
-      // The `|| ''` statements below prevent the literal string 'undefined' from being part of the searchable text
-      // Add all rule attrs for rule
-      for (var attrIndex = 0; attrIndex < ruleSearchAttrs.length; attrIndex++) {
-        searchText += ` | ${rule[ruleSearchAttrs[attrIndex]] || ""}`;
-      }
-      // Add all check attrs for each rule check
-      for (var attrIndex = 0; attrIndex < checkDescriptionSearchAttrs.length; attrIndex++) {
-        for (var checkIndex = 0; checkIndex < rule.checks_attributes.length; checkIndex++) {
-          searchText += ` | ${
-            rule.checks_attributes[checkIndex][checkDescriptionSearchAttrs[attrIndex]] || ""
-          }`;
-        }
-      }
-      // Add all descriptions attrs for each rule disa description
-      for (var attrIndex = 0; attrIndex < disaDescriptionSearchAttrs.length; attrIndex++) {
-        for (
-          var descIndex = 0;
-          descIndex < rule.disa_rule_descriptions_attributes.length;
-          descIndex++
-        ) {
-          searchText += ` | ${
-            rule.disa_rule_descriptions_attributes[descIndex][
-              disaDescriptionSearchAttrs[attrIndex]
-            ] || ""
-          }`;
-        }
-      }
-      return searchText.toLowerCase();
-    },
-    // Helper to clear all filters
-    clearFilters: function () {
-      this.$refs.ruleSearch.value = "";
-      this.filters = {
-        search: "",
-        acFilterChecked: true, // Applicable - Configurable
-        aimFilterChecked: true, // Applicable - Inherently Meets
-        adnmFilterChecked: true, // Applicable - Does Not Meet
-        naFilterChecked: true, // Not Applicable
-        nydFilterChecked: true, // Not Yet Determined
-        nurFilterChecked: true, // Not under review
-        urFilterChecked: true, // Under review
-        lckFilterChecked: true, // Locked
-        nestSatisfiedRulesChecked: false, // Nests satisfied rules
-        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
-        sortBySRGIdChecked: false, // Sort by SRG ID
-      };
-    },
-    handleScroll: function () {
-      this.$nextTick(() => {
-        // Get the distance from the top of the sidebar to the top of the page
-        let top = this.$refs.sidebar?.getBoundingClientRect().top;
-        // if top is set and greater than 0 then set the sidebar offset to keep
-        // the scrollbar from going off the page
-        this.sidebarOffset = top > 0 ? top : 0;
-      });
-    },
-    toggleParentExpand: function (parentId) {
-      // Toggle the expanded state for this parent
-      this.$set(this.expandedParents, parentId, !this.expandedParents[parentId]);
-    },
-    isParentExpanded: function (parentId) {
-      // Return true if this parent is expanded (defaults to false/collapsed)
-      return this.expandedParents[parentId] || false;
-    },
-  },
-};
-</script>
 
 <style scoped>
 .parent-svg-container {

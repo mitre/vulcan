@@ -1,51 +1,51 @@
 <script>
-import axios from "axios";
+import axios from 'axios'
 
 // This mixin is for a modal confirmation asking if a user really wants to release a component
 export default {
   methods: {
-    confirmComponentRelease: function () {
+    confirmComponentRelease() {
       if (!this.component.releasable) {
-        return;
+        return
       }
 
-      let body = this.$createElement("div", {
+      const body = this.$createElement('div', {
         domProps: {
           innerHTML:
-            "<p>Are you sure you want to release this component?</p><p>This cannot be undone and will make the component publicly available within Vulcan.</p>",
+            '<p>Are you sure you want to release this component?</p><p>This cannot be undone and will make the component publicly available within Vulcan.</p>',
         },
-      });
+      })
       this.$bvModal
         .msgBoxConfirm(body, {
-          title: "Release Component",
-          size: "md",
-          okTitle: "Release Component",
-          okVariant: "success",
-          cancelTitle: "Cancel",
+          title: 'Release Component',
+          size: 'md',
+          okTitle: 'Release Component',
+          okVariant: 'success',
+          cancelTitle: 'Cancel',
           hideHeaderClose: false,
           centered: true,
         })
         .then((value) => {
           // confirm value was either null or false (clicked away or clicked cancel)
           if (!value) {
-            return;
+            return
           }
 
-          let payload = {
+          const payload = {
             component: {
               released: true,
             },
-          };
+          }
           axios
             .patch(`/components/${this.component.id}`, payload)
             .then((response) => {
-              this.alertOrNotifyResponse(response);
-              this.$emit("projectUpdated");
+              this.alertOrNotifyResponse(response)
+              this.$emit('projectUpdated')
             })
-            .catch(this.alertOrNotifyResponse);
+            .catch(this.alertOrNotifyResponse)
         })
-        .catch((err) => {});
+        .catch((err) => {})
     },
   },
-};
+}
 </script>

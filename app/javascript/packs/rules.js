@@ -1,14 +1,14 @@
-import { createApp } from "vue";
-import { registerComponents } from "../bootstrap-vue-next-components";
-import Rules from "../components/rules/Rules.vue";
+import { createApp } from 'vue'
+import { registerComponents } from '../bootstrap-vue-next-components'
+import Rules from '../components/rules/Rules.vue'
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   const app = createApp({
     components: {
-      Rules
-    }
-  });
+      Rules,
+    },
+  })
 
-  registerComponents(app);
-  app.mount("#Rules");
-});
+  registerComponents(app)
+  app.mount('#Rules')
+})

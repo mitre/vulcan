@@ -1,3 +1,75 @@
+<script>
+// CommentModal is for generating a modal that prompts a user to input a comment,
+// then once submitted, emits an event @comment that contains the contents of the
+// comment.
+export default {
+  name: 'CommentModal',
+  props: {
+    title: {
+      type: String,
+      required: true,
+    },
+    message: {
+      type: String,
+      default: '',
+    },
+    buttonText: {
+      type: String,
+      required: true,
+    },
+    buttonVariant: {
+      type: String,
+      default: 'primary',
+    },
+    buttonClass: {
+      type: [Object, Array],
+      default: () => [],
+    },
+    buttonSize: {
+      type: String,
+      default: 'medium',
+    },
+    buttonDisabled: {
+      type: Boolean,
+      default: false,
+    },
+    wrapperClass: {
+      type: String,
+      default: '',
+    },
+    size: {
+      type: String,
+      default: null,
+    },
+  },
+  data() {
+    return {
+      mod: Math.floor(Math.random() * 1000),
+      comment: '',
+    }
+  },
+  methods: {
+    resetModal() {
+      this.comment = ''
+    },
+    handleOk(bvModalEvt) {
+      // Prevent modal from closing
+      bvModalEvt.preventDefault()
+      // Trigger submit handler
+      this.handleSubmit()
+    },
+    handleSubmit() {
+      this.$emit('comment', this.comment)
+
+      // Hide the modal manually
+      this.$nextTick(() => {
+        this.$bvModal.hide(`comment-modal-${this.mod}`)
+      })
+    },
+  },
+}
+</script>
+
 <template>
   <div :class="wrapperClass">
     <b-button
@@ -24,7 +96,9 @@
     >
       <slot />
 
-      <p v-if="message">{{ message }}</p>
+      <p v-if="message">
+        {{ message }}
+      </p>
 
       <form ref="form" @submit.stop.prevent="handleSubmit">
         <b-form-group label="Comment" label-for="comment-input">
@@ -34,77 +108,5 @@
     </b-modal>
   </div>
 </template>
-
-<script>
-// CommentModal is for generating a modal that prompts a user to input a comment,
-// then once submitted, emits an event @comment that contains the contents of the
-// comment.
-export default {
-  name: "CommentModal",
-  props: {
-    title: {
-      type: String,
-      required: true,
-    },
-    message: {
-      type: String,
-      default: "",
-    },
-    buttonText: {
-      type: String,
-      required: true,
-    },
-    buttonVariant: {
-      type: String,
-      default: "primary",
-    },
-    buttonClass: {
-      type: [Object, Array],
-      default: () => [],
-    },
-    buttonSize: {
-      type: String,
-      default: "medium",
-    },
-    buttonDisabled: {
-      type: Boolean,
-      default: false,
-    },
-    wrapperClass: {
-      type: String,
-      default: "",
-    },
-    size: {
-      type: String,
-      default: null,
-    },
-  },
-  data: function () {
-    return {
-      mod: Math.floor(Math.random() * 1000),
-      comment: "",
-    };
-  },
-  methods: {
-    resetModal() {
-      this.comment = "";
-    },
-    handleOk(bvModalEvt) {
-      // Prevent modal from closing
-      bvModalEvt.preventDefault();
-      // Trigger submit handler
-      this.handleSubmit();
-    },
-    handleSubmit() {
-      this.$emit("comment", this.comment);
-
-      // Hide the modal manually
-      this.$nextTick(() => {
-        this.$bvModal.hide(`comment-modal-${this.mod}`);
-      });
-    },
-  },
-};
-</script>
 
 <style scoped></style>

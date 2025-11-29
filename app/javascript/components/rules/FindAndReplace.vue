@@ -1,6 +1,199 @@
+<script>
+import axios from 'axios'
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
+import FindAndReplaceMixinVue from '../../mixins/FindAndReplaceMixin.vue'
+import CommentModal from '../shared/CommentModal.vue'
+import FindAndReplaceResult from './FindAndReplaceResult.vue'
+
+export default {
+  name: 'FindAndReplace',
+  components: { CommentModal, FindAndReplaceResult },
+  mixins: [AlertMixinVue, FindAndReplaceMixinVue],
+  props: {
+    componentId: {
+      type: Number,
+      required: true,
+    },
+    projectPrefix: {
+      type: String,
+      required: true,
+    },
+    rules: {
+      type: Array,
+      required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      allFieldsSelected: true,
+      indeterminate: false,
+      controlFields: [
+        'Artifact Description',
+        'Check',
+        'Fix',
+        'Mitigations',
+        'Status Justification',
+        'Title',
+        'Vendor Comments',
+        'Vulnerability Discussion',
+      ],
+      loading: false,
+      fr: {
+        find: '',
+        replace: '',
+        matchCase: false,
+        fields: this.controlFields,
+      },
+      find_text: '',
+      find_results: {},
+      find_results_ver: 0,
+      total_results_match: 0,
+      total_results_control: 0,
+    }
+  },
+  watch: {
+    'fr.fields': function (newValue, oldValue) {
+      // Handle changes in individual field checkboxes
+      if (newValue.length === 0) {
+        this.indeterminate = false
+        this.allFieldsSelected = false
+      }
+      else if (newValue.length === this.controlFields.length) {
+        this.indeterminate = false
+        this.allFieldsSelected = true
+      }
+      else {
+        this.indeterminate = true
+        this.allFieldsSelected = false
+      }
+    },
+  },
+  methods: {
+    toggleAllFields(checked) {
+      this.fr.fields = checked ? this.controlFields.slice() : []
+    },
+    sortFindResults() {
+      return Object.entries(this.find_results).sort((a, b) => {
+        const findResultA = a[1].rule_id
+        const findResultB = b[1].rule_id
+        return findResultA.localeCompare(findResultB)
+      })
+    },
+    resetModal() {
+      this.loading = false
+      this.fr = {
+        find: '',
+        replace: '',
+        matchCase: false,
+        fields: this.controlFields,
+      }
+      this.find_text = ''
+      this.find_results = {}
+      this.find_results_ver = 0
+      this.total_results_match = 0
+      this.total_results_control = 0
+    },
+    find() {
+      this.loading = true
+      this.find_text = this.fr.find
+      axios
+        .post(`/components/${this.componentId}/find`, { find: this.find_text })
+        .then((response) => {
+          this.find_results = this.groupFindResults(
+            response.data,
+            this.find_text,
+            this.fr.matchCase,
+            this.fr.fields,
+          )
+          this.find_results_ver += 1
+          this.countTotalResults()
+          this.loading = false
+        })
+    },
+    countTotalResults() {
+      const resultValues = Object.values(this.find_results)
+      this.total_results_control = resultValues.length
+      this.total_results_match = resultValues.reduce((total, obj) => {
+        return (
+          total
+          + obj.results.reduce((count, result) => {
+            return (
+              count
+              + result.segments.filter(segment => segment.text.length > 0 && segment.highlighted)
+                .length
+            )
+          }, 0)
+        )
+      }, 0)
+    },
+    replace_one(rule_id, result, comment) {
+      this.loading = true
+      const original_rule = this.rules.find(rule => rule.id == rule_id)
+      this.replaceTextInRule(original_rule, result.field, result.segments, this.fr.replace)
+      const payload = {
+        rule: {
+          ...original_rule,
+          audit_comment: comment,
+        },
+      }
+      return axios
+        .put(`/rules/${rule_id}`, payload)
+        .then((response) => {
+          this.saveRuleSuccess(response, rule_id)
+        })
+        .catch(this.alertOrNotifyResponse)
+        .then(() => {
+          this.find()
+        })
+    },
+    replace_all(comment) {
+      const self = this
+      this.loading = true
+      const promises = []
+      Object.entries(this.find_results).forEach(([rule_id, find_results]) => {
+        const original_rule = self.rules.find(rule => rule.id == rule_id)
+        find_results.results.forEach((result) => {
+          self.replaceTextInRule(original_rule, result.field, result.segments, self.fr.replace)
+        })
+        const payload = {
+          rule: {
+            ...original_rule,
+            audit_comment: comment,
+          },
+        }
+        promises.push(
+          axios
+            .put(`/rules/${rule_id}`, payload)
+            .then((response) => {
+              self.saveRuleSuccess(response, rule_id)
+            })
+            .catch(self.alertOrNotifyResponse),
+        )
+      })
+      Promise.all(promises).then(() => {
+        self.find()
+      })
+    },
+    saveRuleSuccess(response, rule_id) {
+      this.alertOrNotifyResponse(response)
+      this.$root.$emit('refresh:rule', rule_id)
+    },
+    formatRuleId(id) {
+      return `${this.projectPrefix}-${id}`
+    },
+  },
+}
+</script>
+
 <template>
   <div>
-    <b-button v-b-modal.find-replace-modal class="w-100">Find &amp; Replace</b-button>
+    <b-button v-b-modal.find-replace-modal class="w-100">
+      Find &amp; Replace
+    </b-button>
     <b-modal
       id="find-replace-modal"
       size="xl"
@@ -26,7 +219,7 @@
       </b-form-group>
       <b-form-group>
         <template #label>
-          <span>Fields to include</span><br />
+          <span>Fields to include</span><br>
           <b-form-checkbox
             v-model="allFieldsSelected"
             :indeterminate="indeterminate"
@@ -61,14 +254,14 @@
         </small>
         <small v-else>No results found.</small>
       </span>
-      <hr v-if="!Object.keys(find_results).length == 0" />
+      <hr v-if="!Object.keys(find_results).length == 0">
       <div
         v-if="!Object.keys(find_results).length == 0"
         class="d-flex justify-content-end align-items-center"
       >
-        <b-button variant="primary" :disabled="fr.find == '' || loading" class="mr-4" @click="find"
-          >Find</b-button
-        >
+        <b-button variant="primary" :disabled="fr.find == '' || loading" class="mr-4" @click="find">
+          Find
+        </b-button>
         <CommentModal
           v-if="!readOnly"
           title="Replace All"
@@ -80,7 +273,7 @@
           @comment="replace_all($event)"
         />
       </div>
-      <hr v-if="!Object.keys(find_results).length == 0" />
+      <hr v-if="!Object.keys(find_results).length == 0">
       <div v-for="[id, find_result] in sortFindResults()" :key="`${find_results_ver}-${id}`">
         <b-card :title="formatRuleId(find_result.rule_id)" class="mb-3">
           <b-card-text>
@@ -97,9 +290,9 @@
         </b-card>
       </div>
       <template #modal-footer>
-        <b-button variant="primary" :disabled="fr.find == '' || loading" @click="find"
-          >Find</b-button
-        >
+        <b-button variant="primary" :disabled="fr.find == '' || loading" @click="find">
+          Find
+        </b-button>
         <CommentModal
           title="Replace All"
           message="Provide a comment that summarizes your changes to these controls."
@@ -115,195 +308,6 @@
     </b-modal>
   </div>
 </template>
-
-<script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FindAndReplaceMixinVue from "../../mixins/FindAndReplaceMixin.vue";
-import CommentModal from "../shared/CommentModal.vue";
-import FindAndReplaceResult from "./FindAndReplaceResult.vue";
-
-export default {
-  name: "FindAndReplace",
-  components: { CommentModal, FindAndReplaceResult },
-  mixins: [AlertMixinVue, FindAndReplaceMixinVue],
-  props: {
-    componentId: {
-      type: Number,
-      required: true,
-    },
-    projectPrefix: {
-      type: String,
-      required: true,
-    },
-    rules: {
-      type: Array,
-      required: true,
-    },
-    readOnly: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  data: function () {
-    return {
-      allFieldsSelected: true,
-      indeterminate: false,
-      controlFields: [
-        "Artifact Description",
-        "Check",
-        "Fix",
-        "Mitigations",
-        "Status Justification",
-        "Title",
-        "Vendor Comments",
-        "Vulnerability Discussion",
-      ],
-      loading: false,
-      fr: {
-        find: "",
-        replace: "",
-        matchCase: false,
-        fields: this.controlFields,
-      },
-      find_text: "",
-      find_results: {},
-      find_results_ver: 0,
-      total_results_match: 0,
-      total_results_control: 0,
-    };
-  },
-  watch: {
-    "fr.fields": function (newValue, oldValue) {
-      // Handle changes in individual field checkboxes
-      if (newValue.length === 0) {
-        this.indeterminate = false;
-        this.allFieldsSelected = false;
-      } else if (newValue.length === this.controlFields.length) {
-        this.indeterminate = false;
-        this.allFieldsSelected = true;
-      } else {
-        this.indeterminate = true;
-        this.allFieldsSelected = false;
-      }
-    },
-  },
-  methods: {
-    toggleAllFields: function (checked) {
-      this.fr.fields = checked ? this.controlFields.slice() : [];
-    },
-    sortFindResults: function () {
-      return Object.entries(this.find_results).sort((a, b) => {
-        const findResultA = a[1].rule_id;
-        const findResultB = b[1].rule_id;
-        return findResultA.localeCompare(findResultB);
-      });
-    },
-    resetModal: function () {
-      this.loading = false;
-      this.fr = {
-        find: "",
-        replace: "",
-        matchCase: false,
-        fields: this.controlFields,
-      };
-      this.find_text = "";
-      this.find_results = {};
-      this.find_results_ver = 0;
-      this.total_results_match = 0;
-      this.total_results_control = 0;
-    },
-    find: function () {
-      this.loading = true;
-      this.find_text = this.fr.find;
-      axios
-        .post(`/components/${this.componentId}/find`, { find: this.find_text })
-        .then((response) => {
-          this.find_results = this.groupFindResults(
-            response.data,
-            this.find_text,
-            this.fr.matchCase,
-            this.fr.fields,
-          );
-          this.find_results_ver += 1;
-          this.countTotalResults();
-          this.loading = false;
-        });
-    },
-    countTotalResults: function () {
-      const resultValues = Object.values(this.find_results);
-      this.total_results_control = resultValues.length;
-      this.total_results_match = resultValues.reduce((total, obj) => {
-        return (
-          total +
-          obj.results.reduce((count, result) => {
-            return (
-              count +
-              result.segments.filter((segment) => segment.text.length > 0 && segment.highlighted)
-                .length
-            );
-          }, 0)
-        );
-      }, 0);
-    },
-    replace_one: function (rule_id, result, comment) {
-      this.loading = true;
-      const original_rule = this.rules.find((rule) => rule.id == rule_id);
-      this.replaceTextInRule(original_rule, result.field, result.segments, this.fr.replace);
-      const payload = {
-        rule: {
-          ...original_rule,
-          audit_comment: comment,
-        },
-      };
-      return axios
-        .put(`/rules/${rule_id}`, payload)
-        .then((response) => {
-          this.saveRuleSuccess(response, rule_id);
-        })
-        .catch(this.alertOrNotifyResponse)
-        .then(() => {
-          this.find();
-        });
-    },
-    replace_all: function (comment) {
-      const self = this;
-      this.loading = true;
-      const promises = [];
-      Object.entries(this.find_results).forEach(function ([rule_id, find_results]) {
-        const original_rule = self.rules.find((rule) => rule.id == rule_id);
-        find_results.results.forEach(function (result) {
-          self.replaceTextInRule(original_rule, result.field, result.segments, self.fr.replace);
-        });
-        const payload = {
-          rule: {
-            ...original_rule,
-            audit_comment: comment,
-          },
-        };
-        promises.push(
-          axios
-            .put(`/rules/${rule_id}`, payload)
-            .then((response) => {
-              self.saveRuleSuccess(response, rule_id);
-            })
-            .catch(self.alertOrNotifyResponse),
-        );
-      });
-      Promise.all(promises).then(function () {
-        self.find();
-      });
-    },
-    saveRuleSuccess: function (response, rule_id) {
-      this.alertOrNotifyResponse(response);
-      this.$root.$emit("refresh:rule", rule_id);
-    },
-    formatRuleId: function (id) {
-      return `${this.projectPrefix}-${id}`;
-    },
-  },
-};
-</script>
 
 <style scoped>
 .find-input-wrapper {

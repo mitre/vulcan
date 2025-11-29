@@ -1,3 +1,95 @@
+<script>
+import axios from 'axios'
+import SimpleTypeahead from 'vue3-simple-typeahead'
+import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
+import DisplayedComponentMixin from '../../mixins/DisplayedComponentMixin.vue'
+import FormMixinVue from '../../mixins/FormMixin.vue'
+import ComponentCard from '../components/ComponentCard.vue'
+
+function initialState() {
+  return {
+    selectedComponent: null,
+  }
+}
+
+export default {
+  name: 'AddComponentModal',
+  components: {
+    SimpleTypeahead,
+    ComponentCard,
+  },
+  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
+  props: {
+    project_id: {
+      type: Number,
+      required: true,
+    },
+    available_components: {
+      type: Array,
+      required: true,
+    },
+  },
+  data() {
+    return initialState()
+  },
+  computed: {
+    // Add display name to components for typeahead
+    componentsWithDisplay() {
+      return this.addDisplayNameToComponents(this.available_components)
+    },
+  },
+  methods: {
+    resetModal() {
+      Object.assign(this.$data, initialState())
+      // Clear the typeahead input
+      if (this.$refs.componentSearch) {
+        this.$refs.componentSearch.clearInput()
+      }
+    },
+    showModal() {
+      this.$refs.AddComponentModal.show()
+    },
+    chooseAnotherProject() {
+      this.selectedComponent = null
+      if (this.$refs.componentSearch) {
+        this.$refs.componentSearch.clearInput()
+      }
+    },
+    setSelectedComponent(component) {
+      this.selectedComponent = component
+    },
+    // Projection function for typeahead display
+    componentProjection(component) {
+      return component.displayed || component.name || ''
+    },
+    addComponent() {
+      // Guard if no component project selected
+      if (!this.selectedComponent) {
+        return
+      }
+
+      this.$refs.AddComponentModal.hide()
+      const payload = {
+        component: {
+          component_id: this.selectedComponent.id,
+        },
+      }
+
+      axios
+        .post(`/projects/${this.project_id}/components`, payload)
+        .then(this.addComponentSuccess)
+        .catch(this.alertOrNotifyResponse)
+    },
+    addComponentSuccess(response) {
+      this.alertOrNotifyResponse(response)
+      this.$refs.AddComponentModal.hide()
+      this.$emit('projectUpdated')
+    },
+  },
+}
+</script>
+
 <template>
   <div>
     <!-- Modal trigger button -->
@@ -15,137 +107,48 @@
       @ok="addComponent()"
     >
       <!-- Searchable projects -->
-      <b-form v-if="!selectedComponent" @submit="addComponent()">
+      <b-form v-if="!selectedComponent" @submit.prevent="addComponent()">
         <input
           id="AddComponentAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
-        />
+        >
         <b-row>
           <b-col class="d-flex">
             <b-input-group>
-              <b-input-group-prepend>
-                <b-input-group-text>
-                  <b-icon icon="search" aria-hidden="true" />
-                </b-input-group-text>
-              </b-input-group-prepend>
-              <vue-simple-suggest
+              <b-input-group-text>
+                <i class="bi bi-search" aria-hidden="true" />
+              </b-input-group-text>
+              <SimpleTypeahead
+                id="componentSearch"
                 ref="componentSearch"
-                v-model="search"
-                :list="addDisplayNameToComponents(available_components)"
-                :filter-by-query="true"
-                value-attribute="id"
-                display-attribute="displayed"
+                class="flex-grow-1"
                 placeholder="Search for a component by name..."
-                :styles="projectSearchStyles"
-                @select="setSelectedComponent($refs.componentSearch.selected)"
+                :items="componentsWithDisplay"
+                :min-input-length="1"
+                :item-projection="componentProjection"
+                @select-item="setSelectedComponent"
               />
             </b-input-group>
 
             <!-- Allow the enter button to submit the form -->
-            <b-btn type="submit" class="d-none" @click.prevent="addComponent()" />
+            <b-button type="submit" class="d-none" @click.prevent="addComponent()" />
           </b-col>
         </b-row>
       </b-form>
 
-      <!-- When  -->
+      <!-- When component is selected -->
       <template v-if="selectedComponent">
         <ComponentCard :actionable="false" :component="selectedComponent" />
-        <span class="text-danger clickable float-right mr-3" @click="chooseAnotherProject"
-          >Choose a different component</span
-        >
+        <span class="text-danger clickable float-end me-3" @click="chooseAnotherProject">Choose a different component</span>
       </template>
     </b-modal>
   </div>
 </template>
 
-<script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
-import ComponentCard from "../components/ComponentCard.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
-
-function initialState() {
-  return {
-    selectedComponent: null,
-    search: "",
-    projectSearchStyles: {
-      vueSimpleSuggest: "flex1",
-      inputWrapper: "",
-      defaultInput: "",
-      suggestions: "",
-      suggestItem: "",
-    },
-  };
-}
-
-export default {
-  name: "AddComponentModal",
-  components: {
-    VueSimpleSuggest,
-    ComponentCard,
-  },
-  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
-  props: {
-    project_id: {
-      type: Number,
-      required: true,
-    },
-    available_components: {
-      type: Array,
-      required: true,
-    },
-  },
-  data: function () {
-    return initialState();
-  },
-  methods: {
-    resetModal: function () {
-      Object.assign(this.$data, initialState());
-    },
-    showModal: function () {
-      this.$refs["AddComponentModal"].show();
-    },
-    chooseAnotherProject: function () {
-      this.search = "";
-      this.selectedComponent = null;
-    },
-    setSelectedComponent: function (component) {
-      this.selectedComponent = component;
-    },
-    addComponent: function () {
-      // Guard if no component project selected
-      if (!this.selectedComponent) {
-        return;
-      }
-
-      this.$refs["AddComponentModal"].hide();
-      let payload = {
-        component: {
-          component_id: this.selectedComponent.id,
-        },
-      };
-
-      axios
-        .post(`/projects/${this.project_id}/components`, payload)
-        .then(this.addComponentSuccess)
-        .catch(this.alertOrNotifyResponse);
-    },
-    addComponentSuccess: function (response) {
-      this.alertOrNotifyResponse(response);
-      this.$refs["AddComponentModal"].hide();
-      this.$emit("projectUpdated");
-    },
-  },
-};
-</script>
-
 <style scoped>
-.flex1 {
-  flex: 1;
+.flex-grow-1 {
+  flex-grow: 1;
 }
 </style>

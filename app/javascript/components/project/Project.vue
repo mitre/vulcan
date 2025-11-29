@@ -1,546 +1,633 @@
+<script setup lang="ts">
+/**
+ * Project Component
+ * Displays project details, components, members, and history
+ * Vue 3 Composition API + Bootstrap 5
+ */
+
+import { orderBy, sortBy, uniq } from 'lodash'
+import { computed, onMounted, ref, watch } from 'vue'
+import { updateProject } from '@/apis/projects.api'
+import { formatDateTime, hasPermission, useAppToast } from '@/composables'
+import { http } from '@/services/http.service'
+
+// Child components (still Vue 2 compat for now)
+import AddComponentModal from '../components/AddComponentModal.vue'
+import ComponentCard from '../components/ComponentCard.vue'
+import NewComponentModal from '../components/NewComponentModal.vue'
+import MembershipsTable from '../memberships/MembershipsTable.vue'
+import UpdateProjectDetailsModal from '../projects/UpdateProjectDetailsModal.vue'
+import History from '../shared/History.vue'
+import DiffViewer from './DiffViewer.vue'
+import RevisionHistory from './RevisionHistory.vue'
+import UpdateMetadataModal from './UpdateMetadataModal.vue'
+
+// Props
+const props = defineProps<{
+  initialProjectState: any
+  statuses: string[]
+  severities: string[]
+  availableRoles: string[]
+  currentUserId?: number
+  effectivePermissions?: string
+}>()
+
+// Emits (currently unused but may be needed for parent communication)
+// const emit = defineEmits<{
+//   (e: 'refresh'): void
+// }>()
+
+const toast = useAppToast()
+
+// Reactive state
+const project = ref<any>(props.initialProjectState)
+const visible = ref(props.initialProjectState?.visibility === 'discoverable')
+const activeTab = ref(0)
+const showDetails = ref(true)
+const showMetadata = ref(true)
+const showHistory = ref(true)
+
+// Export modal state
+const showExportModal = ref(false)
+const excelExportType = ref('')
+const selectedComponentsToExport = ref<number[]>([])
+const allComponentsSelected = ref(false)
+const releasedComponentsSelected = ref(false)
+
+// Visibility confirmation modal
+const showVisibilityModal = ref(false)
+
+// Computed
+const isProjectAdmin = computed(() => hasPermission(props.effectivePermissions, 'admin'))
+const isAuthor = computed(() => hasPermission(props.effectivePermissions, 'author'))
+
+const sortedComponents = computed(() => {
+  return orderBy(
+    project.value?.components || [],
+    [(c: any) => c.name.toLowerCase(), 'version', 'release'],
+    ['asc'],
+  )
+})
+
+const sortedRegularComponents = computed(() => {
+  return sortedComponents.value.filter((c: any) => c.component_id == null)
+})
+
+const sortedOverlayComponents = computed(() => {
+  return sortedComponents.value.filter((c: any) => c.component_id != null)
+})
+
+const sortedAvailableComponents = computed(() => {
+  return sortBy(project.value?.available_components || [], ['child_project_name'])
+})
+
+const uniqueComponentNames = computed(() => {
+  return uniq(sortedComponents.value.map((c: any) => c.name))
+})
+
+const lastAudit = computed(() => {
+  return project.value?.histories?.[0] || null
+})
+
+const releasedComponentIds = computed(() => {
+  return (project.value?.components || [])
+    .filter((c: any) => c.released)
+    .map((c: any) => c.id)
+})
+
+const exportComponentOptions = computed(() => {
+  return sortedComponents.value.map((c: any) => {
+    const versionRelease = c.version && c.release ? ` - V${c.version}R${c.release}` : ''
+    return { label: `${c.name}${versionRelease}`, value: c.id }
+  })
+})
+
+const detailsStats = computed(() => {
+  const d = project.value?.details || {}
+  const total = d.total || 1
+  return [
+    { label: 'Applicable - Configurable', value: d.ac, pct: ((d.ac / total) * 100).toFixed(2) },
+    { label: 'Applicable - Inherently Meets', value: d.aim, pct: ((d.aim / total) * 100).toFixed(2) },
+    { label: 'Applicable - Does Not Meet', value: d.adnm, pct: ((d.adnm / total) * 100).toFixed(2) },
+    { label: 'Not Applicable', value: d.na, pct: ((d.na / total) * 100).toFixed(2) },
+    { label: 'Not Yet Determined', value: d.nyd, pct: ((d.nyd / total) * 100).toFixed(2) },
+    { label: 'Not Under Review', value: d.nur, pct: ((d.nur / total) * 100).toFixed(2) },
+    { label: 'Under Review', value: d.ur, pct: ((d.ur / total) * 100).toFixed(2) },
+    { label: 'Locked', value: d.lck, pct: ((d.lck / total) * 100).toFixed(2) },
+  ]
+})
+
+// Persist tab selection
+watch(activeTab, (val) => {
+  localStorage.setItem(`projectTabIndex-${project.value?.id}`, JSON.stringify(val))
+})
+
+onMounted(() => {
+  const saved = localStorage.getItem(`projectTabIndex-${project.value?.id}`)
+  if (saved) {
+    try {
+      activeTab.value = JSON.parse(saved)
+    }
+    catch {
+      localStorage.removeItem(`projectTabIndex-${project.value?.id}`)
+    }
+  }
+})
+
+// Methods
+async function refreshProject() {
+  try {
+    const response = await http.get(`/projects/${project.value.id}`)
+    project.value = response.data
+    visible.value = project.value.visibility === 'discoverable'
+  }
+  catch {
+    toast.error('Failed to refresh project')
+  }
+}
+
+async function updateVisibility() {
+  try {
+    await updateProject(project.value.id, {
+      visibility: visible.value ? 'discoverable' : 'hidden',
+    })
+    toast.success('Visibility updated')
+    await refreshProject()
+  }
+  catch {
+    toast.error('Failed to update visibility')
+    visible.value = project.value.visibility === 'discoverable'
+  }
+  showVisibilityModal.value = false
+}
+
+async function deleteComponent(componentId: number) {
+  try {
+    await http.delete(`/components/${componentId}`)
+    toast.success('Component removed')
+    await refreshProject()
+  }
+  catch {
+    toast.error('Failed to remove component')
+  }
+}
+
+async function downloadExport(type: string) {
+  try {
+    const params = type === 'excel' || type === 'disa_excel'
+      ? `?component_ids=${selectedComponentsToExport.value.join(',')}`
+      : ''
+    await http.get(`/projects/${project.value.id}/export/${type}${params}`)
+    window.open(`/projects/${project.value.id}/export/${type}${params}`)
+
+    if (type === 'excel' || type === 'disa_excel') {
+      showExportModal.value = false
+      excelExportType.value = ''
+      selectedComponentsToExport.value = []
+    }
+  }
+  catch {
+    toast.error('Failed to export')
+  }
+}
+
+function toggleAllComponents() {
+  if (allComponentsSelected.value) {
+    selectedComponentsToExport.value = (project.value?.components || []).map((c: any) => c.id)
+  }
+  else {
+    selectedComponentsToExport.value = []
+  }
+}
+
+function toggleReleasedComponents() {
+  if (releasedComponentsSelected.value) {
+    selectedComponentsToExport.value = releasedComponentIds.value
+  }
+  else {
+    selectedComponentsToExport.value = []
+  }
+}
+
+function openExportModal(type: string) {
+  excelExportType.value = type
+  showExportModal.value = true
+}
+</script>
+
 <template>
   <div>
-    <b-breadcrumb :items="breadcrumbs" />
-    <b-row class="align-items-center">
-      <b-col md="8">
-        <div class="d-flex justify-content-start">
-          <h1>{{ project.name }}</h1>
-          <b-badge pill variant="info" class="w-15 h-25">{{ project.visibility }} </b-badge>
-          <div v-if="role_gte_to(effective_permissions, 'admin')">
-            <b-form-checkbox
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="/projects">Projects</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+          {{ project?.name }}
+        </li>
+      </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-8">
+        <div class="d-flex align-items-center gap-2">
+          <h1 class="mb-0">
+            {{ project?.name }}
+          </h1>
+          <span class="badge bg-info">{{ project?.visibility }}</span>
+          <div v-if="isProjectAdmin" class="form-check form-switch ms-3">
+            <input
+              id="visibility-switch"
               v-model="visible"
-              v-b-modal.confirm-visibility-change
-              switch
-              size="lg"
-              class="ml-2"
+              class="form-check-input"
+              type="checkbox"
+              @change="showVisibilityModal = true"
             >
-              <small>{{ visible ? "Switch back to private" : "Mark as discoverable" }}</small>
-            </b-form-checkbox>
-            <b-modal
-              id="confirm-visibility-change"
-              title="Confirm Visibility Change"
-              @ok="updateVisibility"
-              @hide="visible = project.visibility === 'discoverable'"
-            >
-              Are you sure you want to change the visibility of this project to
-              <mark>{{ visible ? "discoverable" : "hidden" }} </mark>?
-            </b-modal>
+            <label class="form-check-label" for="visibility-switch">
+              <small>{{ visible ? 'Switch back to private' : 'Mark as discoverable' }}</small>
+            </label>
           </div>
         </div>
-      </b-col>
-      <b-col md="4" class="text-muted text-md-right">
-        <p v-if="lastAudit" class="text-muted mb-1">
-          <template v-if="lastAudit.created_at">
-            Last update on {{ friendlyDateTime(lastAudit.created_at) }}
-          </template>
-          <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
+      </div>
+      <div class="col-md-4 text-muted text-end">
+        <p v-if="lastAudit" class="mb-1">
+          <span v-if="lastAudit.created_at">Last update on {{ formatDateTime(lastAudit.created_at) }}</span>
+          <span v-if="lastAudit.user_id"> by {{ lastAudit.user_id }}</span>
         </p>
         <p class="mb-1">
-          <span v-if="project.admin_name">
+          <span v-if="project?.admin_name">
             {{ project.admin_name }}
-            {{ project.admin_email ? `(${project.admin_email})` : "" }}
+            {{ project.admin_email ? `(${project.admin_email})` : '' }}
           </span>
           <em v-else>No Project Admin</em>
         </p>
-      </b-col>
-    </b-row>
+      </div>
+    </div>
 
-    <b-row>
-      <b-col md="10" class="border-right">
-        <!-- Tab view for project information -->
-        <b-tabs v-model="projectTabIndex" content-class="mt-3" justified>
-          <!-- Project components -->
-          <b-tab :title="`Components (${project.components.length})`">
+    <!-- Main content -->
+    <div class="row">
+      <!-- Left column - Tabs -->
+      <div class="col-md-10 border-end">
+        <ul class="nav nav-tabs nav-justified" role="tablist">
+          <li class="nav-item">
+            <button
+              class="nav-link" :class="[{ active: activeTab === 0 }]"
+              @click="activeTab = 0"
+            >
+              Components ({{ project?.components?.length || 0 }})
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              class="nav-link" :class="[{ active: activeTab === 1 }]"
+              @click="activeTab = 1"
+            >
+              Diff Viewer
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              class="nav-link" :class="[{ active: activeTab === 2 }]"
+              @click="activeTab = 2"
+            >
+              Revision History
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              class="nav-link" :class="[{ active: activeTab === 3 }]"
+              @click="activeTab = 3"
+            >
+              Members ({{ project?.memberships_count || 0 }})
+              <span
+                v-if="isProjectAdmin && project?.access_requests?.length > 0"
+                class="badge bg-info ms-1"
+              >
+                pending
+              </span>
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content mt-3">
+          <!-- Components Tab -->
+          <div v-show="activeTab === 0" class="tab-pane active">
             <h2>Project Components</h2>
-            <div>
+            <div class="mb-3">
               <NewComponentModal
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                :project_id="project.id"
+                v-if="isProjectAdmin"
+                :project_id="project?.id"
                 :project="project"
-                @projectUpdated="refreshProject"
+                @project-updated="refreshProject"
               />
               <NewComponentModal
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                :project_id="project.id"
+                v-if="isProjectAdmin"
+                :project_id="project?.id"
                 :project="project"
                 :spreadsheet_import="true"
-                @projectUpdated="refreshProject"
+                @project-updated="refreshProject"
               />
               <NewComponentModal
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                :project_id="project.id"
+                v-if="isProjectAdmin"
+                :project_id="project?.id"
                 :project="project"
                 :copy_component="true"
-                @projectUpdated="refreshProject"
+                @project-updated="refreshProject"
               />
-              <b-dropdown right text="Download" variant="secondary" class="px-2 m2">
-                <b-dropdown-item
-                  v-b-modal.excel-export-modal
-                  @click="excelExportType = 'disa_excel'"
+
+              <!-- Download dropdown -->
+              <div class="dropdown d-inline-block">
+                <button
+                  class="btn btn-secondary dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
                 >
-                  DISA Excel Export
-                </b-dropdown-item>
-                <b-dropdown-item v-b-modal.excel-export-modal @click="excelExportType = 'excel'">
-                  Excel Export
-                </b-dropdown-item>
-                <b-dropdown-item @click="downloadExport('inspec')">InSpec Profile</b-dropdown-item>
-                <b-dropdown-item @click="downloadExport('xccdf')">Xccdf Export</b-dropdown-item>
-              </b-dropdown>
-
-              <b-modal
-                id="excel-export-modal"
-                ref="excel-export-modal"
-                :title="excelExportType === 'excel' ? 'Excel Export' : 'DISA Excel Export'"
-                centered
-              >
-                <b-form-group>
-                  <template #label>
-                    <h5>Select components to export:</h5>
-                    <b-form-checkbox
-                      v-model="allComponentsSelected"
-                      :indeterminate="indeterminate"
-                      aria-describedby="allComponents"
-                      aria-controls="allComponents"
-                      @change="toggleComponents"
-                    >
-                      {{ allComponentsSelected ? "Un-select All" : "Select All" }}
-                    </b-form-checkbox>
-                    <b-form-checkbox
-                      v-model="releasedComponentsSelected"
-                      aria-describedby="releasedComponents"
-                      aria-controls="releasedComponents"
-                      :disabled="releasedComponents.length === 0"
-                      @change="toggleComponents"
-                    >
-                      Select Released Components
-                    </b-form-checkbox>
-                  </template>
-                  <template #default="{ ariaDescribedby }">
-                    <b-form-checkbox-group
-                      v-model="selectedComponentsToExport"
-                      :options="excelExportComponentOptions"
-                      :aria-describedby="ariaDescribedby"
-                      class="mb-2"
-                    />
-                  </template>
-                </b-form-group>
-
-                <template #modal-footer>
-                  <b-button @click="downloadExport(excelExportType)">
-                    Export Selected Components
-                  </b-button>
-                </template>
-              </b-modal>
+                  Download
+                </button>
+                <ul class="dropdown-menu">
+                  <li>
+                    <button class="dropdown-item" @click="openExportModal('disa_excel')">
+                      DISA Excel Export
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item" @click="openExportModal('excel')">
+                      Excel Export
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item" @click="downloadExport('inspec')">
+                      InSpec Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item" @click="downloadExport('xccdf')">
+                      XCCDF Export
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
-              <b-col v-for="component in sortedRegularComponents()" :key="component.id">
+
+            <!-- Regular Components -->
+            <div class="row row-cols-1 row-cols-lg-2">
+              <div v-for="component in sortedRegularComponents" :key="component.id" class="col">
                 <ComponentCard
                   :component="component"
-                  :effective-permissions="effective_permissions"
-                  @deleteComponent="deleteComponent($event)"
-                  @projectUpdated="refreshProject"
+                  :effective-permissions="effectivePermissions"
+                  @delete-component="deleteComponent($event)"
+                  @project-updated="refreshProject"
                 />
-              </b-col>
-            </b-row>
+              </div>
+            </div>
 
-            <h2>Overlaid Components</h2>
+            <!-- Overlay Components -->
+            <h2 class="mt-4">
+              Overlaid Components
+            </h2>
             <AddComponentModal
-              v-if="role_gte_to(effective_permissions, 'admin')"
-              :project_id="project.id"
+              v-if="isProjectAdmin"
+              :project_id="project?.id"
               :available_components="sortedAvailableComponents"
-              @projectUpdated="refreshProject"
+              @project-updated="refreshProject"
             />
-            <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
-              <b-col v-for="component in sortedOverlayComponents()" :key="component.id">
+            <div class="row row-cols-1 row-cols-lg-2">
+              <div v-for="component in sortedOverlayComponents" :key="component.id" class="col">
                 <ComponentCard
                   :component="component"
-                  :effective-permissions="effective_permissions"
-                  @deleteComponent="deleteComponent($event)"
-                  @projectUpdated="refreshProject"
+                  :effective-permissions="effectivePermissions"
+                  @delete-component="deleteComponent($event)"
+                  @project-updated="refreshProject"
                 />
-              </b-col>
-            </b-row>
-          </b-tab>
+              </div>
+            </div>
+          </div>
 
-          <!-- Diff View -->
-          <b-tab title="Diff Viewer" lazy>
+          <!-- Diff Viewer Tab -->
+          <div v-show="activeTab === 1" class="tab-pane">
             <DiffViewer :project="initialProjectState" />
-          </b-tab>
+          </div>
 
-          <!-- Revision History -->
-          <b-tab title="Revision History">
+          <!-- Revision History Tab -->
+          <div v-show="activeTab === 2" class="tab-pane">
             <RevisionHistory
               :project="initialProjectState"
               :unique-component-names="uniqueComponentNames"
             />
-          </b-tab>
+          </div>
 
-          <!-- Project members -->
-          <b-tab :title="`Members (${project.memberships_count})`">
-            <template #title>
-              <div class="position-relative">
-                Members ({{ project.memberships_count }})
-                <b-badge
-                  v-if="
-                    role_gte_to(effective_permissions, 'admin') &&
-                    project.access_requests.length > 0
-                  "
-                  pill
-                  variant="info"
-                >
-                  pending request
-                </b-badge>
-              </div>
-            </template>
+          <!-- Members Tab -->
+          <div v-show="activeTab === 3" class="tab-pane">
             <MembershipsTable
-              :editable="role_gte_to(effective_permissions, 'admin')"
-              :membership_type="'Project'"
-              :membership_id="project.id"
-              :memberships="project.memberships"
-              :memberships_count="project.memberships_count"
-              :available_members="project.available_members"
-              :available_roles="available_roles"
-              :access_requests="project.access_requests"
+              :editable="isProjectAdmin"
+              membership_type="Project"
+              :membership_id="project?.id"
+              :memberships="project?.memberships"
+              :memberships_count="project?.memberships_count"
+              :available_members="project?.available_members"
+              :available_roles="availableRoles"
+              :access_requests="project?.access_requests"
             />
-          </b-tab>
-        </b-tabs>
-      </b-col>
-      <b-col md="2">
-        <b-row class="pb-4">
-          <b-col>
-            <div class="clickable" @click="showDetails = !showDetails">
-              <h5 class="m-0 d-inline-block">Project Details</h5>
+          </div>
+        </div>
+      </div>
 
-              <b-icon v-if="showDetails" icon="chevron-down" />
-              <b-icon v-if="!showDetails" icon="chevron-up" />
-            </div>
-            <b-collapse id="collapse-details" v-model="showDetails">
-              <p class="ml-2 mb-0 mt-2"><strong>Name: </strong>{{ project.name }}</p>
-              <p v-if="project.description" class="ml-2 mb-0 mt-2">
-                <strong>Description: </strong>{{ project.description }}
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Applicable - Configurable: </strong> {{ project.details.ac }} ({{
-                  ((project.details.ac / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Applicable - Inherently Meets: </strong> {{ project.details.aim }} ({{
-                  ((project.details.aim / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Applicable - Does Not Meet: </strong> {{ project.details.adnm }} ({{
-                  ((project.details.adnm / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Not Applicable: </strong> {{ project.details.na }} ({{
-                  ((project.details.na / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Not Yet Determined: </strong> {{ project.details.nyd }} ({{
-                  ((project.details.nyd / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Not Under Review: </strong> {{ project.details.nur }} ({{
-                  ((project.details.nur / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Under Review: </strong> {{ project.details.ur }} ({{
-                  ((project.details.ur / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2">
-                <strong>Locked: </strong> {{ project.details.lck }} ({{
-                  ((project.details.lck / project.details.total) * 100).toFixed(2)
-                }}%)
-              </p>
-              <p class="ml-2 mb-0 mt-2"><strong>Total: </strong> {{ project.details.total }}</p>
-              <UpdateProjectDetailsModal
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                :project="project"
-                @projectUpdated="refreshProject"
-              />
-            </b-collapse>
-          </b-col>
-        </b-row>
-        <b-row class="pb-4">
-          <b-col>
-            <div class="clickable" @click="showMetadata = !showMetadata">
-              <h5 class="m-0 d-inline-block">Project Metadata</h5>
+      <!-- Right column - Details sidebar -->
+      <div class="col-md-2">
+        <!-- Project Details -->
+        <div class="mb-4">
+          <div
+            class="d-flex align-items-center cursor-pointer"
+            @click="showDetails = !showDetails"
+          >
+            <h5 class="m-0">
+              Project Details
+            </h5>
+            <i class="bi ms-2" :class="[showDetails ? 'bi-chevron-down' : 'bi-chevron-up']" />
+          </div>
+          <div v-show="showDetails" class="mt-2">
+            <p class="mb-1">
+              <strong>Name:</strong> {{ project?.name }}
+            </p>
+            <p v-if="project?.description" class="mb-1">
+              <strong>Description:</strong> {{ project.description }}
+            </p>
+            <p v-for="stat in detailsStats" :key="stat.label" class="mb-1">
+              <strong>{{ stat.label }}:</strong> {{ stat.value }} ({{ stat.pct }}%)
+            </p>
+            <p class="mb-1">
+              <strong>Total:</strong> {{ project?.details?.total }}
+            </p>
+            <UpdateProjectDetailsModal
+              v-if="isProjectAdmin"
+              :project="project"
+              @project-updated="refreshProject"
+            />
+          </div>
+        </div>
 
-              <b-icon v-if="showMetadata" icon="chevron-down" />
-              <b-icon v-if="!showMetadata" icon="chevron-up" />
+        <!-- Project Metadata -->
+        <div class="mb-4">
+          <div
+            class="d-flex align-items-center cursor-pointer"
+            @click="showMetadata = !showMetadata"
+          >
+            <h5 class="m-0">
+              Project Metadata
+            </h5>
+            <i class="bi ms-2" :class="[showMetadata ? 'bi-chevron-down' : 'bi-chevron-up']" />
+          </div>
+          <div v-show="showMetadata" class="mt-2">
+            <small
+              v-if="isProjectAdmin && (!project?.metadata || !project?.metadata['Slack Channel ID'])"
+              class="text-muted"
+            >
+              Add a metadata with key `Slack Channel ID` for slack notifications.
+            </small>
+            <div v-for="(value, key) in project?.metadata" :key="key">
+              <p class="mb-1">
+                <strong>{{ key }}:</strong> {{ value }}
+              </p>
             </div>
-            <b-collapse id="collapse-metadata" v-model="showMetadata">
-              <small
-                v-if="
-                  role_gte_to(effective_permissions, 'admin') &&
-                  (!project.metadata || !project.metadata.hasOwnProperty('Slack Channel ID'))
-                "
-                class="text-muted"
+            <UpdateMetadataModal
+              v-if="isAuthor"
+              :project="project"
+              @project-updated="refreshProject"
+            />
+          </div>
+        </div>
+
+        <!-- Project History -->
+        <div>
+          <div
+            class="d-flex align-items-center cursor-pointer"
+            @click="showHistory = !showHistory"
+          >
+            <h5 class="m-0">
+              Project History
+            </h5>
+            <i class="bi ms-2" :class="[showHistory ? 'bi-chevron-down' : 'bi-chevron-up']" />
+          </div>
+          <div v-show="showHistory" class="mt-2">
+            <History :histories="project?.histories" :revertable="false" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visibility Confirmation Modal -->
+    <div
+      v-if="showVisibilityModal"
+      class="modal fade show d-block"
+      tabindex="-1"
+      style="background: rgba(0,0,0,0.5)"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              Confirm Visibility Change
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              @click="showVisibilityModal = false; visible = project?.visibility === 'discoverable'"
+            />
+          </div>
+          <div class="modal-body">
+            Are you sure you want to change the visibility of this project to
+            <mark>{{ visible ? 'discoverable' : 'hidden' }}</mark>?
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showVisibilityModal = false; visible = project?.visibility === 'discoverable'"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" @click="updateVisibility">
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Excel Export Modal -->
+    <div
+      v-if="showExportModal"
+      class="modal fade show d-block"
+      tabindex="-1"
+      style="background: rgba(0,0,0,0.5)"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              {{ excelExportType === 'excel' ? 'Excel Export' : 'DISA Excel Export' }}
+            </h5>
+            <button type="button" class="btn-close" @click="showExportModal = false" />
+          </div>
+          <div class="modal-body">
+            <h5>Select components to export:</h5>
+            <div class="form-check">
+              <input
+                id="select-all"
+                v-model="allComponentsSelected"
+                type="checkbox"
+                class="form-check-input"
+                @change="toggleAllComponents"
               >
-                For slack notification, you can add a metadata with key `Slack Channel ID` and the
-                value will be the slack channel ID (e.g. C12345) or name (e.g. #general) you wish to
-                notify.
-              </small>
-              <div v-for="(value, propertyName) in project.metadata" :key="propertyName">
-                <p v-linkified class="ml-2 mb-0 mt-2">
-                  <strong>{{ propertyName }}: </strong>{{ value }}
-                </p>
-              </div>
-              <UpdateMetadataModal
-                v-if="role_gte_to(effective_permissions, 'author')"
-                :project="project"
-                @projectUpdated="refreshProject"
-              />
-            </b-collapse>
-          </b-col>
-        </b-row>
-        <b-row>
-          <b-col>
-            <div class="clickable" @click="showHistory = !showHistory">
-              <h5 class="m-0 d-inline-block">Project History</h5>
-
-              <b-icon v-if="showHistory" icon="chevron-down" />
-              <b-icon v-if="!showHistory" icon="chevron-up" />
+              <label class="form-check-label" for="select-all">
+                {{ allComponentsSelected ? 'Un-select All' : 'Select All' }}
+              </label>
             </div>
-            <b-collapse id="collapse-metadata" v-model="showHistory">
-              <History :histories="project.histories" :revertable="false" />
-            </b-collapse>
-          </b-col>
-        </b-row>
-      </b-col>
-    </b-row>
+            <div class="form-check">
+              <input
+                id="select-released"
+                v-model="releasedComponentsSelected"
+                type="checkbox"
+                class="form-check-input"
+                :disabled="releasedComponentIds.length === 0"
+                @change="toggleReleasedComponents"
+              >
+              <label class="form-check-label" for="select-released">
+                Select Released Components
+              </label>
+            </div>
+            <hr>
+            <div v-for="opt in exportComponentOptions" :key="opt.value" class="form-check">
+              <input
+                :id="`comp-${opt.value}`"
+                v-model="selectedComponentsToExport"
+                type="checkbox"
+                class="form-check-input"
+                :value="opt.value"
+              >
+              <label class="form-check-label" :for="`comp-${opt.value}`">
+                {{ opt.label }}
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="showExportModal = false">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" @click="downloadExport(excelExportType)">
+              Export Selected Components
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
-import _ from "lodash";
-import axios from "axios";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import History from "../shared/History.vue";
-import MembershipsTable from "../memberships/MembershipsTable.vue";
-import UpdateMetadataModal from "./UpdateMetadataModal.vue";
-import ComponentCard from "../components/ComponentCard.vue";
-import AddComponentModal from "../components/AddComponentModal.vue";
-import NewComponentModal from "../components/NewComponentModal.vue";
-import DiffViewer from "./DiffViewer.vue";
-import RevisionHistory from "./RevisionHistory.vue";
-import UpdateProjectDetailsModal from "../projects/UpdateProjectDetailsModal.vue";
-
-export default {
-  name: "Project",
-  components: {
-    History,
-    MembershipsTable,
-    UpdateMetadataModal,
-    ComponentCard,
-    AddComponentModal,
-    NewComponentModal,
-    DiffViewer,
-    RevisionHistory,
-    UpdateProjectDetailsModal,
-  },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
-  props: {
-    effective_permissions: {
-      type: String,
-    },
-    initialProjectState: {
-      type: Object,
-      required: true,
-    },
-    current_user_id: {
-      type: Number,
-    },
-    statuses: {
-      type: Array,
-      required: true,
-    },
-    severities: {
-      type: Array,
-      required: true,
-    },
-    available_roles: {
-      type: Array,
-      required: true,
-    },
-  },
-  data: function () {
-    return {
-      showDetails: true,
-      showMetadata: true,
-      showHistory: true,
-      project: this.initialProjectState,
-      visible: this.initialProjectState.visibility === "discoverable",
-      projectTabIndex: 0,
-      excelExportType: "",
-      selectedComponentsToExport: [],
-      allComponentsSelected: false,
-      releasedComponentsSelected: false,
-      indeterminate: false,
-    };
-  },
-  computed: {
-    excelExportComponentOptions: function () {
-      return this.sortedComponents().map((c) => {
-        const versionRelease = c.version && c.release ? ` - V${c.version}R${c.release}` : "";
-        return { text: `${c.name}${versionRelease}`, value: c.id };
-      });
-    },
-    sortedAvailableComponents: function () {
-      return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
-    },
-    uniqueComponentNames: function () {
-      return _.uniq(this.sortedComponents().map((c) => c["name"]));
-    },
-    adminList: function () {
-      return this.project.admins.map((a) => `${a.name} <${a.email}>`).join(", ");
-    },
-    lastAudit: function () {
-      return this.project.histories.slice(0, 1).pop();
-    },
-    breadcrumbs: function () {
-      return [
-        {
-          text: "Projects",
-          href: "/projects",
-        },
-        {
-          text: this.project.name,
-          active: true,
-        },
-      ];
-    },
-  },
-  watch: {
-    projectTabIndex: function (_) {
-      localStorage.setItem(
-        `projectTabIndex-${this.project.id}`,
-        JSON.stringify(this.projectTabIndex),
-      );
-    },
-    selectedComponentsToExport: function (newValue, oldValue) {
-      // Handle changes in individual component checkboxes
-      if (newValue.length === 0) {
-        this.indeterminate = false;
-        this.allComponentsSelected = false;
-        this.releasedComponentsSelected = false;
-      } else if (newValue.length === this.project.components.length) {
-        this.indeterminate = false;
-        this.allComponentsSelected = true;
-        this.releasedComponentsSelected = true;
-      } else if (
-        this.releasedComponents().lenght > 0 &&
-        this.releasedComponents().every((element) => newValue.includes(element))
-      ) {
-        this.indeterminate = true;
-        this.allComponentsSelected = false;
-        this.releasedComponentsSelected = true;
-      } else {
-        this.indeterminate = true;
-        this.allComponentsSelected = false;
-        this.releasedComponentsSelected = false;
-      }
-    },
-  },
-  mounted: function () {
-    // Persist `currentTab` across page loads
-    if (localStorage.getItem(`projectTabIndex-${this.project.id}`)) {
-      try {
-        this.$nextTick(
-          () =>
-            (this.projectTabIndex = JSON.parse(
-              localStorage.getItem(`projectTabIndex-${this.project.id}`),
-            )),
-        );
-      } catch (e) {
-        localStorage.removeItem(`projectTabIndex-${this.project.id}`);
-      }
-    }
-  },
-  methods: {
-    toggleComponents: function () {
-      if (this.allComponentsSelected) {
-        this.selectedComponentsToExport = this.project.components.map((comp) => comp.id);
-      } else if (this.releasedComponentsSelected) {
-        this.selectedComponentsToExport = this.releasedComponents();
-      } else {
-        this.selectedComponentsToExport = [];
-      }
-    },
-    releasedComponents: function () {
-      return this.project.components.filter((comp) => comp.released).map((comp) => comp.id);
-    },
-    sortedComponents: function () {
-      return _.orderBy(
-        this.project.components,
-        [(component) => component.name.toLowerCase(), "version", "release"],
-        ["asc"],
-      );
-    },
-    sortedOverlayComponents: function () {
-      return this.sortedComponents().filter((e) => e.component_id != null);
-    },
-    sortedRegularComponents: function () {
-      return this.sortedComponents().filter((e) => e.component_id == null);
-    },
-    refreshProject: function () {
-      axios.get(`/projects/${this.project.id}`).then((response) => {
-        this.project = response.data;
-        this.visible = this.project.visibility === "discoverable";
-      });
-    },
-    updateVisibility: function () {
-      let payload = { project: { visibility: this.visible ? "discoverable" : "hidden" } };
-      axios
-        .put(`/projects/${this.project.id}`, payload)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.refreshProject();
-        })
-        .catch(this.alertOrNotifyResponse);
-    },
-    // Having deleteComponent on the `ComponentCard` causes it to
-    // disappear almost immediately because the component gets
-    // destroyed once `refreshProject` executes
-    deleteComponent: function (componentId) {
-      axios
-        .delete(`/components/${componentId}`)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.refreshProject();
-        })
-        .catch(this.alertOrNotifyResponse);
-    },
-    downloadExport: function (type) {
-      axios
-        .get(
-          `/projects/${this.project.id}/export/${type}?component_ids=${this.selectedComponentsToExport}`,
-        )
-        .then((_res) => {
-          // Once it is validated that there is content to download, prompt
-          // the user to save the file
-          window.open(`/projects/${this.project.id}/export/${type}`);
-        })
-        .catch(this.alertOrNotifyResponse);
-
-      if (type === "excel" || type === "disa_excel") {
-        this.$refs["excel-export-modal"].hide();
-        this.excelExportType = "";
-        this.selectedComponentsToExport = [];
-      }
-    },
-  },
-};
-</script>
-
-<style scoped></style>
+<style scoped>
+.cursor-pointer {
+  cursor: pointer;
+}
+</style>

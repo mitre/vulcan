@@ -1,135 +1,12 @@
-<template>
-  <div>
-    <b-row>
-      <b-col class="d-flex">
-        <template v-if="!selectedUser">
-          <b-input-group>
-            <b-input-group-prepend>
-              <b-input-group-text><b-icon icon="search" aria-hidden="true" /></b-input-group-text>
-            </b-input-group-prepend>
-            <vue-simple-suggest
-              ref="userSearch"
-              v-model="search"
-              :list="available_members"
-              :filter-by-query="true"
-              display-attribute="email"
-              placeholder="Search for a user by email..."
-              :styles="userSearchStyles"
-              @select="setSelectedUser($refs.userSearch.selected)"
-            />
-          </b-input-group>
-        </template>
-        <template v-else>
-          <b-alert
-            show
-            variant="info"
-            dismissible
-            class="w-100 mb-0"
-            @dismissed="setSelectedUser(null)"
-          >
-            <p class="mb-0">
-              <b>{{ selectedUser.name }}</b>
-            </p>
-            <p class="mb-0">{{ selectedUser.email }}</p>
-          </b-alert>
-        </template>
-      </b-col>
-    </b-row>
-    <div v-if="selectedUser">
-      <br />
-      <b-row>
-        <b-col>
-          Choose a role
-          <hr class="mt-1" />
-        </b-col>
-      </b-row>
-      <b-row v-for="(role, index) in available_roles" :key="role">
-        <b-col>
-          <!-- <b-form-radio :key="role" v-for="role in available_roles"  name="role" :value="role">{{ role }}</b-form-radio> -->
-          <div class="d-flex mb-3">
-            <span>
-              <input
-                class="form-check-input role-input mt-0 ml-0 mr-3"
-                type="radio"
-                name="roles"
-                :value="role"
-                @click="setSelectedRole(role)"
-              />
-            </span>
-            <div>
-              <h5 class="d-flex flex-items-center mb-0 role-label">{{ capitalizeRole(role) }}</h5>
-              <span
-                ><small class="muted role-description">{{ roleDescriptions[index] }}</small></span
-              >
-            </div>
-          </div>
-        </b-col>
-      </b-row>
-    </div>
-    <br />
-    <b-row>
-      <b-col>
-        <form :action="formAction()" method="post">
-          <input
-            id="NewProjectMemberAuthenticityToken"
-            type="hidden"
-            name="authenticity_token"
-            :value="authenticityToken"
-          />
-          <input
-            id="NewMembershipMembershipType"
-            type="hidden"
-            name="membership[membership_type]"
-            :value="membership_type"
-          />
-          <input
-            id="NewMembershipMembershipId"
-            type="hidden"
-            name="membership[membership_id]"
-            :value="membership_id"
-          />
-          <input
-            id="NewMembershipEmail"
-            type="hidden"
-            name="membership[user_id]"
-            :value="selectedUserId"
-          />
-          <input
-            id="access_request_id"
-            type="hidden"
-            name="membership[access_request_id]"
-            :value="access_request_id"
-          />
-          <input
-            id="NewMembershipRole"
-            type="hidden"
-            name="membership[role]"
-            :value="selectedRole"
-          />
-          <b-button
-            block
-            type="submit"
-            variant="primary"
-            :disabled="isSubmitDisabled"
-            rel="nofollow"
-          >
-            Add User to Project
-          </b-button>
-        </form>
-      </b-col>
-    </b-row>
-  </div>
-</template>
-
 <script>
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
-import capitalize from "lodash/capitalize";
+import capitalize from 'lodash/capitalize'
+import SimpleTypeahead from 'vue3-simple-typeahead'
+import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
 
 export default {
-  name: "NewMembership",
+  name: 'NewMembership',
   components: {
-    VueSimpleSuggest,
+    SimpleTypeahead,
   },
   props: {
     membership_type: {
@@ -157,79 +34,144 @@ export default {
       required: false,
     },
   },
-  data: function () {
+  data() {
     return {
-      search: "",
       selectedUser: this.selected_member,
       selectedRole: null,
       roleDescriptions: [
-        "Read only access to the Project or Component",
-        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
-        "Author and approve changes to a Control.",
-        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
+        'Read only access to the Project or Component',
+        'Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.',
+        'Author and approve changes to a Control.',
+        'Full control of a Project or Component. Lock Controls, revert controls, and manage members.',
       ],
-      userSearchStyles: {
-        vueSimpleSuggest: "userSearchVueSimpleSuggest",
-        inputWrapper: "",
-        defaultInput: "",
-        suggestions: "",
-        suggestItem: "",
-      },
-    };
+    }
   },
   computed: {
-    authenticityToken: function () {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
+    authenticityToken() {
+      return document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
     },
-    searchedAvailableMembers: function () {
-      let downcaseSearch = this.search.toLowerCase();
-      return this.available_members.filter((pm) => pm.email.toLowerCase().includes(downcaseSearch));
+    isSubmitDisabled() {
+      return !(this.selectedUser !== null && this.selectedRole !== null)
     },
-    isSubmitDisabled: function () {
-      return !(this.selectedUser !== null && this.selectedRole !== null);
-    },
-    selectedUserId: function () {
-      return this.selectedUser?.id;
+    selectedUserId() {
+      return this.selectedUser?.id
     },
   },
   methods: {
-    capitalizeRole: function (roleString) {
-      return capitalize(roleString);
+    capitalizeRole(roleString) {
+      return capitalize(roleString)
     },
-    setSelectedRole: function (role) {
-      this.selectedRole = role;
+    setSelectedRole(role) {
+      this.selectedRole = role
     },
-    setSelectedUser: function (user) {
-      this.selectedUser = user;
-      this.search = "";
+    setSelectedUser(user) {
+      this.selectedUser = user
     },
-    formAction: function () {
-      return `/memberships/`;
+    clearSelectedUser() {
+      this.selectedUser = null
+      if (this.$refs.userSearch) {
+        this.$refs.userSearch.clearInput()
+      }
+    },
+    userProjection(user) {
+      return user.email || ''
+    },
+    formAction() {
+      return `/memberships/`
     },
   },
-};
+}
 </script>
 
+<template>
+  <div>
+    <b-row>
+      <b-col class="d-flex">
+        <template v-if="!selectedUser">
+          <b-input-group>
+            <b-input-group-text><i class="bi bi-search" aria-hidden="true" /></b-input-group-text>
+            <SimpleTypeahead
+              id="userSearch"
+              ref="userSearch"
+              class="flex-grow-1"
+              placeholder="Search for a user by email..."
+              :items="available_members"
+              :min-input-length="1"
+              :item-projection="userProjection"
+              @select-item="setSelectedUser"
+            />
+          </b-input-group>
+        </template>
+        <template v-else>
+          <b-alert
+            show
+            variant="info"
+            dismissible
+            class="w-100 mb-0"
+            @dismissed="clearSelectedUser"
+          >
+            <p class="mb-0">
+              <b>{{ selectedUser.name }}</b>
+            </p>
+            <p class="mb-0">
+              {{ selectedUser.email }}
+            </p>
+          </b-alert>
+        </template>
+      </b-col>
+    </b-row>
+    <div v-if="selectedUser">
+      <br>
+      <b-row>
+        <b-col>
+          Choose a role
+          <hr class="mt-1">
+        </b-col>
+      </b-row>
+      <b-row v-for="(role, index) in available_roles" :key="role">
+        <b-col>
+          <div class="d-flex mb-3">
+            <span>
+              <input
+                class="form-check-input role-input mt-0 ml-0 mr-3"
+                type="radio"
+                name="roles"
+                :value="role"
+                @click="setSelectedRole(role)"
+              >
+            </span>
+            <div>
+              <h5 class="d-flex flex-items-center mb-0 role-label">
+                {{ capitalizeRole(role) }}
+              </h5>
+              <span><small class="muted role-description">{{ roleDescriptions[index] }}</small></span>
+            </div>
+          </div>
+        </b-col>
+      </b-row>
+    </div>
+    <br>
+    <b-row>
+      <b-col>
+        <form :action="formAction()" method="post">
+          <input id="NewProjectMemberAuthenticityToken" type="hidden" name="authenticity_token" :value="authenticityToken">
+          <input id="NewMembershipMembershipType" type="hidden" name="membership[membership_type]" :value="membership_type">
+          <input id="NewMembershipMembershipId" type="hidden" name="membership[membership_id]" :value="membership_id">
+          <input id="NewMembershipEmail" type="hidden" name="membership[user_id]" :value="selectedUserId">
+          <input id="access_request_id" type="hidden" name="membership[access_request_id]" :value="access_request_id">
+          <input id="NewMembershipRole" type="hidden" name="membership[role]" :value="selectedRole">
+          <b-button block type="submit" variant="primary" :disabled="isSubmitDisabled" rel="nofollow">
+            Add User to Project
+          </b-button>
+        </form>
+      </b-col>
+    </b-row>
+  </div>
+</template>
+
 <style scoped>
-.role-input {
-  position: inherit;
-}
-
-.role-label {
-  line-height: 1;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.role-description {
-  line-height: 1;
-}
-
-.userSearchVueSimpleSuggest {
-  flex: 1;
-}
-
-.role-description {
-  line-height: 1;
-}
+.flex-grow-1 { flex-grow: 1; }
+.role-input { position: inherit; }
+.role-label { line-height: 1; font-size: 14px; font-weight: 700; }
+.role-description { line-height: 1; }
 </style>

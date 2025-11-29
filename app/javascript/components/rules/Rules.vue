@@ -1,36 +1,13 @@
-<template>
-  <div>
-    <b-breadcrumb :items="breadcrumbs" />
-
-    <h1>
-      {{ component.name }}
-      <span v-if="component.version">V{{ component.version }}</span>
-      <span v-if="component.release">R{{ component.release }}</span> - Controls
-    </h1>
-
-    <RulesCodeEditorView
-      :project="project"
-      :component="component"
-      :rules="reactiveRules"
-      :statuses="statuses"
-      :severities="severities"
-      :severities_map="severities_map"
-      :effective-permissions="effective_permissions"
-      :current-user-id="current_user_id"
-    />
-  </div>
-</template>
-
 <script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import RulesCodeEditorView from "./RulesCodeEditorView.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
-import _ from "lodash";
+import axios from 'axios'
+import _ from 'lodash'
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
+import FormMixinVue from '../../mixins/FormMixin.vue'
+import SortRulesMixin from '../../mixins/SortRulesMixin.vue'
+import RulesCodeEditorView from './RulesCodeEditorView.vue'
 
 export default {
-  name: "Rules",
+  name: 'Rules',
   components: { RulesCodeEditorView },
   mixins: [AlertMixinVue, FormMixinVue, SortRulesMixin],
   props: {
@@ -67,189 +44,193 @@ export default {
       required: true,
     },
   },
-  data: function () {
+  data() {
     return {
       reactiveRules: _.cloneDeep(this.rules).sort(this.compareRules),
-    };
+    }
   },
   computed: {
-    breadcrumbs: function () {
+    breadcrumbs() {
       return [
         {
-          text: "Projects",
-          href: "/projects",
+          text: 'Projects',
+          href: '/projects',
         },
         {
           text: this.project.name,
-          href: "/projects/" + this.project.id,
+          href: `/projects/${this.project.id}`,
         },
         {
           text: this.component.name,
-          href: "/components/" + this.component.id,
+          href: `/components/${this.component.id}`,
         },
         {
-          text: "Controls",
+          text: 'Controls',
           active: true,
         },
-      ];
+      ]
     },
   },
   mounted() {
-    this.$root.$on("refresh:rule", this.refreshRule);
-    this.$root.$on("update:rule", this.ruleUpdate);
-    this.$root.$on("update:check", this.checkUpdate);
-    this.$root.$on("update:description", this.descriptionUpdate);
-    this.$root.$on("update:disaDescription", this.disaDescriptionUpdate);
-    this.$root.$on("add:check", this.addCheck);
-    this.$root.$on("add:description", this.addRuleDescription);
-    this.$root.$on("add:disaDescription", this.addDisaRuleDescription);
-    this.$root.$on("create:rule", this.createRule);
-    this.$root.$on("delete:rule", this.deleteRule);
-    this.$root.$on("addSatisfied:rule", this.addSatisfiedRule);
-    this.$root.$on("removeSatisfied:rule", this.removeSatisfiedRule);
+    this.$root.$on('refresh:rule', this.refreshRule)
+    this.$root.$on('update:rule', this.ruleUpdate)
+    this.$root.$on('update:check', this.checkUpdate)
+    this.$root.$on('update:description', this.descriptionUpdate)
+    this.$root.$on('update:disaDescription', this.disaDescriptionUpdate)
+    this.$root.$on('add:check', this.addCheck)
+    this.$root.$on('add:description', this.addRuleDescription)
+    this.$root.$on('add:disaDescription', this.addDisaRuleDescription)
+    this.$root.$on('create:rule', this.createRule)
+    this.$root.$on('delete:rule', this.deleteRule)
+    this.$root.$on('addSatisfied:rule', this.addSatisfiedRule)
+    this.$root.$on('removeSatisfied:rule', this.removeSatisfiedRule)
   },
   methods: {
     /**
      * Event handler for @addSatisfied:rule
      */
-    addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
+    addSatisfiedRule(rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
         .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.refreshRule(rule_id);
-          this.refreshRule(satisfied_by_rule_id);
+          this.alertOrNotifyResponse(response)
+          this.refreshRule(rule_id)
+          this.refreshRule(satisfied_by_rule_id)
 
           if (successCallback) {
             try {
-              successCallback(response);
-            } catch (_) {}
+              successCallback(response)
+            }
+            catch (_) {}
           }
         })
-        .catch(this.alertOrNotifyResponse);
+        .catch(this.alertOrNotifyResponse)
     },
     /**
      * Event handler for @removeSatisfied:rule
      */
-    removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
+    removeSatisfiedRule(rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
         .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.refreshRule(rule_id);
-          this.refreshRule(satisfied_by_rule_id);
+          this.alertOrNotifyResponse(response)
+          this.refreshRule(rule_id)
+          this.refreshRule(satisfied_by_rule_id)
 
           if (successCallback) {
             try {
-              successCallback(response);
-            } catch (_) {}
+              successCallback(response)
+            }
+            catch (_) {}
           }
         })
-        .catch(this.alertOrNotifyResponse);
+        .catch(this.alertOrNotifyResponse)
     },
     /**
      * Event handler for @delete:rule
      */
-    deleteRule: function (rule_id, successCallback = null) {
+    deleteRule(rule_id, successCallback = null) {
       axios
         .delete(`/rules/${rule_id}`)
         .then((response) => {
-          this.alertOrNotifyResponse(response);
+          this.alertOrNotifyResponse(response)
 
           // remove the rule
-          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+          const ruleIndex = this.reactiveRules.findIndex(r => r.id == rule_id)
           if (ruleIndex >= 0) {
-            this.reactiveRules.splice(ruleIndex, 1);
+            this.reactiveRules.splice(ruleIndex, 1)
           }
 
           if (successCallback) {
             try {
-              successCallback(response);
-            } catch (_) {}
+              successCallback(response)
+            }
+            catch (_) {}
           }
         })
-        .catch(this.alertOrNotifyResponse);
+        .catch(this.alertOrNotifyResponse)
     },
     /**
      * Event handler for @create:rule
      */
-    createRule: function (rule, successCallback = null) {
+    createRule(rule, successCallback = null) {
       axios
-        .post(`/components/${this.component.id}/rules`, { rule: rule })
+        .post(`/components/${this.component.id}/rules`, { rule })
         .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.ruleFetchSuccess(response);
+          this.alertOrNotifyResponse(response)
+          this.ruleFetchSuccess(response)
           if (successCallback) {
             try {
-              successCallback(response);
-            } catch (_) {}
+              successCallback(response)
+            }
+            catch (_) {}
           }
         })
-        .catch(this.alertOrNotifyResponse);
+        .catch(this.alertOrNotifyResponse)
     },
     /**
      * Event handler for @add:description
      */
-    addRuleDescription: function (rule) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
+    addRuleDescription(rule) {
+      const ruleIndex = this.reactiveRules.findIndex(r => r.id == rule?.id)
       // Guard if rule is not found
       if (ruleIndex == -1) {
-        return;
+        return
       }
 
       this.reactiveRules[ruleIndex].rule_descriptions_attributes.push({
-        description: "",
+        description: '',
         rule_id: this.reactiveRules[ruleIndex].id,
         _destroy: false,
-      });
+      })
     },
     /**
      * Event handler for @add:check
      */
-    addCheck: function (rule) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
+    addCheck(rule) {
+      const ruleIndex = this.reactiveRules.findIndex(r => r.id == rule?.id)
       // Guard if rule is not found
       if (ruleIndex == -1) {
-        return;
+        return
       }
 
       this.reactiveRules[ruleIndex].checks_attributes.push({
-        system: "",
-        content_ref_name: "",
-        content_ref_href: "",
-        content: "",
+        system: '',
+        content_ref_name: '',
+        content_ref_href: '',
+        content: '',
         rule_id: this.reactiveRules[ruleIndex].id,
         _destroy: false,
-      });
+      })
     },
     /**
      * Event handler for @add:disaDescription
      */
-    addDisaRuleDescription: function (rule) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
+    addDisaRuleDescription(rule) {
+      const ruleIndex = this.reactiveRules.findIndex(r => r.id == rule?.id)
       // Guard if rule is not found
       if (ruleIndex == -1) {
-        return;
+        return
       }
 
       this.reactiveRules[ruleIndex].disa_rule_descriptions_attributes.push({
-        description: "",
+        description: '',
         rule_id: this.reactiveRules[ruleIndex].id,
         _destroy: false,
-      });
+      })
     },
     /**
      * Event handler for @update:rule.
      * Splices the updated version of the rule where the previous rule was.
      */
-    ruleUpdate: function (rule) {
-      const index = this.reactiveRules.findIndex((r) => r.id == rule?.id);
+    ruleUpdate(rule) {
+      const index = this.reactiveRules.findIndex(r => r.id == rule?.id)
       // Guard if rule is not found.
       if (index == -1) {
-        return;
+        return
       }
 
-      this.reactiveRules.splice(index, 1, rule);
+      this.reactiveRules.splice(index, 1, rule)
     },
     /**
      * Event handler for @update:check
@@ -257,16 +238,16 @@ export default {
      *
      * If -1 is passed as the index, then no action will be taken.
      */
-    checkUpdate: function (rule, check, index) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
+    checkUpdate(rule, check, index) {
+      const ruleIndex = this.reactiveRules.findIndex(r => r.id == rule?.id)
       // Guard if rule is not found
       // OR
       // check index == -1  because -1 is the default if no index is passed to CheckForm.
       if (ruleIndex == -1 || index == -1) {
-        return;
+        return
       }
 
-      this.reactiveRules[ruleIndex].checks_attributes.splice(index, 1, check);
+      this.reactiveRules[ruleIndex].checks_attributes.splice(index, 1, check)
     },
     /**
      * Event handler for @update:disaDescription
@@ -274,16 +255,16 @@ export default {
      *
      * If -1 is passed as the index, then no action will be taken.
      */
-    disaDescriptionUpdate: function (rule, description, index) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
+    disaDescriptionUpdate(rule, description, index) {
+      const ruleIndex = this.reactiveRules.findIndex(r => r.id == rule?.id)
       // Guard if rule is not found
       // OR
       // check index == -1  because -1 is the default if no index is passed to DisaRuleDescriptionForm.
       if (ruleIndex == -1 || index == -1) {
-        return;
+        return
       }
 
-      this.reactiveRules[ruleIndex].disa_rule_descriptions_attributes.splice(index, 1, description);
+      this.reactiveRules[ruleIndex].disa_rule_descriptions_attributes.splice(index, 1, description)
     },
     /**
      * Event handler for @update:description
@@ -291,16 +272,16 @@ export default {
      *
      * If -1 is passed as the index, then no action will be taken.
      */
-    descriptionUpdate: function (rule, description, index) {
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule?.id);
+    descriptionUpdate(rule, description, index) {
+      const ruleIndex = this.reactiveRules.findIndex(r => r.id == rule?.id)
       // Guard if rule is not found
       // OR
       // check index == -1  because -1 is the default if no index is passed to RuleDescriptionForm.
       if (ruleIndex == -1 || index == -1) {
-        return;
+        return
       }
 
-      this.reactiveRules[ruleIndex].rule_descriptions_attributes.splice(index, 1, description);
+      this.reactiveRules[ruleIndex].rule_descriptions_attributes.splice(index, 1, description)
     },
     /**
      * Indicates to this component that a rule has updated and should be re-fetched.
@@ -308,11 +289,11 @@ export default {
      * id: The rule ID
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
      */
-    refreshRule: function (id, updated = "all") {
+    refreshRule(id, updated = 'all') {
       axios
         .get(`/rules/${id}`)
-        .then((response) => this.ruleFetchSuccess(response, updated))
-        .catch(this.alertOrNotifyResponse);
+        .then(response => this.ruleFetchSuccess(response, updated))
+        .catch(this.alertOrNotifyResponse)
     },
     /**
      * Update data with a fetched rule.
@@ -323,26 +304,50 @@ export default {
      * Changing behavior based on `updated` is necessary because we do not want to wipe away control
      * changes just beause a user has commented.
      */
-    ruleFetchSuccess: function (response, updated = "all") {
+    ruleFetchSuccess(response, updated = 'all') {
       if (response.data.id === undefined) {
-        response.data.data = JSON.parse(response.data.data);
+        response.data.data = JSON.parse(response.data.data)
       }
-      const ruleIndex = this.reactiveRules.findIndex((r) => r.id == response.data.id);
+      const ruleIndex = this.reactiveRules.findIndex(r => r.id == response.data.id)
 
       // If the rule is not in the reactive rules then add it and return early
       if (ruleIndex < 0) {
-        this.reactiveRules.push(response.data.data);
-        return;
+        this.reactiveRules.push(response.data.data)
+        return
       }
 
-      if (updated == "all") {
-        this.reactiveRules.splice(ruleIndex, 1, response.data);
-      } else if (updated == "comments") {
-        this.reactiveRules[ruleIndex].comments.push(...response.data.comments);
+      if (updated == 'all') {
+        this.reactiveRules.splice(ruleIndex, 1, response.data)
+      }
+      else if (updated == 'comments') {
+        this.reactiveRules[ruleIndex].comments.push(...response.data.comments)
       }
     },
   },
-};
+}
 </script>
+
+<template>
+  <div>
+    <b-breadcrumb :items="breadcrumbs" />
+
+    <h1>
+      {{ component.name }}
+      <span v-if="component.version">V{{ component.version }}</span>
+      <span v-if="component.release">R{{ component.release }}</span> - Controls
+    </h1>
+
+    <RulesCodeEditorView
+      :project="project"
+      :component="component"
+      :rules="reactiveRules"
+      :statuses="statuses"
+      :severities="severities"
+      :severities_map="severities_map"
+      :effective-permissions="effective_permissions"
+      :current-user-id="current_user_id"
+    />
+  </div>
+</template>
 
 <style scoped></style>

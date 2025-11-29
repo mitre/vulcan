@@ -1,20 +1,8 @@
-<template>
-  <div>
-    <h1>Projects</h1>
-    <ProjectsTable
-      :projects="projectlist"
-      :is_vulcan_admin="is_vulcan_admin"
-      @projectUpdated="refreshProjects"
-    />
-  </div>
-</template>
-
 <script>
-import ProjectsTable from "./ProjectsTable.vue";
-import axios from "axios";
+import ProjectsTable from './ProjectsTable.vue'
 
 export default {
-  name: "Projects",
+  name: 'Projects',
   components: { ProjectsTable },
   props: {
     projects: {
@@ -27,22 +15,25 @@ export default {
       default: false,
     },
   },
-  data: function () {
-    return {
-      projectlist: this.projects,
-    };
-  },
+  emits: ['refresh'],
   methods: {
-    refreshProjects: function () {
-      axios
-        .get("/projects")
-        .then((response) => {
-          this.projectlist = response.data;
-        })
-        .catch(this.alertOrNotifyResponse);
+    refreshProjects() {
+      // Emit event to parent to trigger store refresh
+      this.$emit('refresh')
     },
   },
-};
+}
 </script>
+
+<template>
+  <div>
+    <h1>Projects</h1>
+    <ProjectsTable
+      :projects="projects"
+      :is_vulcan_admin="is_vulcan_admin"
+      @project-updated="refreshProjects"
+    />
+  </div>
+</template>
 
 <style scoped></style>

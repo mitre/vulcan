@@ -1,3 +1,20 @@
+<script>
+export default {
+  name: 'NewProject',
+  computed: {
+    // Only include CSRF token, not JSON headers since this is HTML form submission
+    authenticityToken() {
+      return document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
+    },
+  },
+  methods: {
+    formAction() {
+      return '/projects'
+    },
+  },
+}
+</script>
+
 <template>
   <div class="p-3">
     <h1>Start a New Project</h1>
@@ -7,7 +24,7 @@
         type="hidden"
         name="authenticity_token"
         :value="authenticityToken"
-      />
+      >
       <b-row>
         <b-col md="6">
           <!-- Name -->
@@ -50,28 +67,13 @@
               autocomplete="off"
             />
           </b-form-group>
-          <b-button type="submit" variant="primary"> Create Project </b-button>
+          <b-button type="submit" variant="primary">
+            Create Project
+          </b-button>
         </b-col>
       </b-row>
     </b-form>
   </div>
 </template>
-
-<script>
-export default {
-  name: "NewProject",
-  computed: {
-    // Only include CSRF token, not JSON headers since this is HTML form submission
-    authenticityToken: function () {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
-  },
-  methods: {
-    formAction: function () {
-      return "/projects";
-    },
-  },
-};
-</script>
 
 <style scoped></style>

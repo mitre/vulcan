@@ -1,9 +1,56 @@
+<script>
+import axios from 'axios'
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
+
+export default {
+  name: 'RevisionHistory',
+  components: {},
+  mixins: [AlertMixinVue],
+  props: {
+    project: {
+      type: Object,
+      required: true,
+    },
+    uniqueComponentNames: {
+      type: Array,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      componentName: '',
+      revisionHistory: [],
+      loading: false,
+    }
+  },
+  methods: {
+    fetchRevisionHistory() {
+      if (this.componentName) {
+        this.loading = true
+        axios
+          .post(`/components/history`, {
+            project_id: this.project.id,
+            name: this.componentName,
+          })
+          .then((response) => {
+            this.revisionHistory = response.data
+          })
+          .catch(this.alertOrNotifyResponse)
+          .then(() => {
+            this.loading = false
+          })
+      }
+    },
+  },
+}
+</script>
+
 <template>
   <div class="my-2">
     <b-input-group size="sm" class="mb-3">
-      <b-input-group-prepend>
-        <b-input-group-text class="rounded-0">Component Name</b-input-group-text>
-      </b-input-group-prepend>
+      <b-input-group-text class="rounded-0">
+        Component Name
+      </b-input-group-text>
       <b-form-select
         id="componentName"
         v-model="componentName"
@@ -13,7 +60,9 @@
       />
     </b-input-group>
     <div v-if="loading" class="mt-3">
-      <h6 class="m-3 text-center">Loading...</h6>
+      <h6 class="m-3 text-center">
+        Loading...
+      </h6>
     </div>
     <div class="mt-3">
       <div v-for="(history, index) in revisionHistory.slice().reverse()" :key="`history-${index}`">
@@ -23,9 +72,9 @@
             {{
               history.component.version || history.component.release
                 ? `(${[
-                    history.component.version ? `Version ${history.component.version}` : "",
-                    history.component.release ? `Release ${history.component.release}` : "",
-                  ].join(", ")})`
+                  history.component.version ? `Version ${history.component.version}` : "",
+                  history.component.release ? `Release ${history.component.release}` : "",
+                ].join(", ")})`
                 : ""
             }}
           </h6>
@@ -51,55 +100,6 @@
     </div>
   </div>
 </template>
-
-<script>
-import _ from "lodash";
-import axios from "axios";
-import MonacoEditor from "vue-monaco";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-
-export default {
-  name: "RevisionHistory",
-  components: {},
-  mixins: [AlertMixinVue],
-  props: {
-    project: {
-      type: Object,
-      required: true,
-    },
-    uniqueComponentNames: {
-      type: Array,
-      required: true,
-    },
-  },
-  data: function () {
-    return {
-      componentName: "",
-      revisionHistory: [],
-      loading: false,
-    };
-  },
-  methods: {
-    fetchRevisionHistory: function () {
-      if (this.componentName) {
-        this.loading = true;
-        axios
-          .post(`/components/history`, {
-            project_id: this.project.id,
-            name: this.componentName,
-          })
-          .then((response) => {
-            this.revisionHistory = response.data;
-          })
-          .catch(this.alertOrNotifyResponse)
-          .then(() => {
-            this.loading = false;
-          });
-      }
-    },
-  },
-};
-</script>
 
 <style scoped>
 .form-select-sm {

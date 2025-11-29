@@ -22,70 +22,70 @@ export default {
     //   - 'message' is required and can be a string or array of strings
     //   - 'title', and 'variant' are optional and will default to 'Success' and 'sucess'
     // - If no response is provided -> show 'message' as an alert on the screen
-    alertOrNotifyResponse: function (response) {
-      let toastData = response["data"] && response["data"]["toast"] ? response["data"]["toast"] : null;
+    alertOrNotifyResponse(response) {
+      let toastData
+        = response.data && response.data.toast ? response.data.toast : null
       if (
-        !toastData &&
-        response["response"] &&
-        response["response"]["data"] &&
-        response["response"]["data"]["toast"]
+        !toastData
+        && response.response
+        && response.response.data
+        && response.response.data.toast
       ) {
-        toastData = response["response"]["data"]["toast"];
+        toastData = response.response.data.toast
       }
 
       // If toast is just a string, then assume it's a basic success message
-      if (typeof toastData === "string" || toastData instanceof String) {
+      if (typeof toastData === 'string' || toastData instanceof String) {
         this.toast?.show({
           props: {
-            title: "Success",
-            variant: "success",
+            title: 'Success',
+            variant: 'success',
             solid: true,
             body: toastData,
-          }
-        });
-        return;
+          },
+        })
+        return
       }
 
       // If toast is an object, then gather its parameters with some defaults
-      if (toastData && typeof toastData === "object" && !Array.isArray(toastData)) {
-        const title = toastData["title"] || "Success";
-        const variant = toastData["variant"] || "success";
-        let message = toastData["message"];
+      if (toastData && typeof toastData === 'object' && !Array.isArray(toastData)) {
+        const title = toastData.title || 'Success'
+        const variant = toastData.variant || 'success'
+        let message = toastData.message
         if (Array.isArray(message)) {
-          message = this.arrayToMessage(message);
+          message = this.arrayToMessage(message)
         }
 
         this.toast?.show({
           props: {
-            title: title,
-            variant: variant,
+            title,
+            variant,
             solid: true,
             body: message,
-          }
-        });
-        return;
+          },
+        })
+        return
       }
 
       // At this point in the code it is likely an error has occurred
       if (response.message) {
         this.toast?.show({
           props: {
-            title: "Error",
-            variant: "danger",
+            title: 'Error',
+            variant: 'danger',
             solid: true,
             body: response.message,
-          }
-        });
-        return;
+          },
+        })
       }
     },
     // Takes an array of messages and forms them into a nicely formatted toast message
-    arrayToMessage: function (messageArray) {
+    arrayToMessage(messageArray) {
       return h(
-        "div",
-        messageArray.map((message) => h("p", message)),
-      );
+        'div',
+        messageArray.map(message => h('p', message)),
+      )
     },
   },
-};
+}
 </script>

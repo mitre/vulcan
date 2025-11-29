@@ -1,60 +1,11 @@
-<template>
-  <div class="row">
-    <div id="sidebar-wrapper" class="col-3 pr-0">
-      <RuleNavigator
-        :component-id="component.id"
-        :rules="rules"
-        :selected-rule-id="selectedRuleId"
-        :effective-permissions="effectivePermissions"
-        :project-prefix="component.prefix"
-        :read-only="true"
-        :open-rule-ids="openRuleIds"
-        @ruleSelected="handleRuleSelected($event)"
-        @ruleDeselected="handleRuleDeselected($event)"
-      />
-    </div>
-
-    <template v-if="selectedRule()">
-      <div class="col-9 mb-5">
-        <RuleEditorHeader
-          :rule="selectedRule()"
-          :rules="rules"
-          :effective-permissions="effectivePermissions"
-          :current-user-id="currentUserId"
-          :project-prefix="component.prefix"
-          :read-only="true"
-        />
-        <hr />
-        <RuleEditor
-          :rule="selectedRule()"
-          :statuses="statuses"
-          :severities="severities"
-          :severities_map="severities_map"
-          :read-only="true"
-          :advanced_fields="component.advanced_fields"
-          :additional_questions="component.additional_questions"
-        />
-      </div>
-    </template>
-
-    <template v-else>
-      <div class="col-9">
-        <p class="text-center">
-          No control currently selected. Select a control on the left to view.
-        </p>
-      </div>
-    </template>
-  </div>
-</template>
-
 <script>
-import RuleEditorHeader from "./RuleEditorHeader.vue";
-import RuleEditor from "./RuleEditor.vue";
-import RuleNavigator from "./RuleNavigator.vue";
-import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
+import SelectedRulesMixin from '../../mixins/SelectedRulesMixin.vue'
+import RuleEditor from './RuleEditor.vue'
+import RuleEditorHeader from './RuleEditorHeader.vue'
+import RuleNavigator from './RuleNavigator.vue'
 
 export default {
-  name: "RulesReadOnlyView",
+  name: 'RulesReadOnlyView',
   components: {
     RuleNavigator,
     RuleEditor,
@@ -64,7 +15,7 @@ export default {
   props: {
     effectivePermissions: {
       type: String,
-      default: "",
+      default: '',
     },
     currentUserId: {
       type: Number,
@@ -96,14 +47,63 @@ export default {
     },
   },
   watch: {
-    selectedRuleId: function () {
-      this.$emit("ruleSelected", this.selectedRule());
+    selectedRuleId() {
+      this.$emit('ruleSelected', this.selectedRule())
     },
-    componentSelectedRuleId: function (ruleId) {
-      this.handleRuleSelected(ruleId);
+    componentSelectedRuleId(ruleId) {
+      this.handleRuleSelected(ruleId)
     },
   },
-};
+}
 </script>
+
+<template>
+  <div class="row">
+    <div id="sidebar-wrapper" class="col-3 pr-0">
+      <RuleNavigator
+        :component-id="component.id"
+        :rules="rules"
+        :selected-rule-id="selectedRuleId"
+        :effective-permissions="effectivePermissions"
+        :project-prefix="component.prefix"
+        :read-only="true"
+        :open-rule-ids="openRuleIds"
+        @rule-selected="handleRuleSelected($event)"
+        @rule-deselected="handleRuleDeselected($event)"
+      />
+    </div>
+
+    <template v-if="selectedRule()">
+      <div class="col-9 mb-5">
+        <RuleEditorHeader
+          :rule="selectedRule()"
+          :rules="rules"
+          :effective-permissions="effectivePermissions"
+          :current-user-id="currentUserId"
+          :project-prefix="component.prefix"
+          :read-only="true"
+        />
+        <hr>
+        <RuleEditor
+          :rule="selectedRule()"
+          :statuses="statuses"
+          :severities="severities"
+          :severities_map="severities_map"
+          :read-only="true"
+          :advanced_fields="component.advanced_fields"
+          :additional_questions="component.additional_questions"
+        />
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="col-9">
+        <p class="text-center">
+          No control currently selected. Select a control on the left to view.
+        </p>
+      </div>
+    </template>
+  </div>
+</template>
 
 <style scoped></style>

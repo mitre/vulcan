@@ -1,4 +1,277 @@
 <!-- eslint-disable vue/no-v-html -->
+<script>
+import axios from 'axios'
+import SimpleTypeahead from 'vue3-simple-typeahead'
+import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
+
+export default {
+  name: 'RelatedRulesModal',
+  components: {
+    SimpleTypeahead,
+  },
+  props: {
+    rule: {
+      type: Object,
+      required: true,
+    },
+    ruleStigId: {
+      type: String,
+      required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      relatedRules: [],
+      relatedRulesParents: [],
+      filteredRules: [],
+      selectedParent: '',
+      keywordSearch: '',
+      keywordList: [],
+      results: 0,
+      stigsAndComponents: true,
+      stigResultsOnly: true,
+      componentResultsOnly: true,
+      allFieldsSelected: true,
+      indeterminate: false,
+      controlFields: ['Vulnerability Discussion', 'Check', 'Fix'],
+      fields: [],
+    }
+  },
+  computed: {
+    filteredGroupedRules() {
+      const parentsNames = this.filteredParents.map(parent => parent.name)
+      // Filter by STIG / Component
+      let rules = this.relatedRules.filter(r => parentsNames.includes(r.parent))
+      // Filter rules that includes the searchWord in check, fix, or discussion
+      if (this.keywordList.length > 0) {
+        rules = this.lookupSearchWordInRules(rules)
+      }
+      // Filter rules in a gven stig or component
+      if (this.selectedParent) {
+        rules = rules.filter(r => r.parent === this.selectedParent)
+      }
+      this.updateTotalResults(rules)
+      this.updateFilteredRules(rules)
+      // Group results by stig / component name
+      return rules.reduce((grouped, rule) => {
+        const key = rule.parent
+        if (!grouped[key]) {
+          grouped[key] = []
+        }
+        grouped[key].push(rule)
+        return grouped
+      }, {})
+    },
+    filteredParents() {
+      let parents = this.relatedRulesParents
+      if (!this.stigsAndComponents && this.stigResultsOnly) {
+        parents = parents.filter(parent => !!parent.stig_id)
+      }
+      else if (!this.stigsAndComponents && this.componentResultsOnly) {
+        parents = parents.filter(parent => !parent.stig_id)
+      }
+      return parents
+    },
+    dynamicDisplayFieldClass() {
+      switch (this.fields.length) {
+        case 1:
+          return 'col-xl-12'
+        case 2:
+          return 'col-xl-6'
+        default:
+          return 'col-xl-4'
+      }
+    },
+  },
+  watch: {
+    fields(newValue, oldValue) {
+      // Handle changes in individual field checkboxes
+      if (newValue.length === 0) {
+        this.indeterminate = false
+        this.allFieldsSelected = false
+      }
+      else if (newValue.length === this.controlFields.length) {
+        this.indeterminate = false
+        this.allFieldsSelected = true
+      }
+      else {
+        this.indeterminate = true
+        this.allFieldsSelected = false
+      }
+    },
+    keywordList() {
+      this.toggleAllCollapses(true)
+    },
+  },
+  methods: {
+    async getRelatedRules() {
+      this.resetModal()
+      axios.get(`/rules/${this.rule.id}/search/related_rules`).then((response) => {
+        this.fields = this.controlFields
+        this.relatedRules = response.data.rules
+        this.relatedRulesParents = response.data.parents
+        this.relatedRulesParents.forEach((parent) => {
+          if (parent.stig_id) {
+            const stig_rules = this.relatedRules.filter(r => r.stig_id == parent.id)
+            stig_rules.forEach((r) => {
+              r.parent = parent.name
+              r.name = `${r.version}//${r.srg_id}`
+            })
+          }
+          else {
+            const comp_rules = this.relatedRules.filter(r => r.component_id == parent.id)
+            parent.name = `${parent.project.name} / ${parent.name} - Ver ${parent.version}, Rel ${parent.release}`
+            comp_rules.forEach((r) => {
+              r.parent = parent.name
+              r.name = `${parent.prefix}-${r.rule_id}//${r.version}`
+            })
+          }
+        })
+      })
+    },
+    resetModal() {
+      this.fields = []
+      this.relatedRules = []
+      this.relatedRulesParents = []
+      this.filteredRules = []
+      this.results = 0
+      this.resetFilters()
+    },
+    resetFilters() {
+      this.stigsAndComponents = true
+      this.stigResultsOnly = true
+      this.componentResultsOnly = true
+      this.allFieldsSelected = true
+      this.indeterminate = false
+      this.fields = this.controlFields
+      this.selectedParent = ''
+      this.keywordSearch = ''
+      this.keywordList = []
+      this.toggleAllCollapses(false)
+    },
+    updateTotalResults(rules) {
+      this.results = rules.length
+    },
+    updateFilteredRules(rules) {
+      this.filteredRules = rules
+    },
+    addKeywordSearchToList(e) {
+      e.preventDefault()
+      if (this.keywordSearch.trim()) {
+        this.keywordList.push(this.keywordSearch.trim())
+        this.keywordSearch = ''
+      }
+    },
+    removeKeywordSearchFromList(index) {
+      this.keywordList.splice(index, 1)
+    },
+    lookupSearchWordInRules(rules) {
+      const words = this.keywordList.map(w => w.toLowerCase())
+      const checkWord = text => text && words.some(w => text.includes(w))
+      const convertLower = text => text?.toLowerCase() ?? ''
+
+      // Precompute the inclusion flags for the fields
+      const includeCheck = this.fields.includes('Check')
+      const includeFix = this.fields.includes('Fix')
+      const includeDiscussion = this.fields.includes('Vulnerability Discussion')
+      const anyFieldIncluded = includeCheck || includeFix || includeDiscussion
+
+      return rules.filter((r) => {
+        const title = convertLower(r.title)
+        const discussion = convertLower(r.disa_rule_descriptions_attributes[0].vuln_discussion)
+        const check = convertLower(r.checks_attributes[0].content)
+        const fix = convertLower(r.fixtext)
+
+        if (this.allFieldsSelected) {
+          return [discussion, check, fix, title].some(checkWord)
+        }
+
+        const selectedFieldsTexts = [
+          includeDiscussion ? discussion : null,
+          includeCheck ? check : null,
+          includeFix ? fix : null,
+          title,
+        ].filter(Boolean) // Remove null values
+
+        return !anyFieldIncluded ? checkWord(title) : selectedFieldsTexts.some(checkWord)
+      })
+    },
+
+    formatAndHighlightSearchWord(text) {
+      if (!text) return
+      let formattedText = this.escapeHtml(text)
+      if (this.keywordList.length) {
+        const words = this.keywordList.map(w => w.toLowerCase())
+        for (const word of words) {
+          const re = new RegExp(word, 'gi')
+          formattedText = formattedText.replace(re, (match) => {
+            return `<mark class='bg-warning'>${match}</mark>`
+          })
+        }
+      }
+      return formattedText.replace(/\n/g, '<br />')
+    },
+    escapeHtml(text) {
+      if (!text) return
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+    },
+    copyCheckContentToRule(root, checkContent) {
+      const check = this.rule.checks_attributes[0]
+      const content = `${check.content}\n\n${checkContent}`
+      root.$emit('update:check', this.rule, { ...check, content }, 0)
+      this.$bvToast.toast(`Check successfully copied to ${this.ruleStigId}`, {
+        title: 'Success',
+        variant: 'success',
+        solid: true,
+      })
+    },
+    copyDiscussionToRule(root, vulnDiscussion) {
+      const discussion = this.rule.disa_rule_descriptions_attributes[0]
+      const vuln_discussion = `${discussion.vuln_discussion}\n\n${vulnDiscussion}`
+      root.$emit('update:disaDescription', this.rule, { ...discussion, vuln_discussion }, 0)
+      this.$bvToast.toast(`Discussion successfully copied to ${this.ruleStigId}`, {
+        title: 'Success',
+        variant: 'success',
+        solid: true,
+      })
+    },
+    copyFixTextToRule(root, fix) {
+      const fixtext = `${this.rule.fixtext}\n\n${fix}`
+      root.$emit('update:rule', { ...this.rule, fixtext })
+      this.$bvToast.toast(`Fix successfully copied to ${this.ruleStigId}`, {
+        title: 'Success',
+        variant: 'success',
+        solid: true,
+      })
+    },
+    toggleAllFields(checked) {
+      this.fields = checked ? this.controlFields.slice() : []
+    },
+    toggleAllCollapses(toggle) {
+      this.filteredRules.forEach((rule) => {
+        rule.show = toggle
+      })
+    },
+    setStigAndComponentFilter(switchText) {
+      if (switchText === 'all') {
+        this.componentResultsOnly = true
+        this.stigResultsOnly = true
+      }
+      this.stigsAndComponents = !!(this.componentResultsOnly && this.stigResultsOnly)
+    },
+  },
+}
+</script>
+
 <template>
   <div>
     <a
@@ -22,7 +295,9 @@
       @close="resetModal"
     >
       <!-- RESET FILTERS -->
-      <b-link class="h6 float-right" @click="resetFilters">Reset Filters</b-link>
+      <b-link class="h6 float-right" @click="resetFilters">
+        Reset Filters
+      </b-link>
 
       <!-- FILTER RESULTS BY STIG / COMPONENT -->
       <b-form-group label="Filter results by DISA STIGs / Local Vulcan Components" label-class="h6">
@@ -46,18 +321,13 @@
             Vulcan Components
           </b-form-checkbox>
         </div>
-        <vue-simple-suggest
+        <SimpleTypeahead
           :key="rule.id"
-          v-model="selectedParent"
-          :list="filteredParents"
-          display-attribute="name"
-          value-attribute="name"
-          type="search"
           placeholder="Search STIG/Component by name ..."
-          :filter-by-query="true"
-          :min-length="0"
-          :max-suggestions="0"
-          :number="0"
+          :items="filteredParents"
+          :min-input-length="0"
+          :item-projection="item => item.name"
+          @select-item="item => selectedParent = item.name"
         />
         <small class="text-info">
           {{ results }} Related Rules {{ selectedParent ? `in ${selectedParent}` : "" }}
@@ -108,7 +378,7 @@
           <div class="input-group">
             <div class="input-group-prepend">
               <div class="input-group-text">
-                <b-icon icon="search" aria-hidden="true" />
+                <i class="bi bi-search" aria-hidden="true" />
               </div>
             </div>
             <input
@@ -118,7 +388,7 @@
               class="form-control col-9"
               placeholder="Search keyword in results"
               @keydown.enter="addKeywordSearchToList"
-            />
+            >
           </div>
           <div class="d-flex justify-content-start flex-wrap mt-2">
             <b-badge
@@ -129,16 +399,20 @@
               class="border border-1 border-primary ml-1 mb-1 font-weight-normal"
             >
               {{ keyword }}
-              <b-icon icon="x-lg" aria-hidden="true" @click="removeKeywordSearchFromList(index)" />
+              <i class="bi bi-x-lg" aria-hidden="true" @click="removeKeywordSearchFromList(index)" />
             </b-badge>
           </div>
         </div>
       </div>
       <div class="d-flex justify-content-end">
-        <b-button class="mr-3" @click="toggleAllCollapses(false)"> Collapse All </b-button>
-        <b-button class="mr-3" @click="toggleAllCollapses(true)"> Open All </b-button>
+        <b-button class="mr-3" @click="toggleAllCollapses(false)">
+          Collapse All
+        </b-button>
+        <b-button class="mr-3" @click="toggleAllCollapses(true)">
+          Open All
+        </b-button>
       </div>
-      <br />
+      <br>
 
       <!-- RELATED RULES RESULTS GROUPED BY STIG/COMPONENT NAME -->
       <div v-for="parent in Object.keys(filteredGroupedRules)" :key="parent" class="col">
@@ -163,7 +437,7 @@
               @click="relatedRule.show = !relatedRule.show"
             >
               {{ relatedRule.name }}
-              <b-icon icon="arrows-collapse" class="float-right" />
+              <i class="bi bi-arrows-collapse float-right" />
             </b-card-header>
             <b-collapse :id="relatedRule.name" v-model="relatedRule.show">
               <b-card-body>
@@ -257,272 +531,7 @@
     </b-modal>
   </div>
 </template>
-<script>
-import axios from "axios";
-import VueSimpleSuggest from "vue-simple-suggest";
-export default {
-  name: "RelatedRulesModal",
-  components: {
-    VueSimpleSuggest,
-  },
-  props: {
-    rule: {
-      type: Object,
-      required: true,
-    },
-    ruleStigId: {
-      type: String,
-      required: true,
-    },
-    readOnly: {
-      type: Boolean,
-      required: true,
-    },
-  },
-  data: function () {
-    return {
-      relatedRules: [],
-      relatedRulesParents: [],
-      filteredRules: [],
-      selectedParent: "",
-      keywordSearch: "",
-      keywordList: [],
-      results: 0,
-      stigsAndComponents: true,
-      stigResultsOnly: true,
-      componentResultsOnly: true,
-      allFieldsSelected: true,
-      indeterminate: false,
-      controlFields: ["Vulnerability Discussion", "Check", "Fix"],
-      fields: [],
-    };
-  },
-  computed: {
-    filteredGroupedRules: function () {
-      const parentsNames = this.filteredParents.map((parent) => parent.name);
-      // Filter by STIG / Component
-      let rules = this.relatedRules.filter((r) => parentsNames.includes(r.parent));
-      // Filter rules that includes the searchWord in check, fix, or discussion
-      if (this.keywordList.length > 0) {
-        rules = this.lookupSearchWordInRules(rules);
-      }
-      // Filter rules in a gven stig or component
-      if (this.selectedParent) {
-        rules = rules.filter((r) => r.parent === this.selectedParent);
-      }
-      this.updateTotalResults(rules);
-      this.updateFilteredRules(rules);
-      // Group results by stig / component name
-      return rules.reduce((grouped, rule) => {
-        let key = rule.parent;
-        if (!grouped[key]) {
-          grouped[key] = [];
-        }
-        grouped[key].push(rule);
-        return grouped;
-      }, {});
-    },
-    filteredParents: function () {
-      let parents = this.relatedRulesParents;
-      if (!this.stigsAndComponents && this.stigResultsOnly) {
-        parents = parents.filter((parent) => !!parent.stig_id);
-      } else if (!this.stigsAndComponents && this.componentResultsOnly) {
-        parents = parents.filter((parent) => !parent.stig_id);
-      }
-      return parents;
-    },
-    dynamicDisplayFieldClass: function () {
-      switch (this.fields.length) {
-        case 1:
-          return "col-xl-12";
-        case 2:
-          return "col-xl-6";
-        default:
-          return "col-xl-4";
-      }
-    },
-  },
-  watch: {
-    fields: function (newValue, oldValue) {
-      // Handle changes in individual field checkboxes
-      if (newValue.length === 0) {
-        this.indeterminate = false;
-        this.allFieldsSelected = false;
-      } else if (newValue.length === this.controlFields.length) {
-        this.indeterminate = false;
-        this.allFieldsSelected = true;
-      } else {
-        this.indeterminate = true;
-        this.allFieldsSelected = false;
-      }
-    },
-    keywordList: function () {
-      this.toggleAllCollapses(true);
-    },
-  },
-  methods: {
-    getRelatedRules: async function () {
-      this.resetModal();
-      axios.get(`/rules/${this.rule.id}/search/related_rules`).then((response) => {
-        this.fields = this.controlFields;
-        this.relatedRules = response.data.rules;
-        this.relatedRulesParents = response.data.parents;
-        this.relatedRulesParents.forEach((parent) => {
-          if (parent.stig_id) {
-            const stig_rules = this.relatedRules.filter((r) => r.stig_id == parent.id);
-            stig_rules.forEach((r) => {
-              r.parent = parent.name;
-              r.name = `${r.version}//${r.srg_id}`;
-            });
-          } else {
-            const comp_rules = this.relatedRules.filter((r) => r.component_id == parent.id);
-            parent.name = `${parent.project.name} / ${parent.name} - Ver ${parent.version}, Rel ${parent.release}`;
-            comp_rules.forEach((r) => {
-              r.parent = parent.name;
-              r.name = `${parent.prefix}-${r.rule_id}//${r.version}`;
-            });
-          }
-        });
-      });
-    },
-    resetModal: function () {
-      this.fields = [];
-      this.relatedRules = [];
-      this.relatedRulesParents = [];
-      this.filteredRules = [];
-      this.results = 0;
-      this.resetFilters();
-    },
-    resetFilters: function () {
-      this.stigsAndComponents = true;
-      this.stigResultsOnly = true;
-      this.componentResultsOnly = true;
-      this.allFieldsSelected = true;
-      this.indeterminate = false;
-      this.fields = this.controlFields;
-      this.selectedParent = "";
-      this.keywordSearch = "";
-      this.keywordList = [];
-      this.toggleAllCollapses(false);
-    },
-    updateTotalResults: function (rules) {
-      this.results = rules.length;
-    },
-    updateFilteredRules: function (rules) {
-      this.filteredRules = rules;
-    },
-    addKeywordSearchToList: function (e) {
-      e.preventDefault();
-      if (this.keywordSearch.trim()) {
-        this.keywordList.push(this.keywordSearch.trim());
-        this.keywordSearch = "";
-      }
-    },
-    removeKeywordSearchFromList: function (index) {
-      this.keywordList.splice(index, 1);
-    },
-    lookupSearchWordInRules: function (rules) {
-      const words = this.keywordList.map((w) => w.toLowerCase());
-      const checkWord = (text) => text && words.some((w) => text.includes(w));
-      const convertLower = (text) => text?.toLowerCase() ?? "";
 
-      // Precompute the inclusion flags for the fields
-      const includeCheck = this.fields.includes("Check");
-      const includeFix = this.fields.includes("Fix");
-      const includeDiscussion = this.fields.includes("Vulnerability Discussion");
-      const anyFieldIncluded = includeCheck || includeFix || includeDiscussion;
-
-      return rules.filter((r) => {
-        const title = convertLower(r.title);
-        const discussion = convertLower(r.disa_rule_descriptions_attributes[0].vuln_discussion);
-        const check = convertLower(r.checks_attributes[0].content);
-        const fix = convertLower(r.fixtext);
-
-        if (this.allFieldsSelected) {
-          return [discussion, check, fix, title].some(checkWord);
-        }
-
-        const selectedFieldsTexts = [
-          includeDiscussion ? discussion : null,
-          includeCheck ? check : null,
-          includeFix ? fix : null,
-          title,
-        ].filter(Boolean); // Remove null values
-
-        return !anyFieldIncluded ? checkWord(title) : selectedFieldsTexts.some(checkWord);
-      });
-    },
-
-    formatAndHighlightSearchWord: function (text) {
-      if (!text) return;
-      let formattedText = this.escapeHtml(text);
-      if (this.keywordList.length) {
-        const words = this.keywordList.map((w) => w.toLowerCase());
-        for (let word of words) {
-          const re = new RegExp(word, "gi");
-          formattedText = formattedText.replace(re, (match) => {
-            return `<mark class='bg-warning'>${match}</mark>`;
-          });
-        }
-      }
-      return formattedText.replace(/\n/g, "<br />");
-    },
-    escapeHtml: function (text) {
-      if (!text) return;
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    },
-    copyCheckContentToRule: function (root, checkContent) {
-      const check = this.rule.checks_attributes[0];
-      const content = `${check.content}\n\n${checkContent}`;
-      root.$emit("update:check", this.rule, { ...check, content }, 0);
-      this.$bvToast.toast(`Check successfully copied to ${this.ruleStigId}`, {
-        title: "Success",
-        variant: "success",
-        solid: true,
-      });
-    },
-    copyDiscussionToRule: function (root, vulnDiscussion) {
-      const discussion = this.rule.disa_rule_descriptions_attributes[0];
-      const vuln_discussion = `${discussion.vuln_discussion}\n\n${vulnDiscussion}`;
-      root.$emit("update:disaDescription", this.rule, { ...discussion, vuln_discussion }, 0);
-      this.$bvToast.toast(`Discussion successfully copied to ${this.ruleStigId}`, {
-        title: "Success",
-        variant: "success",
-        solid: true,
-      });
-    },
-    copyFixTextToRule: function (root, fix) {
-      const fixtext = `${this.rule.fixtext}\n\n${fix}`;
-      root.$emit("update:rule", { ...this.rule, fixtext });
-      this.$bvToast.toast(`Fix successfully copied to ${this.ruleStigId}`, {
-        title: "Success",
-        variant: "success",
-        solid: true,
-      });
-    },
-    toggleAllFields: function (checked) {
-      this.fields = checked ? this.controlFields.slice() : [];
-    },
-    toggleAllCollapses: function (toggle) {
-      this.filteredRules.forEach((rule) => {
-        rule.show = toggle;
-      });
-    },
-    setStigAndComponentFilter: function (switchText) {
-      if (switchText === "all") {
-        this.componentResultsOnly = true;
-        this.stigResultsOnly = true;
-      }
-      this.stigsAndComponents = this.componentResultsOnly && this.stigResultsOnly ? true : false;
-    },
-  },
-};
-</script>
 <style scoped>
 .keyword-bubble {
   display: inline-block;

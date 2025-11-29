@@ -1,3 +1,65 @@
+<script>
+import AdvancedRuleForm from './forms/AdvancedRuleForm.vue'
+import BasicRuleForm from './forms/BasicRuleForm.vue'
+import InspecControlEditor from './InspecControlEditor.vue'
+
+export default {
+  name: 'RuleEditor',
+  components: { BasicRuleForm, AdvancedRuleForm, InspecControlEditor },
+  props: {
+    rule: {
+      type: Object,
+      required: true,
+    },
+    statuses: {
+      type: Array,
+      required: true,
+    },
+    severities: {
+      type: Array,
+      required: true,
+    },
+    severities_map: {
+      type: Object,
+      required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
+    advanced_fields: {
+      type: Boolean,
+      default: false,
+    },
+    additional_questions: {
+      type: Array,
+      default: () => [],
+    },
+  },
+  data() {
+    return {
+      advancedEditor: false,
+    }
+  },
+  watch: {
+    advancedEditor(_) {
+      localStorage.setItem('advancedEditor', JSON.stringify(this.advancedEditor))
+    },
+  },
+  mounted() {
+    // Persist `advancedEditor` across page loads
+    if (localStorage.getItem('advancedEditor')) {
+      try {
+        this.advancedEditor = JSON.parse(localStorage.getItem('advancedEditor'))
+      }
+      catch (e) {
+        localStorage.removeItem('advancedEditor')
+      }
+    }
+  },
+}
+</script>
+
 <template>
   <div>
     <b-tabs>
@@ -40,66 +102,5 @@
     </b-tabs>
   </div>
 </template>
-
-<script>
-import BasicRuleForm from "./forms/BasicRuleForm.vue";
-import AdvancedRuleForm from "./forms/AdvancedRuleForm.vue";
-import InspecControlEditor from "./InspecControlEditor.vue";
-
-export default {
-  name: "RuleEditor",
-  components: { BasicRuleForm, AdvancedRuleForm, InspecControlEditor },
-  props: {
-    rule: {
-      type: Object,
-      required: true,
-    },
-    statuses: {
-      type: Array,
-      required: true,
-    },
-    severities: {
-      type: Array,
-      required: true,
-    },
-    severities_map: {
-      type: Object,
-      required: true,
-    },
-    readOnly: {
-      type: Boolean,
-      default: false,
-    },
-    advanced_fields: {
-      type: Boolean,
-      default: false,
-    },
-    additional_questions: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  data: function () {
-    return {
-      advancedEditor: false,
-    };
-  },
-  watch: {
-    advancedEditor: function (_) {
-      localStorage.setItem("advancedEditor", JSON.stringify(this.advancedEditor));
-    },
-  },
-  mounted: function () {
-    // Persist `advancedEditor` across page loads
-    if (localStorage.getItem("advancedEditor")) {
-      try {
-        this.advancedEditor = JSON.parse(localStorage.getItem("advancedEditor"));
-      } catch (e) {
-        localStorage.removeItem("advancedEditor");
-      }
-    }
-  },
-};
-</script>
 
 <style scoped></style>
