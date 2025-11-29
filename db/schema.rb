@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_13_154605) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_29_005016) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "additional_answers", force: :cascade do |t|
     t.bigint "rule_id", null: false

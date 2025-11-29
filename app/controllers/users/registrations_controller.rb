@@ -5,12 +5,30 @@ module Users
   # login is disabled.
   class RegistrationsController < Devise::RegistrationsController
     before_action :configure_permitted_parameters
+    respond_to :html, :json
 
     def create
-      if Settings.local_login.enabled
-        super
-      else
-        redirect_back(fallback_location: new_user_session_path, alert: I18n.t('devise.registrations.disabled'))
+      unless Settings.local_login.enabled
+        respond_to do |format|
+          format.json { render json: { error: I18n.t('devise.registrations.disabled') }, status: :forbidden }
+          format.html { redirect_back(fallback_location: new_user_session_path, alert: I18n.t('devise.registrations.disabled')) }
+        end
+        return
+      end
+
+      # Handle JSON requests for Vue SPA
+      respond_to do |format|
+        format.json do
+          build_resource(sign_up_params)
+
+          if resource.save
+            sign_up(resource_name, resource)
+            render json: { success: true, user: resource.as_json(only: %i[id email name admin]) }, status: :created
+          else
+            render json: { success: false, errors: resource.errors.full_messages, error: resource.errors.full_messages.join(', ') }, status: :unprocessable_entity
+          end
+        end
+        format.html { super }
       end
     end
 

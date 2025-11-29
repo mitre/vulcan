@@ -7,6 +7,18 @@ require 'json'
 class SessionsController < Devise::SessionsController
   include OidcDiscoveryHelper
 
+  def create
+    # Handle JSON requests for Vue SPA
+    respond_to do |format|
+      format.json do
+        self.resource = warden.authenticate!(auth_options)
+        sign_in(resource_name, resource)
+        render json: { user: resource.as_json(only: %i[id email admin]) }, status: :ok
+      end
+      format.html { super }
+    end
+  end
+
   def destroy
     id_token = session[:id_token]
 

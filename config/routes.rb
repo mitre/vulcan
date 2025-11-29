@@ -11,6 +11,11 @@ Rails.application.routes.draw do
   # Application status endpoint
   get '/status' => 'status#show'
 
+  # API namespace for SPA
+  namespace :api do
+    get 'navigation', to: 'navigation#show'
+  end
+
   # Prometheus metrics are served on port 9394 by prometheus_exporter
   # Access at: http://localhost:9394/metrics (in development)
   # In Kubernetes: prometheus_exporter runs in same container, port 9394
@@ -21,7 +26,7 @@ Rails.application.routes.draw do
   }
 
   resources :users, only: %i[index create update destroy]
-  resources :srgs, only: %i[index create destroy], controller: 'security_requirements_guides'
+  resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
   resources :stigs, only: %i[index show create destroy]
 
   resources :memberships, only: %i[create update destroy]

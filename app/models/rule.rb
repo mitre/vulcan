@@ -5,7 +5,34 @@ require 'inspec/objects'
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < BaseRule
+  include PgSearch::Model
+
   attr_accessor :skip_update_inspec_code
+
+  # Full-text search scope with partial word matching and fuzzy search
+  pg_search_scope :search_content,
+                  against: {
+                    title: 'A',                    # Highest weight
+                    fixtext: 'B',                  # High weight
+                    vendor_comments: 'C',          # Medium weight
+                    status_justification: 'C',
+                    artifact_description: 'D'      # Lower weight
+                  },
+                  associated_against: {
+                    checks: :content,
+                    disa_rule_descriptions: [:vuln_discussion, :mitigations]
+                  },
+                  using: {
+                    tsearch: {
+                      prefix: true,           # Enable partial word matching
+                      dictionary: 'english',  # Stemming (finds "systems" when searching "system")
+                      any_word: true          # Match any word in multi-word queries
+                    },
+                    trigram: {
+                      threshold: 0.2          # Fuzzy matching (typo tolerance)
+                    }
+                  },
+                  ranked_by: ':tsearch + (0.5 * :trigram)'  # Prioritize exact matches, but allow fuzzy
 
   amoeba do
     # Using set review_requestor_id: nil does not work as expected, must use nullify
@@ -99,7 +126,10 @@ class Rule < BaseRule
           additional_answers_attributes: additional_answers.as_json.map do |c|
             c.except('rule_id', 'created_at', 'updated_at')
           end,
-          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule.security_requirements_guide_id).version }
+          srg_info: { version: srg_rule.security_requirements_guide&.version },
+          # Include non-_attributes versions for frontend compatibility
+          disa_rule_descriptions: disa_rule_descriptions.as_json,
+          checks: checks.as_json
         }
       )
     end

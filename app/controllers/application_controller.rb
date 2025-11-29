@@ -3,6 +3,8 @@
 # This is the base controller for the application. Things should only be
 # placed here if they are shared between multiple controllers
 class ApplicationController < ActionController::Base
+  include Pagy::Backend
+
   helper :all
   include SlackNotificationsHelper
 

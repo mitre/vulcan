@@ -18,6 +18,10 @@ gem 'propshaft'
 gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 2.7'
+# Fast, declarative JSON serializers for Ruby
+gem 'blueprinter'
+# Fast, efficient pagination
+gem 'pagy', '~> 9.0'
 # Use HAML instead of ERB
 gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
@@ -64,6 +68,9 @@ gem 'nkf'
 gem 'audited', '~> 5.8.0'
 
 gem 'activerecord-import'
+
+# PostgreSQL full-text search with trigrams, fuzzy matching, and ranking
+gem 'pg_search'
 
 gem 'ffaker', '~> 2.10'
 

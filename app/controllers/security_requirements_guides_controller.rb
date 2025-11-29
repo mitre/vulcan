@@ -2,14 +2,22 @@
 
 # Controller for SecurityRequirementsGuides
 class SecurityRequirementsGuidesController < ApplicationController
-  before_action :authorize_admin, except: %i[index]
-  before_action :security_requirements_guide, only: %i[destroy]
+  before_action :authorize_admin, except: %i[index show]
+  before_action :security_requirements_guide, only: %i[show destroy]
 
   def index
-    @srgs = SecurityRequirementsGuide.order(:srg_id, :version).select(:id, :srg_id, :title, :version, :release_date)
+    @srgs = SecurityRequirementsGuide.order(:srg_id, :version).select(:id, :srg_id, :title, :name, :version, :release_date)
     respond_to do |format|
       format.html
       format.json { render json: @srgs }
+    end
+  end
+
+  def show
+    @srg_json = @srg.to_json(methods: %i[srg_rules])
+    respond_to do |format|
+      format.html
+      format.json { render json: @srg_json }
     end
   end
 
@@ -68,6 +76,7 @@ class SecurityRequirementsGuidesController < ApplicationController
   private
 
   def security_requirements_guide
-    @srg = SecurityRequirementsGuide.find(params[:id])
+    @srg = SecurityRequirementsGuide.includes(srg_rules: %i[rule_descriptions disa_rule_descriptions checks])
+                                    .find(params[:id])
   end
 end

@@ -164,7 +164,10 @@ class ComponentsController < ApplicationController
   end
 
   def based_on_same_srg
-    srg_title = Component.find(params[:id]).based_on.title
+    component = Component.find(params[:id])
+    srg_title = component.based_on&.title
+    return render json: [] if srg_title.nil?
+
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
                           .order(:project_id)
@@ -227,26 +230,20 @@ class ComponentsController < ApplicationController
   end
 
   def find
-    find_param = params.require(:find).downcase
-    component_id = params.require(:id)
+    find_param = params.require(:find)
+    component = Component.find(params.require(:id))
 
-    rules = Component.find_by(id: component_id).rules
-    checks = Check.where(base_rule: rules).where('LOWER(content) LIKE ?', "%#{find_param}%")
-    descriptions = DisaRuleDescription.where(base_rule: rules).where(
-      'LOWER(vuln_discussion) LIKE ? OR LOWER(mitigations) LIKE ?', "%#{find_param}%", "%#{find_param}%"
-    )
-    rules = rules.where(
-      "LOWER(title) LIKE ? OR
-      LOWER(fixtext) LIKE ? OR
-      LOWER(vendor_comments) LIKE ? OR
-      LOWER(status_justification) LIKE ? OR
-      LOWER(artifact_description) LIKE ? OR
-      id IN (?) ", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
-      "%#{find_param}%", checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id)
-    )
-                 .order(:rule_id)
+    # Use pg_search gem for advanced full-text search
+    # Features: partial word matching, fuzzy/typo tolerance, relevance ranking
+    # Searches across: title, fixtext, vendor_comments, status_justification, artifact_description,
+    #                  checks.content, disa_rule_descriptions (vuln_discussion, mitigations)
+    rules = Rule.where(component_id: component.id)
+                .search_content(find_param)
+                .with_pg_search_rank
+                .limit(200)
 
-    render json: rules
+    # Use Blueprinter for efficient JSON serialization
+    render json: RuleBlueprint.render(rules)
   end
 
   private
@@ -272,7 +269,7 @@ class ComponentsController < ApplicationController
       # Detect file type and route to appropriate import method
       Rails.logger.info "File type: #{file.content_type}, filename: #{file.original_filename}"
       if file.content_type.in?(['application/xml', 'text/xml']) || file.original_filename.end_with?('.xml')
-        Rails.logger.info "Routing to from_xccdf"
+        Rails.logger.info 'Routing to from_xccdf'
         # XCCDF import requires component to be saved first (needs ID for from_mapping)
         # But we need to extract prefix first before validation
         parsed_benchmark = Xccdf::Benchmark.parse(file.read)
@@ -295,7 +292,7 @@ class ComponentsController < ApplicationController
         file.rewind
         component.from_xccdf(file)
       else
-        Rails.logger.info "Routing to from_spreadsheet"
+        Rails.logger.info 'Routing to from_spreadsheet'
         component.from_spreadsheet(file)
       end
       Rails.logger.info "Component errors: #{component.errors.full_messages}"

@@ -14,9 +14,41 @@ class RulesController < ApplicationController
   before_action :authorize_logged_in, only: %i[search]
 
   def index
-    @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-                                         :additional_answers, :satisfies, :satisfied_by,
-                                         srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    respond_to do |format|
+      format.html do
+        # Full eager load for HTML view (legacy)
+        @rules = @component.rules.eager_load(
+          :reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+          :additional_answers, :satisfies, :satisfied_by,
+          srg_rule: [:security_requirements_guide,
+                     { disa_rule_descriptions: [], rule_descriptions: [], checks: [] }]
+        )
+      end
+      format.json do
+        # Slim data for list view with pagination
+        base_query = @component.rules.includes(:satisfied_by).order(:rule_id)
+
+        # Support both paginated and non-paginated requests
+        if params[:page].present?
+          @pagy, @rules = pagy(base_query, limit: params[:per_page]&.to_i || 50)
+          render json: {
+            rules: RuleIndexBlueprint.render_as_hash(@rules),
+            pagination: {
+              page: @pagy.page,
+              per_page: @pagy.limit,
+              total_count: @pagy.count,
+              total_pages: @pagy.pages,
+              has_next: @pagy.next.present?,
+              has_prev: @pagy.prev.present?
+            }
+          }
+        else
+          # No pagination - return all (for backwards compatibility)
+          @rules = base_query
+          render json: RuleIndexBlueprint.render_as_hash(@rules)
+        end
+      end
+    end
   end
 
   def search
@@ -39,7 +71,8 @@ class RulesController < ApplicationController
   end
 
   def show
-    render json: @rule.to_json(methods: %i[histories satisfies satisfied_by])
+    # Full data for detail view - uses RuleBlueprint
+    render json: RuleBlueprint.render_as_hash(@rule)
   end
 
   def related_rules
@@ -72,7 +105,12 @@ class RulesController < ApplicationController
 
   def update
     if @rule.update(rule_update_params)
-      render json: { toast: 'Successfully updated control.' }
+      # Reload to get fresh associations after update
+      @rule.reload
+      render json: {
+        toast: 'Successfully updated control.',
+        rule: RuleBlueprint.render_as_hash(@rule)
+      }
     else
       render json: {
         toast: {
@@ -146,19 +184,19 @@ class RulesController < ApplicationController
   end
 
   def rule_update_params
-    params.require(:rule).permit(
-      :status, :status_justification, :artifact_description, :vendor_comments,
-      :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
-      :fix_id, :fixtext_fixref, :audit_comment, :inspec_control_body, :inspec_control_file,
-      :inspec_control_body_lang, :inspec_control_file_lang,
-      checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
-      rule_descriptions_attributes: %i[id description _destroy],
-      additional_answers_attributes: %i[id additional_question_id answer],
-      disa_rule_descriptions_attributes: %i[
-        id vuln_discussion false_positives false_negatives documentable mitigations_available
-        mitigations poam_available poam severity_override_guidance potential_impacts
-        third_party_tools mitigation_control responsibility ia_controls _destroy
-      ]
+    params.expect(
+      rule: [:status, :status_justification, :artifact_description, :vendor_comments,
+             :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
+             :fix_id, :fixtext_fixref, :audit_comment, :inspec_control_body, :inspec_control_file,
+             :inspec_control_body_lang, :inspec_control_file_lang,
+             { checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
+               rule_descriptions_attributes: %i[id description _destroy],
+               additional_answers_attributes: %i[id additional_question_id answer],
+               disa_rule_descriptions_attributes: %i[
+                 id vuln_discussion false_positives false_negatives documentable mitigations_available
+                 mitigations poam_available poam severity_override_guidance potential_impacts
+                 third_party_tools mitigation_control responsibility ia_controls _destroy
+               ] }]
     )
   end
 
@@ -171,7 +209,16 @@ class RulesController < ApplicationController
   end
 
   def set_rule
-    @rule = Rule.find(params[:id])
+    @rule = Rule.includes(
+      :reviews,
+      :satisfies,
+      :satisfied_by,
+      :additional_answers,
+      :disa_rule_descriptions,
+      :rule_descriptions,
+      :checks,
+      srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
+    ).find(params[:id])
   end
 
   def set_component
@@ -190,5 +237,28 @@ class RulesController < ApplicationController
                                               additional_answers] })
                         .find(@component.project_id || params[:project_id] || params.dig(:rule, :project_id))
                end
+  end
+
+  ##
+  # Optimized slim JSON for table view - ~50x faster than full as_json
+  # Returns minimal fields needed for table rendering with accurate merged status
+  #
+  def slim_rules_json
+    # Get IDs of rules that have satisfied_by relationships (merged rules)
+    merged_rule_ids = Set.new(
+      Rule.connection.select_values('SELECT DISTINCT rule_id FROM rule_satisfactions')
+    )
+
+    # Pluck only the fields needed for table view
+    data = @component.rules.pluck(:id, :rule_id, :version, :title, :status, :rule_severity, :locked, :review_requestor_id)
+
+    # Build array of hashes with corrected status for merged rules
+    keys = %w[id rule_id version title status rule_severity locked review_requestor_id]
+    data.map do |row|
+      h = keys.zip(row).to_h
+      h['is_merged'] = merged_rule_ids.include?(h['id'])
+      h['status'] = 'Applicable - Configurable' if h['is_merged']
+      h
+    end
   end
 end

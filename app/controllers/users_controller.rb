@@ -13,6 +13,11 @@ class UsersController < ApplicationController
                         .where(auditable_type: 'User')
                         .order(created_at: :desc)
                         .map(&:format)
+
+    respond_to do |format|
+      format.html # renders SPA layout
+      format.json { render json: { users: @users, histories: @histories } }
+    end
   end
 
   def update
