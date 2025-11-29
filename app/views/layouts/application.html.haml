@@ -11,6 +11,16 @@
     = javascript_include_tag 'application', defer: true
 
     :javascript
+      // Color mode initialization - runs before Vue to prevent flash
+      (function() {
+        var stored = localStorage.getItem('vulcan-color-mode');
+        var mode = stored || 'light';
+        if (mode === 'auto') {
+          mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-bs-theme', mode);
+      })();
+
       // Minimal bootstrap data for SPA - auth state only
       window.vueAppData = {
         signedIn: #{user_signed_in?.to_json},

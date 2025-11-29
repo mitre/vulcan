@@ -109,7 +109,7 @@ function handleCustomReplace() {
 <style scoped>
 .find-replace-result {
   padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--bs-border-color);
   transition: background-color 0.2s ease, border-left 0.2s ease;
 }
 
@@ -118,14 +118,14 @@ function handleCustomReplace() {
 }
 
 .current-result {
-  background-color: #fff3cd;
-  border-left: 3px solid #ffc107;
+  background-color: var(--bs-warning-bg-subtle);
+  border-left: 3px solid var(--bs-warning);
   padding-left: 0.5rem;
   margin-left: -0.5rem;
 }
 
 .field-name {
-  color: #495057;
+  color: var(--bs-secondary-color);
   font-weight: 600;
 }
 
@@ -138,15 +138,15 @@ function handleCustomReplace() {
 }
 
 .match-highlight-old {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: var(--bs-danger-bg-subtle);
+  color: var(--bs-danger-text-emphasis);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
 }
 
 .match-highlight-new {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: var(--bs-success-bg-subtle);
+  color: var(--bs-success-text-emphasis);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-weight: 600;

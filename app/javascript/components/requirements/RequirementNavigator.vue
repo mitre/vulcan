@@ -7,16 +7,29 @@
  * - Status indicators
  * - Click to select
  * - Keyboard navigation (j/k)
+ * - Find & Replace modal
  */
 
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { ISlimRule } from '@/types'
 import { useRules } from '@/composables'
-import StatusBadge from './StatusBadge.vue'
+import FindReplaceModal from './FindReplaceModal.vue'
+
+// Props
+interface Props {
+  componentId: number
+  projectPrefix: string
+  readOnly?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  readOnly: false,
+})
 
 // Emits - slim rule for list operations
 const emit = defineEmits<{
   (e: 'select', rule: ISlimRule): void
+  (e: 'replaced'): void
 }>()
 
 // Store
@@ -26,6 +39,7 @@ const {
   showNestedRules,
   toggleNestedRules,
   selectRule,
+  refreshRule,
 } = useRules()
 
 // Local state
@@ -83,6 +97,14 @@ function statusDot(rule: ISlimRule): string {
     'Not Applicable': 'dark',
   }
   return colors[rule.status] || 'secondary'
+}
+
+// Handle replacement - refresh current rule if it was affected
+async function handleReplaced() {
+  if (currentRule.value) {
+    await refreshRule(currentRule.value.id)
+  }
+  emit('replaced')
 }
 </script>
 
@@ -175,6 +197,15 @@ function statusDot(rule: ISlimRule): string {
         No matches
       </div>
     </div>
+
+    <!-- Find & Replace Modal -->
+    <FindReplaceModal
+      v-model="showFindModal"
+      :component-id="componentId"
+      :project-prefix="projectPrefix"
+      :read-only="readOnly"
+      @replaced="handleReplaced"
+    />
   </div>
 </template>
 
@@ -182,6 +213,7 @@ function statusDot(rule: ISlimRule): string {
 .requirement-navigator {
   width: 280px;
   transition: width 0.2s ease;
+  background-color: var(--bs-body-bg);
 }
 .requirement-navigator.collapsed {
   width: 80px;
@@ -189,10 +221,13 @@ function statusDot(rule: ISlimRule): string {
 .requirement-navigator:focus {
   outline: none;
 }
+.nav-header {
+  background-color: var(--bs-tertiary-bg);
+}
 .nav-item {
   cursor: pointer;
 }
 .nav-item:hover:not(.bg-primary) {
-  background-color: #f8f9fa;
+  background-color: var(--bs-secondary-bg);
 }
 </style>

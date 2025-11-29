@@ -12,7 +12,7 @@ const currentYear = new Date().getFullYear()
 
 <template>
   <footer class="footer fixed-bottom py-2 bg-body-tertiary border-top">
-    <div class="container-fluid">
+    <div class="footer-container px-3 px-sm-4 px-lg-5 mx-auto">
       <div class="d-flex justify-content-between align-items-center text-body-secondary small">
         <span>
           <a
@@ -40,3 +40,10 @@ const currentYear = new Date().getFullYear()
     </div>
   </footer>
 </template>
+
+<style scoped>
+.footer-container {
+  width: 100%;
+  max-width: 1600px;
+}
+</style>

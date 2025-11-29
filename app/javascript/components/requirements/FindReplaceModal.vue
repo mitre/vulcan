@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import type { IRule } from '@/types'
+// No need to import IRule - executeFind fetches full rules from API
 import { BButton, BCard, BFormCheckbox, BFormGroup, BFormInput, BModal } from 'bootstrap-vue-next'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import ActionCommentModal from '@/components/shared/ActionCommentModal.vue'
-import { FIND_REPLACE_FIELDS, useFindReplace } from '@/composables/useFindReplace'
+import { FIND_REPLACE_FIELDS, useFindReplace, type IFieldMatch } from '@/composables/useFindReplace'
 import FindReplaceResultCard from './FindReplaceResultCard.vue'
 
 interface Props {
   modelValue: boolean
   componentId: number
-  rules: IRule[]
   projectPrefix: string
   readOnly?: boolean
 }
@@ -92,9 +91,9 @@ function toggleAllFields(checked: boolean) {
   selectedFields.value = checked ? [...FIND_REPLACE_FIELDS] : []
 }
 
-// Execute find
+// Execute find - API fetches full rules matching the search
 async function handleFind() {
-  await executeFind(props.componentId, props.rules)
+  await executeFind(props.componentId)
 }
 
 // Replace single field in a rule - NO MODAL, just do it
@@ -476,9 +475,9 @@ kbd {
   font-size: 0.75rem;
   font-family: monospace;
   line-height: 1;
-  color: #212529;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  color: var(--bs-body-color);
+  background-color: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
   border-radius: 0.25rem;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
 }

@@ -290,7 +290,7 @@ watch(
     <!-- Editor -->
     <template v-else>
       <!-- Header -->
-      <div class="editor-header p-3 border-bottom bg-light">
+      <div class="editor-header p-3 border-bottom">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <h5 class="mb-1">
@@ -325,7 +325,7 @@ watch(
         <!-- Status & Core Fields Section -->
         <div class="accordion-section border-bottom">
           <div
-            class="section-header d-flex align-items-center justify-content-between p-3 bg-light cursor-pointer"
+            class="section-header d-flex align-items-center justify-content-between p-3 cursor-pointer"
             @click="toggleSection('status')"
           >
             <strong>
@@ -458,7 +458,7 @@ watch(
         <!-- Vulnerability Discussion -->
         <div v-if="showField('vuln_discussion', 'disa')" class="accordion-section border-bottom">
           <div
-            class="section-header d-flex align-items-center justify-content-between p-3 bg-light cursor-pointer"
+            class="section-header d-flex align-items-center justify-content-between p-3 cursor-pointer"
             @click="toggleSection('vuln')"
           >
             <strong>
@@ -495,7 +495,7 @@ watch(
         <!-- Check Text -->
         <div v-if="showField('content', 'check')" class="accordion-section border-bottom">
           <div
-            class="section-header d-flex align-items-center justify-content-between p-3 bg-light cursor-pointer"
+            class="section-header d-flex align-items-center justify-content-between p-3 cursor-pointer"
             @click="toggleSection('check')"
           >
             <strong>
@@ -545,7 +545,7 @@ watch(
         <!-- Fix Text -->
         <div v-if="showField('fixtext')" class="accordion-section border-bottom">
           <div
-            class="section-header d-flex align-items-center justify-content-between p-3 bg-light cursor-pointer"
+            class="section-header d-flex align-items-center justify-content-between p-3 cursor-pointer"
             @click="toggleSection('fix')"
           >
             <strong>
@@ -582,7 +582,7 @@ watch(
         <!-- Mitigations / POA&M -->
         <div v-if="showField('mitigations_available', 'disa')" class="accordion-section border-bottom">
           <div
-            class="section-header d-flex align-items-center justify-content-between p-3 bg-light cursor-pointer"
+            class="section-header d-flex align-items-center justify-content-between p-3 cursor-pointer"
             @click="toggleSection('mitigation')"
           >
             <strong>
@@ -678,7 +678,7 @@ watch(
         <!-- Vendor Comments -->
         <div v-if="showField('vendor_comments')" class="accordion-section border-bottom">
           <div
-            class="section-header d-flex align-items-center justify-content-between p-3 bg-light cursor-pointer"
+            class="section-header d-flex align-items-center justify-content-between p-3 cursor-pointer"
             @click="toggleSection('vendor')"
           >
             <strong>
@@ -793,15 +793,27 @@ watch(
 .cursor-pointer {
   cursor: pointer;
 }
-.section-header:hover {
-  background-color: #e9ecef !important;
+
+/* Use CSS variables for dark mode compatibility */
+.editor-header {
+  background-color: var(--bs-tertiary-bg);
 }
+
+.section-header {
+  background-color: var(--bs-secondary-bg);
+}
+
+.section-header:hover {
+  background-color: var(--bs-tertiary-bg);
+}
+
 pre {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+
 .form-check-input:checked {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
 }
 </style>

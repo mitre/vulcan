@@ -4,9 +4,13 @@ import Navbar from '@/components/navbar/App.vue'
 import Toaster from '@/components/toaster/Toaster.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
 import { useAuthStore, useNavigationStore } from '@/stores'
+import { useColorMode } from '@/composables'
 
 const authStore = useAuthStore()
 const navigationStore = useNavigationStore()
+
+// Initialize color mode early to prevent flash
+useColorMode()
 
 // Fetch navigation when auth state changes
 watch(
@@ -50,7 +54,7 @@ onMounted(() => {
 
     <!-- Main content area - scrollable, pb-5 accounts for fixed footer -->
     <main class="flex-grow-1 overflow-auto pb-5">
-      <div class="container-fluid py-3">
+      <div class="app-container py-3 py-lg-4 px-3 px-sm-4 px-lg-5 mx-auto">
         <router-view />
       </div>
     </main>
@@ -59,3 +63,18 @@ onMounted(() => {
     <AppFooter />
   </BApp>
 </template>
+
+<style>
+/* App container - centered with max-width for modern feel */
+.app-container {
+  width: 100%;
+  max-width: 1600px; /* Wider - 50% less centered than 1400px */
+}
+
+/* Full-width override for pages that need edge-to-edge (like editors) */
+.app-container:has(.full-width-page) {
+  max-width: 100%;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+</style>

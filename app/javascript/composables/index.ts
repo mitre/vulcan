@@ -27,6 +27,10 @@ export { useSrgs } from './useSrgs'
 export { useStigs } from './useStigs'
 // Toast composable
 export { useAppToast } from './useToast'
-
 export type { ToastOptions } from './useToast'
+
+// UI composables
+export { useColorMode } from './useColorMode'
+export type { ColorMode } from './useColorMode'
+
 export { useUsers } from './useUsers'

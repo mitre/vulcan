@@ -3,6 +3,7 @@ import semver from 'semver'
 import { version } from '../../../../package.json'
 import NavbarItem from './NavbarItem.vue'
 import SrgIdSearch from './SrgIdSearch.vue'
+import { useColorMode } from '@/composables'
 
 export default {
   name: 'Navbar',
@@ -34,12 +35,26 @@ export default {
       default: () => [],
     },
   },
+  setup() {
+    const { colorMode, resolvedMode, toggleColorMode, cycleColorMode } = useColorMode()
+    return { colorMode, resolvedMode, toggleColorMode, cycleColorMode }
+  },
   data() {
     return {
       latestRelease: '',
       currentVersion: version,
       updateAvailable: false,
     }
+  },
+  computed: {
+    colorModeIcon() {
+      if (this.colorMode === 'auto') return 'bi-circle-half'
+      return this.resolvedMode === 'dark' ? 'bi-moon-fill' : 'bi-sun-fill'
+    },
+    colorModeTitle() {
+      const modes = { light: 'Light mode', dark: 'Dark mode', auto: 'System preference' }
+      return modes[this.colorMode]
+    },
   },
   mounted() {
     this.fetchLatestRelease()
@@ -82,30 +97,39 @@ export default {
 
 <template>
   <div>
-    <b-navbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark">
-      <b-navbar-brand id="heading" href="/">
-        <i class="bi bi-broadcast" aria-hidden="true" />
-        VULCAN
-        <b-link href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
-          <span class="latest-release">{{ currentVersion }}</span>
-        </b-link>
-      </b-navbar-brand>
-      <b-navbar-toggle target="nav-collapse" />
+    <b-navbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark px-3 px-sm-4 px-lg-5">
+      <div class="navbar-container d-flex w-100 align-items-center mx-auto">
+        <b-navbar-brand id="heading" href="/">
+          <i class="bi bi-broadcast" aria-hidden="true" />
+          VULCAN
+          <b-link href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
+            <span class="latest-release">{{ currentVersion }}</span>
+          </b-link>
+        </b-navbar-brand>
+        <b-navbar-toggle target="nav-collapse" />
 
-      <b-collapse id="nav-collapse" is-nav>
-        <div class="d-flex w-100 justify-content-lg-center text-lg-center">
-          <b-navbar-nav>
-            <div v-for="item in navigation" :key="item.name">
-              <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
-            </div>
-          </b-navbar-nav>
-        </div>
+        <b-collapse id="nav-collapse" is-nav>
+          <div class="d-flex w-100 justify-content-lg-center text-lg-center">
+            <b-navbar-nav>
+              <div v-for="item in navigation" :key="item.name">
+                <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
+              </div>
+            </b-navbar-nav>
+          </div>
 
-        <div v-if="signed_in" class="d-flex justify-content-between right-container">
-          <SrgIdSearch />
-          <!-- Notification Dropdown -->
+          <div v-if="signed_in" class="d-flex justify-content-between right-container">
+            <SrgIdSearch />
           <!-- Right aligned nav items -->
           <b-navbar-nav class="ml-auto">
+            <!-- Color Mode Toggle -->
+            <b-nav-item
+              class="color-mode-toggle"
+              :title="colorModeTitle"
+              @click="cycleColorMode"
+            >
+              <i :class="['bi', colorModeIcon]" aria-hidden="true" />
+            </b-nav-item>
+            <!-- Notification Dropdown -->
             <b-nav-item-dropdown right no-caret class="position-relative ml-3">
               <template #button-content>
                 <i class="bi bi-bell" aria-hidden="true" />
@@ -145,6 +169,7 @@ export default {
           </b-navbar-nav>
         </div>
       </b-collapse>
+      </div>
     </b-navbar>
     <b-alert
       dismissible
@@ -159,6 +184,11 @@ export default {
 </template>
 
 <style scoped>
+/* Navbar content container - matches main content width */
+.navbar-container {
+  max-width: 1600px;
+}
+
 #heading {
   font-family: verdana, arial, helvetica, sans-serif;
   font-weight: 700;
@@ -170,5 +200,18 @@ export default {
 }
 .right-container {
   gap: 32px;
+}
+.color-mode-toggle {
+  cursor: pointer;
+}
+.color-mode-toggle :deep(.nav-link) {
+  padding: 0.5rem 0.75rem;
+}
+.color-mode-toggle i {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+.color-mode-toggle:hover i {
+  transform: rotate(15deg);
 }
 </style>
