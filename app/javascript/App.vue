@@ -1,64 +1,61 @@
-<template>
-  <BApp>
-    <!-- Navbar - always visible -->
-    <div id="navbar">
-      <Navbar
-        :navigation="navigation"
-        :signed_in="signedIn"
-        :users_path="usersPath"
-        :profile_path="profilePath"
-        :sign_out_path="signOutPath"
-        :access_requests="accessRequests"
-      />
-    </div>
-
-    <!-- Toast notifications - global -->
-    <div id="toaster">
-      <Toaster :notice="notice" :alert="alert" />
-    </div>
-
-    <!-- Main content area - routed pages -->
-    <div class="pt-3 container-fluid">
-      <router-view />
-    </div>
-  </BApp>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { onMounted, watch } from 'vue'
 import Navbar from '@/components/navbar/App.vue'
 import Toaster from '@/components/toaster/Toaster.vue'
-
-// Props passed from Rails
-const props = defineProps<{
-  navigation?: Array<any>
-  signedIn?: boolean
-  usersPath?: string
-  profilePath?: string
-  signOutPath?: string
-  accessRequests?: Array<any>
-  notice?: string
-  alert?: string
-  currentUser?: any
-}>()
+import AppFooter from '@/components/shared/AppFooter.vue'
+import { useAuthStore, useNavigationStore } from '@/stores'
 
 const authStore = useAuthStore()
+const navigationStore = useNavigationStore()
 
-// Set navigation defaults
-const navigation = ref(props.navigation || [])
-const signedIn = ref(props.signedIn || false)
-const usersPath = ref(props.usersPath || '')
-const profilePath = ref(props.profilePath || '/users/edit')
-const signOutPath = ref(props.signOutPath || '/users/sign_out')
-const accessRequests = ref(props.accessRequests || [])
-const notice = ref(props.notice || null)
-const alert = ref(props.alert || null)
+// Fetch navigation when auth state changes
+watch(
+  () => authStore.signedIn,
+  (signedIn) => {
+    if (signedIn) {
+      navigationStore.fetchNavigation()
+    }
+    else {
+      navigationStore.reset()
+    }
+  },
+)
 
 onMounted(() => {
-  // Initialize auth store with current user if provided
-  if (props.currentUser) {
-    authStore.setUser(props.currentUser)
+  // Fetch navigation if user is already signed in
+  if (authStore.signedIn) {
+    navigationStore.fetchNavigation()
   }
 })
 </script>
+
+<template>
+  <BApp class="d-flex flex-column vh-100">
+    <!-- Navbar - fixed at top -->
+    <header id="navbar" class="flex-shrink-0">
+      <Navbar
+        :navigation="navigationStore.links"
+        :signed_in="authStore.signedIn"
+        :users_path="authStore.isAdmin ? '/users' : ''"
+        profile_path="/users/edit"
+        sign_out_path="/users/sign_out"
+        :access_requests="navigationStore.accessRequests"
+      />
+    </header>
+
+    <!-- Toast container for notifications -->
+    <div id="toaster">
+      <Toaster />
+    </div>
+
+    <!-- Main content area - scrollable, pb-5 accounts for fixed footer -->
+    <main class="flex-grow-1 overflow-auto pb-5">
+      <div class="container-fluid py-3">
+        <router-view />
+      </div>
+    </main>
+
+    <!-- Footer - fixed at bottom of viewport -->
+    <AppFooter />
+  </BApp>
+</template>
