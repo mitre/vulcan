@@ -49,12 +49,11 @@ RSpec.describe 'Stigs', type: :request do
       sign_in user
 
       expect do
-        delete "/stigs/#{stig2.id}"
+        delete "/stigs/#{stig2.id}", as: :json
       end.to change(Stig, :count).by(-1)
 
-      expect(response).to redirect_to(stigs_path)
-      follow_redirect!
-      expect(response.body).to include('Successfully removed')
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['toast']).to include('Successfully removed')
     end
 
     it 'does not allow non admin to destroy the stig' do

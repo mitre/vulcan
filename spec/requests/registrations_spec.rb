@@ -33,9 +33,9 @@ RSpec.describe 'User Registrations', type: :request do
         }
       end.not_to change(User, :count)
 
+      # Registration disabled should redirect with flash alert
       expect(response).to have_http_status(:redirect)
-      follow_redirect!
-      expect(response.body).to include('registration is not currently enabled')
+      expect(flash[:alert]).to include('registration is not currently enabled')
     end
   end
 
@@ -56,9 +56,9 @@ RSpec.describe 'User Registrations', type: :request do
         }
       end.to change(User, :count).by(1)
 
+      # Successful registration redirects and sets flash notice
       expect(response).to have_http_status(:redirect)
-      follow_redirect!
-      expect(response.body).to include(I18n.t('devise.registrations.signed_up'))
+      expect(flash[:notice]).to eq(I18n.t('devise.registrations.signed_up'))
     end
   end
 
@@ -116,9 +116,9 @@ RSpec.describe 'User Registrations', type: :request do
         }
       end.to change(User, :count).by(1)
 
+      # Successful registration redirects and sets flash notice
       expect(response).to have_http_status(:redirect)
-      follow_redirect!
-      expect(response.body).to include(I18n.t('devise.registrations.signed_up'))
+      expect(flash[:notice]).to eq(I18n.t('devise.registrations.signed_up'))
     end
   end
 
