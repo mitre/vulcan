@@ -47,9 +47,9 @@ export function useRules() {
   /**
    * Fetch all rules for a component (slim data)
    */
-  async function fetchRules(compId: number) {
+  async function fetchRules(compId: number, page?: number, perPage?: number) {
     try {
-      await store.fetchRules(compId)
+      await store.fetchRules(compId, page, perPage)
     } catch (err) {
       toast.error('Failed to load requirements')
     }

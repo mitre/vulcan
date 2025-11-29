@@ -139,7 +139,7 @@ function handleOpenFocus(rule: ISlimRule) {
 </script>
 
 <template>
-  <div class="controls-page d-flex flex-column h-100">
+  <div class="controls-page full-width-page d-flex flex-column h-100">
     <!-- Loading -->
     <div v-if="loading" class="flex-grow-1 d-flex align-items-center justify-content-center">
       <div class="text-center">
@@ -165,7 +165,7 @@ function handleOpenFocus(rule: ISlimRule) {
     <!-- Main content -->
     <template v-else-if="component && project">
       <!-- Header -->
-      <div class="page-header px-3 py-2 border-bottom bg-light">
+      <div class="page-header px-3 py-2 border-bottom bg-body-secondary">
         <div class="d-flex align-items-center justify-content-between">
           <!-- Breadcrumb + Title -->
           <div>
@@ -198,6 +198,8 @@ function handleOpenFocus(rule: ISlimRule) {
         <RequirementsTable
           v-if="layoutMode === 'table'"
           :effective-permissions="effectivePermissions"
+          :component-id="component.id"
+          :project-prefix="component.prefix"
           @select="handleSelectRule"
           @open-focus="handleOpenFocus"
         />

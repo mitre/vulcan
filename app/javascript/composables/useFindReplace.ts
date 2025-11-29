@@ -214,8 +214,9 @@ export function useFindReplace() {
 
   /**
    * Execute find operation
+   * Note: rules param removed - we fetch full rules from the API
    */
-  async function executeFind(componentId: number, rules: IRule[]): Promise<void> {
+  async function executeFind(componentId: number): Promise<void> {
     if (!findText.value.trim()) {
       toast.warning('Please enter search text')
       return

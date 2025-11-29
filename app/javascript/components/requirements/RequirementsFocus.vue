@@ -17,8 +17,8 @@ import RequirementEditor from './RequirementEditor.vue'
 // Props
 interface Props {
   effectivePermissions: string
-  componentId?: number
-  projectPrefix?: string
+  componentId: number
+  projectPrefix: string
 }
 
 const props = defineProps<Props>()
@@ -40,7 +40,12 @@ function handleSaved() {
 <template>
   <div class="requirements-focus d-flex h-100">
     <!-- Navigator -->
-    <RequirementNavigator @select="handleSelect" />
+    <RequirementNavigator
+      :component-id="componentId"
+      :project-prefix="projectPrefix"
+      :read-only="effectivePermissions === 'viewer'"
+      @select="handleSelect"
+    />
 
     <!-- Editor -->
     <div class="flex-grow-1 h-100 overflow-hidden">

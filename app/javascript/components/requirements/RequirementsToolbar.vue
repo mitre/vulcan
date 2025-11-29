@@ -13,9 +13,12 @@ interface Props {
   showNestedRules: boolean
   pagination?: IPagination | null
   loading?: boolean
+  showFindReplace?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showFindReplace: false,
+})
 
 // v-model bindings
 const searchQuery = defineModel<string>('search', { default: '' })
@@ -26,11 +29,12 @@ const groupByStatus = defineModel<boolean>('groupByStatus', { default: false })
 const emit = defineEmits<{
   (e: 'toggleNested'): void
   (e: 'pageChange', page: number): void
+  (e: 'openFindReplace'): void
 }>()
 </script>
 
 <template>
-  <div class="requirements-toolbar d-flex flex-wrap gap-2 align-items-center p-3 bg-light border-bottom">
+  <div class="requirements-toolbar d-flex flex-wrap gap-2 align-items-center p-3 bg-body-secondary border-bottom">
     <!-- Search -->
     <div class="input-group" style="max-width: 250px;">
       <span class="input-group-text">
@@ -86,6 +90,18 @@ const emit = defineEmits<{
         Merged
       </label>
     </div>
+
+    <!-- Find & Replace button -->
+    <button
+      v-if="showFindReplace"
+      type="button"
+      class="btn btn-sm btn-outline-primary"
+      title="Find & Replace"
+      @click="emit('openFindReplace')"
+    >
+      <i class="bi bi-search me-1"></i>
+      Find
+    </button>
 
     <!-- Stats & Pagination -->
     <div class="ms-auto d-flex align-items-center gap-3">

@@ -13,10 +13,13 @@ import StatusBadge from './StatusBadge.vue'
 import SeverityBadge from './SeverityBadge.vue'
 import StatusProgressBar from './StatusProgressBar.vue'
 import RequirementsToolbar from './RequirementsToolbar.vue'
+import FindReplaceModal from './FindReplaceModal.vue'
 
 // Props
 interface Props {
   effectivePermissions: string
+  componentId: number
+  projectPrefix: string
 }
 
 const props = defineProps<Props>()
@@ -25,6 +28,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'select', rule: ISlimRule): void
   (e: 'openFocus', rule: ISlimRule): void
+  (e: 'replaced'): void
 }>()
 
 // Store
@@ -43,6 +47,9 @@ const searchQuery = ref('')
 const filterStatus = ref<RuleStatus | 'all'>('all')
 const filterSeverity = ref<RuleSeverity | 'all'>('all')
 const groupByStatus = ref(false)
+
+// Find/Replace modal state
+const showFindModal = ref(false)
 
 // Sort state
 const sortField = ref<'rule_id' | 'status' | 'rule_severity' | 'title'>('rule_id')
@@ -130,8 +137,10 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
       :show-nested-rules="showNestedRules"
       :pagination="pagination"
       :loading="loading"
+      :show-find-replace="canEdit"
       @toggle-nested="toggleNestedRules()"
       @page-change="goToPage"
+      @open-find-replace="showFindModal = true"
     />
 
     <!-- Progress bar -->
@@ -205,7 +214,7 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
       <!-- Grouped -->
       <template v-else-if="groupedRules">
         <div v-for="(rules, status) in groupedRules" :key="status" class="group">
-          <div class="group-header d-flex align-items-center gap-2 p-2 bg-light border-bottom sticky-top">
+          <div class="group-header d-flex align-items-center gap-2 p-2 bg-body-secondary border-bottom sticky-top">
             <StatusBadge :status="status as RuleStatus" />
             <span class="fw-semibold">{{ rules.length }}</span>
           </div>
@@ -234,6 +243,15 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
         <span class="visually-hidden">Loading...</span>
       </div>
     </div>
+
+    <!-- Find & Replace Modal -->
+    <FindReplaceModal
+      v-model="showFindModal"
+      :component-id="componentId"
+      :project-prefix="projectPrefix"
+      :read-only="!canEdit"
+      @replaced="emit('replaced')"
+    />
   </div>
 </template>
 
@@ -243,7 +261,7 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
   user-select: none;
 }
 .sortable:hover {
-  background-color: #e9ecef;
+  background-color: var(--bs-tertiary-bg);
 }
 .clickable {
   cursor: pointer;
