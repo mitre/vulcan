@@ -55,18 +55,21 @@ if (!project) {
   throw new Error('Project not found')
 }
 
-// Fetch rules with pagination (50 per page) for better performance
-await fetchRules(componentId, 1, 50)
+// Fetch all rules (slim data is lightweight enough for full list)
+// This enables proper navigation sidebar and deep-linking
+await fetchRules(componentId)
 initSelection(componentId)
 
 // Handle deep-link from search: ?rule=123
 // Select the rule after rules are loaded
-onMounted(() => {
+onMounted(async () => {
   const ruleIdParam = route.query.rule
   if (ruleIdParam) {
     const ruleId = Number(ruleIdParam)
-    if (ruleId && rules.value.some(r => r.id === ruleId)) {
-      selectRule(ruleId)
+    if (ruleId) {
+      // selectRule will fetch the full rule data if not in cache
+      // No need to check if it's in current page - the store handles it
+      await selectRule(ruleId)
       // Switch to focus mode for deep-linked rules
       layoutMode.value = 'focus'
     }

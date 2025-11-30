@@ -64,9 +64,9 @@ onMounted(() => {
       <Toaster />
     </div>
 
-    <!-- Main content area - scrollable, pb-5 accounts for fixed footer -->
-    <!-- Suspense handles async page loading, ErrorBoundary catches errors -->
-    <main class="flex-grow-1 overflow-auto pb-5">
+    <!-- Main content area - overflow-hidden so pages control their own scrolling -->
+    <!-- pb-5 accounts for fixed footer, Suspense handles async loading -->
+    <main class="flex-grow-1 overflow-hidden pb-5">
       <RouterView v-slot="{ Component }">
         <template v-if="Component">
           <ErrorBoundary>

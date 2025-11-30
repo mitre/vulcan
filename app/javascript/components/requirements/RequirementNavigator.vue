@@ -11,7 +11,7 @@
  */
 
 import type { ISlimRule } from '@/types'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRules } from '@/composables'
 import FindReplaceModal from './FindReplaceModal.vue'
 
@@ -36,6 +36,7 @@ const emit = defineEmits<{
 const {
   visibleRules,
   currentRule,
+  currentRuleId,
   showNestedRules,
   toggleNestedRules,
   selectRule,
@@ -46,6 +47,16 @@ const {
 const searchQuery = ref('')
 const collapsed = ref(false)
 const showFindModal = ref(false)
+const navListRef = ref<HTMLElement | null>(null)
+
+// Scroll selected item into view when currentRuleId changes
+watch(currentRuleId, async (newId) => {
+  if (newId) {
+    await nextTick()
+    const selectedEl = navListRef.value?.querySelector('.bg-primary')
+    selectedEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }
+})
 
 // Filtered list
 const filteredRules = computed(() => {
@@ -85,7 +96,7 @@ function handleKeydown(e: KeyboardEvent) {
 
 // Is this rule selected?
 function isSelected(rule: ISlimRule): boolean {
-  return currentRule.value?.id === rule.id
+  return currentRuleId.value === rule.id
 }
 
 // Status dot color
@@ -157,8 +168,8 @@ async function handleReplaced() {
       <span class="text-muted ms-2">{{ filteredRules.length }}</span>
     </div>
 
-    <!-- List -->
-    <div class="nav-list flex-grow-1 overflow-auto">
+    <!-- List - Bootstrap overflow-auto handles scrolling -->
+    <div ref="navListRef" class="nav-list flex-grow-1 overflow-auto">
       <div
         v-for="rule in filteredRules"
         :key="rule.id"
@@ -213,6 +224,7 @@ async function handleReplaced() {
 <style scoped>
 .requirement-navigator {
   width: 280px;
+  min-height: 0; /* Critical for flex child to respect parent bounds */
   transition: width 0.2s ease;
   background-color: var(--bs-body-bg);
 }
@@ -224,6 +236,9 @@ async function handleReplaced() {
 }
 .nav-header {
   background-color: var(--bs-tertiary-bg);
+}
+.nav-list {
+  min-height: 0; /* Allow list to shrink and scroll */
 }
 .nav-item {
   cursor: pointer;
