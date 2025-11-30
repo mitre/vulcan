@@ -1,80 +1,23 @@
 /**
  * useGlobalSearch - Global search composable for Command Palette
  *
- * Provides fuzzy search across projects, components, and rules
- * using Fuse.js with debounced API calls.
+ * Provides search across projects, components, and rules using:
+ * - Fuse.js for quick actions (client-side filtering)
+ * - pg_search for API results (server-side filtering)
  *
- * Inspired by Nuxt UI CommandPalette patterns.
+ * Based on Nuxt UI v4 CommandPalette patterns.
  */
 
+import type { Ref } from 'vue'
+import type { CommandPaletteGroup, CommandPaletteItem } from '@/types/command-palette'
+import { useDebounceFn } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { computed, ref, watch } from 'vue'
-import { useDebounceFn } from '@vueuse/core'
+import { getQuickActions } from '@/config/command-palette.config'
+import { useAuthStore } from '@/stores'
 
-// Types for search results
-export interface ISearchItem {
-  id: number | string
-  type: 'project' | 'component' | 'rule' | 'user' | 'action'
-  label: string
-  description?: string
-  icon?: string
-  href?: string
-  meta?: Record<string, any>
-}
-
-export interface ISearchGroup {
-  id: string
-  label: string
-  icon?: string
-  items: ISearchItem[]
-}
-
-// Quick actions that don't require API calls
-const QUICK_ACTIONS: ISearchItem[] = [
-  {
-    id: 'new-project',
-    type: 'action',
-    label: 'New Project',
-    description: 'Create a new project',
-    icon: 'bi-plus-circle',
-    href: '/projects/new',
-  },
-  {
-    id: 'view-projects',
-    type: 'action',
-    label: 'View All Projects',
-    description: 'Browse all projects',
-    icon: 'bi-folder',
-    href: '/projects',
-  },
-  {
-    id: 'view-components',
-    type: 'action',
-    label: 'View All Components',
-    description: 'Browse all components',
-    icon: 'bi-box',
-    href: '/components',
-  },
-  {
-    id: 'view-stigs',
-    type: 'action',
-    label: 'Browse STIGs',
-    description: 'View published STIGs',
-    icon: 'bi-file-earmark-text',
-    href: '/stigs',
-  },
-  {
-    id: 'view-srgs',
-    type: 'action',
-    label: 'Browse SRGs',
-    description: 'View Security Requirements Guides',
-    icon: 'bi-shield-check',
-    href: '/srgs',
-  },
-]
-
-// Fuse.js options for fuzzy matching
-const FUSE_OPTIONS: Fuse.IFuseOptions<ISearchItem> = {
+// Fuse.js options for fuzzy matching quick actions
+const FUSE_OPTIONS: Fuse.IFuseOptions<CommandPaletteItem> = {
   keys: [
     { name: 'label', weight: 0.7 },
     { name: 'description', weight: 0.3 },
@@ -89,52 +32,64 @@ const FUSE_OPTIONS: Fuse.IFuseOptions<ISearchItem> = {
 const RECENT_ITEMS_KEY = 'vulcan-recent-searches'
 const MAX_RECENT_ITEMS = 5
 
-export function useGlobalSearch() {
-  const searchTerm = ref('')
+/**
+ * Global search composable for Command Palette.
+ *
+ * @param externalSearchTerm - Optional external ref for search term.
+ *   If provided, the composable watches this ref.
+ *   If not provided, creates internal searchTerm ref.
+ *
+ * @example
+ * ```typescript
+ * // With external search term (recommended for Command Palette)
+ * const searchTerm = ref('')
+ * const { groups, loading } = useGlobalSearch(searchTerm)
+ *
+ * // With internal search term
+ * const { searchTerm, groups, loading } = useGlobalSearch()
+ * ```
+ */
+export function useGlobalSearch(externalSearchTerm?: Ref<string>) {
+  // Use external or internal searchTerm
+  const internalSearchTerm = ref('')
+  const searchTerm = externalSearchTerm ?? internalSearchTerm
+
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  // Get auth store for admin status
+  const authStore = useAuthStore()
+
   // Cached data from API
-  const projects = ref<ISearchItem[]>([])
-  const components = ref<ISearchItem[]>([])
-  const rules = ref<ISearchItem[]>([])
+  // Parent objects (containers)
+  const projects = ref<CommandPaletteItem[]>([])
+  const components = ref<CommandPaletteItem[]>([])
+  const stigs = ref<CommandPaletteItem[]>([])
+  const srgs = ref<CommandPaletteItem[]>([])
+  // Child objects (content within containers)
+  const rules = ref<CommandPaletteItem[]>([])
+  const stigRules = ref<CommandPaletteItem[]>([])
+  const srgRules = ref<CommandPaletteItem[]>([])
 
   // Recent items from localStorage
-  const recentItems = ref<ISearchItem[]>(loadRecentItems())
+  const recentItems = ref<CommandPaletteItem[]>(loadRecentItems())
 
-  // Fuse instances for each category
-  const actionsFuse = new Fuse(QUICK_ACTIONS, FUSE_OPTIONS)
-  const projectsFuse = computed(() => new Fuse(projects.value, FUSE_OPTIONS))
-  const componentsFuse = computed(() => new Fuse(components.value, FUSE_OPTIONS))
-  const rulesFuse = computed(() => new Fuse(rules.value, FUSE_OPTIONS))
+  // Quick actions based on user role (includes admin actions for admins)
+  const quickActions = computed(() => getQuickActions(authStore.isAdmin))
 
-  // Filtered results based on search term
+  // Fuse instance for quick actions - recreate when actions change
+  const actionsFuse = computed(() => new Fuse(quickActions.value, FUSE_OPTIONS))
+
+  // Filtered quick actions (Fuse.js client-side)
   const filteredActions = computed(() => {
-    if (!searchTerm.value.trim()) return QUICK_ACTIONS.slice(0, 3)
-    return actionsFuse.search(searchTerm.value).map(r => r.item).slice(0, 5)
-  })
-
-  const filteredProjects = computed(() => {
-    if (!searchTerm.value.trim()) return []
-    if (!projects.value.length) return []
-    return projectsFuse.value.search(searchTerm.value).map(r => r.item).slice(0, 5)
-  })
-
-  const filteredComponents = computed(() => {
-    if (!searchTerm.value.trim()) return []
-    if (!components.value.length) return []
-    return componentsFuse.value.search(searchTerm.value).map(r => r.item).slice(0, 5)
-  })
-
-  const filteredRules = computed(() => {
-    if (!searchTerm.value.trim()) return []
-    if (!rules.value.length) return []
-    return rulesFuse.value.search(searchTerm.value).map(r => r.item).slice(0, 5)
+    if (!searchTerm.value.trim()) return quickActions.value.slice(0, 3)
+    return actionsFuse.value.search(searchTerm.value).map(r => r.item).slice(0, 5)
   })
 
   // Grouped results for display
-  const groups = computed<ISearchGroup[]>(() => {
-    const result: ISearchGroup[] = []
+  // Each group has ignoreFilter to indicate filtering behavior
+  const groups = computed<CommandPaletteGroup[]>(() => {
+    const result: CommandPaletteGroup[] = []
 
     // Show recent items when no search term
     if (!searchTerm.value.trim() && recentItems.value.length > 0) {
@@ -143,47 +98,103 @@ export function useGlobalSearch() {
         label: 'Recent',
         icon: 'bi-clock-history',
         items: recentItems.value,
+        ignoreFilter: true, // Already selected items, no filtering
       })
     }
 
-    // Quick actions
+    // Quick actions - Fuse.js filters these
     if (filteredActions.value.length > 0) {
       result.push({
         id: 'actions',
         label: 'Quick Actions',
         icon: 'bi-lightning',
         items: filteredActions.value,
+        ignoreFilter: false, // Fuse.js filters these client-side
       })
     }
 
-    // Projects
-    if (filteredProjects.value.length > 0) {
-      result.push({
-        id: 'projects',
-        label: 'Projects',
-        icon: 'bi-folder',
-        items: filteredProjects.value,
-      })
-    }
+    // API results - only show when searching (length >= 2)
+    if (searchTerm.value.trim().length >= 2) {
+      // ===== PARENT OBJECTS (containers) - show first, limit 5 =====
 
-    // Components
-    if (filteredComponents.value.length > 0) {
-      result.push({
-        id: 'components',
-        label: 'Components',
-        icon: 'bi-box',
-        items: filteredComponents.value,
-      })
-    }
+      // Projects
+      if (projects.value.length > 0) {
+        result.push({
+          id: 'projects',
+          label: 'Projects',
+          icon: 'bi-folder',
+          items: projects.value.slice(0, 5),
+          ignoreFilter: true,
+        })
+      }
 
-    // Rules (only show if searching)
-    if (filteredRules.value.length > 0) {
-      result.push({
-        id: 'rules',
-        label: 'Requirements',
-        icon: 'bi-list-check',
-        items: filteredRules.value,
-      })
+      // Components (STIGs in progress)
+      if (components.value.length > 0) {
+        result.push({
+          id: 'components',
+          label: 'Components',
+          icon: 'bi-box',
+          items: components.value.slice(0, 5),
+          ignoreFilter: true,
+        })
+      }
+
+      // STIGs (published STIG documents)
+      if (stigs.value.length > 0) {
+        result.push({
+          id: 'stigs',
+          label: 'STIGs',
+          icon: 'bi-file-earmark-lock',
+          items: stigs.value.slice(0, 5),
+          ignoreFilter: true,
+        })
+      }
+
+      // SRGs (Security Requirements Guide documents)
+      if (srgs.value.length > 0) {
+        result.push({
+          id: 'srgs',
+          label: 'SRGs',
+          icon: 'bi-file-earmark-text',
+          items: srgs.value.slice(0, 5),
+          ignoreFilter: true,
+        })
+      }
+
+      // ===== CHILD OBJECTS (content within containers) - show after, limit 10 =====
+
+      // Requirements (rules within components)
+      if (rules.value.length > 0) {
+        result.push({
+          id: 'requirements',
+          label: 'Requirements',
+          icon: 'bi-shield-check',
+          items: rules.value.slice(0, 10),
+          ignoreFilter: true,
+        })
+      }
+
+      // STIG Requirements (rules within STIGs)
+      if (stigRules.value.length > 0) {
+        result.push({
+          id: 'stig-rules',
+          label: 'STIG Requirements',
+          icon: 'bi-list-check',
+          items: stigRules.value.slice(0, 10),
+          ignoreFilter: true,
+        })
+      }
+
+      // SRG Requirements (rules within SRGs)
+      if (srgRules.value.length > 0) {
+        result.push({
+          id: 'srg-rules',
+          label: 'SRG Requirements',
+          icon: 'bi-list-ul',
+          items: srgRules.value.slice(0, 10),
+          ignoreFilter: true,
+        })
+      }
     }
 
     return result
@@ -196,7 +207,12 @@ export function useGlobalSearch() {
 
   // Debounced API fetch
   const fetchSearchData = useDebounceFn(async () => {
-    if (!searchTerm.value.trim() || searchTerm.value.length < 2) {
+    const query = searchTerm.value.trim()
+    if (!query || query.length < 2) {
+      // Clear results if query is too short
+      projects.value = []
+      components.value = []
+      rules.value = []
       return
     }
 
@@ -204,40 +220,90 @@ export function useGlobalSearch() {
     error.value = null
 
     try {
-      const response = await fetch(`/api/search/global?q=${encodeURIComponent(searchTerm.value)}&limit=10`)
-      if (!response.ok) throw new Error('Search failed')
+      const response = await fetch(`/api/search/global?q=${encodeURIComponent(query)}&limit=20`, {
+        credentials: 'same-origin', // Include session cookie for authentication
+      })
+
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`)
+      }
 
       const data = await response.json()
 
-      // Transform API response to search items
+      // Transform API response to CommandPaletteItem format
       projects.value = (data.projects || []).map((p: any) => ({
-        id: p.id,
-        type: 'project',
+        id: `project-${p.id}`,
         label: p.name,
         description: p.description || `${p.components_count || 0} components`,
         icon: 'bi-folder',
-        href: `/projects/${p.id}`,
-        meta: p,
+        to: `/projects/${p.id}`,
+        meta: { type: 'project', ...p },
       }))
 
       components.value = (data.components || []).map((c: any) => ({
-        id: c.id,
-        type: 'component',
+        id: `component-${c.id}`,
         label: c.name,
         description: c.version ? `V${c.version}R${c.release || '0'}` : c.project_name,
         icon: 'bi-box',
-        href: `/components/${c.id}`,
-        meta: c,
+        to: `/components/${c.id}`,
+        meta: { type: 'component', ...c },
       }))
 
+      // ===== PARENT OBJECTS (containers) =====
+
+      // STIGs - published STIG documents
+      stigs.value = (data.stigs || []).map((s: any) => ({
+        id: `stig-${s.id}`,
+        label: s.name,
+        description: `${s.title} (${s.rules_count} rules)`,
+        icon: 'bi-file-earmark-lock',
+        to: `/stigs/${s.id}`,
+        meta: { type: 'stig', ...s },
+      }))
+
+      // SRGs - Security Requirements Guide documents
+      srgs.value = (data.srgs || []).map((s: any) => ({
+        id: `srg-${s.id}`,
+        label: s.name,
+        description: `${s.title} (${s.rules_count} rules)`,
+        icon: 'bi-file-earmark-text',
+        to: `/srgs/${s.id}`,
+        meta: { type: 'srg', ...s },
+      }))
+
+      // ===== CHILD OBJECTS (content within containers) =====
+
+      // Requirements - rules within components
+      // Use snippet if available (shows context around match), fallback to title
       rules.value = (data.rules || []).map((r: any) => ({
-        id: r.id,
-        type: 'rule',
-        label: `${r.rule_id}: ${r.title}`,
-        description: r.status,
-        icon: 'bi-check-circle',
-        href: `/components/${r.component_id}/controls?rule=${r.id}`,
-        meta: r,
+        id: `rule-${r.id}`,
+        label: r.rule_id,
+        description: r.snippet || r.title,
+        icon: 'bi-shield-check',
+        to: `/components/${r.component_id}/controls?rule=${r.id}`,
+        meta: { type: 'rule', ...r },
+      }))
+
+      // STIG Requirements - rules within STIGs
+      stigRules.value = (data.stig_rules || []).map((r: any) => ({
+        id: `stig-rule-${r.id}`,
+        label: r.vuln_id || r.rule_id,
+        description: r.snippet || r.title,
+        suffix: r.stig_name ? `In: ${r.stig_name}` : undefined,
+        icon: 'bi-list-check',
+        to: `/stigs/${r.stig_id}?rule=${r.id}`,
+        meta: { type: 'stig_rule', ...r },
+      }))
+
+      // SRG Requirements - rules within SRGs
+      srgRules.value = (data.srg_rules || []).map((r: any) => ({
+        id: `srg-rule-${r.id}`,
+        label: r.version || r.rule_id,
+        description: r.snippet || r.title,
+        suffix: r.srg_name ? `In: ${r.srg_name}` : undefined,
+        icon: 'bi-list-ul',
+        to: `/srgs/${r.srg_id}?rule=${r.id}`,
+        meta: { type: 'srg_rule', ...r },
       }))
     }
     catch (err) {
@@ -250,15 +316,25 @@ export function useGlobalSearch() {
   }, 300)
 
   // Watch search term and trigger fetch
-  watch(searchTerm, () => {
-    if (searchTerm.value.trim().length >= 2) {
+  watch(searchTerm, (newValue) => {
+    if (newValue.trim().length >= 2) {
       fetchSearchData()
+    }
+    else {
+      // Clear results when query is cleared
+      projects.value = []
+      components.value = []
+      stigs.value = []
+      srgs.value = []
+      rules.value = []
+      stigRules.value = []
+      srgRules.value = []
     }
   })
 
   // Add item to recent searches
-  function addToRecent(item: ISearchItem) {
-    const filtered = recentItems.value.filter(r => !(r.id === item.id && r.type === item.type))
+  function addToRecent(item: CommandPaletteItem) {
+    const filtered = recentItems.value.filter(r => r.id !== item.id)
     recentItems.value = [item, ...filtered].slice(0, MAX_RECENT_ITEMS)
     saveRecentItems(recentItems.value)
   }
@@ -271,28 +347,45 @@ export function useGlobalSearch() {
 
   // Reset search state
   function reset() {
-    searchTerm.value = ''
+    if (!externalSearchTerm) {
+      internalSearchTerm.value = ''
+    }
+    // Parent objects
     projects.value = []
     components.value = []
+    stigs.value = []
+    srgs.value = []
+    // Child objects
     rules.value = []
+    stigRules.value = []
+    srgRules.value = []
     error.value = null
   }
 
   return {
+    /** Search term (ref) */
     searchTerm,
+    /** Loading state */
     loading,
+    /** Error message if any */
     error,
+    /** Grouped search results with ignoreFilter property */
     groups,
+    /** Total number of results across all groups */
     totalResults,
+    /** Recently selected items */
     recentItems,
+    /** Add an item to recent searches */
     addToRecent,
+    /** Clear recent searches */
     clearRecent,
+    /** Reset search state */
     reset,
   }
 }
 
 // Helper functions for localStorage
-function loadRecentItems(): ISearchItem[] {
+function loadRecentItems(): CommandPaletteItem[] {
   try {
     const stored = localStorage.getItem(RECENT_ITEMS_KEY)
     return stored ? JSON.parse(stored) : []
@@ -302,7 +395,7 @@ function loadRecentItems(): ISearchItem[] {
   }
 }
 
-function saveRecentItems(items: ISearchItem[]) {
+function saveRecentItems(items: CommandPaletteItem[]) {
   try {
     localStorage.setItem(RECENT_ITEMS_KEY, JSON.stringify(items))
   }
@@ -310,3 +403,6 @@ function saveRecentItems(items: ISearchItem[]) {
     // Ignore storage errors
   }
 }
+
+// Re-export types for backward compatibility
+export type { CommandPaletteGroup, CommandPaletteItem }
