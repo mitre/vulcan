@@ -315,6 +315,7 @@ Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrati
 - Enhance accessibility compliance
 - Optimize performance for large datasets
 - Improve offline capabilities
+- **Evaluate local-first sync engines for real-time collaboration**
 - Address remaining GitHub issues
 
 ### Tasks
@@ -326,6 +327,42 @@ Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrati
 - [ ] Consider PWA features for improved user experience
 - [ ] Address remaining GitHub issues from initial triage
 - [ ] Comprehensive security review of entire application
+
+### Local-First Sync Engine Evaluation (v3.0 Architecture Decision)
+
+**Goal**: Enable real-time collaboration, offline authoring, and instant local queries
+
+**Options to Evaluate**:
+
+1. **Zero** (Rocicorp) - https://zero.rocicorp.dev/
+   - PostgreSQL compatible (works with existing Vulcan database)
+   - ZQL query language with IVM (Incremental View Maintenance)
+   - Client-side caching with automatic background sync
+   - Currently in beta (v0.x) - evaluate stability
+   - Provides instant queries from local cache
+
+2. **Electric SQL** - https://electric-sql.com/
+   - PostgreSQL-first design (native Postgres integration)
+   - Sync engine between Postgres and local SQLite
+   - Active sync with conflict resolution
+   - More mature than Zero
+
+**Use Cases for Vulcan**:
+- Real-time collaborative editing on Components/Rules (multiple authors)
+- Offline STIG authoring capability (disconnected environments)
+- Instant Command Palette search (local queries, no API round-trip)
+- Multi-user conflict resolution for concurrent edits
+- Reduced server load through local-first queries
+
+**Evaluation Criteria**:
+- PostgreSQL compatibility and integration complexity
+- Vue 3 / TypeScript support quality
+- Offline-first reliability and conflict resolution
+- Performance benchmarks vs current API approach
+- Community maturity and long-term support
+- Security model for sync authorization
+
+**Decision Timeline**: Evaluate both options during Phase 5 planning, implement in v3.0 if beneficial
 
 ### Success Criteria
 - Application meets WCAG accessibility guidelines
