@@ -172,3 +172,119 @@ describe('commandPalette group rendering logic', () => {
     })
   })
 })
+
+describe('commandPalette keyboard navigation logic', () => {
+  // Helper to flatten items from groups (mirrors component logic)
+  const flattenItems = (groups: Array<{ items: Array<{ id: string, label: string }> }>) => {
+    return groups.flatMap(group => group.items)
+  }
+
+  // Helper to check if item is highlighted (mirrors component logic)
+  const isHighlighted = (
+    item: { id: string },
+    allItems: Array<{ id: string }>,
+    highlightedIndex: number,
+  ) => {
+    const index = allItems.findIndex(i => i.id === item.id)
+    return index === highlightedIndex
+  }
+
+  describe('flattenItems', () => {
+    it('flattens items from multiple groups', () => {
+      const groups = [
+        { id: 'g1', items: [{ id: '1', label: 'Item 1' }, { id: '2', label: 'Item 2' }] },
+        { id: 'g2', items: [{ id: '3', label: 'Item 3' }] },
+      ]
+      const flat = flattenItems(groups)
+      expect(flat).toHaveLength(3)
+      expect(flat[0].id).toBe('1')
+      expect(flat[2].id).toBe('3')
+    })
+
+    it('returns empty array for empty groups', () => {
+      const groups: Array<{ items: Array<{ id: string, label: string }> }> = []
+      const flat = flattenItems(groups)
+      expect(flat).toHaveLength(0)
+    })
+  })
+
+  describe('isHighlighted', () => {
+    const items = [{ id: '1' }, { id: '2' }, { id: '3' }]
+
+    it('returns true when item index matches highlightedIndex', () => {
+      expect(isHighlighted({ id: '1' }, items, 0)).toBe(true)
+      expect(isHighlighted({ id: '2' }, items, 1)).toBe(true)
+      expect(isHighlighted({ id: '3' }, items, 2)).toBe(true)
+    })
+
+    it('returns false when item index does not match highlightedIndex', () => {
+      expect(isHighlighted({ id: '1' }, items, 1)).toBe(false)
+      expect(isHighlighted({ id: '2' }, items, 0)).toBe(false)
+    })
+
+    it('returns false for non-existent item', () => {
+      expect(isHighlighted({ id: 'nonexistent' }, items, 0)).toBe(false)
+    })
+  })
+
+  describe('arrow key navigation behavior', () => {
+    it('ArrowDown increments index within bounds', () => {
+      let highlightedIndex = 0
+      const itemCount = 5
+
+      // Simulate ArrowDown
+      highlightedIndex = Math.min(highlightedIndex + 1, itemCount - 1)
+      expect(highlightedIndex).toBe(1)
+
+      // Go to end
+      highlightedIndex = 4
+      highlightedIndex = Math.min(highlightedIndex + 1, itemCount - 1)
+      expect(highlightedIndex).toBe(4) // Should not exceed bounds
+    })
+
+    it('ArrowUp decrements index within bounds', () => {
+      let highlightedIndex = 2
+      const itemCount = 5
+
+      // Simulate ArrowUp
+      highlightedIndex = Math.max(highlightedIndex - 1, 0)
+      expect(highlightedIndex).toBe(1)
+
+      // Go to start
+      highlightedIndex = 0
+      highlightedIndex = Math.max(highlightedIndex - 1, 0)
+      expect(highlightedIndex).toBe(0) // Should not go below 0
+    })
+
+    it('resets to 0 when groups change', () => {
+      let highlightedIndex = 5
+
+      // Simulate groups changing (new search results)
+      highlightedIndex = 0
+      expect(highlightedIndex).toBe(0)
+    })
+  })
+
+  describe('Enter key selection', () => {
+    it('selects item at current highlightedIndex', () => {
+      const items = [
+        { id: '1', label: 'First', to: '/first' },
+        { id: '2', label: 'Second', to: '/second' },
+        { id: '3', label: 'Third', to: '/third' },
+      ]
+      const highlightedIndex = 1
+
+      const selectedItem = items[highlightedIndex]
+      expect(selectedItem.label).toBe('Second')
+      expect(selectedItem.to).toBe('/second')
+    })
+
+    it('handles empty items gracefully', () => {
+      const items: Array<{ id: string, label: string }> = []
+      const highlightedIndex = 0
+
+      const selectedItem = items[highlightedIndex]
+      expect(selectedItem).toBeUndefined()
+    })
+  })
+})

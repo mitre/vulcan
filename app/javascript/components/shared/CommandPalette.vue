@@ -48,6 +48,7 @@ const {
 
 const router = useRouter()
 const inputRef = ref<HTMLInputElement | null>(null)
+const listboxRef = ref<InstanceType<typeof ListboxContent> | null>(null)
 
 // Search words for highlighting (split search term into words)
 const searchWords = computed(() => {
@@ -72,6 +73,52 @@ watch(open, async (isOpen) => {
     reset()
   }
 })
+
+// Track highlighted index for keyboard navigation
+const highlightedIndex = ref(0)
+
+// Flatten all items from groups for keyboard navigation
+const allItems = computed(() => {
+  return groups.value.flatMap(group => group.items)
+})
+
+// Reset highlighted index when results change
+watch(groups, () => {
+  highlightedIndex.value = 0
+})
+
+// Handle keyboard navigation from input
+function handleInputKeydown(event: KeyboardEvent) {
+  const items = allItems.value
+  if (items.length === 0) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      highlightedIndex.value = Math.min(highlightedIndex.value + 1, items.length - 1)
+      scrollToHighlighted()
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      highlightedIndex.value = Math.max(highlightedIndex.value - 1, 0)
+      scrollToHighlighted()
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (items[highlightedIndex.value]) {
+        handleSelect(items[highlightedIndex.value])
+      }
+      break
+  }
+}
+
+// Scroll highlighted item into view
+function scrollToHighlighted() {
+  nextTick(() => {
+    const highlighted = document.querySelector('.command-palette-item.is-highlighted')
+    highlighted?.scrollIntoView({ block: 'nearest' })
+  })
+}
 
 // Handle item selection
 function handleSelect(item: CommandPaletteItem) {
@@ -99,6 +146,13 @@ function handleSelect(item: CommandPaletteItem) {
 function getItemIcon(item: CommandPaletteItem): string {
   if (item.icon) return `bi ${item.icon}`
   return 'bi bi-circle'
+}
+
+// Check if item is currently highlighted
+function isHighlighted(item: CommandPaletteItem): boolean {
+  const items = allItems.value
+  const index = items.findIndex(i => i.id === item.id)
+  return index === highlightedIndex.value
 }
 </script>
 
@@ -136,6 +190,7 @@ function getItemIcon(item: CommandPaletteItem): string {
               type="text"
               class="command-palette-input"
               placeholder="Search projects, components, requirements..."
+              @keydown="handleInputKeydown"
               @keydown.escape="close"
             >
             <span v-if="loading" class="spinner-border spinner-border-sm text-muted" />
@@ -143,7 +198,7 @@ function getItemIcon(item: CommandPaletteItem): string {
           </div>
 
           <!-- Results -->
-          <ListboxContent class="command-palette-content">
+          <ListboxContent ref="listboxRef" class="command-palette-content" tabindex="0">
             <!-- Empty state -->
             <div v-if="groups.length === 0" class="command-palette-empty">
               <template v-if="searchTerm && searchTerm.length >= 2 && !loading">
@@ -175,7 +230,7 @@ function getItemIcon(item: CommandPaletteItem): string {
                 v-for="item in group.items"
                 :key="String(item.id)"
                 :value="item"
-                class="command-palette-item"
+                :class="['command-palette-item', { 'is-highlighted': isHighlighted(item) }]"
               >
                 <div class="d-flex align-items-center gap-2 w-100">
                   <i :class="getItemIcon(item)" class="command-palette-item-icon" />
@@ -355,8 +410,9 @@ function getItemIcon(item: CommandPaletteItem): string {
   transition: background-color 0.15s ease;
 }
 
-/* Reka UI data attribute styling */
-.command-palette-item[data-highlighted] {
+/* Reka UI data attribute styling + custom highlight class */
+.command-palette-item[data-highlighted],
+.command-palette-item.is-highlighted {
   background-color: var(--bs-primary-bg-subtle);
 }
 
@@ -371,7 +427,8 @@ function getItemIcon(item: CommandPaletteItem): string {
   color: var(--bs-secondary-color);
 }
 
-.command-palette-item[data-highlighted] .command-palette-item-icon {
+.command-palette-item[data-highlighted] .command-palette-item-icon,
+.command-palette-item.is-highlighted .command-palette-item-icon {
   color: var(--bs-primary);
 }
 
@@ -410,7 +467,8 @@ function getItemIcon(item: CommandPaletteItem): string {
   transition: opacity 0.15s ease;
 }
 
-.command-palette-item[data-highlighted] .command-palette-item-hint {
+.command-palette-item[data-highlighted] .command-palette-item-hint,
+.command-palette-item.is-highlighted .command-palette-item-hint {
   opacity: 1;
 }
 
