@@ -13,7 +13,7 @@ unless Rails.env.test?
 
   # Only start prometheus server when running as a server (not during rake tasks, console, etc.)
   # Check if we're running via rails server or puma
-  if defined?(Rails::Server) || File.basename($0) == 'puma'
+  if defined?(Rails::Server) || File.basename($PROGRAM_NAME) == 'puma'
     # Start metrics server in background thread (single-process mode)
     # This is simpler than running separate prometheus_exporter process
     # Port and bind address configurable via PROMETHEUS_PORT and PROMETHEUS_BIND env vars
@@ -32,7 +32,7 @@ unless Rails.env.test?
     # Instrument Active Record queries (connection pool, query time)
     PrometheusExporter::Instrumentation::ActiveRecord.start(
       custom_labels: { app: 'vulcan' },
-      config_labels: [:database, :host]
+      config_labels: %i[database host]
     )
 
     # Instrument Process metrics (memory, GC, heap, RSS)

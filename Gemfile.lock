@@ -192,7 +192,6 @@ GEM
     fast_excel (0.5.0)
       ffi (> 1.9, < 2)
     ffaker (2.24.0)
-    ffi (1.17.2)
     ffi (1.17.2-aarch64-linux-gnu)
     ffi (1.17.2-arm64-darwin)
     ffi (1.17.2-x86_64-linux-gnu)
@@ -398,7 +397,6 @@ GEM
     parslet (2.0.0)
     pastel (0.8.0)
       tty-color (~> 0.5)
-    pg (1.6.1)
     pg (1.6.1-aarch64-linux)
     pg (1.6.1-arm64-darwin)
     pg (1.6.1-x86_64-linux)
@@ -536,6 +534,12 @@ GEM
     rubocop-ast (1.46.0)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
+    rubocop-capybara (2.22.1)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.72, >= 1.72.1)
+    rubocop-factory_bot (2.28.0)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.72, >= 1.72.1)
     rubocop-performance (1.25.0)
       lint_roller (~> 1.1)
       rubocop (>= 1.75.0, < 2.0)
@@ -549,6 +553,10 @@ GEM
     rubocop-rspec (3.6.0)
       lint_roller (~> 1.1)
       rubocop (~> 1.72, >= 1.72.1)
+    rubocop-rspec_rails (2.32.0)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.72, >= 1.72.1)
+      rubocop-rspec (~> 3.5)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
     rubyntlm (0.6.5)
@@ -727,9 +735,12 @@ DEPENDENCIES
   rspec-mocks
   rspec-rails (~> 6.0)
   rubocop
+  rubocop-capybara (~> 2.22)
+  rubocop-factory_bot (~> 2.28)
   rubocop-performance
   rubocop-rails
   rubocop-rspec
+  rubocop-rspec_rails (~> 2.32)
   rubyzip
   ruh-roo (~> 3.0.0)
   selenium-webdriver

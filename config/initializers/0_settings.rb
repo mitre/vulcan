@@ -36,7 +36,7 @@ if defined?(Rails::Server) && Rails.env.production?
   if Settings.smtp.enabled
     # Check for valid contact email
     if Settings['contact_email'].blank?
-      puts <<~TEXT
+      Rails.logger.debug { <<~TEXT }
 
         ================================ CONFIGURATION ERROR ================================
         VULCAN_CONTACT_EMAIL is required when SMTP is enabled in production.
@@ -50,12 +50,12 @@ if defined?(Rails::Server) && Rails.env.production?
         =================================================================================
 
       TEXT
-      raise "VULCAN_CONTACT_EMAIL is required when SMTP is enabled"
+      raise 'VULCAN_CONTACT_EMAIL is required when SMTP is enabled'
     end
 
     # Validate email format using valid_email2 gem
     unless ValidEmail2::Address.new(Settings['contact_email']).valid?
-      puts <<~TEXT
+      Rails.logger.debug { <<~TEXT }
 
         ================================ CONFIGURATION ERROR ================================
         VULCAN_CONTACT_EMAIL has invalid email format.
@@ -70,12 +70,12 @@ if defined?(Rails::Server) && Rails.env.production?
         =================================================================================
 
       TEXT
-      raise "VULCAN_CONTACT_EMAIL has invalid format"
+      raise 'VULCAN_CONTACT_EMAIL has invalid format'
     end
 
     # Check for example.com domains (common mistake)
     if Settings['contact_email'].end_with?('@example.com', '@example.org')
-      puts <<~TEXT
+      Rails.logger.debug { <<~TEXT }
 
         ================================ CONFIGURATION ERROR ================================
         VULCAN_CONTACT_EMAIL cannot use an example domain in production.
@@ -91,7 +91,7 @@ if defined?(Rails::Server) && Rails.env.production?
         =================================================================================
 
       TEXT
-      raise "VULCAN_CONTACT_EMAIL cannot use example domain"
+      raise 'VULCAN_CONTACT_EMAIL cannot use example domain'
     end
 
     # Validate required SMTP settings
@@ -104,8 +104,8 @@ if defined?(Rails::Server) && Rails.env.production?
     missing = required_settings.select { |key, _| Settings.smtp.settings[key].blank? }
 
     if missing.any?
-      missing_list = missing.map { |key, example| "  - #{example}" }.join("\n")
-      puts <<~TEXT
+      missing_list = missing.map { |_key, example| "  - #{example}" }.join("\n")
+      Rails.logger.debug { <<~TEXT }
 
         ================================ CONFIGURATION ERROR ================================
         SMTP is enabled but required settings are missing!
@@ -127,25 +127,21 @@ if defined?(Rails::Server) && Rails.env.production?
         =================================================================================
 
       TEXT
-      raise "Required SMTP settings are missing"
+      raise 'Required SMTP settings are missing'
     end
 
     # Warn about missing password (common in Kubernetes secrets)
-    if Settings.smtp.settings['password'].blank?
-      Rails.logger.warn "VULCAN_SMTP_SERVER_PASSWORD is not set. SMTP authentication may fail."
-    end
-  else
+    Rails.logger.warn 'VULCAN_SMTP_SERVER_PASSWORD is not set. SMTP authentication may fail.' if Settings.smtp.settings['password'].blank?
+  elsif Settings['contact_email'].present? && Settings['contact_email'].end_with?('@example.com', '@example.org')
     # SMTP disabled in production - warn about example.com emails and clear them
-    if Settings['contact_email'].present? && Settings['contact_email'].end_with?('@example.com', '@example.org')
-      Rails.logger.warn "VULCAN_CONTACT_EMAIL uses example domain. Email notifications are disabled."
-      Settings['contact_email'] = nil
-    end
+    Rails.logger.warn 'VULCAN_CONTACT_EMAIL uses example domain. Email notifications are disabled.'
+    Settings['contact_email'] = nil
   end
 elsif Rails.env.production?
   # Production but not server startup (rake tasks, console, etc.)
   # Just set safe defaults without validation
   Settings['contact_email'] = nil if Settings['contact_email'].blank? || Settings['contact_email'].end_with?('@example.com', '@example.org')
-else
+elsif Settings['contact_email'].blank?
   # Development/test: use safe fallback
-  Settings['contact_email'] = 'vulcan-support@example.com' if Settings['contact_email'].blank?
+  Settings['contact_email'] = 'vulcan-support@example.com'
 end

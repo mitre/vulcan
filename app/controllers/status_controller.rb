@@ -47,7 +47,7 @@ class StatusController < ApplicationController
   end
 
   def admin_user_check
-    User.where(admin: true).exists?
+    User.exists?(admin: true)
   rescue ActiveRecord::StatementInvalid
     false # Table doesn't exist yet
   end

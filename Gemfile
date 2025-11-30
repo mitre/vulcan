@@ -147,3 +147,7 @@ gem 'slack_block_kit', '0.3.3'
 
 # Rate limiting and abuse prevention
 gem 'rack-attack'
+
+gem 'rubocop-capybara', '~> 2.22', groups: %i[development test]
+gem 'rubocop-factory_bot', '~> 2.28', groups: %i[development test]
+gem 'rubocop-rspec_rails', '~> 2.32', groups: %i[development test]

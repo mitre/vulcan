@@ -14,6 +14,16 @@ Rails.application.routes.draw do
   # API namespace for SPA
   namespace :api do
     get 'navigation', to: 'navigation#show'
+    get 'search/global', to: 'search#global'
+
+    # Find and Replace API (component-scoped)
+    scope 'components/:component_id/find_replace' do
+      post 'find', to: 'find_replace#find'
+      post 'replace_instance', to: 'find_replace#replace_instance'
+      post 'replace_field', to: 'find_replace#replace_field'
+      post 'replace_all', to: 'find_replace#replace_all'
+      post 'undo', to: 'find_replace#undo'
+    end
   end
 
   # Prometheus metrics are served on port 9394 by prometheus_exporter

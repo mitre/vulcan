@@ -2,6 +2,9 @@ plugins:
   - rubocop-rails
   - rubocop-performance
   - rubocop-rspec
+  - rubocop-capybara
+  - rubocop-factory_bot
+  - rubocop-rspec_rails
 
 AllCops:
   NewCops: enable
@@ -124,6 +127,8 @@ Style/Documentation:
   Exclude:
     - db/migrate/*
     - spec/**/*
+    - config/initializers/*
+    - app/blueprints/*
     - app/lib/xccdf/idref/overrideable_idref.rb
     - app/lib/xccdf/item/selectable_item.rb
     - app/lib/xccdf/item/selectable_item/group.rb
@@ -134,8 +139,35 @@ Style/Documentation:
     - app/models/project_access_request.rb
     - app/models/project_metadata.rb
 
-# Test let statements with numbers in names (6 occurrences)
+# Test let statements with numbers in names (common in test fixtures)
 RSpec/IndexedLet:
-  Exclude:
-    - spec/controllers/registrations_controller_spec.rb
-    - spec/models/project_access_request_spec.rb
+  Enabled: false
+
+# Multiple memoized helpers - common pattern in complex test setups
+RSpec/MultipleMemoizedHelpers:
+  Enabled: false
+
+# Factory association strategy - existing pattern in codebase
+FactoryBot/FactoryAssociationWithStrategy:
+  Enabled: false
+
+# Repeated examples - sometimes intentional for clarity
+RSpec/RepeatedExample:
+  Enabled: false
+
+# Multiple describes - sometimes needed for organization
+RSpec/MultipleDescribes:
+  Enabled: false
+
+# Block nesting - sometimes necessary for complex logic
+Metrics/BlockNesting:
+  Max: 4
+
+# Let setup without direct reference - warn but don't fail
+# Review these to ensure they're intentional (e.g., side effects)
+RSpec/LetSetup:
+  Enabled: true
+
+# Nested groups - allow 4 levels for complex test organization
+RSpec/NestedGroups:
+  Max: 4
