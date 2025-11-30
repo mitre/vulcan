@@ -1,41 +1,32 @@
 <script setup lang="ts">
+/**
+ * Projects Index Page
+ *
+ * Uses async setup with Suspense for loading state.
+ */
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
 import Projects from '@/components/projects/Projects.vue'
+import PageContainer from '@/components/shared/PageContainer.vue'
 import { useProjects } from '@/composables'
 import { useAuthStore } from '@/stores'
 
 // Use composables
-const { projects, loading, error, refresh } = useProjects()
+const { projects, refresh } = useProjects()
 
 // Auth state
 const authStore = useAuthStore()
 const { isAdmin } = storeToRefs(authStore)
 
-// Fetch on mount
-onMounted(async () => {
-  await refresh()
-})
+// Top-level await makes this component suspensible
+await refresh()
 </script>
 
 <template>
-  <div>
-    <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <p class="mt-2">
-        Loading projects...
-      </p>
-    </div>
-    <div v-else-if="error" class="alert alert-danger">
-      {{ error }}
-    </div>
+  <PageContainer>
     <Projects
-      v-else
       :projects="projects"
       :is_vulcan_admin="isAdmin"
       @refresh="refresh"
     />
-  </div>
+  </PageContainer>
 </template>

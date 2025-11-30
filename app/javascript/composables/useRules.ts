@@ -12,9 +12,9 @@
  *   const { rules, currentRule, loading, error, updateRule, createRule, ... } = useRules()
  */
 
-import type { IRule, ISlimRule, IRuleUpdate, IReviewCreate } from '@/types'
+import type { IReviewCreate, IRule, IRuleUpdate } from '@/types'
 import { storeToRefs } from 'pinia'
-import { useRulesStore, RULE_STATUSES, RULE_SEVERITIES, SEVERITY_MAP } from '@/stores/rules.store'
+import { RULE_SEVERITIES, RULE_STATUSES, SEVERITY_MAP, useRulesStore } from '@/stores/rules.store'
 import { useAppToast } from './useToast'
 
 export function useRules() {
@@ -23,10 +23,10 @@ export function useRules() {
 
   // Use storeToRefs to maintain reactivity when destructuring
   const {
-    rules,              // ISlimRule[] - list view data
-    pagination,         // IPagination | null - pagination state
-    fullRulesCache,     // Map<id, IRule> - full data cache
-    currentRule,        // IRule | null - currently selected (full)
+    rules, // ISlimRule[] - list view data
+    pagination, // IPagination | null - pagination state
+    fullRulesCache, // Map<id, IRule> - full data cache
+    currentRule, // IRule | null - currently selected (full)
     currentRuleId,
     loading,
     error,
@@ -50,7 +50,8 @@ export function useRules() {
   async function fetchRules(compId: number, page?: number, perPage?: number) {
     try {
       await store.fetchRules(compId, page, perPage)
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to load requirements')
     }
   }
@@ -61,7 +62,8 @@ export function useRules() {
   async function fetchFullRule(id: number): Promise<IRule | null> {
     try {
       return await store.fetchFullRule(id)
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to load requirement details')
       return null
     }
@@ -74,7 +76,8 @@ export function useRules() {
   async function refreshRule(id: number) {
     try {
       return await store.refreshRule(id)
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to refresh requirement')
       throw err
     }
@@ -88,7 +91,8 @@ export function useRules() {
       await store.updateRule(id, data)
       toast.success('Requirement saved')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to save requirement')
       return false
     }
@@ -99,13 +103,14 @@ export function useRules() {
    */
   async function createRule(
     data: Partial<IRule>,
-    successCallback?: (rule: IRule) => void
+    successCallback?: (rule: IRule) => void,
   ): Promise<boolean> {
     try {
       await store.createRule(data, successCallback)
       toast.success('Requirement created')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to create requirement')
       return false
     }
@@ -119,7 +124,8 @@ export function useRules() {
       await store.deleteRule(id, successCallback)
       toast.success('Requirement deleted')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to delete requirement')
       return false
     }
@@ -131,13 +137,14 @@ export function useRules() {
   async function addSatisfaction(
     ruleId: number,
     satisfiedByRuleId: number,
-    successCallback?: () => void
+    successCallback?: () => void,
   ): Promise<boolean> {
     try {
       await store.addSatisfaction(ruleId, satisfiedByRuleId, successCallback)
       toast.success('Requirements merged')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to merge requirements')
       return false
     }
@@ -149,13 +156,14 @@ export function useRules() {
   async function removeSatisfaction(
     ruleId: number,
     satisfiedByRuleId: number,
-    successCallback?: () => void
+    successCallback?: () => void,
   ): Promise<boolean> {
     try {
       await store.removeSatisfaction(ruleId, satisfiedByRuleId, successCallback)
       toast.success('Requirements unmerged')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to unmerge requirements')
       return false
     }
@@ -169,7 +177,8 @@ export function useRules() {
       await store.createReview(ruleId, data)
       toast.success('Review submitted')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to submit review')
       return false
     }
@@ -183,7 +192,8 @@ export function useRules() {
       await store.lockRule(ruleId, comment)
       toast.success('Requirement locked')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to lock requirement')
       return false
     }
@@ -197,7 +207,8 @@ export function useRules() {
       await store.unlockRule(ruleId, comment)
       toast.success('Requirement unlocked')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to unlock requirement')
       return false
     }
@@ -210,13 +221,14 @@ export function useRules() {
     ruleId: number,
     auditId: number,
     fields: string[],
-    auditComment?: string
+    auditComment?: string,
   ): Promise<boolean> {
     try {
       await store.revertRule(ruleId, auditId, fields, auditComment)
       toast.success('Requirement reverted')
       return true
-    } catch (err) {
+    }
+    catch (err) {
       toast.error('Failed to revert requirement')
       return false
     }
@@ -250,10 +262,10 @@ export function useRules() {
 
   return {
     // Reactive state
-    rules,              // ISlimRule[] - list view data
-    pagination,         // IPagination | null
-    fullRulesCache,     // Map<id, IRule> - full data cache
-    currentRule,        // IRule | null - currently selected (full)
+    rules, // ISlimRule[] - list view data
+    pagination, // IPagination | null
+    fullRulesCache, // Map<id, IRule> - full data cache
+    currentRule, // IRule | null - currently selected (full)
     currentRuleId,
     loading,
     error,
@@ -310,4 +322,4 @@ export function useRules() {
 }
 
 // Re-export constants for convenience
-export { RULE_STATUSES, RULE_SEVERITIES, SEVERITY_MAP } from '@/stores/rules.store'
+export { RULE_SEVERITIES, RULE_STATUSES, SEVERITY_MAP } from '@/stores/rules.store'

@@ -10,8 +10,8 @@
  * - Find & Replace modal
  */
 
-import { computed, ref } from 'vue'
 import type { ISlimRule } from '@/types'
+import { computed, ref } from 'vue'
 import { useRules } from '@/composables'
 import FindReplaceModal from './FindReplaceModal.vue'
 
@@ -52,8 +52,8 @@ const filteredRules = computed(() => {
   if (!searchQuery.value.trim()) return visibleRules.value
   const q = searchQuery.value.toLowerCase()
   return visibleRules.value.filter(r =>
-    r.rule_id.toLowerCase().includes(q) ||
-    r.title.toLowerCase().includes(q)
+    r.rule_id.toLowerCase().includes(q)
+    || r.title.toLowerCase().includes(q),
   )
 })
 
@@ -75,7 +75,8 @@ function handleKeydown(e: KeyboardEvent) {
     e.preventDefault()
     const next = Math.min(currentIndex + 1, filteredRules.value.length - 1)
     handleSelect(filteredRules.value[next])
-  } else if (e.key === 'k' || e.key === 'ArrowUp') {
+  }
+  else if (e.key === 'k' || e.key === 'ArrowUp') {
     e.preventDefault()
     const prev = Math.max(currentIndex - 1, 0)
     handleSelect(filteredRules.value[prev])
@@ -122,7 +123,7 @@ async function handleReplaced() {
         title="Toggle navigator"
         @click="collapsed = !collapsed"
       >
-        <i :class="collapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left'"></i>
+        <i :class="collapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left'" />
       </button>
       <template v-if="!collapsed">
         <input
@@ -136,7 +137,7 @@ async function handleReplaced() {
           title="Find & Replace"
           @click="showFindModal = true"
         >
-          <i class="bi bi-search"></i>
+          <i class="bi bi-search" />
         </button>
       </template>
     </div>
@@ -174,7 +175,7 @@ async function handleReplaced() {
           class="status-dot rounded-circle"
           :class="`bg-${statusDot(rule)}`"
           style="width: 8px; height: 8px; flex-shrink: 0"
-        ></span>
+        />
 
         <!-- ID -->
         <span class="font-monospace small" style="min-width: 60px">
@@ -188,8 +189,8 @@ async function handleReplaced() {
 
         <!-- Indicators -->
         <span v-if="!collapsed" class="indicators">
-          <i v-if="rule.locked" class="bi bi-lock-fill text-muted"></i>
-          <i v-if="rule.review_requestor_id" class="bi bi-eye text-warning"></i>
+          <i v-if="rule.locked" class="bi bi-lock-fill text-muted" />
+          <i v-if="rule.review_requestor_id" class="bi bi-eye text-warning" />
         </span>
       </div>
 

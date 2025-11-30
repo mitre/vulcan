@@ -11,15 +11,15 @@ const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <footer class="footer fixed-bottom py-2 bg-body-tertiary border-top">
-    <div class="footer-container px-3 px-sm-4 px-lg-5 mx-auto">
-      <div class="d-flex justify-content-between align-items-center text-body-secondary small">
+  <footer class="footer fixed-bottom py-2 bg-dark border-top text-light">
+    <div class="container-fluid container-app">
+      <div class="d-flex justify-content-between align-items-center small">
         <span>
           <a
             href="https://github.com/mitre/vulcan"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-body-secondary text-decoration-none"
+            class="text-light text-decoration-none"
           >
             Vulcan
           </a>
@@ -31,7 +31,7 @@ const currentYear = new Date().getFullYear()
             href="https://saf.mitre.org"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-body-secondary text-decoration-none"
+            class="text-light text-decoration-none"
           >
             MITRE SAF
           </a>
@@ -40,10 +40,3 @@ const currentYear = new Date().getFullYear()
     </div>
   </footer>
 </template>
-
-<style scoped>
-.footer-container {
-  width: 100%;
-  max-width: 1600px;
-}
-</style>

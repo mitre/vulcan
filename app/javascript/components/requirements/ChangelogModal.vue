@@ -9,9 +9,9 @@
  * - Comment input for revert reason
  */
 
-import { ref, computed, watch } from 'vue'
-import { BModal, BCollapse } from 'bootstrap-vue-next'
-import type { IRule, IHistory, IAuditedChange } from '@/types'
+import type { IHistory, IRule } from '@/types'
+import { BCollapse, BModal } from 'bootstrap-vue-next'
+import { computed, ref, watch } from 'vue'
 import { useRules } from '@/composables/useRules'
 
 // Props
@@ -52,7 +52,7 @@ const groupedHistories = computed<IHistoryGroup[]>(() => {
 
   // Sort histories newest first
   const sorted = [...props.rule.histories].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )
 
   sorted.forEach((history) => {
@@ -90,7 +90,7 @@ function formatDate(dateStr: string): string {
 function humanizeField(field: string): string {
   return field
     .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\b\w/g, c => c.toUpperCase())
 }
 
 // Humanize auditable type
@@ -137,7 +137,8 @@ function toggleField(field: string) {
   const idx = selectedFields.value.indexOf(field)
   if (idx === -1) {
     selectedFields.value.push(field)
-  } else {
+  }
+  else {
     selectedFields.value.splice(idx, 1)
   }
 }
@@ -145,7 +146,7 @@ function toggleField(field: string) {
 // Select all fields
 function selectAllFields() {
   if (!selectedHistory.value) return
-  selectedFields.value = selectedHistory.value.audited_changes.map((c) => c.field)
+  selectedFields.value = selectedHistory.value.audited_changes.map(c => c.field)
 }
 
 // Clear field selection
@@ -170,7 +171,7 @@ async function submitRevert() {
     props.rule.id,
     selectedHistory.value.id,
     selectedFields.value,
-    revertComment.value || undefined
+    revertComment.value || undefined,
   )
 
   reverting.value = false
@@ -188,14 +189,14 @@ watch(
       expandedId.value = null
       cancelRevert()
     }
-  }
+  },
 )
 
 // Truncate long values
 function truncateValue(value: unknown, maxLen = 100): string {
   if (value === null || value === undefined) return '(empty)'
   const str = typeof value === 'object' ? JSON.stringify(value) : String(value)
-  if (str.length > maxLen) return str.slice(0, maxLen) + '...'
+  if (str.length > maxLen) return `${str.slice(0, maxLen)}...`
   return str
 }
 </script>
@@ -210,7 +211,7 @@ function truncateValue(value: unknown, maxLen = 100): string {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div v-if="!rule?.histories?.length" class="text-center text-muted py-4">
-      <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+      <i class="bi bi-clock-history fs-1 d-block mb-2" />
       No history available for this control.
     </div>
 
@@ -218,11 +219,11 @@ function truncateValue(value: unknown, maxLen = 100): string {
     <div v-else-if="showRevertPanel && selectedHistory" class="revert-panel">
       <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="mb-0">
-          <i class="bi bi-arrow-counterclockwise me-2"></i>
+          <i class="bi bi-arrow-counterclockwise me-2" />
           Revert Changes
         </h5>
         <button class="btn btn-sm btn-outline-secondary" @click="cancelRevert">
-          <i class="bi bi-x-lg"></i>
+          <i class="bi bi-x-lg" />
         </button>
       </div>
 
@@ -266,7 +267,7 @@ function truncateValue(value: unknown, maxLen = 100): string {
               <div class="fw-medium">{{ humanizeField(change.field) }}</div>
               <div class="small">
                 <span class="text-danger">{{ truncateValue(change.new_value, 50) }}</span>
-                <i class="bi bi-arrow-right mx-1"></i>
+                <i class="bi bi-arrow-right mx-1" />
                 <span class="text-success">{{ truncateValue(change.prev_value, 50) }}</span>
               </div>
             </div>
@@ -282,19 +283,21 @@ function truncateValue(value: unknown, maxLen = 100): string {
           class="form-control"
           rows="2"
           placeholder="Enter a reason for this revert..."
-        ></textarea>
+        />
       </div>
 
       <!-- Revert button -->
       <div class="d-flex justify-content-end gap-2">
-        <button class="btn btn-secondary" @click="cancelRevert">Cancel</button>
+        <button class="btn btn-secondary" @click="cancelRevert">
+          Cancel
+        </button>
         <button
           class="btn btn-warning"
           :disabled="selectedFields.length === 0 || reverting"
           @click="submitRevert"
         >
-          <span v-if="reverting" class="spinner-border spinner-border-sm me-1"></span>
-          <i v-else class="bi bi-arrow-counterclockwise me-1"></i>
+          <span v-if="reverting" class="spinner-border spinner-border-sm me-1" />
+          <i v-else class="bi bi-arrow-counterclockwise me-1" />
           Revert {{ selectedFields.length }} Field{{ selectedFields.length !== 1 ? 's' : '' }}
         </button>
       </div>
@@ -337,7 +340,7 @@ function truncateValue(value: unknown, maxLen = 100): string {
             <i
               class="bi ms-auto"
               :class="expandedId === history.id ? 'bi-chevron-up' : 'bi-chevron-down'"
-            ></i>
+            />
           </div>
 
           <!-- Expanded changes -->
@@ -348,7 +351,9 @@ function truncateValue(value: unknown, maxLen = 100): string {
                 :key="change.field"
                 class="change-item mb-2"
               >
-                <div class="fw-medium small">{{ humanizeField(change.field) }}</div>
+                <div class="fw-medium small">
+                  {{ humanizeField(change.field) }}
+                </div>
                 <div class="d-flex gap-2 small">
                   <div v-if="history.action !== 'create'" class="flex-fill">
                     <span class="text-muted">From:</span>
@@ -367,7 +372,7 @@ function truncateValue(value: unknown, maxLen = 100): string {
                 class="btn btn-sm btn-outline-warning mt-2"
                 @click.stop="startRevert(history)"
               >
-                <i class="bi bi-arrow-counterclockwise me-1"></i>
+                <i class="bi bi-arrow-counterclockwise me-1" />
                 Revert This Change
               </button>
             </div>

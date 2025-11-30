@@ -87,7 +87,6 @@ import {
   vBModal,
   vBPopover,
   vBToggle,
-  // Directives
   vBTooltip,
 } from 'bootstrap-vue-next'
 
@@ -174,10 +173,10 @@ export function registerComponents(app) {
   app.component('BBreadcrumb', BBreadcrumb)
   app.component('BBreadcrumbItem', BBreadcrumbItem)
 
-  // Directives
-  app.directive('BTooltip', vBTooltip)
-  app.directive('BPopover', vBPopover)
-  app.directive('BToggle', vBToggle)
-  app.directive('BColorMode', vBColorMode)
-  app.directive('BModal', vBModal)
+  // Directives (kebab-case to match template usage: v-b-tooltip, v-b-modal, etc.)
+  app.directive('b-tooltip', vBTooltip)
+  app.directive('b-popover', vBPopover)
+  app.directive('b-toggle', vBToggle)
+  app.directive('b-color-mode', vBColorMode)
+  app.directive('b-modal', vBModal)
 }

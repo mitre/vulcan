@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
+import { RouterView } from 'vue-router'
 import Navbar from '@/components/navbar/App.vue'
-import Toaster from '@/components/toaster/Toaster.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
+import CommandPalette from '@/components/shared/CommandPalette.vue'
+import ErrorBoundary from '@/components/shared/ErrorBoundary.vue'
+import PageContainer from '@/components/shared/PageContainer.vue'
+import PageSpinner from '@/components/shared/PageSpinner.vue'
+import Toaster from '@/components/toaster/Toaster.vue'
+import { useColorMode, useCommandPalette } from '@/composables'
 import { useAuthStore, useNavigationStore } from '@/stores'
-import { useColorMode } from '@/composables'
 
 const authStore = useAuthStore()
 const navigationStore = useNavigationStore()
+
+// Command palette composable (manages open state, Cmd+J shortcut)
+const { open: showCommandPalette } = useCommandPalette()
 
 // Initialize color mode early to prevent flash
 useColorMode()
@@ -35,8 +43,11 @@ onMounted(() => {
 
 <template>
   <BApp class="d-flex flex-column vh-100">
-    <!-- Navbar - fixed at top -->
-    <header id="navbar" class="flex-shrink-0">
+    <!-- Command Palette (Cmd+J) -->
+    <CommandPalette />
+
+    <!-- Navbar - sticky at top, stays visible when scrolling -->
+    <header id="navbar" class="flex-shrink-0 sticky-top shadow-sm">
       <Navbar
         :navigation="navigationStore.links"
         :signed_in="authStore.signedIn"
@@ -44,6 +55,7 @@ onMounted(() => {
         profile_path="/users/edit"
         sign_out_path="/users/sign_out"
         :access_requests="navigationStore.accessRequests"
+        @open-command-palette="showCommandPalette = true"
       />
     </header>
 
@@ -53,28 +65,25 @@ onMounted(() => {
     </div>
 
     <!-- Main content area - scrollable, pb-5 accounts for fixed footer -->
+    <!-- Suspense handles async page loading, ErrorBoundary catches errors -->
     <main class="flex-grow-1 overflow-auto pb-5">
-      <div class="app-container py-3 py-lg-4 px-3 px-sm-4 px-lg-5 mx-auto">
-        <router-view />
-      </div>
+      <RouterView v-slot="{ Component }">
+        <template v-if="Component">
+          <ErrorBoundary>
+            <Suspense>
+              <component :is="Component" />
+              <template #fallback>
+                <PageContainer>
+                  <PageSpinner message="Loading..." />
+                </PageContainer>
+              </template>
+            </Suspense>
+          </ErrorBoundary>
+        </template>
+      </RouterView>
     </main>
 
     <!-- Footer - fixed at bottom of viewport -->
     <AppFooter />
   </BApp>
 </template>
-
-<style>
-/* App container - centered with max-width for modern feel */
-.app-container {
-  width: 100%;
-  max-width: 1600px; /* Wider - 50% less centered than 1400px */
-}
-
-/* Full-width override for pages that need edge-to-edge (like editors) */
-.app-container:has(.full-width-page) {
-  max-width: 100%;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-</style>

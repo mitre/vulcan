@@ -10,8 +10,8 @@
  * - Slot for additional content
  */
 
-import { ref, watch, computed } from 'vue'
 import { BModal } from 'bootstrap-vue-next'
+import { computed, ref, watch } from 'vue'
 
 // Props
 interface Props {
@@ -55,7 +55,7 @@ watch(
     if (isOpen) {
       comment.value = ''
     }
-  }
+  },
 )
 
 // Can confirm?
@@ -105,7 +105,7 @@ function handleCancel() {
         class="form-control"
         rows="3"
         :placeholder="commentPlaceholder"
-      ></textarea>
+      />
       <div v-if="requireComment && comment.trim().length === 0" class="form-text text-danger">
         Comment is required
       </div>
@@ -121,7 +121,7 @@ function handleCancel() {
         :disabled="!canConfirm || loading"
         @click="handleConfirm"
       >
-        <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
+        <span v-if="loading" class="spinner-border spinner-border-sm me-1" />
         {{ confirmText }}
       </button>
     </template>

@@ -4,8 +4,8 @@
  * Includes pagination controls when pagination is enabled
  */
 
-import type { RuleStatus, RuleSeverity, IPagination } from '@/types'
-import { RULE_STATUSES, RULE_SEVERITIES, SEVERITY_MAP } from '@/composables'
+import type { IPagination, RuleSeverity, RuleStatus } from '@/types'
+import { RULE_SEVERITIES, RULE_STATUSES, SEVERITY_MAP } from '@/composables'
 
 interface Props {
   totalCount: number
@@ -20,25 +20,24 @@ const props = withDefaults(defineProps<Props>(), {
   showFindReplace: false,
 })
 
-// v-model bindings
-const searchQuery = defineModel<string>('search', { default: '' })
-const filterStatus = defineModel<RuleStatus | 'all'>('filterStatus', { default: 'all' })
-const filterSeverity = defineModel<RuleSeverity | 'all'>('filterSeverity', { default: 'all' })
-const groupByStatus = defineModel<boolean>('groupByStatus', { default: false })
-
 const emit = defineEmits<{
   (e: 'toggleNested'): void
   (e: 'pageChange', page: number): void
   (e: 'openFindReplace'): void
 }>()
+// v-model bindings
+const searchQuery = defineModel<string>('search', { default: '' })
+const filterStatus = defineModel<RuleStatus | 'all'>('filterStatus', { default: 'all' })
+const filterSeverity = defineModel<RuleSeverity | 'all'>('filterSeverity', { default: 'all' })
+const groupByStatus = defineModel<boolean>('groupByStatus', { default: false })
 </script>
 
 <template>
-  <div class="requirements-toolbar d-flex flex-wrap gap-2 align-items-center p-3 bg-body-secondary border-bottom">
+  <div class="requirements-toolbar d-flex flex-wrap gap-2 align-items-center py-3 bg-body-secondary border-bottom">
     <!-- Search -->
     <div class="input-group" style="max-width: 250px;">
       <span class="input-group-text">
-        <i class="bi bi-search"></i>
+        <i class="bi bi-search" />
       </span>
       <input
         v-model="searchQuery"
@@ -50,7 +49,9 @@ const emit = defineEmits<{
 
     <!-- Status filter -->
     <select v-model="filterStatus" class="form-select form-select-sm" style="max-width: 180px;">
-      <option value="all">All Statuses</option>
+      <option value="all">
+        All Statuses
+      </option>
       <option v-for="status in RULE_STATUSES" :key="status" :value="status">
         {{ status }}
       </option>
@@ -58,7 +59,9 @@ const emit = defineEmits<{
 
     <!-- Severity filter -->
     <select v-model="filterSeverity" class="form-select form-select-sm" style="max-width: 130px;">
-      <option value="all">All Severities</option>
+      <option value="all">
+        All Severities
+      </option>
       <option v-for="sev in RULE_SEVERITIES" :key="sev" :value="sev">
         {{ SEVERITY_MAP[sev] || sev }}
       </option>
@@ -99,7 +102,7 @@ const emit = defineEmits<{
       title="Find & Replace"
       @click="emit('openFindReplace')"
     >
-      <i class="bi bi-search me-1"></i>
+      <i class="bi bi-search me-1" />
       Find
     </button>
 
@@ -125,7 +128,7 @@ const emit = defineEmits<{
           title="First page"
           @click="emit('pageChange', 1)"
         >
-          <i class="bi bi-chevron-double-left"></i>
+          <i class="bi bi-chevron-double-left" />
         </button>
         <button
           type="button"
@@ -134,7 +137,7 @@ const emit = defineEmits<{
           title="Previous page"
           @click="emit('pageChange', pagination.page - 1)"
         >
-          <i class="bi bi-chevron-left"></i>
+          <i class="bi bi-chevron-left" />
         </button>
         <button
           type="button"
@@ -143,7 +146,7 @@ const emit = defineEmits<{
           title="Next page"
           @click="emit('pageChange', pagination.page + 1)"
         >
-          <i class="bi bi-chevron-right"></i>
+          <i class="bi bi-chevron-right" />
         </button>
         <button
           type="button"
@@ -152,7 +155,7 @@ const emit = defineEmits<{
           title="Last page"
           @click="emit('pageChange', pagination.total_pages)"
         >
-          <i class="bi bi-chevron-double-right"></i>
+          <i class="bi bi-chevron-double-right" />
         </button>
       </div>
     </div>

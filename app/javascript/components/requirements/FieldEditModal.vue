@@ -6,8 +6,8 @@
  * Future: Can add markdown preview toggle
  */
 
-import { ref, watch, computed } from 'vue'
 import { BModal } from 'bootstrap-vue-next'
+import { computed, ref, watch } from 'vue'
 
 // Props
 interface Props {
@@ -83,7 +83,7 @@ function handleCancel() {
   >
     <!-- Help text -->
     <div v-if="helpText" class="alert alert-info small mb-3">
-      <i class="bi bi-info-circle me-1"></i>
+      <i class="bi bi-info-circle me-1" />
       {{ helpText }}
     </div>
 
@@ -95,11 +95,11 @@ function handleCancel() {
         :rows="rows"
         :placeholder="placeholder"
         :disabled="disabled"
-      ></textarea>
+      />
       <div class="d-flex justify-content-between mt-2 text-muted small">
         <span>{{ charCount }} characters</span>
         <span v-if="isDirty" class="text-warning">
-          <i class="bi bi-exclamation-circle me-1"></i>
+          <i class="bi bi-exclamation-circle me-1" />
           Modified
         </span>
       </div>
@@ -127,7 +127,7 @@ function handleCancel() {
             :disabled="disabled || !isDirty"
             @click="handleSave"
           >
-            <i class="bi bi-check-lg me-1"></i>
+            <i class="bi bi-check-lg me-1" />
             Save & Close
           </button>
         </div>

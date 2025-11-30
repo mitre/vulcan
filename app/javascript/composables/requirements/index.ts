@@ -19,13 +19,6 @@
  *   const { percentComplete, progressSummary } = useRequirementProgress()
  */
 
-// Base layer - status to fields mapping
-export {
-  useRequirementFields,
-  useRequirementFieldsFromRule,
-  type UseRequirementFieldsReturn,
-} from './useRequirementFields'
-
 // Orchestrator - editor state and actions
 export {
   useRequirementEditor,
@@ -33,9 +26,16 @@ export {
   type ValidationError,
 } from './useRequirementEditor'
 
+// Base layer - status to fields mapping
+export {
+  useRequirementFields,
+  useRequirementFieldsFromRule,
+  type UseRequirementFieldsReturn,
+} from './useRequirementFields'
+
 // Progress tracking
 export {
+  type StatusCount,
   useRequirementProgress,
   type UseRequirementProgressReturn,
-  type StatusCount,
 } from './useRequirementProgress'

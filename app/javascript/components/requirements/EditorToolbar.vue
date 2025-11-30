@@ -8,8 +8,8 @@
  * Note: Find/Replace moved to navigator (component-wide scope)
  */
 
-import { computed, ref } from 'vue'
 import type { IRule } from '@/types'
+import { computed } from 'vue'
 
 // Props
 interface Props {
@@ -74,11 +74,11 @@ const statusMessage = computed(() => {
       <!-- Left: Status -->
       <div class="d-flex align-items-center gap-2">
         <span v-if="statusMessage" :class="statusMessage.class" class="small">
-          <i :class="'bi ' + statusMessage.icon" class="me-1"></i>
+          <i :class="`bi ${statusMessage.icon}`" class="me-1" />
           {{ statusMessage.text }}
         </span>
         <span v-else-if="rule" class="text-success small">
-          <i class="bi bi-check-circle me-1"></i>
+          <i class="bi bi-check-circle me-1" />
           Saved
         </span>
       </div>
@@ -92,7 +92,7 @@ const statusMessage = computed(() => {
           :disabled="!rule"
           @click="emit('changelog')"
         >
-          <i class="bi bi-clock-history"></i>
+          <i class="bi bi-clock-history" />
           <span class="d-none d-md-inline ms-1">History</span>
         </button>
 
@@ -103,7 +103,7 @@ const statusMessage = computed(() => {
           :disabled="!rule"
           @click="emit('satisfies')"
         >
-          <i class="bi bi-diagram-3"></i>
+          <i class="bi bi-diagram-3" />
           <span class="d-none d-md-inline ms-1">Satisfies</span>
         </button>
 
@@ -116,7 +116,7 @@ const statusMessage = computed(() => {
             aria-expanded="false"
             :disabled="!rule"
           >
-            <i class="bi bi-three-dots"></i>
+            <i class="bi bi-three-dots" />
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
             <!-- Revert -->
@@ -126,7 +126,7 @@ const statusMessage = computed(() => {
                 :disabled="!canEdit"
                 @click="emit('revert')"
               >
-                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                <i class="bi bi-arrow-counterclockwise me-2" />
                 Revert Changes
               </button>
             </li>
@@ -137,7 +137,7 @@ const statusMessage = computed(() => {
                 class="dropdown-item"
                 @click="emit('lock')"
               >
-                <i class="bi bi-lock me-2"></i>
+                <i class="bi bi-lock me-2" />
                 Lock Control
               </button>
             </li>
@@ -147,7 +147,7 @@ const statusMessage = computed(() => {
                 class="dropdown-item"
                 @click="emit('unlock')"
               >
-                <i class="bi bi-unlock me-2"></i>
+                <i class="bi bi-unlock me-2" />
                 Unlock Control
               </button>
             </li>
@@ -163,7 +163,7 @@ const statusMessage = computed(() => {
           class="btn btn-sm btn-outline-primary"
           @click="emit('requestReview')"
         >
-          <i class="bi bi-send me-1"></i>
+          <i class="bi bi-send me-1" />
           Request Review
         </button>
 
@@ -173,8 +173,8 @@ const statusMessage = computed(() => {
           :disabled="!canEdit || !isDirty || loading || !isValid"
           @click="emit('save')"
         >
-          <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-          <i v-else class="bi bi-check-lg me-1"></i>
+          <span v-if="loading" class="spinner-border spinner-border-sm me-1" />
+          <i v-else class="bi bi-check-lg me-1" />
           Save
         </button>
       </div>

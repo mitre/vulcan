@@ -15,10 +15,12 @@
  *   } = useRequirementEditor(ruleRef, permissionsRef)
  */
 
-import { computed, ref, watch, type Ref, type ComputedRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
+import type { UseRequirementFieldsReturn } from './useRequirementFields'
 import type { IRule, IRuleUpdate } from '@/types'
+import { computed, ref, watch } from 'vue'
 import { useRules } from '@/composables/useRules'
-import { useRequirementFields, type UseRequirementFieldsReturn } from './useRequirementFields'
+import { useRequirementFields } from './useRequirementFields'
 
 export interface ValidationError {
   field: string

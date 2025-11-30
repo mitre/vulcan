@@ -1,9 +1,9 @@
 <script>
 import axios from 'axios'
 import SimpleTypeahead from 'vue3-simple-typeahead'
-import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
 import AlertMixinVue from '../../mixins/AlertMixin.vue'
 import FormMixinVue from '../../mixins/FormMixin.vue'
+import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
 
 export default {
   name: 'UpdateComponentDetailsModal',

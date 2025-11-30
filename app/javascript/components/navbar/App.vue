@@ -1,13 +1,13 @@
 <script>
 import semver from 'semver'
+import { useColorMode } from '@/composables'
+import { primaryModifierSymbol } from '@/composables/useKeyboardShortcuts'
 import { version } from '../../../../package.json'
 import NavbarItem from './NavbarItem.vue'
-import SrgIdSearch from './SrgIdSearch.vue'
-import { useColorMode } from '@/composables'
 
 export default {
   name: 'Navbar',
-  components: { NavbarItem, SrgIdSearch },
+  components: { NavbarItem },
   props: {
     navigation: {
       type: Array,
@@ -35,9 +35,10 @@ export default {
       default: () => [],
     },
   },
+  emits: ['openCommandPalette'],
   setup() {
     const { colorMode, resolvedMode, toggleColorMode, cycleColorMode } = useColorMode()
-    return { colorMode, resolvedMode, toggleColorMode, cycleColorMode }
+    return { colorMode, resolvedMode, toggleColorMode, cycleColorMode, primaryModifierSymbol }
   },
   data() {
     return {
@@ -91,14 +92,17 @@ export default {
         return false
       }
     },
+    openCommandPalette() {
+      this.$emit('openCommandPalette')
+    },
   },
 }
 </script>
 
 <template>
   <div>
-    <b-navbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark px-3 px-sm-4 px-lg-5">
-      <div class="navbar-container d-flex w-100 align-items-center mx-auto">
+    <b-navbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark border-bottom">
+      <div class="container-fluid container-app d-flex align-items-center">
         <b-navbar-brand id="heading" href="/">
           <i class="bi bi-broadcast" aria-hidden="true" />
           VULCAN
@@ -118,57 +122,67 @@ export default {
           </div>
 
           <div v-if="signed_in" class="d-flex justify-content-between right-container">
-            <SrgIdSearch />
-          <!-- Right aligned nav items -->
-          <b-navbar-nav class="ml-auto">
-            <!-- Color Mode Toggle -->
-            <b-nav-item
-              class="color-mode-toggle"
-              :title="colorModeTitle"
-              @click="cycleColorMode"
+            <!-- Global Search Button -->
+            <button
+              type="button"
+              class="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
+              title="Search (Cmd+J)"
+              @click="openCommandPalette"
             >
-              <i :class="['bi', colorModeIcon]" aria-hidden="true" />
-            </b-nav-item>
-            <!-- Notification Dropdown -->
-            <b-nav-item-dropdown right no-caret class="position-relative ml-3">
-              <template #button-content>
-                <i class="bi bi-bell" aria-hidden="true" />
-                <b-badge
-                  v-if="access_requests.length"
-                  variant="danger"
-                  class="rounded-pill position-absolute top-0 start-100 translate-middle"
-                  style="top: 0; right: 0"
-                >
-                  {{ access_requests.length }}
-                </b-badge>
-              </template>
-              <b-dropdown-item
-                v-for="(access_request, index) in access_requests"
-                :key="index"
-                :href="`/projects/${access_request.project_id}`"
+              <i class="bi bi-search" />
+              <span class="d-none d-md-inline">Search</span>
+              <kbd class="d-none d-lg-inline ms-1">{{ primaryModifierSymbol }}J</kbd>
+            </button>
+            <!-- Right aligned nav items -->
+            <b-navbar-nav class="ml-auto">
+              <!-- Color Mode Toggle -->
+              <b-nav-item
+                class="color-mode-toggle"
+                :title="colorModeTitle"
+                @click="cycleColorMode"
               >
-                {{
-                  `${access_request.user.name} has requested access to project ${access_request.project.name}`
-                }}
-              </b-dropdown-item>
-            </b-nav-item-dropdown>
-            <b-nav-item-dropdown right>
-              <template #button-content>
-                <i class="bi bi-person-circle" aria-hidden="true" />
-              </template>
-              <b-dropdown-item :href="profile_path">
-                Profile
-              </b-dropdown-item>
-              <b-dropdown-item v-if="users_path" :href="users_path">
-                Manage Users
-              </b-dropdown-item>
-              <b-dropdown-item :href="sign_out_path">
-                Sign Out
-              </b-dropdown-item>
-            </b-nav-item-dropdown>
-          </b-navbar-nav>
-        </div>
-      </b-collapse>
+                <i class="bi" :class="[colorModeIcon]" aria-hidden="true" />
+              </b-nav-item>
+              <!-- Notification Dropdown -->
+              <b-nav-item-dropdown right no-caret class="position-relative ml-3">
+                <template #button-content>
+                  <i class="bi bi-bell" aria-hidden="true" />
+                  <b-badge
+                    v-if="access_requests.length"
+                    variant="danger"
+                    class="rounded-pill position-absolute top-0 start-100 translate-middle"
+                    style="top: 0; right: 0"
+                  >
+                    {{ access_requests.length }}
+                  </b-badge>
+                </template>
+                <b-dropdown-item
+                  v-for="(access_request, index) in access_requests"
+                  :key="index"
+                  :href="`/projects/${access_request.project_id}`"
+                >
+                  {{
+                    `${access_request.user.name} has requested access to project ${access_request.project.name}`
+                  }}
+                </b-dropdown-item>
+              </b-nav-item-dropdown>
+              <b-nav-item-dropdown right>
+                <template #button-content>
+                  <i class="bi bi-person-circle" aria-hidden="true" />
+                </template>
+                <b-dropdown-item :href="profile_path">
+                  Profile
+                </b-dropdown-item>
+                <b-dropdown-item v-if="users_path" :href="users_path">
+                  Manage Users
+                </b-dropdown-item>
+                <b-dropdown-item :href="sign_out_path">
+                  Sign Out
+                </b-dropdown-item>
+              </b-nav-item-dropdown>
+            </b-navbar-nav>
+          </div>
+        </b-collapse>
       </div>
     </b-navbar>
     <b-alert
@@ -184,11 +198,6 @@ export default {
 </template>
 
 <style scoped>
-/* Navbar content container - matches main content width */
-.navbar-container {
-  max-width: 1600px;
-}
-
 #heading {
   font-family: verdana, arial, helvetica, sans-serif;
   font-weight: 700;
@@ -213,5 +222,14 @@ export default {
 }
 .color-mode-toggle:hover i {
   transform: rotate(15deg);
+}
+/* Search button keyboard hint */
+.btn kbd {
+  padding: 0.125rem 0.25rem;
+  font-size: 0.625rem;
+  font-family: var(--bs-font-monospace);
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 </style>

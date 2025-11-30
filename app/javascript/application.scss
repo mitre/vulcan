@@ -68,6 +68,21 @@ html {
   z-index: 1060 !important;
 }
 
+// =============================================================================
+// APP LAYOUT SYSTEM
+// =============================================================================
+// Use Bootstrap's container-fluid as base, constrain with max-width.
+// This gives us edge-to-edge on mobile, constrained width on desktop.
+//
+// Usage:
+//   Standard pages: .container-fluid.container-app
+//   Full-width pages: .container-fluid (no max-width constraint)
+// =============================================================================
+
+.container-app {
+  max-width: 1600px;
+}
+
 // Ensure typeahead input matches Bootstrap form-control styling
 .simple-typeahead > input {
   display: block;

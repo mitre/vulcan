@@ -11,15 +11,16 @@
  *   const { showField, isDisabled, ... } = useRequirementFields(computed(() => rule.value?.status))
  */
 
-import { computed, type Ref, type ComputedRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
+import type { RuleStatusType, StatusFieldConfig } from '@/config'
+import { computed } from 'vue'
 import {
   getFieldConfig,
   getFieldTooltip,
   getStatusRiskLevel,
   RISK_LEVEL_DESCRIPTIONS,
   RULE_STATUSES,
-  type RuleStatusType,
-  type StatusFieldConfig,
+
 } from '@/config'
 
 export interface UseRequirementFieldsReturn {

@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+/**
+ * Component Show Page
+ *
+ * Uses async setup with Suspense for loading state.
+ */
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { getComponent } from '@/apis/components.api'
 import { getProject } from '@/apis/projects.api'
 import ProjectComponent from '@/components/components/ProjectComponent.vue'
+import PageContainer from '@/components/shared/PageContainer.vue'
 import { useAuthStore } from '@/stores'
 
 // Rule constants (matching app/constants/rule_constants.rb)
@@ -28,12 +34,24 @@ const SEVERITIES_MAP = {
 const route = useRoute()
 const authStore = useAuthStore()
 
-const component = ref<any>(null)
-const project = ref<any>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
-
 const availableRoles = ['viewer', 'author', 'reviewer', 'admin']
+
+// Top-level await makes this component suspensible
+const componentId = Number(route.params.id)
+const componentResponse = await getComponent(componentId)
+const component = componentResponse.data
+
+if (!component) {
+  throw new Error('Component not found')
+}
+
+// Fetch project data
+const projectResponse = await getProject(component.project_id)
+const project = projectResponse.data
+
+if (!project) {
+  throw new Error('Project not found')
+}
 
 // Get current user from auth store
 const currentUserId = computed(() => authStore.user?.id)
@@ -44,59 +62,27 @@ const effectivePermissions = computed(() => {
   // Global admins have admin everywhere
   if (isAdmin.value) return 'admin'
 
-  if (!component.value?.memberships || !currentUserId.value) return 'viewer'
+  if (!component?.memberships || !currentUserId.value) return 'viewer'
 
   // Find current user's membership in this component
-  const membership = component.value.memberships.find(
+  const membership = component.memberships.find(
     (m: any) => m.user_id === currentUserId.value,
   )
 
   if (membership?.role) return membership.role
 
   // Check inherited memberships from project
-  const inheritedMembership = component.value.inherited_memberships?.find(
+  const inheritedMembership = component.inherited_memberships?.find(
     (m: any) => m.user_id === currentUserId.value,
   )
 
   return inheritedMembership?.role || 'viewer'
 })
-
-onMounted(async () => {
-  try {
-    const componentId = Number(route.params.id)
-    const componentResponse = await getComponent(componentId)
-    component.value = componentResponse.data
-
-    // Fetch project data
-    if (component.value?.project_id) {
-      const projectResponse = await getProject(component.value.project_id)
-      project.value = projectResponse.data
-    }
-  }
-  catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load component'
-    console.error('Failed to load component:', err)
-  }
-  finally {
-    loading.value = false
-  }
-})
 </script>
 
 <template>
-  <div>
-    <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
-
-    <div v-else-if="error" class="alert alert-danger">
-      {{ error }}
-    </div>
-
+  <PageContainer>
     <ProjectComponent
-      v-else-if="component && project"
       :initial-component-state="component"
       :project="project"
       :statuses="STATUSES"
@@ -106,5 +92,5 @@ onMounted(async () => {
       :current_user_id="currentUserId"
       :effective_permissions="effectivePermissions"
     />
-  </div>
+  </PageContainer>
 </template>

@@ -11,8 +11,8 @@
 
 import type { ISlimRule } from '@/types'
 import { useRules } from '@/composables'
-import RequirementNavigator from './RequirementNavigator.vue'
 import RequirementEditor from './RequirementEditor.vue'
+import RequirementNavigator from './RequirementNavigator.vue'
 
 // Props
 interface Props {

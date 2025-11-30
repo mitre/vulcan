@@ -12,9 +12,9 @@
  *   } = useRequirementProgress()
  */
 
+import type { RuleStatusType } from '@/config'
 import { computed } from 'vue'
 import { useRulesStore } from '@/stores'
-import type { RuleStatusType } from '@/config'
 
 export interface StatusCount {
   status: RuleStatusType

@@ -2,42 +2,28 @@
 /**
  * STIGs Index Page
  *
- * Uses unified BenchmarkList component via useBenchmarks composable.
+ * Uses async setup with Suspense for loading state.
  */
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
 import { BenchmarkList } from '@/components/benchmarks'
+import PageContainer from '@/components/shared/PageContainer.vue'
 import { useBenchmarks } from '@/composables'
 import { useAuthStore } from '@/stores'
 
 // Use unified benchmark composable for STIGs
-const { items, loading, error, refresh, upload, remove } = useBenchmarks('stig')
+const { items, refresh, upload, remove } = useBenchmarks('stig')
 
 // Auth state
 const authStore = useAuthStore()
 const { isAdmin } = storeToRefs(authStore)
 
-// Fetch on mount
-onMounted(async () => {
-  await refresh()
-})
+// Top-level await makes this component suspensible
+await refresh()
 </script>
 
 <template>
-  <div>
-    <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <p class="mt-2">
-        Loading STIGs...
-      </p>
-    </div>
-    <div v-else-if="error" class="alert alert-danger">
-      {{ error }}
-    </div>
+  <PageContainer>
     <BenchmarkList
-      v-else
       type="stig"
       :items="items"
       :is-admin="isAdmin"
@@ -45,5 +31,5 @@ onMounted(async () => {
       @upload="upload"
       @delete="remove"
     />
-  </div>
+  </PageContainer>
 </template>

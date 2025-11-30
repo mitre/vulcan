@@ -11,8 +11,8 @@
  * This component is now a thin UI wrapper around the composable.
  */
 
-import { computed, ref, toRef, watch } from 'vue'
 import type { IRule } from '@/types'
+import { computed, ref, toRef, watch } from 'vue'
 import { useRequirementEditor, useRules } from '@/composables'
 import ActionCommentModal from '../shared/ActionCommentModal.vue'
 import ChangelogModal from './ChangelogModal.vue'
@@ -20,6 +20,13 @@ import EditorToolbar from './EditorToolbar.vue'
 import FieldEditModal from './FieldEditModal.vue'
 import SeverityBadge from './SeverityBadge.vue'
 import StatusBadge from './StatusBadge.vue'
+
+const props = defineProps<Props>()
+
+// Emits
+const emit = defineEmits<{
+  (e: 'saved'): void
+}>()
 
 // Severity options
 const SEVERITY_OPTIONS = [
@@ -36,13 +43,6 @@ interface Props {
   componentId?: number
   projectPrefix?: string
 }
-
-const props = defineProps<Props>()
-
-// Emits
-const emit = defineEmits<{
-  (e: 'saved'): void
-}>()
 
 // Convert props to refs for the composable
 const ruleRef = toRef(props, 'rule')
@@ -137,7 +137,8 @@ async function handleActionConfirm(comment: string) {
       await refreshRule(props.rule.id)
       pendingAction.value = null
     }
-  } finally {
+  }
+  finally {
     actionLoading.value = false
   }
 }
@@ -282,8 +283,10 @@ watch(
     <!-- No selection -->
     <div v-if="!rule" class="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
       <div class="text-center">
-        <i class="bi bi-file-text" style="font-size: 3rem"></i>
-        <p class="mt-2">Select a requirement to edit</p>
+        <i class="bi bi-file-text" style="font-size: 3rem" />
+        <p class="mt-2">
+          Select a requirement to edit
+        </p>
       </div>
     </div>
 
@@ -295,10 +298,12 @@ watch(
           <div>
             <h5 class="mb-1">
               <span class="font-monospace">{{ rule.rule_id }}</span>
-              <i v-if="isLocked" class="bi bi-lock-fill text-muted ms-2" title="Locked"></i>
-              <i v-if="isMerged" class="bi bi-diagram-3 text-info ms-2" title="Merged rule"></i>
+              <i v-if="isLocked" class="bi bi-lock-fill text-muted ms-2" title="Locked" />
+              <i v-if="isMerged" class="bi bi-diagram-3 text-info ms-2" title="Merged rule" />
             </h5>
-            <p class="mb-0 text-muted small">{{ rule.version }}</p>
+            <p class="mb-0 text-muted small">
+              {{ rule.version }}
+            </p>
           </div>
           <div class="d-flex gap-2 align-items-center">
             <!-- Risk indicator -->
@@ -311,7 +316,7 @@ watch(
               }"
               :title="riskDescription"
             >
-              <i class="bi bi-exclamation-triangle me-1"></i>
+              <i class="bi bi-exclamation-triangle me-1" />
               {{ riskLevel === 'high' ? 'Review periodically' : 'Monitor' }}
             </span>
             <StatusBadge :status="rule.status" />
@@ -329,10 +334,10 @@ watch(
             @click="toggleSection('status')"
           >
             <strong>
-              <i class="bi bi-gear me-2"></i>
+              <i class="bi bi-gear me-2" />
               Status & Classification
             </strong>
-            <i :class="isOpen('status') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+            <i :class="isOpen('status') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" />
           </div>
           <div v-if="isOpen('status')" class="section-body p-3">
             <div class="row g-3">
@@ -344,7 +349,7 @@ watch(
                     v-if="getTooltip('status')"
                     class="bi bi-info-circle text-muted ms-1"
                     :title="getTooltip('status') || ''"
-                  ></i>
+                  />
                 </label>
                 <select
                   v-model="editedRule.status"
@@ -352,7 +357,9 @@ watch(
                   :disabled="!canEdit"
                   @change="markDirty"
                 >
-                  <option v-for="s in RULE_STATUSES" :key="s" :value="s">{{ s }}</option>
+                  <option v-for="s in RULE_STATUSES" :key="s" :value="s">
+                    {{ s }}
+                  </option>
                 </select>
               </div>
 
@@ -364,7 +371,7 @@ watch(
                     v-if="getTooltip('rule_severity')"
                     class="bi bi-info-circle text-muted ms-1"
                     :title="getTooltip('rule_severity') || ''"
-                  ></i>
+                  />
                 </label>
                 <select
                   v-model="editedRule.rule_severity"
@@ -386,7 +393,7 @@ watch(
                     v-if="getTooltip('title')"
                     class="bi bi-info-circle text-muted ms-1"
                     :title="getTooltip('title') || ''"
-                  ></i>
+                  />
                 </label>
                 <textarea
                   v-model="editedRule.title"
@@ -394,7 +401,7 @@ watch(
                   rows="2"
                   :disabled="isDisabled('title')"
                   @input="markDirty"
-                ></textarea>
+                />
               </div>
 
               <!-- Status Justification -->
@@ -406,7 +413,7 @@ watch(
                     v-if="getTooltip('status_justification')"
                     class="bi bi-info-circle text-muted ms-1"
                     :title="getTooltip('status_justification') || ''"
-                  ></i>
+                  />
                 </label>
                 <textarea
                   v-model="editedRule.status_justification"
@@ -416,7 +423,7 @@ watch(
                   :disabled="isDisabled('status_justification')"
                   placeholder="Explain why this status was selected..."
                   @input="markDirty"
-                ></textarea>
+                />
                 <div
                   v-if="validationErrors.some(e => e.field === 'status_justification')"
                   class="invalid-feedback"
@@ -433,7 +440,7 @@ watch(
                     v-if="getTooltip('artifact_description')"
                     class="bi bi-info-circle text-muted ms-1"
                     :title="getTooltip('artifact_description') || ''"
-                  ></i>
+                  />
                 </label>
                 <textarea
                   v-model="editedRule.artifact_description"
@@ -443,7 +450,7 @@ watch(
                   :disabled="isDisabled('artifact_description')"
                   placeholder="Provide evidence (code files, documentation, screenshots)..."
                   @input="markDirty"
-                ></textarea>
+                />
                 <div
                   v-if="validationErrors.some(e => e.field === 'artifact_description')"
                   class="invalid-feedback"
@@ -462,7 +469,7 @@ watch(
             @click="toggleSection('vuln')"
           >
             <strong>
-              <i class="bi bi-shield-exclamation me-2"></i>
+              <i class="bi bi-shield-exclamation me-2" />
               Vulnerability Discussion
             </strong>
             <div class="d-flex align-items-center gap-2">
@@ -471,14 +478,14 @@ watch(
                 title="Expand to full editor"
                 @click.stop="showVulnModal = true"
               >
-                <i class="bi bi-arrows-fullscreen"></i>
+                <i class="bi bi-arrows-fullscreen" />
               </button>
-              <i :class="isOpen('vuln') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+              <i :class="isOpen('vuln') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" />
             </div>
           </div>
           <div v-if="isOpen('vuln')" class="section-body p-3">
             <p class="text-muted small mb-2">
-              <i class="bi bi-info-circle me-1"></i>
+              <i class="bi bi-info-circle me-1" />
               {{ getTooltip('vuln_discussion') || 'Discuss, in detail, the rationale for this control\'s vulnerability' }}
             </p>
             <textarea
@@ -488,7 +495,7 @@ watch(
               :disabled="isDisabled('vuln_discussion', 'disa')"
               placeholder="Describe the vulnerability and its impact..."
               @input="markDirty"
-            ></textarea>
+            />
           </div>
         </div>
 
@@ -499,7 +506,7 @@ watch(
             @click="toggleSection('check')"
           >
             <strong>
-              <i class="bi bi-check2-square me-2"></i>
+              <i class="bi bi-check2-square me-2" />
               Check Text
             </strong>
             <div class="d-flex align-items-center gap-2">
@@ -508,14 +515,14 @@ watch(
                 title="Expand to full editor"
                 @click.stop="showCheckModal = true"
               >
-                <i class="bi bi-arrows-fullscreen"></i>
+                <i class="bi bi-arrows-fullscreen" />
               </button>
-              <i :class="isOpen('check') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+              <i :class="isOpen('check') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" />
             </div>
           </div>
           <div v-if="isOpen('check')" class="section-body p-3">
             <p class="text-muted small mb-2">
-              <i class="bi bi-info-circle me-1"></i>
+              <i class="bi bi-info-circle me-1" />
               The check/test script to validate compliance
             </p>
             <div v-if="rule.checks?.length">
@@ -527,7 +534,7 @@ watch(
                   :disabled="isDisabled('content', 'check')"
                   placeholder="Enter check text..."
                   @input="markDirty"
-                ></textarea>
+                />
               </div>
             </div>
             <div v-else>
@@ -537,7 +544,7 @@ watch(
                 :disabled="isDisabled('content', 'check')"
                 placeholder="Enter check text..."
                 @input="markDirty"
-              ></textarea>
+              />
             </div>
           </div>
         </div>
@@ -549,7 +556,7 @@ watch(
             @click="toggleSection('fix')"
           >
             <strong>
-              <i class="bi bi-wrench me-2"></i>
+              <i class="bi bi-wrench me-2" />
               Fix Text
             </strong>
             <div class="d-flex align-items-center gap-2">
@@ -558,14 +565,14 @@ watch(
                 title="Expand to full editor"
                 @click.stop="showFixModal = true"
               >
-                <i class="bi bi-arrows-fullscreen"></i>
+                <i class="bi bi-arrows-fullscreen" />
               </button>
-              <i :class="isOpen('fix') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+              <i :class="isOpen('fix') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" />
             </div>
           </div>
           <div v-if="isOpen('fix')" class="section-body p-3">
             <p class="text-muted small mb-2">
-              <i class="bi bi-info-circle me-1"></i>
+              <i class="bi bi-info-circle me-1" />
               {{ getTooltip('fixtext') }}
             </p>
             <textarea
@@ -575,7 +582,7 @@ watch(
               :disabled="isDisabled('fixtext')"
               placeholder="Describe how to remediate..."
               @input="markDirty"
-            ></textarea>
+            />
           </div>
         </div>
 
@@ -586,17 +593,17 @@ watch(
             @click="toggleSection('mitigation')"
           >
             <strong>
-              <i class="bi bi-shield-check me-2"></i>
+              <i class="bi bi-shield-check me-2" />
               Mitigations & POA&M
             </strong>
-            <i :class="isOpen('mitigation') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+            <i :class="isOpen('mitigation') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" />
           </div>
           <div v-if="isOpen('mitigation')" class="section-body p-3">
             <div
               class="alert small mb-3"
               :class="validationErrors.some(e => e.field === 'mitigations') ? 'alert-warning' : 'alert-info'"
             >
-              <i class="bi bi-info-circle me-1"></i>
+              <i class="bi bi-info-circle me-1" />
               Select either Mitigations OR POA&M (not both)
               <span v-if="validationErrors.some(e => e.field === 'mitigations')" class="fw-bold">
                 - {{ validationErrors.find(e => e.field === 'mitigations')?.message }}
@@ -626,7 +633,7 @@ watch(
                   v-if="getTooltip('mitigations')"
                   class="bi bi-info-circle text-muted ms-1"
                   :title="getTooltip('mitigations') || ''"
-                ></i>
+                />
               </label>
               <textarea
                 v-model="editedDisaDescription.mitigations"
@@ -635,7 +642,7 @@ watch(
                 :disabled="!canEdit"
                 placeholder="Describe how the system mitigates this vulnerability..."
                 @input="markDirty"
-              ></textarea>
+              />
             </div>
 
             <!-- POA&M Toggle -->
@@ -661,7 +668,7 @@ watch(
                   v-if="getTooltip('poam')"
                   class="bi bi-info-circle text-muted ms-1"
                   :title="getTooltip('poam') || ''"
-                ></i>
+                />
               </label>
               <textarea
                 v-model="editedDisaDescription.poam"
@@ -670,7 +677,7 @@ watch(
                 :disabled="!canEdit"
                 placeholder="Describe the POA&M action, including start and end dates..."
                 @input="markDirty"
-              ></textarea>
+              />
             </div>
           </div>
         </div>
@@ -682,15 +689,15 @@ watch(
             @click="toggleSection('vendor')"
           >
             <strong>
-              <i class="bi bi-chat-left-text me-2"></i>
+              <i class="bi bi-chat-left-text me-2" />
               Vendor Comments
             </strong>
             <span class="badge bg-secondary small">Internal</span>
-            <i :class="isOpen('vendor') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" class="ms-auto"></i>
+            <i :class="isOpen('vendor') ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" class="ms-auto" />
           </div>
           <div v-if="isOpen('vendor')" class="section-body p-3">
             <p class="text-muted small mb-2">
-              <i class="bi bi-eye-slash me-1"></i>
+              <i class="bi bi-eye-slash me-1" />
               Internal notes - not published in final STIG
             </p>
             <textarea
@@ -700,7 +707,7 @@ watch(
               :disabled="isDisabled('vendor_comments')"
               placeholder="Optional internal comments..."
               @input="markDirty"
-            ></textarea>
+            />
           </div>
         </div>
 

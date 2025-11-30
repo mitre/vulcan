@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import NewProject from '@/components/project/NewProject.vue'
+import PageContainer from '@/components/shared/PageContainer.vue'
 </script>
 
 <template>
-  <div>
+  <PageContainer>
     <NewProject />
-  </div>
+  </PageContainer>
 </template>

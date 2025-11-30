@@ -6,31 +6,48 @@
  * Pattern: Component → Composable → Store → API
  */
 
+// Requirements composables (hierarchical)
+export {
+  useRequirementEditor,
+  useRequirementFields,
+  useRequirementFieldsFromRule,
+  useRequirementProgress,
+} from './requirements'
 // Domain composables
 export { useAuth } from './useAuth'
 export { useBenchmarks } from './useBenchmarks'
+// UI composables
+export { useColorMode } from './useColorMode'
+export type { ColorMode } from './useColorMode'
+export { useCommandPalette } from './useCommandPalette'
 export { useComponents } from './useComponents'
 export { formatDate, formatDateTime, formatRelative, useDateTime } from './useDateTime'
+export { useGlobalSearch } from './useGlobalSearch'
 export { useNavigation } from './useNavigation'
 // Utility composables
 export { hasPermission, isAdmin, isAuthor, isReviewer, isViewer, usePermissions } from './usePermissions'
 export { useProjects } from './useProjects'
-// Requirements composables (hierarchical)
-export {
-  useRequirementFields,
-  useRequirementFieldsFromRule,
-  useRequirementEditor,
-  useRequirementProgress,
-} from './requirements'
-export { useRules, RULE_STATUSES, RULE_SEVERITIES, SEVERITY_MAP } from './useRules'
+export { RULE_SEVERITIES, RULE_STATUSES, SEVERITY_MAP, useRules } from './useRules'
+
 export { useSrgs } from './useSrgs'
 export { useStigs } from './useStigs'
 // Toast composable
 export { useAppToast } from './useToast'
 export type { ToastOptions } from './useToast'
 
-// UI composables
-export { useColorMode } from './useColorMode'
-export type { ColorMode } from './useColorMode'
-
 export { useUsers } from './useUsers'
+
+// Keyboard shortcuts composable
+export {
+  formatShortcut,
+  getKeySymbol,
+  isMac,
+  isInputFocused,
+  isPrimaryModifier,
+  KEY_SYMBOLS,
+  primaryModifier,
+  primaryModifierSymbol,
+  useKeyboardShortcuts,
+  usePrimaryShortcut,
+} from './useKeyboardShortcuts'
+export type { ShortcutDefinition } from './useKeyboardShortcuts'

@@ -1,10 +1,25 @@
 <script setup lang="ts">
-// TODO: Add components list
+/**
+ * Components Index Page
+ *
+ * Lists all components the user has access to.
+ * Uses async setup with Suspense for loading state.
+ *
+ * TODO: Implement component listing with useComponents composable
+ */
+import PageContainer from '@/components/shared/PageContainer.vue'
+
+// TODO: Implement with async setup pattern:
+// const { components, refresh } = useComponents()
+// await refresh()
 </script>
 
 <template>
-  <div>
+  <PageContainer>
     <h1>Components</h1>
-    <p>Components list page</p>
-  </div>
+    <p class="text-muted">
+      Components list page - implementation pending
+    </p>
+    <!-- TODO: Add ComponentsList component -->
+  </PageContainer>
 </template>

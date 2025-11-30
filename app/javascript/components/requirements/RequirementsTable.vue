@@ -6,14 +6,14 @@
  * Uses shared components for badges, toolbar, progress bar.
  */
 
+import type { ISlimRule, RuleSeverity, RuleStatus } from '@/types'
 import { computed, ref } from 'vue'
-import type { ISlimRule, RuleStatus, RuleSeverity } from '@/types'
-import { useRules, RULE_STATUSES, RULE_SEVERITIES } from '@/composables'
-import StatusBadge from './StatusBadge.vue'
-import SeverityBadge from './SeverityBadge.vue'
-import StatusProgressBar from './StatusProgressBar.vue'
-import RequirementsToolbar from './RequirementsToolbar.vue'
+import { RULE_SEVERITIES, RULE_STATUSES, useRules } from '@/composables'
 import FindReplaceModal from './FindReplaceModal.vue'
+import RequirementsToolbar from './RequirementsToolbar.vue'
+import SeverityBadge from './SeverityBadge.vue'
+import StatusBadge from './StatusBadge.vue'
+import StatusProgressBar from './StatusProgressBar.vue'
 
 // Props
 interface Props {
@@ -71,8 +71,8 @@ const filteredRules = computed(() => {
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase()
     result = result.filter(r =>
-      r.rule_id.toLowerCase().includes(q) ||
-      r.title.toLowerCase().includes(q)
+      r.rule_id.toLowerCase().includes(q)
+      || r.title.toLowerCase().includes(q),
     )
   }
 
@@ -106,7 +106,8 @@ const groupedRules = computed(() => {
 function toggleSort(field: typeof sortField.value) {
   if (sortField.value === field) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  } else {
+  }
+  else {
     sortField.value = field
     sortDir.value = 'asc'
   }
@@ -164,7 +165,9 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
             <th class="sortable" style="width: 90px" @click="toggleSort('rule_severity')">
               Severity{{ sortIndicator('rule_severity') }}
             </th>
-            <th style="width: 70px">Review</th>
+            <th style="width: 70px">
+              Review
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -193,7 +196,7 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
             </td>
             <td class="font-monospace small">
               {{ rule.rule_id }}
-              <i v-if="rule.locked" class="bi bi-lock-fill text-muted"></i>
+              <i v-if="rule.locked" class="bi bi-lock-fill text-muted" />
             </td>
             <td class="text-truncate" style="max-width: 400px">
               {{ rule.title }}
@@ -206,7 +209,9 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
             </td>
           </tr>
           <tr v-if="!sortedRules.length">
-            <td colspan="5" class="text-center text-muted py-4">No requirements match filters</td>
+            <td colspan="5" class="text-center text-muted py-4">
+              No requirements match filters
+            </td>
           </tr>
         </tbody>
       </table>
@@ -227,9 +232,15 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
                 @click="emit('select', rule)"
                 @dblclick="emit('openFocus', rule)"
               >
-                <td class="font-monospace small" style="width: 90px">{{ rule.rule_id }}</td>
-                <td class="text-truncate">{{ rule.title }}</td>
-                <td style="width: 90px"><SeverityBadge :severity="rule.rule_severity" /></td>
+                <td class="font-monospace small" style="width: 90px">
+                  {{ rule.rule_id }}
+                </td>
+                <td class="text-truncate">
+                  {{ rule.title }}
+                </td>
+                <td style="width: 90px">
+                  <SeverityBadge :severity="rule.rule_severity" />
+                </td>
               </tr>
             </tbody>
           </table>

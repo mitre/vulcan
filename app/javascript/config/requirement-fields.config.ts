@@ -10,8 +10,6 @@
  * - check: Check/test script fields
  */
 
-import type { RuleStatus } from '@/types'
-
 // All possible rule statuses
 export const RULE_STATUSES = [
   'Not Yet Determined',

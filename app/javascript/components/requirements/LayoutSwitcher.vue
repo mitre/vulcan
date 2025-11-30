@@ -28,7 +28,7 @@ function setMode(mode: LayoutMode) {
       title="Table view - for triage"
       @click="setMode('table')"
     >
-      <i class="bi bi-table"></i>
+      <i class="bi bi-table" />
       <span class="ms-1 d-none d-md-inline">Table</span>
     </button>
     <button
@@ -38,7 +38,7 @@ function setMode(mode: LayoutMode) {
       title="Focus view - for authoring"
       @click="setMode('focus')"
     >
-      <i class="bi bi-pencil-square"></i>
+      <i class="bi bi-pencil-square" />
       <span class="ms-1 d-none d-md-inline">Focus</span>
     </button>
   </div>

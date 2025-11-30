@@ -72,7 +72,7 @@ export default {
       :id="`ruleEditor-additional-field-${question.id}`"
       :value="findAnswerText(question.id)"
       :disabled="disabled"
-      :options="question.options"
+      :options="question.options || []"
       :class="inputClass(question.name)"
       @input="addOrUpdateAnswer($event, question.id)"
     />

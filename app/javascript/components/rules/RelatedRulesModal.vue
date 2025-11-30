@@ -424,11 +424,10 @@ export default {
             </b-badge>
           </h3>
         </b-card-header>
-        <b-card-group
+        <div
           v-for="relatedRule in filteredGroupedRules[parent]"
           :key="relatedRule.name"
           class="mb-2"
-          deck
         >
           <b-card no-body class="mb-2 h-100">
             <b-card-header
@@ -526,7 +525,7 @@ export default {
               </b-card-body>
             </b-collapse>
           </b-card>
-        </b-card-group>
+        </div>
       </div>
     </b-modal>
   </div>

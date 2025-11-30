@@ -16,6 +16,8 @@ import RuleOverview from './RuleOverview.vue'
 const props = defineProps<{
   type: BenchmarkType
   benchmark: IBenchmark
+  /** Optional: Rule ID to select initially (for deep-linking from search) */
+  initialRuleId?: number | null
 }>()
 
 // Selected rule state
@@ -27,11 +29,20 @@ const sortedRules = computed(() => {
   return [...props.benchmark.rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id))
 })
 
-// Select first rule initially
+// Select initial rule: deep-linked rule if provided, otherwise first rule
 watch(
   () => sortedRules.value,
   (rules) => {
     if (rules.length > 0 && !selectedRule.value) {
+      // If initialRuleId provided, find and select that rule
+      if (props.initialRuleId) {
+        const targetRule = rules.find(r => r.id === props.initialRuleId)
+        if (targetRule) {
+          selectedRule.value = targetRule
+          return
+        }
+      }
+      // Fallback to first rule
       selectedRule.value = rules[0]
     }
   },

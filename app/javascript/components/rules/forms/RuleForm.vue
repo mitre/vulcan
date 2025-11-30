@@ -1,12 +1,13 @@
 <script>
 import FormFeedbackMixinVue from '../../../mixins/FormFeedbackMixin.vue'
+import TooltipIcon from '../../shared/TooltipIcon.vue'
 import AdditionalQuestions from './AdditionalQuestions'
 import CheckForm from './CheckForm'
 import DisaRuleDescriptionForm from './DisaRuleDescriptionForm'
 
 export default {
   name: 'RuleForm',
-  components: { DisaRuleDescriptionForm, CheckForm, AdditionalQuestions },
+  components: { DisaRuleDescriptionForm, CheckForm, AdditionalQuestions, TooltipIcon },
   mixins: [FormFeedbackMixinVue],
   props: {
     rule: {
@@ -128,10 +129,9 @@ export default {
             Status
             <i
               v-if="tooltips.status"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.status"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.status"
             />
           </label>
           <b-form-select
@@ -158,10 +158,9 @@ export default {
             Status Justification
             <i
               v-if="tooltips.status_justification"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.status_justification"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.status_justification"
             />
           </label>
           <b-form-textarea
@@ -193,10 +192,9 @@ export default {
             Title
             <i
               v-if="tooltips.title"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.title"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.title"
             />
           </label>
           <b-form-textarea
@@ -239,10 +237,9 @@ export default {
           Version
           <i
             v-if="tooltips.version"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips.version"
             class="bi bi-info-circle"
             aria-hidden="true"
-            :title="tooltips.version"
           />
         </label>
         <b-form-input
@@ -270,10 +267,9 @@ export default {
           Artifact Description
           <i
             v-if="tooltips.artifact_description"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips.artifact_description"
             class="bi bi-info-circle"
             aria-hidden="true"
-            :title="tooltips.artifact_description"
           />
         </label>
         <b-form-textarea
@@ -319,10 +315,9 @@ export default {
             Fix ID
             <i
               v-if="tooltips.fix_id"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.fix_id"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.fix_id"
             />
           </label>
           <b-form-input
@@ -351,10 +346,9 @@ export default {
             Fix Text Reference
             <i
               v-if="tooltips.fixtext_fixref"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.fixtext_fixref"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.fixtext_fixref"
             />
           </label>
           <b-form-input
@@ -383,10 +377,9 @@ export default {
           Fix
           <i
             v-if="tooltips.fixtext"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips.fixtext"
             class="bi bi-info-circle"
             aria-hidden="true"
-            :title="tooltips.fixtext"
           />
         </label>
         <b-form-textarea
@@ -418,17 +411,16 @@ export default {
             Severity
             <i
               v-if="tooltips.rule_severity"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.rule_severity"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.rule_severity"
             />
           </label>
           <b-form-select
             :id="`ruleEditor-rule_severity-${mod}`"
             :value="rule.rule_severity"
             :class="inputClass('rule_severity')"
-            :options="severities"
+            :options="Array.isArray(severities) ? severities : Object.keys(severities)"
             :disabled="disabled || fields.disabled.includes('rule_severity')"
             @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
           >
@@ -458,10 +450,9 @@ export default {
             Rule Weight
             <i
               v-if="tooltips.rule_weight"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.rule_weight"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.rule_weight"
             />
           </label>
           <b-form-input
@@ -492,10 +483,9 @@ export default {
             Identity
             <i
               v-if="tooltips.ident"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.ident"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.ident"
             />
           </label>
           <b-form-input
@@ -524,10 +514,9 @@ export default {
             Identity System
             <i
               v-if="tooltips.ident_system"
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="tooltips.ident_system"
               class="bi bi-info-circle"
               aria-hidden="true"
-              :title="tooltips.ident_system"
             />
           </label>
           <b-form-input
@@ -556,10 +545,9 @@ export default {
           Vendor Comments
           <i
             v-if="tooltips.vendor_comments"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips.vendor_comments"
             class="bi bi-info-circle"
             aria-hidden="true"
-            :title="tooltips.vendor_comments"
           />
         </label>
         <b-form-textarea

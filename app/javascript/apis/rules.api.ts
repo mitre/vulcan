@@ -3,7 +3,7 @@
  * Rule CRUD and related operations
  */
 
-import type { IRule, ISlimRule, IRuleUpdate, IReviewCreate, IPaginatedRulesResponse } from '@/types'
+import type { IPaginatedRulesResponse, IReviewCreate, IRule, IRuleUpdate, ISlimRule } from '@/types'
 import { http } from '@/services/http.service'
 
 /**
@@ -78,7 +78,7 @@ export function revertRule(
   id: number,
   auditId: number,
   fields: string[],
-  auditComment?: string
+  auditComment?: string,
 ) {
   return http.post(`/rules/${id}/revert`, {
     audit_id: auditId,

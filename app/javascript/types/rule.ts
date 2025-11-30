@@ -256,10 +256,10 @@ export interface IPaginatedRulesResponse {
  * Rules store state interface
  */
 export interface IRulesState {
-  rules: ISlimRule[]                    // Slim data for list view
-  fullRulesCache: Map<number, IRule>    // Full data cache (on-demand)
-  currentRule: IRule | null             // Currently selected (full data)
-  pagination: IPagination | null        // Pagination state
+  rules: ISlimRule[] // Slim data for list view
+  fullRulesCache: Map<number, IRule> // Full data cache (on-demand)
+  currentRule: IRule | null // Currently selected (full data)
+  pagination: IPagination | null // Pagination state
   loading: boolean
   error: string | null
 }

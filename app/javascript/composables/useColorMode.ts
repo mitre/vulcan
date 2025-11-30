@@ -6,7 +6,7 @@
  * Values: 'light' | 'dark' | 'auto' (follows system preference)
  */
 
-import { ref, watch, onMounted } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 export type ColorMode = 'light' | 'dark' | 'auto'
 
@@ -110,8 +110,8 @@ export function useColorMode() {
 
   return {
     // State
-    colorMode,        // Current setting: 'light' | 'dark' | 'auto'
-    resolvedMode,     // Actual applied mode: 'light' | 'dark'
+    colorMode, // Current setting: 'light' | 'dark' | 'auto'
+    resolvedMode, // Actual applied mode: 'light' | 'dark'
 
     // Actions
     setColorMode,

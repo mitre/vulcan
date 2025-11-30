@@ -1,11 +1,11 @@
 <script>
 import axios from 'axios'
 import SimpleTypeahead from 'vue3-simple-typeahead'
-import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
 import AlertMixinVue from '../../mixins/AlertMixin.vue'
 import DisplayedComponentMixin from '../../mixins/DisplayedComponentMixin.vue'
 import FormMixinVue from '../../mixins/FormMixin.vue'
 import ComponentCard from '../components/ComponentCard.vue'
+import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
 
 function initialState() {
   return {

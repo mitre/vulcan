@@ -12,18 +12,18 @@
  * for operations that need toast notifications.
  */
 
-import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
 import type {
-  IRule,
-  ISlimRule,
-  IRuleUpdate,
   ICheck,
   IDisaRuleDescription,
-  IRuleDescription,
-  IReviewCreate,
   IPagination,
+  IReviewCreate,
+  IRule,
+  IRuleDescription,
+  IRuleUpdate,
+  ISlimRule,
 } from '@/types'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import * as rulesApi from '@/apis/rules.api'
 
 /**
@@ -165,10 +165,11 @@ export const useRulesStore = defineStore('rules', () => {
       if (page) {
         // Paginated request
         const response = await rulesApi.getComponentRules(compId, { page, per_page: perPage })
-        const data = response.data as { rules: ISlimRule[]; pagination: IPagination }
+        const data = response.data as { rules: ISlimRule[], pagination: IPagination }
         rules.value = data.rules
         pagination.value = data.pagination
-      } else {
+      }
+      else {
         // Non-paginated (load all)
         const response = await rulesApi.getComponentRules(compId)
         rules.value = response.data as ISlimRule[]
@@ -243,7 +244,7 @@ export const useRulesStore = defineStore('rules', () => {
           rule_severity: fullRule.rule_severity,
           locked: fullRule.locked,
           review_requestor_id: fullRule.review_requestor_id,
-          is_merged: fullRule.satisfied_by?.length ? true : false,
+          is_merged: !!fullRule.satisfied_by?.length,
         })
       }
 
@@ -312,7 +313,7 @@ export const useRulesStore = defineStore('rules', () => {
           rule_severity: fullRule.rule_severity,
           locked: fullRule.locked,
           review_requestor_id: fullRule.review_requestor_id,
-          is_merged: fullRule.satisfied_by?.length ? true : false,
+          is_merged: !!fullRule.satisfied_by?.length,
         })
       }
 
@@ -361,7 +362,7 @@ export const useRulesStore = defineStore('rules', () => {
         rule_severity: fullRule.rule_severity,
         locked: fullRule.locked,
         review_requestor_id: fullRule.review_requestor_id,
-        is_merged: fullRule.satisfied_by?.length ? true : false,
+        is_merged: !!fullRule.satisfied_by?.length,
       })
 
       if (successCallback) {
@@ -499,7 +500,7 @@ export const useRulesStore = defineStore('rules', () => {
   function updateRuleDescription(
     ruleId: number,
     description: Partial<IRuleDescription>,
-    index: number
+    index: number,
   ) {
     if (index === -1) return
 
@@ -544,7 +545,7 @@ export const useRulesStore = defineStore('rules', () => {
   function updateDisaRuleDescription(
     ruleId: number,
     description: Partial<IDisaRuleDescription>,
-    index: number
+    index: number,
   ) {
     if (index === -1) return
 
@@ -571,7 +572,7 @@ export const useRulesStore = defineStore('rules', () => {
   async function addSatisfaction(
     ruleId: number,
     satisfiedByRuleId: number,
-    successCallback?: () => void
+    successCallback?: () => void,
   ) {
     try {
       await rulesApi.createRuleSatisfaction(ruleId, satisfiedByRuleId)
@@ -595,7 +596,7 @@ export const useRulesStore = defineStore('rules', () => {
   async function removeSatisfaction(
     ruleId: number,
     satisfiedByRuleId: number,
-    successCallback?: () => void
+    successCallback?: () => void,
   ) {
     try {
       await rulesApi.deleteRuleSatisfaction(ruleId, satisfiedByRuleId)
@@ -668,7 +669,7 @@ export const useRulesStore = defineStore('rules', () => {
     ruleId: number,
     auditId: number,
     fields: string[],
-    auditComment?: string
+    auditComment?: string,
   ) {
     try {
       await rulesApi.revertRule(ruleId, auditId, fields, auditComment)
@@ -735,7 +736,7 @@ export const useRulesStore = defineStore('rules', () => {
   async function initSelection(compId: number) {
     const saved = localStorage.getItem(`selectedRuleId-${compId}`)
     if (saved) {
-      const id = parseInt(saved, 10)
+      const id = Number.parseInt(saved, 10)
       if (rules.value.some(r => r.id === id)) {
         await selectRule(id)
       }
@@ -772,10 +773,10 @@ export const useRulesStore = defineStore('rules', () => {
   // ============================================
   return {
     // State
-    rules,                // ISlimRule[] - list view data
-    pagination,           // IPagination | null - pagination state
-    fullRulesCache,       // Map<id, IRule> - full data cache
-    currentRule,          // IRule | null - currently selected (full data)
+    rules, // ISlimRule[] - list view data
+    pagination, // IPagination | null - pagination state
+    fullRulesCache, // Map<id, IRule> - full data cache
+    currentRule, // IRule | null - currently selected (full data)
     loading,
     error,
     componentId,
@@ -788,20 +789,20 @@ export const useRulesStore = defineStore('rules', () => {
     nestedRules,
     visibleRules,
     currentRuleId,
-    getSlimRuleById,      // Get slim rule from list
-    getFullRuleById,      // Get full rule from cache
+    getSlimRuleById, // Get slim rule from list
+    getFullRuleById, // Get full rule from cache
     getChildRules,
 
     // Actions - Data fetching
-    fetchRules,           // Fetch slim data for component (with optional pagination)
-    goToPage,             // Navigate to specific page
-    fetchFullRule,        // Fetch/cache full data for single rule
-    refreshRule,          // Refresh both slim and full data
+    fetchRules, // Fetch slim data for component (with optional pagination)
+    goToPage, // Navigate to specific page
+    fetchFullRule, // Fetch/cache full data for single rule
+    refreshRule, // Refresh both slim and full data
 
     // Actions - CRUD
-    updateSlimRuleLocal,  // Optimistic update for list
-    updateFullRuleLocal,  // Update full cache entry
-    updateRule,           // Server update (updates both)
+    updateSlimRuleLocal, // Optimistic update for list
+    updateFullRuleLocal, // Update full cache entry
+    updateRule, // Server update (updates both)
     createRule,
     deleteRule,
 
@@ -824,10 +825,10 @@ export const useRulesStore = defineStore('rules', () => {
     revertRule,
 
     // Actions - Selection/UI
-    selectRule,           // Now async - fetches full data
+    selectRule, // Now async - fetches full data
     closeRule,
     toggleNestedRules,
-    initSelection,        // Now async
+    initSelection, // Now async
     setCurrentRule,
     reset,
   }
