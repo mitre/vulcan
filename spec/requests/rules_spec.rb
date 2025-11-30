@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Rules', type: :request do
+RSpec.describe 'Rules' do
   let(:user) { create(:user) }
   let(:project) { create(:project) }
   let(:component) { create(:component, project: project) }
@@ -128,7 +128,7 @@ RSpec.describe 'Rules', type: :request do
     end
 
     context 'when updating without id in nested attributes' do
-      it 'should still work or show clear error' do
+      it 'stills work or show clear error' do
         new_content = 'Updated without id'
 
         put "/rules/#{rule.id}", params: {

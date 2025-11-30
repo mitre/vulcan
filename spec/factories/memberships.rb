@@ -2,9 +2,9 @@
 
 FactoryBot.define do
   factory :membership do
-    association :user
-    association :membership, factory: :project
-    role { 'viewer' }  # Default to viewer (valid role)
+    user
+    membership factory: %i[project]
+    role { 'viewer' } # Default to viewer (valid role)
 
     trait :admin do
       role { 'admin' }
@@ -19,7 +19,7 @@ FactoryBot.define do
     end
 
     trait :component_membership do
-      association :membership, factory: :component
+      membership factory: %i[component]
     end
   end
 end

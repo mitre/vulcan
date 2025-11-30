@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Format Handling Across Controllers', type: :request do
+RSpec.describe 'Format Handling Across Controllers' do
   # Regression tests to ensure all controllers properly handle HTML vs JSON format requests
   # This prevents the FormMixin JSON header vs redirect_to mismatch issues
 
@@ -45,7 +45,7 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
       it 'returns error JSON on failure' do
         post '/projects', params: { project: { name: '' } }.to_json, headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.content_type).to include('application/json')
 
         json_response = response.parsed_body

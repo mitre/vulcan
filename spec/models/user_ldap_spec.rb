@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe User, type: :model do
+RSpec.describe User do
   describe '.from_omniauth with LDAP' do
     # Use unique email addresses to avoid conflicts with other tests
     let(:ldap_uid) { 'zoidberg_ldap_test' }

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Project, type: :model do
+RSpec.describe Project do
   let(:project) { create(:project) }
   let(:user1) { create(:user) }
   let(:user2) { create(:user) }

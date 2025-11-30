@@ -34,7 +34,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = nil
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /VULCAN_CONTACT_EMAIL is required/)
       end
 
@@ -42,7 +42,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = 'test@example.com'
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /cannot use example domain/)
       end
 
@@ -50,7 +50,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = 'test@example.org'
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /cannot use example domain/)
       end
 
@@ -58,7 +58,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = 'not-an-email'
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /invalid format/)
       end
 
@@ -66,7 +66,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = 'admin@'
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /invalid format/)
       end
 
@@ -75,7 +75,7 @@ RSpec.describe 'Settings Validation' do
         Settings.smtp.settings['address'] = nil
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /Required SMTP settings are missing/)
       end
 
@@ -85,7 +85,7 @@ RSpec.describe 'Settings Validation' do
         Settings.smtp.settings['port'] = nil
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /Required SMTP settings are missing/)
       end
 
@@ -96,7 +96,7 @@ RSpec.describe 'Settings Validation' do
         Settings.smtp.settings['domain'] = nil
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.to raise_error(RuntimeError, /Required SMTP settings are missing/)
       end
 
@@ -107,7 +107,7 @@ RSpec.describe 'Settings Validation' do
         Settings.smtp.settings['domain'] = 'company.com'
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.not_to raise_error
       end
 
@@ -120,7 +120,7 @@ RSpec.describe 'Settings Validation' do
 
         expect(Rails.logger).to receive(:warn).with(/VULCAN_SMTP_SERVER_PASSWORD is not set/)
 
-        load Rails.root.join('config/initializers/0_settings.rb')
+        load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
       end
     end
 
@@ -134,7 +134,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = nil
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.not_to raise_error
       end
 
@@ -142,7 +142,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = 'test@example.com'
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.not_to raise_error
 
         # But it should set to nil
@@ -159,7 +159,7 @@ RSpec.describe 'Settings Validation' do
       it 'uses fallback email for contact_email' do
         Settings['contact_email'] = nil
 
-        load Rails.root.join('config/initializers/0_settings.rb')
+        load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
 
         expect(Settings['contact_email']).to eq('vulcan-support@example.com')
       end
@@ -168,7 +168,7 @@ RSpec.describe 'Settings Validation' do
         Settings['contact_email'] = 'dev@example.com'
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.not_to raise_error
 
         expect(Settings['contact_email']).to eq('dev@example.com')
@@ -188,7 +188,7 @@ RSpec.describe 'Settings Validation' do
         Settings.smtp.settings['address'] = nil
 
         expect do
-          load Rails.root.join('config/initializers/0_settings.rb')
+          load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
         end.not_to raise_error
 
         # But should set example.com to nil

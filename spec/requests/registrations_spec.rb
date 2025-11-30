@@ -2,17 +2,15 @@
 
 require 'rails_helper'
 
-RSpec.describe 'User Registrations', type: :request do
-  before(:each) do
-    # Clear Rack::Attack cache before each test to avoid rate limiting
-    Rack::Attack.cache.store.clear if Rack::Attack.cache.store
-  end
-  include LoginHelpers
-  include ActiveJob::TestHelper
-
+RSpec.describe 'User Registrations' do
   before do
+    # Clear Rack::Attack cache before each test to avoid rate limiting
+    Rack::Attack.cache.store&.clear
     Rails.application.reload_routes!
   end
+
+  include LoginHelpers
+  include ActiveJob::TestHelper
 
   let(:user1) { build(:user, email: "registration-test-#{SecureRandom.hex(4)}@example.com") }
 
@@ -212,7 +210,7 @@ RSpec.describe 'User Registrations', type: :request do
       }
 
       # When current_password is wrong, Devise should not update the user
-      expect(response).to have_http_status(:unprocessable_entity).or have_http_status(:ok)
+      expect(response).to have_http_status(:unprocessable_content).or have_http_status(:ok)
       existing_user.reload
       expect(existing_user.name).not_to eq(new_user_data.name)
       # The key test is that the name didn't change due to wrong password

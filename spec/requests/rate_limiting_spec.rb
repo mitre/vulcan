@@ -2,13 +2,13 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Rack::Attack Rate Limiting', type: :request do
+RSpec.describe 'Rack::Attack Rate Limiting' do
   before(:all) do
     # Set up memory store once for all tests
     Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
   end
 
-  before(:each) do
+  before do
     Rails.application.reload_routes!
     # Clear cache before EACH test for isolation
     Rack::Attack.cache.store.clear
@@ -38,12 +38,12 @@ RSpec.describe 'Rack::Attack Rate Limiting', type: :request do
       # First 5 attempts should work (will redirect but not 429)
       5.times do
         post '/users/sign_in', params: { user: { email: email, password: 'wrong' } }, headers: { 'REMOTE_ADDR' => '1.2.3.4' }
-        expect(response.status).not_to eq(429)
+        expect(response).not_to have_http_status(:too_many_requests)
       end
 
       # 6th attempt should be rate limited
       post '/users/sign_in', params: { user: { email: email, password: 'wrong' } }, headers: { 'REMOTE_ADDR' => '1.2.3.4' }
-      expect(response.status).to eq(429)
+      expect(response).to have_http_status(:too_many_requests)
     end
 
     it 'is case-insensitive for email addresses' do
@@ -56,7 +56,7 @@ RSpec.describe 'Rack::Attack Rate Limiting', type: :request do
 
       # 6th attempt should be blocked
       post '/users/sign_in', params: { user: { email: 'test@example.com', password: 'wrong' } }, headers: { 'REMOTE_ADDR' => '1.2.3.4' }
-      expect(response.status).to eq(429)
+      expect(response).to have_http_status(:too_many_requests)
     end
   end
 
@@ -67,28 +67,28 @@ RSpec.describe 'Rack::Attack Rate Limiting', type: :request do
       # 20 attempts with different emails
       20.times do |i|
         post '/users/sign_in', params: { user: { email: "user#{i}@test.com", password: 'wrong' } }, headers: { 'REMOTE_ADDR' => ip }
-        expect(response.status).not_to eq(429)
+        expect(response).not_to have_http_status(:too_many_requests)
       end
 
       # 21st should be blocked
       post '/users/sign_in', params: { user: { email: 'final@test.com', password: 'wrong' } }, headers: { 'REMOTE_ADDR' => ip }
-      expect(response.status).to eq(429)
+      expect(response).to have_http_status(:too_many_requests)
     end
 
     it 'different IPs have separate limits' do
       # Exhaust IP 1's limit with unique emails (20 requests to hit IP limit)
       20.times do |i|
         post '/users/sign_in', params: { user: { email: "unique1-#{i}@test.com", password: 'wrong' } }, headers: { 'REMOTE_ADDR' => '192.168.1.1' }
-        expect(response.status).not_to eq(429), "Request #{i+1} was blocked unexpectedly"
+        expect(response.status).not_to eq(429), "Request #{i + 1} was blocked unexpectedly"
       end
 
       # 21st request from IP 1 should be blocked
       post '/users/sign_in', params: { user: { email: 'unique1-final@test.com', password: 'wrong' } }, headers: { 'REMOTE_ADDR' => '192.168.1.1' }
-      expect(response.status).to eq(429)
+      expect(response).to have_http_status(:too_many_requests)
 
       # IP 2 should still work (different IP, fresh limit)
       post '/users/sign_in', params: { user: { email: 'unique2-test@test.com', password: 'wrong' } }, headers: { 'REMOTE_ADDR' => '192.168.2.2' }
-      expect(response.status).not_to eq(429)
+      expect(response).not_to have_http_status(:too_many_requests)
     end
   end
 
@@ -97,21 +97,21 @@ RSpec.describe 'Rack::Attack Rate Limiting', type: :request do
       # Make many requests
       100.times do
         get '/up', headers: { 'REMOTE_ADDR' => '88.88.88.88' }
-        expect(response.status).to eq(200)
+        expect(response).to have_http_status(:ok)
       end
     end
 
     it 'allows unlimited /status requests' do
       50.times do
         get '/status', headers: { 'REMOTE_ADDR' => '88.88.88.88' }
-        expect(response.status).to eq(200)
+        expect(response).to have_http_status(:ok)
       end
     end
 
     it 'allows unlimited /health_check requests' do
       50.times do
         get '/health_check', headers: { 'REMOTE_ADDR' => '88.88.88.88' }
-        expect(response.status).to eq(200)
+        expect(response).to have_http_status(:ok)
       end
     end
   end

@@ -15,7 +15,7 @@ RSpec.describe 'Email Configuration Integration' do
       Settings['contact_email'] = nil
 
       # Reload settings to apply fallback
-      load Rails.root.join('config/initializers/0_settings.rb')
+      load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
 
       expect(Settings.contact_email).to eq('vulcan-support@example.com')
 
@@ -34,9 +34,7 @@ RSpec.describe 'Email Configuration Integration' do
     it 'from address does not use example.com in test environment' do
       # In test environment, Settings.contact_email should be safe
       # but never @example.com in production
-      if Rails.env.production?
-        expect(Settings.contact_email).not_to end_with('@example.com', '@example.org')
-      end
+      expect(Settings.contact_email).not_to end_with('@example.com', '@example.org') if Rails.env.production?
     end
   end
 
@@ -70,9 +68,7 @@ RSpec.describe 'Email Configuration Integration' do
         # This simulates controller behavior
         email_sent = false
 
-        if Settings.smtp.enabled
-          email_sent = true
-        end
+        email_sent = true if Settings.smtp.enabled
 
         expect(email_sent).to be true
       end
@@ -143,7 +139,7 @@ RSpec.describe 'Email Configuration Integration' do
       Settings['contact_email'] = 'test@example.com'
 
       expect do
-        load Rails.root.join('config/initializers/0_settings.rb')
+        load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
       end.to raise_error(RuntimeError, /cannot use example domain/)
 
       # Restore
@@ -164,7 +160,7 @@ RSpec.describe 'Email Configuration Integration' do
       Settings.smtp.settings['address'] = nil
 
       expect do
-        load Rails.root.join('config/initializers/0_settings.rb')
+        load Rails.root.join('config', 'initializers', '0_settings.rb', '0_settings.rb')
       end.to raise_error(RuntimeError, /Required SMTP settings are missing/)
 
       # Restore

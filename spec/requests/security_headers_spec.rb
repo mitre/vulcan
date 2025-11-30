@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Security Headers', type: :request do
+RSpec.describe 'Security Headers' do
   before do
     Rails.application.reload_routes!
   end

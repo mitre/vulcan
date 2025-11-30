@@ -10,7 +10,7 @@ require 'rails_helper'
 # appropriate ENV's set so the application knows how to access the LDAP service
 # running. in that container. See the Github Actions configuration
 # for an example of how this works.
-RSpec.describe 'Login with LDAP', skip: !Settings.ldap.enabled || ENV.fetch('CI', nil), type: :system do
+RSpec.describe 'Login with LDAP', skip: !Settings.ldap.enabled || ENV.fetch('CI', nil) do
   include LoginHelpers
 
   context 'when ldap login is enabled' do
@@ -19,7 +19,7 @@ RSpec.describe 'Login with LDAP', skip: !Settings.ldap.enabled || ENV.fetch('CI'
         vulcan_sign_in_with('LDAP', { username: 'zoidberg@planetexpress.com', password: 'zoidberg' })
       end.to change(User, :count).from(0).to(1)
 
-      expect(page).to have_selector('.b-toast-success', text: I18n.t('devise.sessions.signed_in'))
+      expect(page).to have_css('.b-toast-success', text: I18n.t('devise.sessions.signed_in'))
     end
 
     it 'does not log an ldap user in with incorrect credentials' do
@@ -28,7 +28,7 @@ RSpec.describe 'Login with LDAP', skip: !Settings.ldap.enabled || ENV.fetch('CI'
       end.not_to change(User, :count)
 
       expect(page)
-        .to have_selector(
+        .to have_css(
           '.b-toast-danger',
           text: 'Could not authenticate you from LDAP because "Invalid credentials".'
         )

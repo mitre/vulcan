@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'ProjectAccessRequests', type: :request do
+RSpec.describe 'ProjectAccessRequests' do
   before do
     Rails.application.reload_routes!
     sign_in user

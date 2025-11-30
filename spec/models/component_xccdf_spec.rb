@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Component XCCDF Import', type: :model do
+RSpec.describe 'Component XCCDF Import' do
   let(:project) { create(:project) }
   let(:srg) { create(:security_requirements_guide) }
 
@@ -17,12 +17,13 @@ RSpec.describe 'Component XCCDF Import', type: :model do
       )
 
       temp_file = Tempfile.new(['test', '.xml'])
-      temp_file.write(File.read(Rails.root.join('spec/fixtures/files/U_Web_Server_V2R3_Manual-xccdf.xml')))
+      temp_file.write(Rails.root.join('spec', 'fixtures', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml',
+                                      'U_Web_Server_V2R3_Manual-xccdf.xml').read)
       temp_file.rewind
 
       xccdf_file = Rack::Test::UploadedFile.new(temp_file.path, 'application/xml')
 
-      expect { component.from_xccdf(xccdf_file) }.to change { component.rules.count }
+      expect { component.from_xccdf(xccdf_file) }.to(change { component.rules.count })
 
       expect(component.rules.count).to be > 0
       expect(component.primary_controls_count).to be > 0
@@ -33,7 +34,8 @@ RSpec.describe 'Component XCCDF Import', type: :model do
 
     it 'parses XCCDF file and extracts metadata' do
       temp_file = Tempfile.new(['test', '.xml'])
-      temp_file.write(File.read(Rails.root.join('spec/fixtures/files/U_Web_Server_V2R3_Manual-xccdf.xml')))
+      temp_file.write(Rails.root.join('spec', 'fixtures', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml',
+                                      'U_Web_Server_V2R3_Manual-xccdf.xml').read)
       temp_file.rewind
 
       parsed = Xccdf::Benchmark.parse(File.read(temp_file.path))

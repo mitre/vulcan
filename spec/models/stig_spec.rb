@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Stig, type: :model do
+RSpec.describe Stig do
   let(:stig) { create(:stig) }
 
   context 'validation' do

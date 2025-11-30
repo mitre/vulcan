@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ApplicationMailer, type: :mailer do
+RSpec.describe ApplicationMailer do
   describe 'default from address' do
     let(:mailer) { ApplicationMailer.new }
     let(:from_address) { mailer.default_params[:from].call }

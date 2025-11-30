@@ -6,7 +6,7 @@ require 'webmock/rspec'
 # This file uses mock-based testing - WebMock configuration is per-example
 # Integration tests that need real HTTP requests are in spec/integration/
 
-RSpec.describe 'OIDC Discovery Integration', type: :system do
+RSpec.describe 'OIDC Discovery Integration' do
   let(:mock_discovery_response) do
     {
       'issuer' => 'https://example.okta.com',

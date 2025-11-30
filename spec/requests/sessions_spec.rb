@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Sessions', type: :request do
+RSpec.describe 'Sessions' do
   let(:base_url) { 'http://test.host' }
 
   before do

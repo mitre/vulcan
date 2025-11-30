@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Stigs', type: :request do
+RSpec.describe 'Stigs' do
   before do
     Rails.application.reload_routes!
   end
@@ -27,7 +27,7 @@ RSpec.describe 'Stigs', type: :request do
         post '/stigs', params: { file: file }
       end.to change(Stig, :count).by(1)
 
-      expect(response.status).to eq(200)
+      expect(response).to have_http_status(:ok)
       json = response.parsed_body
       expect(json['toast']).to include('Successfully added')
 
