@@ -41,14 +41,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Install and build docs
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build docs
         env:
           GITHUB_DEPLOY: "true"  # Tell VitePress to use / base for custom domain
-        run: |
-          # DO NOT install main dependencies - they cause Vue 2/3 conflict
-          cd docs
-          pnpm install
-          pnpm build
+        run: pnpm docs:build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

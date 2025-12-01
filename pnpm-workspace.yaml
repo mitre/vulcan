@@ -1,0 +1,7 @@
+# pnpm workspace configuration
+packages:
+  - 'docs'
+
+# Only allow these packages to run postinstall scripts
+onlyBuiltDependencies:
+  - esbuild
