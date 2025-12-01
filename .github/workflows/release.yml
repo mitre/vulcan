@@ -123,11 +123,14 @@ jobs:
           bundle exec rails db:create
           bundle exec rails db:migrate
 
-      - name: Run tests
+      - name: Run frontend tests
+        run: pnpm vitest run
+
+      - name: Run backend tests
         env:
           RAILS_ENV: test
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vulcan_vue_test
-        run: bundle exec rspec
+        run: bundle exec parallel_rspec spec/
 
       - name: Run RuboCop
         run: bundle exec rubocop
