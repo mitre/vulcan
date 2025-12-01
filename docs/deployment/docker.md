@@ -186,6 +186,137 @@ tar -xzf uploads-backup.tar.gz
 docker-compose run --rm -e RAILS_LOG_LEVEL=debug web
 ```
 
+## Building Docker Images
+
+Vulcan uses a unified multi-stage Dockerfile that supports both development and production builds.
+
+### Quick Build
+
+```bash
+# Production image (~550MB)
+docker build -t vulcan:prod --target production .
+
+# Development image (~2.7GB, includes all dev tools)
+docker build -t vulcan:dev --target development .
+```
+
+### Using the Vulcan CLI
+
+The CLI provides a streamlined build experience:
+
+```bash
+# Build production image
+vulcan build
+
+# Build development image
+vulcan build --target dev
+
+# Show build configuration
+vulcan build --info
+
+# Build and push to registry
+vulcan build --push
+
+# Custom registry and version
+vulcan build --registry ghcr.io/myorg --version v2.3.0
+```
+
+### Using Docker Buildx Bake
+
+For advanced builds, use the `docker-bake.hcl` configuration:
+
+```bash
+# Build production (default)
+docker buildx bake
+
+# Build development
+docker buildx bake dev
+
+# Build all targets
+docker buildx bake all
+
+# Show what would be built
+docker buildx bake --print production
+```
+
+### Multi-Architecture Builds
+
+Build for multiple platforms (amd64 + arm64):
+
+```bash
+# Using CLI
+vulcan build -p linux/amd64,linux/arm64 --push
+
+# Using docker buildx bake
+docker buildx bake production-multiarch --push
+
+# Manual docker build
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --target production \
+  --push \
+  -t mitre/vulcan:latest .
+```
+
+::: warning Multi-arch Requirements
+Multi-architecture builds require:
+- Docker Buildx (included in Docker Desktop)
+- A builder with multi-platform support
+- `--push` flag (multi-arch images can't be loaded locally)
+:::
+
+### Build Targets
+
+| Target | Size | Description |
+|--------|------|-------------|
+| `production` | ~550MB | Optimized for deployment, non-root user |
+| `development` | ~2.7GB | Full dev environment with all tools |
+
+### Build Arguments
+
+Override versions at build time:
+
+```bash
+docker build \
+  --build-arg RUBY_VERSION=3.4.7 \
+  --build-arg NODE_VERSION=24.11.1 \
+  --build-arg BUNDLER_VERSION=2.6.5 \
+  --target production \
+  -t vulcan:custom .
+```
+
+### Corporate SSL Certificates
+
+Place certificates in the `certs/` directory before building:
+
+```bash
+# Add corporate CA certificates
+cp /path/to/corporate-ca.crt certs/
+
+# Build (certificates are automatically installed)
+docker build --target production -t vulcan:prod .
+```
+
+Supported formats: `.crt`, `.pem`, `.cer` (auto-converted to `.crt`)
+
+### Development with Docker
+
+For local development using Docker:
+
+```bash
+# Build development image
+docker build -t vulcan:dev --target development .
+
+# Run with mounted source code
+docker run -it --rm \
+  -v $(pwd):/rails \
+  -p 3000:3000 \
+  vulcan:dev
+
+# Or use docker-compose.dev.yml
+docker-compose -f docker-compose.dev.yml up
+```
+
 ## Security Considerations
 
 - Always use strong SECRET_KEY_BASE

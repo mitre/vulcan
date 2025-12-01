@@ -401,28 +401,46 @@ rails server -p 3001
 
 ## Docker Development
 
-### Using Docker Compose
+Vulcan uses a unified multi-stage Dockerfile with separate targets for development and production.
+
+### Building the Development Image
 
 ```bash
-# Build containers
-docker-compose build
+# Build development image (~2.7GB, includes all dev tools)
+docker build -t vulcan:dev --target development .
 
-# Start services
-docker-compose up
+# Or use the CLI
+vulcan build --target dev
+```
+
+### Using Docker Compose for Development
+
+```bash
+# Start development environment
+docker-compose -f docker-compose.dev.yml up
 
 # Run migrations
-docker-compose run web rails db:create db:migrate
+docker-compose -f docker-compose.dev.yml run --rm web rails db:create db:migrate
 
-# Access container
-docker-compose exec web bash
+# Access container shell
+docker-compose -f docker-compose.dev.yml exec web bash
 ```
 
 ### Docker Development Tips
 
-1. Use volumes for code hot-reload
-2. Separate services for web, db, redis
-3. Use .dockerignore for faster builds
-4. Override configs with docker-compose.override.yml
+1. **Hot-reload**: Mount source code as volume for live changes
+2. **Database**: Use `docker-compose.dev.yml` for local PostgreSQL
+3. **Faster builds**: The `.dockerignore` excludes unnecessary files
+4. **Build cache**: Docker caches layers, so rebuilds are fast after initial build
+
+### Build Targets
+
+| Target | Use Case | Size |
+|--------|----------|------|
+| `development` | Local development with all tools | ~2.7GB |
+| `production` | Optimized deployment | ~550MB |
+
+See [Docker Deployment](../deployment/docker.md#building-docker-images) for full build documentation.
 
 ## Performance Optimization
 
