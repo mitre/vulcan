@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.3.9'
+ruby '3.4.7'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
@@ -10,8 +10,8 @@ gem 'rails', '~> 8.0.0'
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
 gem 'puma', '~> 6.4'
-# Asset pipeline for JavaScript bundling
-gem 'jsbundling-rails'
+# Vite.js integration for modern JavaScript bundling
+gem 'vite_rails'
 # Asset pipeline for Rails
 gem 'propshaft'
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
@@ -151,3 +151,4 @@ gem 'rack-attack'
 gem 'rubocop-capybara', '~> 2.22', groups: %i[development test]
 gem 'rubocop-factory_bot', '~> 2.28', groups: %i[development test]
 gem 'rubocop-rspec_rails', '~> 2.32', groups: %i[development test]
+gem 'parallel_tests', group: [:development, :test]
