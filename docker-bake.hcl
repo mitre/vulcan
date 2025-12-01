@@ -71,8 +71,9 @@ group "all" {
 // ============================================================================
 
 target "production" {
-  dockerfile = "Dockerfile.production"
+  dockerfile = "Dockerfile"
   context    = "."
+  target     = "production"
 
   tags = [
     "${REGISTRY}/${IMAGE_NAME}:${VERSION}",
@@ -97,13 +98,10 @@ target "production" {
     "org.opencontainers.image.version"     = "${VERSION}"
   }
 
-  // Build cache configuration
-  cache-from = [
-    "type=registry,ref=${REGISTRY}/${IMAGE_NAME}:cache"
-  ]
-  cache-to = [
-    "type=registry,ref=${REGISTRY}/${IMAGE_NAME}:cache,mode=max"
-  ]
+  // Build cache configuration (only for CI/registry push)
+  // Uncomment for CI builds with registry access
+  // cache-from = ["type=registry,ref=${REGISTRY}/${IMAGE_NAME}:cache"]
+  // cache-to = ["type=registry,ref=${REGISTRY}/${IMAGE_NAME}:cache,mode=max"]
 }
 
 // ============================================================================
@@ -125,12 +123,13 @@ target "production-multiarch" {
 }
 
 // ============================================================================
-// Development Target - Includes dev tools
+// Development Target - Full dev environment with all dependencies
 // ============================================================================
 
 target "dev" {
   dockerfile = "Dockerfile"
   context    = "."
+  target     = "development"
 
   tags = [
     "${REGISTRY}/${IMAGE_NAME}:dev"
@@ -138,14 +137,19 @@ target "dev" {
 
   platforms = ["linux/amd64"]
 
-  target = "development"
-
   args = {
     RUBY_VERSION     = "${VULCAN_RUBY_VERSION}"
     NODE_VERSION     = "${VULCAN_NODE_VERSION}"
     BUNDLER_VERSION  = "${BUNDLER_VERSION}"
     WEB_PORT         = "${WEB_PORT}"
     PROMETHEUS_PORT  = "${PROMETHEUS_PORT}"
+  }
+
+  labels = {
+    "org.opencontainers.image.title"       = "Vulcan Development"
+    "org.opencontainers.image.description" = "Vulcan development environment with all dependencies"
+    "org.opencontainers.image.vendor"      = "MITRE"
+    "org.opencontainers.image.source"      = "https://github.com/mitre/vulcan"
   }
 }
 
@@ -161,7 +165,7 @@ target "ci" {
     "${REGISTRY}/${IMAGE_NAME}:ci"
   ]
 
-  // Use GitHub Actions cache
+  // GitHub Actions cache
   cache-from = ["type=gha"]
   cache-to   = ["type=gha,mode=max"]
 }

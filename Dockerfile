@@ -1,130 +1,223 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-# Make sure RUBY_VERSION matches the Ruby version in .ruby-version
-ARG RUBY_VERSION=3.3.9
-FROM ruby:$RUBY_VERSION-slim AS base
+# =============================================================================
+# Vulcan Multi-Stage Dockerfile
+# =============================================================================
+# Supports multiple build targets:
+#   - development: Full dev environment with all dependencies
+#   - production:  Optimized production image (default)
+#
+# Build commands:
+#   docker build -t vulcan:dev --target development .
+#   docker build -t vulcan:prod --target production .
+#   docker buildx bake production
+#   docker buildx bake dev
+#
+# Or use the CLI:
+#   vulcan build
+#   vulcan build --target development
+# =============================================================================
 
-# Rails app lives here
+# Make sure versions match .ruby-version and .nvmrc
+ARG RUBY_VERSION=3.4.7
+ARG NODE_VERSION=24.11.1
+ARG BUNDLER_VERSION=2.6.5
+
+# =============================================================================
+# BASE STAGE - Common foundation for all stages
+# =============================================================================
+FROM docker.io/library/ruby:${RUBY_VERSION}-slim AS base
+
 WORKDIR /rails
 
-# Update gems and bundler
-RUN gem update --system --no-document && \
-    gem install -N bundler
-
-# Install base packages
+# Install base packages including jemalloc for better memory management
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 postgresql-client && \
+    apt-get install --no-install-recommends -y \
+      ca-certificates \
+      curl \
+      libjemalloc2 \
+      libvips \
+      libyaml-0-2 \
+      postgresql-client && \
+    ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-# Set production environment
-ENV BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development:test" \
-    RAILS_ENV="production"
-
-# Custom instructions for base stage: Install corporate CA certificates and proxy support
-
-# Proxy support for corporate environments (optional build args)
-ARG HTTP_PROXY
-ARG HTTPS_PROXY
-ARG NO_PROXY
-
-# Install custom SSL certificates from certs/ directory
+# Install custom SSL certificates if provided
 COPY certs/ /usr/local/share/ca-certificates/custom/
-RUN cd /usr/local/share/ca-certificates/custom && \
-    for cert in ./*.pem ./*.cer; do \
+WORKDIR /usr/local/share/ca-certificates/custom
+RUN for cert in ./*.pem ./*.cer; do \
       [ -f "$cert" ] && mv "$cert" "${cert%.*}.crt" || true; \
     done && \
     if ls ./*.crt 2>/dev/null | grep -q .; then \
-      apt-get update -qq && \
-      apt-get install --no-install-recommends -y ca-certificates && \
-      update-ca-certificates && \
-      rm -rf /var/lib/apt/lists /var/cache/apt/archives; \
+      update-ca-certificates; \
     fi && \
-    cd /rails
+    rm -rf /usr/local/share/ca-certificates/custom/README.md
+WORKDIR /rails
 
-# Configure all tools to use system CA certificates
-# Supports multiple standards so it works regardless of user's environment
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
-    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
-    SSL_CERT_DIR=/etc/ssl/certs \
-    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+# Common environment for all stages
+ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
+    MALLOC_ARENA_MAX="2" \
+    NODE_EXTRA_CA_CERTS="/etc/ssl/certs/ca-certificates.crt" \
+    BUNDLE_PATH="/usr/local/bundle"
 
-# Set proxy env vars if provided (for pnpm/npm behind corporate proxy)
-ENV HTTP_PROXY=${HTTP_PROXY} \
-    HTTPS_PROXY=${HTTPS_PROXY} \
-    NO_PROXY=${NO_PROXY}
-
-
-
-# Throw-away build stage to reduce size of final image
+# =============================================================================
+# BUILD STAGE - Compile gems and assets
+# =============================================================================
 FROM base AS build
 
 # Install packages needed to build gems and node modules
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git gnupg libffi-dev libpq-dev libyaml-dev node-gyp pkg-config python-is-python3 zlib1g-dev && \
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      git \
+      gnupg \
+      libpq-dev \
+      libyaml-dev \
+      pkg-config \
+      zlib1g-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-# Install JavaScript dependencies
-ARG NODE_VERSION=22.14.0
-ARG YARN_VERSION=1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e
-ENV PATH=/usr/local/node/bin:$PATH
-RUN curl -sL https://github.com/nodenv/node-build/archive/master.tar.gz | tar xz -C /tmp/ && \
-    /tmp/node-build-master/bin/node-build "${NODE_VERSION}" /usr/local/node && \
-    npm install -g pnpm@10 && \
-    rm -rf /tmp/node-build-master
+# Install Node.js LTS and pnpm using official binaries
+ARG NODE_VERSION
+ARG TARGETARCH
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
+    rm node.tar.xz && \
+    npm install -g pnpm@10
 
-# Install application gems
+# Build stage environment - production mode for asset compilation
+ARG BUNDLER_VERSION
+ENV RAILS_ENV="production" \
+    NODE_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_WITHOUT="development:test"
+
 COPY Gemfile Gemfile.lock ./
-RUN bundle install && \
+RUN gem install bundler -v ${BUNDLER_VERSION} && \
+    bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
-# Install node modules
-COPY package.json pnpm-lock.yaml ./
+# Install node modules (including dev dependencies for build)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml vite.config.ts ./
+COPY config/vite.json ./config/
 RUN pnpm install --frozen-lockfile
 
 # Copy application code
 COPY . .
 
-# Build stage instructions: Configure npm/pnpm for CA certificates
-
-# Configure npm and pnpm to use system CA certificates (after Node.js is installed)
-RUN npm config set cafile /etc/ssl/certs/ca-certificates.crt && \
-    pnpm config set ca /etc/ssl/certs/ca-certificates.crt
-
-
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 
-# Precompiling assets for production without requiring secret RAILS_MASTER_KEY
+# Build Vite assets for production (includes gzip/brotli compression)
+RUN bin/vite build
+
+# Precompile Rails assets
 RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
 
+# Remove dev/test files and node_modules BEFORE copying to production stage
+# This is critical - doing it here reduces the final image size significantly
+RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec test .git
 
-# Final stage for app image
-FROM base
+# =============================================================================
+# DEVELOPMENT STAGE - Full development environment
+# =============================================================================
+FROM base AS development
 
+# Install development packages
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      git \
+      gnupg \
+      libpq-dev \
+      libyaml-dev \
+      pkg-config \
+      zlib1g-dev \
+      vim \
+      less && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-# Copy built artifacts: gems, application
-COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
+# Install Node.js and pnpm
+ARG NODE_VERSION
+ARG TARGETARCH
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
+    rm node.tar.xz && \
+    npm install -g pnpm@10
+
+# Development environment
+ENV RAILS_ENV="development" \
+    BUNDLE_WITHOUT="" \
+    BUNDLE_DEPLOYMENT="0"
+
+# Install all gems including dev/test
+ARG BUNDLER_VERSION
+COPY Gemfile Gemfile.lock ./
+RUN gem install bundler -v ${BUNDLER_VERSION} && \
+    bundle install
+
+# Install node modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml vite.config.ts ./
+COPY config/vite.json ./config/
+RUN pnpm install
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails .
+
+USER 1000:1000
+
+# Port configuration
+ARG WEB_PORT=3000
+ARG PROMETHEUS_PORT=9394
+EXPOSE ${WEB_PORT} ${PROMETHEUS_PORT}
+
+# Development server with file watching
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
+
+# =============================================================================
+# PRODUCTION STAGE - Optimized for deployment (default)
+# =============================================================================
+FROM base AS production
+
+# Production environment
+ENV RAILS_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_WITHOUT="development:test" \
+    RAILS_LOG_TO_STDOUT="true" \
+    RAILS_SERVE_STATIC_FILES="true"
+
+# Copy built artifacts from build stage
+# Note: cleanup already done in build stage to minimize copy size
+COPY --from=build /usr/local/bundle /usr/local/bundle
 COPY --from=build /rails /rails
 
-# Run and own only the runtime files as a non-root user for security
-ARG UID=1000 \
-    GID=1000
-RUN groupadd -f -g $GID rails && \
-    useradd -u $UID -g $GID rails --create-home --shell /bin/bash && \
-    chown -R rails:rails db log storage tmp
-USER rails:rails
+# Create non-root user and set ownership
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails db log storage tmp public
 
-# Expose Prometheus metrics port (in addition to default web port)
-EXPOSE 9394
+USER 1000:1000
 
-# Entrypoint prepares the database.
-ENTRYPOINT ["/rails/bin/docker-entrypoint"]
+# Port configuration
+ARG WEB_PORT=3000
+ARG PROMETHEUS_PORT=9394
 
-# Start the server by default, this can be overwritten at runtime
-EXPOSE 3000
-CMD ["./bin/rails", "server"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:${WEB_PORT}/up || exit 1
+
+EXPOSE ${WEB_PORT} ${PROMETHEUS_PORT}
+
+# Production server
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
