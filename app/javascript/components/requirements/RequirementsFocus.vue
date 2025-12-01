@@ -38,8 +38,10 @@ function handleSaved() {
 </script>
 
 <template>
-  <div class="requirements-focus d-flex h-100">
-    <!-- Navigator -->
+  <!-- Two-panel layout: Navigator + Editor -->
+  <!-- flex-grow-1 fills available space from parent (ControlsPage content area) -->
+  <div class="requirements-focus d-flex flex-grow-1 overflow-hidden">
+    <!-- Navigator - fixed width, scrolls independently -->
     <RequirementNavigator
       :component-id="componentId"
       :project-prefix="projectPrefix"
@@ -47,8 +49,8 @@ function handleSaved() {
       @select="handleSelect"
     />
 
-    <!-- Editor -->
-    <div class="flex-grow-1 h-100 overflow-hidden">
+    <!-- Editor - takes remaining space, scrolls independently -->
+    <div class="flex-grow-1 d-flex flex-column overflow-hidden">
       <RequirementEditor
         :rule="currentRule"
         :effective-permissions="effectivePermissions"
@@ -61,7 +63,25 @@ function handleSaved() {
 </template>
 
 <style scoped>
+/* Container query context for responsive child components */
 .requirements-focus {
-  min-height: 0; /* Allow flex children to shrink */
+  container-type: inline-size;
+  container-name: requirements-focus;
+}
+
+/* Responsive layout: stack vertically on narrow containers */
+@container requirements-focus (max-width: 768px) {
+  .requirements-focus {
+    flex-direction: column;
+  }
+}
+
+/* Fallback for older browsers */
+@supports not (container-type: inline-size) {
+  @media (max-width: 768px) {
+    .requirements-focus {
+      flex-direction: column;
+    }
+  }
 }
 </style>

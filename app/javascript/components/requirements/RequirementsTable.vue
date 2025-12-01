@@ -267,6 +267,13 @@ async function onStatusChange(rule: ISlimRule, newStatus: RuleStatus) {
 </template>
 
 <style scoped>
+/* Ensure table respects parent flexbox bounds */
+.requirements-table {
+  min-height: 0;
+}
+.table-container {
+  min-height: 0;
+}
 .sortable {
   cursor: pointer;
   user-select: none;

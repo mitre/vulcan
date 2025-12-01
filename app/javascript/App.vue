@@ -64,9 +64,10 @@ onMounted(() => {
       <Toaster />
     </div>
 
-    <!-- Main content area - overflow-hidden so pages control their own scrolling -->
-    <!-- pb-5 accounts for fixed footer, Suspense handles async loading -->
-    <main class="flex-grow-1 overflow-hidden pb-5">
+    <!-- Main content area - flex-grow to fill remaining space -->
+    <!-- overflow-hidden prevents content from expanding viewport -->
+    <!-- No pb-5 needed - footer is in normal flow, not fixed position -->
+    <main class="flex-grow-1 overflow-hidden">
       <RouterView v-slot="{ Component }">
         <template v-if="Component">
           <ErrorBoundary>

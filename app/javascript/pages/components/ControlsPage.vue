@@ -124,9 +124,11 @@ function handleOpenFocus(rule: ISlimRule) {
 </script>
 
 <template>
-  <div class="controls-page d-flex flex-column h-100">
+  <!-- Layout 2: Editor - Two-column with sidebar -->
+  <!-- Height constrained to main content area via CSS variable -->
+  <div class="controls-page d-flex flex-column" style="height: var(--app-main-height);">
     <!-- Header - full-width background, content aligned -->
-    <div class="border-bottom bg-body-secondary">
+    <div class="border-bottom bg-body-secondary flex-shrink-0">
       <div class="container-fluid container-app py-2 d-flex align-items-center justify-content-between">
         <!-- Breadcrumb + Title -->
         <div>
@@ -155,9 +157,9 @@ function handleOpenFocus(rule: ISlimRule) {
       </div>
     </div>
 
-    <!-- Content area -->
-    <div class="page-content flex-grow-1 overflow-hidden">
-      <div class="container-fluid container-app h-100">
+    <!-- Content area - fills remaining space, prevents overflow -->
+    <div class="page-content flex-grow-1 d-flex flex-column overflow-hidden">
+      <div class="container-fluid container-app h-100 d-flex flex-column">
         <!-- Table Mode -->
         <RequirementsTable
           v-if="layoutMode === 'table'"
@@ -181,10 +183,5 @@ function handleOpenFocus(rule: ISlimRule) {
 </template>
 
 <style scoped>
-.controls-page {
-  min-height: 0; /* Allow flex children to shrink */
-}
-.page-content {
-  min-height: 0;
-}
+/* Layout handled by Bootstrap utilities and inline min-height: 0 */
 </style>

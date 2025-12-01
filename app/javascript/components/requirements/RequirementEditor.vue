@@ -326,7 +326,7 @@ watch(
       </div>
 
       <!-- Sections (scrollable) -->
-      <div class="editor-body flex-grow-1 overflow-auto" style="min-height: 0">
+      <div class="editor-body flex-grow-1 overflow-auto">
         <!-- Status & Core Fields Section -->
         <div class="accordion-section border-bottom">
           <div

@@ -62,16 +62,23 @@ function onRuleSelected(rule: IBenchmarkRule) {
 </script>
 
 <template>
-  <main role="main" class="container-fluid">
-    <h1>{{ benchmark.title }} :: {{ benchmark.version }}</h1>
-    <h6 class="card-subtitle text-muted mb-2">
-      {{ dateLabel }}: {{ benchmark.date }}
-    </h6>
-    <br>
-    <hr>
-    <div class="row">
-      <!-- Left Sidebar - Rule List -->
-      <aside class="col-md-3">
+  <!-- Layout 3: Viewer - Three-column benchmark viewer -->
+  <!-- flex-grow-1 fills available space from parent container -->
+  <div class="benchmark-viewer d-flex flex-column flex-grow-1 overflow-hidden">
+    <!-- Header -->
+    <header class="benchmark-header pb-2 border-bottom flex-shrink-0">
+      <h1 class="h4 mb-1">
+        {{ benchmark.title }} :: {{ benchmark.version }}
+      </h1>
+      <p class="text-muted mb-0 small">
+        {{ dateLabel }}: {{ benchmark.date }}
+      </p>
+    </header>
+
+    <!-- Content - 3 column layout with independent scrolling -->
+    <div class="benchmark-content d-flex flex-grow-1 overflow-hidden">
+      <!-- Left Sidebar - Rule List (scrolls independently) -->
+      <aside class="rule-list-panel d-flex flex-column border-end overflow-hidden">
         <RuleList
           :type="type"
           :rules="sortedRules"
@@ -79,8 +86,9 @@ function onRuleSelected(rule: IBenchmarkRule) {
           @rule-selected="onRuleSelected"
         />
       </aside>
-      <!-- Middle Section - Rule Details -->
-      <main class="col-md-6">
+
+      <!-- Middle Section - Rule Details (scrolls independently) -->
+      <main class="rule-details-panel flex-grow-1 overflow-auto p-3">
         <RuleDetails
           v-if="selectedRule"
           :type="type"
@@ -90,8 +98,9 @@ function onRuleSelected(rule: IBenchmarkRule) {
           Select a rule to view details
         </div>
       </main>
-      <!-- Right Sidebar - Rule Overview -->
-      <aside class="col-md-3">
+
+      <!-- Right Sidebar - Rule Overview (scrolls independently) -->
+      <aside class="rule-overview-panel d-flex flex-column border-start overflow-auto">
         <RuleOverview
           v-if="selectedRule"
           :type="type"
@@ -99,5 +108,64 @@ function onRuleSelected(rule: IBenchmarkRule) {
         />
       </aside>
     </div>
-  </main>
+  </div>
 </template>
+
+<style scoped>
+/* Container query context */
+.benchmark-viewer {
+  container-type: inline-size;
+  container-name: benchmark-viewer;
+}
+
+/* Default widths for 3-column layout - using CSS variables */
+.rule-list-panel {
+  width: var(--app-sidebar-width);
+  flex-shrink: 0;
+}
+.rule-overview-panel {
+  width: var(--app-sidebar-right-width);
+  flex-shrink: 0;
+}
+
+/* Responsive: 2-column on medium containers */
+@container benchmark-viewer (max-width: 1200px) {
+  .rule-overview-panel {
+    display: none;
+  }
+}
+
+/* Responsive: stack on narrow containers */
+@container benchmark-viewer (max-width: 768px) {
+  .benchmark-content {
+    flex-direction: column;
+  }
+  .rule-list-panel {
+    width: 100%;
+    max-height: 35vh;
+    border-end: none;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+  .rule-details-panel {
+    flex: 1;
+  }
+}
+
+/* Fallback for older browsers */
+@supports not (container-type: inline-size) {
+  @media (max-width: 1200px) {
+    .rule-overview-panel {
+      display: none;
+    }
+  }
+  @media (max-width: 768px) {
+    .benchmark-content {
+      flex-direction: column;
+    }
+    .rule-list-panel {
+      width: 100%;
+      max-height: 35vh;
+    }
+  }
+}
+</style>

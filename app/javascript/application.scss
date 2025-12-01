@@ -71,16 +71,53 @@ html {
 // =============================================================================
 // APP LAYOUT SYSTEM
 // =============================================================================
-// Use Bootstrap's container-fluid as base, constrain with max-width.
-// This gives us edge-to-edge on mobile, constrained width on desktop.
+// CSS Custom Properties - Single Source of Truth for Layout Dimensions
+// Following the pattern used by Nuxt UI, CoreUI, and Bootstrap 5
 //
 // Usage:
 //   Standard pages: .container-fluid.container-app
 //   Full-width pages: .container-fluid (no max-width constraint)
+//   Height constraints: Use var(--app-*) instead of magic numbers
 // =============================================================================
 
+:root {
+  // -----------------------------------------------------------------------------
+  // Core Layout Dimensions
+  // -----------------------------------------------------------------------------
+  --app-navbar-height: 56px;
+  --app-footer-height: 40px;
+
+  // Page header (breadcrumbs, title, actions) - used in Editor/Viewer layouts
+  --app-page-header-height: 56px;
+
+  // -----------------------------------------------------------------------------
+  // Derived Heights (calculated from core dimensions)
+  // -----------------------------------------------------------------------------
+  // Main content area = viewport minus navbar and footer
+  --app-main-height: calc(100vh - var(--app-navbar-height) - var(--app-footer-height));
+
+  // Content area within pages that have their own header
+  --app-content-height: calc(var(--app-main-height) - var(--app-page-header-height));
+
+  // -----------------------------------------------------------------------------
+  // Sidebar Widths
+  // -----------------------------------------------------------------------------
+  --app-sidebar-width: 280px;
+  --app-sidebar-width-collapsed: 80px;
+  --app-sidebar-width-narrow: 250px;
+
+  // Right sidebar (for 3-column layouts like STIG/SRG viewer)
+  --app-sidebar-right-width: 280px;
+
+  // -----------------------------------------------------------------------------
+  // Container Widths
+  // -----------------------------------------------------------------------------
+  --app-container-max-width: 1600px;
+}
+
+// Container class using the CSS variable
 .container-app {
-  max-width: 1600px;
+  max-width: var(--app-container-max-width);
 }
 
 // Ensure typeahead input matches Bootstrap form-control styling

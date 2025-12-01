@@ -6,9 +6,8 @@
     %title Vulcan Profile Builder
     = csrf_meta_tags
     = csp_meta_tag
-    = stylesheet_link_tag 'application'
-    = stylesheet_link_tag 'bootstrap-vue'
-    = javascript_include_tag 'application', defer: true
+    = vite_client_tag
+    = vite_javascript_tag 'application'
 
     :javascript
       // Color mode initialization - runs before Vue to prevent flash

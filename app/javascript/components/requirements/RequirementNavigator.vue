@@ -122,7 +122,7 @@ async function handleReplaced() {
 
 <template>
   <div
-    class="requirement-navigator d-flex flex-column h-100 border-end"
+    class="requirement-navigator d-flex flex-column border-end"
     :class="{ collapsed }"
     tabindex="0"
     @keydown="handleKeydown"
@@ -223,27 +223,58 @@ async function handleReplaced() {
 
 <style scoped>
 .requirement-navigator {
-  width: 280px;
-  min-height: 0; /* Critical for flex child to respect parent bounds */
+  /* Sidebar in flex container - uses CSS variable for width */
+  width: var(--app-sidebar-width);
+  flex-shrink: 0;
+  /* align-self: stretch is default in flexbox - fills parent height */
   transition: width 0.2s ease;
   background-color: var(--bs-body-bg);
+  /* Enable container queries for child elements */
+  container-type: inline-size;
+  container-name: nav-sidebar;
+  overflow: hidden; /* Parent clips, .nav-list child scrolls */
 }
 .requirement-navigator.collapsed {
-  width: 80px;
+  width: var(--app-sidebar-width-collapsed);
 }
 .requirement-navigator:focus {
   outline: none;
 }
 .nav-header {
   background-color: var(--bs-tertiary-bg);
+  flex-shrink: 0;
+}
+.nav-options {
+  flex-shrink: 0;
 }
 .nav-list {
-  min-height: 0; /* Allow list to shrink and scroll */
+  /* This is the scrollable area */
+  overflow-y: auto;
 }
 .nav-item {
   cursor: pointer;
 }
 .nav-item:hover:not(.bg-primary) {
   background-color: var(--bs-secondary-bg);
+}
+
+/* When stacked vertically (narrow parent), limit height */
+@container requirements-focus (max-width: 768px) {
+  .requirement-navigator {
+    width: 100%;
+    max-height: 40vh;
+    border-end: none;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+}
+
+/* Fallback for older browsers */
+@supports not (container-type: inline-size) {
+  @media (max-width: 768px) {
+    .requirement-navigator {
+      width: 100%;
+      max-height: 40vh;
+    }
+  }
 }
 </style>

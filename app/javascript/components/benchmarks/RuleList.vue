@@ -98,60 +98,55 @@ function isSelected(rule: IBenchmarkRule): boolean {
 </script>
 
 <template>
-  <div class="p-3">
-    <!-- Filter Section -->
-    <div class="mb-3">
-      <h5 class="card-title">
+  <!-- Rule list fills parent sidebar panel via flexbox -->
+  <div class="rule-list d-flex flex-column flex-grow-1">
+    <!-- Filter Section (fixed height) -->
+    <div class="filter-section p-3 flex-shrink-0 border-bottom">
+      <h5 class="card-title mb-2">
         Filter & Search
       </h5>
-      <div class="mb-3">
-        <label class="form-label"><strong>Search</strong></label>
+      <div class="mb-2">
         <input
           v-model="searchText"
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           :placeholder="`Search by ${type === 'stig' ? 'STIG ID or SRG ID' : 'Rule ID or Version'}`"
         >
       </div>
-      <div class="mb-3">
-        <label class="form-label"><strong>Filter by Severity</strong></label>
-        <div class="d-flex flex-wrap gap-1">
-          <BButton size="sm" variant="danger" @click="setSeverity('high')">
-            High
-            <span class="badge bg-light text-dark">{{ severityCounts.high }}</span>
-          </BButton>
-          <BButton size="sm" variant="warning" @click="setSeverity('medium')">
-            Medium
-            <span class="badge bg-light text-dark">{{ severityCounts.medium }}</span>
-          </BButton>
-          <BButton size="sm" variant="success" @click="setSeverity('low')">
-            Low
-            <span class="badge bg-light text-dark">{{ severityCounts.low }}</span>
-          </BButton>
-          <BButton size="sm" variant="info" @click="setSeverity('')">
-            All
-            <span class="badge bg-light text-dark">{{ rules.length }}</span>
-          </BButton>
-        </div>
+      <div class="d-flex flex-wrap gap-1">
+        <BButton size="sm" variant="danger" @click="setSeverity('high')">
+          High
+          <span class="badge bg-light text-dark">{{ severityCounts.high }}</span>
+        </BButton>
+        <BButton size="sm" variant="warning" @click="setSeverity('medium')">
+          Med
+          <span class="badge bg-light text-dark">{{ severityCounts.medium }}</span>
+        </BButton>
+        <BButton size="sm" variant="success" @click="setSeverity('low')">
+          Low
+          <span class="badge bg-light text-dark">{{ severityCounts.low }}</span>
+        </BButton>
+        <BButton size="sm" variant="secondary" @click="setSeverity('')">
+          All
+          <span class="badge bg-light text-dark">{{ rules.length }}</span>
+        </BButton>
       </div>
     </div>
 
-    <!-- Table of Rules -->
-    <div class="mt-3" style="max-height: 700px; overflow-y: auto">
-      <h5 class="card-title">
-        Requirements
-      </h5>
-      <table class="table table-hover">
-        <thead>
+    <!-- Scrollable Rule List -->
+    <div class="rule-table-container flex-grow-1 overflow-auto">
+      <table class="table table-hover table-sm mb-0">
+        <thead class="sticky-top bg-body">
           <tr>
-            <th class="d-flex align-items-center gap-2">
-              <BFormSelect v-model="sortField" :options="fieldOptions" size="sm" />
+            <th class="d-flex align-items-center gap-2 py-2">
+              <BFormSelect v-model="sortField" :options="fieldOptions" size="sm" class="w-auto" />
               <button class="btn btn-sm btn-link p-0" @click="toggleSort">
                 <i
                   :class="sortOrder === 'asc' ? 'bi bi-arrow-down-circle' : 'bi bi-arrow-up-circle'"
                   aria-hidden="true"
                 />
               </button>
+              <span class="text-muted small ms-auto">{{ filteredRules.length }}</span>
             </th>
           </tr>
         </thead>
@@ -159,14 +154,27 @@ function isSelected(rule: IBenchmarkRule): boolean {
           <tr
             v-for="rule in filteredRules"
             :key="rule.id"
-            :class="{ 'bg-secondary text-white': isSelected(rule) }"
-            style="cursor: pointer"
+            :class="{ 'bg-primary text-white': isSelected(rule) }"
+            class="rule-row"
             @click="selectRule(rule)"
           >
-            <td>{{ sortField === 'rule_id' ? rule.rule_id : rule.version }}</td>
+            <td class="py-1">{{ sortField === 'rule_id' ? rule.rule_id : rule.version }}</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 </template>
+
+<style scoped>
+.rule-list {
+  /* Fills parent flexbox - no magic height needed */
+  overflow: hidden; /* Parent clips, .rule-table-container child scrolls */
+}
+.rule-row {
+  cursor: pointer;
+}
+.rule-row:hover:not(.bg-primary) {
+  background-color: var(--bs-secondary-bg);
+}
+</style>

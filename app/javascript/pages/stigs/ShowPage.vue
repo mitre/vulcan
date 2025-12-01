@@ -8,7 +8,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { BenchmarkViewer } from '@/components/benchmarks'
-import PageContainer from '@/components/shared/PageContainer.vue'
 import { useStigs } from '@/composables'
 import { stigToBenchmark } from '@/types'
 
@@ -33,7 +32,15 @@ const initialRuleId = computed(() => {
 </script>
 
 <template>
-  <PageContainer>
-    <BenchmarkViewer type="stig" :benchmark="benchmark" :initial-rule-id="initialRuleId" />
-  </PageContainer>
+  <!-- Layout 3: Viewer - Three-column for benchmark viewing -->
+  <!-- Height constrained to main content area via CSS variable -->
+  <div class="stig-show-page d-flex flex-column" style="height: var(--app-main-height);">
+    <div class="container-fluid container-app flex-grow-1 d-flex flex-column py-3 overflow-hidden">
+      <BenchmarkViewer type="stig" :benchmark="benchmark" :initial-rule-id="initialRuleId" />
+    </div>
+  </div>
 </template>
+
+<style scoped>
+/* Layout handled by Bootstrap utilities and inline min-height: 0 */
+</style>
