@@ -229,7 +229,7 @@ RSpec.describe Component do
     describe 'file extension validation' do
       it 'rejects non-spreadsheet files (exe)' do
         file = Rack::Test::UploadedFile.new(
-          Rails.root.join('spec', 'fixtures', 'files', 'malicious.exe', 'malicious.exe', 'files', 'malicious.exe', 'malicious.exe'),
+          Rails.root.join('spec', 'fixtures', 'files', 'malicious.exe'),
           'application/x-msdownload'
         )
 
@@ -240,7 +240,7 @@ RSpec.describe Component do
 
       it 'accepts CSV files' do
         file = Rack::Test::UploadedFile.new(
-          Rails.root.join('spec', 'fixtures', 'files', 'test.csv', 'test.csv', 'files', 'test.csv', 'test.csv'),
+          Rails.root.join('spec', 'fixtures', 'files', 'test.csv'),
           'text/csv'
         )
 
@@ -255,7 +255,7 @@ RSpec.describe Component do
       it 'rejects files over 100MB' do
         # Create a mock file object with large size
         file = Rack::Test::UploadedFile.new(
-          Rails.root.join('spec', 'fixtures', 'files', 'test.csv', 'test.csv', 'files', 'test.csv', 'test.csv'),
+          Rails.root.join('spec', 'fixtures', 'files', 'test.csv'),
           'text/csv'
         )
         allow(file).to receive(:size).and_return(101.megabytes)
@@ -267,7 +267,7 @@ RSpec.describe Component do
 
       it 'allows files under 100MB' do
         file = Rack::Test::UploadedFile.new(
-          Rails.root.join('spec', 'fixtures', 'files', 'test.csv', 'test.csv', 'files', 'test.csv', 'test.csv'),
+          Rails.root.join('spec', 'fixtures', 'files', 'test.csv'),
           'text/csv'
         )
         # Default size is small, under limit

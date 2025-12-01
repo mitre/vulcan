@@ -29,7 +29,7 @@ RSpec.describe 'Users' do
     it 'sets success flash message' do
       put "/users/#{target_user.id}", params: valid_params
 
-      follow_redirect!
+      # Check flash is set before following redirect (avoids CookieOverflow in test)
       expect(flash[:notice]).to eq('Successfully updated user.')
     end
 

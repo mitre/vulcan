@@ -17,8 +17,7 @@ RSpec.describe 'Component XCCDF Import' do
       )
 
       temp_file = Tempfile.new(['test', '.xml'])
-      temp_file.write(Rails.root.join('spec', 'fixtures', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml',
-                                      'U_Web_Server_V2R3_Manual-xccdf.xml').read)
+      temp_file.write(Rails.root.join('spec', 'fixtures', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml').read)
       temp_file.rewind
 
       xccdf_file = Rack::Test::UploadedFile.new(temp_file.path, 'application/xml')
@@ -34,8 +33,7 @@ RSpec.describe 'Component XCCDF Import' do
 
     it 'parses XCCDF file and extracts metadata' do
       temp_file = Tempfile.new(['test', '.xml'])
-      temp_file.write(Rails.root.join('spec', 'fixtures', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'U_Web_Server_V2R3_Manual-xccdf.xml', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml',
-                                      'U_Web_Server_V2R3_Manual-xccdf.xml').read)
+      temp_file.write(Rails.root.join('spec', 'fixtures', 'files', 'U_Web_Server_V2R3_Manual-xccdf.xml').read)
       temp_file.rewind
 
       parsed = Xccdf::Benchmark.parse(File.read(temp_file.path))

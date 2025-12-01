@@ -17,7 +17,8 @@ FactoryBot.define do
     end
 
     # rule_id must be unique within component scope
-    sequence(:rule_id) { |n| n.to_s.rjust(6, '0') }
+    # Use FACTORY- prefix to avoid conflicts with SRG-imported rules
+    sequence(:rule_id) { |n| "FACTORY-#{n.to_s.rjust(6, '0')}" }
     title { 'Default Rule Title' }
     status { 'Not Yet Determined' }
     rule_severity { 'medium' }
