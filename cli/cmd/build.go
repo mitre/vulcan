@@ -222,11 +222,8 @@ func runBuild(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Check Dockerfile exists for target
-	dockerfilePath := filepath.Join(projectRoot, "Dockerfile.production")
-	if buildTarget == "dev" {
-		dockerfilePath = filepath.Join(projectRoot, "Dockerfile")
-	}
+	// Check unified Dockerfile exists (supports all targets via --target)
+	dockerfilePath := filepath.Join(projectRoot, "Dockerfile")
 	if _, err := os.Stat(dockerfilePath); os.IsNotExist(err) {
 		printError(fmt.Sprintf("Dockerfile not found: %s", dockerfilePath))
 		os.Exit(1)
@@ -381,7 +378,8 @@ group "all" {
 
 // Production image - optimized for size and security
 target "production" {
-  dockerfile = "Dockerfile.production"
+  dockerfile = "Dockerfile"
+  target = "production"
   tags = [
     "${REGISTRY}/${IMAGE_NAME}:${VERSION}",
     "${REGISTRY}/${IMAGE_NAME}:latest"
@@ -406,11 +404,11 @@ target "production-multiarch" {
 // Development image - includes dev dependencies
 target "dev" {
   dockerfile = "Dockerfile"
+  target = "development"
   tags = [
     "${REGISTRY}/${IMAGE_NAME}:dev"
   ]
   platforms = ["linux/amd64"]
-  target = "development"
 }
 
 // CI build - for testing

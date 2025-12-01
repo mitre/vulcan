@@ -273,7 +273,7 @@ curl http://localhost:3000/status | jq '.application.version'
 - Review Actions logs for details
 
 ### Docker build fails
-- Verify Dockerfile.production is valid
+- Verify Dockerfile is valid (uses `--target production`)
 - Check Docker Hub secrets are configured
 - Review build logs in Actions
 

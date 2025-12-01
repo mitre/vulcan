@@ -861,8 +861,12 @@ func TestDockerDefaults(t *testing.T) {
 	v := viper.New()
 	setDefaults(v)
 
-	if v.GetString("docker.dockerfile") != "Dockerfile.production" {
-		t.Errorf("docker.dockerfile = %s, want Dockerfile.production", v.GetString("docker.dockerfile"))
+	if v.GetString("docker.dockerfile") != "Dockerfile" {
+		t.Errorf("docker.dockerfile = %s, want Dockerfile", v.GetString("docker.dockerfile"))
+	}
+
+	if v.GetString("docker.target") != "production" {
+		t.Errorf("docker.target = %s, want production", v.GetString("docker.target"))
 	}
 
 	platforms := v.GetStringSlice("docker.platforms")

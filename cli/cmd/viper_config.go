@@ -198,8 +198,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("ports.database", 5432)
 	v.SetDefault("ports.prometheus", 9394)
 
-	// Docker defaults
-	v.SetDefault("docker.dockerfile", "Dockerfile.production")
+	// Docker defaults (unified multi-stage Dockerfile with targets)
+	v.SetDefault("docker.dockerfile", "Dockerfile")
+	v.SetDefault("docker.target", "production")
 	v.SetDefault("docker.platforms", []string{"linux/amd64"})
 
 	// Database defaults
