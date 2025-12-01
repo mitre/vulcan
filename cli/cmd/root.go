@@ -47,8 +47,23 @@ var rootCmd = &cobra.Command{
 		"  stop        Stop Vulcan services\n" +
 		"  status      Show service status and health\n" +
 		"  logs        View service logs\n" +
+		"  build       Build Docker images\n" +
 		"  test        Run test suite\n" +
-		"  db          Database management commands\n",
+		"  db          Database management commands\n" +
+		"  config      View and manage configuration\n\n" +
+		"Configuration:\n" +
+		"  Vulcan CLI loads configuration from multiple sources (lowest to highest priority):\n" +
+		"  1. Built-in defaults\n" +
+		"  2. vulcan.yaml (or .json, .toml) in project root\n" +
+		"  3. .env file\n" +
+		"  4. Environment variables (VULCAN_* prefix)\n" +
+		"  5. Command-line flags\n\n" +
+		"Examples:\n" +
+		"  vulcan setup dev              # Set up development environment\n" +
+		"  vulcan start                  # Start services\n" +
+		"  vulcan build --info           # Show build configuration\n" +
+		"  vulcan db backup              # Create database backup\n" +
+		"  vulcan config show            # View current configuration\n",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
@@ -59,7 +74,9 @@ func Execute() error {
 }
 
 func init() {
+	cobra.OnInitialize(InitConfig)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	AddConfigFlags(rootCmd)
 }
 
 // Helper functions for output
