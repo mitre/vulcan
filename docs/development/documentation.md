@@ -10,14 +10,9 @@ Vulcan uses [VitePress](https://vitepress.dev/) for documentation, which provide
 - Markdown-centric with Vue enhancements
 - Static site generation for GitHub Pages
 
-## ⚠️ Important: Separate Dependencies
+## Documentation Dependencies
 
-**The documentation has its own `package.json` separate from the main application.** This temporary separation exists because:
-
-- **Main Application**: Uses Vue 2.6.11 + Bootstrap 4
-- **Documentation**: Uses VitePress with Vue 3
-
-This will be consolidated once the main application migrates to Vue 3.
+**The documentation has its own `package.json` in the `docs/` directory.** Both the main application and documentation now use Vue 3, but are kept separate for build isolation.
 
 ## Working with Documentation
 
@@ -144,22 +139,22 @@ graph TD
 
 ## Building Documentation
 
-### Local Build (Currently Limited)
+### Local Build
 
-Due to Vue 2/3 conflicts:
 ```bash
+# From project root
+pnpm docs:build
+
+# Or from docs directory
 cd docs
-yarn build  # ❌ Currently fails locally
+pnpm build
 ```
 
-**Note:** This is a known issue that will be resolved when the main app migrates to Vue 3.
+The built site will be in `docs/.vitepress/dist/`.
 
 ### CI/CD Build
 
-GitHub Actions successfully builds and deploys because it:
-1. Only installs docs dependencies
-2. Runs in a clean environment
-3. Deploys to GitHub Pages
+GitHub Actions automatically builds and deploys on merge to master.
 
 ## Deployment
 

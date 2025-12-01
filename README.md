@@ -88,7 +88,7 @@ For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
 The documentation uses [VitePress](https://vitepress.dev/) and is located in the `docs/` directory.
 
-**Important:** The documentation has its own `package.json` separate from the main application to avoid Vue version conflicts (main app uses Vue 2, VitePress uses Vue 3). This separation will be removed once the main application migrates to Vue 3.
+**Note:** The documentation has its own `package.json` in the `docs/` directory for build isolation.
 
 ```bash
 # Start documentation dev server
@@ -125,7 +125,7 @@ pnpm dev      # Start dev server
 - **bundler-audit** for dependency vulnerability scanning
 
 ### DevOps & Deployment
-- **Docker** with optimized production images (1.76GB)
+- **Docker** with optimized production images (~550MB)
 - **GitHub Actions** for CI/CD
 - **Heroku** compatible
 - **SonarCloud** integration for code quality
@@ -269,7 +269,7 @@ bundle exec bundler-audit
 
 ### Docker Image Features
 
-- **Optimized size**: 1.76GB (reduced from 6.5GB)
+- **Optimized size**: ~550MB
 - **Memory efficiency**: jemalloc for 20-40% reduction
 - **Multi-stage builds** for security and size
 - **Health checks** configured (see below)

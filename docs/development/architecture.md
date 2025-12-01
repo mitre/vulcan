@@ -19,10 +19,11 @@ Vulcan is a Rails-based web application designed for creating and managing Secur
 - **Redis** - Caching and background jobs (optional)
 
 ### Frontend
-- **Vue 2.6.11** - Reactive UI framework
-- **Bootstrap 4.4.1** - CSS framework
-- **Bootstrap-Vue 2.13.0** - Vue Bootstrap components
-- **Turbolinks 5.2.0** - Page navigation optimization
+- **Vue 3.5** - Reactive UI framework with Composition API
+- **Bootstrap 5** - CSS framework
+- **Bootstrap-Vue-Next** - Vue 3 Bootstrap components
+- **Pinia** - State management
+- **TypeScript** - Type-safe JavaScript
 - **esbuild** - JavaScript bundling
 
 ### Testing
@@ -181,9 +182,9 @@ POST   /api/v1/projects/:project_id/components
 ### Optimizations
 - Database query optimization with includes/joins
 - Fragment caching for expensive views
-- Turbolinks for faster page transitions
+- Vue Router for SPA navigation
 - CDN for static assets
-- Docker multi-stage builds (1.76GB image)
+- Docker multi-stage builds (~550MB production image)
 
 ### Monitoring
 - Application Performance Monitoring (APM)
@@ -211,11 +212,11 @@ FROM ruby:3.4.7-slim
 
 ## Future Architecture Plans
 
-### Vue 3 Migration
-- Incremental page-by-page migration
-- Remove Bootstrap-Vue dependency
-- Native Bootstrap 5 integration
-- Remove Turbolinks
+### Completed (v2.3.0)
+- ✅ Vue 3.5 with Composition API and TypeScript
+- ✅ Bootstrap 5 with Bootstrap-Vue-Next
+- ✅ Pinia for state management
+- ✅ Vue Router for SPA navigation (Turbolinks removed)
 
 ### Rails Improvements
 - GraphQL API consideration

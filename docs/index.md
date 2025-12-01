@@ -96,9 +96,9 @@ Vulcan bridges the gap between security requirements and practical implementatio
   <div class="tech-section">
     <h3>Frontend</h3>
     <ul>
-      <li>Vue 2.6.11</li>
-      <li>Bootstrap 4.4.1</li>
-      <li>Turbolinks 5.2.0</li>
+      <li>Vue 3.5 with Pinia</li>
+      <li>Bootstrap 5 with Bootstrap-Vue-Next</li>
+      <li>TypeScript</li>
     </ul>
   </div>
   <div class="tech-section">
