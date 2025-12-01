@@ -38,10 +38,11 @@ docker run -d \
 
 ## Image Details
 
-- **Base**: Ruby 3.4.7 on Debian Bookworm
-- **Size**: 1.76GB (73% smaller than v2.1)
+- **Base**: Ruby 3.4.7 on Debian Bookworm (slim)
+- **Size**: ~550MB (optimized multi-stage build)
 - **Memory**: Uses jemalloc for 20-40% memory reduction
 - **Security**: Non-root user, minimal attack surface
+- **Build**: Unified Dockerfile with `--target production`
 
 ## Configuration
 
