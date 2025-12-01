@@ -339,24 +339,24 @@ After enabling Prometheus scraping, you can create Grafana dashboards.
 **Example Queries:**
 
 **Request Rate:**
-```promql
+```text
 rate(http_requests_total{job="saf-vulcan"}[5m])
 ```
 
 **P95 Response Time:**
-```promql
+```text
 histogram_quantile(0.95,
   rate(http_request_duration_seconds_bucket{job="saf-vulcan"}[5m]))
 ```
 
 **Database Connection Pool Usage:**
-```promql
+```text
 active_record_connection_pool_busy{job="saf-vulcan"} /
 active_record_connection_pool_size{job="saf-vulcan"}
 ```
 
 **Memory Usage:**
-```promql
+```text
 rss{job="saf-vulcan"}
 ```
 

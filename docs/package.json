@@ -11,10 +11,10 @@
   "devDependencies": {
     "svgo": "^4.0.0",
     "vite-plugin-image-optimizer": "^2.0.2",
-    "vitepress": "2.0.0-alpha.11",
+    "vitepress": "2.0.0-alpha.15",
     "vue": "^3.5.18"
   },
   "dependencies": {
-    "mermaid": "^10.9.3"
+    "mermaid": "^8.14.0"
   }
 }
