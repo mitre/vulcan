@@ -1,6 +1,6 @@
 # Quick Start
 
-Get Vulcan up and running in minutes with Docker.
+Get Vulcan up and running in minutes.
 
 ## Try Vulcan Online
 
@@ -11,43 +11,66 @@ Before installing, you can try Vulcan directly:
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
+- **Docker** and **Docker Compose** installed
+- **Ruby 3.4.7** (for local development)
+- **Node.js 24 LTS** and **pnpm** (for local development)
 - 4GB+ RAM available
 - Port 3000 available
 
-## Quick Installation
+## Local Development (Recommended)
 
-### 1. Pull and Run with Docker
+The fastest way to get started:
 
 ```bash
-# Pull the latest Docker image
-docker pull mitre/vulcan:latest
-
-# Or use docker-compose for a complete setup
-wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
-wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
-chmod +x setup-docker-secrets.sh
-./setup-docker-secrets.sh
-docker-compose up
+git clone https://github.com/mitre/vulcan.git && cd vulcan && bin/setup
 ```
 
-### 2. Access Vulcan
+That's it! `bin/setup` handles everything:
+- Creates `.env` from `.env.example`
+- Starts PostgreSQL 16 via Docker
+- Installs Ruby and JavaScript dependencies
+- Builds frontend assets
+- Sets up database with seed data
+- Starts the development server
 
-Open your browser and navigate to: `http://localhost:3000`
+### Access Vulcan
 
-Default credentials for testing:
+Open your browser: `http://localhost:3000`
+
+Default credentials:
 - **Email**: admin@example.com
 - **Password**: 1234567ab!
 
-!!! warning "Security Notice"
-    These are development credentials only. Never use default credentials in production!
+## Production Docker
 
-### 3. First Steps
+For production deployments:
+
+```bash
+# Download files
+wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
+wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
+
+# Generate secure credentials
+chmod +x setup-docker-secrets.sh
+./setup-docker-secrets.sh
+
+# Start application
+docker-compose up -d
+```
+
+!!! warning "Security Notice"
+    Never use default credentials in production! The `setup-docker-secrets.sh` script generates secure passwords.
+
+## First Steps
 
 1. **Create a Project**: Click "New Project" to start organizing your security controls
 2. **Import an SRG**: Upload a Security Requirements Guide to begin tailoring
 3. **Create Components**: Add system components that need STIG documentation
-4. **Write Controls**: Begin documenting security controls with both human-readable guidance and InSpec validation code
+4. **Write Controls**: Document security controls with human-readable guidance and InSpec validation code
+
+## Keyboard Shortcuts
+
+- **Cmd+K** (Mac) / **Ctrl+K** (Windows/Linux): Open Command Palette for global search
 
 ## Next Steps
 

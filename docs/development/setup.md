@@ -6,8 +6,8 @@ This guide walks through setting up a local Vulcan development environment.
 
 ### Required Software
 
-- **Ruby 3.3.9** (use rbenv or rvm for version management)
-- **Node.js 22 LTS** and **Yarn** package manager
+- **Ruby 3.4.7** (use rbenv or rvm for version management)
+- **Node.js 24 LTS** and **pnpm** package manager
 - **PostgreSQL 12+** database server
 - **Git** version control
 - **Redis** (optional, for caching)
@@ -93,8 +93,8 @@ echo 'eval "$(rbenv init -)"' >> ~/.bashrc
 git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 
 # Install Ruby
-rbenv install 3.3.9
-rbenv local 3.3.9
+rbenv install 3.4.7
+rbenv local 3.4.7
 ```
 
 #### Using rvm
@@ -104,12 +104,12 @@ rbenv local 3.3.9
 \curl -sSL https://get.rvm.io | bash -s stable
 
 # Install Ruby
-rvm install 3.3.9
-rvm use 3.3.9
+rvm install 3.4.7
+rvm use 3.4.7
 
 # Create gemset (optional)
 rvm gemset create vulcan
-rvm use 3.3.9@vulcan
+rvm use 3.4.7@vulcan
 ```
 
 ### Database Configuration
@@ -339,7 +339,7 @@ Recommended extensions:
 
 ### RubyMine
 
-1. Set Ruby SDK to 3.3.9
+1. Set Ruby SDK to 3.4.7
 2. Configure Rails project
 3. Enable RuboCop inspection
 4. Set JavaScript version to ES6+
