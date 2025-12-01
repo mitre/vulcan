@@ -49,7 +49,20 @@ vulcan logs
 | `vulcan logs` | View service logs |
 | `vulcan logs -f` | Follow logs in real-time |
 | `vulcan test` | Run the test suite |
-| `vulcan build` | Build Docker images |
+
+### Docker Builds
+
+| Command | Description |
+|---------|-------------|
+| `vulcan build` | Build production Docker image |
+| `vulcan build --info` | Show build configuration (versions, tags, etc.) |
+| `vulcan build --target dev` | Build development image |
+| `vulcan build --push` | Build and push to registry |
+| `vulcan build -p linux/amd64,linux/arm64 --push` | Multi-arch build |
+| `vulcan build --registry ghcr.io/myorg` | Use custom registry |
+| `vulcan build --version v2.3.0` | Build with specific version tag |
+
+The build command reads versions from `.ruby-version` and `.nvmrc` files for single source of truth.
 
 ### Setup & Configuration
 

@@ -378,6 +378,12 @@ vulcan stop                     # Stop services
 vulcan status                   # Check status
 vulcan logs -f                  # Follow logs
 
+# Docker Builds
+vulcan build                    # Build production image
+vulcan build --info             # Show build configuration
+vulcan build --push             # Build and push to registry
+vulcan build -p linux/amd64,linux/arm64 --push  # Multi-arch build
+
 # Database
 vulcan db migrate               # Run migrations
 vulcan db snapshot before-change # Create named snapshot
