@@ -1,0 +1,158 @@
+# Vulcan CLI Taskfile
+# https://taskfile.dev
+#
+# Install: brew install go-task (macOS) or go install github.com/go-task/task/v3/cmd/task@latest
+# Usage: task <command>
+
+version: '3'
+
+vars:
+  BINARY_NAME: vulcan
+  INSTALL_DIR: ../bin
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the CLI binary
+    cmds:
+      - go build -o {{.INSTALL_DIR}}/{{.BINARY_NAME}} -v .
+
+  build:all:
+    desc: Build for all platforms
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -o {{.INSTALL_DIR}}/{{.BINARY_NAME}}-linux-amd64 .
+      - GOOS=linux GOARCH=arm64 go build -o {{.INSTALL_DIR}}/{{.BINARY_NAME}}-linux-arm64 .
+      - GOOS=darwin GOARCH=amd64 go build -o {{.INSTALL_DIR}}/{{.BINARY_NAME}}-darwin-amd64 .
+      - GOOS=darwin GOARCH=arm64 go build -o {{.INSTALL_DIR}}/{{.BINARY_NAME}}-darwin-arm64 .
+      - GOOS=windows GOARCH=amd64 go build -o {{.INSTALL_DIR}}/{{.BINARY_NAME}}-windows-amd64.exe .
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...
+
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -v -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+
+  test:race:
+    desc: Run tests with race detector
+    cmds:
+      - go test -race -v ./...
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run
+
+  lint:fix:
+    desc: Run linter with auto-fix
+    cmds:
+      - golangci-lint run --fix
+
+  fmt:
+    desc: Format code
+    cmds:
+      - gofmt -s -w .
+
+  fmt:check:
+    desc: Check if code is formatted
+    cmds:
+      - test -z "$(gofmt -l .)"
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  sec:
+    desc: Run security scanner (gosec)
+    cmds:
+      - gosec -quiet ./...
+
+  sec:full:
+    desc: Run full security scan with report
+    cmds:
+      - gosec -fmt=json -out=security-report.json ./... || true
+      - gosec ./...
+
+  secrets:
+    desc: Scan for hardcoded secrets (gitleaks)
+    cmds:
+      - gitleaks detect --source . --no-git -v
+
+  secrets:baseline:
+    desc: Generate secrets baseline for false positives
+    cmds:
+      - gitleaks detect --source . --no-git --report-format json --report-path .gitleaks-baseline.json || true
+
+  vuln:
+    desc: Check for known vulnerabilities
+    cmds:
+      - govulncheck ./...
+
+  security:
+    desc: Run all security checks
+    cmds:
+      - task: sec
+      - task: secrets
+      - task: vuln
+
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+
+  deps:update:
+    desc: Update dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  deps:audit:
+    desc: Verify dependencies
+    cmds:
+      - go mod verify
+
+  ci:
+    desc: Run all CI checks
+    deps: [fmt:check, vet, lint, sec, secrets, test, build]
+
+  ci:quick:
+    desc: Quick CI checks (no security scans)
+    deps: [fmt:check, vet, test, build]
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - go clean
+      - rm -f {{.INSTALL_DIR}}/{{.BINARY_NAME}}*
+      - rm -f coverage.out coverage.html
+
+  tools:install:
+    desc: Install all development tools
+    cmds:
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - go install github.com/securego/gosec/v2/cmd/gosec@latest
+      - go install golang.org/x/vuln/cmd/govulncheck@latest
+      - go install github.com/go-task/task/v3/cmd/task@latest
+
+  tools:check:
+    desc: Check if all required tools are installed
+    cmds:
+      - command -v go >/dev/null && echo "✓ go" || echo "✗ go"
+      - command -v golangci-lint >/dev/null && echo "✓ golangci-lint" || echo "✗ golangci-lint"
+      - command -v gosec >/dev/null && echo "✓ gosec" || echo "✗ gosec"
+      - command -v gitleaks >/dev/null && echo "✓ gitleaks" || echo "✗ gitleaks"
+      - command -v govulncheck >/dev/null && echo "✓ govulncheck" || echo "✗ govulncheck"
+
+  run:
+    desc: Build and run the CLI with args
+    cmds:
+      - go run . {{.CLI_ARGS}}
