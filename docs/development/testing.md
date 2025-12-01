@@ -516,19 +516,22 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3.9
+          ruby-version: 3.4.7
           bundler-cache: true
       
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'yarn'
-      
+          node-version: '24'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Install dependencies
         run: |
           bundle install
-          yarn install
+          pnpm install
       
       - name: Setup database
         env:

@@ -130,8 +130,8 @@ bundle config set --local without 'development test'
 bundle install
 
 # Install Node.js dependencies
-npm install -g yarn
-yarn install --production
+npm install -g pnpm
+pnpm install --prod
 ```
 
 ### 4. Configure Application
@@ -507,7 +507,7 @@ find /var/www/vulcan -type f -exec chmod 644 {} \;
 cd /var/www/vulcan
 git pull origin main
 bundle install
-yarn install
+pnpm install
 bundle exec rails db:migrate
 bundle exec rails assets:precompile
 sudo systemctl restart vulcan

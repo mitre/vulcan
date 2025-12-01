@@ -110,6 +110,7 @@ export default defineConfig({
             { text: "Installation", link: "/getting-started/installation" },
             { text: "Configuration", link: "/getting-started/configuration" },
             { text: "Environment Variables", link: "/getting-started/environment-variables" },
+            { text: "CLI Reference", link: "/getting-started/cli" },
           ],
         },
       ],

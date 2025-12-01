@@ -196,10 +196,10 @@ POST   /api/v1/projects/:project_id/components
 ### Container-based
 ```dockerfile
 # Multi-stage build for optimization
-FROM ruby:3.3.9-slim as builder
+FROM ruby:3.4.7-slim as builder
 # Build dependencies and assets
 
-FROM ruby:3.3.9-slim
+FROM ruby:3.4.7-slim
 # Runtime with jemalloc for memory optimization
 ```
 

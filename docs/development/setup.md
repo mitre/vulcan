@@ -41,11 +41,11 @@ bundle install
 
 #### JavaScript Dependencies
 ```bash
-# Install yarn if not present
-npm install -g yarn
+# Install pnpm if not present
+npm install -g pnpm
 
 # Install packages
-yarn install
+pnpm install
 ```
 
 ### 3. Database Setup
@@ -72,7 +72,7 @@ foreman start -f Procfile.dev
 rails server
 
 # Terminal 2: JavaScript bundler
-yarn build:watch
+pnpm build:watch
 ```
 
 Visit http://localhost:3000
@@ -250,13 +250,13 @@ bundle exec rubocop --autocorrect-all
 #### JavaScript Style
 ```bash
 # Run ESLint
-yarn lint
+pnpm lint
 
 # Auto-fix issues
-yarn lint --fix
+pnpm lint --fix
 
 # CI mode (fails on warnings)
-yarn lint:ci
+pnpm lint:ci
 ```
 
 ### Testing
@@ -267,7 +267,7 @@ yarn lint:ci
 bundle exec rspec
 
 # JavaScript tests
-yarn test
+pnpm test
 
 # Specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -311,7 +311,7 @@ rails assets:precompile
 rails assets:clean
 
 # Watch for changes
-yarn build:watch
+pnpm build:watch
 ```
 
 ## IDE Configuration
@@ -376,14 +376,14 @@ rails db:drop db:create db:migrate
 ```bash
 # Clear cache
 rails tmp:clear
-yarn cache clean
+pnpm store prune
 
 # Reinstall dependencies
-rm -rf node_modules yarn.lock
-yarn install
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
 
 # Rebuild
-yarn build
+pnpm build
 ```
 
 ### Port Already in Use
@@ -517,7 +517,7 @@ bundle exec bundler-audit check --update
 bundle exec brakeman
 
 # JavaScript audit
-yarn audit
+pnpm audit
 ```
 
 ## Useful Commands
