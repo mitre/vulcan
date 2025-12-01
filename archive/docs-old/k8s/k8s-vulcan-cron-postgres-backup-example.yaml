@@ -14,7 +14,7 @@ spec:
         spec:
           containers:
           - name: postgres-backup
-            image: postgres:12
+            image: postgres:16-alpine
             imagePullPolicy: IfNotPresent
             command: ["/bin/sh", "-c"]
             args:
