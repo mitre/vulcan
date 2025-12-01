@@ -7,7 +7,7 @@ This guide covers deploying Vulcan directly on Linux servers without containeriz
 - Ubuntu 20.04+ or RHEL/CentOS 8+ server
 - Root or sudo access
 - Minimum 2GB RAM, 2 CPU cores
-- PostgreSQL 12+ database server
+- PostgreSQL 16+ database server
 - Domain name with SSL certificate (recommended)
 
 ## System Preparation

@@ -8,7 +8,7 @@ This guide walks through setting up a local Vulcan development environment.
 
 - **Ruby 3.4.7** (use rbenv or rvm for version management)
 - **Node.js 24 LTS** and **pnpm** package manager
-- **PostgreSQL 12+** database server
+- **PostgreSQL 16+** database server
 - **Git** version control
 - **Redis** (optional, for caching)
 
@@ -118,8 +118,8 @@ rvm use 3.4.7@vulcan
 
 ```bash
 # macOS
-brew install postgresql@14
-brew services start postgresql@14
+brew install postgresql@16
+brew services start postgresql@16
 
 # Ubuntu/Debian
 sudo apt-get install postgresql postgresql-contrib

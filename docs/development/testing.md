@@ -501,7 +501,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:14
+        image: postgres:16-alpine
         env:
           POSTGRES_PASSWORD: postgres
         options: >-

@@ -89,7 +89,7 @@ Vulcan bridges the gap between security requirements and practical implementatio
     <h3>Backend</h3>
     <ul>
       <li>Ruby 3.4.7 with Rails 8.0.2.1</li>
-      <li>PostgreSQL 12+</li>
+      <li>PostgreSQL 16+</li>
       <li>Redis for caching</li>
     </ul>
   </div>
