@@ -3,9 +3,11 @@
  * Following Pinia best practices with explicit type definitions
  */
 
+import type { IPagination } from './common'
+
 /**
- * Core User interface matching Rails User model
- * Fields: id, email, name, admin, provider, uid, slack_user_id
+ * User interface matching Rails User model
+ * All fields that can be returned by the API
  */
 export interface IUser {
   id: number
@@ -15,6 +17,47 @@ export interface IUser {
   provider?: string | null
   uid?: string | null
   slack_user_id?: string | null
+  // Status fields (returned by admin endpoints)
+  locked?: boolean
+  confirmed?: boolean
+  sign_in_count?: number
+  last_sign_in_at?: string | null
+  created_at?: string
+}
+
+/**
+ * Extended user detail (for user detail view)
+ * Includes all tracking and membership info
+ */
+export interface IUserDetail extends IUser {
+  updated_at: string
+  current_sign_in_at: string | null
+  current_sign_in_ip: string | null
+  last_sign_in_ip: string | null
+  confirmed_at: string | null
+  locked_at: string | null
+  failed_attempts: number
+  memberships: IUserMembership[]
+}
+
+/**
+ * User membership info
+ */
+export interface IUserMembership {
+  id: number
+  role: string
+  type: string
+  name: string | null
+  membership_id: number
+  created_at: string
+}
+
+/**
+ * Invite user request
+ */
+export interface IUserInvite {
+  email: string
+  name: string
 }
 
 /**
@@ -37,7 +80,7 @@ export interface IUserRegister {
 }
 
 /**
- * User update data (for admin operations)
+ * User update data
  */
 export interface IUserUpdate {
   name?: string
@@ -55,13 +98,26 @@ export interface IAuthState {
 }
 
 /**
- * Users store state interface (for admin user management)
+ * Users store state interface
  */
 export interface IUsersState {
   users: IUser[]
   histories: IUserHistory[]
   loading: boolean
   error: string | null
+  pagination: IPagination | null
+}
+
+// IPagination is now imported from ./common
+
+/**
+ * Filter options for user listing
+ */
+export interface IUserFilters {
+  search?: string
+  provider?: 'all' | 'local' | 'external'
+  role?: 'all' | 'admin' | 'user'
+  status?: 'all' | 'active' | 'locked' | 'unconfirmed'
 }
 
 /**
@@ -93,4 +149,16 @@ export interface IAuthResponse {
 
 export interface IUsersResponse {
   users: IUser[]
+  pagination: IPagination
+}
+
+export interface IUserDetailResponse {
+  user: IUserDetail
+}
+
+export interface IUserActionResponse {
+  toast: string
+  user?: IUser
+  error?: string
+  details?: string[]
 }

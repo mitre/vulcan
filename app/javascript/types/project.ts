@@ -24,6 +24,7 @@ export interface IProject {
   created_at: string
   updated_at: string
   memberships?: IProjectMembership[]
+  memberships_count?: number
   admin?: boolean
   is_member?: boolean
   access_request_id?: number | null

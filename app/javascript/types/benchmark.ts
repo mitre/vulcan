@@ -15,7 +15,7 @@
 import type { ISecurityRequirementsGuide, ISrgRule } from './srg'
 import type { IStig, IStigRule } from './stig'
 
-export type BenchmarkType = 'stig' | 'srg'
+export type BenchmarkType = 'stig' | 'srg' | 'component'
 
 /**
  * Check content for a rule
