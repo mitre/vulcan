@@ -122,5 +122,42 @@ describe('useProjects', () => {
       expect(composable.loading.value).toBe(false)
       expect(composable.error.value).toBeNull()
     })
+
+    it('create returns project ID on success', async () => {
+      const createSpy = vi.spyOn(store, 'createProject').mockResolvedValue({
+        data: { redirect_url: '/projects/123', toast: 'Success' },
+      } as any)
+
+      const projectId = await composable.create({ name: 'New Project' })
+
+      expect(createSpy).toHaveBeenCalledWith({ name: 'New Project' })
+      expect(projectId).toBe(123)
+    })
+
+    it('create returns null on failure', async () => {
+      vi.spyOn(store, 'createProject').mockRejectedValue(new Error('Failed'))
+
+      const projectId = await composable.create({ name: 'New Project' })
+
+      expect(projectId).toBeNull()
+    })
+
+    it('create extracts project ID from various redirect_url formats', async () => {
+      // Test with different URL formats
+      const testCases = [
+        { redirect_url: '/projects/1', expected: 1 },
+        { redirect_url: '/projects/999', expected: 999 },
+        { redirect_url: '/projects/12345', expected: 12345 },
+      ]
+
+      for (const { redirect_url, expected } of testCases) {
+        vi.spyOn(store, 'createProject').mockResolvedValue({
+          data: { redirect_url },
+        } as any)
+
+        const projectId = await composable.create({ name: 'Test' })
+        expect(projectId).toBe(expected)
+      }
+    })
   })
 })

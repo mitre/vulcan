@@ -42,11 +42,14 @@ export function useAppToast() {
 
   /**
    * Show a toast with custom options
+   * Uses Bootstrap-Vue-Next's create method (show is deprecated)
    */
   function show(message: string | VNode, options: ToastOptions = {}) {
     const opts = { ...defaultOptions, ...options }
 
-    bvnToast.show?.({
+    // Use create instead of deprecated show method
+    const toastMethod = bvnToast.create || bvnToast.show
+    toastMethod?.({
       props: {
         title: opts.title,
         variant: opts.variant,

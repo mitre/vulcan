@@ -9,6 +9,7 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useStigsStore } from '@/stores'
+import { withToastBoolean } from '@/utils'
 import { useAppToast } from './useToast'
 
 export function useStigs() {
@@ -42,15 +43,11 @@ export function useStigs() {
    * @returns true if successful, false if failed
    */
   async function upload(file: File): Promise<boolean> {
-    try {
-      await store.uploadStig(file)
-      toast.success('Successfully uploaded STIG')
-      return true
-    }
-    catch (err) {
-      toast.error('Failed to upload STIG', err instanceof Error ? err.message : 'Unknown error')
-      return false
-    }
+    return withToastBoolean(
+      toast,
+      { success: 'Successfully uploaded STIG', error: 'Failed to upload STIG' },
+      () => store.uploadStig(file),
+    )
   }
 
   /**
@@ -58,15 +55,11 @@ export function useStigs() {
    * @returns true if successful, false if failed
    */
   async function remove(id: number): Promise<boolean> {
-    try {
-      await store.deleteStig(id)
-      toast.success('Successfully removed STIG')
-      return true
-    }
-    catch (err) {
-      toast.error('Failed to remove STIG', err instanceof Error ? err.message : 'Unknown error')
-      return false
-    }
+    return withToastBoolean(
+      toast,
+      { success: 'Successfully removed STIG', error: 'Failed to remove STIG' },
+      () => store.deleteStig(id),
+    )
   }
 
   /**

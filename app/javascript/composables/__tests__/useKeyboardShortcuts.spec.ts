@@ -2,12 +2,12 @@
  * Tests for useKeyboardShortcuts composable
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   formatShortcut,
   getKeySymbol,
-  isMac,
   isInputFocused,
+  isMac,
   isPrimaryModifier,
   KEY_SYMBOLS,
   primaryModifier,
@@ -116,7 +116,7 @@ describe('useKeyboardShortcuts', () => {
     })
   })
 
-  describe('KEY_SYMBOLS', () => {
+  describe('kEY_SYMBOLS', () => {
     it('has mac and other variants for each key', () => {
       expect(KEY_SYMBOLS.meta.mac).toBe('⌘')
       expect(KEY_SYMBOLS.meta.other).toBe('Ctrl')

@@ -9,6 +9,7 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useSrgsStore } from '@/stores'
+import { withToastBoolean } from '@/utils'
 import { useAppToast } from './useToast'
 
 export function useSrgs() {
@@ -49,15 +50,11 @@ export function useSrgs() {
    * @returns true if successful, false if failed
    */
   async function upload(file: File): Promise<boolean> {
-    try {
-      await store.uploadSrg(file)
-      toast.success('Successfully uploaded SRG')
-      return true
-    }
-    catch (err) {
-      toast.error('Failed to upload SRG', err instanceof Error ? err.message : 'Unknown error')
-      return false
-    }
+    return withToastBoolean(
+      toast,
+      { success: 'Successfully uploaded SRG', error: 'Failed to upload SRG' },
+      () => store.uploadSrg(file),
+    )
   }
 
   /**
@@ -65,15 +62,11 @@ export function useSrgs() {
    * @returns true if successful, false if failed
    */
   async function remove(id: number): Promise<boolean> {
-    try {
-      await store.deleteSrg(id)
-      toast.success('Successfully removed SRG')
-      return true
-    }
-    catch (err) {
-      toast.error('Failed to remove SRG', err instanceof Error ? err.message : 'Unknown error')
-      return false
-    }
+    return withToastBoolean(
+      toast,
+      { success: 'Successfully removed SRG', error: 'Failed to remove SRG' },
+      () => store.deleteSrg(id),
+    )
   }
 
   /**

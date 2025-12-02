@@ -10,7 +10,7 @@ import { useGlobalSearch } from '../useGlobalSearch'
 
 // Mock fetch
 const mockFetch = vi.fn()
-global.fetch = mockFetch
+globalThis.fetch = mockFetch
 
 // Mock localStorage
 const localStorageMock = {
@@ -18,7 +18,7 @@ const localStorageMock = {
   setItem: vi.fn(),
   removeItem: vi.fn(),
 }
-Object.defineProperty(global, 'localStorage', { value: localStorageMock })
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 
 describe('useGlobalSearch', () => {
   beforeEach(() => {

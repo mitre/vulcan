@@ -1,17 +1,26 @@
 /**
  * Benchmarks Composable
  *
- * Provides a unified interface for working with both STIGs and SRGs.
+ * Provides a unified interface for working with STIGs, SRGs, and Components.
  * Converts internal types to the unified IBenchmarkListItem format.
  *
  * Usage:
  *   const { items, loading, error, refresh, upload, remove } = useBenchmarks('stig')
+ *   const { items, loading, error, refresh } = useBenchmarks('component')
+ *   const { items } = useBenchmarks('component', { releasedOnly: true }) // Public view
  */
 
-import type { BenchmarkType, IBenchmarkListItem } from '@/types'
+import type { Ref } from 'vue'
+import type { BenchmarkType, IBenchmarkListItem, IComponent } from '@/types'
 import { computed } from 'vue'
+import { useComponents } from './useComponents'
 import { useSrgs } from './useSrgs'
 import { useStigs } from './useStigs'
+
+export interface UseBenchmarksOptions {
+  /** For components: only show released components (public view) */
+  releasedOnly?: boolean | Ref<boolean>
+}
 
 /**
  * Convert STIG to unified benchmark list item
@@ -42,10 +51,27 @@ function srgToBenchmarkListItem(srg: Record<string, unknown>): IBenchmarkListIte
 }
 
 /**
- * Unified benchmarks composable
- * Provides the same interface for both STIGs and SRGs
+ * Convert Component to unified benchmark list item
  */
-export function useBenchmarks(type: BenchmarkType) {
+function componentToBenchmarkListItem(component: IComponent): IBenchmarkListItem {
+  return {
+    id: component.id,
+    benchmark_id: `${component.prefix}-${component.version}`,
+    title: component.title || component.name,
+    name: component.name,
+    version: `V${component.version}R${component.release || 0}`,
+    date: component.created_at,
+  }
+}
+
+/**
+ * Unified benchmarks composable
+ * Provides the same interface for STIGs, SRGs, and Components
+ *
+ * @param type - The benchmark type to work with
+ * @param options - Optional configuration (e.g., releasedOnly for components)
+ */
+export function useBenchmarks(type: BenchmarkType, options: UseBenchmarksOptions = {}) {
   if (type === 'stig') {
     const { stigs, loading, error, refresh, upload, remove } = useStigs()
 
@@ -64,7 +90,7 @@ export function useBenchmarks(type: BenchmarkType) {
       remove,
     }
   }
-  else {
+  else if (type === 'srg') {
     const { srgs, loading, error, refresh, upload, remove } = useSrgs()
 
     // Convert SRGs to unified format
@@ -79,6 +105,31 @@ export function useBenchmarks(type: BenchmarkType) {
       error,
       refresh,
       upload,
+      remove,
+    }
+  }
+  else {
+    // Component type
+    const { components, released, loading, error, refresh: refreshComponents, remove } = useComponents()
+
+    // Convert Components to unified format
+    // Filter by released status if releasedOnly option is set
+    const items = computed<IBenchmarkListItem[]>(() => {
+      const releasedOnly = typeof options.releasedOnly === 'object'
+        ? options.releasedOnly.value
+        : options.releasedOnly
+
+      const sourceComponents = releasedOnly ? released.value : components.value
+      return sourceComponents.map(componentToBenchmarkListItem)
+    })
+
+    return {
+      type: 'component' as const,
+      items,
+      loading,
+      error,
+      refresh: refreshComponents,
+      upload: undefined, // Components don't support file upload
       remove,
     }
   }

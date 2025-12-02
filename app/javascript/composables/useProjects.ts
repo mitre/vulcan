@@ -10,6 +10,7 @@ import type { IProjectCreate, IProjectUpdate } from '@/types'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useProjectsStore } from '@/stores'
+import { withToast, withToastBoolean } from '@/utils'
 import { useAppToast } from './useToast'
 
 export function useProjects() {
@@ -42,18 +43,18 @@ export function useProjects() {
 
   /**
    * Create a new project
-   * @returns true if successful, false if failed
+   * @returns The created project ID if successful, null if failed
    */
-  async function create(data: IProjectCreate): Promise<boolean> {
-    try {
-      await store.createProject(data)
-      toast.success('Successfully created project')
-      return true
-    }
-    catch (err) {
-      toast.error('Failed to create project', err instanceof Error ? err.message : 'Unknown error')
-      return false
-    }
+  async function create(data: IProjectCreate): Promise<number | null> {
+    const result = await withToast(
+      toast,
+      { success: 'Successfully created project', error: 'Failed to create project' },
+      () => store.createProject(data),
+    )
+    if (!result) return null
+    // Extract project ID from redirect_url (e.g., "/projects/123")
+    const match = result.data?.redirect_url?.match(/\/projects\/(\d+)/)
+    return match ? Number.parseInt(match[1], 10) : null
   }
 
   /**
@@ -61,15 +62,11 @@ export function useProjects() {
    * @returns true if successful, false if failed
    */
   async function update(id: number, data: IProjectUpdate): Promise<boolean> {
-    try {
-      await store.updateProject(id, data)
-      toast.success('Successfully updated project')
-      return true
-    }
-    catch (err) {
-      toast.error('Failed to update project', err instanceof Error ? err.message : 'Unknown error')
-      return false
-    }
+    return withToastBoolean(
+      toast,
+      { success: 'Successfully updated project', error: 'Failed to update project' },
+      () => store.updateProject(id, data),
+    )
   }
 
   /**
@@ -77,15 +74,11 @@ export function useProjects() {
    * @returns true if successful, false if failed
    */
   async function remove(id: number): Promise<boolean> {
-    try {
-      await store.deleteProject(id)
-      toast.success('Successfully deleted project')
-      return true
-    }
-    catch (err) {
-      toast.error('Failed to delete project', err instanceof Error ? err.message : 'Unknown error')
-      return false
-    }
+    return withToastBoolean(
+      toast,
+      { success: 'Successfully deleted project', error: 'Failed to delete project' },
+      () => store.deleteProject(id),
+    )
   }
 
   /**

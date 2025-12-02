@@ -7,8 +7,9 @@
  * Uses VueUse's useMagicKeys under the hood.
  */
 
+import type { Ref } from 'vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { computed, onUnmounted, type Ref } from 'vue'
+import { computed, onUnmounted } from 'vue'
 
 /**
  * Detect if running on macOS/iOS
@@ -76,7 +77,7 @@ export function getKeySymbol(key: string): string {
  * formatShortcut('Shift+Enter') // '⇧↩' on Mac, 'Shift+Enter' on Windows
  */
 export function formatShortcut(shortcut: string): string {
-  const parts = shortcut.split(/[+]/)
+  const parts = shortcut.split(/\+/)
   const formattedParts = parts.map(part => getKeySymbol(part.trim()))
 
   // On Mac, join without separator for cleaner look (⌘⇧K)
