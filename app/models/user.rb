@@ -9,7 +9,8 @@ class User < ApplicationRecord
 
   include ProjectMemberConstants
 
-  devise :database_authenticatable, :registerable, :rememberable, :recoverable, :confirmable, :trackable, :validatable
+  devise :database_authenticatable, :registerable, :rememberable, :recoverable, :confirmable, :trackable, :validatable,
+         :lockable
 
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
 

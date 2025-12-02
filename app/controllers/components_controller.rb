@@ -14,18 +14,20 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
-  before_action :authorize_admin_component, only: %i[update], if: lambda {
-    params
-      .expect(component: [:advanced_fields])[:advanced_fields]
-      .present?
-  }
+  # Require admin for advanced_fields updates (separate callback to avoid overwriting destroy authorization)
+  before_action :authorize_admin_for_advanced_fields, only: %i[update]
 
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
   before_action :authorize_logged_in, only: %i[search]
-  before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
+  before_action :authorize_logged_in_for_released_show, only: %i[show]
 
   def index
-    @components_json = Component.eager_load(:based_on).where(released: true).to_json
+    @components = Component.eager_load(:based_on).where(released: true)
+                           .select(:id, :name, :prefix, :version, :release, :title, :released, :created_at, :project_id, :security_requirements_guide_id)
+    respond_to do |format|
+      format.html { @components_json = @components.to_json }
+      format.json { render json: @components }
+    end
   end
 
   def search
@@ -384,6 +386,22 @@ class ComponentsController < ApplicationController
     return if component_update_params[:component_metadata_attributes]&.dig('data', 'Slack Channel ID').blank?
 
     authorize_admin_component
+  end
+
+  # Require admin permissions when updating advanced_fields
+  # This is a separate method to avoid overwriting the authorize_admin_component callback for :destroy
+  def authorize_admin_for_advanced_fields
+    return unless params.dig(:component, :advanced_fields).present?
+
+    authorize_admin_component
+  end
+
+  # Require login for viewing released components
+  # Separate method to avoid overwriting authorize_logged_in for :search
+  def authorize_logged_in_for_released_show
+    return unless @component.released
+
+    authorize_logged_in
   end
 
   def component_update_params

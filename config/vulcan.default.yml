@@ -35,6 +35,11 @@ defaults: &defaults
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCAL_LOGIN']) != false %>
     email_confirmation: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION']) || false %>
     session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
+  # Account lockout settings
+  lockable:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCKABLE']) != false %>
+    max_attempts: <%= ENV['VULCAN_LOCKABLE_MAX_ATTEMPTS'] || 5 %>
+    unlock_in_minutes: <%= ENV['VULCAN_LOCKABLE_UNLOCK_IN_MINUTES'] || 30 %>
   user_registration:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
   project:

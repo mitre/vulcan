@@ -11,9 +11,10 @@ class ApplicationController < ActionController::Base
   before_action :setup_navigation, :authenticate_user!
   before_action :check_access_request_notifications
 
-  rescue_from NotAuthorizedError, with: :not_authorized
-
+  # Order matters: more specific handlers must come AFTER generic ones
+  # Rails processes rescue_from in reverse order (last defined = highest priority)
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
+  rescue_from NotAuthorizedError, with: :not_authorized
 
   def set_project_permissions
     @effective_permissions = current_user&.effective_permissions(@project)

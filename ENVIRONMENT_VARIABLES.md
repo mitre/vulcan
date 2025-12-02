@@ -75,6 +75,14 @@ These are automatically derived from the primitives above. Only override when ne
 | `VULCAN_ENABLE_EMAIL_CONFIRMATION` | Require email confirmation for new users | `false` | `true` |
 | `VULCAN_SESSION_TIMEOUT` | Session timeout in minutes | `60` | `120` |
 
+### Account Lockout
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_ENABLE_LOCKABLE` | Enable account lockout after failed attempts | `true` | `false` |
+| `VULCAN_LOCKABLE_MAX_ATTEMPTS` | Maximum login attempts before lockout | `5` | `10` |
+| `VULCAN_LOCKABLE_UNLOCK_IN_MINUTES` | Minutes until auto-unlock | `30` | `60` |
+
 ### User Registration
 
 | Variable | Description | Default | Example |

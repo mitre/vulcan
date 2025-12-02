@@ -26,6 +26,32 @@ Rails.application.routes.draw do
     end
   end
 
+  # Admin namespace for admin-only functionality
+  namespace :admin do
+    get '/', to: 'dashboard#index', as: :root
+    get 'stats', to: 'dashboard#stats'
+
+    resources :users, only: %i[index show update destroy] do
+      member do
+        post 'lock'
+        post 'unlock'
+        post 'reset_password'
+        post 'resend_confirmation'
+      end
+      collection do
+        post 'invite'
+      end
+    end
+
+    get 'settings', to: 'settings#index'
+
+    resources :audits, only: %i[index show] do
+      collection do
+        get 'stats'
+      end
+    end
+  end
+
   # Prometheus metrics are served on port 9394 by prometheus_exporter
   # Access at: http://localhost:9394/metrics (in development)
   # In Kubernetes: prometheus_exporter runs in same container, port 9394
@@ -79,5 +105,19 @@ Rails.application.routes.draw do
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
   root to: 'projects#index'
+
+  # SPA routes - serve the SPA shell for client-side routing
+  # These routes don't need their own controller actions, they just render the SPA
+  # The Vue Router handles the actual routing client-side
+  get '/profile', to: 'projects#index'
+  get '/benchmarks', to: 'projects#index'
+  get '/rules/:id/edit', to: 'projects#index'
+
+  # Admin SPA routes (Vue Router handles these, Rails just serves the shell)
+  get '/admin/audit', to: 'admin/dashboard#index'
+  get '/admin/content/benchmarks', to: 'admin/dashboard#index'
+  get '/admin/content/stigs', to: 'admin/dashboard#index'
+  get '/admin/content/srgs', to: 'admin/dashboard#index'
+
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
 end

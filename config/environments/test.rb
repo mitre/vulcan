@@ -28,6 +28,10 @@ Rails.application.configure do
   # This is needed for OIDC discovery caching tests in Rails 7.1+
   config.cache_store = :memory_store
 
+  # Use cache_store for sessions in test to avoid 4KB cookie limit
+  # This prevents CookieOverflow when rendering HTML pages with large JS assets
+  config.session_store :cache_store, key: '_vulcan_vue_session_test'
+
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable
 
