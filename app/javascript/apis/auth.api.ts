@@ -28,3 +28,33 @@ export function register(name: string, email: string, password: string, password
 
   return http.post('/users', { user: userData })
 }
+
+/**
+ * Get current user profile
+ */
+export function getProfile() {
+  return http.get('/users/edit')
+}
+
+/**
+ * Update current user profile
+ */
+export interface IProfileUpdate {
+  name?: string
+  email?: string
+  slack_user_id?: string
+  password?: string
+  password_confirmation?: string
+  current_password: string
+}
+
+export function updateProfile(data: IProfileUpdate) {
+  return http.put('/users', { user: data })
+}
+
+/**
+ * Delete current user account
+ */
+export function deleteAccount() {
+  return http.delete('/users')
+}

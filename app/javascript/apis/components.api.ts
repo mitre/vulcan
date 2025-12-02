@@ -7,6 +7,14 @@ import type { IComponent, IComponentCreate, IComponentDuplicate, IComponentUpdat
 import { http } from '@/services/http.service'
 
 /**
+ * Get all released components
+ * GET /components
+ */
+export function getComponents() {
+  return http.get<IComponent[]>('/components')
+}
+
+/**
  * Get a single component by ID
  * GET /components/:id
  */
