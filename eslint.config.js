@@ -23,6 +23,18 @@ export default antfu({
     'tmp/**',
     'log/**',
     'coverage/**',
+
+    // Legacy Vue 2 code - will be replaced, not migrated
+    'app/javascript/mixins/**',
+    'app/javascript/store/**', // Old Vuex store (not Pinia stores/)
+    'app/javascript/packs/**',
+    'app/javascript/components/rules/**/*.vue', // Legacy rule components
+    'app/javascript/components/rule_desc/**',
+    'app/javascript/components/components/**', // Legacy component components
+    'app/javascript/components/project/DiffViewer.vue', // Legacy diff viewer
+    'app/javascript/components/shared/CommentModal.vue', // Legacy modal
+    'app/javascript/components/shared/History.vue', // Legacy history
+    'app/javascript/components/requirements/RequirementEditor.vue', // Legacy editor
   ],
 },
 // Custom rule overrides
