@@ -42,49 +42,51 @@ onMounted(() => {
 </script>
 
 <template>
-  <BApp class="d-flex flex-column vh-100">
-    <!-- Command Palette (Cmd+J) -->
-    <CommandPalette />
+  <BApp>
+    <div class="d-flex flex-column vh-100">
+      <!-- Command Palette (Cmd+J) -->
+      <CommandPalette />
 
-    <!-- Navbar - sticky at top, stays visible when scrolling -->
-    <header id="navbar" class="flex-shrink-0 sticky-top shadow-sm">
-      <Navbar
-        :navigation="navigationStore.links"
-        :signed_in="authStore.signedIn"
-        :users_path="authStore.isAdmin ? '/users' : ''"
-        profile_path="/users/edit"
-        sign_out_path="/users/sign_out"
-        :access_requests="navigationStore.accessRequests"
-        @open-command-palette="showCommandPalette = true"
-      />
-    </header>
+      <!-- Navbar - sticky at top, stays visible when scrolling -->
+      <header id="navbar" class="flex-shrink-0 sticky-top shadow-sm">
+        <Navbar
+          :navigation="navigationStore.links"
+          :signed_in="authStore.signedIn"
+          :users_path="authStore.isAdmin ? '/users' : ''"
+          profile_path="/profile"
+          sign_out_path="/users/sign_out"
+          :access_requests="navigationStore.accessRequests"
+          @open-command-palette="showCommandPalette = true"
+        />
+      </header>
 
-    <!-- Toast container for notifications -->
-    <div id="toaster">
-      <Toaster />
+      <!-- Toast container for notifications -->
+      <div id="toaster">
+        <Toaster />
+      </div>
+
+      <!-- Main content area - flex-grow to fill remaining space -->
+      <!-- overflow-hidden prevents content from expanding viewport -->
+      <!-- No pb-5 needed - footer is in normal flow, not fixed position -->
+      <main class="flex-grow-1 overflow-hidden">
+        <RouterView v-slot="{ Component }">
+          <template v-if="Component">
+            <ErrorBoundary>
+              <Suspense>
+                <component :is="Component" />
+                <template #fallback>
+                  <PageContainer>
+                    <PageSpinner message="Loading..." />
+                  </PageContainer>
+                </template>
+              </Suspense>
+            </ErrorBoundary>
+          </template>
+        </RouterView>
+      </main>
+
+      <!-- Footer - fixed at bottom of viewport -->
+      <AppFooter />
     </div>
-
-    <!-- Main content area - flex-grow to fill remaining space -->
-    <!-- overflow-hidden prevents content from expanding viewport -->
-    <!-- No pb-5 needed - footer is in normal flow, not fixed position -->
-    <main class="flex-grow-1 overflow-hidden">
-      <RouterView v-slot="{ Component }">
-        <template v-if="Component">
-          <ErrorBoundary>
-            <Suspense>
-              <component :is="Component" />
-              <template #fallback>
-                <PageContainer>
-                  <PageSpinner message="Loading..." />
-                </PageContainer>
-              </template>
-            </Suspense>
-          </ErrorBoundary>
-        </template>
-      </RouterView>
-    </main>
-
-    <!-- Footer - fixed at bottom of viewport -->
-    <AppFooter />
   </BApp>
 </template>

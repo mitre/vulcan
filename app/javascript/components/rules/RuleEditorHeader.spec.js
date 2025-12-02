@@ -6,12 +6,6 @@ describe('ruleEditorHeader', () => {
     return RuleEditorHeader.computed[computedName].bind(props)
   }
 
-  const mockRules = [
-    { id: 1, rule_id: '000001', version: 'SRG-001', component_id: 1, satisfies: [] },
-    { id: 2, rule_id: '000002', version: 'SRG-002', component_id: 1, satisfies: [] },
-    { id: 3, rule_id: '000003', version: 'SRG-003', component_id: 1, satisfies: [] },
-  ]
-
   describe('filteredSelectRulesForCheckbox computed property', () => {
     it('returns all rules when search is empty', () => {
       const computed = testComputed('filteredSelectRulesForCheckbox', {

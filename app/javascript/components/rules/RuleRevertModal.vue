@@ -91,23 +91,23 @@ export default {
         dependentRecord = this.rule
       }
       else if (this.history.auditable_type == 'RuleDescription') {
-        dependentRecord = this.rule.rule_descriptions_attributes.find(
+        dependentRecord = (this.rule.rule_descriptions_attributes || []).find(
           e => e.id == this.history.auditable_id,
         )
       }
       else if (this.history.auditable_type == 'DisaRuleDescription') {
-        dependentRecord = this.rule.disa_rule_descriptions_attributes.find(
+        dependentRecord = (this.rule.disa_rule_descriptions_attributes || []).find(
           e => e.id == this.history.auditable_id,
         )
       }
       else if (this.history.auditable_type == 'Check') {
-        dependentRecord = this.rule.checks_attributes.find(
+        dependentRecord = (this.rule.checks_attributes || []).find(
           e => e.id == this.history.auditable_id,
         )
       }
       else if (this.history.auditable_type == 'AdditionalAnswer') {
         dependentRecord.additional_answers_attributes
-          = this.rule.additional_answers_attributes.filter(e => e.id == this.history.auditable_id)
+          = (this.rule.additional_answers_attributes || []).filter(e => e.id == this.history.auditable_id)
       }
 
       const curState = _.cloneDeep(dependentRecord)

@@ -32,6 +32,8 @@
   height: 100vh;
   top: 0rem;
   bottom: 0rem;
+  // Lower than dropdowns (1000) so action menus appear above
+  z-index: 100;
 }
 
 .white-space-pre-wrap {
@@ -69,56 +71,181 @@ html {
 }
 
 // =============================================================================
-// APP LAYOUT SYSTEM
+// VULCAN DESIGN SYSTEM
 // =============================================================================
-// CSS Custom Properties - Single Source of Truth for Layout Dimensions
-// Following the pattern used by Nuxt UI, CoreUI, and Bootstrap 5
+// CSS Custom Properties - Single Source of Truth
+// Following patterns from Nuxt UI, CoreUI, and Bootstrap 5
+//
+// Naming Convention: --app-{category}-{property}
+// Categories: layout, breakpoint, z, spacing, color
 //
 // Usage:
 //   Standard pages: .container-fluid.container-app
 //   Full-width pages: .container-fluid (no max-width constraint)
 //   Height constraints: Use var(--app-*) instead of magic numbers
+//   Container queries: Add .cq-container class to parent
 // =============================================================================
 
 :root {
-  // -----------------------------------------------------------------------------
-  // Core Layout Dimensions
-  // -----------------------------------------------------------------------------
+  // =============================================================================
+  // BREAKPOINTS (for JavaScript access - mirrors Bootstrap 5)
+  // Note: CSS variables cannot be used in @media queries, use Sass mixins instead
+  // These are for JS/Vue access via getComputedStyle()
+  // =============================================================================
+  --app-breakpoint-xs: 0;
+  --app-breakpoint-sm: 576px;
+  --app-breakpoint-md: 768px;
+  --app-breakpoint-lg: 992px;
+  --app-breakpoint-xl: 1200px;
+  --app-breakpoint-xxl: 1400px;
+
+  // =============================================================================
+  // LAYOUT DIMENSIONS
+  // =============================================================================
+
+  // Core heights (fixed elements)
   --app-navbar-height: 56px;
   --app-footer-height: 40px;
-
-  // Page header (breadcrumbs, title, actions) - used in Editor/Viewer layouts
   --app-page-header-height: 56px;
 
-  // -----------------------------------------------------------------------------
-  // Derived Heights (calculated from core dimensions)
-  // -----------------------------------------------------------------------------
-  // Main content area = viewport minus navbar and footer
+  // Derived heights (calculated)
   --app-main-height: calc(100vh - var(--app-navbar-height) - var(--app-footer-height));
-
-  // Content area within pages that have their own header
   --app-content-height: calc(var(--app-main-height) - var(--app-page-header-height));
 
-  // -----------------------------------------------------------------------------
-  // Sidebar Widths
-  // -----------------------------------------------------------------------------
+  // Sidebar widths
   --app-sidebar-width: 280px;
   --app-sidebar-width-collapsed: 80px;
   --app-sidebar-width-narrow: 250px;
-
-  // Right sidebar (for 3-column layouts like STIG/SRG viewer)
   --app-sidebar-right-width: 280px;
 
-  // -----------------------------------------------------------------------------
-  // Container Widths
-  // -----------------------------------------------------------------------------
+  // Container widths
   --app-container-max-width: 1600px;
+
+  // =============================================================================
+  // Z-INDEX SCALE
+  // =============================================================================
+  // Standardized z-index values to prevent stacking context issues
+  // Bootstrap uses: dropdown(1000), sticky(1020), fixed(1030), modal-backdrop(1040),
+  //                 offcanvas(1045), modal(1050), popover(1070), tooltip(1080)
+  --app-z-dropdown: 1000;
+  --app-z-sticky: 1020;
+  --app-z-fixed: 1030;
+  --app-z-modal-backdrop: 1040;
+  --app-z-offcanvas: 1045;
+  --app-z-modal: 1050;
+  --app-z-popover: 1070;
+  --app-z-tooltip: 1080;
+  --app-z-command-palette: 1090;  // Above everything
+
+  // =============================================================================
+  // SPACING SCALE
+  // =============================================================================
+  // Matches Bootstrap's spacing scale for consistency
+  --app-spacing-0: 0;
+  --app-spacing-1: 0.25rem;   // 4px
+  --app-spacing-2: 0.5rem;    // 8px
+  --app-spacing-3: 1rem;      // 16px
+  --app-spacing-4: 1.5rem;    // 24px
+  --app-spacing-5: 3rem;      // 48px
+
+  // =============================================================================
+  // TRANSITION TIMING
+  // =============================================================================
+  --app-transition-fast: 150ms;
+  --app-transition-base: 300ms;
+  --app-transition-slow: 500ms;
+  --app-transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// Container class using the CSS variable
+// =============================================================================
+// LAYOUT UTILITY CLASSES
+// =============================================================================
+
+// Container class with max-width constraint
 .container-app {
   max-width: var(--app-container-max-width);
 }
+
+// Footer with enforced height (ensures consistent layout)
+.footer {
+  height: var(--app-footer-height);
+  min-height: var(--app-footer-height);
+}
+
+// Main content area height constraint
+.main-content {
+  height: var(--app-main-height);
+  min-height: var(--app-main-height);
+}
+
+// =============================================================================
+// CONTAINER QUERY SYSTEM
+// =============================================================================
+// Usage: Add .cq-container to a parent element to enable container queries
+// Then use @container rules in child components
+//
+// Example:
+//   <div class="cq-container">
+//     <MyComponent />  <!-- Can use @container queries -->
+//   </div>
+//
+// In component CSS:
+//   @container (max-width: 500px) {
+//     .my-element { flex-direction: column; }
+//   }
+// =============================================================================
+
+// Basic container query context
+.cq-container {
+  container-type: inline-size;
+}
+
+// Named containers for specific contexts
+.cq-sidebar {
+  container-type: inline-size;
+  container-name: sidebar;
+}
+
+.cq-card {
+  container-type: inline-size;
+  container-name: card;
+}
+
+.cq-modal {
+  container-type: inline-size;
+  container-name: modal;
+}
+
+.cq-editor {
+  container-type: inline-size;
+  container-name: editor;
+}
+
+// =============================================================================
+// CONTAINER QUERY BREAKPOINT HELPERS
+// =============================================================================
+// Standard container query breakpoints (smaller than viewport breakpoints)
+// These are for component-level responsiveness
+//
+// Container Breakpoints:
+//   xs: 0-299px     (very narrow: collapsed sidebar, small modal)
+//   sm: 300-499px   (narrow: sidebar, card)
+//   md: 500-699px   (medium: panel, modal)
+//   lg: 700-899px   (wide: main content panel)
+//   xl: 900px+      (full: large modal, full-width content)
+// =============================================================================
+
+// Note: Container query breakpoints are intentionally different from viewport
+// breakpoints because containers are smaller than viewports. A 500px container
+// is "medium" while a 500px viewport is "extra small".
+
+// Example usage in Vue component <style> blocks:
+// @container (min-width: 500px) {
+//   .my-component { /* medium container styles */ }
+// }
+// @container sidebar (max-width: 299px) {
+//   .sidebar-item { /* collapsed sidebar styles */ }
+// }
 
 // Ensure typeahead input matches Bootstrap form-control styling
 .simple-typeahead > input {

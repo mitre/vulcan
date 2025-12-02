@@ -158,7 +158,9 @@ function isSelected(rule: IBenchmarkRule): boolean {
             class="rule-row"
             @click="selectRule(rule)"
           >
-            <td class="py-1">{{ sortField === 'rule_id' ? rule.rule_id : rule.version }}</td>
+            <td class="py-1">
+              {{ sortField === 'rule_id' ? rule.rule_id : rule.version }}
+            </td>
           </tr>
         </tbody>
       </table>

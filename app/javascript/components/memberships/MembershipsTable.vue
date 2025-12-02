@@ -1,278 +1,311 @@
-<script>
-import FormMixinVue from '../../mixins/FormMixin.vue'
-import RoleComparisonMixin from '../../mixins/RoleComparisonMixin.vue'
+<script setup lang="ts">
+/**
+ * MembershipsTable.vue
+ *
+ * Displays tables for project/component memberships:
+ * - Pending access requests (if editable)
+ * - Current members with search, pagination, role management, and delete actions
+ * Uses BaseTable for consistent UI.
+ */
+import type { IAvailableMember, IMembership, MemberRole, MembershipType } from '@/types'
+import type { IProjectAccessRequest } from '@/types/access-request'
+import { BButton, BModal, BTable } from 'bootstrap-vue-next'
+import { computed, ref } from 'vue'
+import ActionMenu from '@/components/shared/ActionMenu.vue'
+import BaseTable from '@/components/shared/BaseTable.vue'
+import DeleteModal from '@/components/shared/DeleteModal.vue'
+import { useBaseTable, useDeleteConfirmation, useRailsForm } from '@/composables'
 import NewMembership from './NewMembership.vue'
 
-export default {
-  name: 'MembershipsTable',
-  components: { NewMembership },
-  mixins: [FormMixinVue, RoleComparisonMixin],
-  props: {
-    memberships: {
-      type: Array,
-      required: true,
-    },
-    access_requests: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-    membership_type: {
-      type: String,
-      required: true,
-    },
-    membership_id: {
-      type: Number,
-      required: true,
-    },
-    editable: {
-      type: Boolean,
-      default: false,
-    },
-    available_roles: {
-      type: Array,
-      required: false,
-    },
-    available_members: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-    memberships_count: {
-      type: Number,
-      required: true,
-    },
-    header_text: {
-      type: String,
-      default: 'Members',
-    },
+const props = withDefaults(
+  defineProps<{
+    memberships: IMembership[]
+    access_requests?: IProjectAccessRequest[]
+    membership_type: MembershipType
+    membership_id: number
+    editable?: boolean
+    available_roles?: MemberRole[]
+    available_members?: IAvailableMember[]
+    memberships_count: number
+    header_text?: string
+  }>(),
+  {
+    access_requests: () => [],
+    editable: false,
+    available_roles: () => ['viewer', 'author', 'reviewer', 'admin'],
+    available_members: () => [],
+    header_text: 'Members',
   },
-  data() {
-    return {
-      search: '',
-      perPage: 10,
-      currentPage: 1,
-      selectedMember: null,
-      access_request_id: null,
-      fields: [
-        { key: 'name', label: 'User', sortable: true },
-        { key: 'role', sortable: true },
-        { key: 'actions', label: '' },
-      ],
-      requestFields: [
-        { key: 'name', label: 'User', sortable: true },
-        { key: 'actions', label: '' },
-      ],
-    }
+)
+
+// Rails form utilities (CSRF token + form submission)
+const { csrfToken, submitDelete } = useRailsForm()
+
+// Use composable for table state
+const { search, currentPage, paginatedItems, totalRows } = useBaseTable({
+  items: computed(() => props.memberships),
+  searchFields: ['name', 'email'] as (keyof IMembership)[],
+})
+
+// Modal state
+const showNewMemberModal = ref(false)
+const selectedMember = ref<IAvailableMember | null>(null)
+const accessRequestId = ref<number | null>(null)
+
+// Delete confirmation with composable
+const {
+  showModal: showDeleteModal,
+  itemToDelete: memberToDelete,
+  isDeleting: deleting,
+  confirmDelete,
+  executeDelete,
+} = useDeleteConfirmation<IMembership>({
+  onDelete: (member) => {
+    submitDelete(`/memberships/${member.id}`)
   },
-  computed: {
-    // Search users based on name and email
-    searchedProjectMembers() {
-      const downcaseSearch = this.search.toLowerCase()
-      return this.memberships.filter(
-        pm =>
-          pm.email.toLowerCase().includes(downcaseSearch)
-          || pm.name.toLowerCase().includes(downcaseSearch),
-      )
-    },
-    // Users with pending access request
-    pendingProjectMembers() {
-      return this.available_members.filter(member =>
-        this.access_requests.some(request => request.user_id === member.id),
-      )
-    },
-    // Used by b-pagination to know how many total rows there are
-    rows() {
-      return this.searchedProjectMembers.length
-    },
-  },
-  methods: {
-    resetModal() {
-      this.selectedMember = null
-      this.access_request_id = null
-    },
-    // Selecting the user when accepting request
-    setSelectedMember(member) {
-      this.selectedMember = member
-      this.access_request_id = this.getAccessRequestId(member)
-    },
-    getAccessRequestId(member) {
-      return this.access_requests.find(request => request.user_id === member.id).id
-    },
-    // Automatically submit the form when a user selects a form option
-    roleChanged(_event, project_member) {
-      document.getElementById(this.formId(project_member)).submit()
-    },
-    // Generator for a unique form id for the user role dropdown
-    formId(project_member) {
-      return `ProjectMember-${project_member.id}`
-    },
-    // Path to POST/DELETE to when updating/deleting a user
-    formAction(project_member) {
-      return `/memberships/${project_member.id}`
-    },
-  },
+})
+
+// Column definitions
+const columns = computed(() => {
+  const cols = [
+    { key: 'name', label: 'User', sortable: true },
+    { key: 'role', label: 'Role', sortable: true },
+  ]
+
+  if (props.editable) {
+    cols.push({ key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' })
+  }
+
+  return cols
+})
+
+// Pending access request columns
+const requestColumns = [
+  { key: 'name', label: 'User', sortable: true },
+  { key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' },
+]
+
+// Users with pending access requests
+const pendingMembers = computed(() => {
+  return props.available_members.filter(member =>
+    props.access_requests.some(request => request.user_id === member.id),
+  )
+})
+
+/**
+ * Get access request ID for a member
+ */
+function getAccessRequestId(member: IAvailableMember): number | undefined {
+  return props.access_requests.find(request => request.user_id === member.id)?.id
+}
+
+/**
+ * Handle role change - submit form
+ */
+function handleRoleChange(membership: IMembership) {
+  const form = document.getElementById(`ProjectMember-${membership.id}`) as HTMLFormElement | null
+  if (form) {
+    form.submit()
+  }
+}
+
+/**
+ * Accept access request - open modal with pre-selected member
+ */
+function acceptRequest(member: IAvailableMember) {
+  selectedMember.value = member
+  accessRequestId.value = getAccessRequestId(member) ?? null
+  showNewMemberModal.value = true
+}
+
+/**
+ * Reject access request via form submission
+ */
+function rejectRequest(member: IAvailableMember) {
+  const requestId = getAccessRequestId(member)
+  if (!requestId) return
+
+  submitDelete(`/projects/${props.membership_id}/project_access_requests/${requestId}`)
+}
+
+/**
+ * Reset modal state
+ */
+function resetModal() {
+  selectedMember.value = null
+  accessRequestId.value = null
+}
+
+/**
+ * Open new member modal
+ */
+function openNewMemberModal() {
+  selectedMember.value = null
+  accessRequestId.value = null
+  showNewMemberModal.value = true
+}
+
+/**
+ * Get actions for a member row
+ */
+function getActions() {
+  return [
+    { id: 'delete', label: 'Remove Member', icon: 'bi-trash', variant: 'danger' as const },
+  ]
+}
+
+/**
+ * Handle action menu selection
+ */
+function handleAction(actionId: string, member: IMembership) {
+  if (actionId === 'delete') {
+    confirmDelete(member)
+  }
 }
 </script>
 
 <template>
   <div>
-    <!-- Pending Access Request -->
-    <h2 v-if="access_requests.length > 0 && editable">
-      Pending Access Requests <span class="badge bg-info">{{ access_requests.length }}</span>
-    </h2>
-    <b-table
-      v-if="access_requests.length > 0 && editable"
-      id="project-access-requests"
-      :items="pendingProjectMembers"
-      :fields="requestFields"
-      sort-icon-left
-    >
-      <!-- Column template for Name -->
-      <template #cell(name)="data">
-        {{ data.item.name }}
-        <br>
-        <small>{{ data.item.email }}</small>
-      </template>
+    <!-- Pending Access Requests -->
+    <template v-if="access_requests.length > 0 && editable">
+      <h2 class="mb-3">
+        Pending Access Requests
+        <span class="badge bg-info ms-2">{{ access_requests.length }}</span>
+      </h2>
 
-      <!-- Column template for Actions -->
-      <template #cell(actions)="data">
-        <b-button
-          v-b-modal.new-project-member
-          class="btn btn-success"
-          @click="setSelectedMember(data.item)"
-        >
-          <i class="bi bi-check" aria-hidden="true" />
-          Accept Request
-        </b-button>
-        <b-button
-          class="btn btn-danger ml-2"
-          data-method="delete"
-          :href="`/projects/${membership_id}/project_access_requests/${getAccessRequestId(
-            data.item,
-          )}`"
-          rel="nofollow"
-        >
-          <i class="bi bi-x-circle" aria-hidden="true" />
-          Reject Request
-        </b-button>
-      </template>
-    </b-table>
+      <BTable
+        id="project-access-requests"
+        :items="pendingMembers"
+        :fields="requestColumns"
+        class="mb-4"
+      >
+        <!-- Name column -->
+        <template #cell(name)="{ item }">
+          {{ item.name }}
+          <br>
+          <small class="text-body-secondary">{{ item.email }}</small>
+        </template>
 
-    <!-- Members -->
-    <h2>
-      {{ header_text }} <span class="badge bg-info">{{ memberships_count }} </span>
-    </h2>
-    <!-- User search -->
-    <div class="row">
-      <div class="col-6">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text">
-              <i class="bi bi-search" aria-hidden="true" />
-            </div>
+        <!-- Actions column -->
+        <template #cell(actions)="{ item }">
+          <div class="d-flex justify-content-end gap-2">
+            <BButton
+              variant="success"
+              size="sm"
+              @click="acceptRequest(item)"
+            >
+              <i class="bi bi-check me-1" aria-hidden="true" />
+              Accept
+            </BButton>
+            <BButton
+              variant="danger"
+              size="sm"
+              @click="rejectRequest(item)"
+            >
+              <i class="bi bi-x-circle me-1" aria-hidden="true" />
+              Reject
+            </BButton>
           </div>
-          <input
-            id="userSearch"
-            v-model="search"
-            type="text"
-            class="form-control"
-            placeholder="Search users by name or email..."
-          >
-        </div>
-      </div>
-      <div v-if="editable && available_members && available_roles" class="col-6 float-right">
-        <b-button v-b-modal.new-project-member variant="primary" size="large" class="float-right">
-          New Member
-        </b-button>
+        </template>
+      </BTable>
+    </template>
 
-        <b-modal
-          id="new-project-member"
-          size="md"
-          title="Add New Project Member"
-          centered
-          :hide-footer="true"
-          @hidden="resetModal"
-        >
-          <NewMembership
-            :membership_type="membership_type"
-            :membership_id="membership_id"
-            :available_members="available_members"
-            :available_roles="available_roles"
-            :selected_member="selectedMember"
-            :access_request_id="access_request_id"
-          />
-        </b-modal>
-      </div>
+    <!-- Members Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">
+        {{ header_text }}
+        <span class="badge bg-info ms-2">{{ memberships_count }}</span>
+      </h2>
+
+      <BButton
+        v-if="editable && available_members && available_roles"
+        variant="primary"
+        @click="openNewMemberModal"
+      >
+        <i class="bi bi-plus me-1" aria-hidden="true" />
+        New Member
+      </BButton>
     </div>
-    <br>
 
-    <!-- Project Members table -->
-    <b-table
-      id="project-members-table"
-      :items="searchedProjectMembers"
-      :fields="fields"
-      :per-page="perPage"
+    <!-- Members Table -->
+    <BaseTable
+      :items="paginatedItems"
+      :columns="columns"
+      :total-rows="totalRows"
       :current-page="currentPage"
-      sort-icon-left
+      :search="search"
+      search-placeholder="Search members by name or email..."
+      @update:search="search = $event"
+      @update:current-page="currentPage = $event"
     >
-      <!-- Column template for Name -->
-      <template #cell(name)="data">
-        {{ data.item.name }}
+      <!-- Name column -->
+      <template #cell-name="{ item }">
+        {{ item.name }}
         <br>
-        <small>{{ data.item.email }}</small>
+        <small class="text-body-secondary">{{ item.email }}</small>
       </template>
 
-      <!-- Column template for Role -->
-      <template v-if="editable" #cell(role)="data">
-        <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
-          <input type="hidden" name="_method" value="put">
-          <input type="hidden" name="authenticity_token" :value="authenticityToken">
-          <select
-            v-model="data.item.role"
-            class="form-control"
-            name="membership[role]"
-            @change="roleChanged($event, data.item)"
-          >
-            <option v-for="available_role in available_roles" :key="available_role">
-              {{ available_role }}
-            </option>
-          </select>
-        </form>
+      <!-- Role column -->
+      <template #cell-role="{ item }">
+        <template v-if="editable && available_roles">
+          <form :id="`ProjectMember-${item.id}`" :action="`/memberships/${item.id}`" method="post">
+            <input type="hidden" name="_method" value="put">
+            <input type="hidden" name="authenticity_token" :value="csrfToken">
+            <select
+              v-model="item.role"
+              class="form-select form-select-sm"
+              name="membership[role]"
+              style="width: auto;"
+              @change="handleRoleChange(item)"
+            >
+              <option v-for="role in available_roles" :key="role" :value="role">
+                {{ role }}
+              </option>
+            </select>
+          </form>
+        </template>
+        <template v-else>
+          {{ item.role }}
+        </template>
       </template>
 
-      <template v-else #cell(role)="data">
-        {{ data.item.role }}
+      <!-- Actions column -->
+      <template v-if="editable" #cell-actions="{ item }">
+        <ActionMenu
+          :actions="getActions()"
+          @action="handleAction($event, item)"
+        />
       </template>
+    </BaseTable>
 
-      <!-- Column template for Actions -->
-      <template v-if="editable" #cell(actions)="data">
-        <b-button
-          class="projectMemberDeleteButton"
-          variant="danger"
-          data-confirm="Are you sure you want to remove this user from the project?"
-          data-method="delete"
-          :href="formAction(data.item)"
-          rel="nofollow"
-        >
-          <i class="bi bi-trash" aria-hidden="true" />
-          Remove
-        </b-button>
-      </template>
-    </b-table>
+    <!-- New Member Modal -->
+    <BModal
+      v-model="showNewMemberModal"
+      size="md"
+      title="Add New Project Member"
+      centered
+      :hide-footer="true"
+      @hidden="resetModal"
+    >
+      <NewMembership
+        :membership_type="membership_type"
+        :membership_id="membership_id"
+        :available_members="available_members"
+        :available_roles="available_roles"
+        :selected_member="selectedMember"
+        :access_request_id="accessRequestId"
+      />
+    </BModal>
 
-    <!-- Pagination controls -->
-    <b-pagination
-      v-model="currentPage"
-      :total-rows="rows"
-      :per-page="perPage"
-      aria-controls="project-members-table"
+    <!-- Delete Confirmation Modal -->
+    <DeleteModal
+      v-model="showDeleteModal"
+      title="Remove Member"
+      :item-name="memberToDelete?.name"
+      message="Are you sure you want to remove this member from the project?"
+      :loading="deleting"
+      confirm-button-text="Remove"
+      @confirm="executeDelete"
     />
   </div>
 </template>
-
-<style scoped>
-.projectMemberDeleteButton {
-  float: right;
-}
-</style>

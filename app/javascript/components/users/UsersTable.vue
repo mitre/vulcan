@@ -1,162 +1,154 @@
-<script>
-import FormMixinVue from '../../mixins/FormMixin.vue'
+<script setup lang="ts">
+/**
+ * UsersTable.vue
+ *
+ * Displays a table of users with search, pagination, role management, and delete actions.
+ * Uses BaseTable for consistent table UI.
+ */
+import type { IUser } from '@/types'
+import { computed } from 'vue'
+import ActionMenu from '@/components/shared/ActionMenu.vue'
+import BaseTable from '@/components/shared/BaseTable.vue'
+import DeleteModal from '@/components/shared/DeleteModal.vue'
+import { useBaseTable, useDeleteConfirmation, useRailsForm } from '@/composables'
 
-export default {
-  name: 'UsersTable',
-  mixins: [FormMixinVue],
-  props: {
-    users: {
-      type: Array,
-      required: true,
-    },
+const props = defineProps<{
+  users: IUser[]
+}>()
+
+// Rails form utilities (CSRF token + form submission)
+const { csrfToken, submitDelete } = useRailsForm()
+
+// Use composable for table state
+const { search, currentPage, paginatedItems, totalRows } = useBaseTable({
+  items: computed(() => props.users),
+  searchFields: ['name', 'email'] as (keyof IUser)[],
+})
+
+// Delete confirmation with composable
+const {
+  showModal: showDeleteModal,
+  itemToDelete: userToDelete,
+  isDeleting: deleting,
+  confirmDelete,
+  executeDelete,
+} = useDeleteConfirmation<IUser>({
+  onDelete: (user) => {
+    submitDelete(`/users/${user.id}`)
   },
-  data() {
-    return {
-      search: '',
-      perPage: 10,
-      currentPage: 1,
-      fields: [
-        { key: 'name', label: 'User' },
-        { key: 'provider', label: 'Type' },
-        'role',
-        { key: 'actions', label: '' },
-      ],
-    }
-  },
-  computed: {
-    // Search users based on name and email
-    searchedUsers() {
-      const downcaseSearch = this.search.toLowerCase()
-      return this.users.filter(
-        user =>
-          user.email.toLowerCase().includes(downcaseSearch)
-          || user.name.toLowerCase().includes(downcaseSearch),
-      )
-    },
-    // Used by b-pagination to know how many total rows there are
-    rows() {
-      return this.searchedUsers.length
-    },
-    // Total number of users in the system
-    userCount() {
-      return this.users.length
-    },
-  },
-  methods: {
-    // Automatically submit the form when a user selects a form option
-    adminStatusChanged(event, user) {
-      document.getElementById(this.formId(user)).submit()
-    },
-    // The text that should appear in the 'Type' column
-    typeColumn(user) {
-      return user.provider === null ? 'Local User' : `${user.provider.toUpperCase()} User`
-    },
-    // Generator for a unique form id for the user role dropdown
-    formId(user) {
-      return `User-${user.id}`
-    },
-    // Path to POST/DELETE to when updating/deleting a user
-    formAction(user) {
-      return `/users/${user.id}`
-    },
-  },
+})
+
+// Column definitions
+const columns = [
+  { key: 'name', label: 'User' },
+  { key: 'provider', label: 'Type' },
+  { key: 'role', label: 'Role' },
+  { key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' },
+]
+
+// Action menu items
+function getActions() {
+  return [
+    { id: 'delete', label: 'Remove User', icon: 'bi-trash', variant: 'danger' as const },
+  ]
+}
+
+/**
+ * Get provider display text
+ */
+function getProviderText(user: IUser) {
+  return user.provider ? `${user.provider.toUpperCase()} User` : 'Local User'
+}
+
+/**
+ * Handle role change - submit form
+ */
+function handleRoleChange(user: IUser) {
+  const form = document.getElementById(`User-${user.id}`) as HTMLFormElement | null
+  if (form) {
+    form.submit()
+  }
+}
+
+/**
+ * Handle action menu selection
+ */
+function handleAction(actionId: string, user: IUser) {
+  if (actionId === 'delete') {
+    confirmDelete(user)
+  }
 }
 </script>
 
 <template>
   <div>
     <!-- Table information -->
-    <p>
-      <b>User Count:</b> <span>{{ userCount }}</span>
+    <p class="mb-3">
+      <strong>User Count:</strong> <span>{{ props.users.length }}</span>
     </p>
 
-    <!-- User search -->
-    <div class="row">
-      <div class="col-6">
-        <b-input-group>
-          <template #prepend>
-            <b-input-group-text>
-              <i class="bi bi-search" aria-hidden="true" />
-            </b-input-group-text>
-          </template>
-          <input
-            id="userSearch"
-            v-model="search"
-            type="text"
-            class="form-control"
-            placeholder="Search users by name or email..."
-          >
-        </b-input-group>
-      </div>
-    </div>
-
-    <br>
-
-    <!-- User table -->
-    <b-table
-      id="users-table"
-      :items="searchedUsers"
-      :fields="fields"
-      :per-page="perPage"
+    <BaseTable
+      :items="paginatedItems"
+      :columns="columns"
+      :total-rows="totalRows"
       :current-page="currentPage"
+      :search="search"
+      search-placeholder="Search users by name or email..."
+      @update:search="search = $event"
+      @update:current-page="currentPage = $event"
     >
-      <!-- Column template for Name -->
-      <template #cell(name)="data">
-        {{ data.item.name }}
+      <!-- Name column with email -->
+      <template #cell-name="{ item }">
+        {{ item.name }}
         <br>
-        <small>{{ data.item.email }}</small>
+        <small class="text-body-secondary">{{ item.email }}</small>
       </template>
 
-      <!-- Column template for Type -->
-      <template #cell(provider)="data">
-        {{ typeColumn(data.item) }}
+      <!-- Provider column -->
+      <template #cell-provider="{ item }">
+        {{ getProviderText(item) }}
       </template>
 
-      <!-- Column template for Role -->
-      <template #cell(role)="data">
-        <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
+      <!-- Role column with inline select -->
+      <template #cell-role="{ item }">
+        <form :id="`User-${item.id}`" :action="`/users/${item.id}`" method="post">
           <input type="hidden" name="_method" value="put">
-          <input type="hidden" name="authenticity_token" :value="authenticityToken">
+          <input type="hidden" name="authenticity_token" :value="csrfToken">
           <select
-            v-model="data.item.admin"
-            class="form-control"
+            v-model="item.admin"
+            class="form-select form-select-sm"
             name="user[admin]"
-            @change="adminStatusChanged($event, data.item)"
+            style="width: auto;"
+            @change="handleRoleChange(item)"
           >
-            <option value="false">
+            <option :value="false">
               user
             </option>
-            <option value="true">
+            <option :value="true">
               admin
             </option>
           </select>
         </form>
       </template>
 
-      <!-- Column template for Actions -->
-      <template #cell(actions)="data">
-        <b-button
-          class="float-end"
-          variant="danger"
-          data-confirm="Are you sure you want to permanently remove this user?"
-          data-method="delete"
-          :href="formAction(data.item)"
-          rel="nofollow"
-        >
-          <i class="bi bi-trash" aria-hidden="true" />
-          Remove
-        </b-button>
+      <!-- Actions column -->
+      <template #cell-actions="{ item }">
+        <ActionMenu
+          :actions="getActions()"
+          @action="handleAction($event, item)"
+        />
       </template>
-    </b-table>
+    </BaseTable>
 
-    <!-- Pagination controls -->
-    <b-pagination
-      v-model="currentPage"
-      :total-rows="rows"
-      :per-page="perPage"
-      aria-controls="users-table"
+    <!-- Delete Confirmation Modal -->
+    <DeleteModal
+      v-model="showDeleteModal"
+      title="Remove User"
+      :item-name="userToDelete?.name"
+      message="Are you sure you want to permanently remove this user?"
+      :loading="deleting"
+      confirm-button-text="Remove"
+      @confirm="executeDelete"
     />
   </div>
 </template>
-
-<style scoped></style>

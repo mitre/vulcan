@@ -39,12 +39,10 @@ const loading = ref(false)
 
 // Expose show/hide methods to parent
 function show() {
-  console.log('[BenchmarkUpload] show() called')
   modalRef.value?.show()
 }
 
 function hide() {
-  console.log('[BenchmarkUpload] hide() called')
   modalRef.value?.hide()
 }
 
@@ -64,14 +62,11 @@ function clearFile() {
  * Submit upload - emit file to parent, let parent handle API call
  */
 function submitUpload() {
-  console.log('[BenchmarkUpload] submitUpload called, file:', file.value?.name)
   if (!file.value) {
-    console.log('[BenchmarkUpload] No file selected, returning')
     return
   }
 
   loading.value = true
-  console.log('[BenchmarkUpload] Emitting uploaded event with file:', file.value.name)
   emit('uploaded', file.value)
 
   // Reset state after emitting

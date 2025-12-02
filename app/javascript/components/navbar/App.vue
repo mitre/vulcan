@@ -1,124 +1,94 @@
-<script>
-import semver from 'semver'
-import { useColorMode } from '@/composables'
+<script setup lang="ts">
+/**
+ * Navbar Component
+ *
+ * Main navigation bar for the application.
+ * Uses composables for color mode and release checking.
+ */
+
+import { computed, onMounted } from 'vue'
+import { useColorMode, useReleaseCheck } from '@/composables'
 import { primaryModifierSymbol } from '@/composables/useKeyboardShortcuts'
-import { version } from '../../../../package.json'
 import NavbarItem from './NavbarItem.vue'
 
-export default {
-  name: 'Navbar',
-  components: { NavbarItem },
-  props: {
-    navigation: {
-      type: Array,
-      required: true,
-    },
-    signed_in: {
-      type: Boolean,
-      required: true,
-    },
-    users_path: {
-      type: String,
-      required: false,
-    },
-    profile_path: {
-      type: String,
-      required: false,
-    },
-    sign_out_path: {
-      type: String,
-      required: false,
-    },
-    access_requests: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-  },
-  emits: ['openCommandPalette'],
-  setup() {
-    const { colorMode, resolvedMode, toggleColorMode, cycleColorMode } = useColorMode()
-    return { colorMode, resolvedMode, toggleColorMode, cycleColorMode, primaryModifierSymbol }
-  },
-  data() {
-    return {
-      latestRelease: '',
-      currentVersion: version,
-      updateAvailable: false,
-    }
-  },
-  computed: {
-    colorModeIcon() {
-      if (this.colorMode === 'auto') return 'bi-circle-half'
-      return this.resolvedMode === 'dark' ? 'bi-moon-fill' : 'bi-sun-fill'
-    },
-    colorModeTitle() {
-      const modes = { light: 'Light mode', dark: 'Dark mode', auto: 'System preference' }
-      return modes[this.colorMode]
-    },
-  },
-  mounted() {
-    this.fetchLatestRelease()
-  },
-  methods: {
-    fetchLatestRelease() {
-      const owner = 'mitre'
-      const repo = 'vulcan'
-      // Make the API request to fetch the latest release
-      fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`)
-        .then(response => response.json())
-        .then((data) => {
-          this.latestRelease = data.tag_name.substring(1)
-          this.updateAvailable = this.checkUpdateAvailable()
-        })
-        .catch((error) => {
-          this.latestRelease = ''
-        })
-    },
-    checkUpdateAvailable() {
-      if (!this.latestRelease || this.latestRelease.trim() === '') return false
-
-      // Use semver.gt to check if latest is greater than current
-      // Clean versions by removing 'v' prefix if present
-      const latest = this.latestRelease.replace(/^v/, '')
-      const current = this.currentVersion.replace(/^v/, '')
-
-      try {
-        return semver.gt(latest, current)
-      }
-      catch (error) {
-        // Silently handle version comparison errors - likely malformed version strings
-        // In this case, don't show the update banner
-        return false
-      }
-    },
-    openCommandPalette() {
-      this.$emit('openCommandPalette')
-    },
-  },
+// Types
+interface INavItem {
+  name: string
+  link: string
+  icon?: string
 }
+
+interface IAccessRequest {
+  project_id: number
+  project: { name: string }
+  user: { name: string }
+}
+
+// Props
+const props = defineProps<{
+  navigation: INavItem[]
+  signed_in: boolean
+  users_path?: string
+  profile_path?: string
+  sign_out_path?: string
+  access_requests?: IAccessRequest[]
+}>()
+
+// Emits
+const emit = defineEmits<{
+  openCommandPalette: []
+}>()
+
+// Composables
+const { colorMode, resolvedMode, cycleColorMode } = useColorMode()
+const { currentVersion, latestRelease, updateAvailable, dismissUpdate, fetchLatestRelease } = useReleaseCheck()
+
+// Computed
+const colorModeIcon = computed(() => {
+  if (colorMode.value === 'auto') return 'bi-circle-half'
+  return resolvedMode.value === 'dark' ? 'bi-moon-fill' : 'bi-sun-fill'
+})
+
+const colorModeTitle = computed(() => {
+  const modes: Record<string, string> = {
+    light: 'Light mode',
+    dark: 'Dark mode',
+    auto: 'System preference',
+  }
+  return modes[colorMode.value]
+})
+
+// Actions
+function openCommandPalette() {
+  emit('openCommandPalette')
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchLatestRelease()
+})
 </script>
 
 <template>
   <div>
-    <b-navbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark border-bottom">
+    <BNavbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark border-bottom">
       <div class="container-fluid container-app d-flex align-items-center">
-        <b-navbar-brand id="heading" href="/">
+        <BNavbarBrand id="heading" href="/">
           <i class="bi bi-broadcast" aria-hidden="true" />
           VULCAN
-          <b-link href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
+          <BLink href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
             <span class="latest-release">{{ currentVersion }}</span>
-          </b-link>
-        </b-navbar-brand>
-        <b-navbar-toggle target="nav-collapse" />
+          </BLink>
+        </BNavbarBrand>
+        <BNavbarToggle target="nav-collapse" />
 
-        <b-collapse id="nav-collapse" is-nav>
+        <BCollapse id="nav-collapse" is-nav>
           <div class="d-flex w-100 justify-content-lg-center text-lg-center">
-            <b-navbar-nav>
+            <BNavbarNav>
               <div v-for="item in navigation" :key="item.name">
                 <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
               </div>
-            </b-navbar-nav>
+            </BNavbarNav>
           </div>
 
           <div v-if="signed_in" class="d-flex justify-content-between right-container">
@@ -134,29 +104,29 @@ export default {
               <kbd class="d-none d-lg-inline ms-1">{{ primaryModifierSymbol }}J</kbd>
             </button>
             <!-- Right aligned nav items -->
-            <b-navbar-nav class="ml-auto">
+            <BNavbarNav class="ml-auto">
               <!-- Color Mode Toggle -->
-              <b-nav-item
+              <BNavItem
                 class="color-mode-toggle"
                 :title="colorModeTitle"
                 @click="cycleColorMode"
               >
                 <i class="bi" :class="[colorModeIcon]" aria-hidden="true" />
-              </b-nav-item>
+              </BNavItem>
               <!-- Notification Dropdown -->
-              <b-nav-item-dropdown right no-caret class="position-relative ml-3">
+              <BNavItemDropdown right no-caret class="position-relative ml-3">
                 <template #button-content>
                   <i class="bi bi-bell" aria-hidden="true" />
-                  <b-badge
-                    v-if="access_requests.length"
+                  <BBadge
+                    v-if="access_requests?.length"
                     variant="danger"
                     class="rounded-pill position-absolute top-0 start-100 translate-middle"
                     style="top: 0; right: 0"
                   >
                     {{ access_requests.length }}
-                  </b-badge>
+                  </BBadge>
                 </template>
-                <b-dropdown-item
+                <BDropdownItem
                   v-for="(access_request, index) in access_requests"
                   :key="index"
                   :href="`/projects/${access_request.project_id}`"
@@ -164,36 +134,38 @@ export default {
                   {{
                     `${access_request.user.name} has requested access to project ${access_request.project.name}`
                   }}
-                </b-dropdown-item>
-              </b-nav-item-dropdown>
-              <b-nav-item-dropdown right>
+                </BDropdownItem>
+              </BNavItemDropdown>
+              <BNavItemDropdown right>
                 <template #button-content>
                   <i class="bi bi-person-circle" aria-hidden="true" />
                 </template>
-                <b-dropdown-item :href="profile_path">
+                <BDropdownItem :href="profile_path">
                   Profile
-                </b-dropdown-item>
-                <b-dropdown-item v-if="users_path" :href="users_path">
-                  Manage Users
-                </b-dropdown-item>
-                <b-dropdown-item :href="sign_out_path">
+                </BDropdownItem>
+                <BDropdownItem v-if="users_path" href="/admin">
+                  <i class="bi bi-gear me-1" />
+                  Admin Panel
+                </BDropdownItem>
+                <BDropdownDivider v-if="users_path" />
+                <BDropdownItem :href="sign_out_path">
                   Sign Out
-                </b-dropdown-item>
-              </b-nav-item-dropdown>
-            </b-navbar-nav>
+                </BDropdownItem>
+              </BNavItemDropdown>
+            </BNavbarNav>
           </div>
-        </b-collapse>
+        </BCollapse>
       </div>
-    </b-navbar>
-    <b-alert
+    </BNavbar>
+    <BAlert
       dismissible
       fade
-      :show="updateAvailable"
+      :model-value="updateAvailable"
       class="text-center"
-      @dismissed="updateAvailable = false"
+      @update:model-value="dismissUpdate"
     >
       New version: Vulcan {{ latestRelease }} is now available!!
-    </b-alert>
+    </BAlert>
   </div>
 </template>
 

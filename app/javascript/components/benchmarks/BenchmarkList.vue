@@ -39,15 +39,33 @@ const showUploadModal = ref(false)
 const selectedFile = ref<File | null>(null)
 
 // Type-specific labels
-const labels = computed(() => ({
-  title: props.type === 'stig'
-    ? 'Security Technical Implementation Guides'
-    : 'Security Requirements Guides',
-  subtitle: props.type === 'stig'
-    ? 'Published STIGs'
-    : 'Use the following guides to start a new Project',
-  uploadButton: props.type === 'stig' ? 'Upload STIG' : 'Upload SRG',
-}))
+const labels = computed(() => {
+  switch (props.type) {
+    case 'stig':
+      return {
+        title: 'Security Technical Implementation Guides',
+        subtitle: 'Published STIGs',
+        uploadButton: 'Upload STIG',
+      }
+    case 'srg':
+      return {
+        title: 'Security Requirements Guides',
+        subtitle: 'Use the following guides to start a new Project',
+        uploadButton: 'Upload SRG',
+      }
+    case 'component':
+      return {
+        title: 'Released Components',
+        subtitle: 'Published security guidance components',
+        uploadButton: '', // Components don't support upload
+      }
+    default:
+      return { title: '', subtitle: '', uploadButton: '' }
+  }
+})
+
+// Components don't support file upload
+const showUploadButton = computed(() => props.isAdmin && props.type !== 'component')
 
 /**
  * Handle file upload from modal
@@ -81,7 +99,7 @@ function handleDelete(id: number) {
           {{ labels.subtitle }}
         </h6>
       </BCol>
-      <BCol v-if="isAdmin" md="2" class="align-self-center">
+      <BCol v-if="showUploadButton" md="2" class="align-self-center">
         <BButton variant="primary" class="float-end" @click="showUploadModal = true">
           <i class="bi bi-cloud-upload" aria-hidden="true" />
           {{ labels.uploadButton }}

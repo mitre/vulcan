@@ -14,7 +14,7 @@ import { BButton, BCard, BFormCheckbox, BFormGroup, BFormInput, BModal } from 'b
 import { computed, nextTick, ref, toRef, watch } from 'vue'
 import ActionCommentModal from '@/components/shared/ActionCommentModal.vue'
 import { FIELD_LABELS, FIND_REPLACE_FIELDS, useFindReplace } from '@/composables/useFindReplace'
-import { getKeySymbol, isMac, isInputFocused, isPrimaryModifier } from '@/composables/useKeyboardShortcuts'
+import { getKeySymbol, isInputFocused, isPrimaryModifier } from '@/composables/useKeyboardShortcuts'
 
 interface Props {
   modelValue: boolean

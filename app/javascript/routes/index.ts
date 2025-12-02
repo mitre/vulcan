@@ -1,7 +1,9 @@
 // Route definitions for Vulcan SPA
 // Using lazy loading for code splitting
 
-const routes = [
+import type { RouteRecordRaw } from 'vue-router'
+
+const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'root',
@@ -29,8 +31,7 @@ const routes = [
   },
   {
     path: '/components',
-    name: 'components',
-    component: () => import('@/pages/components/IndexPage.vue'),
+    redirect: { name: 'benchmarks', query: { tab: 'component' } },
   },
   {
     path: '/components/:id',
@@ -47,10 +48,16 @@ const routes = [
     name: 'edit_rule',
     component: () => import('@/pages/rules/EditPage.vue'),
   },
+  // Unified Benchmarks page
+  {
+    path: '/benchmarks',
+    name: 'benchmarks',
+    component: () => import('@/pages/benchmarks/IndexPage.vue'),
+  },
+  // Legacy routes redirect to unified benchmarks with tab query param
   {
     path: '/stigs',
-    name: 'stigs',
-    component: () => import('@/pages/stigs/IndexPage.vue'),
+    redirect: { name: 'benchmarks', query: { tab: 'stig' } },
   },
   {
     path: '/stigs/:id',
@@ -59,8 +66,7 @@ const routes = [
   },
   {
     path: '/srgs',
-    name: 'security_requirements_guides',
-    component: () => import('@/pages/srgs/IndexPage.vue'),
+    redirect: { name: 'benchmarks', query: { tab: 'srg' } },
   },
   {
     path: '/srgs/:id',
@@ -71,6 +77,54 @@ const routes = [
     path: '/users',
     name: 'users',
     component: () => import('@/pages/users/IndexPage.vue'),
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/pages/users/ProfilePage.vue'),
+  },
+
+  // Admin routes - nested under AdminLayout
+  {
+    path: '/admin',
+    component: () => import('@/layouts/AdminLayout.vue'),
+    meta: { requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'admin_dashboard',
+        component: () => import('@/pages/admin/DashboardPage.vue'),
+      },
+      {
+        path: 'users',
+        name: 'admin_users',
+        component: () => import('@/pages/admin/UsersPage.vue'),
+      },
+      {
+        path: 'audit',
+        name: 'admin_audit',
+        component: () => import('@/pages/admin/AuditPage.vue'),
+      },
+      {
+        path: 'settings',
+        name: 'admin_settings',
+        component: () => import('@/pages/admin/SettingsPage.vue'),
+      },
+      {
+        path: 'content/benchmarks',
+        name: 'admin_benchmarks',
+        component: () => import('@/pages/admin/BenchmarksPage.vue'),
+      },
+      // Redirects for backwards compatibility
+      {
+        path: 'content/stigs',
+        redirect: { name: 'admin_benchmarks' },
+      },
+      {
+        path: 'content/srgs',
+        redirect: { name: 'admin_benchmarks' },
+      },
+    ],
   },
 ]
 

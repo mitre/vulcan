@@ -3,7 +3,7 @@
  * BenchmarkTable.vue
  *
  * Unified table component for both STIGs and SRGs.
- * Provides search, pagination, and row actions.
+ * Uses BaseTable for consistent table UI with search, pagination, and row actions.
  *
  * Usage:
  *   <BenchmarkTable
@@ -14,8 +14,12 @@
  *   />
  */
 import type { BenchmarkType, IBenchmarkListItem } from '@/types'
-import { BButton, BModal, BPagination, BTable } from 'bootstrap-vue-next'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import ActionMenu from '@/components/shared/ActionMenu.vue'
+import BaseTable from '@/components/shared/BaseTable.vue'
+import DeleteModal from '@/components/shared/DeleteModal.vue'
+import { useBaseTable, useDeleteConfirmation } from '@/composables'
 
 const props = withDefaults(
   defineProps<{
@@ -30,155 +34,130 @@ const emit = defineEmits<{
   delete: [id: number]
 }>()
 
-// Local UI state
-const search = ref('')
-const perPage = ref(10)
-const currentPage = ref(1)
+const router = useRouter()
 
-// Delete confirmation state
-const showDeleteModal = ref(false)
-const itemToDelete = ref<IBenchmarkListItem | null>(null)
+// Use composable for table state
+const { search, currentPage, paginatedItems, totalRows } = useBaseTable({
+  items: computed(() => props.items),
+  searchFields: ['title', 'benchmark_id'] as (keyof IBenchmarkListItem)[],
+})
+
+// Delete confirmation with composable
+const {
+  showModal: showDeleteModal,
+  itemToDelete,
+  confirmDelete,
+  executeDelete,
+} = useDeleteConfirmation<IBenchmarkListItem>({
+  onDelete: (item) => {
+    emit('delete', item.id)
+  },
+})
 
 // Type-specific labels
-const typeLabel = computed(() => (props.type === 'stig' ? 'STIG' : 'SRG'))
+const typeLabel = computed(() => {
+  switch (props.type) {
+    case 'stig': return 'STIG'
+    case 'srg': return 'SRG'
+    case 'component': return 'Component'
+    default: return ''
+  }
+})
 
-// Computed table fields based on type
-const tableFields = computed(() => {
-  const fields = [
-    {
-      key: 'benchmark_id',
-      label: `${typeLabel.value} ID`,
-    },
+// Route path based on type - components link to requirements editor
+const routeBase = computed(() => {
+  switch (props.type) {
+    case 'stig': return '/stigs'
+    case 'srg': return '/srgs'
+    case 'component': return '/components'
+    default: return ''
+  }
+})
+
+// Components link to /controls, STIGs/SRGs link to show page
+function getItemRoute(item: IBenchmarkListItem) {
+  if (props.type === 'component') {
+    return `/components/${item.id}/controls`
+  }
+  return `${routeBase.value}/${item.id}`
+}
+
+// Column definitions
+const columns = computed(() => {
+  const cols = [
+    { key: 'benchmark_id', label: `${typeLabel.value} ID` },
     { key: 'title', label: 'Title' },
     { key: 'version', label: 'Version' },
     { key: 'date', label: props.type === 'stig' ? 'Benchmark Date' : 'Release Date' },
   ]
 
   if (props.isAdmin) {
-    fields.push({
-      key: 'actions',
-      label: 'Actions',
-      thClass: 'text-end',
-      tdClass: 'p-0 text-end',
-    })
+    cols.push({ key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' })
   }
 
-  return fields
+  return cols
 })
 
-// Filter by search term
-const searchedCollection = computed(() => {
-  const term = search.value.toLowerCase()
-  return props.items.filter(
-    item =>
-      item.title.toLowerCase().includes(term)
-      || item.benchmark_id.toLowerCase().includes(term),
-  )
-})
-
-// Total rows for pagination
-const totalRows = computed(() => searchedCollection.value.length)
-
-// Route path based on type
-const routeBase = computed(() => (props.type === 'stig' ? '/stigs' : '/srgs'))
-
-/**
- * Show delete confirmation modal
- */
-function showDeleteConfirmation(item: IBenchmarkListItem) {
-  itemToDelete.value = item
-  showDeleteModal.value = true
+// Action menu items
+function getActions() {
+  return [
+    { id: 'view', label: `View ${typeLabel.value}`, icon: 'bi-eye' },
+    { id: 'delete', label: `Remove ${typeLabel.value}`, icon: 'bi-trash', variant: 'danger' as const, dividerBefore: true },
+  ]
 }
 
 /**
- * Execute delete after confirmation
+ * Handle action menu selection
  */
-function executeDelete() {
-  if (itemToDelete.value) {
-    emit('delete', itemToDelete.value.id)
-    showDeleteModal.value = false
-    itemToDelete.value = null
+function handleAction(actionId: string, item: IBenchmarkListItem) {
+  switch (actionId) {
+    case 'view':
+      router.push(getItemRoute(item))
+      break
+    case 'delete':
+      confirmDelete(item)
+      break
   }
-}
-
-/**
- * Cancel delete
- */
-function cancelDelete() {
-  showDeleteModal.value = false
-  itemToDelete.value = null
 }
 </script>
 
 <template>
   <div>
-    <!-- Search -->
-    <div class="row">
-      <div class="col-6">
-        <div class="input-group">
-          <span class="input-group-text">
-            <i class="bi bi-search" aria-hidden="true" />
-          </span>
-          <input
-            id="benchmarkSearch"
-            v-model="search"
-            type="text"
-            class="form-control"
-            :placeholder="`Search ${typeLabel} by title or ID...`"
-          >
-        </div>
-      </div>
-    </div>
-    <br>
-    <BTable
-      id="benchmarks-table"
-      :items="searchedCollection"
-      :fields="tableFields"
-      :per-page="perPage"
+    <BaseTable
+      :items="paginatedItems"
+      :columns="columns"
+      :total-rows="totalRows"
       :current-page="currentPage"
+      :search="search"
+      :search-placeholder="`Search ${typeLabel} by title or ID...`"
+      @update:search="search = $event"
+      @update:current-page="currentPage = $event"
     >
       <!-- Benchmark ID with router link -->
-      <template #cell(benchmark_id)="{ item }">
-        <router-link :to="`${routeBase}/${item.id}`">
+      <template #cell-benchmark_id="{ item }">
+        <router-link :to="getItemRoute(item)">
           {{ item.benchmark_id }}
         </router-link>
       </template>
+
       <!-- Actions column -->
-      <template #cell(actions)="{ item }">
-        <BButton
+      <template #cell-actions="{ item }">
+        <ActionMenu
           v-if="isAdmin"
-          class="float-end mt-1"
-          variant="danger"
-          @click="showDeleteConfirmation(item)"
-        >
-          <i class="bi bi-trash" aria-hidden="true" />
-          Remove
-        </BButton>
+          :actions="getActions()"
+          @action="handleAction($event, item)"
+        />
       </template>
-    </BTable>
-    <!-- Pagination controls -->
-    <BPagination
-      v-model="currentPage"
-      :total-rows="totalRows"
-      :per-page="perPage"
-      aria-controls="benchmarks-table"
-    />
+    </BaseTable>
+
     <!-- Delete Confirmation Modal -->
-    <BModal
+    <DeleteModal
       v-model="showDeleteModal"
       :title="`Remove ${typeLabel}`"
-      ok-variant="danger"
-      ok-title="Remove"
-      @ok="executeDelete"
-      @cancel="cancelDelete"
-      @hidden="cancelDelete"
-    >
-      <p>
-        Are you sure you want to remove this {{ typeLabel }} from Vulcan?
-      </p>
-      <p v-if="itemToDelete" class="text-muted">
-        <strong>{{ itemToDelete.benchmark_id }}</strong> - {{ itemToDelete.title }}
-      </p>
-    </BModal>
+      :item-name="itemToDelete ? `${itemToDelete.benchmark_id} - ${itemToDelete.title}` : ''"
+      :message="`Are you sure you want to remove this ${typeLabel} from Vulcan?`"
+      confirm-button-text="Remove"
+      @confirm="executeDelete"
+    />
   </div>
 </template>

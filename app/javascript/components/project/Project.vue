@@ -371,8 +371,38 @@ function openExportModal(type: string) {
               </div>
             </div>
 
+            <!-- Empty State - No Components -->
+            <div
+              v-if="sortedComponents.length === 0"
+              class="text-center py-5 my-4 bg-body-secondary rounded-3"
+            >
+              <i class="bi bi-box-seam display-1 text-body-secondary mb-3 d-block" />
+              <h3 class="text-body-secondary">
+                No Components Yet
+              </h3>
+              <p class="text-body-secondary mb-4">
+                Get started by creating your first component for this project.
+              </p>
+              <NewComponentModal
+                v-if="isProjectAdmin"
+                :project_id="project?.id"
+                :project="project"
+                @project-updated="refreshProject"
+              >
+                <template #opener>
+                  <button class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle me-2" />
+                    Create Your First Component
+                  </button>
+                </template>
+              </NewComponentModal>
+              <p v-if="!isProjectAdmin" class="text-body-secondary small mt-3">
+                Contact a project administrator to add components.
+              </p>
+            </div>
+
             <!-- Regular Components -->
-            <div class="row row-cols-1 row-cols-lg-2">
+            <div v-else class="row row-cols-1 row-cols-lg-2">
               <div v-for="component in sortedRegularComponents" :key="component.id" class="col">
                 <ComponentCard
                   :component="component"
@@ -383,26 +413,28 @@ function openExportModal(type: string) {
               </div>
             </div>
 
-            <!-- Overlay Components -->
-            <h2 class="mt-4">
-              Overlaid Components
-            </h2>
-            <AddComponentModal
-              v-if="isProjectAdmin"
-              :project_id="project?.id"
-              :available_components="sortedAvailableComponents"
-              @project-updated="refreshProject"
-            />
-            <div class="row row-cols-1 row-cols-lg-2">
-              <div v-for="component in sortedOverlayComponents" :key="component.id" class="col">
-                <ComponentCard
-                  :component="component"
-                  :effective-permissions="effectivePermissions"
-                  @delete-component="deleteComponent($event)"
-                  @project-updated="refreshProject"
-                />
+            <!-- Overlay Components (only show when there are regular components) -->
+            <template v-if="sortedComponents.length > 0">
+              <h2 class="mt-4">
+                Overlaid Components
+              </h2>
+              <AddComponentModal
+                v-if="isProjectAdmin"
+                :project_id="project?.id"
+                :available_components="sortedAvailableComponents"
+                @project-updated="refreshProject"
+              />
+              <div class="row row-cols-1 row-cols-lg-2">
+                <div v-for="component in sortedOverlayComponents" :key="component.id" class="col">
+                  <ComponentCard
+                    :component="component"
+                    :effective-permissions="effectivePermissions"
+                    @delete-component="deleteComponent($event)"
+                    @project-updated="refreshProject"
+                  />
+                </div>
               </div>
-            </div>
+            </template>
           </div>
 
           <!-- Diff Viewer Tab -->
