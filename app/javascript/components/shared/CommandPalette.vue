@@ -230,7 +230,7 @@ function isHighlighted(item: CommandPaletteItem): boolean {
                 v-for="item in group.items"
                 :key="String(item.id)"
                 :value="item"
-                :class="['command-palette-item', { 'is-highlighted': isHighlighted(item) }]"
+                class="command-palette-item" :class="[{ 'is-highlighted': isHighlighted(item) }]"
               >
                 <div class="d-flex align-items-center gap-2 w-100">
                   <i :class="getItemIcon(item)" class="command-palette-item-icon" />

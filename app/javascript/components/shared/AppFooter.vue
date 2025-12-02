@@ -13,8 +13,8 @@ const currentYear = new Date().getFullYear()
 <template>
   <!-- Footer in normal document flow (not fixed-bottom) -->
   <!-- Parent App.vue uses d-flex flex-column vh-100, so footer stays at bottom via flexbox -->
-  <!-- Height matches --app-footer-height CSS variable (40px) -->
-  <footer class="footer flex-shrink-0 py-2 bg-dark border-top text-light">
+  <!-- Height enforced by .footer class in application.scss (--app-footer-height: 40px) -->
+  <footer class="footer mt-auto flex-shrink-0 bg-dark border-top text-light d-flex align-items-center">
     <div class="container-fluid container-app">
       <div class="d-flex justify-content-between align-items-center small">
         <span>

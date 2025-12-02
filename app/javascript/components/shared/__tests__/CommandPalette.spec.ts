@@ -228,7 +228,7 @@ describe('commandPalette keyboard navigation logic', () => {
   })
 
   describe('arrow key navigation behavior', () => {
-    it('ArrowDown increments index within bounds', () => {
+    it('arrowDown increments index within bounds', () => {
       let highlightedIndex = 0
       const itemCount = 5
 
@@ -242,7 +242,7 @@ describe('commandPalette keyboard navigation logic', () => {
       expect(highlightedIndex).toBe(4) // Should not exceed bounds
     })
 
-    it('ArrowUp decrements index within bounds', () => {
+    it('arrowUp decrements index within bounds', () => {
       let highlightedIndex = 2
       const itemCount = 5
 
@@ -265,7 +265,7 @@ describe('commandPalette keyboard navigation logic', () => {
     })
   })
 
-  describe('Enter key selection', () => {
+  describe('enter key selection', () => {
     it('selects item at current highlightedIndex', () => {
       const items = [
         { id: '1', label: 'First', to: '/first' },
