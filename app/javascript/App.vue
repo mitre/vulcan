@@ -90,3 +90,10 @@ onMounted(() => {
     </div>
   </BApp>
 </template>
+
+<style scoped>
+/* Fix: min-height: 0 allows flex item to shrink for proper scrolling */
+main {
+  min-height: 0;
+}
+</style>

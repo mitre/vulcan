@@ -67,6 +67,9 @@ function handleSaved() {
 .requirements-focus {
   container-type: inline-size;
   container-name: requirements-focus;
+  /* Fix: min-height: 0 allows flex item to shrink below content size */
+  /* This ensures the scroll zones work correctly in nested flex layouts */
+  min-height: 0;
 }
 
 /* Responsive layout: stack vertically on narrow containers */

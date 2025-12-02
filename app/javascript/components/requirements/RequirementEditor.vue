@@ -801,6 +801,12 @@ watch(
   cursor: pointer;
 }
 
+/* Fix: min-height: 0 allows flex item to shrink below content size */
+/* Without this, the scroll zone can be very small in flexbox layouts */
+.editor-body {
+  min-height: 0;
+}
+
 /* Use CSS variables for dark mode compatibility */
 .editor-header {
   background-color: var(--bs-tertiary-bg);

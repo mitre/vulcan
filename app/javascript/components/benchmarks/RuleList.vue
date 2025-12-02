@@ -172,6 +172,10 @@ function isSelected(rule: IBenchmarkRule): boolean {
 .rule-list {
   /* Fills parent flexbox - no magic height needed */
   overflow: hidden; /* Parent clips, .rule-table-container child scrolls */
+  min-height: 0; /* Fix: allows flex item to shrink for scroll */
+}
+.rule-table-container {
+  min-height: 0; /* Fix: allows flex item to shrink for scroll */
 }
 .rule-row {
   cursor: pointer;

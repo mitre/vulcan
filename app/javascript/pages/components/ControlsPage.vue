@@ -183,5 +183,14 @@ function handleOpenFocus(rule: ISlimRule) {
 </template>
 
 <style scoped>
-/* Layout handled by Bootstrap utilities and inline min-height: 0 */
+/* Fix: min-height: 0 allows flex items to shrink for proper scrolling */
+.controls-page {
+  min-height: 0;
+}
+.page-content {
+  min-height: 0;
+}
+.container-app {
+  min-height: 0;
+}
 </style>

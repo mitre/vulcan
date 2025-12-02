@@ -250,6 +250,9 @@ async function handleReplaced() {
 .nav-list {
   /* This is the scrollable area */
   overflow-y: auto;
+  /* Fix: min-height: 0 allows flex item to shrink below content size */
+  /* Without this, the scroll zone can be very small */
+  min-height: 0;
 }
 .nav-item {
   cursor: pointer;

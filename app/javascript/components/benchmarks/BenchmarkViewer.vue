@@ -116,16 +116,28 @@ function onRuleSelected(rule: IBenchmarkRule) {
 .benchmark-viewer {
   container-type: inline-size;
   container-name: benchmark-viewer;
+  /* Fix: min-height: 0 allows flex item to shrink below content size */
+  min-height: 0;
+}
+
+/* Fix: min-height: 0 on flex children with overflow */
+.benchmark-content {
+  min-height: 0;
 }
 
 /* Default widths for 3-column layout - using CSS variables */
 .rule-list-panel {
   width: var(--app-sidebar-width);
   flex-shrink: 0;
+  min-height: 0; /* Fix: allows flex item to shrink for scroll */
+}
+.rule-details-panel {
+  min-height: 0; /* Fix: allows flex item to shrink for scroll */
 }
 .rule-overview-panel {
   width: var(--app-sidebar-right-width);
   flex-shrink: 0;
+  min-height: 0; /* Fix: allows flex item to shrink for scroll */
 }
 
 /* Responsive: 2-column on medium containers */
