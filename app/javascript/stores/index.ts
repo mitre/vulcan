@@ -10,6 +10,7 @@ export const pinia = createPinia()
 // Disable dev notifications
 pinia.use(() => {}) // Empty plugin to suppress install messages
 
+export { useAuditsStore } from './audits.store'
 // Re-export all stores for convenient imports
 export { useAuthStore } from './auth.store'
 export { useComponentsStore } from './components.store'

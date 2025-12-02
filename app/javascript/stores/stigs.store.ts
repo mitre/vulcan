@@ -1,126 +1,111 @@
 /**
  * STIGs Store
  * Security Technical Implementation Guides state management
- * Uses Options API pattern for consistency
+ *
+ * Uses Composition API pattern (Vue 3 standard)
+ * Architecture: API → Store → Composable → Page
  */
 
-import type { IStig, IStigsState } from '@/types'
+import type { IStig } from '@/types'
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import { deleteStig, getStig, getStigs, uploadStig } from '@/apis/stigs.api'
+import { removeItemFromList, withAsyncAction } from '@/utils'
 
-const initialState: IStigsState = {
-  stigs: [],
-  currentStig: null,
-  loading: false,
-  error: null,
-}
+export const useStigsStore = defineStore('stigs.store', () => {
+  // State
+  const stigs = ref<IStig[]>([])
+  const currentStig = ref<IStig | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useStigsStore = defineStore('stigs.store', {
-  state: (): IStigsState => ({ ...initialState }),
+  // Getters
+  const stigCount = computed(() => stigs.value.length)
+  const getStigById = computed(() => (id: number) => stigs.value.find(s => s.id === id))
 
-  getters: {
-    stigCount: (state: IStigsState) => state.stigs.length,
-    getStigById: (state: IStigsState) => (id: number) => state.stigs.find(s => s.id === id),
-  },
+  // Actions
 
-  actions: {
-    /**
-     * Fetch all STIGs
-     */
-    async fetchStigs() {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getStigs()
-        this.stigs = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch STIGs'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch all STIGs
+   */
+  async function fetchStigs() {
+    return withAsyncAction(loading, error, 'Failed to fetch STIGs', async () => {
+      const response = await getStigs()
+      stigs.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Fetch a single STIG by ID
-     */
-    async fetchStig(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getStig(id)
-        this.currentStig = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch STIG'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch a single STIG by ID
+   */
+  async function fetchStig(id: number) {
+    return withAsyncAction(loading, error, 'Failed to fetch STIG', async () => {
+      const response = await getStig(id)
+      currentStig.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Upload new STIG
-     */
-    async uploadStig(file: File) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await uploadStig(file)
-        // Refresh STIGs list after upload
-        await this.fetchStigs()
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to upload STIG'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Upload new STIG
+   */
+  async function upload(file: File) {
+    return withAsyncAction(loading, error, 'Failed to upload STIG', async () => {
+      const response = await uploadStig(file)
+      await fetchStigs()
+      return response
+    })
+  }
 
-    /**
-     * Delete STIG
-     */
-    async deleteStig(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await deleteStig(id)
-        // Remove from local state
-        this.stigs = this.stigs.filter(s => s.id !== id)
-        if (this.currentStig?.id === id) {
-          this.currentStig = null
-        }
-        return response
+  /**
+   * Delete STIG
+   */
+  async function remove(id: number) {
+    return withAsyncAction(loading, error, 'Failed to delete STIG', async () => {
+      const response = await deleteStig(id)
+      stigs.value = removeItemFromList(stigs.value, id)
+      if (currentStig.value?.id === id) {
+        currentStig.value = null
       }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to delete STIG'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+      return response
+    })
+  }
 
-    /**
-     * Set current STIG
-     */
-    setCurrentStig(stig: IStig | null) {
-      this.currentStig = stig
-    },
+  /**
+   * Set current STIG
+   */
+  function setCurrentStig(stig: IStig | null) {
+    currentStig.value = stig
+  }
 
-    /**
-     * Clear store state
-     */
-    reset() {
-      Object.assign(this, initialState)
-    },
-  },
+  /**
+   * Reset store to initial state
+   */
+  function reset() {
+    stigs.value = []
+    currentStig.value = null
+    loading.value = false
+    error.value = null
+  }
+
+  return {
+    // State
+    stigs,
+    currentStig,
+    loading,
+    error,
+
+    // Getters
+    stigCount,
+    getStigById,
+
+    // Actions
+    fetchStigs,
+    fetchStig,
+    uploadStig: upload,
+    deleteStig: remove,
+    setCurrentStig,
+    reset,
+  }
 })

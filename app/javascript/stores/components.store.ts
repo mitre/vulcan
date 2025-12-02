@@ -1,174 +1,164 @@
 /**
  * Components Store
  * Component state management
- * Uses Options API pattern for consistency
+ *
+ * Uses Composition API pattern (Vue 3 standard)
+ * Architecture: API → Store → Composable → Page
  */
 
-import type { IComponent, IComponentCreate, IComponentDuplicate, IComponentsState, IComponentUpdate } from '@/types'
+import type { IComponent, IComponentCreate, IComponentDuplicate, IComponentUpdate } from '@/types'
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import {
   createComponent,
   deleteComponent,
   duplicateComponent,
   getComponent,
+  getComponents,
   updateComponent,
 } from '@/apis/components.api'
+import { removeItemFromList, updateItemInList, withAsyncAction } from '@/utils'
 
-const initialState: IComponentsState = {
-  components: [],
-  currentComponent: null,
-  loading: false,
-  error: null,
-}
+export const useComponentsStore = defineStore('components.store', () => {
+  // State
+  const components = ref<IComponent[]>([])
+  const currentComponent = ref<IComponent | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useComponentsStore = defineStore('components.store', {
-  state: (): IComponentsState => ({ ...initialState }),
+  // Getters
+  const componentCount = computed(() => components.value.length)
+  const getComponentById = computed(() => (id: number) => components.value.find(c => c.id === id))
+  const releasedComponents = computed(() => components.value.filter(c => c.released))
 
-  getters: {
-    componentCount: (state: IComponentsState) => state.components.length,
-    getComponentById: (state: IComponentsState) => (id: number) => state.components.find(c => c.id === id),
-    releasedComponents: (state: IComponentsState) => state.components.filter(c => c.released),
-  },
+  // Actions
 
-  actions: {
-    /**
-     * Initialize from window.vueAppData (server-rendered data)
-     */
-    initFromWindowData() {
-      const windowData = (window as Window & { vueAppData?: { components?: IComponent[] } }).vueAppData
-      if (windowData?.components) {
-        this.components = windowData.components
-      }
-    },
+  /**
+   * Initialize from window.vueAppData (server-rendered data)
+   */
+  function initFromWindowData() {
+    const windowData = (window as Window & { vueAppData?: { components?: IComponent[] } }).vueAppData
+    if (windowData?.components) {
+      components.value = windowData.components
+    }
+  }
 
-    /**
-     * Set components from project data
-     */
-    setComponents(components: IComponent[]) {
-      this.components = components
-    },
+  /**
+   * Set components from project data
+   */
+  function setComponents(newComponents: IComponent[]) {
+    components.value = newComponents
+  }
 
-    /**
-     * Fetch a single component by ID
-     */
-    async fetchComponent(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getComponent(id)
-        this.currentComponent = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch component'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch all released components
+   */
+  async function fetchComponents() {
+    return withAsyncAction(loading, error, 'Failed to fetch components', async () => {
+      const response = await getComponents()
+      components.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Create a new component
-     */
-    async createComponent(data: IComponentCreate) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await createComponent(data)
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to create component'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch a single component by ID
+   */
+  async function fetchComponent(id: number) {
+    return withAsyncAction(loading, error, 'Failed to fetch component', async () => {
+      const response = await getComponent(id)
+      currentComponent.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Update a component
-     */
-    async updateComponent(id: number, data: IComponentUpdate) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await updateComponent(id, data)
-        // Update local state
-        const index = this.components.findIndex(c => c.id === id)
-        if (index !== -1) {
-          this.components[index] = { ...this.components[index], ...data }
-        }
-        if (this.currentComponent?.id === id) {
-          this.currentComponent = { ...this.currentComponent, ...data }
-        }
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to update component'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Create a new component
+   */
+  async function create(data: IComponentCreate) {
+    return withAsyncAction(loading, error, 'Failed to create component', async () => {
+      const response = await createComponent(data)
+      return response
+    })
+  }
 
-    /**
-     * Delete a component
-     */
-    async deleteComponent(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await deleteComponent(id)
-        // Remove from local state
-        this.components = this.components.filter(c => c.id !== id)
-        if (this.currentComponent?.id === id) {
-          this.currentComponent = null
-        }
-        return response
+  /**
+   * Update a component
+   */
+  async function update(id: number, data: IComponentUpdate) {
+    return withAsyncAction(loading, error, 'Failed to update component', async () => {
+      const response = await updateComponent(id, data)
+      components.value = updateItemInList(components.value, id, data)
+      if (currentComponent.value?.id === id) {
+        currentComponent.value = { ...currentComponent.value, ...data }
       }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to delete component'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+      return response
+    })
+  }
 
-    /**
-     * Duplicate a component
-     */
-    async duplicateComponent(id: number, options: IComponentDuplicate) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await duplicateComponent(id, options)
-        return response
+  /**
+   * Delete a component
+   */
+  async function remove(id: number) {
+    return withAsyncAction(loading, error, 'Failed to delete component', async () => {
+      const response = await deleteComponent(id)
+      components.value = removeItemFromList(components.value, id)
+      if (currentComponent.value?.id === id) {
+        currentComponent.value = null
       }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to duplicate component'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+      return response
+    })
+  }
 
-    /**
-     * Set current component
-     */
-    setCurrentComponent(component: IComponent | null) {
-      this.currentComponent = component
-    },
+  /**
+   * Duplicate a component
+   */
+  async function duplicate(id: number, options: IComponentDuplicate) {
+    return withAsyncAction(loading, error, 'Failed to duplicate component', async () => {
+      const response = await duplicateComponent(id, options)
+      return response
+    })
+  }
 
-    /**
-     * Clear store state
-     */
-    reset() {
-      Object.assign(this, initialState)
-    },
-  },
+  /**
+   * Set current component
+   */
+  function setCurrentComponent(component: IComponent | null) {
+    currentComponent.value = component
+  }
+
+  /**
+   * Reset store to initial state
+   */
+  function reset() {
+    components.value = []
+    currentComponent.value = null
+    loading.value = false
+    error.value = null
+  }
+
+  return {
+    // State
+    components,
+    currentComponent,
+    loading,
+    error,
+
+    // Getters
+    componentCount,
+    getComponentById,
+    releasedComponents,
+
+    // Actions
+    initFromWindowData,
+    setComponents,
+    fetchComponents,
+    fetchComponent,
+    createComponent: create,
+    updateComponent: update,
+    deleteComponent: remove,
+    duplicateComponent: duplicate,
+    setCurrentComponent,
+    reset,
+  }
 })

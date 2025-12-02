@@ -1,147 +1,126 @@
 /**
  * SRGs Store
  * Security Requirements Guides state management
- * Uses Options API pattern for consistency
+ *
+ * Uses Composition API pattern (Vue 3 standard)
+ * Architecture: API → Store → Composable → Page
  */
 
-import type { ISecurityRequirementsGuide, ISrgsState } from '@/types'
+import type { ISecurityRequirementsGuide } from '@/types'
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import { deleteSrg, getLatestSrgs, getSrg, getSrgs, uploadSrg } from '@/apis/srgs.api'
+import { removeItemFromList, withAsyncAction } from '@/utils'
 
-const initialState: ISrgsState = {
-  srgs: [],
-  latestSrgs: [],
-  currentSrg: null,
-  loading: false,
-  error: null,
-}
+export const useSrgsStore = defineStore('srgs.store', () => {
+  // State
+  const srgs = ref<ISecurityRequirementsGuide[]>([])
+  const latestSrgs = ref<ISecurityRequirementsGuide[]>([])
+  const currentSrg = ref<ISecurityRequirementsGuide | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useSrgsStore = defineStore('srgs.store', {
-  state: (): ISrgsState => ({ ...initialState }),
+  // Getters
+  const srgCount = computed(() => srgs.value.length)
+  const getSrgById = computed(() => (id: number) => srgs.value.find(s => s.id === id))
 
-  getters: {
-    srgCount: (state: ISrgsState) => state.srgs.length,
-    getSrgById: (state: ISrgsState) => (id: number) => state.srgs.find(s => s.id === id),
-  },
+  // Actions
 
-  actions: {
-    /**
-     * Fetch all SRGs
-     */
-    async fetchSrgs() {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getSrgs()
-        this.srgs = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch SRGs'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch all SRGs
+   */
+  async function fetchSrgs() {
+    return withAsyncAction(loading, error, 'Failed to fetch SRGs', async () => {
+      const response = await getSrgs()
+      srgs.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Fetch latest version of each SRG
-     */
-    async fetchLatestSrgs() {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getLatestSrgs()
-        this.latestSrgs = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch latest SRGs'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch latest version of each SRG
+   */
+  async function fetchLatestSrgs() {
+    return withAsyncAction(loading, error, 'Failed to fetch latest SRGs', async () => {
+      const response = await getLatestSrgs()
+      latestSrgs.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Fetch a single SRG by ID
-     */
-    async fetchSrg(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getSrg(id)
-        this.currentSrg = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch SRG'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch a single SRG by ID
+   */
+  async function fetchSrg(id: number) {
+    return withAsyncAction(loading, error, 'Failed to fetch SRG', async () => {
+      const response = await getSrg(id)
+      currentSrg.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Upload new SRG
-     */
-    async uploadSrg(file: File) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await uploadSrg(file)
-        // Refresh SRGs list after upload
-        await this.fetchSrgs()
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to upload SRG'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Upload new SRG
+   */
+  async function upload(file: File) {
+    return withAsyncAction(loading, error, 'Failed to upload SRG', async () => {
+      const response = await uploadSrg(file)
+      await fetchSrgs()
+      return response
+    })
+  }
 
-    /**
-     * Delete SRG
-     */
-    async deleteSrg(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await deleteSrg(id)
-        // Remove from local state
-        this.srgs = this.srgs.filter(s => s.id !== id)
-        if (this.currentSrg?.id === id) {
-          this.currentSrg = null
-        }
-        return response
+  /**
+   * Delete SRG
+   */
+  async function remove(id: number) {
+    return withAsyncAction(loading, error, 'Failed to delete SRG', async () => {
+      const response = await deleteSrg(id)
+      srgs.value = removeItemFromList(srgs.value, id)
+      if (currentSrg.value?.id === id) {
+        currentSrg.value = null
       }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to delete SRG'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+      return response
+    })
+  }
 
-    /**
-     * Set current SRG
-     */
-    setCurrentSrg(srg: ISecurityRequirementsGuide | null) {
-      this.currentSrg = srg
-    },
+  /**
+   * Set current SRG
+   */
+  function setCurrentSrg(srg: ISecurityRequirementsGuide | null) {
+    currentSrg.value = srg
+  }
 
-    /**
-     * Clear store state
-     */
-    reset() {
-      Object.assign(this, initialState)
-    },
-  },
+  /**
+   * Reset store to initial state
+   */
+  function reset() {
+    srgs.value = []
+    latestSrgs.value = []
+    currentSrg.value = null
+    loading.value = false
+    error.value = null
+  }
+
+  return {
+    // State
+    srgs,
+    latestSrgs,
+    currentSrg,
+    loading,
+    error,
+
+    // Getters
+    srgCount,
+    getSrgById,
+
+    // Actions
+    fetchSrgs,
+    fetchLatestSrgs,
+    fetchSrg,
+    uploadSrg: upload,
+    deleteSrg: remove,
+    setCurrentSrg,
+    reset,
+  }
 })

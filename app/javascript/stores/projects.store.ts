@@ -1,11 +1,14 @@
 /**
  * Projects Store
  * Project list and CRUD state management
- * Uses Options API pattern for consistency
+ *
+ * Uses Composition API pattern (Vue 3 standard)
+ * Architecture: API → Store → Composable → Page
  */
 
-import type { IProject, IProjectCreate, IProjectsState, IProjectUpdate } from '@/types'
+import type { IProject, IProjectCreate, IProjectUpdate } from '@/types'
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import {
   createProject,
   deleteProject,
@@ -13,149 +16,125 @@ import {
   getProjects,
   updateProject,
 } from '@/apis/projects.api'
+import {
+  removeItemFromList,
+  updateItemInList,
+  withAsyncAction,
+} from '@/utils'
 
-const initialState: IProjectsState = {
-  projects: [],
-  currentProject: null,
-  loading: false,
-  error: null,
-}
+export const useProjectsStore = defineStore('projects.store', () => {
+  // State
+  const projects = ref<IProject[]>([])
+  const currentProject = ref<IProject | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useProjectsStore = defineStore('projects.store', {
-  state: (): IProjectsState => ({ ...initialState }),
+  // Getters
+  const projectCount = computed(() => projects.value.length)
+  const getProjectById = computed(() => (id: number) => projects.value.find(p => p.id === id))
+  const memberProjects = computed(() => projects.value.filter(p => p.is_member))
+  const adminProjects = computed(() => projects.value.filter(p => p.admin))
 
-  getters: {
-    projectCount: (state: IProjectsState) => state.projects.length,
-    getProjectById: (state: IProjectsState) => (id: number) => state.projects.find(p => p.id === id),
-    memberProjects: (state: IProjectsState) => state.projects.filter(p => p.is_member),
-    adminProjects: (state: IProjectsState) => state.projects.filter(p => p.admin),
-  },
+  // Actions
 
-  actions: {
-    /**
-     * Fetch all projects from API
-     */
-    async fetchProjects() {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getProjects()
-        this.projects = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch projects'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch all projects from API
+   */
+  async function fetchProjects() {
+    return withAsyncAction(loading, error, 'Failed to fetch projects', async () => {
+      const response = await getProjects()
+      projects.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Fetch a single project by ID
-     */
-    async fetchProject(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await getProject(id)
-        this.currentProject = response.data
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to fetch project'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Fetch a single project by ID
+   */
+  async function fetchProject(id: number) {
+    return withAsyncAction(loading, error, 'Failed to fetch project', async () => {
+      const response = await getProject(id)
+      currentProject.value = response.data
+      return response
+    })
+  }
 
-    /**
-     * Create a new project
-     */
-    async createProject(data: IProjectCreate) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await createProject(data)
-        // Refresh projects list after creation
-        await this.fetchProjects()
-        return response
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to create project'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+  /**
+   * Create a new project
+   */
+  async function create(data: IProjectCreate) {
+    return withAsyncAction(loading, error, 'Failed to create project', async () => {
+      const response = await createProject(data)
+      await fetchProjects()
+      return response
+    })
+  }
 
-    /**
-     * Update a project
-     */
-    async updateProject(id: number, data: IProjectUpdate) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await updateProject(id, data)
-        // Update local state
-        const index = this.projects.findIndex(p => p.id === id)
-        if (index !== -1) {
-          this.projects[index] = { ...this.projects[index], ...data }
-        }
-        if (this.currentProject?.id === id) {
-          this.currentProject = { ...this.currentProject, ...data }
-        }
-        return response
+  /**
+   * Update a project
+   */
+  async function update(id: number, data: IProjectUpdate) {
+    return withAsyncAction(loading, error, 'Failed to update project', async () => {
+      const response = await updateProject(id, data)
+      projects.value = updateItemInList(projects.value, id, data)
+      if (currentProject.value?.id === id) {
+        currentProject.value = { ...currentProject.value, ...data }
       }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to update project'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+      return response
+    })
+  }
 
-    /**
-     * Delete a project
-     */
-    async deleteProject(id: number) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await deleteProject(id)
-        // Remove from local state
-        this.projects = this.projects.filter(p => p.id !== id)
-        if (this.currentProject?.id === id) {
-          this.currentProject = null
-        }
-        return response
+  /**
+   * Delete a project
+   */
+  async function remove(id: number) {
+    return withAsyncAction(loading, error, 'Failed to delete project', async () => {
+      const response = await deleteProject(id)
+      projects.value = removeItemFromList(projects.value, id)
+      if (currentProject.value?.id === id) {
+        currentProject.value = null
       }
-      catch (error) {
-        this.error = error instanceof Error ? error.message : 'Failed to delete project'
-        throw error
-      }
-      finally {
-        this.loading = false
-      }
-    },
+      return response
+    })
+  }
 
-    /**
-     * Set current project
-     */
-    setCurrentProject(project: IProject | null) {
-      this.currentProject = project
-    },
+  /**
+   * Set current project
+   */
+  function setCurrentProject(project: IProject | null) {
+    currentProject.value = project
+  }
 
-    /**
-     * Clear store state
-     */
-    reset() {
-      Object.assign(this, initialState)
-    },
-  },
+  /**
+   * Reset store to initial state
+   */
+  function reset() {
+    projects.value = []
+    currentProject.value = null
+    loading.value = false
+    error.value = null
+  }
+
+  return {
+    // State
+    projects,
+    currentProject,
+    loading,
+    error,
+
+    // Getters
+    projectCount,
+    getProjectById,
+    memberProjects,
+    adminProjects,
+
+    // Actions
+    fetchProjects,
+    fetchProject,
+    createProject: create,
+    updateProject: update,
+    deleteProject: remove,
+    setCurrentProject,
+    reset,
+  }
 })
