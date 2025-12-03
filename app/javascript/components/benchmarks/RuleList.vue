@@ -99,9 +99,9 @@ function isSelected(rule: IBenchmarkRule): boolean {
 
 <template>
   <!-- Rule list fills parent sidebar panel via flexbox -->
-  <div class="rule-list d-flex flex-column flex-grow-1">
+  <div class="card rule-list d-flex flex-column flex-grow-1 h-100">
     <!-- Filter Section (fixed height) -->
-    <div class="filter-section p-3 flex-shrink-0 border-bottom">
+    <div class="card-header flex-shrink-0">
       <h5 class="card-title mb-2">
         Filter & Search
       </h5>
@@ -134,7 +134,7 @@ function isSelected(rule: IBenchmarkRule): boolean {
     </div>
 
     <!-- Scrollable Rule List -->
-    <div class="rule-table-container flex-grow-1 overflow-auto">
+    <div class="card-body rule-table-container flex-grow-1 overflow-auto p-0">
       <table class="table table-hover table-sm mb-0">
         <thead class="sticky-top bg-body">
           <tr>

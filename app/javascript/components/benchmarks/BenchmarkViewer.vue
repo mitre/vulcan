@@ -76,9 +76,9 @@ function onRuleSelected(rule: IBenchmarkRule) {
     </header>
 
     <!-- Content - 3 column layout with independent scrolling -->
-    <div class="benchmark-content d-flex flex-grow-1 overflow-hidden">
+    <div class="benchmark-content d-flex flex-grow-1 overflow-hidden mb-3 gap-3">
       <!-- Left Sidebar - Rule List (scrolls independently) -->
-      <aside class="rule-list-panel d-flex flex-column border-end overflow-hidden">
+      <aside class="rule-list-panel d-flex flex-column overflow-hidden">
         <RuleList
           :type="type"
           :rules="sortedRules"
@@ -88,7 +88,7 @@ function onRuleSelected(rule: IBenchmarkRule) {
       </aside>
 
       <!-- Middle Section - Rule Details (scrolls independently) -->
-      <main class="rule-details-panel flex-grow-1 overflow-auto p-3">
+      <main class="rule-details-panel flex-grow-1 overflow-auto">
         <RuleDetails
           v-if="selectedRule"
           :type="type"
@@ -100,7 +100,7 @@ function onRuleSelected(rule: IBenchmarkRule) {
       </main>
 
       <!-- Right Sidebar - Rule Overview (scrolls independently) -->
-      <aside class="rule-overview-panel d-flex flex-column border-start overflow-auto">
+      <aside class="rule-overview-panel d-flex flex-column overflow-auto">
         <RuleOverview
           v-if="selectedRule"
           :type="type"

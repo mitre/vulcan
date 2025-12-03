@@ -66,9 +66,9 @@ onMounted(() => {
       </div>
 
       <!-- Main content area - flex-grow to fill remaining space -->
-      <!-- overflow-hidden prevents content from expanding viewport -->
-      <!-- No pb-5 needed - footer is in normal flow, not fixed position -->
-      <main class="flex-grow-1 overflow-hidden">
+      <!-- overflow-auto allows standard pages to scroll while keeping footer visible -->
+      <!-- Pages managing their own scroll (ControlsPage) use explicit height -->
+      <main class="flex-grow-1 overflow-auto">
         <RouterView v-slot="{ Component }">
           <template v-if="Component">
             <ErrorBoundary>
