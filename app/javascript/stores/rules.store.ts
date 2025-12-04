@@ -72,8 +72,8 @@ export const useRulesStore = defineStore('rules', () => {
   const error = ref<string | null>(null)
   const componentId = ref<number | null>(null)
 
-  // UI state
-  const showNestedRules = ref(true)
+  // UI state - default to hierarchical view (nested/collapsed)
+  const showNestedRules = ref(false)
   const openRuleIds = ref<number[]>([])
 
   // ============================================
@@ -780,7 +780,7 @@ export const useRulesStore = defineStore('rules', () => {
     loading.value = false
     error.value = null
     componentId.value = null
-    showNestedRules.value = true
+    showNestedRules.value = false
     openRuleIds.value = []
   }
 

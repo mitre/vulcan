@@ -97,7 +97,7 @@ describe('useRules composable', () => {
 
     it('provides reactive showNestedRules', () => {
       const { showNestedRules } = useRules()
-      expect(showNestedRules.value).toBe(true)
+      expect(showNestedRules.value).toBe(false) // default is false (hierarchical view)
     })
   })
 
@@ -142,13 +142,13 @@ describe('useRules composable', () => {
         createSlimRule({ id: 2, is_merged: true }),
       ]
 
-      // Default: showNestedRules = true, all visible
-      expect(visibleRules.value.length).toBe(2)
-
-      // Toggle off: only primary visible
-      toggleNestedRules()
-      expect(showNestedRules.value).toBe(false)
+      // Default: showNestedRules = false, only primary visible (hierarchical view)
       expect(visibleRules.value.length).toBe(1)
+
+      // Toggle on: all visible (flat view)
+      toggleNestedRules()
+      expect(showNestedRules.value).toBe(true)
+      expect(visibleRules.value.length).toBe(2)
     })
   })
 
@@ -175,11 +175,11 @@ describe('useRules composable', () => {
     it('toggles showNestedRules state', () => {
       const { showNestedRules, toggleNestedRules } = useRules()
 
+      expect(showNestedRules.value).toBe(false) // default is false (hierarchical view)
+      toggleNestedRules()
       expect(showNestedRules.value).toBe(true)
       toggleNestedRules()
       expect(showNestedRules.value).toBe(false)
-      toggleNestedRules()
-      expect(showNestedRules.value).toBe(true)
     })
   })
 
@@ -231,15 +231,15 @@ describe('useRules composable', () => {
         createSlimRule({ id: 3, is_merged: true, satisfies_count: 0 }), // child
       ]
 
-      // All visible when showNestedRules = true
-      expect(showNestedRules.value).toBe(true)
-      expect(visibleRules.value.length).toBe(3)
-
-      // Only parent visible when showNestedRules = false
-      toggleNestedRules()
+      // Default: showNestedRules = false, only parent visible (hierarchical view)
+      expect(showNestedRules.value).toBe(false)
       expect(visibleRules.value.length).toBe(1)
       expect(visibleRules.value[0].id).toBe(1)
       expect(visibleRules.value[0].satisfies_count).toBe(2)
+
+      // Toggle on: all visible (flat view)
+      toggleNestedRules()
+      expect(visibleRules.value.length).toBe(3)
     })
 
     describe('removeSatisfaction', () => {
@@ -364,16 +364,16 @@ describe('useRules composable', () => {
     it('resets all state', () => {
       const { rules, showNestedRules, error, reset, toggleNestedRules } = useRules()
 
-      // Set some state
+      // Set some state (toggle to non-default)
       rules.value = [createSlimRule()]
-      toggleNestedRules()
+      toggleNestedRules() // false -> true
       error.value = 'some error'
 
       // Reset
       reset()
 
       expect(rules.value).toEqual([])
-      expect(showNestedRules.value).toBe(true)
+      expect(showNestedRules.value).toBe(false) // default is false (hierarchical view)
       expect(error.value).toBeNull()
     })
   })

@@ -82,9 +82,9 @@ describe('rules Store', () => {
       expect(store.currentRule).toBeNull()
     })
 
-    it('has showNestedRules true by default', () => {
+    it('has showNestedRules false by default (hierarchical view)', () => {
       const store = useRulesStore()
-      expect(store.showNestedRules).toBe(true)
+      expect(store.showNestedRules).toBe(false)
     })
 
     it('has no loading state', () => {
@@ -187,22 +187,22 @@ describe('rules Store', () => {
 
   describe('actions', () => {
     describe('toggleNestedRules', () => {
+      it('toggles showNestedRules from false to true', () => {
+        const store = useRulesStore()
+        expect(store.showNestedRules).toBe(false) // default is false (hierarchical view)
+
+        store.toggleNestedRules()
+
+        expect(store.showNestedRules).toBe(true)
+      })
+
       it('toggles showNestedRules from true to false', () => {
         const store = useRulesStore()
-        expect(store.showNestedRules).toBe(true)
+        store.showNestedRules = true
 
         store.toggleNestedRules()
 
         expect(store.showNestedRules).toBe(false)
-      })
-
-      it('toggles showNestedRules from false to true', () => {
-        const store = useRulesStore()
-        store.showNestedRules = false
-
-        store.toggleNestedRules()
-
-        expect(store.showNestedRules).toBe(true)
       })
     })
 
@@ -234,14 +234,14 @@ describe('rules Store', () => {
         const store = useRulesStore()
         store.rules = [createSlimRule()]
         store.componentId = 123
-        store.showNestedRules = false
+        store.showNestedRules = true // Set to non-default
         store.error = 'some error'
 
         store.reset()
 
         expect(store.rules).toEqual([])
         expect(store.componentId).toBeNull()
-        expect(store.showNestedRules).toBe(true)
+        expect(store.showNestedRules).toBe(false) // default is false (hierarchical view)
         expect(store.error).toBeNull()
         expect(store.fullRulesCache.size).toBe(0)
       })

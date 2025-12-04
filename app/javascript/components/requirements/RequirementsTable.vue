@@ -151,7 +151,8 @@ const satisfactionPickerCurrentSatisfiedIds = ref<number[]>([])
 const addingSatisfactions = ref(false)
 
 // Sort state - BTable uses array of { key, order } objects
-const sortBy = ref([{ key: 'rule_id', order: 'asc' as const }])
+// Default to severity ascending (CAT I at top, then CAT II, then CAT III)
+const sortBy = ref([{ key: 'rule_severity', order: 'asc' as const }])
 
 /**
  * Custom sort compare function for BTable
