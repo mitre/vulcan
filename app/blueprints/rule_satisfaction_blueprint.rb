@@ -4,5 +4,6 @@ class RuleSatisfactionBlueprint < Blueprinter::Base
   identifier :id
 
   fields :rule_id,
+         :title,
          :fixtext
 end

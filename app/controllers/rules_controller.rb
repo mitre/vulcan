@@ -26,7 +26,8 @@ class RulesController < ApplicationController
       end
       format.json do
         # Slim data for list view with pagination
-        base_query = @component.rules.includes(:satisfied_by).order(:rule_id)
+        # Include both satisfied_by (for is_merged) and satisfies (for satisfies_rules)
+        base_query = @component.rules.includes(:satisfied_by, :satisfies).order(:rule_id)
 
         # Support both paginated and non-paginated requests
         if params[:page].present?
