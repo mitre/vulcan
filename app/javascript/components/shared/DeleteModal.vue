@@ -26,12 +26,15 @@ const props = withDefaults(
     dangerText?: string
     confirmButtonText?: string
     cancelButtonText?: string
+    /** Hide the "cannot be undone" warning (use when undo is available) */
+    hideUndoWarning?: boolean
   }>(),
   {
     title: 'Confirm Delete',
     loading: false,
     confirmButtonText: 'Delete',
     cancelButtonText: 'Cancel',
+    hideUndoWarning: false,
   },
 )
 
@@ -41,13 +44,27 @@ const emit = defineEmits<{
   'cancel': []
 }>()
 
+// Track if confirm was clicked to prevent cancel on hidden
+let confirmClicked = false
+
 function handleConfirm() {
+  confirmClicked = true
   emit('confirm')
 }
 
 function handleCancel() {
   emit('update:modelValue', false)
   emit('cancel')
+}
+
+function handleHidden() {
+  // Only emit cancel if the modal was closed without confirming
+  // (e.g., clicking backdrop, pressing Escape, or Cancel button)
+  if (!confirmClicked) {
+    emit('cancel')
+  }
+  // Reset for next open
+  confirmClicked = false
 }
 </script>
 
@@ -57,7 +74,7 @@ function handleCancel() {
     :title="title"
     centered
     @update:model-value="emit('update:modelValue', $event)"
-    @hidden="handleCancel"
+    @hidden="handleHidden"
   >
     <p v-if="message">
       {{ message }}
@@ -71,7 +88,7 @@ function handleCancel() {
       <i class="bi bi-exclamation-triangle me-1" aria-hidden="true" />
       {{ dangerText }}
     </p>
-    <p class="text-body-secondary small mb-0">
+    <p v-if="!hideUndoWarning" class="text-body-secondary small mb-0">
       This action cannot be undone.
     </p>
 

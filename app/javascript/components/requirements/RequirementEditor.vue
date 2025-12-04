@@ -18,6 +18,7 @@ import ActionCommentModal from '../shared/ActionCommentModal.vue'
 import ChangelogModal from './ChangelogModal.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import FieldEditModal from './FieldEditModal.vue'
+import SatisfactionPickerModal from './SatisfactionPickerModal.vue'
 import SeverityBadge from './SeverityBadge.vue'
 import StatusBadge from './StatusBadge.vue'
 
@@ -87,7 +88,7 @@ const {
 } = useRequirementEditor(ruleRef, permissionsRef)
 
 // Rules composable for lock/unlock/revert/review
-const { rules, lockRule, unlockRule, createReview, refreshRule } = useRules()
+const { rules, lockRule, unlockRule, createReview, refreshRule, addSatisfaction, removeSatisfaction } = useRules()
 
 // Handle save with emit
 async function handleSave() {
@@ -153,9 +154,8 @@ function handleRevert() {
 }
 
 function handleSatisfies() {
-  // TODO: Implement Satisfactions modal with normalized "Satisfy" terminology
-  // This will be the next feature after Find/Replace
-  alert('Satisfactions feature coming soon! This will show which requirements this control satisfies and which satisfy it.')
+  // Open the satisfaction picker modal
+  showSatisfactionPickerModal.value = true
 }
 
 function handleChangelog() {
@@ -178,6 +178,8 @@ const showVulnModal = ref(false)
 const showCheckModal = ref(false)
 const showFixModal = ref(false)
 const showChangelogModal = ref(false)
+const showSatisfactionPickerModal = ref(false)
+const addingSatisfactions = ref(false)
 
 // Action modal state (lock/unlock/review)
 type ActionType = 'lock' | 'unlock' | 'review' | null
@@ -244,6 +246,38 @@ function handleFixSave(value: string) {
   markDirty()
 }
 
+// Computed: current satisfied rule IDs for the picker modal
+const currentSatisfiedRuleIds = computed(() => {
+  return props.rule?.satisfies?.map(s => s.id) ?? []
+})
+
+// Satisfaction picker modal handlers
+async function handleSatisfactionPickerAdd(childRuleIds: number[]) {
+  if (!props.rule || childRuleIds.length === 0) return
+
+  addingSatisfactions.value = true
+  try {
+    for (const childId of childRuleIds) {
+      await addSatisfaction(childId, props.rule.id)
+    }
+    // Refresh the rule to get updated satisfies list
+    await refreshRule(props.rule.id)
+  }
+  finally {
+    addingSatisfactions.value = false
+  }
+}
+
+async function handleSatisfactionPickerRemove(childRuleIds: number[]) {
+  if (!props.rule || childRuleIds.length === 0) return
+
+  for (const childId of childRuleIds) {
+    await removeSatisfaction(childId, props.rule.id)
+  }
+  // Refresh the rule to get updated satisfies list
+  await refreshRule(props.rule.id)
+}
+
 function toggleSection(section: string) {
   const idx = openSections.value.indexOf(section)
   if (idx >= 0) {
@@ -299,7 +333,7 @@ watch(
             <h5 class="mb-1">
               <span class="font-monospace">{{ rule.rule_id }}</span>
               <i v-if="isLocked" class="bi bi-lock-fill text-muted ms-2" title="Locked" />
-              <i v-if="isMerged" class="bi bi-diagram-3 text-info ms-2" title="Merged rule" />
+              <i v-if="isMerged" class="bi bi-arrow-left text-info ms-2" title="Satisfied by another rule" />
             </h5>
             <p class="mb-0 text-muted small">
               {{ rule.version }}
@@ -324,6 +358,26 @@ watch(
           </div>
         </div>
       </div>
+
+      <!-- Toolbar / Command bar (at top for easy access) -->
+      <EditorToolbar
+        :rule="rule"
+        :is-dirty="isDirty"
+        :is-valid="isValid"
+        :loading="loading"
+        :can-edit="canEdit"
+        :is-locked="isLocked"
+        :is-under-review="isUnderReview"
+        :is-merged="isMerged"
+        :effective-permissions="effectivePermissions"
+        @save="handleSave"
+        @request-review="handleRequestReview"
+        @lock="handleLock"
+        @unlock="handleUnlock"
+        @revert="handleRevert"
+        @satisfies="handleSatisfies"
+        @changelog="handleChangelog"
+      />
 
       <!-- Sections (scrollable) -->
       <div class="editor-body flex-grow-1 overflow-auto">
@@ -716,26 +770,6 @@ watch(
         <!-- - Related/Merged requirements (right sidebar) -->
         <!-- - Reviews & History (right sidebar) -->
       </div>
-
-      <!-- Toolbar / Command bar -->
-      <EditorToolbar
-        :rule="rule"
-        :is-dirty="isDirty"
-        :is-valid="isValid"
-        :loading="loading"
-        :can-edit="canEdit"
-        :is-locked="isLocked"
-        :is-under-review="isUnderReview"
-        :is-merged="isMerged"
-        :effective-permissions="effectivePermissions"
-        @save="handleSave"
-        @request-review="handleRequestReview"
-        @lock="handleLock"
-        @unlock="handleUnlock"
-        @revert="handleRevert"
-        @satisfies="handleSatisfies"
-        @changelog="handleChangelog"
-      />
     </template>
 
     <!-- Field Edit Modals -->
@@ -792,6 +826,19 @@ watch(
       @update:model-value="!$event && handleActionCancel()"
       @confirm="handleActionConfirm"
       @cancel="handleActionCancel"
+    />
+
+    <!-- Satisfaction Picker Modal -->
+    <SatisfactionPickerModal
+      v-if="rule"
+      v-model="showSatisfactionPickerModal"
+      :parent-rule-id="rule.id"
+      :parent-rule-display-id="rule.rule_id"
+      :rules="rules"
+      :current-satisfied-rule-ids="currentSatisfiedRuleIds"
+      :loading="addingSatisfactions"
+      @add="handleSatisfactionPickerAdd"
+      @remove="handleSatisfactionPickerRemove"
     />
   </div>
 </template>

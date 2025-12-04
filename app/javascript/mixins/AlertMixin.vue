@@ -36,13 +36,13 @@ export default {
 
       // If toast is just a string, then assume it's a basic success message
       if (typeof toastData === 'string' || toastData instanceof String) {
-        this.toast?.show({
-          props: {
-            title: 'Success',
-            variant: 'success',
-            solid: true,
-            body: toastData,
-          },
+        this.toast?.create?.({
+          title: 'Success',
+          variant: 'success',
+          solid: true,
+          body: toastData,
+          pos: 'top-end',
+          modelValue: 5000,
         })
         return
       }
@@ -56,26 +56,26 @@ export default {
           message = this.arrayToMessage(message)
         }
 
-        this.toast?.show({
-          props: {
-            title,
-            variant,
-            solid: true,
-            body: message,
-          },
+        this.toast?.create?.({
+          title,
+          variant,
+          solid: true,
+          body: message,
+          pos: 'top-end',
+          modelValue: 5000,
         })
         return
       }
 
       // At this point in the code it is likely an error has occurred
       if (response.message) {
-        this.toast?.show({
-          props: {
-            title: 'Error',
-            variant: 'danger',
-            solid: true,
-            body: response.message,
-          },
+        this.toast?.create?.({
+          title: 'Error',
+          variant: 'danger',
+          solid: true,
+          body: response.message,
+          pos: 'top-end',
+          modelValue: 8000, // Errors stay longer
         })
       }
     },

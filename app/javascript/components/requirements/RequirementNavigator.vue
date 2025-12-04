@@ -163,7 +163,7 @@ async function handleReplaced() {
           class="form-check-input"
           @change="toggleNestedRules()"
         >
-        <label class="form-check-label" for="navShowMerged">Merged</label>
+        <label class="form-check-label" for="navShowMerged">Show Satisfied</label>
       </div>
       <span class="text-muted ms-2">{{ filteredRules.length }}</span>
     </div>

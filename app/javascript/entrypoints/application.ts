@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   app.use(router)
   app.use(pinia)
+  // BApp component handles orchestrators (toast, modal, popover)
+  // createBootstrap() just provides global defaults - no conflict
   app.use(createBootstrap())
   app.use(Vue3Linkify)
   // Also register as 'linkified' for backward compatibility

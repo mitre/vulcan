@@ -9,6 +9,7 @@
  */
 
 import type { IRule } from '@/types'
+import { BDropdown, BDropdownItem, BDropdownDivider } from 'bootstrap-vue-next'
 import { computed } from 'vue'
 
 // Props
@@ -61,7 +62,7 @@ const canUnlock = computed(() => {
 const statusMessage = computed(() => {
   if (props.isLocked) return { icon: 'bi-lock-fill', text: 'Locked', class: 'text-muted' }
   if (props.isUnderReview) return { icon: 'bi-hourglass-split', text: 'Under Review', class: 'text-info' }
-  if (props.isMerged) return { icon: 'bi-diagram-3', text: 'Merged', class: 'text-info' }
+  if (props.isMerged) return { icon: 'bi-arrow-left', text: 'Satisfied', class: 'text-info' }
   if (props.isDirty && !props.isValid) return { icon: 'bi-exclamation-triangle', text: 'Fix errors', class: 'text-danger' }
   if (props.isDirty) return { icon: 'bi-exclamation-circle', text: 'Unsaved', class: 'text-warning' }
   return null
@@ -108,51 +109,41 @@ const statusMessage = computed(() => {
         </button>
 
         <!-- More dropdown -->
-        <div class="dropdown">
-          <button
-            class="btn btn-sm btn-outline-secondary dropdown-toggle"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            :disabled="!rule"
-          >
+        <BDropdown
+          size="sm"
+          variant="outline-secondary"
+          end
+          :disabled="!rule"
+        >
+          <template #button-content>
             <i class="bi bi-three-dots" />
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <!-- Revert -->
-            <li>
-              <button
-                class="dropdown-item"
-                :disabled="!canEdit"
-                @click="emit('revert')"
-              >
-                <i class="bi bi-arrow-counterclockwise me-2" />
-                Revert Changes
-              </button>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <!-- Lock -->
-            <li v-if="canLock">
-              <button
-                class="dropdown-item"
-                @click="emit('lock')"
-              >
-                <i class="bi bi-lock me-2" />
-                Lock Control
-              </button>
-            </li>
-            <!-- Unlock -->
-            <li v-if="canUnlock">
-              <button
-                class="dropdown-item"
-                @click="emit('unlock')"
-              >
-                <i class="bi bi-unlock me-2" />
-                Unlock Control
-              </button>
-            </li>
-          </ul>
-        </div>
+          </template>
+          <!-- Revert -->
+          <BDropdownItem
+            :disabled="!canEdit"
+            @click="emit('revert')"
+          >
+            <i class="bi bi-arrow-counterclockwise me-2" />
+            Revert Changes
+          </BDropdownItem>
+          <BDropdownDivider />
+          <!-- Lock -->
+          <BDropdownItem
+            v-if="canLock"
+            @click="emit('lock')"
+          >
+            <i class="bi bi-lock me-2" />
+            Lock Control
+          </BDropdownItem>
+          <!-- Unlock -->
+          <BDropdownItem
+            v-if="canUnlock"
+            @click="emit('unlock')"
+          >
+            <i class="bi bi-unlock me-2" />
+            Unlock Control
+          </BDropdownItem>
+        </BDropdown>
       </div>
 
       <!-- Right: Primary Actions -->
