@@ -26,6 +26,7 @@ interface Props {
   totalCount: number
   filteredCount: number
   showNestedRules: boolean
+  componentId: number
   hasSatisfiesRelationships?: boolean
   pagination?: IPagination | null
   loading?: boolean
@@ -181,6 +182,16 @@ const groupByStatus = defineModel<boolean>('groupByStatus', { default: false })
       <i class="bi bi-search me-1" />
       Find
     </button>
+
+    <!-- Legacy Editor link -->
+    <a
+      :href="`/components/${props.componentId}`"
+      class="btn btn-sm btn-outline-secondary"
+      title="Open Classic Editor (legacy view)"
+    >
+      <i class="bi bi-clock-history me-1" />
+      Classic
+    </a>
 
     <!-- Stats & Pagination -->
     <div class="ms-auto d-flex align-items-center gap-3">

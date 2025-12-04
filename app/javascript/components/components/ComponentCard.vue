@@ -329,13 +329,22 @@ function handleDeleteConfirm() {
           <!-- Primary Actions Row -->
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <!-- Primary Action Button -->
+              <!-- Primary Action Button - Goes to Requirements Editor -->
               <a
-                :href="`/components/${component.id}`"
+                :href="`/components/${component.id}/controls`"
                 class="btn btn-primary btn-sm me-2"
               >
-                <i class="bi bi-box-arrow-up-right me-1" />
-                Open Component
+                <i class="bi bi-pencil-square me-1" />
+                Edit Requirements
+              </a>
+              <!-- Component Details Link -->
+              <a
+                :href="`/components/${component.id}`"
+                class="btn btn-outline-secondary btn-sm me-2"
+                title="View component details, settings, and metadata"
+              >
+                <i class="bi bi-info-circle me-1" />
+                Details
               </a>
 
               <!-- Export Dropdown -->

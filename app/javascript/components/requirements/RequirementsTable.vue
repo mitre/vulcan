@@ -563,6 +563,7 @@ const isAllSelected = computed(() =>
       v-model:filter-review="filterReview"
       v-model:filter-satisfies="filterSatisfies"
       v-model:group-by-status="groupByStatus"
+      :component-id="props.componentId"
       :total-count="visibleRules.length"
       :filtered-count="filteredRules.length"
       :show-nested-rules="showNestedRules"
