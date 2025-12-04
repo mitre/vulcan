@@ -127,12 +127,11 @@ const effectivePermissions = computed(() => {
   return inheritedMembership?.role || 'viewer'
 })
 
-// Breadcrumbs
+// Breadcrumbs - Component name is active (current page)
 const breadcrumbs = computed(() => [
   { text: 'Projects', href: '/projects' },
   { text: project.name, href: `/projects/${project.id}` },
-  { text: component.name, href: `/components/${component.id}` },
-  { text: 'Requirements', active: true },
+  { text: component.name, active: true },
 ])
 
 // Page title
