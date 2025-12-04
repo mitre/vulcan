@@ -5,85 +5,88 @@
  * Bootstrap-Vue-Next toast which requires a Vue app context.
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Import after mocking
 import { useAppToast } from '../useToast'
 
-// Mock bootstrap-vue-next's useToast
-const mockShow = vi.fn()
+// Mock bootstrap-vue-next's useToast with the create method
+const mockCreate = vi.fn()
 vi.mock('bootstrap-vue-next', () => ({
   useToast: () => ({
-    show: mockShow,
+    create: mockCreate,
   }),
+  BButton: 'BButton', // Mock BButton component
 }))
 
 describe('useAppToast', () => {
   beforeEach(() => {
-    mockShow.mockClear()
+    mockCreate.mockClear()
+    // Default mock returns undefined (toast dismissed normally)
+    mockCreate.mockResolvedValue({ ok: undefined })
   })
 
   describe('convenience methods', () => {
-    it('success calls show with success variant', () => {
+    it('success calls create with success variant', () => {
       const toast = useAppToast()
       toast.success('Test message')
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'Success',
           variant: 'success',
           body: 'Test message',
         }),
-      })
+      )
     })
 
     it('success accepts custom title', () => {
       const toast = useAppToast()
       toast.success('Test message', 'Custom Title')
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'Custom Title',
           variant: 'success',
         }),
-      })
+      )
     })
 
-    it('error calls show with danger variant', () => {
+    it('error calls create with danger variant', () => {
       const toast = useAppToast()
       toast.error('Error message')
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'Error',
           variant: 'danger',
           body: 'Error message',
         }),
-      })
+      )
     })
 
-    it('warning calls show with warning variant', () => {
+    it('warning calls create with warning variant', () => {
       const toast = useAppToast()
       toast.warning('Warning message')
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'Warning',
           variant: 'warning',
         }),
-      })
+      )
     })
 
-    it('info calls show with info variant', () => {
+    it('info calls create with info variant', () => {
       const toast = useAppToast()
       toast.info('Info message')
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'Info',
           variant: 'info',
         }),
-      })
+      )
     })
   })
 
@@ -99,7 +102,7 @@ describe('useAppToast', () => {
       const result = toast.fromResponse({ data: { toast: 'Success!' } })
 
       expect(result).toBe(true)
-      expect(mockShow).toHaveBeenCalled()
+      expect(mockCreate).toHaveBeenCalled()
     })
 
     it('handles object toast data', () => {
@@ -115,12 +118,12 @@ describe('useAppToast', () => {
       })
 
       expect(result).toBe(true)
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'Custom',
           variant: 'warning',
         }),
-      })
+      )
     })
   })
 
@@ -131,13 +134,13 @@ describe('useAppToast', () => {
         response: { data: { error: 'API Error' } },
       })
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'Error',
           variant: 'danger',
           body: 'API Error',
         }),
-      })
+      )
     })
 
     it('joins array of errors', () => {
@@ -146,33 +149,33 @@ describe('useAppToast', () => {
         response: { data: { errors: ['Error 1', 'Error 2'] } },
       })
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           body: 'Error 1, Error 2',
         }),
-      })
+      )
     })
 
     it('falls back to error message', () => {
       const toast = useAppToast()
       toast.fromError(new Error('Native error'))
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           body: 'Native error',
         }),
-      })
+      )
     })
 
     it('uses default message when nothing available', () => {
       const toast = useAppToast()
       toast.fromError({})
 
-      expect(mockShow).toHaveBeenCalledWith({
-        props: expect.objectContaining({
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
           body: 'An unexpected error occurred',
         }),
-      })
+      )
     })
   })
 
@@ -180,7 +183,159 @@ describe('useAppToast', () => {
     it('provides access to BVN toast', () => {
       const toast = useAppToast()
       expect(toast.raw).toBeDefined()
-      expect(toast.raw.show).toBe(mockShow)
+      expect(toast.raw.create).toBe(mockCreate)
+    })
+  })
+
+  describe('successWithUndo', () => {
+    it('calls create with slots pattern for interactive toast', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn()
+
+      await toast.successWithUndo('Item deleted', onUndo)
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success',
+          variant: 'success',
+          // Uses slots pattern, not body
+          slots: expect.objectContaining({
+            default: expect.any(Function),
+          }),
+        }),
+        { resolveOnHide: true },
+      )
+    })
+
+    it('accepts custom title', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn()
+
+      await toast.successWithUndo('Item deleted', onUndo, 'Deleted')
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Deleted',
+        }),
+        expect.anything(),
+      )
+    })
+
+    it('has longer delay (8 seconds) for undo toasts', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn()
+
+      await toast.successWithUndo('Item deleted', onUndo)
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelValue: 8000, // Longer delay for undo opportunity
+        }),
+        expect.anything(),
+      )
+    })
+
+    it('does NOT call onUndo when toast times out normally', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn()
+
+      // Mock: toast dismissed normally (no undo clicked)
+      // BvTriggerableEvent has trigger property, ok is derived from trigger
+      mockCreate.mockResolvedValueOnce({ trigger: undefined, ok: undefined })
+
+      await toast.successWithUndo('Item deleted', onUndo)
+
+      expect(onUndo).not.toHaveBeenCalled()
+    })
+
+    it('calls onUndo when user clicks Undo button', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn().mockResolvedValue(undefined)
+
+      // Mock: user clicked undo - BvTriggerableEvent with trigger: 'undo'
+      // ok is null for custom triggers (not 'ok' or 'cancel')
+      mockCreate.mockResolvedValueOnce({ trigger: 'undo', ok: null })
+
+      await toast.successWithUndo('Item deleted', onUndo)
+
+      expect(onUndo).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows error toast when onUndo callback fails', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn().mockRejectedValue(new Error('Undo failed'))
+
+      // Mock: user clicked undo - BvTriggerableEvent with trigger: 'undo'
+      mockCreate.mockResolvedValueOnce({ trigger: 'undo', ok: null })
+
+      await toast.successWithUndo('Item deleted', onUndo)
+
+      // onUndo was called
+      expect(onUndo).toHaveBeenCalled()
+
+      // Error toast was shown (second call to mockCreate)
+      expect(mockCreate).toHaveBeenCalledTimes(2)
+      expect(mockCreate).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          title: 'Error',
+          variant: 'danger',
+          body: 'Undo failed',
+        }),
+      )
+    })
+
+    it('slot function renders message and Undo button', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn()
+
+      await toast.successWithUndo('Item deleted', onUndo)
+
+      // Get the slots from the create call
+      const createCall = mockCreate.mock.calls[0][0]
+      const slotFn = createCall.slots.default
+
+      // Call the slot function with a mock hide function
+      const mockHide = vi.fn()
+      const vnodes = slotFn({ hide: mockHide })
+
+      // Verify VNode structure - returns array with wrapper div
+      expect(vnodes).toBeDefined()
+      expect(Array.isArray(vnodes)).toBe(true)
+      expect(vnodes).toHaveLength(1)
+
+      // The wrapper div contains message span and button
+      const wrapperDiv = vnodes[0]
+      expect(wrapperDiv.type).toBe('div')
+      expect(wrapperDiv.children).toHaveLength(2)
+
+      // First child is the message span
+      expect(wrapperDiv.children[0].type).toBe('span')
+      expect(wrapperDiv.children[0].children).toBe('Item deleted')
+
+      // Second child is the Undo button
+      expect(wrapperDiv.children[1].type).toBe('button')
+      expect(wrapperDiv.children[1].children).toBe('Undo')
+    })
+
+    it('clicking Undo button calls hide with "undo" trigger', async () => {
+      const toast = useAppToast()
+      const onUndo = vi.fn()
+
+      await toast.successWithUndo('Item deleted', onUndo)
+
+      // Get the slots from the create call
+      const createCall = mockCreate.mock.calls[0][0]
+      const slotFn = createCall.slots.default
+
+      // Call the slot function with a mock hide function
+      const mockHide = vi.fn()
+      const vnodes = slotFn({ hide: mockHide })
+
+      // Get the button and simulate click
+      const undoButton = vnodes[0].children[1]
+      undoButton.props.onClick()
+
+      expect(mockHide).toHaveBeenCalledWith('undo')
     })
   })
 })

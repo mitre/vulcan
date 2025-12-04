@@ -24,14 +24,14 @@ export interface ToastOptions {
   delay?: number // milliseconds before auto-hide
   solid?: boolean
   noCloseButton?: boolean
-  pos?: 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
+  pos?: 'top-start' | 'top-center' | 'top-end' | 'middle-start' | 'middle-center' | 'middle-end' | 'bottom-start' | 'bottom-center' | 'bottom-end'
 }
 
 const defaultOptions: ToastOptions = {
   autoHide: true,
   delay: 5000,
   solid: true,
-  pos: 'top-right',
+  pos: 'top-end',
 }
 
 /**
@@ -43,22 +43,24 @@ export function useAppToast() {
   /**
    * Show a toast with custom options
    * Uses Bootstrap-Vue-Next's create method (show is deprecated)
+   *
+   * API per BVN source code (useToast/index.ts):
+   * - Properties go directly on the object, NOT inside a 'props' wrapper
+   * - Use 'modelValue' (not 'value') for auto-hide timing
+   * - Use 'pos' for positioning (maps to 'position' internally)
    */
   function show(message: string | VNode, options: ToastOptions = {}) {
     const opts = { ...defaultOptions, ...options }
 
-    // Use create instead of deprecated show method
-    const toastMethod = bvnToast.create || bvnToast.show
-    toastMethod?.({
-      props: {
-        title: opts.title,
-        variant: opts.variant,
-        solid: opts.solid,
-        noCloseButton: opts.noCloseButton,
-        body: message,
-        pos: opts.pos,
-        value: opts.autoHide ? opts.delay : true, // number = auto-hide after ms, true = stay visible
-      },
+    // Use create method - properties go directly on object, no props wrapper!
+    bvnToast.create({
+      title: opts.title,
+      variant: opts.variant,
+      solid: opts.solid,
+      noCloseButton: opts.noCloseButton,
+      body: message,
+      pos: opts.pos,
+      modelValue: opts.autoHide ? opts.delay : true, // number = auto-hide after ms, true = stay visible
     })
   }
 
@@ -140,9 +142,55 @@ export function useAppToast() {
     error(message)
   }
 
+  /**
+   * Show success toast with an Undo button (Gmail/Outlook pattern)
+   * Uses BVN slots pattern with hide callback for proper interaction
+   * Toast stays visible for 8 seconds or until user interacts
+   */
+  async function successWithUndo(message: string, onUndo: () => void | Promise<void>, title = 'Success') {
+    // Use slots pattern with hide callback - the correct BVN way
+    const result = await bvnToast.create(
+      {
+        title,
+        variant: 'success',
+        solid: true,
+        pos: 'top-end',
+        modelValue: 8000, // 8 seconds for undo actions
+        noCloseButton: false,
+        slots: {
+          default: ({ hide }: { hide: (trigger?: string) => void }) => [
+            h('div', { class: 'd-flex align-items-center justify-content-between gap-3' }, [
+              h('span', message),
+              h(
+                'button',
+                {
+                  class: 'btn btn-sm btn-outline-light',
+                  onClick: () => hide('undo'),
+                },
+                'Undo',
+              ),
+            ]),
+          ],
+        },
+      },
+      { resolveOnHide: true },
+    )
+
+    // Check if user clicked Undo
+    if (result && typeof result === 'object' && 'trigger' in result && result.trigger === 'undo') {
+      try {
+        await onUndo()
+      }
+      catch (err) {
+        error('Undo failed')
+      }
+    }
+  }
+
   return {
     show,
     success,
+    successWithUndo,
     error,
     warning,
     info,
