@@ -7,16 +7,33 @@
 import type { IPagination, RuleSeverity, RuleStatus } from '@/types'
 import { RULE_SEVERITIES, RULE_STATUSES, SEVERITY_MAP } from '@/composables'
 
+/**
+ * Lock status filter options
+ */
+export type LockFilter = 'all' | 'locked' | 'unlocked'
+
+/**
+ * Review status filter options
+ */
+export type ReviewFilter = 'all' | 'pending' | 'changes_requested' | 'approved' | 'none'
+
+/**
+ * Satisfies status filter options
+ */
+export type SatisfiesFilter = 'all' | 'satisfies_others' | 'satisfied_by' | 'no_satisfaction'
+
 interface Props {
   totalCount: number
   filteredCount: number
   showNestedRules: boolean
+  hasSatisfiesRelationships?: boolean
   pagination?: IPagination | null
   loading?: boolean
   showFindReplace?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  hasSatisfiesRelationships: false,
   showFindReplace: false,
 })
 
@@ -29,6 +46,9 @@ const emit = defineEmits<{
 const searchQuery = defineModel<string>('search', { default: '' })
 const filterStatus = defineModel<RuleStatus | 'all'>('filterStatus', { default: 'all' })
 const filterSeverity = defineModel<RuleSeverity | 'all'>('filterSeverity', { default: 'all' })
+const filterLock = defineModel<LockFilter>('filterLock', { default: 'all' })
+const filterReview = defineModel<ReviewFilter>('filterReview', { default: 'all' })
+const filterSatisfies = defineModel<SatisfiesFilter>('filterSatisfies', { default: 'all' })
 const groupByStatus = defineModel<boolean>('groupByStatus', { default: false })
 </script>
 
@@ -67,30 +87,86 @@ const groupByStatus = defineModel<boolean>('groupByStatus', { default: false })
       </option>
     </select>
 
-    <!-- Group toggle -->
-    <div class="form-check form-check-inline mb-0">
+    <!-- Lock filter -->
+    <select v-model="filterLock" class="form-select form-select-sm" style="max-width: 120px;">
+      <option value="all">
+        All Locks
+      </option>
+      <option value="locked">
+        Locked
+      </option>
+      <option value="unlocked">
+        Unlocked
+      </option>
+    </select>
+
+    <!-- Review filter -->
+    <select v-model="filterReview" class="form-select form-select-sm" style="max-width: 150px;">
+      <option value="all">
+        All Reviews
+      </option>
+      <option value="pending">
+        Pending Review
+      </option>
+      <option value="changes_requested">
+        Changes Requested
+      </option>
+      <option value="approved">
+        Approved
+      </option>
+      <option value="none">
+        No Review
+      </option>
+    </select>
+
+    <!-- Satisfies filter -->
+    <select v-model="filterSatisfies" class="form-select form-select-sm" style="max-width: 150px;">
+      <option value="all">
+        All Satisfies
+      </option>
+      <option value="satisfies_others">
+        Satisfies Others
+      </option>
+      <option value="satisfied_by">
+        Satisfied By
+      </option>
+      <option value="no_satisfaction">
+        No Satisfaction
+      </option>
+    </select>
+
+    <!-- Group toggle (switch style) -->
+    <div class="form-check form-switch form-check-inline mb-0">
       <input
         id="groupByStatus"
         v-model="groupByStatus"
         type="checkbox"
         class="form-check-input"
+        role="switch"
       >
       <label class="form-check-label small" for="groupByStatus">
         Group
       </label>
     </div>
 
-    <!-- Show nested toggle -->
-    <div class="form-check form-check-inline mb-0">
+    <!-- Show nested toggle (switch style, disabled when no relationships) -->
+    <div class="form-check form-switch form-check-inline mb-0">
       <input
         id="showNested"
         :checked="showNestedRules"
+        :disabled="!hasSatisfiesRelationships"
         type="checkbox"
         class="form-check-input"
+        role="switch"
+        :title="hasSatisfiesRelationships ? 'Toggle visibility of satisfied rules' : 'No satisfaction relationships in this component'"
         @change="emit('toggleNested')"
       >
-      <label class="form-check-label small" for="showNested">
-        Merged
+      <label
+        class="form-check-label small"
+        for="showNested"
+        :class="{ 'text-muted': !hasSatisfiesRelationships }"
+      >
+        Show Satisfied
       </label>
     </div>
 
@@ -161,3 +237,13 @@ const groupByStatus = defineModel<boolean>('groupByStatus', { default: false })
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Full-bleed background: extends edge-to-edge while content stays in container */
+.requirements-toolbar {
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  padding-left: calc(50vw - 50%);
+  padding-right: calc(50vw - 50%);
+}
+</style>

@@ -44,6 +44,12 @@ function getWidth(status: RuleStatus): string {
 </template>
 
 <style scoped>
+/* Full-bleed background: extends edge-to-edge while content stays in container */
+.status-progress {
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+}
+
 .progress-segment {
   transition: width 0.3s ease;
 }
