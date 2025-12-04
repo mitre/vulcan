@@ -152,6 +152,8 @@ export function useRules() {
 
   /**
    * Remove a satisfaction relationship (unmerge)
+   * Shows toast with Undo button (Gmail/Outlook pattern) for 8 seconds
+   * If user clicks Undo, the relationship is restored via API
    */
   async function removeSatisfaction(
     ruleId: number,
@@ -160,11 +162,23 @@ export function useRules() {
   ): Promise<boolean> {
     try {
       await store.removeSatisfaction(ruleId, satisfiedByRuleId, successCallback)
-      toast.success('Requirements unmerged')
+
+      // Show success toast with Undo action using the slots pattern
+      // DON'T await - let the toast run independently so the dialog can close
+      // If user clicks Undo within 8 seconds, the callback restores the relationship
+      toast.successWithUndo(
+        'Satisfaction removed',
+        async () => {
+          // Undo: re-add the satisfaction relationship via API
+          await store.addSatisfaction(ruleId, satisfiedByRuleId)
+          toast.success('Satisfaction restored')
+        },
+      )
+
       return true
     }
     catch (err) {
-      toast.error('Failed to unmerge requirements')
+      toast.error('Failed to remove satisfaction')
       return false
     }
   }

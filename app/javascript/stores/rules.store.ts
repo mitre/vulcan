@@ -232,20 +232,10 @@ export const useRulesStore = defineStore('rules', () => {
       // Update full cache
       fullRulesCache.value.set(id, fullRule)
 
-      // Update slim list with relevant fields
+      // Update slim list with all relevant fields including satisfies data
       const index = rules.value.findIndex(r => r.id === id)
       if (index !== -1) {
-        rules.value.splice(index, 1, {
-          id: fullRule.id,
-          rule_id: fullRule.rule_id,
-          version: fullRule.version,
-          title: fullRule.title,
-          status: fullRule.status,
-          rule_severity: fullRule.rule_severity,
-          locked: fullRule.locked,
-          review_requestor_id: fullRule.review_requestor_id,
-          is_merged: !!fullRule.satisfied_by?.length,
-        })
+        rules.value.splice(index, 1, fullRuleToSlim(fullRule))
       }
 
       // Update currentRule if it's the one being refreshed
@@ -277,6 +267,42 @@ export const useRulesStore = defineStore('rules', () => {
   }
 
   /**
+   * Convert a full rule to slim rule format
+   * Used to update slim list after fetching/updating full rule
+   */
+  function fullRuleToSlim(fullRule: IRule): ISlimRule {
+    // Compute satisfies_rules from the full rule's satisfies array
+    // The full rule has satisfies with { id, rule_id, title, fixtext }
+    const satisfiesRules = fullRule.satisfies?.map(s => ({
+      id: s.id,
+      rule_id: s.rule_id,
+      title: s.title || '',
+    })) || []
+
+    // Compute satisfied_by from the full rule (parent references)
+    const satisfiedBy = fullRule.satisfied_by?.map(s => ({
+      id: s.id,
+      rule_id: s.rule_id,
+      title: s.title || '',
+    })) || []
+
+    return {
+      id: fullRule.id,
+      rule_id: fullRule.rule_id,
+      version: fullRule.version,
+      title: fullRule.title,
+      status: fullRule.status,
+      rule_severity: fullRule.rule_severity,
+      locked: fullRule.locked,
+      review_requestor_id: fullRule.review_requestor_id,
+      is_merged: !!fullRule.satisfied_by?.length,
+      satisfies_count: fullRule.satisfies?.length || 0,
+      satisfies_rules: satisfiesRules,
+      satisfied_by: satisfiedBy,
+    }
+  }
+
+  /**
    * Update full rule in cache
    */
   function updateFullRuleLocal(rule: IRule) {
@@ -301,20 +327,10 @@ export const useRulesStore = defineStore('rules', () => {
       // Update full cache
       fullRulesCache.value.set(id, fullRule)
 
-      // Update slim list with relevant fields
+      // Update slim list with all relevant fields including satisfies data
       const index = rules.value.findIndex(r => r.id === id)
       if (index !== -1) {
-        rules.value.splice(index, 1, {
-          id: fullRule.id,
-          rule_id: fullRule.rule_id,
-          version: fullRule.version,
-          title: fullRule.title,
-          status: fullRule.status,
-          rule_severity: fullRule.rule_severity,
-          locked: fullRule.locked,
-          review_requestor_id: fullRule.review_requestor_id,
-          is_merged: !!fullRule.satisfied_by?.length,
-        })
+        rules.value.splice(index, 1, fullRuleToSlim(fullRule))
       }
 
       // Update currentRule

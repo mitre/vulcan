@@ -101,10 +101,11 @@ export function createRuleSatisfaction(ruleId: number, satisfiedByRuleId: number
 /**
  * Remove a rule satisfaction (unmerge)
  * DELETE /rule_satisfactions/:id
+ * Rails controller expects rule_id and satisfied_by_rule_id as params
  */
 export function deleteRuleSatisfaction(ruleId: number, satisfiedByRuleId: number) {
   return http.delete(`/rule_satisfactions/${ruleId}`, {
-    data: {
+    params: {
       rule_id: ruleId,
       satisfied_by_rule_id: satisfiedByRuleId,
     },

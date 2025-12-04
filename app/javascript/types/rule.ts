@@ -139,6 +139,7 @@ export interface ISrgRuleAttributes {
 export interface IRuleSatisfaction {
   id: number
   rule_id: string
+  title?: string
   fixtext?: string
 }
 
@@ -147,6 +148,13 @@ export interface IRuleSatisfaction {
  * Contains only fields needed for table display (from RuleIndexBlueprint)
  * Full data is fetched on-demand when user opens a rule
  */
+/** Slim reference to a satisfied rule (for table row-details) */
+export interface ISatisfiedRuleRef {
+  id: number
+  rule_id: string
+  title: string
+}
+
 export interface ISlimRule {
   id: number
   rule_id: string
@@ -156,7 +164,12 @@ export interface ISlimRule {
   rule_severity: RuleSeverity
   locked: boolean
   review_requestor_id?: number | null
+  changes_requested?: boolean
   is_merged: boolean
+  satisfies_count?: number
+  satisfies_rules?: ISatisfiedRuleRef[]
+  satisfied_by?: ISatisfiedRuleRef[]
+  updated_at?: string
 }
 
 /**

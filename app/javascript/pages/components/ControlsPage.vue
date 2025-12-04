@@ -12,7 +12,7 @@
 
 import type { ISlimRule } from '@/types'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getComponent } from '@/apis/components.api'
 import { getProject } from '@/apis/projects.api'
 import {
@@ -27,8 +27,9 @@ import { useAuthStore } from '@/stores'
 type LayoutMode = 'table' | 'focus'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
-const { fetchRules, initSelection, selectRule, rules } = useRules()
+const { fetchRules, initSelection, selectRule, currentRuleId } = useRules()
 
 // Layout mode - persist to localStorage
 const layoutMode = ref<LayoutMode>(
@@ -60,21 +61,51 @@ if (!project) {
 await fetchRules(componentId)
 initSelection(componentId)
 
-// Handle deep-link from search: ?rule=123
-// Select the rule after rules are loaded
+/**
+ * Update URL with rule query parameter
+ * Always uses push to add history entries (browser back works for all navigation)
+ */
+function updateUrl(query: Record<string, string>) {
+  router.push({ query })
+}
+
+// Handle deep-link from search: ?rule=123&mode=focus
+// Select the rule and set mode after rules are loaded
 onMounted(async () => {
-  const ruleIdParam = route.query.rule
-  if (ruleIdParam) {
-    const ruleId = Number(ruleIdParam)
-    if (ruleId) {
-      // selectRule will fetch the full rule data if not in cache
-      // No need to check if it's in current page - the store handles it
-      await selectRule(ruleId)
-      // Switch to focus mode for deep-linked rules
+  const mode = route.query.mode as LayoutMode | undefined
+  const ruleId = route.query.rule ? Number(route.query.rule) : null
+
+  if (mode) {
+    layoutMode.value = mode
+  }
+
+  if (ruleId) {
+    await selectRule(ruleId)
+    // If rule is specified but mode isn't, default to focus
+    if (!mode) {
       layoutMode.value = 'focus'
     }
   }
 })
+
+// Watch for route query changes (browser back/forward navigation)
+watch(
+  () => route.query,
+  async (query) => {
+    const mode = query.mode as LayoutMode | undefined
+    const ruleId = query.rule ? Number(query.rule) : null
+
+    // Update layout mode from URL
+    if (mode && mode !== layoutMode.value) {
+      layoutMode.value = mode
+    }
+
+    // Update selected rule from URL
+    if (ruleId && ruleId !== currentRuleId.value) {
+      await selectRule(ruleId)
+    }
+  },
+)
 
 // Get current user from auth store
 const currentUserId = computed(() => authStore.user?.id ?? 0)
@@ -115,12 +146,23 @@ const pageTitle = computed(() => {
 // Event handlers - receive slim rule from table
 function handleSelectRule(rule: ISlimRule) {
   selectRule(rule.id)
+  // Don't update URL on table selection - only on focus mode
 }
 
 function handleOpenFocus(rule: ISlimRule) {
   selectRule(rule.id)
   layoutMode.value = 'focus'
+  updateUrl({ rule: String(rule.id), mode: 'focus' })
 }
+
+// Watch for layout mode changes to sync URL
+watch(layoutMode, (newMode) => {
+  if (newMode === 'table') {
+    updateUrl({ mode: 'table' })
+  } else if (newMode === 'focus' && currentRuleId.value) {
+    updateUrl({ rule: String(currentRuleId.value), mode: 'focus' })
+  }
+})
 </script>
 
 <template>
