@@ -128,8 +128,27 @@ async function handleDelete(id: number) {
   }
 }
 
-// Initial load
-loadData()
+// Initial load - fetch all types for accurate tab counts
+async function initialLoad() {
+  loading.value = true
+  error.value = null
+  try {
+    // Load all types in parallel for tab badge counts
+    await Promise.all([
+      stigBenchmarks.refresh(),
+      srgBenchmarks.refresh(),
+      componentBenchmarks.refresh(),
+    ])
+  }
+  catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to load data'
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+initialLoad()
 </script>
 
 <template>

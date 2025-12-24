@@ -14,12 +14,17 @@ import { srgToBenchmark } from '@/types'
 const route = useRoute()
 const { fetchById } = useSrgs()
 
-// Top-level await makes this component suspensible
+// Get ID from route params - validate it's a valid number
 const id = Number(route.params.id)
+if (!id || Number.isNaN(id)) {
+  throw new Error(`Invalid SRG ID: ${route.params.id}`)
+}
+
+// Top-level await makes this component suspensible
 const srg = await fetchById(id)
 
 if (!srg) {
-  throw new Error('SRG not found')
+  throw new Error(`SRG with ID ${id} not found`)
 }
 
 const benchmark = srgToBenchmark(srg)

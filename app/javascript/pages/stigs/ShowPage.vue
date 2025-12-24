@@ -14,12 +14,17 @@ import { stigToBenchmark } from '@/types'
 const route = useRoute()
 const { fetchById } = useStigs()
 
-// Top-level await makes this component suspensible
+// Get ID from route params - validate it's a valid number
 const id = Number(route.params.id)
+if (!id || Number.isNaN(id)) {
+  throw new Error(`Invalid STIG ID: ${route.params.id}`)
+}
+
+// Top-level await makes this component suspensible
 const stig = await fetchById(id)
 
 if (!stig) {
-  throw new Error('STIG not found')
+  throw new Error(`STIG with ID ${id} not found`)
 }
 
 const benchmark = stigToBenchmark(stig)
