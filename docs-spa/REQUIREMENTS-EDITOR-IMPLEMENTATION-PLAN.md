@@ -11,10 +11,15 @@
 |-------|-------|--------------|-------------|
 | **1** | Enhanced Table View | None | Foundation |
 | **2** | Focus View Refactor | Phase 1 | Core editor |
+| **2.x** | NIST Family Grouping | Phase 1 | ~8-11 hours |
 | **3** | Reference Panel | Phase 2 | Key feature |
+| **3.x** | Meta-Category Grouping | Phase 2.x | ~14-18 hours |
 | **4** | Field-Level Locking | Phase 2 | Backend + Frontend |
 | **5** | Review Integration | Phase 4 | Workflow |
 | **6** | Automation Panel | Phase 2 | Future feature |
+
+**Architecture Docs:**
+- `docs-spa/REQUIREMENTS-GROUPING-ARCHITECTURE.md` - NIST/Meta-category grouping details
 
 ---
 
@@ -105,6 +110,45 @@
 
 ---
 
+## Phase 2.x: NIST Family Grouping
+
+**Goal**: Group requirements by security focus area using existing NIST control family data.
+**Reference**: `docs-spa/REQUIREMENTS-GROUPING-ARCHITECTURE.md`
+
+### 2.x.1 Backend: Add NIST Fields to Serializer
+- Add `nist_family` (2-char code: AC, AU, CM, etc.)
+- Add `nist_control` (full control: AC-2, AU-3, etc.)
+- Extract from existing `nist_control_family` method
+- Add tests to `rule_serializer_spec.rb`
+
+### 2.x.2 Frontend: Grouping Composable
+- Create `useRequirementsGrouping.ts`
+- `groupedByNist` computed property
+- NIST family name mapping (AC → "Access Control")
+- Group statistics (total, completed per group)
+
+### 2.x.3 UI: Group By Dropdown
+- Add "Group by" dropdown to `RequirementsToolbar.vue`
+- Options: None, NIST Family, Severity, Status
+- Persist selection in localStorage
+
+### 2.x.4 UI: Collapsible Group Headers
+- Modify `RequirementsTable.vue` for grouped rendering
+- Collapsible group headers with count/progress
+- Remember expand/collapse state
+
+### 2.x.5 UI: Group Progress Indicators
+- Show progress per group (12/45 ✓)
+- Visual progress bar in header
+- Filter to specific group on click
+
+**Tests Required:**
+- rule_serializer_spec.rb (nist fields)
+- useRequirementsGrouping.spec.ts
+- Table grouping integration tests
+
+---
+
 ## Phase 3: Reference Panel
 
 **Goal**: Side-by-side reference with scroll-spy sync.
@@ -160,6 +204,62 @@
 - RelatedRulesPanel.spec.ts
 - SatisfiesPanel.spec.ts
 - Smart suggestion tests
+
+---
+
+## Phase 3.x: Meta-Category Grouping (Future)
+
+**Goal**: Higher-level business-friendly groupings that combine related NIST families.
+**Reference**: `docs-spa/REQUIREMENTS-GROUPING-ARCHITECTURE.md`
+
+### 3.x.1 Database: Focus Areas Tables
+```ruby
+create_table :focus_areas do |t|
+  t.string :code, null: false
+  t.string :name, null: false
+  t.text :description
+  t.string :icon
+  t.integer :display_order, default: 0
+  t.timestamps
+end
+
+create_table :focus_area_nist_mappings do |t|
+  t.references :focus_area, null: false
+  t.string :nist_family, null: false
+  t.timestamps
+end
+```
+
+### 3.x.2 Seed Data: Default Meta-Categories
+| Meta-Category | NIST Families |
+|--------------|---------------|
+| Identity & Access | AC, IA |
+| Audit & Monitoring | AU, SI |
+| System Hardening | CM, SC |
+| Data Protection | MP |
+| Operations | MA, IR, CP |
+| Governance | PL, PM, RA, CA |
+
+### 3.x.3 Backend: FocusArea Model & API
+- Create `FocusArea` model with NIST mappings
+- API: GET /api/focus_areas
+- Add `focus_area` to rule serializer (derived from nist_family)
+
+### 3.x.4 Frontend: Dashboard Summary View
+- Create `FocusAreaDashboard.vue`
+- Card-based display per meta-category
+- Progress indicators per category
+- Click to drill down to NIST families
+
+### 3.x.5 Admin UI (Optional)
+- Allow admins to customize meta-categories
+- Drag-and-drop NIST family assignment
+- Add/remove categories
+
+**Tests Required:**
+- focus_area_spec.rb
+- FocusAreaDashboard.spec.ts
+- API integration tests
 
 ---
 
@@ -260,23 +360,30 @@ add_column :rules, :fix_locked_by_id, :bigint
 ## Implementation Order
 
 ```
-Week 1-2: Phase 1 (Table View)
-├─ 1.1 Summary Cards
-├─ 1.2 Lock Progress Column
-├─ 1.3 Review Status Column
-├─ 1.4 Satisfies Column & Card
-├─ 1.5 Enhanced Filters (Lock, Review, Satisfies)
-├─ 1.6 Bulk Satisfaction Actions
-└─ 1.7 Collapsible Groups
+Phase 1 (Table View) - COMPLETE ✓
+├─ 1.1 Summary Cards ✓
+├─ 1.2 Lock Progress Column ✓
+├─ 1.3 Review Status Column ✓
+├─ 1.4 Satisfies Column & Card ✓
+├─ 1.5 Enhanced Filters (Lock, Review, Satisfies) ✓
+├─ 1.6 Bulk Satisfaction Actions ✓
+└─ 1.7 Collapsible Groups ✓
 
-Week 3-4: Phase 2 (Focus View)
+Phase 2 (Focus View) - Next
 ├─ 2.1 Smart Header
 ├─ 2.2 Editor Fields
 ├─ 2.3 Field Expand Modal
 ├─ 2.4 Slideout Infrastructure
 └─ 2.5 Keyboard Navigation
 
-Week 5-6: Phase 3 (Reference Panel)
+Phase 2.x (NIST Grouping) - Can be done in parallel with Phase 2
+├─ 2.x.1 Backend: Add NIST fields to serializer
+├─ 2.x.2 Frontend: useRequirementsGrouping composable
+├─ 2.x.3 UI: Group by dropdown
+├─ 2.x.4 UI: Collapsible group headers
+└─ 2.x.5 UI: Group progress indicators
+
+Phase 3 (Reference Panel)
 ├─ 3.1 Reference Panel
 ├─ 3.2 Reference Tabs
 ├─ 3.3 Scroll-Spy Sync
@@ -286,14 +393,21 @@ Week 5-6: Phase 3 (Reference Panel)
 ├─ 3.7 Smart Satisfaction Suggestions
 └─ 3.8 Satisfies Slideout
 
-Week 7-8: Phase 4 (Field Locking)
+Phase 3.x (Meta-Categories) - Future
+├─ 3.x.1 Database: focus_areas tables
+├─ 3.x.2 Seed data
+├─ 3.x.3 Backend: FocusArea model & API
+├─ 3.x.4 Frontend: Dashboard summary view
+└─ 3.x.5 Admin UI (optional)
+
+Phase 4 (Field Locking)
 ├─ 4.1 Database Migration
 ├─ 4.2 Backend API
 ├─ 4.3 Frontend Store
 ├─ 4.4 Field Lock UI
 └─ 4.5 Lock Actions
 
-Week 9: Phase 5 (Reviews)
+Phase 5 (Reviews)
 ├─ 5.1 Reviews Slideout
 ├─ 5.2 Review Status
 ├─ 5.3 Review Filters
@@ -307,18 +421,26 @@ Future: Phase 6 (Automation)
 ## Dependencies Diagram
 
 ```
-Phase 1: Table View (standalone)
+Phase 1: Table View (standalone) ✓ COMPLETE
     │
-    └──► Phase 2: Focus View Refactor
+    ├──► Phase 2: Focus View Refactor
+    │         │
+    │         ├──► Phase 3: Reference Panel
+    │         │         │
+    │         │         └──► Phase 3.x: Meta-Category Grouping
+    │         │
+    │         ├──► Phase 4: Field Locking
+    │         │         │
+    │         │         └──► Phase 5: Review Integration
+    │         │
+    │         └──► Phase 6: Automation Panel (future)
+    │
+    └──► Phase 2.x: NIST Family Grouping (parallel)
               │
-              ├──► Phase 3: Reference Panel
-              │
-              ├──► Phase 4: Field Locking
-              │         │
-              │         └──► Phase 5: Review Integration
-              │
-              └──► Phase 6: Automation Panel (future)
+              └──► Phase 3.x: Meta-Category Grouping
 ```
+
+**Note**: Phase 2.x (NIST Grouping) can be implemented in parallel with Phase 2 (Focus View) since they don't share dependencies. Phase 3.x builds on 2.x.
 
 ---
 
@@ -384,9 +506,35 @@ app/javascript/
 │   ├── useKeyboardNav.ts
 │   ├── useKeyboardNav.spec.ts
 │   ├── useSatisfactions.ts
-│   └── useSatisfactions.spec.ts
+│   ├── useSatisfactions.spec.ts
+│   ├── useRequirementsGrouping.ts        # Phase 2.x
+│   └── useRequirementsGrouping.spec.ts   # Phase 2.x
+│
+├── components/dashboard/                  # Phase 3.x
+│   ├── FocusAreaDashboard.vue
+│   └── FocusAreaCard.vue
+```
+
+**Backend Files (Phase 3.x):**
+```
+app/models/
+├── focus_area.rb
+└── focus_area_nist_mapping.rb
+
+app/controllers/api/
+└── focus_areas_controller.rb
+
+app/blueprints/
+└── focus_area_blueprint.rb
+
+db/migrate/
+└── xxx_create_focus_areas.rb
+
+spec/models/
+├── focus_area_spec.rb
+└── focus_area_nist_mapping_spec.rb
 ```
 
 ---
 
-*Last Updated: 2025-12-02*
+*Last Updated: 2025-12-05*
