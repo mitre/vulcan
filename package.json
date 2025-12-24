@@ -14,7 +14,7 @@
     "axios": "1.12.2",
     "bootstrap": "5.3.8",
     "bootstrap-icons": "^1.13.1",
-    "bootstrap-vue-next": "^0.40.8",
+    "bootstrap-vue-next": "^0.42.0",
     "dompurify": "^3.3.0",
     "fuse.js": "^7.1.0",
     "jquery": "^3.7.1",
