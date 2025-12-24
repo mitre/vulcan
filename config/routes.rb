@@ -81,6 +81,9 @@ Rails.application.routes.draw do
   # Alias rules#index to controls for convenience
   get '/components/:component_id/controls', to: 'rules#index'
 
+  # Editor2 demo page (must come before :stig_id catch-all)
+  get '/components/:component_id/editor2', to: 'projects#index'
+
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 
@@ -118,6 +121,12 @@ Rails.application.routes.draw do
   get '/admin/content/benchmarks', to: 'admin/dashboard#index'
   get '/admin/content/stigs', to: 'admin/dashboard#index'
   get '/admin/content/srgs', to: 'admin/dashboard#index'
+
+  # Experimental routes (development/test only)
+  # Load experimental UI prototypes that are not production-ready
+  if Rails.env.development? || Rails.env.test?
+    draw(:experimental)
+  end
 
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
 end

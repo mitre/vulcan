@@ -2,6 +2,7 @@
 // Using lazy loading for code splitting
 
 import type { RouteRecordRaw } from 'vue-router'
+import experimentalRoutes from './experimental'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -127,5 +128,11 @@ const routes: RouteRecordRaw[] = [
     ],
   },
 ]
+
+// Load experimental routes in development only
+// These are UI prototypes that should not be accessible in production
+if (import.meta.env.DEV) {
+  routes.push(...experimentalRoutes)
+}
 
 export default routes
