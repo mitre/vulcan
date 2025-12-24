@@ -9,7 +9,7 @@
  */
 
 import type { IRule } from '@/types'
-import { BDropdown, BDropdownItem, BDropdownDivider } from 'bootstrap-vue-next'
+import { BDropdown, BDropdownDivider, BDropdownItem } from 'bootstrap-vue-next'
 import { computed } from 'vue'
 
 // Props

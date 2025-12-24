@@ -47,13 +47,14 @@ function sortCompare(a: ITableRule, b: ITableRule, key: string): number {
       aVal = a.title
       bVal = b.title
       break
-    case 'rule_severity':
+    case 'rule_severity': {
       // Sort by severity priority: CAT I (high) = 1, CAT II (medium) = 2, CAT III (low) = 3, unknown = 4
       // Lower number = higher priority, so ascending sort shows CAT I first
       const severityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, unknown: 4 }
       aVal = severityOrder[a.rule_severity] ?? 5
       bVal = severityOrder[b.rule_severity] ?? 5
       break
+    }
     default:
       aVal = String(a[key as keyof ITableRule] ?? '')
       bVal = String(b[key as keyof ITableRule] ?? '')

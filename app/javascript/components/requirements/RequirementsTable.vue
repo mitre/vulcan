@@ -177,13 +177,14 @@ function sortCompare(a: ITableRule, b: ITableRule, key: string): number {
       aVal = a.title
       bVal = b.title
       break
-    case 'rule_severity':
+    case 'rule_severity': {
       // Sort by severity priority: CAT I (high) = 1, CAT II (medium) = 2, CAT III (low) = 3, unknown = 4
       // Lower number = higher priority, so ascending sort shows CAT I first
       const severityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, unknown: 4 }
       aVal = severityOrder[a.rule_severity] ?? 5
       bVal = severityOrder[b.rule_severity] ?? 5
       break
+    }
     default:
       aVal = String(a[key as keyof ITableRule] ?? '')
       bVal = String(b[key as keyof ITableRule] ?? '')
@@ -200,10 +201,8 @@ function sortCompare(a: ITableRule, b: ITableRule, key: string): number {
 }
 
 // Selection state for bulk actions
+// Note: selectedRuleIds is defined here, but selectedRules computed is defined after tableItems
 const selectedRuleIds = ref<Set<number>>(new Set())
-const selectedRules = computed(() =>
-  tableItems.value.filter(r => selectedRuleIds.value.has(r.id)),
-)
 
 // Check if any rule in the FULL dataset has satisfaction relationships (for enabling the toggle)
 // This checks ALL rules, not filtered/visible ones
@@ -266,7 +265,7 @@ const tableFields = computed<TableFieldRaw<ITableRule>[]>(() => {
   ]
 })
 
-// Selection handlers
+// Selection handlers - toggleRuleSelection and clearSelection don't need tableItems
 function toggleRuleSelection(rule: ISlimRule) {
   const newSet = new Set(selectedRuleIds.value)
   if (newSet.has(rule.id)) {
@@ -278,32 +277,12 @@ function toggleRuleSelection(rule: ISlimRule) {
   selectedRuleIds.value = newSet
 }
 
-function toggleAllSelection() {
-  if (selectedRuleIds.value.size === tableItems.value.length) {
-    selectedRuleIds.value = new Set()
-  }
-  else {
-    selectedRuleIds.value = new Set(tableItems.value.map(r => r.id))
-  }
-}
-
 function clearSelection() {
   selectedRuleIds.value = new Set()
 }
 
-function selectAll() {
-  selectedRuleIds.value = new Set(tableItems.value.map(r => r.id))
-}
-
-function handleMarkSatisfiedBy() {
-  // TODO: Implement satisfaction modal in Phase 3.8
-  console.log('Mark satisfied by:', selectedRules.value)
-}
-
-function handleRemoveSatisfaction() {
-  // TODO: Implement remove satisfaction in Phase 3.8
-  console.log('Remove satisfaction:', selectedRules.value)
-}
+// Note: toggleAllSelection, selectAll, selectedRules, handleMarkSatisfiedBy, handleRemoveSatisfaction
+// are defined after tableItems computed (they depend on it)
 
 // SatisfiesIndicator event handlers
 function handleNavigateToRule(ruleId: number) {
@@ -501,6 +480,34 @@ const tableItems = computed<ITableRule[]>(() => {
 
   return items
 })
+
+// Selection computed and functions that depend on tableItems
+const selectedRules = computed(() =>
+  tableItems.value.filter(r => selectedRuleIds.value.has(r.id)),
+)
+
+function toggleAllSelection() {
+  if (selectedRuleIds.value.size === tableItems.value.length) {
+    selectedRuleIds.value = new Set()
+  }
+  else {
+    selectedRuleIds.value = new Set(tableItems.value.map(r => r.id))
+  }
+}
+
+function selectAll() {
+  selectedRuleIds.value = new Set(tableItems.value.map(r => r.id))
+}
+
+function handleMarkSatisfiedBy() {
+  // TODO: Implement satisfaction modal in Phase 3.8
+  console.warn('Mark satisfied by:', selectedRules.value)
+}
+
+function handleRemoveSatisfaction() {
+  // TODO: Implement remove satisfaction in Phase 3.8
+  console.warn('Remove satisfaction:', selectedRules.value)
+}
 
 // Row class function for BTable
 function rowClass(item: ITableRule | null): string {

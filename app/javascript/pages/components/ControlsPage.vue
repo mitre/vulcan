@@ -158,7 +158,8 @@ function handleOpenFocus(rule: ISlimRule) {
 watch(layoutMode, (newMode) => {
   if (newMode === 'table') {
     updateUrl({ mode: 'table' })
-  } else if (newMode === 'focus' && currentRuleId.value) {
+  }
+  else if (newMode === 'focus' && currentRuleId.value) {
     updateUrl({ rule: String(currentRuleId.value), mode: 'focus' })
   }
 })
