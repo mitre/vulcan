@@ -97,6 +97,16 @@ class SearchQueryService
       }
     end
 
+    # Patterns that should NOT be split at letter-number boundaries
+    # These are well-known identifiers that users search for as single tokens
+    PRESERVE_PATTERNS = [
+      /\bT\d+(?:\.\d+)?\b/i,    # MITRE ATT&CK Techniques: T1005, T1005.000
+      /\bTA\d+\b/i,             # MITRE ATT&CK Tactics: TA0005
+      /\bM\d+\b/i,              # MITRE ATT&CK Mitigations: M1050
+      /\bCCI-\d+\b/i,           # CCI identifiers: CCI-000366
+      /\b\d+:\d+(?:\.\d+)?\b/   # CIS Controls: 7:9.2, 8:4.8
+    ].freeze
+
     ##
     # Normalize search query for flexible matching
     #
@@ -108,11 +118,30 @@ class SearchQueryService
     # Note: Dots are NOT normalized here - they're handled in expand_filenames
     # to preserve exact matches for filenames like "sshd.conf"
     #
+    # Preserves certain patterns that should not be split:
+    # - MITRE ATT&CK identifiers: T1005, TA0005, M1050
+    # - CCI identifiers: CCI-000366
+    # - CIS Controls: 7:9.2, 8:4.8
+    #
     # @param query [String] the search query
     # @return [String] normalized query
     #
     def normalize(query)
       normalized = query.dup
+
+      # Extract patterns that should be preserved before normalization
+      # Use unicode private use area characters as delimiters (won't appear in normal text)
+      preserved = {}
+      placeholder_counter = 0
+
+      PRESERVE_PATTERNS.each do |pattern|
+        normalized.gsub!(pattern) do |match|
+          placeholder = "\uE000#{placeholder_counter}\uE001"
+          preserved[placeholder] = match
+          placeholder_counter += 1
+          placeholder
+        end
+      end
 
       # Split PascalCase: "RedHat" → "Red Hat"
       # Matches lowercase followed by uppercase
@@ -124,6 +153,11 @@ class SearchQueryService
 
       # Normalize common separators to spaces: "RHEL-9" → "RHEL 9"
       normalized.gsub!(/[-_]/, ' ')
+
+      # Restore preserved patterns
+      preserved.each do |placeholder, original|
+        normalized.gsub!(placeholder, original)
+      end
 
       # Collapse multiple spaces
       normalized.gsub!(/\s+/, ' ')

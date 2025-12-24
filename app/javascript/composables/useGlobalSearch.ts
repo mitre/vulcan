@@ -161,7 +161,7 @@ export function useGlobalSearch(externalSearchTerm?: Ref<string>) {
         })
       }
 
-      // ===== CHILD OBJECTS (content within containers) - show after, limit 10 =====
+      // ===== CHILD OBJECTS (content within containers) =====
 
       // Requirements (rules within components)
       if (rules.value.length > 0) {
@@ -169,7 +169,7 @@ export function useGlobalSearch(externalSearchTerm?: Ref<string>) {
           id: 'requirements',
           label: 'Requirements',
           icon: 'bi-shield-check',
-          items: rules.value.slice(0, 10),
+          items: rules.value,
           ignoreFilter: true,
         })
       }
@@ -180,7 +180,7 @@ export function useGlobalSearch(externalSearchTerm?: Ref<string>) {
           id: 'stig-rules',
           label: 'STIG Requirements',
           icon: 'bi-list-check',
-          items: stigRules.value.slice(0, 10),
+          items: stigRules.value,
           ignoreFilter: true,
         })
       }
@@ -191,7 +191,7 @@ export function useGlobalSearch(externalSearchTerm?: Ref<string>) {
           id: 'srg-rules',
           label: 'SRG Requirements',
           icon: 'bi-list-ul',
-          items: srgRules.value.slice(0, 10),
+          items: srgRules.value,
           ignoreFilter: true,
         })
       }

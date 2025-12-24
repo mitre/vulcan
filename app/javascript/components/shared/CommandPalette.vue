@@ -24,13 +24,14 @@ import {
   DialogRoot,
   DialogTitle,
   ListboxContent,
+  ListboxFilter,
   ListboxGroup,
   ListboxGroupLabel,
   ListboxItem,
   ListboxRoot,
   VisuallyHidden,
 } from 'reka-ui'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import Highlighter from 'vue-highlight-words'
 import { useRouter } from 'vue-router'
 import { useCommandPalette } from '@/composables/useCommandPalette'
@@ -57,16 +58,21 @@ const searchWords = computed(() => {
   return term.split(/\s+/).filter(word => word.length >= 2)
 })
 
+// Track if component is mounted to prevent async operations after unmount
+let isMounted = true
+onUnmounted(() => {
+  isMounted = false
+})
+
 // Focus input when dialog opens
-// Use multiple nextTick cycles to ensure DOM is fully rendered
-watch(open, async (isOpen) => {
+// Use setTimeout to ensure DOM is fully rendered after dialog animation
+watch(open, (isOpen) => {
   if (isOpen) {
-    // Wait for dialog to render, then focus
-    await nextTick()
-    await nextTick()
-    // Use setTimeout as fallback for dialog animation
+    // Use setTimeout for dialog animation - simpler and more reliable than multiple nextTicks
     setTimeout(() => {
-      inputRef.value?.focus()
+      if (isMounted) {
+        inputRef.value?.focus()
+      }
     }, 50)
   }
   else {
@@ -74,71 +80,33 @@ watch(open, async (isOpen) => {
   }
 })
 
-// Track highlighted index for keyboard navigation
-const highlightedIndex = ref(0)
-
-// Flatten all items from groups for keyboard navigation
-const allItems = computed(() => {
-  return groups.value.flatMap(group => group.items)
-})
-
-// Reset highlighted index when results change
-watch(groups, () => {
-  highlightedIndex.value = 0
-})
-
-// Handle keyboard navigation from input
-function handleInputKeydown(event: KeyboardEvent) {
-  const items = allItems.value
-  if (items.length === 0) return
-
-  switch (event.key) {
-    case 'ArrowDown':
-      event.preventDefault()
-      highlightedIndex.value = Math.min(highlightedIndex.value + 1, items.length - 1)
-      scrollToHighlighted()
-      break
-    case 'ArrowUp':
-      event.preventDefault()
-      highlightedIndex.value = Math.max(highlightedIndex.value - 1, 0)
-      scrollToHighlighted()
-      break
-    case 'Enter':
-      event.preventDefault()
-      if (items[highlightedIndex.value]) {
-        handleSelect(items[highlightedIndex.value])
-      }
-      break
-  }
-}
-
-// Scroll highlighted item into view
-function scrollToHighlighted() {
-  nextTick(() => {
-    const highlighted = document.querySelector('.command-palette-item.is-highlighted')
-    highlighted?.scrollIntoView({ block: 'nearest' })
-  })
-}
-
-// Handle item selection
-function handleSelect(item: CommandPaletteItem) {
+// Handle item selection (called by Reka UI's @select event)
+// Reka UI's SelectEvent is CustomEvent<{ originalEvent, value }>
+// We pass the item directly in the template: @select="handleSelect(item)"
+async function handleSelect(item: CommandPaletteItem) {
   if (!item) return
 
   // Add to recent items
   addToRecent(item)
 
-  // Close palette
-  close()
-
-  // Navigate
+  // Navigate using Vue Router for SPA navigation
+  // Per Vue Router docs: await router.push() and close modal AFTER navigation succeeds
+  // https://router.vuejs.org/guide/advanced/navigation-failures
   if (item.to) {
-    router.push(item.to)
+    const failure = await router.push(item.to)
+    // Only close if navigation succeeded (failure is undefined on success)
+    if (!failure) {
+      close()
+    }
   }
   else if (item.href) {
+    // External links open in new tab
     window.open(item.href, '_blank')
+    close()
   }
   else if (item.onSelect) {
     item.onSelect()
+    close()
   }
 }
 
@@ -146,13 +114,6 @@ function handleSelect(item: CommandPaletteItem) {
 function getItemIcon(item: CommandPaletteItem): string {
   if (item.icon) return `bi ${item.icon}`
   return 'bi bi-circle'
-}
-
-// Check if item is currently highlighted
-function isHighlighted(item: CommandPaletteItem): boolean {
-  const items = allItems.value
-  const index = items.findIndex(i => i.id === item.id)
-  return index === highlightedIndex.value
 }
 </script>
 
@@ -175,24 +136,28 @@ function isHighlighted(item: CommandPaletteItem): boolean {
           </DialogDescription>
         </VisuallyHidden>
 
-        <!-- Listbox for navigation -->
+        <!-- Listbox for navigation - highlight-on-hover enables keyboard nav scroll -->
         <ListboxRoot
           class="command-palette-root"
           :model-value="null"
+          highlight-on-hover
           @update:model-value="handleSelect"
         >
-          <!-- Search Input Header -->
+          <!-- Search Input Header with ListboxFilter for native keyboard navigation -->
           <div class="command-palette-header">
             <i class="bi bi-search text-muted" />
-            <input
-              ref="inputRef"
+            <ListboxFilter
               v-model="searchTerm"
-              type="text"
-              class="command-palette-input"
-              placeholder="Search projects, components, requirements..."
-              @keydown="handleInputKeydown"
-              @keydown.escape="close"
+              as-child
             >
+              <input
+                ref="inputRef"
+                type="text"
+                class="command-palette-input"
+                placeholder="Search projects, components, requirements..."
+                @keydown.escape="close"
+              >
+            </ListboxFilter>
             <span v-if="loading" class="spinner-border spinner-border-sm text-muted" />
             <kbd v-else class="command-palette-kbd">ESC</kbd>
           </div>
@@ -230,7 +195,7 @@ function isHighlighted(item: CommandPaletteItem): boolean {
                 v-for="item in group.items"
                 :key="String(item.id)"
                 :value="item"
-                class="command-palette-item" :class="[{ 'is-highlighted': isHighlighted(item) }]"
+                class="command-palette-item"
               >
                 <div class="d-flex align-items-center gap-2 w-100">
                   <i :class="getItemIcon(item)" class="command-palette-item-icon" />
@@ -410,9 +375,8 @@ function isHighlighted(item: CommandPaletteItem): boolean {
   transition: background-color 0.15s ease;
 }
 
-/* Reka UI data attribute styling + custom highlight class */
-.command-palette-item[data-highlighted],
-.command-palette-item.is-highlighted {
+/* Reka UI data-highlighted attribute styling (set by ListboxItem) */
+.command-palette-item[data-highlighted] {
   background-color: var(--bs-primary-bg-subtle);
 }
 
@@ -427,8 +391,7 @@ function isHighlighted(item: CommandPaletteItem): boolean {
   color: var(--bs-secondary-color);
 }
 
-.command-palette-item[data-highlighted] .command-palette-item-icon,
-.command-palette-item.is-highlighted .command-palette-item-icon {
+.command-palette-item[data-highlighted] .command-palette-item-icon {
   color: var(--bs-primary);
 }
 
@@ -467,8 +430,7 @@ function isHighlighted(item: CommandPaletteItem): boolean {
   transition: opacity 0.15s ease;
 }
 
-.command-palette-item[data-highlighted] .command-palette-item-hint,
-.command-palette-item.is-highlighted .command-palette-item-hint {
+.command-palette-item[data-highlighted] .command-palette-item-hint {
   opacity: 1;
 }
 

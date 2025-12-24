@@ -12,7 +12,8 @@ class StigRule < BaseRule
                   against: {
                     title: 'A',           # Highest weight
                     fixtext: 'B',         # High weight
-                    version: 'C'          # Medium weight (e.g., SV-230221r858734_rule)
+                    version: 'C',         # Medium weight (e.g., SV-230221r858734_rule)
+                    ident: 'C'            # Medium weight - CIS Controls, MITRE ATT&CK, CCIs
                   },
                   associated_against: {
                     checks: :content,
@@ -41,7 +42,8 @@ class StigRule < BaseRule
     tsvector_sql = <<~SQL.squish
       setweight(to_tsvector('english', coalesce(#{table_name}.title, '')), 'A') ||
       setweight(to_tsvector('english', coalesce(#{table_name}.fixtext, '')), 'B') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.version, '')), 'C')
+      setweight(to_tsvector('english', coalesce(#{table_name}.version, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.ident, '')), 'C')
     SQL
 
     where("(#{tsvector_sql}) @@ websearch_to_tsquery('english', ?)", query)
