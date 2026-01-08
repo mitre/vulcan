@@ -232,6 +232,7 @@ function handleAction(actionId: string, project: IProject) {
 async function requestAccess(project: IProject) {
   try {
     await axios.post(`/projects/${project.id}/project_access_requests`)
+    toast.success('Your request for access has been sent.', 'Access Requested')
     emit('projectUpdated')
   }
   catch (error) {
@@ -254,6 +255,7 @@ async function cancelAccessRequest(project: IProject) {
 
   try {
     await axios.delete(`/projects/${project.id}/project_access_requests/${project.access_request_id}`)
+    toast.success(`Your request to access ${project.name} has been cancelled.`, 'Request Cancelled')
     emit('projectUpdated')
   }
   catch (error) {
@@ -361,7 +363,7 @@ function refreshProjects() {
             @project-updated="refreshProjects"
           />
 
-          <!-- Action menu -->
+          <!-- Action menu (handles single action as button automatically) -->
           <ActionMenu
             :actions="getActions(item)"
             @action="handleAction($event, item)"

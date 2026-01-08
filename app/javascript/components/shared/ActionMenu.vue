@@ -61,7 +61,20 @@ function getItemClass(action: ActionItem) {
 </script>
 
 <template>
+  <!-- Single action: render as button -->
+  <button
+    v-if="visibleActions.length === 1"
+    :class="`btn btn-${size} btn-${visibleActions[0].variant || 'primary'}`"
+    :disabled="visibleActions[0].disabled"
+    @click="handleAction(visibleActions[0])"
+  >
+    <i v-if="visibleActions[0].icon" :class="visibleActions[0].icon" aria-hidden="true" />
+    {{ visibleActions[0].label }}
+  </button>
+
+  <!-- Multiple actions: render as dropdown -->
   <BDropdown
+    v-else-if="visibleActions.length > 1"
     :size="size"
     :variant="buttonVariant"
     :end="dropdownAlign === 'end'"
@@ -89,11 +102,6 @@ function getItemClass(action: ActionItem) {
         </span>
       </BDropdownItemButton>
     </template>
-
-    <!-- Empty state -->
-    <BDropdownItemButton v-if="visibleActions.length === 0" disabled>
-      No actions available
-    </BDropdownItemButton>
   </BDropdown>
 </template>
 

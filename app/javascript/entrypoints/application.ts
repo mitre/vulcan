@@ -6,6 +6,9 @@ import { registerComponents } from '../bootstrap-vue-next-components'
 import router from '../router'
 import { pinia } from '../stores'
 
+// Configure axios CSRF token (must be before any axios usage)
+import '../config/axios'
+
 // Import all styles - esbuild handles SCSS via sassPlugin
 import '../application.scss'
 import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'

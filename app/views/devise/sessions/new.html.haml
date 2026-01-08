@@ -1,1 +1,43 @@
-/ SPA handles all content - this view is just a placeholder for Rails routing
+.container.mt-5
+  .row.justify-content-center
+    .col-md-8
+      %h2.text-center.mb-4 Sign in to Vulcan
+
+      %ul.nav.nav-tabs{role: "tablist"}
+        - if oidc_enabled?
+          - non_ldap_oauth_providers.each_with_index do |provider, index|
+            %li.nav-item{role: "presentation"}
+              %button.nav-link{class: (index == 0 ? "active" : ""), id: "oidc-tab", "data-bs-toggle" => "tab", "data-bs-target" => "#oidc", type: "button", role: "tab"}
+                = oidc_title_text
+        - if ldap_enabled?
+          %li.nav-item{role: "presentation"}
+            %button.nav-link{id: "ldap-tab", "data-bs-toggle" => "tab", "data-bs-target" => "#ldap", type: "button", role: "tab"}
+              = Settings.ldap.servers.values.first['title']
+        - if local_login_enabled?
+          %li.nav-item{role: "presentation"}
+            %button.nav-link{class: (!oidc_enabled? && !ldap_enabled? ? "active" : ""), id: "local-tab", "data-bs-toggle" => "tab", "data-bs-target" => "#local", type: "button", role: "tab"}
+              Local Login
+        - if user_registration_enabled?
+          %li.nav-item{role: "presentation"}
+            %button.nav-link{id: "register-tab", "data-bs-toggle" => "tab", "data-bs-target" => "#register", type: "button", role: "tab"}
+              Register
+
+      .tab-content.mt-3
+        - if oidc_enabled?
+          - non_ldap_oauth_providers.each_with_index do |provider, index|
+            .tab-pane{class: (index == 0 ? "active" : ""), id: "oidc", role: "tabpanel"}
+              .text-center.p-4
+                = button_to omniauth_authorize_path(resource_name, provider), class: "btn btn-primary btn-lg", method: :post do
+                  Sign in with #{oidc_title_text}
+        - if ldap_enabled?
+          .tab-pane{id: "ldap", role: "tabpanel"}
+            .p-3
+              = render 'devise/sessions/ldap'
+        - if local_login_enabled?
+          .tab-pane{class: (!oidc_enabled? && !ldap_enabled? ? "active" : ""), id: "local", role: "tabpanel"}
+            .p-3
+              = render 'devise/sessions/local'
+        - if user_registration_enabled?
+          .tab-pane{id: "register", role: "tabpanel"}
+            .p-3
+              = render 'devise/registrations/form'

@@ -9,11 +9,13 @@
  */
 import type { IAvailableMember, IMembership, MemberRole, MembershipType } from '@/types'
 import type { IProjectAccessRequest } from '@/types/access-request'
+import axios from 'axios'
 import { BButton, BModal, BTable } from 'bootstrap-vue-next'
 import { computed, ref } from 'vue'
 import ActionMenu from '@/components/shared/ActionMenu.vue'
 import BaseTable from '@/components/shared/BaseTable.vue'
 import DeleteModal from '@/components/shared/DeleteModal.vue'
+import { useAppToast } from '@/composables/useToast'
 import { useBaseTable, useDeleteConfirmation, useRailsForm } from '@/composables'
 import NewMembership from './NewMembership.vue'
 
@@ -37,6 +39,9 @@ const props = withDefaults(
     header_text: 'Members',
   },
 )
+
+// Toast notifications
+const toast = useAppToast()
 
 // Rails form utilities (CSRF token + form submission)
 const { csrfToken, submitDelete } = useRailsForm()
@@ -119,13 +124,22 @@ function acceptRequest(member: IAvailableMember) {
 }
 
 /**
- * Reject access request via form submission
+ * Reject access request via axios
  */
-function rejectRequest(member: IAvailableMember) {
+async function rejectRequest(member: IAvailableMember) {
   const requestId = getAccessRequestId(member)
   if (!requestId) return
 
-  submitDelete(`/projects/${props.membership_id}/project_access_requests/${requestId}`)
+  try {
+    await axios.delete(`/projects/${props.membership_id}/project_access_requests/${requestId}`)
+    toast.success(`${member.name}'s request has been rejected.`, 'Request Rejected')
+    // Reload the page to update the access requests list
+    window.location.reload()
+  }
+  catch (error: any) {
+    console.error('Failed to reject request:', error)
+    toast.error(error.response?.data?.error || 'Failed to reject request. Please try again.')
+  }
 }
 
 /**

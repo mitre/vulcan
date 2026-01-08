@@ -7,6 +7,9 @@ import { useAuthStore } from '@/stores'
 const authStore = useAuthStore()
 const toast = useAppToast()
 
+// Get CSRF token from Rails meta tag
+const csrfToken = ref(document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '')
+
 // Auth configuration from Rails/ENV - show all tabs by default
 const oidcEnabled = ref(true)
 const localEnabled = ref(true)
@@ -129,10 +132,13 @@ async function handleRegister() {
             <!-- OIDC Login -->
             <b-tab v-if="oidcEnabled" :title="oidcTitle">
               <b-card-text>
-                <a :href="oidcPath" class="btn btn-block btn-light border" data-method="post">
-                  <img v-if="oidcIconPath" :src="oidcIconPath" style="vertical-align: middle; margin-right: 10px" height="40" width="40">
-                  Sign in with {{ oidcTitle }}
-                </a>
+                <form :action="oidcPath" method="post">
+                  <input type="hidden" name="authenticity_token" :value="csrfToken">
+                  <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <img v-if="oidcIconPath" :src="oidcIconPath" style="vertical-align: middle; margin-right: 10px" height="40" width="40">
+                    Sign in with {{ oidcTitle }}
+                  </button>
+                </form>
               </b-card-text>
             </b-tab>
 
