@@ -27,28 +27,73 @@
 - **Lint/Format**: Use `yarn lint` for JS/ESLint, `rubocop` for Ruby, and `prettier` for code formatting.
 - **Docker**: Build images with `docker-compose`, and use `setup-docker-secrets.sh` for secure configuration.
 
+## Session Recovery Pattern
+
+**CRITICAL: Every project must have a standardized recovery card for context restoration.**
+
+### Recovery Card Convention
+
+- **Title**: `RECOVERY: Current Session Context` (always this exact title)
+- **Status**: `open` (so it appears in `bd ready` - do NOT use in_progress)
+- **Priority**: P0
+- **Content**: Detailed context including:
+  - What was completed
+  - What's in progress
+  - Git status (commits ahead, uncommitted changes)
+  - Next steps with specific `bd show` commands
+  - Any critical blockers or context
+
+### Starting a Session
+
+When returning to ANY project after time away:
+
+```bash
+bd ready
+```
+
+The `RECOVERY: Current Session Context` card will appear. Read it, follow its instructions, then close it and continue work.
+
+### Ending a Session (Before Compact)
+
+Update or create the recovery card:
+
+```bash
+# Check if recovery card exists
+bd list --status in_progress | grep -i recovery
+
+# If exists, update it
+bd update <id> --description "..."
+
+# If not, create it (status defaults to open, which is correct)
+bd create "RECOVERY: Current Session Context" -p 0 --description "..."
+
+# Always sync
+bd sync
+```
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
 
 **MANDATORY WORKFLOW:**
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+1. **Update recovery card** - Create/update `RECOVERY: Current Session Context` with detailed context
+2. **File issues for remaining work** - Create issues for anything that needs follow-up
+3. **Run quality gates** (if code changed) - Tests, linters, builds
+4. **Update issue status** - Close finished work, update in-progress items
+5. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
    bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+6. **Clean up** - Clear stashes, prune remote branches
+7. **Verify** - All changes committed AND pushed
 
 **CRITICAL RULES:**
 - Work is NOT complete until `git push` succeeds
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+- ALWAYS have an open `RECOVERY: Current Session Context` card before compact
