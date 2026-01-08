@@ -19,9 +19,10 @@ interface INavItem {
 }
 
 interface IAccessRequest {
-  project_id: number
-  project: { name: string }
-  user: { name: string }
+  id: number
+  project: { id: number, name: string }
+  user: { id: number, name: string, email: string }
+  created_at: string
 }
 
 // Props
@@ -129,7 +130,7 @@ onMounted(() => {
                 <BDropdownItem
                   v-for="(access_request, index) in access_requests"
                   :key="index"
-                  :href="`/projects/${access_request.project_id}`"
+                  :href="`/projects/${access_request.project.id}#members`"
                 >
                   {{
                     `${access_request.user.name} has requested access to project ${access_request.project.name}`

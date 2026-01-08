@@ -123,6 +123,14 @@ watch(activeTab, (val) => {
 })
 
 onMounted(() => {
+  // Check URL hash first (takes priority over localStorage)
+  const hash = window.location.hash.slice(1) // Remove the '#'
+  if (hash === 'members') {
+    activeTab.value = 3
+    return
+  }
+
+  // Fall back to saved tab preference
   const saved = localStorage.getItem(`projectTabIndex-${project.value?.id}`)
   if (saved) {
     try {
