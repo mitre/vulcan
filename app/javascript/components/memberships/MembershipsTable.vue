@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { TableFieldRaw } from 'bootstrap-vue-next'
 /**
  * MembershipsTable.vue
  *
@@ -9,15 +10,13 @@
  */
 import type { IAvailableMember, IMembership, MemberRole, MembershipType } from '@/types'
 import type { IProjectAccessRequest } from '@/types/access-request'
-import type { TableFieldRaw } from 'bootstrap-vue-next'
-import axios from 'axios'
 import { BButton, BModal, BPagination, BTable } from 'bootstrap-vue-next'
 import { computed, ref } from 'vue'
 import ActionMenu from '@/components/shared/ActionMenu.vue'
 import DeleteModal from '@/components/shared/DeleteModal.vue'
 import SearchInput from '@/components/shared/SearchInput.vue'
-import { useAppToast } from '@/composables/useToast'
 import { useBaseTable, useDeleteConfirmation, useRailsForm } from '@/composables'
+import { useAppToast } from '@/composables/useToast'
 import NewMembership from './NewMembership.vue'
 
 const props = withDefaults(
@@ -86,19 +85,6 @@ const tableFields = computed<TableFieldRaw<IMembership>[]>(() => {
   return fields
 })
 
-// Pending access request columns
-const requestColumns = [
-  { key: 'name', label: 'User', sortable: true },
-  { key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' },
-]
-
-// Users with pending access requests
-const pendingMembers = computed(() => {
-  return props.available_members.filter(member =>
-    props.access_requests.some(request => request.user_id === member.id),
-  )
-})
-
 /**
  * Get access request ID for a member
  */
@@ -120,31 +106,9 @@ function handleRoleChange(membership: IMembership) {
  * Accept access request - open modal with pre-selected member
  */
 function acceptRequest(member: IAvailableMember) {
-  console.log('MembershipsTable.acceptRequest called with:', member)
-  console.log('Available access_requests:', props.access_requests)
   selectedMember.value = member
   accessRequestId.value = getAccessRequestId(member) ?? null
-  console.log('Found accessRequestId:', accessRequestId.value)
   showNewMemberModal.value = true
-}
-
-/**
- * Reject access request via axios
- */
-async function rejectRequest(member: IAvailableMember) {
-  const requestId = getAccessRequestId(member)
-  if (!requestId) return
-
-  try {
-    await axios.delete(`/projects/${props.membership_id}/project_access_requests/${requestId}`)
-    toast.success(`${member.name}'s request has been rejected.`, 'Request Rejected')
-    // Reload the page to update the access requests list
-    window.location.reload()
-  }
-  catch (error: any) {
-    console.error('Failed to reject request:', error)
-    toast.error(error.response?.data?.error || 'Failed to reject request. Please try again.')
-  }
 }
 
 /**

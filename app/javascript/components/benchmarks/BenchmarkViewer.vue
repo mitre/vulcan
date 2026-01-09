@@ -50,7 +50,6 @@ watch(
 )
 
 // Type-specific labels
-const typeLabel = computed(() => (props.type === 'stig' ? 'STIG' : 'SRG'))
 const dateLabel = computed(() => (props.type === 'stig' ? 'Benchmark Date' : 'Release Date'))
 
 /**

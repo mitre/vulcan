@@ -21,7 +21,7 @@ interface Props {
   projectPrefix: string
 }
 
-const props = defineProps<Props>()
+const _props = defineProps<Props>()
 
 // Store
 const { currentRule } = useRules()

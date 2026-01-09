@@ -17,6 +17,7 @@ export default {
       default: false,
     },
   },
+  emits: ['projectUpdated'],
   data() {
     return {
       name: this.project.name,

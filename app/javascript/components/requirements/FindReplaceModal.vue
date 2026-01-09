@@ -126,13 +126,6 @@ function handleClear() {
   })
 }
 
-// Focus search input helper
-function focusSearchInput() {
-  nextTick(() => {
-    searchInputRef.value?.focus()
-  })
-}
-
 // Replace current match
 async function handleReplaceOne() {
   await executeReplaceOne(props.componentId)

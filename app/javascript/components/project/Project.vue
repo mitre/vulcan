@@ -5,12 +5,12 @@
  * Vue 3 Composition API + Bootstrap 5
  */
 
+import axios from 'axios'
+import { BButton, BOffcanvas, BTab, BTabs } from 'bootstrap-vue-next'
 import { orderBy, sortBy, uniq } from 'lodash'
-import { BTabs, BTab, BButton, BOffcanvas } from 'bootstrap-vue-next'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { formatDateTime, hasPermission, useAppToast, useProjects } from '@/composables'
 import { http } from '@/services/http.service'
-import axios from 'axios'
 
 // Child components
 import AddComponentModal from '../components/AddComponentModal.vue'
@@ -81,9 +81,6 @@ function getInitialActiveTab(): number {
 }
 
 const activeTab = ref(getInitialActiveTab())
-const showDetails = ref(true)
-const showMetadata = ref(true)
-const showHistory = ref(true)
 
 // Offcanvas state - separate for each section
 const showDetailsOffcanvas = ref(false)
@@ -111,8 +108,6 @@ const isAuthor = computed(() => hasPermission(props.effectivePermissions, 'autho
 const pendingMembers = computed(() => {
   if (!project.value?.access_requests) return []
 
-  console.log('Raw access_requests from API:', project.value.access_requests)
-
   return project.value.access_requests.map((request: any) => {
     const mapped = {
       id: request.user?.id || request.user_id,
@@ -121,15 +116,9 @@ const pendingMembers = computed(() => {
       request_id: request.id,
       created_at: request.created_at,
     }
-    console.log('Mapped pending member:', mapped)
     return mapped
   })
 })
-
-// Get access request by ID
-function getAccessRequestById(requestId: number) {
-  return project.value?.access_requests?.find((request: any) => request.id === requestId)
-}
 
 // Accept access request - delegate to MembershipsTable component
 const membershipsTableRef = ref<InstanceType<typeof MembershipsTable> | null>(null)
@@ -327,7 +316,9 @@ function openExportModal(type: string) {
       <!-- Title Row -->
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center gap-2">
-          <h1 class="mb-0 h2">{{ project?.name }}</h1>
+          <h1 class="mb-0 h2">
+            {{ project?.name }}
+          </h1>
           <span class="badge bg-info">{{ project?.visibility }}</span>
           <div v-if="isProjectAdmin" class="form-check form-switch ms-2">
             <input
@@ -343,27 +334,27 @@ function openExportModal(type: string) {
           </div>
         </div>
         <div class="btn-group" role="group">
-        <BButton variant="outline-secondary" size="sm" @click="showDetailsOffcanvas = true">
-          <i class="bi bi-info-circle me-1" />
-          Details
-        </BButton>
-        <BButton variant="outline-secondary" size="sm" @click="showMetadataOffcanvas = true">
-          <i class="bi bi-tags me-1" />
-          Metadata
-        </BButton>
-        <BButton variant="outline-secondary" size="sm" @click="showHistoryOffcanvas = true">
-          <i class="bi bi-clock-history me-1" />
-          History
-        </BButton>
-        <BButton variant="outline-secondary" size="sm" @click="showRevisionHistoryOffcanvas = true">
-          <i class="bi bi-arrow-counterclockwise me-1" />
-          Revisions
-        </BButton>
-        <BButton v-if="isProjectAdmin" variant="primary" size="sm" @click="showExportOffcanvas = true">
-          <i class="bi bi-download me-1" />
-          Export
-        </BButton>
-      </div>
+          <BButton variant="outline-secondary" size="sm" @click="showDetailsOffcanvas = true">
+            <i class="bi bi-info-circle me-1" />
+            Details
+          </BButton>
+          <BButton variant="outline-secondary" size="sm" @click="showMetadataOffcanvas = true">
+            <i class="bi bi-tags me-1" />
+            Metadata
+          </BButton>
+          <BButton variant="outline-secondary" size="sm" @click="showHistoryOffcanvas = true">
+            <i class="bi bi-clock-history me-1" />
+            History
+          </BButton>
+          <BButton variant="outline-secondary" size="sm" @click="showRevisionHistoryOffcanvas = true">
+            <i class="bi bi-arrow-counterclockwise me-1" />
+            Revisions
+          </BButton>
+          <BButton v-if="isProjectAdmin" variant="primary" size="sm" @click="showExportOffcanvas = true">
+            <i class="bi bi-download me-1" />
+            Export
+          </BButton>
+        </div>
       </div>
 
       <!-- Metadata Row -->

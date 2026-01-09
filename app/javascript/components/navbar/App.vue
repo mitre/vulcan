@@ -26,7 +26,7 @@ interface IAccessRequest {
 }
 
 // Props
-const props = defineProps<{
+const _props = defineProps<{
   navigation: INavItem[]
   signed_in: boolean
   users_path?: string

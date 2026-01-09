@@ -101,7 +101,7 @@ function handlePageChange(page: number) {
 }
 
 function handleRowClick(item: T) {
-  emit('rowClick', item)
+  emit('row-click', item)
 }
 </script>
 

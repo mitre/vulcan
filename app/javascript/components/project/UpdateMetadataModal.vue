@@ -20,6 +20,7 @@ export default {
       required: true,
     },
   },
+  emits: ['projectUpdated'],
   data() {
     return initialState(this.project)
   },
