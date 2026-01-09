@@ -16,26 +16,29 @@ module Api
     # Search for users to invite to a project
     # - Admin-only (global admins or project admins)
     # - Excludes existing project members
-    # - Searches by name and email (case-insensitive)
-    # - Minimum 2 characters
+    # - Slack model: Shows first 10 users by default, filters as you type
     # - Maximum 10 results
     #
     def search_users
       query = params[:q].to_s.strip
 
-      if query.length < 2
-        return render json: { users: [] }
-      end
-
       # Get existing member user IDs to exclude
       existing_member_ids = @project.memberships.pluck(:user_id)
 
-      # Search users by name or email (ILIKE for case-insensitive partial match)
-      users = User.where('name ILIKE ? OR email ILIKE ?', "%#{query}%", "%#{query}%")
-                  .where.not(id: existing_member_ids)
-                  .limit(10)
-                  .select(:id, :name, :email)
-                  .order(:name)
+      # Slack model: Show first 10 users if query is empty or short
+      if query.length < 2
+        users = User.where.not(id: existing_member_ids)
+                    .limit(10)
+                    .select(:id, :name, :email)
+                    .order(:name)
+      else
+        # Search users by name or email (ILIKE for case-insensitive partial match)
+        users = User.where('name ILIKE ? OR email ILIKE ?', "%#{query}%", "%#{query}%")
+                    .where.not(id: existing_member_ids)
+                    .limit(10)
+                    .select(:id, :name, :email)
+                    .order(:name)
+      end
 
       render json: {
         users: users.map do |user|

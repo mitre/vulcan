@@ -82,12 +82,31 @@ RSpec.describe 'API::Projects', type: :request do
         expect(json['users']).to be_empty
       end
 
-      it 'requires minimum 2 characters' do
+      it 'shows first 10 users on empty query (Slack model)' do
+        # Create some users
+        5.times do |i|
+          create(:user, email: "user#{i}@example.com", name: "User #{i}")
+        end
+
+        get "/api/projects/#{project.id}/search_users", params: { q: '' }, headers: { 'Accept' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['users'].length).to eq(5)
+      end
+
+      it 'shows first 10 users on short query (< 2 chars)' do
+        # Create some users
+        3.times do |i|
+          create(:user, email: "abc#{i}@example.com", name: "ABC User #{i}")
+        end
+
         get "/api/projects/#{project.id}/search_users", params: { q: 'a' }, headers: { 'Accept' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json['users']).to be_empty
+        # Should show all 3 users (not filtering, just showing first 10)
+        expect(json['users'].length).to eq(3)
       end
 
       it 'limits results to 10' do
