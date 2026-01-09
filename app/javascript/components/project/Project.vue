@@ -100,7 +100,7 @@ const membershipsTableRef = ref<InstanceType<typeof MembershipsTable> | null>(nu
 
 async function acceptRequest(member: any) {
   showPendingRequestsOffcanvas.value = false
-  activeTab.value = 3
+  activeTab.value = 2 // Members tab (was 3 before Revision History removal)
 
   await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -193,7 +193,7 @@ onMounted(() => {
   // Check URL hash first (takes priority over localStorage)
   const hash = window.location.hash.slice(1) // Remove the '#'
   if (hash === 'members') {
-    activeTab.value = 3
+    activeTab.value = 2 // Members is now tab index 2 (was 3 before Revision History removal)
     return
   }
 
@@ -201,7 +201,16 @@ onMounted(() => {
   const saved = localStorage.getItem(`projectTabIndex-${project.value?.id}`)
   if (saved) {
     try {
-      activeTab.value = JSON.parse(saved)
+      const savedIndex = JSON.parse(saved)
+      // Validate saved index is within bounds (we have 3 tabs: 0, 1, 2)
+      if (savedIndex >= 0 && savedIndex <= 2) {
+        activeTab.value = savedIndex
+      }
+      else {
+        // Invalid index (probably from before tab removal), default to Components
+        activeTab.value = 0
+        localStorage.removeItem(`projectTabIndex-${project.value?.id}`)
+      }
     }
     catch {
       localStorage.removeItem(`projectTabIndex-${project.value?.id}`)
@@ -369,9 +378,9 @@ function openExportModal(type: string) {
     <div class="row">
       <!-- Main column - Full width tabs -->
       <div class="col-12">
-        <BTabs v-model:index="activeTab" content-class="mt-3" nav-class="nav-justified" lazy>
-          <!-- Components Tab -->
-          <BTab lazy>
+        <BTabs v-model:index="activeTab" content-class="mt-3" nav-class="nav-justified">
+          <!-- Components Tab (not lazy - always render) -->
+          <BTab>
             <template #title>
               Components <span class="badge bg-info ms-1">{{ project?.components?.length || 0 }}</span>
             </template>
