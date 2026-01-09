@@ -170,6 +170,16 @@ watch(searchResults, () => {
 // Form ref for parent to submit
 const formRef = ref<HTMLFormElement | null>(null)
 
+// Reset all state (called when modal is canceled)
+function reset() {
+  selectedUser.value = null
+  selectedRole.value = null
+  searchQuery.value = ''
+  searchResults.value = []
+  showResults.value = false
+  highlightedIndex.value = -1
+}
+
 // Expose for parent component
 defineExpose({
   isSubmitDisabled,
@@ -178,6 +188,7 @@ defineExpose({
       formRef.value.submit()
     }
   },
+  reset,
 })
 </script>
 

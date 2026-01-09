@@ -153,6 +153,10 @@ async function rejectRequest(member: IAvailableMember) {
 function resetModal() {
   selectedMember.value = null
   accessRequestId.value = null
+  // Reset NewMembership component's internal state
+  if (newMembershipRef.value) {
+    newMembershipRef.value.reset()
+  }
 }
 
 /**

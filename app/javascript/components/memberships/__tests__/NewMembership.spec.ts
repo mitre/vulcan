@@ -682,4 +682,99 @@ describe('newMembership', () => {
       consoleErrorSpy.mockRestore()
     })
   })
+
+  describe('reset functionality', () => {
+    it('exposes reset method', () => {
+      const wrapper = mount(NewMembership, {
+        props: {
+          membership_type: 'Project',
+          membership_id: mockProjectId,
+          available_roles: ['viewer', 'admin'],
+        },
+      })
+
+      expect(wrapper.vm.reset).toBeDefined()
+      expect(typeof wrapper.vm.reset).toBe('function')
+    })
+
+    it('reset clears selected user', async () => {
+      const wrapper = mount(NewMembership, {
+        props: {
+          membership_type: 'Project',
+          membership_id: mockProjectId,
+          available_roles: ['viewer', 'admin'],
+          selected_member: mockUsers[0],
+        },
+      })
+
+      await nextTick()
+
+      // User should be selected
+      expect(wrapper.text()).toContain('John Doe')
+
+      // Call reset
+      wrapper.vm.reset()
+      await nextTick()
+
+      // Should show search input again
+      expect(wrapper.find('input[type="text"]').exists()).toBe(true)
+      expect(wrapper.find('.alert').exists()).toBe(false)
+    })
+
+    it('reset clears selected role', async () => {
+      const wrapper = mount(NewMembership, {
+        props: {
+          membership_type: 'Project',
+          membership_id: mockProjectId,
+          available_roles: ['viewer', 'admin'],
+          selected_member: mockUsers[0],
+        },
+      })
+
+      await nextTick()
+
+      // Select a role
+      const viewerRadio = wrapper.find('input[type="radio"]')
+      await viewerRadio.trigger('click')
+      await nextTick()
+
+      // Submit should be enabled
+      expect(wrapper.vm.isSubmitDisabled).toBe(false)
+
+      // Call reset
+      wrapper.vm.reset()
+      await nextTick()
+
+      // Submit should be disabled again (no role selected)
+      expect(wrapper.vm.isSubmitDisabled).toBe(true)
+    })
+
+    it('reset clears search query and results', async () => {
+      const wrapper = mount(NewMembership, {
+        props: {
+          membership_type: 'Project',
+          membership_id: mockProjectId,
+          available_roles: ['viewer', 'admin'],
+        },
+      })
+
+      const input = wrapper.find('input[type="text"]')
+      await input.setValue('jo')
+      vi.advanceTimersByTime(300)
+      await flushPromises()
+      await nextTick()
+
+      // Should have search results
+      expect(wrapper.find('.search-dropdown').exists()).toBe(true)
+
+      // Call reset
+      wrapper.vm.reset()
+      await nextTick()
+
+      // Search should be cleared
+      const newInput = wrapper.find('input[type="text"]')
+      expect(newInput.element.value).toBe('')
+      expect(wrapper.find('.search-dropdown').exists()).toBe(false)
+    })
+  })
 })
