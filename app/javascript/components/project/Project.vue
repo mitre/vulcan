@@ -44,10 +44,6 @@ const { fetchById, update } = useProjects()
 // Reactive state - wrap plain object prop in ref
 const project = ref(props.initialProjectState)
 const visible = ref(props.initialProjectState?.visibility === 'discoverable')
-const activeTab = ref(0)
-const showDetails = ref(true)
-const showMetadata = ref(true)
-const showHistory = ref(true)
 
 // Tab configuration - single source of truth for tab indices
 const TAB_INDICES = {
@@ -56,6 +52,38 @@ const TAB_INDICES = {
   MEMBERS: 2,
 } as const
 const TAB_COUNT = Object.keys(TAB_INDICES).length
+
+// Initialize activeTab from localStorage or hash BEFORE component renders
+function getInitialActiveTab(): number {
+  // Check URL hash first
+  const hash = window.location.hash.slice(1)
+  if (hash === 'members') {
+    return TAB_INDICES.MEMBERS
+  }
+
+  // Check localStorage
+  const key = `projectTabIndex-${props.initialProjectState?.id}`
+  const saved = localStorage.getItem(key)
+  if (saved) {
+    try {
+      const savedIndex = JSON.parse(saved)
+      if (savedIndex >= 0 && savedIndex < TAB_COUNT) {
+        return savedIndex
+      }
+    }
+    catch {
+      // Invalid - fall through to default
+    }
+  }
+
+  // Default to Components tab
+  return TAB_INDICES.COMPONENTS
+}
+
+const activeTab = ref(getInitialActiveTab())
+const showDetails = ref(true)
+const showMetadata = ref(true)
+const showHistory = ref(true)
 
 // Offcanvas state - separate for each section
 const showDetailsOffcanvas = ref(false)
@@ -195,35 +223,6 @@ const detailsStats = computed(() => {
 // Persist tab selection
 watch(activeTab, (val) => {
   localStorage.setItem(`projectTabIndex-${project.value?.id}`, JSON.stringify(val))
-})
-
-onMounted(() => {
-  // Check URL hash first (takes priority over localStorage)
-  const hash = window.location.hash.slice(1) // Remove the '#'
-  if (hash === 'members') {
-    activeTab.value = TAB_INDICES.MEMBERS
-    return
-  }
-
-  // Fall back to saved tab preference
-  const saved = localStorage.getItem(`projectTabIndex-${project.value?.id}`)
-  if (saved) {
-    try {
-      const savedIndex = JSON.parse(saved)
-      // Validate saved index is within bounds
-      if (savedIndex >= 0 && savedIndex < TAB_COUNT) {
-        activeTab.value = savedIndex
-      }
-      else {
-        // Invalid index (probably from before tab removal), default to Components
-        activeTab.value = TAB_INDICES.COMPONENTS
-        localStorage.removeItem(`projectTabIndex-${project.value?.id}`)
-      }
-    }
-    catch {
-      localStorage.removeItem(`projectTabIndex-${project.value?.id}`)
-    }
-  }
 })
 
 // Methods
@@ -387,7 +386,7 @@ function openExportModal(type: string) {
       <!-- Main column - Full width tabs -->
       <div class="col-12">
         <BTabs v-model:index="activeTab" content-class="mt-3" nav-class="nav-justified">
-          <!-- Components Tab (not lazy - always render) -->
+          <!-- Components Tab -->
           <BTab>
             <template #title>
               Components <span class="badge bg-info ms-1">{{ project?.components?.length || 0 }}</span>

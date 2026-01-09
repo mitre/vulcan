@@ -63,6 +63,7 @@ const effectivePermissions = computed(() => {
 <template>
   <PageContainer>
     <Project
+      :key="project.id"
       :initial-project-state="project"
       :statuses="STATUSES"
       :severities="SEVERITIES"
