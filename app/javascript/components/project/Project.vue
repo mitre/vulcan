@@ -53,6 +53,7 @@ const showHistory = ref(true)
 const showDetailsOffcanvas = ref(false)
 const showMetadataOffcanvas = ref(false)
 const showHistoryOffcanvas = ref(false)
+const showRevisionHistoryOffcanvas = ref(false)
 const showPendingRequestsOffcanvas = ref(false)
 const showExportOffcanvas = ref(false)
 
@@ -338,6 +339,10 @@ function openExportModal(type: string) {
           <i class="bi bi-clock-history me-1" />
           History
         </BButton>
+        <BButton variant="outline-secondary" size="sm" @click="showRevisionHistoryOffcanvas = true">
+          <i class="bi bi-arrow-counterclockwise me-1" />
+          Revisions
+        </BButton>
         <BButton v-if="isProjectAdmin" variant="primary" size="sm" @click="showExportOffcanvas = true">
           <i class="bi bi-download me-1" />
           Export
@@ -501,17 +506,6 @@ function openExportModal(type: string) {
             <DiffViewer :project="initialProjectState" />
           </BTab>
 
-          <!-- Revision History Tab -->
-          <BTab lazy>
-            <template #title>
-              Revision History
-            </template>
-            <RevisionHistory
-              :project="initialProjectState"
-              :unique-component-names="uniqueComponentNames"
-            />
-          </BTab>
-
           <!-- Members Tab -->
           <BTab lazy>
             <template #title>
@@ -598,6 +592,18 @@ function openExportModal(type: string) {
       title="Project History"
     >
       <History :histories="project?.histories" :revertable="false" />
+    </BOffcanvas>
+
+    <!-- Revision History Offcanvas -->
+    <BOffcanvas
+      v-model="showRevisionHistoryOffcanvas"
+      placement="end"
+      title="Component Revision History"
+    >
+      <RevisionHistory
+        :project="initialProjectState"
+        :unique-component-names="uniqueComponentNames"
+      />
     </BOffcanvas>
 
     <!-- Pending Access Requests Offcanvas -->

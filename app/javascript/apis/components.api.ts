@@ -87,3 +87,15 @@ export function uploadSpreadsheet(projectId: number, srgId: number, file: File) 
 export function findRules(id: number, searchText: string) {
   return http.post(`/components/${id}/find`, { find: searchText })
 }
+
+/**
+ * Get revision history for a component by name
+ * POST /components/history
+ */
+export async function getRevisionHistory(projectId: number, componentName: string) {
+  const response = await http.post('/components/history', {
+    project_id: projectId,
+    name: componentName,
+  })
+  return response.data
+}

@@ -188,7 +188,7 @@ describe('project component', () => {
       document.head.appendChild(meta)
     })
 
-    it('renders BTabs component with 4 tabs', async () => {
+    it('renders BTabs component with 3 tabs', async () => {
       wrapper = mount(Project, {
         props: {
           initialProjectState: mockProject,
@@ -215,9 +215,9 @@ describe('project component', () => {
       // Verify BTabs is rendered
       expect(wrapper.find('[role="tablist"]').exists()).toBe(true)
 
-      // Verify 4 tabs exist
+      // Verify 3 tabs exist (Components, Diff Viewer, Members)
       const tabs = wrapper.findAll('[role="tab"]')
-      expect(tabs).toHaveLength(4)
+      expect(tabs).toHaveLength(3)
     })
 
     it('shows Components tab with badge count', async () => {
@@ -275,7 +275,7 @@ describe('project component', () => {
       await nextTick()
 
       const tabs = wrapper.findAll('[role="tab"]')
-      const membersTab = tabs[3] // Members is 4th tab (index 3)
+      const membersTab = tabs[2] // Members is 3rd tab (index 2)
 
       // Verify Members tab shows count badge
       expect(membersTab.text()).toContain('Members')
@@ -308,9 +308,9 @@ describe('project component', () => {
 
       await nextTick()
 
-      // Switch to Members tab (index 3)
+      // Switch to Members tab (index 2)
       const tabs = wrapper.findAll('[role="tab"]')
-      await tabs[3].trigger('click')
+      await tabs[2].trigger('click')
       await nextTick()
 
       // Verify MembershipsTable stub is present (proves it's in the DOM)
@@ -384,7 +384,7 @@ describe('project component', () => {
       await nextTick()
 
       const tabs = wrapper.findAll('[role="tab"]')
-      const membersTab = tabs[3] // Members is 4th tab (index 3)
+      const membersTab = tabs[2] // Members is 3rd tab (index 2)
 
       // Members tab should show 0
       expect(membersTab.text()).toContain('Members')
