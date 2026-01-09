@@ -55,6 +55,15 @@ class Project < ApplicationRecord
     []
   end
 
+  ##
+  # Serialize access_requests with nested user data
+  # The association is eager loaded in controller, but needs explicit serialization
+  #
+  def access_requests
+    # Call the association, then serialize with user/project included
+    super.as_json(methods: %i[user project])
+  end
+
   # Project-level rule statistics - single SQL query
   def details
     # Use single query with FILTER for all counts

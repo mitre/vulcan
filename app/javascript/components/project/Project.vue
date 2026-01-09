@@ -70,7 +70,7 @@ const showVisibilityModal = ref(false)
 const isProjectAdmin = computed(() => hasPermission(props.effectivePermissions, 'admin'))
 const isAuthor = computed(() => hasPermission(props.effectivePermissions, 'author'))
 
-// Pending members - use user data directly from access_requests
+// Pending members - access_requests now includes serialized user data
 const pendingMembers = computed(() => {
   if (!project.value?.access_requests) return []
 
