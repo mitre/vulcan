@@ -3,12 +3,13 @@
  * Project Show Page
  *
  * Uses async setup with Suspense for loading state.
+ * Architecture: API → Store → Composable → Page
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { getProject } from '@/apis/projects.api'
 import Project from '@/components/project/Project.vue'
 import PageContainer from '@/components/shared/PageContainer.vue'
+import { useProjects } from '@/composables'
 import { useAuthStore } from '@/stores'
 
 // Rule constants (matching app/constants/rule_constants.rb)
@@ -27,10 +28,13 @@ const authStore = useAuthStore()
 
 const availableRoles = ['viewer', 'author', 'reviewer', 'admin']
 
+// Use composable (follows architecture pattern)
+const { fetchById } = useProjects()
+
 // Top-level await makes this component suspensible
+// fetchById returns the plain project object (not a ref)
 const projectId = Number(route.params.id)
-const response = await getProject(projectId)
-const project = response.data
+const project = await fetchById(projectId)
 
 if (!project) {
   throw new Error('Project not found')

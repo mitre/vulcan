@@ -5,16 +5,17 @@
  * Displays tables for project/component memberships:
  * - Pending access requests (if editable)
  * - Current members with search, pagination, role management, and delete actions
- * Uses BaseTable for consistent UI.
+ * Uses BTable from Bootstrap-Vue-Next with custom cell slots.
  */
 import type { IAvailableMember, IMembership, MemberRole, MembershipType } from '@/types'
 import type { IProjectAccessRequest } from '@/types/access-request'
+import type { TableFieldRaw } from 'bootstrap-vue-next'
 import axios from 'axios'
-import { BButton, BModal, BTable } from 'bootstrap-vue-next'
+import { BButton, BModal, BPagination, BTable } from 'bootstrap-vue-next'
 import { computed, ref } from 'vue'
 import ActionMenu from '@/components/shared/ActionMenu.vue'
-import BaseTable from '@/components/shared/BaseTable.vue'
 import DeleteModal from '@/components/shared/DeleteModal.vue'
+import SearchInput from '@/components/shared/SearchInput.vue'
 import { useAppToast } from '@/composables/useToast'
 import { useBaseTable, useDeleteConfirmation, useRailsForm } from '@/composables'
 import NewMembership from './NewMembership.vue'
@@ -46,8 +47,8 @@ const toast = useAppToast()
 // Rails form utilities (CSRF token + form submission)
 const { csrfToken, submitDelete } = useRailsForm()
 
-// Use composable for table state
-const { search, currentPage, paginatedItems, totalRows } = useBaseTable({
+// Use composable for table state (pagination + search)
+const { search, currentPage, paginatedItems, totalRows, perPage } = useBaseTable({
   items: computed(() => props.memberships),
   searchFields: ['name', 'email'] as (keyof IMembership)[],
 })
@@ -70,18 +71,18 @@ const {
   },
 })
 
-// Column definitions
-const columns = computed(() => {
-  const cols = [
+// Column definitions - BTable format
+const tableFields = computed<TableFieldRaw<IMembership>[]>(() => {
+  const fields: TableFieldRaw<IMembership>[] = [
     { key: 'name', label: 'User', sortable: true },
     { key: 'role', label: 'Role', sortable: true },
   ]
 
   if (props.editable) {
-    cols.push({ key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' })
+    fields.push({ key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' })
   }
 
-  return cols
+  return fields
 })
 
 // Pending access request columns
@@ -176,54 +177,15 @@ function handleAction(actionId: string, member: IMembership) {
     confirmDelete(member)
   }
 }
+
+// Expose methods for parent component
+defineExpose({
+  acceptRequest,
+})
 </script>
 
 <template>
   <div>
-    <!-- Pending Access Requests -->
-    <template v-if="access_requests.length > 0 && editable">
-      <h2 class="mb-3">
-        Pending Access Requests
-        <span class="badge bg-info ms-2">{{ access_requests.length }}</span>
-      </h2>
-
-      <BTable
-        id="project-access-requests"
-        :items="pendingMembers"
-        :fields="requestColumns"
-        class="mb-4"
-      >
-        <!-- Name column -->
-        <template #cell(name)="{ item }">
-          {{ item.name }}
-          <br>
-          <small class="text-body-secondary">{{ item.email }}</small>
-        </template>
-
-        <!-- Actions column -->
-        <template #cell(actions)="{ item }">
-          <div class="d-flex justify-content-end gap-2">
-            <BButton
-              variant="success"
-              size="sm"
-              @click="acceptRequest(item)"
-            >
-              <i class="bi bi-check me-1" aria-hidden="true" />
-              Accept
-            </BButton>
-            <BButton
-              variant="danger"
-              size="sm"
-              @click="rejectRequest(item)"
-            >
-              <i class="bi bi-x-circle me-1" aria-hidden="true" />
-              Reject
-            </BButton>
-          </div>
-        </template>
-      </BTable>
-    </template>
-
     <!-- Members Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="mb-0">
@@ -236,67 +198,97 @@ function handleAction(actionId: string, member: IMembership) {
         variant="primary"
         @click="openNewMemberModal"
       >
-        <i class="bi bi-plus me-1" aria-hidden="true" />
-        New Member
+        <i class="bi bi-person-plus me-1" aria-hidden="true" />
+        Invite Member
       </BButton>
     </div>
 
     <!-- Members Table -->
-    <BaseTable
-      :items="paginatedItems"
-      :columns="columns"
-      :total-rows="totalRows"
-      :current-page="currentPage"
-      :search="search"
-      search-placeholder="Search members by name or email..."
-      @update:search="search = $event"
-      @update:current-page="currentPage = $event"
-    >
-      <!-- Name column -->
-      <template #cell-name="{ item }">
-        {{ item.name }}
-        <br>
-        <small class="text-body-secondary">{{ item.email }}</small>
-      </template>
+    <div class="table-wrapper">
+      <!-- Search Input -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="col-md-6">
+          <SearchInput
+            :model-value="search"
+            placeholder="Search members by name or email..."
+            @update:model-value="search = $event"
+          />
+        </div>
+      </div>
 
-      <!-- Role column -->
-      <template #cell-role="{ item }">
-        <template v-if="editable && available_roles">
-          <form :id="`ProjectMember-${item.id}`" :action="`/memberships/${item.id}`" method="post">
-            <input type="hidden" name="_method" value="put">
-            <input type="hidden" name="authenticity_token" :value="csrfToken">
-            <select
-              v-model="item.role"
-              class="form-select form-select-sm"
-              name="membership[role]"
-              style="width: auto;"
-              @change="handleRoleChange(item)"
-            >
-              <option v-for="role in available_roles" :key="role" :value="role">
-                {{ role }}
-              </option>
-            </select>
-          </form>
+      <!-- BTable -->
+      <BTable
+        :items="paginatedItems"
+        :fields="tableFields"
+        striped
+        hover
+        responsive
+        @row-clicked="() => {}"
+      >
+        <!-- Name column -->
+        <template #cell(name)="{ item }">
+          {{ item.name }}
+          <br>
+          <small class="text-body-secondary">{{ item.email }}</small>
         </template>
-        <template v-else>
-          {{ item.role }}
+
+        <!-- Role column -->
+        <template #cell(role)="{ item }">
+          <template v-if="editable && available_roles">
+            <form :id="`ProjectMember-${item.id}`" :action="`/memberships/${item.id}`" method="post">
+              <input type="hidden" name="_method" value="put">
+              <input type="hidden" name="authenticity_token" :value="csrfToken">
+              <select
+                v-model="item.role"
+                class="form-select form-select-sm"
+                name="membership[role]"
+                style="width: auto;"
+                @click.stop
+                @change="handleRoleChange(item)"
+              >
+                <option v-for="role in available_roles" :key="role" :value="role">
+                  {{ role }}
+                </option>
+              </select>
+            </form>
+          </template>
+          <template v-else>
+            {{ item.role }}
+          </template>
         </template>
-      </template>
 
-      <!-- Actions column -->
-      <template v-if="editable" #cell-actions="{ item }">
-        <ActionMenu
-          :actions="getActions()"
-          @action="handleAction($event, item)"
-        />
-      </template>
-    </BaseTable>
+        <!-- Actions column -->
+        <template v-if="editable" #cell(actions)="{ item }">
+          <ActionMenu
+            :actions="getActions()"
+            @action="handleAction($event, item)"
+          />
+        </template>
 
-    <!-- New Member Modal -->
+        <!-- Empty state -->
+        <template #empty>
+          <div class="text-center text-muted py-4">
+            No members found
+          </div>
+        </template>
+      </BTable>
+
+      <!-- Pagination -->
+      <BPagination
+        v-if="totalRows > perPage"
+        :model-value="currentPage"
+        :total-rows="totalRows"
+        :per-page="perPage"
+        class="mt-3"
+        @update:model-value="currentPage = $event"
+      />
+    </div>
+
+    <!-- Invite Member Modal -->
     <BModal
       v-model="showNewMemberModal"
       size="md"
-      title="Add New Project Member"
+      title="Invite Project Member"
       centered
       :hide-footer="true"
       @hidden="resetModal"

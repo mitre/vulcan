@@ -1,95 +1,90 @@
-<script>
+<script setup lang="ts">
+/**
+ * NewMembership.vue
+ *
+ * Form for adding a new member to a project/component.
+ * Uses typeahead search for user selection and radio buttons for role selection.
+ */
+import type { IAvailableMember, MemberRole, MembershipType } from '@/types'
+import { BAlert, BButton, BCol, BInputGroup, BInputGroupText, BRow } from 'bootstrap-vue-next'
 import capitalize from 'lodash/capitalize'
+import { computed, ref } from 'vue'
 import SimpleTypeahead from 'vue3-simple-typeahead'
 import 'vue3-simple-typeahead/dist/vue3-simple-typeahead.css'
+import { useRailsForm } from '@/composables'
 
-export default {
-  name: 'NewMembership',
-  components: {
-    SimpleTypeahead,
+const props = withDefaults(
+  defineProps<{
+    membership_type: MembershipType
+    membership_id: number
+    available_members: IAvailableMember[]
+    available_roles: MemberRole[]
+    selected_member?: IAvailableMember | null
+    access_request_id?: number | null
+  }>(),
+  {
+    selected_member: null,
+    access_request_id: null,
   },
-  props: {
-    membership_type: {
-      type: String,
-      required: true,
-    },
-    membership_id: {
-      type: Number,
-      required: true,
-    },
-    available_members: {
-      type: Array,
-      required: true,
-    },
-    available_roles: {
-      type: Array,
-      required: true,
-    },
-    selected_member: {
-      type: Object,
-      required: false,
-    },
-    access_request_id: {
-      type: Number,
-      required: false,
-    },
-  },
-  data() {
-    return {
-      selectedUser: this.selected_member,
-      selectedRole: null,
-      roleDescriptions: [
-        'Read only access to the Project or Component',
-        'Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.',
-        'Author and approve changes to a Control.',
-        'Full control of a Project or Component. Lock Controls, revert controls, and manage members.',
-      ],
-    }
-  },
-  computed: {
-    authenticityToken() {
-      return document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
-    },
-    isSubmitDisabled() {
-      return !(this.selectedUser !== null && this.selectedRole !== null)
-    },
-    selectedUserId() {
-      return this.selectedUser?.id
-    },
-  },
-  methods: {
-    capitalizeRole(roleString) {
-      return capitalize(roleString)
-    },
-    setSelectedRole(role) {
-      this.selectedRole = role
-    },
-    setSelectedUser(user) {
-      this.selectedUser = user
-    },
-    clearSelectedUser() {
-      this.selectedUser = null
-      if (this.$refs.userSearch) {
-        this.$refs.userSearch.clearInput()
-      }
-    },
-    userProjection(user) {
-      return user.email || ''
-    },
-    formAction() {
-      return `/memberships/`
-    },
-  },
+)
+
+const { csrfToken } = useRailsForm()
+
+// State
+const selectedUser = ref<IAvailableMember | null>(props.selected_member)
+const selectedRole = ref<MemberRole | null>(null)
+const userSearch = ref<InstanceType<typeof SimpleTypeahead> | null>(null)
+
+const roleDescriptions = [
+  'Read only access to the Project or Component',
+  'Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.',
+  'Author and approve changes to a Control.',
+  'Full control of a Project or Component. Lock Controls, revert controls, and manage members.',
+]
+
+// Computed
+const isSubmitDisabled = computed(() => {
+  return !(selectedUser.value !== null && selectedRole.value !== null)
+})
+
+const selectedUserId = computed(() => selectedUser.value?.id)
+
+// Methods
+function capitalizeRole(roleString: string) {
+  return capitalize(roleString)
+}
+
+function setSelectedRole(role: MemberRole) {
+  selectedRole.value = role
+}
+
+function setSelectedUser(user: IAvailableMember) {
+  selectedUser.value = user
+}
+
+function clearSelectedUser() {
+  selectedUser.value = null
+  if (userSearch.value) {
+    userSearch.value.clearInput()
+  }
+}
+
+function userProjection(user: IAvailableMember) {
+  return user.email || ''
+}
+
+function formAction() {
+  return `/memberships/`
 }
 </script>
 
 <template>
   <div>
-    <b-row>
-      <b-col class="d-flex">
+    <BRow>
+      <BCol class="d-flex">
         <template v-if="!selectedUser">
-          <b-input-group>
-            <b-input-group-text><i class="bi bi-search" aria-hidden="true" /></b-input-group-text>
+          <BInputGroup>
+            <BInputGroupText><i class="bi bi-search" aria-hidden="true" /></BInputGroupText>
             <SimpleTypeahead
               id="userSearch"
               ref="userSearch"
@@ -100,15 +95,15 @@ export default {
               :item-projection="userProjection"
               @select-item="setSelectedUser"
             />
-          </b-input-group>
+          </BInputGroup>
         </template>
         <template v-else>
-          <b-alert
+          <BAlert
             show
             variant="info"
             dismissible
             class="w-100 mb-0"
-            @dismissed="clearSelectedUser"
+            @close="clearSelectedUser"
           >
             <p class="mb-0">
               <b>{{ selectedUser.name }}</b>
@@ -116,20 +111,20 @@ export default {
             <p class="mb-0">
               {{ selectedUser.email }}
             </p>
-          </b-alert>
+          </BAlert>
         </template>
-      </b-col>
-    </b-row>
+      </BCol>
+    </BRow>
     <div v-if="selectedUser">
       <br>
-      <b-row>
-        <b-col>
+      <BRow>
+        <BCol>
           Choose a role
           <hr class="mt-1">
-        </b-col>
-      </b-row>
-      <b-row v-for="(role, index) in available_roles" :key="role">
-        <b-col>
+        </BCol>
+      </BRow>
+      <BRow v-for="(role, index) in available_roles" :key="role">
+        <BCol>
           <div class="d-flex mb-3">
             <span>
               <input
@@ -147,25 +142,25 @@ export default {
               <span><small class="muted role-description">{{ roleDescriptions[index] }}</small></span>
             </div>
           </div>
-        </b-col>
-      </b-row>
+        </BCol>
+      </BRow>
     </div>
     <br>
-    <b-row>
-      <b-col>
+    <BRow>
+      <BCol>
         <form :action="formAction()" method="post">
-          <input id="NewProjectMemberAuthenticityToken" type="hidden" name="authenticity_token" :value="authenticityToken">
+          <input id="NewProjectMemberAuthenticityToken" type="hidden" name="authenticity_token" :value="csrfToken">
           <input id="NewMembershipMembershipType" type="hidden" name="membership[membership_type]" :value="membership_type">
           <input id="NewMembershipMembershipId" type="hidden" name="membership[membership_id]" :value="membership_id">
           <input id="NewMembershipEmail" type="hidden" name="membership[user_id]" :value="selectedUserId">
           <input id="access_request_id" type="hidden" name="membership[access_request_id]" :value="access_request_id">
           <input id="NewMembershipRole" type="hidden" name="membership[role]" :value="selectedRole">
-          <b-button block type="submit" variant="primary" :disabled="isSubmitDisabled" rel="nofollow">
+          <BButton block type="submit" variant="primary" :disabled="isSubmitDisabled" rel="nofollow">
             Add User to Project
-          </b-button>
+          </BButton>
         </form>
-      </b-col>
-    </b-row>
+      </BCol>
+    </BRow>
   </div>
 </template>
 
