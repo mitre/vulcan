@@ -16,6 +16,13 @@ Rails.application.routes.draw do
     get 'navigation', to: 'navigation#show'
     get 'search/global', to: 'search#global'
 
+    # Project member management
+    resources :projects, only: [] do
+      member do
+        get 'search_users', to: 'projects#search_users'
+      end
+    end
+
     # Find and Replace API (component-scoped)
     scope 'components/:component_id/find_replace' do
       post 'find', to: 'find_replace#find'
