@@ -371,7 +371,7 @@ function openExportModal(type: string) {
       <div class="col-12">
         <BTabs v-model:index="activeTab" content-class="mt-3" nav-class="nav-justified" lazy>
           <!-- Components Tab -->
-          <BTab lazy active>
+          <BTab lazy>
             <template #title>
               Components <span class="badge bg-info ms-1">{{ project?.components?.length || 0 }}</span>
             </template>
