@@ -49,6 +49,14 @@ const showDetails = ref(true)
 const showMetadata = ref(true)
 const showHistory = ref(true)
 
+// Tab configuration - single source of truth for tab indices
+const TAB_INDICES = {
+  COMPONENTS: 0,
+  DIFF_VIEWER: 1,
+  MEMBERS: 2,
+} as const
+const TAB_COUNT = Object.keys(TAB_INDICES).length
+
 // Offcanvas state - separate for each section
 const showDetailsOffcanvas = ref(false)
 const showMetadataOffcanvas = ref(false)
@@ -100,7 +108,7 @@ const membershipsTableRef = ref<InstanceType<typeof MembershipsTable> | null>(nu
 
 async function acceptRequest(member: any) {
   showPendingRequestsOffcanvas.value = false
-  activeTab.value = 2 // Members tab (was 3 before Revision History removal)
+  activeTab.value = TAB_INDICES.MEMBERS
 
   await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -193,7 +201,7 @@ onMounted(() => {
   // Check URL hash first (takes priority over localStorage)
   const hash = window.location.hash.slice(1) // Remove the '#'
   if (hash === 'members') {
-    activeTab.value = 2 // Members is now tab index 2 (was 3 before Revision History removal)
+    activeTab.value = TAB_INDICES.MEMBERS
     return
   }
 
@@ -202,13 +210,13 @@ onMounted(() => {
   if (saved) {
     try {
       const savedIndex = JSON.parse(saved)
-      // Validate saved index is within bounds (we have 3 tabs: 0, 1, 2)
-      if (savedIndex >= 0 && savedIndex <= 2) {
+      // Validate saved index is within bounds
+      if (savedIndex >= 0 && savedIndex < TAB_COUNT) {
         activeTab.value = savedIndex
       }
       else {
         // Invalid index (probably from before tab removal), default to Components
-        activeTab.value = 0
+        activeTab.value = TAB_INDICES.COMPONENTS
         localStorage.removeItem(`projectTabIndex-${project.value?.id}`)
       }
     }
