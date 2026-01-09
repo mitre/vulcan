@@ -6,12 +6,13 @@
  */
 
 import { orderBy, sortBy, uniq } from 'lodash'
+import { BTabs, BTab, BButton, BOffcanvas } from 'bootstrap-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
-import { updateProject } from '@/apis/projects.api'
-import { formatDateTime, hasPermission, useAppToast } from '@/composables'
+import { formatDateTime, hasPermission, useAppToast, useProjects } from '@/composables'
 import { http } from '@/services/http.service'
+import axios from 'axios'
 
-// Child components (still Vue 2 compat for now)
+// Child components
 import AddComponentModal from '../components/AddComponentModal.vue'
 import ComponentCard from '../components/ComponentCard.vue'
 import NewComponentModal from '../components/NewComponentModal.vue'
@@ -38,14 +39,22 @@ const props = defineProps<{
 // }>()
 
 const toast = useAppToast()
+const { fetchById, update } = useProjects()
 
-// Reactive state
-const project = ref<any>(props.initialProjectState)
+// Reactive state - wrap plain object prop in ref
+const project = ref(props.initialProjectState)
 const visible = ref(props.initialProjectState?.visibility === 'discoverable')
 const activeTab = ref(0)
 const showDetails = ref(true)
 const showMetadata = ref(true)
 const showHistory = ref(true)
+
+// Offcanvas state - separate for each section
+const showDetailsOffcanvas = ref(false)
+const showMetadataOffcanvas = ref(false)
+const showHistoryOffcanvas = ref(false)
+const showPendingRequestsOffcanvas = ref(false)
+const showExportOffcanvas = ref(false)
 
 // Export modal state
 const showExportModal = ref(false)
@@ -60,6 +69,57 @@ const showVisibilityModal = ref(false)
 // Computed
 const isProjectAdmin = computed(() => hasPermission(props.effectivePermissions, 'admin'))
 const isAuthor = computed(() => hasPermission(props.effectivePermissions, 'author'))
+
+// Pending members - use user data directly from access_requests
+const pendingMembers = computed(() => {
+  if (!project.value?.access_requests) return []
+
+  return project.value.access_requests.map((request: any) => ({
+    id: request.user?.id || request.user_id,
+    name: request.user?.name || 'Unknown User',
+    email: request.user?.email || '',
+    request_id: request.id,
+    created_at: request.created_at,
+  }))
+})
+
+// Get access request by ID
+function getAccessRequestById(requestId: number) {
+  return project.value?.access_requests?.find((request: any) => request.id === requestId)
+}
+
+// Accept access request - delegate to MembershipsTable component
+const membershipsTableRef = ref<InstanceType<typeof MembershipsTable> | null>(null)
+
+async function acceptRequest(member: any) {
+  showPendingRequestsOffcanvas.value = false
+  activeTab.value = 3
+
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  if (membershipsTableRef.value && typeof membershipsTableRef.value.acceptRequest === 'function') {
+    membershipsTableRef.value.acceptRequest(member)
+  }
+  else {
+    toast.info(`Click "Accept" on ${member.name}'s pending request to assign a role`)
+  }
+}
+
+// Reject access request
+async function rejectRequest(member: any) {
+  if (!member.request_id) return
+
+  try {
+    await axios.delete(`/projects/${project.value.id}/project_access_requests/${member.request_id}`)
+    toast.success(`${member.name}'s request has been rejected.`, 'Request Rejected')
+    await refreshProject()
+    showPendingRequestsOffcanvas.value = false
+  }
+  catch (error: any) {
+    console.error('Failed to reject request:', error)
+    toast.error(error.response?.data?.error || 'Failed to reject request. Please try again.')
+  }
+}
 
 const sortedComponents = computed(() => {
   return orderBy(
@@ -145,9 +205,11 @@ onMounted(() => {
 // Methods
 async function refreshProject() {
   try {
-    const response = await http.get(`/projects/${project.value.id}`)
-    project.value = response.data
-    visible.value = project.value.visibility === 'discoverable'
+    const refreshed = await fetchById(project.value.id)
+    if (refreshed) {
+      project.value = refreshed
+      visible.value = refreshed.visibility === 'discoverable'
+    }
   }
   catch {
     toast.error('Failed to refresh project')
@@ -156,7 +218,7 @@ async function refreshProject() {
 
 async function updateVisibility() {
   try {
-    await updateProject(project.value.id, {
+    await update(project.value.id, {
       visibility: visible.value ? 'discoverable' : 'hidden',
     })
     toast.success('Visibility updated')
@@ -237,15 +299,14 @@ function openExportModal(type: string) {
       </ol>
     </nav>
 
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-8">
+    <!-- Action Bar -->
+    <div class="mb-3 pb-3 border-bottom">
+      <!-- Title Row -->
+      <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center gap-2">
-          <h1 class="mb-0">
-            {{ project?.name }}
-          </h1>
+          <h1 class="mb-0 h2">{{ project?.name }}</h1>
           <span class="badge bg-info">{{ project?.visibility }}</span>
-          <div v-if="isProjectAdmin" class="form-check form-switch ms-3">
+          <div v-if="isProjectAdmin" class="form-check form-switch ms-2">
             <input
               id="visibility-switch"
               v-model="visible"
@@ -258,70 +319,51 @@ function openExportModal(type: string) {
             </label>
           </div>
         </div>
+        <div class="btn-group" role="group">
+        <BButton variant="outline-secondary" size="sm" @click="showDetailsOffcanvas = true">
+          <i class="bi bi-info-circle me-1" />
+          Details
+        </BButton>
+        <BButton variant="outline-secondary" size="sm" @click="showMetadataOffcanvas = true">
+          <i class="bi bi-tags me-1" />
+          Metadata
+        </BButton>
+        <BButton variant="outline-secondary" size="sm" @click="showHistoryOffcanvas = true">
+          <i class="bi bi-clock-history me-1" />
+          History
+        </BButton>
+        <BButton v-if="isProjectAdmin" variant="primary" size="sm" @click="showExportOffcanvas = true">
+          <i class="bi bi-download me-1" />
+          Export
+        </BButton>
       </div>
-      <div class="col-md-4 text-muted text-end">
-        <p v-if="lastAudit" class="mb-1">
-          <span v-if="lastAudit.created_at">Last update on {{ formatDateTime(lastAudit.created_at) }}</span>
-          <span v-if="lastAudit.user_id"> by {{ lastAudit.user_id }}</span>
-        </p>
-        <p class="mb-1">
+      </div>
+
+      <!-- Metadata Row -->
+      <div class="d-flex justify-content-end text-muted small">
+        <div class="me-4">
+          <span v-if="lastAudit?.created_at">Last update on {{ formatDateTime(lastAudit.created_at) }}</span>
+        </div>
+        <div>
           <span v-if="project?.admin_name">
             {{ project.admin_name }}
             {{ project.admin_email ? `(${project.admin_email})` : '' }}
           </span>
           <em v-else>No Project Admin</em>
-        </p>
+        </div>
       </div>
     </div>
 
     <!-- Main content -->
     <div class="row">
-      <!-- Left column - Tabs -->
-      <div class="col-md-10 border-end">
-        <ul class="nav nav-tabs nav-justified" role="tablist">
-          <li class="nav-item">
-            <button
-              class="nav-link" :class="[{ active: activeTab === 0 }]"
-              @click="activeTab = 0"
-            >
-              Components ({{ project?.components?.length || 0 }})
-            </button>
-          </li>
-          <li class="nav-item">
-            <button
-              class="nav-link" :class="[{ active: activeTab === 1 }]"
-              @click="activeTab = 1"
-            >
-              Diff Viewer
-            </button>
-          </li>
-          <li class="nav-item">
-            <button
-              class="nav-link" :class="[{ active: activeTab === 2 }]"
-              @click="activeTab = 2"
-            >
-              Revision History
-            </button>
-          </li>
-          <li class="nav-item">
-            <button
-              class="nav-link" :class="[{ active: activeTab === 3 }]"
-              @click="activeTab = 3"
-            >
-              Members ({{ project?.memberships_count || 0 }})
-              <span
-                v-if="isProjectAdmin && project?.access_requests?.length > 0"
-                class="badge bg-info ms-1"
-              >
-                pending
-              </span>
-            </button>
-          </li>
-        </ul>
-
-        <div class="tab-content mt-3">
+      <!-- Main column - Full width tabs -->
+      <div class="col-12">
+        <BTabs v-model:index="activeTab" content-class="mt-3" nav-class="nav-justified" lazy>
           <!-- Components Tab -->
-          <div v-show="activeTab === 0" class="tab-pane active">
+          <BTab lazy active>
+            <template #title>
+              Components <span class="badge bg-info ms-1">{{ project?.components?.length || 0 }}</span>
+            </template>
             <h2>Project Components</h2>
             <div class="mb-3">
               <NewComponentModal
@@ -443,24 +485,43 @@ function openExportModal(type: string) {
                 </div>
               </div>
             </template>
-          </div>
+          </BTab>
 
           <!-- Diff Viewer Tab -->
-          <div v-show="activeTab === 1" class="tab-pane">
+          <BTab lazy>
+            <template #title>
+              Diff Viewer
+            </template>
             <DiffViewer :project="initialProjectState" />
-          </div>
+          </BTab>
 
           <!-- Revision History Tab -->
-          <div v-show="activeTab === 2" class="tab-pane">
+          <BTab lazy>
+            <template #title>
+              Revision History
+            </template>
             <RevisionHistory
               :project="initialProjectState"
               :unique-component-names="uniqueComponentNames"
             />
-          </div>
+          </BTab>
 
           <!-- Members Tab -->
-          <div v-show="activeTab === 3" class="tab-pane">
+          <BTab lazy>
+            <template #title>
+              Members <span class="badge bg-info ms-1">{{ project?.memberships_count || 0 }}</span>
+              <span
+                v-if="isProjectAdmin && project?.access_requests?.length > 0"
+                class="badge bg-danger ms-1 cursor-pointer"
+                role="button"
+                @click.stop="showPendingRequestsOffcanvas = true"
+              >
+                <i class="bi bi-exclamation-circle me-1" />
+                {{ project.access_requests.length }} pending
+              </span>
+            </template>
             <MembershipsTable
+              ref="membershipsTableRef"
               :editable="isProjectAdmin"
               membership_type="Project"
               :membership_id="project?.id"
@@ -470,92 +531,147 @@ function openExportModal(type: string) {
               :available_roles="availableRoles"
               :access_requests="project?.access_requests"
             />
-          </div>
-        </div>
-      </div>
-
-      <!-- Right column - Details sidebar -->
-      <div class="col-md-2">
-        <!-- Project Details -->
-        <div class="mb-4">
-          <div
-            class="d-flex align-items-center cursor-pointer"
-            @click="showDetails = !showDetails"
-          >
-            <h5 class="m-0">
-              Project Details
-            </h5>
-            <i class="bi ms-2" :class="[showDetails ? 'bi-chevron-down' : 'bi-chevron-up']" />
-          </div>
-          <div v-show="showDetails" class="mt-2">
-            <p class="mb-1">
-              <strong>Name:</strong> {{ project?.name }}
-            </p>
-            <p v-if="project?.description" class="mb-1">
-              <strong>Description:</strong> {{ project.description }}
-            </p>
-            <p v-for="stat in detailsStats" :key="stat.label" class="mb-1">
-              <strong>{{ stat.label }}:</strong> {{ stat.value }} ({{ stat.pct }}%)
-            </p>
-            <p class="mb-1">
-              <strong>Total:</strong> {{ project?.details?.total }}
-            </p>
-            <UpdateProjectDetailsModal
-              v-if="isProjectAdmin"
-              :project="project"
-              @project-updated="refreshProject"
-            />
-          </div>
-        </div>
-
-        <!-- Project Metadata -->
-        <div class="mb-4">
-          <div
-            class="d-flex align-items-center cursor-pointer"
-            @click="showMetadata = !showMetadata"
-          >
-            <h5 class="m-0">
-              Project Metadata
-            </h5>
-            <i class="bi ms-2" :class="[showMetadata ? 'bi-chevron-down' : 'bi-chevron-up']" />
-          </div>
-          <div v-show="showMetadata" class="mt-2">
-            <small
-              v-if="isProjectAdmin && (!project?.metadata || !project?.metadata['Slack Channel ID'])"
-              class="text-muted"
-            >
-              Add a metadata with key `Slack Channel ID` for slack notifications.
-            </small>
-            <div v-for="(value, key) in project?.metadata" :key="key">
-              <p class="mb-1">
-                <strong>{{ key }}:</strong> {{ value }}
-              </p>
-            </div>
-            <UpdateMetadataModal
-              v-if="isAuthor"
-              :project="project"
-              @project-updated="refreshProject"
-            />
-          </div>
-        </div>
-
-        <!-- Project History -->
-        <div>
-          <div
-            class="d-flex align-items-center cursor-pointer"
-            @click="showHistory = !showHistory"
-          >
-            <h5 class="m-0">
-              Project History
-            </h5>
-            <i class="bi ms-2" :class="[showHistory ? 'bi-chevron-down' : 'bi-chevron-up']" />
-          </div>
-          <div v-show="showHistory" class="mt-2">
-            <History :histories="project?.histories" :revertable="false" />
-          </div>
-        </div>
+          </BTab>
+        </BTabs>
       </div>
     </div>
+
+    <!-- Project Details Offcanvas -->
+    <BOffcanvas
+      v-model="showDetailsOffcanvas"
+      placement="end"
+      title="Project Details"
+    >
+      <p class="mb-2">
+        <strong>Name:</strong> {{ project?.name }}
+      </p>
+      <p v-if="project?.description" class="mb-2">
+        <strong>Description:</strong> {{ project.description }}
+      </p>
+      <p v-for="stat in detailsStats" :key="stat.label" class="mb-2">
+        <strong>{{ stat.label }}:</strong> {{ stat.value }} ({{ stat.pct }}%)
+      </p>
+      <p class="mb-3">
+        <strong>Total:</strong> {{ project?.details?.total }}
+      </p>
+      <UpdateProjectDetailsModal
+        v-if="isProjectAdmin"
+        :project="project"
+        @project-updated="refreshProject"
+      />
+    </BOffcanvas>
+
+    <!-- Project Metadata Offcanvas -->
+    <BOffcanvas
+      v-model="showMetadataOffcanvas"
+      placement="end"
+      title="Project Metadata"
+    >
+      <small
+        v-if="isProjectAdmin && (!project?.metadata || !project?.metadata['Slack Channel ID'])"
+        class="text-muted mb-3 d-block"
+      >
+        Add a metadata with key `Slack Channel ID` for slack notifications.
+      </small>
+      <div v-for="(value, key) in project?.metadata" :key="key" class="mb-2">
+        <strong>{{ key }}:</strong> {{ value }}
+      </div>
+      <div class="mt-3">
+        <UpdateMetadataModal
+          v-if="isAuthor"
+          :project="project"
+          @project-updated="refreshProject"
+        />
+      </div>
+    </BOffcanvas>
+
+    <!-- Project History Offcanvas -->
+    <BOffcanvas
+      v-model="showHistoryOffcanvas"
+      placement="end"
+      title="Project History"
+    >
+      <History :histories="project?.histories" :revertable="false" />
+    </BOffcanvas>
+
+    <!-- Pending Access Requests Offcanvas -->
+    <BOffcanvas
+      v-model="showPendingRequestsOffcanvas"
+      placement="end"
+      title="Pending Access Requests"
+      body-class="pb-5"
+    >
+      <div v-if="pendingMembers.length === 0" class="text-muted text-center py-4">
+        <i class="bi bi-inbox display-4 d-block mb-2" />
+        No pending access requests
+      </div>
+
+      <div v-else class="list-group list-group-flush">
+        <div
+          v-for="member in pendingMembers"
+          :key="member.request_id"
+          class="list-group-item px-0"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <strong class="d-block">{{ member.name }}</strong>
+              <small class="text-muted d-block">{{ member.email }}</small>
+              <small class="text-muted">
+                <i class="bi bi-clock me-1" />
+                Requested {{ formatDateTime(member.created_at) }}
+              </small>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <BButton
+              variant="success"
+              size="sm"
+              @click="acceptRequest(member)"
+            >
+              <i class="bi bi-check-lg me-1" />
+              Accept
+            </BButton>
+            <BButton
+              variant="danger"
+              size="sm"
+              @click="rejectRequest(member)"
+            >
+              <i class="bi bi-x-lg me-1" />
+              Reject
+            </BButton>
+          </div>
+        </div>
+      </div>
+    </BOffcanvas>
+
+    <!-- Export Offcanvas -->
+    <BOffcanvas
+      v-model="showExportOffcanvas"
+      placement="end"
+      title="Export Project"
+    >
+      <div class="mb-4">
+        <h6>Quick Export</h6>
+        <div class="d-grid gap-2">
+          <BButton variant="outline-primary" @click="downloadExport('inspec')">
+            <i class="bi bi-filetype-rb me-2" />
+            InSpec Profile
+          </BButton>
+          <BButton variant="outline-primary" @click="downloadExport('xccdf')">
+            <i class="bi bi-filetype-xml me-2" />
+            XCCDF Export
+          </BButton>
+          <BButton variant="outline-primary" @click="openExportModal('excel')">
+            <i class="bi bi-filetype-xlsx me-2" />
+            Excel Export
+          </BButton>
+          <BButton variant="outline-primary" @click="openExportModal('disa_excel')">
+            <i class="bi bi-filetype-xlsx me-2" />
+            DISA Excel Export
+          </BButton>
+        </div>
+      </div>
+    </BOffcanvas>
 
     <!-- Visibility Confirmation Modal -->
     <div
