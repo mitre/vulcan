@@ -11,7 +11,7 @@ import { useUsersStore } from '@/stores'
 const usersStore = useUsersStore()
 
 // Top-level await makes this component suspensible
-await usersStore.fetchUsers()
+await usersStore.fetchAdminUsers()
 </script>
 
 <template>

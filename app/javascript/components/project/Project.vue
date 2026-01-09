@@ -74,13 +74,19 @@ const isAuthor = computed(() => hasPermission(props.effectivePermissions, 'autho
 const pendingMembers = computed(() => {
   if (!project.value?.access_requests) return []
 
-  return project.value.access_requests.map((request: any) => ({
-    id: request.user?.id || request.user_id,
-    name: request.user?.name || 'Unknown User',
-    email: request.user?.email || '',
-    request_id: request.id,
-    created_at: request.created_at,
-  }))
+  console.log('Raw access_requests from API:', project.value.access_requests)
+
+  return project.value.access_requests.map((request: any) => {
+    const mapped = {
+      id: request.user?.id || request.user_id,
+      name: request.user?.name || 'Unknown User',
+      email: request.user?.email || '',
+      request_id: request.id,
+      created_at: request.created_at,
+    }
+    console.log('Mapped pending member:', mapped)
+    return mapped
+  })
 })
 
 // Get access request by ID

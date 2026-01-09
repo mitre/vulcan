@@ -224,7 +224,7 @@ class ApplicationController < ActionController::Base
             message: exception.message,
             variant: 'danger'
           }
-        }, status: :unauthorized
+        }, status: :forbidden # 403, not 401 - user is authenticated but lacks permission
       end
     end
   end

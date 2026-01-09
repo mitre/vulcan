@@ -54,7 +54,8 @@ class ProjectsController < ApplicationController
 
     # Build optimized JSON response - uses batch SQL queries instead of N+1
     @project_json = @project.as_json(
-      methods: %i[histories memberships metadata available_components available_members details users access_requests]
+      methods: %i[histories memberships metadata available_components available_members details users],
+      include: { access_requests: { include: :user } }
     ).merge('components' => @project.components_with_summaries).to_json
 
     respond_to do |format|
