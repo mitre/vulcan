@@ -57,6 +57,7 @@ const { search, currentPage, paginatedItems, totalRows, perPage } = useBaseTable
 const showNewMemberModal = ref(false)
 const selectedMember = ref<IAvailableMember | null>(null)
 const accessRequestId = ref<number | null>(null)
+const newMembershipRef = ref<InstanceType<typeof NewMembership> | null>(null)
 
 // Delete confirmation with composable
 const {
@@ -119,8 +120,11 @@ function handleRoleChange(membership: IMembership) {
  * Accept access request - open modal with pre-selected member
  */
 function acceptRequest(member: IAvailableMember) {
+  console.log('MembershipsTable.acceptRequest called with:', member)
+  console.log('Available access_requests:', props.access_requests)
   selectedMember.value = member
   accessRequestId.value = getAccessRequestId(member) ?? null
+  console.log('Found accessRequestId:', accessRequestId.value)
   showNewMemberModal.value = true
 }
 
@@ -158,6 +162,15 @@ function openNewMemberModal() {
   selectedMember.value = null
   accessRequestId.value = null
   showNewMemberModal.value = true
+}
+
+/**
+ * Submit the new member form
+ */
+function submitNewMember() {
+  if (newMembershipRef.value) {
+    newMembershipRef.value.submitForm()
+  }
 }
 
 /**
@@ -290,10 +303,13 @@ defineExpose({
       size="md"
       title="Invite Project Member"
       centered
-      :hide-footer="true"
+      ok-title="Add User to Project"
+      :ok-disabled="newMembershipRef?.isSubmitDisabled ?? true"
+      @ok="submitNewMember"
       @hidden="resetModal"
     >
       <NewMembership
+        ref="newMembershipRef"
         :membership_type="membership_type"
         :membership_id="membership_id"
         :available_members="available_members"
