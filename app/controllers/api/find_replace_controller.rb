@@ -13,25 +13,11 @@ module Api
   #   POST /api/components/:component_id/find_replace/replace_field
   #   POST /api/components/:component_id/find_replace/replace_all
   #
-  class FindReplaceController < ApplicationController
+  class FindReplaceController < BaseController
     before_action :authenticate_user!
     before_action :set_component
     before_action :authorize_read, only: [:find]
     before_action :authorize_write, except: [:find]
-    skip_before_action :setup_navigation
-    skip_before_action :check_access_request_notifications
-
-    rescue_from ActionController::ParameterMissing do |exception|
-      render json: { error: exception.message }, status: :bad_request
-    end
-
-    rescue_from ActiveRecord::RecordNotFound do |_exception|
-      render json: { error: 'Not found' }, status: :not_found
-    end
-
-    rescue_from NotAuthorizedError do |exception|
-      render json: { error: exception.message }, status: :unauthorized
-    end
 
     ##
     # Find all matches in component

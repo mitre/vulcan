@@ -5,10 +5,7 @@ module Api
   # API controller for navigation data
   # Returns navigation links and access request notifications
   #
-  class NavigationController < ApplicationController
-    skip_before_action :setup_navigation
-    skip_before_action :check_access_request_notifications
-
+  class NavigationController < BaseController
     def show
       links = build_navigation_links
       access_requests = build_access_requests

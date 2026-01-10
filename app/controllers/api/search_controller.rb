@@ -5,10 +5,7 @@ module Api
   # API controller for global search functionality
   # Returns search results across projects, components, rules, STIGs, and SRGs
   #
-  class SearchController < ApplicationController
-    skip_before_action :setup_navigation
-    skip_before_action :check_access_request_notifications
-
+  class SearchController < BaseController
     def global
       raw_query = params[:q].to_s.strip
       limit = (params[:limit] || 5).to_i.clamp(1, 20)

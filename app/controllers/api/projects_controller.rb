@@ -4,9 +4,7 @@ module Api
   ##
   # API controller for project member management
   #
-  class ProjectsController < ApplicationController
-    skip_before_action :setup_navigation
-    skip_before_action :check_access_request_notifications
+  class ProjectsController < BaseController
     before_action :authenticate_user!
     before_action :set_project
     before_action :authorize_admin_project
