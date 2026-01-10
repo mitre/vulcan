@@ -48,7 +48,7 @@ RSpec.describe 'Api::FindReplace' do
       it 'denies access' do
         post find_path, params: { search: 'sshd' }, as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
       end
     end
 
@@ -140,7 +140,7 @@ RSpec.describe 'Api::FindReplace' do
           replacement: 'openssh'
         }, as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
       end
     end
 
@@ -374,7 +374,7 @@ RSpec.describe 'Api::FindReplace' do
       it 'denies write access' do
         post undo_path, params: { rule_id: rule1.id }, as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
       end
     end
   end

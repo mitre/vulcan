@@ -132,10 +132,10 @@ RSpec.describe 'Components' do
       it 'denies access' do
         component_id = component.id
 
-        # Non-admin user cannot delete - should return unauthorized
+        # Non-admin user cannot delete - should return forbidden (authenticated but not authorized)
         delete "/components/#{component_id}", as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:forbidden)
         # The component should still exist
         expect(Component.find_by(id: component_id)).to be_present
       end
