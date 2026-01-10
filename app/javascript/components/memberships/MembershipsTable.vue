@@ -16,7 +16,6 @@ import ActionMenu from '@/components/shared/ActionMenu.vue'
 import DeleteModal from '@/components/shared/DeleteModal.vue'
 import SearchInput from '@/components/shared/SearchInput.vue'
 import { useBaseTable, useDeleteConfirmation, useRailsForm } from '@/composables'
-import { useAppToast } from '@/composables/useToast'
 import NewMembership from './NewMembership.vue'
 
 const props = withDefaults(
@@ -39,9 +38,6 @@ const props = withDefaults(
     header_text: 'Members',
   },
 )
-
-// Toast notifications
-const toast = useAppToast()
 
 // Rails form utilities (CSRF token + form submission)
 const { csrfToken, submitDelete } = useRailsForm()

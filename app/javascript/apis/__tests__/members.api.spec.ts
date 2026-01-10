@@ -4,9 +4,9 @@
  * Tests the axios-based API client for user search functionality.
  */
 
+import type { SearchUsersResponse } from '../members.api'
 import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SearchUsersResponse } from '../members.api'
 import { searchUsers } from '../members.api'
 
 vi.mock('axios')

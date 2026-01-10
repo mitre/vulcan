@@ -21,13 +21,13 @@ interface Props {
   projectPrefix: string
 }
 
-const _props = defineProps<Props>()
+defineProps<Props>()
 
 // Store
 const { currentRule } = useRules()
 
 // Handlers - receives slim rule from navigator
-function handleSelect(rule: ISlimRule) {
+function handleSelect(_rule: ISlimRule) {
   // Selection handled by navigator via store
   // Full data is fetched automatically by selectRule()
 }

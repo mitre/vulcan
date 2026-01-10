@@ -16,7 +16,7 @@ function getCsrfToken(): string {
 axios.defaults.headers.common['X-CSRF-Token'] = getCsrfToken()
 
 // Set Accept header to request JSON responses from Rails
-axios.defaults.headers.common['Accept'] = 'application/json'
+axios.defaults.headers.common.Accept = 'application/json'
 
 // Update CSRF token after DOM changes (in case meta tag is updated)
 export function refreshCsrfToken() {

@@ -40,7 +40,6 @@ const emit = defineEmits<{
 
 // Computed permissions
 const isAdmin = computed(() => props.effectivePermissions === 'admin')
-const isReviewer = computed(() => props.effectivePermissions === 'reviewer')
 
 // Can request review: not locked, not under review, has rule
 const canRequestReview = computed(() => {

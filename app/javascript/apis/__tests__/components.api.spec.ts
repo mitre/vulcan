@@ -5,8 +5,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as componentsApi from '../components.api'
 import { http } from '@/services/http.service'
+import * as componentsApi from '../components.api'
 
 vi.mock('@/services/http.service', () => ({
   http: {

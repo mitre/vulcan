@@ -51,10 +51,6 @@ const satisfiesOthersCount = computed(() =>
   props.rules.filter(r => (r.satisfies_count ?? 0) > 0).length,
 )
 
-const satisfiedByCount = computed(() =>
-  props.rules.filter(r => r.is_merged).length,
-)
-
 // Card definitions
 interface CardDef {
   id: SummaryFilter

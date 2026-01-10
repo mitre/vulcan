@@ -4,8 +4,9 @@
  * Tests for empty state display logic, component visibility, and tab functionality
  */
 
+import type { VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount, VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import Project from '../Project.vue'
 
@@ -21,7 +22,7 @@ vi.mock('@/composables', () => ({
     error: vi.fn(),
   })),
   hasPermission: vi.fn(() => true),
-  formatDateTime: vi.fn((date) => date),
+  formatDateTime: vi.fn(date => date),
 }))
 
 // Mock http service
@@ -156,7 +157,7 @@ describe('project component', () => {
     })
   })
 
-  describe('BTabs integration (fix for vulcan-clean-xk8)', () => {
+  describe('bTabs integration (fix for vulcan-clean-xk8)', () => {
     let wrapper: VueWrapper
 
     const mockProject = {
@@ -398,7 +399,7 @@ describe('project component', () => {
     })
   })
 
-  describe('Tab initialization', () => {
+  describe('tab initialization', () => {
     let wrapper: VueWrapper
 
     const mockProject = {

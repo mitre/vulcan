@@ -6,8 +6,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useRevisionHistory } from '../useRevisionHistory'
 import * as componentsApi from '@/apis/components.api'
+import { useRevisionHistory } from '../useRevisionHistory'
 
 vi.mock('@/apis/components.api', () => ({
   getRevisionHistory: vi.fn(),

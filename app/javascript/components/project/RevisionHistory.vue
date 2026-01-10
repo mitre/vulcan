@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BFormSelect, BInputGroup, BInputGroupText } from 'bootstrap-vue-next'
 /**
  * RevisionHistory Component
  *
@@ -7,7 +8,6 @@
  * Uses Vue 3 Composition API with useRevisionHistory composable.
  */
 import { watch } from 'vue'
-import { BFormSelect, BInputGroup, BInputGroupText } from 'bootstrap-vue-next'
 import { useRevisionHistory } from '@/composables/useRevisionHistory'
 
 const props = defineProps<{

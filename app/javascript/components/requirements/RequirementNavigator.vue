@@ -22,7 +22,7 @@ interface Props {
   readOnly?: boolean
 }
 
-const _props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   readOnly: false,
 })
 

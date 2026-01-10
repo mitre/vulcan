@@ -43,10 +43,6 @@ const allSelected = computed(() =>
   props.visibleRules.length > 0
   && props.selectedRules.length === props.visibleRules.length,
 )
-const someSelected = computed(() =>
-  props.selectedRules.length > 0
-  && props.selectedRules.length < props.visibleRules.length,
-)
 
 // Can remove satisfaction only if all selected rules have a satisfaction relationship
 const canRemoveSatisfaction = computed(() => {

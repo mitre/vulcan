@@ -9,7 +9,7 @@ interface Props {
   modelValue: LayoutMode
 }
 
-const _props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<{
   (e: 'update:modelValue', value: LayoutMode): void
 }>()

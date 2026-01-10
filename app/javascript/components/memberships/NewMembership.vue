@@ -8,6 +8,7 @@
  * Built with Reka UI (https://reka-ui.com/) - Headless UI primitives
  */
 import type { IAvailableMember, MemberRole, MembershipType } from '@/types'
+import { useDebounceFn } from '@vueuse/core'
 import { BAlert, BCol, BRow, BSpinner } from 'bootstrap-vue-next'
 import capitalize from 'lodash/capitalize'
 import {
@@ -21,7 +22,6 @@ import {
 import { computed, ref, watch } from 'vue'
 import { searchUsers } from '@/apis/members.api'
 import { useRailsForm } from '@/composables'
-import { useDebounceFn } from '@vueuse/core'
 
 const props = withDefaults(
   defineProps<{

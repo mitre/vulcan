@@ -174,7 +174,7 @@ describe('summaryCards', () => {
       createRule({ id: 3, is_merged: false }),
     ]
 
-    const wrapper = mount(SummaryCards, {
+    mount(SummaryCards, {
       props: { rules },
     })
 

@@ -8,8 +8,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import NewMembership from '../NewMembership.vue'
 import * as membersApi from '@/apis/members.api'
+import NewMembership from '../NewMembership.vue'
 
 // Mock the members API
 vi.mock('@/apis/members.api')

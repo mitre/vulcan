@@ -81,7 +81,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:search': [value: string]
   'update:currentPage': [value: number]
-  'row-click': [item: T]
+  'rowClick': [item: T]
 }>()
 
 // Convert columns to BTable fields format
@@ -101,7 +101,7 @@ function handlePageChange(page: number) {
 }
 
 function handleRowClick(item: T) {
-  emit('row-click', item)
+  emit('rowClick', item)
 }
 </script>
 

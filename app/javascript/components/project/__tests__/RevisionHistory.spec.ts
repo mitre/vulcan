@@ -4,18 +4,19 @@
  * Tests for component revision history display
  */
 
+import type { VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount, VueWrapper } from '@vue/test-utils'
-import { nextTick, ref } from 'vue'
-import RevisionHistory from '../RevisionHistory.vue'
+import { nextTick } from 'vue'
 import * as componentsApi from '@/apis/components.api'
+import RevisionHistory from '../RevisionHistory.vue'
 
 // Mock the API instead of the composable
 vi.mock('@/apis/components.api', () => ({
   getRevisionHistory: vi.fn(),
 }))
 
-describe('RevisionHistory', () => {
+describe('revisionHistory', () => {
   let wrapper: VueWrapper
 
   const mockProject = {
