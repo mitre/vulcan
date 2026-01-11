@@ -20,9 +20,9 @@ RSpec.describe 'API::Projects', type: :request do
     end
 
     context 'when not authenticated' do
-      it 'redirects to login' do
+      it 'returns 401 Unauthorized' do
         get "/api/projects/#{project.id}/search_users", params: { q: 'test' }
-        expect(response).to redirect_to(new_user_session_path)
+        expect(response).to have_http_status(:unauthorized)
       end
     end
 

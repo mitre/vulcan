@@ -55,7 +55,7 @@ describe('loginForm', () => {
       wrapper = mount(LoginForm)
       const link = wrapper.find('a[href="/users/password/new"]')
       expect(link.exists()).toBe(true)
-      expect(link.text()).toContain('Forgot your password?')
+      expect(link.text()).toContain('Forgot password?')
     })
 
     it('has autocomplete enabled', () => {

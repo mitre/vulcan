@@ -1,0 +1,11 @@
+!!!
+%html
+  %head
+    %meta{content: 'text/html; charset=UTF-8', 'http-equiv': 'Content-Type'}/
+    %meta{content: 'width=device-width, initial-scale=1, shrink-to-fit=no', name: 'viewport'}/
+    %title Vulcan - Sign In
+    = csrf_meta_tags
+    = csp_meta_tag
+    %script{src: '/vite-dev/@vite/client', crossorigin: 'anonymous', type: 'module'}
+  %body
+    = yield

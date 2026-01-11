@@ -303,7 +303,8 @@ describe('registerForm', () => {
 
       expect(wrapper.find('input[id="register-name"]').attributes('placeholder')).toBe('Enter your full name')
       expect(wrapper.find('input[type="email"]').attributes('placeholder')).toBe('Enter email')
-      expect(wrapper.find('input[id="register-password"]').attributes('placeholder')).toBe('Enter password (min 6 characters)')
+      // Password inputs are wrapped in PasswordInput component
+      expect(wrapper.find('input[id="register-password"]').attributes('placeholder')).toBe('Enter password')
       expect(wrapper.find('input[id="register-password-confirmation"]').attributes('placeholder')).toBe('Confirm password')
       expect(wrapper.find('input[id="slack-user-id"]').attributes('placeholder')).toBe('Enter Slack user ID (optional)')
     })

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useAppToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores'
+import PasswordInput from './PasswordInput.vue'
 
 // Define emits
 const emit = defineEmits<{
@@ -119,31 +120,22 @@ async function handleSubmit() {
       >
     </div>
 
-    <div class="mb-3">
-      <label for="register-password" class="form-label">Password <span class="text-danger">*</span></label>
-      <input
-        id="register-password"
-        v-model="registerPassword"
-        type="password"
-        class="form-control"
-        required
-        placeholder="Enter password (min 6 characters)"
-        autocomplete="new-password"
-      >
-    </div>
+    <PasswordInput
+      id="register-password"
+      v-model="registerPassword"
+      label="Password"
+      placeholder="Enter password"
+      autocomplete="new-password"
+      :show-strength="true"
+    />
 
-    <div class="mb-3">
-      <label for="register-password-confirmation" class="form-label">Confirm Password <span class="text-danger">*</span></label>
-      <input
-        id="register-password-confirmation"
-        v-model="registerPasswordConfirmation"
-        type="password"
-        class="form-control"
-        required
-        placeholder="Confirm password"
-        autocomplete="new-password"
-      >
-    </div>
+    <PasswordInput
+      id="register-password-confirmation"
+      v-model="registerPasswordConfirmation"
+      label="Confirm Password"
+      placeholder="Confirm password"
+      autocomplete="new-password"
+    />
 
     <div class="mb-3">
       <label for="slack-user-id" class="form-label">Slack User ID <span class="text-muted">(optional)</span></label>

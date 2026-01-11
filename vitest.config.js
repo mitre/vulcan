@@ -4,15 +4,34 @@
  * Based on official @vue/test-utils configuration:
  * https://github.com/vuejs/test-utils/blob/main/vitest.config.ts
  */
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { defineConfig } from 'vitest/config'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import vue from '@vitejs/plugin-vue'
+import IconsResolver from 'unplugin-icons/resolver'
+import Icons from 'unplugin-icons/vite'
+import Components from 'unplugin-vue-components/vite'
+import { defineConfig } from 'vitest/config'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    // Auto-import Vue components (same as vite.config.ts)
+    Components({
+      resolvers: [
+        IconsResolver({
+          prefix: 'I',
+        }),
+      ],
+      dts: false, // Don't generate types in test mode
+    }),
+    // Icon plugin with auto-install (same as vite.config.ts)
+    Icons({
+      autoInstall: true,
+      compiler: 'vue3',
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'app/javascript'),

@@ -23,10 +23,10 @@ RSpec.describe 'Api::Search' do
 
   describe 'GET /api/search/global' do
     context 'when not authenticated' do
-      it 'redirects to login' do
+      it 'returns 401 Unauthorized' do
         get '/api/search/global', params: { q: 'Security' }
 
-        expect(response).to redirect_to(new_user_session_path)
+        expect(response).to have_http_status(:unauthorized)
       end
     end
 

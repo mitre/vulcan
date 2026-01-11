@@ -80,8 +80,8 @@ describe('providerButton', () => {
       const img = wrapper.find('img')
       expect(img.exists()).toBe(true)
       expect(img.attributes('src')).toBe('/assets/okta-icon.png')
-      expect(img.attributes('height')).toBe('40')
-      expect(img.attributes('width')).toBe('40')
+      expect(img.attributes('height')).toBe('24')
+      expect(img.attributes('width')).toBe('24')
     })
 
     it('does not render icon when not provided', () => {
@@ -148,6 +148,116 @@ describe('providerButton', () => {
       const img = wrapper.find('img')
       expect(img.attributes('style')).toContain('vertical-align: middle')
       expect(img.attributes('style')).toContain('margin-right: 10px')
+    })
+  })
+
+  describe('bootstrap Icon Components', () => {
+    it('renders GitHub icon component when providerId is github', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/github',
+          title: 'GitHub',
+          providerId: 'github',
+        },
+      })
+
+      // Check for icon component via aria-label
+      const iconComponent = wrapper.find('[aria-label="GitHub icon"]')
+      expect(iconComponent.exists()).toBe(true)
+    })
+
+    it('renders Google icon component when providerId is google', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/google',
+          title: 'Google',
+          providerId: 'google',
+        },
+      })
+
+      const iconComponent = wrapper.find('[aria-label="Google icon"]')
+      expect(iconComponent.exists()).toBe(true)
+    })
+
+    it('renders OIDC shield icon component when providerId is oidc', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/oidc',
+          title: 'Okta',
+          providerId: 'oidc',
+        },
+      })
+
+      const iconComponent = wrapper.find('[aria-label="Okta icon"]')
+      expect(iconComponent.exists()).toBe(true)
+    })
+
+    it('renders LDAP building icon component when providerId is ldap', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/ldap',
+          title: 'Active Directory',
+          providerId: 'ldap',
+        },
+      })
+
+      const iconComponent = wrapper.find('[aria-label="Active Directory icon"]')
+      expect(iconComponent.exists()).toBe(true)
+    })
+
+    it('renders fallback key icon component for unknown provider', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/unknown',
+          title: 'Custom SSO',
+          providerId: 'unknown-provider',
+        },
+      })
+
+      const iconComponent = wrapper.find('[aria-label="Custom SSO icon"]')
+      expect(iconComponent.exists()).toBe(true)
+    })
+
+    it('prefers custom icon URL over icon component', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/github',
+          title: 'GitHub Enterprise',
+          providerId: 'github',
+          customIcon: '/assets/custom-github.png',
+        },
+      })
+
+      // Should render img tag, not icon component
+      expect(wrapper.find('img').exists()).toBe(true)
+      expect(wrapper.find('img').attributes('src')).toBe('/assets/custom-github.png')
+      expect(wrapper.find('[aria-label="GitHub Enterprise icon"]').exists()).toBe(false)
+    })
+
+    it('supports backward compatibility with icon prop', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/oidc',
+          title: 'OIDC',
+          icon: '/assets/okta.png', // Old prop name
+        },
+      })
+
+      const img = wrapper.find('img')
+      expect(img.exists()).toBe(true)
+      expect(img.attributes('src')).toBe('/assets/okta.png')
+    })
+
+    it('renders no icon when providerId not specified and no custom icon', () => {
+      wrapper = mount(ProviderButton, {
+        props: {
+          path: '/users/auth/custom',
+          title: 'Custom Auth',
+        },
+      })
+
+      expect(wrapper.find('img').exists()).toBe(false)
+      expect(wrapper.find('[aria-label]').exists()).toBe(false)
     })
   })
 })

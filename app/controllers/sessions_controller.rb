@@ -7,6 +7,21 @@ require 'json'
 class SessionsController < Devise::SessionsController
   include OidcDiscoveryHelper
 
+  layout 'devise'
+
+  # Fix for GitHub Issue #700: Prevent infinite redirect loop
+  # Skip authentication requirements that would create redirect loop
+  skip_before_action :setup_navigation
+  skip_before_action :authenticate_user!
+  skip_before_action :check_access_request_notifications
+
+  # Custom new action to clear stored location and prevent redirect loop
+  def new
+    # Clear stored location to avoid post-login redirect issues
+    store_location_for(:user, nil)
+    super
+  end
+
   def create
     # Handle JSON requests for Vue SPA
     respond_to do |format|

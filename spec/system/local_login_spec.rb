@@ -32,8 +32,8 @@ RSpec.describe 'Local Login', skip: (chromedriver_available? ? false : 'Chromedr
       expect(page)
         .to have_css('.b-toast-danger', text: 'Invalid Email or password.')
 
-      # Expect the Local Login tab to be active on page reload
-      expect(page.find('a', text: LOCAL_LOGIN_TAB)[:class]).to include('active')
+      # Vue SPA - login form remains visible after error
+      expect(page).to have_button('Sign in')
     end
   end
 end

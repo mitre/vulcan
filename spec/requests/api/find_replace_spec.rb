@@ -35,10 +35,10 @@ RSpec.describe 'Api::FindReplace' do
     let(:find_path) { "/api/components/#{component.id}/find_replace/find" }
 
     context 'when not authenticated' do
-      it 'redirects to login' do
+      it 'returns 401 Unauthorized' do
         post find_path, params: { search: 'sshd' }
 
-        expect(response).to redirect_to(new_user_session_path)
+        expect(response).to have_http_status(:unauthorized)
       end
     end
 
@@ -112,7 +112,7 @@ RSpec.describe 'Api::FindReplace' do
     let(:replace_instance_path) { "/api/components/#{component.id}/find_replace/replace_instance" }
 
     context 'when not authenticated' do
-      it 'redirects to login' do
+      it 'returns 401 Unauthorized' do
         post replace_instance_path, params: {
           search: 'sshd',
           rule_id: rule1.id,
@@ -121,7 +121,7 @@ RSpec.describe 'Api::FindReplace' do
           replacement: 'openssh'
         }
 
-        expect(response).to redirect_to(new_user_session_path)
+        expect(response).to have_http_status(:unauthorized)
       end
     end
 
@@ -303,10 +303,10 @@ RSpec.describe 'Api::FindReplace' do
     let(:undo_path) { "/api/components/#{component.id}/find_replace/undo" }
 
     context 'when not authenticated' do
-      it 'redirects to login' do
+      it 'returns 401 Unauthorized' do
         post undo_path, params: { rule_id: rule1.id }
 
-        expect(response).to redirect_to(new_user_session_path)
+        expect(response).to have_http_status(:unauthorized)
       end
     end
 

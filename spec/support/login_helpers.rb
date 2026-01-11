@@ -45,7 +45,7 @@ module LoginHelpers
   def vulcan_sign_in_with(login_type, login_fields = {})
     visit new_user_session_path
 
-    click_link login_type
+    # Vue SPA - form is directly visible, no tabs to click
 
     login_fields.each do |key, value|
       fill_in key, with: value

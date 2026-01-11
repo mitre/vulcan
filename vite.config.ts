@@ -1,8 +1,11 @@
-import { defineConfig } from 'vite'
-import RubyPlugin from 'vite-plugin-ruby'
+import path from 'node:path'
 import vue from '@vitejs/plugin-vue'
+import IconsResolver from 'unplugin-icons/resolver'
+import Icons from 'unplugin-icons/vite'
+import Components from 'unplugin-vue-components/vite'
+import { defineConfig } from 'vite'
 import compression from 'vite-plugin-compression'
-import path from 'path'
+import RubyPlugin from 'vite-plugin-ruby'
 
 export default defineConfig({
   define: {
@@ -11,6 +14,21 @@ export default defineConfig({
   plugins: [
     RubyPlugin(),
     vue(),
+    // Auto-import Vue components
+    Components({
+      resolvers: [
+        // Auto-import icons as components
+        IconsResolver({
+          prefix: 'I', // Icon components use I prefix: <IBiGithub />
+        }),
+      ],
+      dts: 'app/javascript/components.d.ts', // TypeScript declarations
+    }),
+    // Icon plugin with auto-install
+    Icons({
+      autoInstall: true, // Automatically install icon sets when used
+      compiler: 'vue3',
+    }),
     // Gzip compression for production builds
     compression({
       algorithm: 'gzip',
@@ -31,9 +49,9 @@ export default defineConfig({
       '@stores': path.resolve(__dirname, 'app/javascript/stores'),
       '@composables': path.resolve(__dirname, 'app/javascript/composables'),
       '@pages': path.resolve(__dirname, 'app/javascript/pages'),
-      'jquery': 'jquery/dist/jquery.js'
+      'jquery': 'jquery/dist/jquery.js',
     },
-    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue']
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
   },
   optimizeDeps: {
     include: [
@@ -48,16 +66,16 @@ export default defineConfig({
       'fuse.js',
       'moment',
       'marked',
-      'dompurify'
-    ]
+      'dompurify',
+    ],
   },
   css: {
     preprocessorOptions: {
       scss: {
         // Don't add additionalData - application.scss handles imports
-        quietDeps: true
-      }
-    }
+        quietDeps: true,
+      },
+    },
   },
   build: {
     sourcemap: true,
@@ -66,9 +84,9 @@ export default defineConfig({
         manualChunks: {
           'vendor-vue': ['vue', 'vue-router', 'pinia'],
           'vendor-ui': ['bootstrap', '@popperjs/core', 'bootstrap-vue-next'],
-          'vendor-utils': ['lodash', 'axios', 'moment', 'fuse.js']
-        }
-      }
-    }
-  }
+          'vendor-utils': ['lodash', 'axios', 'moment', 'fuse.js'],
+        },
+      },
+    },
+  },
 })
