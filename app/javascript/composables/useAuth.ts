@@ -49,6 +49,23 @@ export function useAuth() {
   }
 
   /**
+   * Check authentication status
+   * Silently checks if user is authenticated without showing errors
+   * @returns true if authenticated, false if not
+   */
+  async function checkAuth(): Promise<boolean> {
+    try {
+      const result = await store.checkAuth()
+      // If result is null, user is not authenticated (401 response)
+      return result !== null
+    }
+    catch {
+      // Don't show error toast - authentication checks are often silent
+      return false
+    }
+  }
+
+  /**
    * Register new user
    * @returns true if successful, false if failed
    */
@@ -78,6 +95,7 @@ export function useAuth() {
     // Actions
     login,
     logout,
+    checkAuth,
     register,
   }
 }

@@ -2,6 +2,8 @@
  * useAuth Composable Unit Tests
  */
 
+import type { IUser } from '@/types'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores'
 import { useAuth } from '../useAuth'
@@ -21,6 +23,7 @@ vi.mock('@/apis/auth.api', () => ({
   login: vi.fn(),
   logout: vi.fn(),
   register: vi.fn(),
+  getCurrentUser: vi.fn(),
 }))
 
 // Mock window.location
@@ -35,17 +38,20 @@ describe('useAuth', () => {
   let store: ReturnType<typeof useAuthStore>
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     store = useAuthStore()
     composable = useAuth()
     mockLocation.href = ''
+    vi.clearAllMocks()
   })
 
   describe('reactive state', () => {
     it('exposes user as reactive ref', () => {
       expect(composable.user.value).toBeNull()
 
-      store.$patch({ user: { id: 1, email: 'test@test.com' } as any })
-      expect(composable.user.value).toEqual({ id: 1, email: 'test@test.com' })
+      const mockUser: Partial<IUser> = { id: 1, email: 'test@test.com' }
+      store.$patch({ user: mockUser })
+      expect(composable.user.value).toEqual(mockUser)
     })
 
     it('exposes loading as reactive ref', () => {
@@ -60,7 +66,8 @@ describe('useAuth', () => {
     it('isAdmin reflects store getter', () => {
       expect(composable.isAdmin).toBe(false)
 
-      store.$patch({ user: { id: 1, admin: true } as any })
+      const mockAdmin: Partial<IUser> = { id: 1, admin: true }
+      store.$patch({ user: mockAdmin })
       // Need to get fresh composable to see updated getter
       const fresh = useAuth()
       expect(fresh.isAdmin).toBe(true)
@@ -69,7 +76,8 @@ describe('useAuth', () => {
     it('userEmail reflects store getter', () => {
       expect(composable.userEmail).toBe('')
 
-      store.$patch({ user: { id: 1, email: 'test@example.com' } as any })
+      const mockUser: Partial<IUser> = { id: 1, email: 'test@example.com' }
+      store.$patch({ user: mockUser })
       const fresh = useAuth()
       expect(fresh.userEmail).toBe('test@example.com')
     })
@@ -77,9 +85,47 @@ describe('useAuth', () => {
     it('userName reflects store getter', () => {
       expect(composable.userName).toBe('')
 
-      store.$patch({ user: { id: 1, name: 'John Doe' } as any })
+      const mockUser: Partial<IUser> = { id: 1, name: 'John Doe' }
+      store.$patch({ user: mockUser })
       const fresh = useAuth()
       expect(fresh.userName).toBe('John Doe')
+    })
+  })
+
+  describe('checkAuth action', () => {
+    it('calls store.checkAuth', async () => {
+      const checkAuthSpy = vi.spyOn(store, 'checkAuth')
+
+      await composable.checkAuth()
+
+      expect(checkAuthSpy).toHaveBeenCalled()
+    })
+
+    it('returns true when authentication check succeeds', async () => {
+      const mockResponse = { data: { user: { id: 1 } } }
+      vi.spyOn(store, 'checkAuth').mockResolvedValue(mockResponse)
+
+      const result = await composable.checkAuth()
+
+      expect(result).toBe(true)
+    })
+
+    it('returns false when authentication check fails', async () => {
+      vi.spyOn(store, 'checkAuth').mockRejectedValue(new Error('Unauthorized'))
+
+      const result = await composable.checkAuth()
+
+      expect(result).toBe(false)
+    })
+
+    it('does not show error toast on 401 (expected unauthenticated state)', async () => {
+      const errorSpy = vi.fn()
+      vi.spyOn(store, 'checkAuth').mockResolvedValue(null)
+
+      await composable.checkAuth()
+
+      // Should not call toast.error for expected 401
+      expect(errorSpy).not.toHaveBeenCalled()
     })
   })
 })
