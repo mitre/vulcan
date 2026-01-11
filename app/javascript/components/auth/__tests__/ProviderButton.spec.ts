@@ -1,14 +1,14 @@
 /**
- * OidcForm Component Tests
- * Tests for OIDC provider button (Rails form POST, not SPA)
+ * ProviderButton Component Tests
+ * Tests for OAuth/OIDC/LDAP provider button (Rails form POST, not SPA)
  */
 
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import OidcForm from '../OidcForm.vue'
+import ProviderButton from '../ProviderButton.vue'
 
-describe('oidcForm', () => {
+describe('providerButton', () => {
   let wrapper: VueWrapper
 
   // Mock CSRF token meta tag
@@ -28,10 +28,10 @@ describe('oidcForm', () => {
 
   describe('rendering', () => {
     it('renders form with correct action', () => {
-      wrapper = mount(OidcForm, {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/oidc',
-          oidcTitle: 'OIDC',
+          path: '/users/auth/oidc',
+          title: 'OIDC',
         },
       })
 
@@ -42,10 +42,10 @@ describe('oidcForm', () => {
     })
 
     it('renders CSRF token input', () => {
-      wrapper = mount(OidcForm, {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/oidc',
-          oidcTitle: 'OIDC',
+          path: '/users/auth/oidc',
+          title: 'OIDC',
         },
       })
 
@@ -56,10 +56,10 @@ describe('oidcForm', () => {
     })
 
     it('renders submit button with title', () => {
-      wrapper = mount(OidcForm, {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/oidc',
-          oidcTitle: 'Okta',
+          path: '/users/auth/oidc',
+          title: 'Okta',
         },
       })
 
@@ -69,11 +69,11 @@ describe('oidcForm', () => {
     })
 
     it('renders icon when provided', () => {
-      wrapper = mount(OidcForm, {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/oidc',
-          oidcTitle: 'Okta',
-          oidcIconPath: '/assets/okta-icon.png',
+          path: '/users/auth/oidc',
+          title: 'Okta',
+          icon: '/assets/okta-icon.png',
         },
       })
 
@@ -85,10 +85,10 @@ describe('oidcForm', () => {
     })
 
     it('does not render icon when not provided', () => {
-      wrapper = mount(OidcForm, {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/oidc',
-          oidcTitle: 'OIDC',
+          path: '/users/auth/oidc',
+          title: 'OIDC',
         },
       })
 
@@ -97,22 +97,22 @@ describe('oidcForm', () => {
   })
 
   describe('props', () => {
-    it('uses custom OIDC title', () => {
-      wrapper = mount(OidcForm, {
+    it('uses custom provider title', () => {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/github',
-          oidcTitle: 'GitHub',
+          path: '/users/auth/github',
+          title: 'GitHub',
         },
       })
 
       expect(wrapper.find('button').text()).toContain('Sign in with GitHub')
     })
 
-    it('uses custom OIDC path', () => {
-      wrapper = mount(OidcForm, {
+    it('uses custom provider path', () => {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/google',
-          oidcTitle: 'Google',
+          path: '/users/auth/google',
+          title: 'Google',
         },
       })
 
@@ -122,10 +122,10 @@ describe('oidcForm', () => {
 
   describe('styling', () => {
     it('applies Bootstrap button classes', () => {
-      wrapper = mount(OidcForm, {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/oidc',
-          oidcTitle: 'OIDC',
+          path: '/users/auth/oidc',
+          title: 'OIDC',
         },
       })
 
@@ -137,11 +137,11 @@ describe('oidcForm', () => {
     })
 
     it('applies correct icon styling', () => {
-      wrapper = mount(OidcForm, {
+      wrapper = mount(ProviderButton, {
         props: {
-          oidcPath: '/users/auth/oidc',
-          oidcTitle: 'OIDC',
-          oidcIconPath: '/assets/icon.png',
+          path: '/users/auth/oidc',
+          title: 'OIDC',
+          icon: '/assets/icon.png',
         },
       })
 

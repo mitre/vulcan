@@ -3,9 +3,9 @@ import { ref } from 'vue'
 
 // Define props
 interface Props {
-  oidcPath: string
-  oidcTitle: string
-  oidcIconPath?: string
+  path: string
+  title: string
+  icon?: string
 }
 
 defineProps<Props>()
@@ -15,17 +15,17 @@ const csrfToken = ref(document.querySelector('meta[name="csrf-token"]')?.getAttr
 </script>
 
 <template>
-  <form :action="oidcPath" method="post">
+  <form :action="path" method="post">
     <input type="hidden" name="authenticity_token" :value="csrfToken">
     <button type="submit" class="btn btn-primary btn-lg w-100">
       <img
-        v-if="oidcIconPath"
-        :src="oidcIconPath"
+        v-if="icon"
+        :src="icon"
         style="vertical-align: middle; margin-right: 10px"
         height="40"
         width="40"
       >
-      Sign in with {{ oidcTitle }}
+      Sign in with {{ title }}
     </button>
   </form>
 </template>
