@@ -103,9 +103,10 @@ export const useAuthStore = defineStore('auth.store', () => {
       setUser(response.data.user)
       return response
     }
-    catch (err: any) {
+    catch (err) {
       // If 401, user is not authenticated - clear user and don't throw
-      if (err?.response?.status === 401) {
+      const axiosError = err as { response?: { status?: number } }
+      if (axiosError?.response?.status === 401) {
         clearUser()
         return null
       }
