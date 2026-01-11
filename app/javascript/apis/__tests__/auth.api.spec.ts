@@ -5,8 +5,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getCurrentUser, login, logout } from '../auth.api'
 import { http } from '@/services/http.service'
+import { getCurrentUser, login, logout } from '../auth.api'
 
 vi.mock('@/services/http.service', () => ({
   http: {

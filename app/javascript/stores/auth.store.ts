@@ -16,6 +16,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
   deleteAccount as apiDeleteAccount,
+  getCurrentUser as apiGetCurrentUser,
   getProfile as apiGetProfile,
   login as apiLogin,
   logout as apiLogout,
@@ -67,7 +68,7 @@ export const useAuthStore = defineStore('auth.store', () => {
   async function login(credentials: IUserLogin) {
     return withAsyncAction(loading, error, 'Failed to login', async () => {
       const response = await apiLogin(credentials.email, credentials.password)
-      setUser(response.data)
+      setUser(response.data.user)
       return response
     })
   }
@@ -87,6 +88,33 @@ export const useAuthStore = defineStore('auth.store', () => {
       clearUser()
       loading.value = false
       window.location.href = '/users/sign_in'
+    }
+  }
+
+  /**
+   * Check authentication status by fetching current user from API
+   */
+  async function checkAuth() {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiGetCurrentUser()
+      setUser(response.data.user)
+      return response
+    }
+    catch (err: any) {
+      // If 401, user is not authenticated - clear user and don't throw
+      if (err?.response?.status === 401) {
+        clearUser()
+        return null
+      }
+      // For other errors, set error state and re-throw
+      error.value = 'Failed to check authentication'
+      throw err
+    }
+    finally {
+      loading.value = false
     }
   }
 
@@ -172,6 +200,7 @@ export const useAuthStore = defineStore('auth.store', () => {
     clearUser,
     login,
     logout,
+    checkAuth,
     register,
     fetchProfile,
     updateProfile,
