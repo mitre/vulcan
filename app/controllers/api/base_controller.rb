@@ -8,6 +8,7 @@ module Api
   # - Consistent JSON error handling
   # - Correct HTTP status codes (401 vs 403)
   # - Skips HTML-only before_actions
+  # - Returns 401 JSON instead of redirecting for unauthenticated requests
   #
   # All API controllers should inherit from this instead of ApplicationController
   #
@@ -15,6 +16,14 @@ module Api
     # Skip HTML-only actions - APIs don't need navigation or notifications
     skip_before_action :setup_navigation
     skip_before_action :check_access_request_notifications
+
+    # Override Devise's authentication failure behavior
+    # Return 401 JSON instead of redirecting to login page
+    def authenticate_user!(*args)
+      return head :unauthorized unless user_signed_in?
+
+      super
+    end
 
     # Standardized JSON error responses with correct HTTP semantics
 
@@ -29,7 +38,7 @@ module Api
     end
 
     # 403 Forbidden - Authenticated but not authorized
-    # Note: 401 Unauthorized is for unauthenticated requests (handled by Devise)
+    # Note: 401 Unauthorized is for unauthenticated requests (handled above)
     rescue_from NotAuthorizedError do |exception|
       render json: { error: exception.message }, status: :forbidden
     end

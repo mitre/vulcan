@@ -13,6 +13,13 @@ Rails.application.routes.draw do
 
   # API namespace for SPA
   namespace :api do
+    # Authentication endpoints
+    namespace :auth do
+      post 'login', to: 'sessions#create'
+      delete 'logout', to: 'sessions#destroy'
+      get 'me', to: 'sessions#show'
+    end
+
     get 'navigation', to: 'navigation#show'
     get 'search/global', to: 'search#global'
 

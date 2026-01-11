@@ -50,9 +50,9 @@ RSpec.describe 'Sessions' do
   describe 'GET /users/sign_in' do
     context 'when user is not authenticated' do
       before do
-        # Explicitly ensure warden is logged out
-        logout(:user) if respond_to?(:logout)
-        Warden.test_reset! if defined?(Warden)
+        # Explicitly ensure no user is authenticated
+        sign_out :user if respond_to?(:sign_out)
+        Warden.test_reset!
       end
 
       it 'allows access to login page' do
@@ -102,6 +102,100 @@ RSpec.describe 'Sessions' do
 
         # Devise default behavior - already authenticated users redirect away
         expect(response).to redirect_to(root_path)
+      end
+    end
+  end
+
+  describe 'POST /api/auth/login' do
+    let(:user) { create(:user, email: 'test@example.com', password: 'password123') }
+
+    context 'with valid credentials' do
+      it 'returns user JSON and status 200' do
+        post '/api/auth/login', params: {
+          email: user.email,
+          password: 'password123'
+        }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['user']).to include(
+          'id' => user.id,
+          'email' => user.email
+        )
+        expect(json['user']).to have_key('admin')
+      end
+
+      it 'creates a valid session' do
+        post '/api/auth/login', params: {
+          email: user.email,
+          password: 'password123'
+        }
+
+        # Verify session works by making authenticated request
+        get '/api/navigation'
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with invalid credentials' do
+      it 'returns 401 unauthorized' do
+        post '/api/auth/login', params: {
+          email: user.email,
+          password: 'wrong_password'
+        }
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'with missing email' do
+      it 'returns 401 unauthorized' do
+        post '/api/auth/login', params: {
+          password: 'password123'
+        }
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'with missing password' do
+      it 'returns 401 unauthorized' do
+        post '/api/auth/login', params: {
+          email: user.email
+        }
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+
+  describe 'DELETE /api/auth/logout' do
+    context 'when authenticated' do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it 'returns 204 No Content' do
+        delete '/api/auth/logout'
+
+        expect(response).to have_http_status(:no_content)
+        expect(response.body).to be_empty
+      end
+
+      it 'clears the session' do
+        delete '/api/auth/logout'
+
+        # Verify session is cleared by making authenticated request
+        get '/api/navigation'
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when not authenticated' do
+      it 'returns 204 No Content (logout is idempotent)' do
+        delete '/api/auth/logout'
+
+        expect(response).to have_http_status(:no_content)
       end
     end
   end
