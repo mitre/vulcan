@@ -1,110 +1,71 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import LoginForm from '@/components/auth/LoginForm.vue'
+import ProviderButton from '@/components/auth/ProviderButton.vue'
+import RegisterForm from '@/components/auth/RegisterForm.vue'
 import PageContainer from '@/components/shared/PageContainer.vue'
-import { useAppToast } from '@/composables/useToast'
-import { useAuthStore } from '@/stores'
 
-const authStore = useAuthStore()
-const toast = useAppToast()
+// Type for auth provider configuration
+interface AuthProvider {
+  id: string
+  title: string
+  path: string
+  icon?: string
+}
 
-// Get CSRF token from Rails meta tag
-const csrfToken = ref(document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '')
+// Type for Rails-provided window data
+interface VueAppData {
+  // Provider configuration (OIDC, GitHub, LDAP, etc.)
+  authProviders?: AuthProvider[]
+  // Feature flags
+  localLoginEnabled?: boolean
+  registrationEnabled?: boolean
+  // Backwards compatibility (deprecated - use authProviders)
+  oidcTitle?: string
+  oidcPath?: string
+  oidcIconPath?: string
+}
 
-// Auth configuration from Rails/ENV - show all tabs by default
-const oidcEnabled = ref(true)
-const localEnabled = ref(true)
-const registrationEnabled = ref(true)
-const oidcTitle = ref((window as any).vueAppData?.oidcTitle || 'OIDC')
-const oidcPath = ref((window as any).vueAppData?.oidcPath || '/users/auth/oidc')
-const oidcIconPath = ref((window as any).vueAppData?.oidcIconPath || '')
-const activeTab = ref((window as any).vueAppData?.activeTab || '')
-
-// Login form state
-const email = ref('')
-const password = ref('')
-const _rememberMe = ref(false) // Prefixed with _ as it's not yet used in the UI
-const loading = ref(false)
-
-// Registration form state
-const registerName = ref('')
-const registerEmail = ref('')
-const slackUserId = ref('')
-const registerPassword = ref('')
-const registerPasswordConfirmation = ref('')
-const registerLoading = ref(false)
-
-async function handleLogin() {
-  loading.value = true
-  try {
-    await authStore.login({ email: email.value, password: password.value })
-    window.location.href = '/projects'
-  }
-  catch (error: any) {
-    toast.error(error.response?.data?.error || error.message || 'Unknown error', 'Login Failed')
-    loading.value = false
+declare global {
+  interface Window {
+    vueAppData?: VueAppData
   }
 }
 
-async function handleRegister() {
-  registerLoading.value = true
+// View state
+const showRegistration = ref(false)
 
-  // Validate name
-  if (!registerName.value.trim()) {
-    toast.warning('Name is required', 'Validation Error')
-    registerLoading.value = false
-    return
-  }
+// Auth configuration from Rails
+const localLoginEnabled = ref(window.vueAppData?.localLoginEnabled ?? true)
+const registrationEnabled = ref(window.vueAppData?.registrationEnabled ?? true)
 
-  // Validate passwords match
-  if (registerPassword.value !== registerPasswordConfirmation.value) {
-    toast.warning('Passwords do not match', 'Validation Error')
-    registerLoading.value = false
-    return
+// Provider configuration (with backwards compatibility for old OIDC-only config)
+const providers = computed<AuthProvider[]>(() => {
+  // New multi-provider config
+  if (window.vueAppData?.authProviders) {
+    return window.vueAppData.authProviders
   }
 
-  // Validate password length
-  if (registerPassword.value.length < 6) {
-    toast.warning('Password must be at least 6 characters', 'Validation Error')
-    registerLoading.value = false
-    return
+  // Backwards compatibility: convert old OIDC config to new format
+  if (window.vueAppData?.oidcPath) {
+    return [{
+      id: 'oidc',
+      title: window.vueAppData.oidcTitle || 'OIDC',
+      path: window.vueAppData.oidcPath,
+      icon: window.vueAppData.oidcIconPath,
+    }]
   }
 
-  try {
-    const response = await authStore.register({
-      name: registerName.value.trim(),
-      email: registerEmail.value,
-      password: registerPassword.value,
-      password_confirmation: registerPasswordConfirmation.value,
-      slack_user_id: slackUserId.value.trim() || undefined,
-    })
+  return []
+})
 
-    // Check for success in response data
-    if (response.data?.success) {
-      toast.success('Please log in with your new account.', 'Registration Successful')
-      // Clear the form
-      registerName.value = ''
-      registerEmail.value = ''
-      registerPassword.value = ''
-      registerPasswordConfirmation.value = ''
-      slackUserId.value = ''
-      // Switch to login tab
-      activeTab.value = 'local'
-    }
-    else {
-      // Handle unexpected success response without success flag
-      toast.warning('Please try logging in or register again.', 'Registration Status Unclear')
-    }
-  }
-  catch (error: any) {
-    const errorMessage = error.response?.data?.error
-      || error.response?.data?.errors?.join(', ')
-      || error.message
-      || 'Unknown error'
-    toast.error(errorMessage, 'Registration Failed')
-  }
-  finally {
-    registerLoading.value = false
-  }
+// Event handlers
+function handleSwitchToLogin() {
+  showRegistration.value = false
+}
+
+function showRegistrationForm() {
+  showRegistration.value = true
 }
 </script>
 
@@ -127,137 +88,57 @@ async function handleRegister() {
         <p>Welcome to Vulcan Development</p>
       </div>
       <div class="col-md offset-md-0 offset-lg-1 order-1 order-md-2">
-        <b-card no-body>
-          <b-tabs card fill pills>
-            <!-- OIDC Login -->
-            <b-tab v-if="oidcEnabled" :title="oidcTitle">
-              <b-card-text>
-                <form :action="oidcPath" method="post">
-                  <input type="hidden" name="authenticity_token" :value="csrfToken">
-                  <button type="submit" class="btn btn-primary btn-lg w-100">
-                    <img v-if="oidcIconPath" :src="oidcIconPath" style="vertical-align: middle; margin-right: 10px" height="40" width="40">
-                    Sign in with {{ oidcTitle }}
-                  </button>
-                </form>
-              </b-card-text>
-            </b-tab>
+        <div class="card">
+          <div class="card-body">
+            <!-- OAuth/OIDC/LDAP Providers (if any) -->
+            <div v-if="providers.length > 0" class="mb-3">
+              <ProviderButton
+                v-for="provider in providers"
+                :key="provider.id"
+                :path="provider.path"
+                :title="provider.title"
+                :icon="provider.icon"
+                class="mb-2"
+              />
+            </div>
 
-            <!-- Local Login -->
-            <b-tab v-if="localEnabled" title="Local Login" :active="activeTab === 'local'">
-              <b-card-text>
-                <form autocomplete="on" @submit.prevent="handleLogin">
-                  <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input
-                      id="email"
-                      v-model="email"
-                      type="email"
-                      class="form-control"
-                      required
-                      placeholder="Enter email"
-                      autocomplete="email"
-                    >
-                  </div>
+            <!-- Separator between providers and local login -->
+            <div v-if="providers.length > 0 && localLoginEnabled" class="text-center my-4">
+              <hr class="w-25 d-inline-block" style="vertical-align: middle">
+              <span class="px-3 text-muted">or</span>
+              <hr class="w-25 d-inline-block" style="vertical-align: middle">
+            </div>
 
-                  <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input
-                      id="password"
-                      v-model="password"
-                      type="password"
-                      class="form-control"
-                      required
-                      placeholder="Enter password"
-                      autocomplete="current-password"
-                    >
-                  </div>
+            <!-- Local Login Form (if enabled) -->
+            <div v-if="localLoginEnabled && !showRegistration">
+              <LoginForm />
 
-                  <button type="submit" class="btn btn-primary w-100" :disabled="loading">
-                    {{ loading ? 'Signing in...' : 'Sign in' }}
-                  </button>
+              <!-- Registration Link -->
+              <div v-if="registrationEnabled" class="text-center mt-3">
+                <span class="text-muted">Don't have an account? </span>
+                <a href="#" class="text-decoration-none" @click.prevent="showRegistrationForm">
+                  Sign up
+                </a>
+              </div>
+            </div>
 
-                  <div class="text-center mt-3">
-                    <a href="/users/password/new">Forgot your password?</a>
-                  </div>
-                </form>
-              </b-card-text>
-            </b-tab>
+            <!-- Registration Form -->
+            <div v-if="showRegistration">
+              <h5 class="card-title mb-3">
+                Create Account
+              </h5>
+              <RegisterForm @switch-to-login="handleSwitchToLogin" />
 
-            <!-- Registration -->
-            <b-tab v-if="registrationEnabled" title="Register" :active="activeTab === 'registration'">
-              <b-card-text>
-                <form autocomplete="on" @submit.prevent="handleRegister">
-                  <div class="mb-3">
-                    <label for="register-name" class="form-label">Name <span class="text-danger">*</span></label>
-                    <input
-                      id="register-name"
-                      v-model="registerName"
-                      type="text"
-                      class="form-control"
-                      required
-                      placeholder="Enter your full name"
-                      autocomplete="name"
-                    >
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="register-email" class="form-label">Email <span class="text-danger">*</span></label>
-                    <input
-                      id="register-email"
-                      v-model="registerEmail"
-                      type="email"
-                      class="form-control"
-                      required
-                      placeholder="Enter email"
-                      autocomplete="email"
-                    >
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="register-password" class="form-label">Password <span class="text-danger">*</span></label>
-                    <input
-                      id="register-password"
-                      v-model="registerPassword"
-                      type="password"
-                      class="form-control"
-                      required
-                      placeholder="Enter password (min 6 characters)"
-                      autocomplete="new-password"
-                    >
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="register-password-confirmation" class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                    <input
-                      id="register-password-confirmation"
-                      v-model="registerPasswordConfirmation"
-                      type="password"
-                      class="form-control"
-                      required
-                      placeholder="Confirm password"
-                      autocomplete="new-password"
-                    >
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="slack-user-id" class="form-label">Slack User ID <span class="text-muted">(optional)</span></label>
-                    <input
-                      id="slack-user-id"
-                      v-model="slackUserId"
-                      type="text"
-                      class="form-control"
-                      placeholder="Enter Slack user ID (optional)"
-                    >
-                  </div>
-
-                  <button type="submit" class="btn btn-success w-100" :disabled="registerLoading">
-                    {{ registerLoading ? 'Creating account...' : 'Sign Up' }}
-                  </button>
-                </form>
-              </b-card-text>
-            </b-tab>
-          </b-tabs>
-        </b-card>
+              <!-- Back to Login Link -->
+              <div class="text-center mt-3">
+                <span class="text-muted">Already have an account? </span>
+                <a href="#" class="text-decoration-none" @click.prevent="handleSwitchToLogin">
+                  Sign in
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </PageContainer>
