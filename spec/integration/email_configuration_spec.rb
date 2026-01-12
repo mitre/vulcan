@@ -23,7 +23,10 @@ RSpec.describe 'Email Configuration Integration - Core Validation' do
   end
 
   after do
-    # Reset ActionMailer settings after each test
+    # Reset ActionMailer settings after each test (parallel-safe)
+    # Must reset BOTH config and Base (initializer sets both)
+    Rails.application.config.action_mailer.delivery_method = :test
+    ActionMailer::Base.delivery_method = :test
     ActionMailer::Base.smtp_settings = {}
   end
 
