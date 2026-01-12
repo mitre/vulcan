@@ -82,9 +82,7 @@ onMounted(() => {
           <template v-if="Component">
             <ErrorBoundary>
               <Suspense>
-                <Transition name="fade" mode="out-in">
-                  <component :is="Component" :key="route.path" />
-                </Transition>
+                <component :is="Component" />
                 <template #fallback>
                   <PageContainer>
                     <PageSpinner message="Loading..." />
