@@ -24,7 +24,13 @@
       window.vueAppData = {
         signedIn: #{user_signed_in?.to_json},
         currentUser: #{current_user.to_json},
-        csrfToken: '#{form_authenticity_token}'
+        csrfToken: '#{form_authenticity_token}',
+        banner: {
+          enabled: #{Settings.banner.enabled.to_json},
+          text: #{Settings.banner.text.to_json},
+          backgroundColor: #{Settings.banner.background_color.to_json},
+          textColor: #{Settings.banner.text_color.to_json}
+        }
       };
   %body
     #app

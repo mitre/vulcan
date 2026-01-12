@@ -9,6 +9,7 @@
 import { computed, onMounted } from 'vue'
 import { useColorMode, useReleaseCheck } from '@/composables'
 import { primaryModifierSymbol } from '@/composables/useKeyboardShortcuts'
+import AppBanner from '@/components/shared/AppBanner.vue'
 import NavbarItem from './NavbarItem.vue'
 
 // Types
@@ -72,6 +73,9 @@ onMounted(() => {
 
 <template>
   <div>
+    <!-- App banner (optional colored bar at top) -->
+    <AppBanner />
+
     <BNavbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark border-bottom">
       <div class="container-fluid container-app d-flex align-items-center">
         <BNavbarBrand id="heading" href="/">
@@ -142,7 +146,8 @@ onMounted(() => {
                   <i class="bi bi-person-circle" aria-hidden="true" />
                 </template>
                 <BDropdownItem :href="profile_path">
-                  Profile
+                  <i class="bi bi-person-gear me-1" />
+                  Account Settings
                 </BDropdownItem>
                 <BDropdownItem v-if="users_path" href="/admin">
                   <i class="bi bi-gear me-1" />
@@ -150,6 +155,7 @@ onMounted(() => {
                 </BDropdownItem>
                 <BDropdownDivider v-if="users_path" />
                 <BDropdownItem :href="sign_out_path">
+                  <i class="bi bi-box-arrow-right me-1" />
                   Sign Out
                 </BDropdownItem>
               </BNavItemDropdown>

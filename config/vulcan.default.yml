@@ -19,6 +19,12 @@ defaults: &defaults
   # Production behind proxy: set VULCAN_APP_URL explicitly (e.g., https://vulcan.example.com)
   # Development/Docker: derived from HOST:PORT automatically
   app_url: <%= ENV['VULCAN_APP_URL'] || "#{ENV.fetch('VULCAN_SCHEME', 'http')}://#{ENV.fetch('HOST', 'localhost')}:#{ENV.fetch('PORT', '3000')}" %>
+  # App banner (colored bar at top/bottom of page)
+  banner:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_BANNER_ENABLED']) || false %>
+    text: <%= ENV['VULCAN_BANNER_TEXT'] || '' %>
+    background_color: <%= ENV['VULCAN_BANNER_BACKGROUND_COLOR'] || '#198754' %>
+    text_color: <%= ENV['VULCAN_BANNER_TEXT_COLOR'] || '#ffffff' %>
   smtp:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SMTP']) %>
     settings:

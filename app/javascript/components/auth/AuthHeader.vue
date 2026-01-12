@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useColorMode } from '@/composables'
-import ClassificationBanner from '@/components/shared/ClassificationBanner.vue'
+import IBiCircleHalf from '~icons/bi/circle-half'
+import IBiMoonFill from '~icons/bi/moon-fill'
 import IBiShieldLock from '~icons/bi/shield-lock'
 import IBiSunFill from '~icons/bi/sun-fill'
-import IBiMoonFill from '~icons/bi/moon-fill'
-import IBiCircleHalf from '~icons/bi/circle-half'
+import AppBanner from '@/components/shared/AppBanner.vue'
+import { useColorMode } from '@/composables'
 
 const { colorMode, resolvedMode, cycleColorMode } = useColorMode()
 
@@ -26,27 +26,29 @@ const colorModeTitle = computed(() => {
 </script>
 
 <template>
-  <!-- Classification Banner -->
-  <ClassificationBanner />
+  <header>
+    <!-- App banner (optional colored bar at top) -->
+    <AppBanner />
 
-  <!-- Header with dark mode cycle -->
-  <header class="py-3 px-4">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center gap-2">
-        <IBiShieldLock style="font-size: 1.5rem;" />
-        <span class="fw-bold">Vulcan</span>
+    <!-- Header with dark mode cycle - dark theme -->
+    <div class="bg-dark text-light py-3 border-bottom">
+      <div class="container-fluid container-app d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <IBiShieldLock style="font-size: 1.5rem;" />
+          <span class="fw-bold">Vulcan</span>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-light"
+          :title="colorModeTitle"
+          @click="cycleColorMode"
+        >
+          <IBiSunFill v-if="colorModeIcon === 'sun'" />
+          <IBiMoonFill v-else-if="colorModeIcon === 'moon'" />
+          <IBiCircleHalf v-else />
+        </button>
       </div>
-
-      <button
-        type="button"
-        class="btn btn-sm btn-outline-secondary"
-        :title="colorModeTitle"
-        @click="cycleColorMode"
-      >
-        <IBiSunFill v-if="colorModeIcon === 'sun'" />
-        <IBiMoonFill v-else-if="colorModeIcon === 'moon'" />
-        <IBiCircleHalf v-else />
-      </button>
     </div>
   </header>
 </template>
