@@ -237,4 +237,154 @@ RSpec.describe 'User Registrations' do
       expect(ldap_user.reload.name).to eq(user1.name)
     end
   end
+
+  # JSON API tests for Vue SPA profile editing
+  describe 'JSON API' do
+    describe 'GET /users/edit' do
+      context 'when authenticated' do
+        let(:user) { create(:user) }
+
+        before { sign_in user }
+
+        it 'returns current user data' do
+          get '/users/edit',
+              headers: { 'Accept' => 'application/json' },
+              as: :json
+
+          expect(response).to have_http_status(:ok)
+          json = JSON.parse(response.body)
+          expect(json['user']['id']).to eq(user.id)
+          expect(json['user']['email']).to eq(user.email)
+          expect(json['user']['name']).to eq(user.name)
+        end
+      end
+
+      context 'when not authenticated' do
+        it 'returns unauthorized' do
+          get '/users/edit',
+              headers: { 'Accept' => 'application/json' },
+              as: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+    end
+
+    describe 'PUT /users' do
+      context 'when updating local user profile' do
+        let(:user) { create(:user) }
+        let(:new_name) { 'Updated Name' }
+
+        before { sign_in user }
+
+        it 'updates profile with valid current password' do
+          put '/users',
+              params: {
+                user: {
+                  name: new_name,
+                  current_password: user.password
+                }
+              },
+              headers: { 'Accept' => 'application/json' },
+              as: :json
+
+          expect(response).to have_http_status(:ok)
+          json = JSON.parse(response.body)
+          expect(json['success']).to be true
+          expect(json['user']['name']).to eq(new_name)
+          expect(user.reload.name).to eq(new_name)
+        end
+
+        it 'returns error with wrong current password' do
+          put '/users',
+              params: {
+                user: {
+                  name: new_name,
+                  current_password: 'WrongPassword123!'
+                }
+              },
+              headers: { 'Accept' => 'application/json' },
+              as: :json
+
+          expect(response).to have_http_status(:unprocessable_content)
+          json = JSON.parse(response.body)
+          expect(json['success']).to be false
+          expect(json['errors']).to be_present
+          expect(user.reload.name).not_to eq(new_name)
+        end
+
+        it 'updates email and sends confirmation' do
+          new_email = "newemail-#{SecureRandom.hex(4)}@example.com"
+
+          stub_local_login_setting(enabled: true, email_confirmation: true)
+          allow(Settings).to receive_messages(
+            local_login: double('local_login', enabled: true, email_confirmation: true),
+            contact_email: 'admin@example.com'
+          )
+
+          ActionMailer::Base.perform_deliveries = true
+          ActionMailer::Base.delivery_method = :test
+          ActionMailer::Base.deliveries.clear
+
+          put '/users',
+              params: {
+                user: {
+                  email: new_email,
+                  current_password: user.password
+                }
+              },
+              headers: { 'Accept' => 'application/json' },
+              as: :json
+
+          expect(response).to have_http_status(:ok)
+          json = JSON.parse(response.body)
+          expect(json['success']).to be true
+
+          # Email change requires confirmation
+          expect(ActionMailer::Base.deliveries.count).to eq(1)
+          confirmation_email = ActionMailer::Base.deliveries.last
+          expect(confirmation_email.to).to include(new_email)
+        end
+      end
+
+      context 'when updating LDAP/OIDC user profile' do
+        let(:ldap_user) { create(:ldap_user) }
+        let(:new_name) { 'Updated LDAP Name' }
+
+        before { sign_in ldap_user }
+
+        it 'updates profile without password requirement' do
+          put '/users',
+              params: {
+                user: {
+                  name: new_name
+                }
+              },
+              headers: { 'Accept' => 'application/json' },
+              as: :json
+
+          expect(response).to have_http_status(:ok)
+          json = JSON.parse(response.body)
+          expect(json['success']).to be true
+          expect(json['user']['name']).to eq(new_name)
+          expect(ldap_user.reload.name).to eq(new_name)
+        end
+      end
+
+      context 'when not authenticated' do
+        it 'returns unauthorized' do
+          put '/users',
+              params: {
+                user: {
+                  name: 'Hacker'
+                }
+              },
+              headers: { 'Accept' => 'application/json' },
+              as: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+    end
+  end
 end

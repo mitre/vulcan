@@ -51,7 +51,7 @@ function calculatePasswordStrength(password: string) {
     strength++
   if (/\d/.test(password))
     strength++
-  if (/[^a-zA-Z\d]/.test(password))
+  if (/[^a-z\d]/i.test(password))
     strength++
 
   if (strength <= 1) {

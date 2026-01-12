@@ -51,10 +51,10 @@ export const QUICK_ACTIONS: CommandPaletteItem[] = [
   // User actions (available to all signed-in users)
   {
     id: 'user-profile',
-    label: 'User Profile',
-    description: 'Edit your profile settings',
+    label: 'Account Settings',
+    description: 'Edit your profile, email, and password',
     icon: 'bi-person',
-    to: '/profile',
+    to: '/account/settings',
   },
   {
     id: 'sign-out',

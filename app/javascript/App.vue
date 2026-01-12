@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed, onMounted, watch } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
+import AuthHeader from '@/components/auth/AuthHeader.vue'
 import Navbar from '@/components/navbar/App.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
 import CommandPalette from '@/components/shared/CommandPalette.vue'
@@ -11,6 +12,8 @@ import Toaster from '@/components/toaster/Toaster.vue'
 import { useColorMode, useCommandPalette } from '@/composables'
 import { useAuthStore, useNavigationStore } from '@/stores'
 
+const route = useRoute()
+
 const authStore = useAuthStore()
 const navigationStore = useNavigationStore()
 
@@ -19,6 +22,13 @@ const { open: showCommandPalette } = useCommandPalette()
 
 // Initialize color mode early to prevent flash
 useColorMode()
+
+// Determine if we should show simplified header (login page, etc.)
+const showSimpleHeader = computed(() => {
+  // Show simple header for login and other auth pages
+  const authRoutes = ['/users/sign_in', '/auth/confirmation', '/auth/unlock', '/auth/reset-password']
+  return authRoutes.includes(route.path) || !authStore.signedIn
+})
 
 // Fetch navigation when auth state changes
 watch(
@@ -43,17 +53,18 @@ onMounted(() => {
 
 <template>
   <BApp>
-    <div class="d-flex flex-column vh-100">
-      <!-- Command Palette (Cmd+J) -->
-      <CommandPalette />
+    <div class="d-flex flex-column min-vh-100">
+      <!-- Command Palette (Cmd+J) - only show when authenticated -->
+      <CommandPalette v-if="authStore.signedIn" />
 
-      <!-- Navbar - sticky at top, stays visible when scrolling -->
-      <header id="navbar" class="flex-shrink-0 sticky-top shadow-sm">
+      <!-- Conditional Header: Simple header for login/auth, full navbar when authenticated -->
+      <AuthHeader v-if="showSimpleHeader" />
+      <header v-else id="navbar" class="flex-shrink-0 sticky-top shadow-sm">
         <Navbar
           :navigation="navigationStore.links"
           :signed_in="authStore.signedIn"
           :users_path="authStore.isAdmin ? '/users' : ''"
-          profile_path="/profile"
+          profile_path="/account/settings"
           sign_out_path="/users/sign_out"
           :access_requests="navigationStore.accessRequests"
           @open-command-palette="showCommandPalette = true"
@@ -68,7 +79,8 @@ onMounted(() => {
       <!-- Main content area - flex-grow to fill remaining space -->
       <!-- overflow-auto allows standard pages to scroll while keeping footer visible -->
       <!-- Pages managing their own scroll (ControlsPage) use explicit height -->
-      <main class="flex-grow-1 overflow-auto">
+      <!-- bg-body-secondary provides softer off-white background (reduces eye strain) -->
+      <main class="flex-grow-1 overflow-auto bg-body-secondary">
         <RouterView v-slot="{ Component }">
           <template v-if="Component">
             <ErrorBoundary>
@@ -85,7 +97,7 @@ onMounted(() => {
         </RouterView>
       </main>
 
-      <!-- Footer - fixed at bottom of viewport -->
+      <!-- Footer -->
       <AppFooter />
     </div>
   </BApp>

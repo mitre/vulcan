@@ -10,10 +10,12 @@ const routes: RouteRecordRaw[] = [
     name: 'root',
     component: () => import('@/pages/projects/IndexPage.vue'),
   },
+  // Login page - now part of the SPA
   {
     path: '/users/sign_in',
     name: 'login',
     component: () => import('@/pages/auth/LoginPage.vue'),
+    meta: { layout: 'auth' }, // Simple header, no command palette
   },
   {
     path: '/projects',
@@ -80,9 +82,26 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/users/IndexPage.vue'),
   },
   {
-    path: '/profile',
-    name: 'profile',
-    component: () => import('@/pages/users/ProfilePage.vue'),
+    path: '/account/settings',
+    name: 'account-settings',
+    component: () => import('@/pages/users/AccountSettingsPage.vue'),
+  },
+
+  // Auth helper routes
+  {
+    path: '/auth/confirmation',
+    name: 'email-confirmation',
+    component: () => import('@/pages/auth/EmailConfirmationPage.vue'),
+  },
+  {
+    path: '/auth/unlock',
+    name: 'account-unlock',
+    component: () => import('@/pages/auth/AccountUnlockPage.vue'),
+  },
+  {
+    path: '/auth/reset-password',
+    name: 'reset-password',
+    component: () => import('@/pages/auth/PasswordResetEditPage.vue'),
   },
 
   // Admin routes - nested under AdminLayout

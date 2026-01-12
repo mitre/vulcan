@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navigation: (window as any).vueAppData?.navigation || [],
     signedIn: (window as any).vueAppData?.signedIn || false,
     usersPath: (window as any).vueAppData?.usersPath || '',
-    profilePath: (window as any).vueAppData?.profilePath || '/profile',
+    profilePath: (window as any).vueAppData?.profilePath || '/account/settings',
     signOutPath: (window as any).vueAppData?.signOutPath || '/users/sign_out',
     accessRequests: (window as any).vueAppData?.accessRequests || [],
     notice: (window as any).vueAppData?.notice || null,
