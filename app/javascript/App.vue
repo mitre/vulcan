@@ -80,16 +80,18 @@ onMounted(() => {
       <main class="app-main bg-body-secondary">
         <RouterView v-slot="{ Component }">
           <template v-if="Component">
-            <ErrorBoundary>
-              <Suspense>
-                <component :is="Component" />
-                <template #fallback>
-                  <PageContainer>
-                    <PageSpinner message="Loading..." />
-                  </PageContainer>
-                </template>
-              </Suspense>
-            </ErrorBoundary>
+            <Transition name="fade" mode="out-in">
+              <ErrorBoundary :key="route.path">
+                <Suspense>
+                  <component :is="Component" />
+                  <template #fallback>
+                    <PageContainer>
+                      <PageSpinner message="Loading..." />
+                    </PageContainer>
+                  </template>
+                </Suspense>
+              </ErrorBoundary>
+            </Transition>
           </template>
         </RouterView>
       </main>

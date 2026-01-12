@@ -265,3 +265,29 @@ html {
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   }
 }
+
+// =============================================================================
+// ROUTE TRANSITIONS
+// =============================================================================
+// Simple fade transition for page navigation
+// Uses opacity only (GPU-accelerated, no layout thrashing)
+// Duration: 200ms (balanced - not too fast, not too slow)
+// =============================================================================
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// Accessibility: Respect prefers-reduced-motion
+@media (prefers-reduced-motion: reduce) {
+  .fade-enter-active,
+  .fade-leave-active {
+    transition-duration: 0.01ms !important;
+  }
+}
