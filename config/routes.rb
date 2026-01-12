@@ -72,8 +72,19 @@ Rails.application.routes.draw do
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
     registrations: 'users/registrations',
-    sessions: 'sessions'
-  }
+    sessions: 'sessions',
+    confirmations: 'users/confirmations',
+    unlocks: 'users/unlocks',
+    passwords: 'users/passwords'
+  }, skip: [:sessions]
+
+  # Custom sessions routes - GET serves SPA (public), POST goes to API
+  devise_scope :user do
+    get '/users/sign_in', to: 'public#index' # SPA handles login UI (no auth required)
+    post '/users/sign_in', to: 'sessions#create' # API endpoint
+    get '/users/sign_out', to: 'sessions#destroy' # Allow GET for navbar links
+    delete '/users/sign_out', to: 'sessions#destroy' # API endpoint
+  end
 
   resources :users, only: %i[index create update destroy]
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
@@ -121,12 +132,24 @@ Rails.application.routes.draw do
   get '/search/rules', to: 'rules#search'
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
-  root to: 'projects#index'
+  # Root serves SPA shell - Vue Router handles auth/routing client-side
+  root to: 'public#index'
 
   # SPA routes - serve the SPA shell for client-side routing
   # These routes don't need their own controller actions, they just render the SPA
   # The Vue Router handles the actual routing client-side
-  get '/profile', to: 'projects#index'
+  # Redirect old /profile route to new /account/settings
+  get '/profile', to: redirect('/account/settings')
+
+  # Account settings (Vue SPA handles routing)
+  get '/account/settings', to: 'projects#index'
+
+  # Auth helper pages (Vue SPA handles routing) - login handled separately above
+  # Use PublicController (no auth required) instead of ProjectsController
+  get '/auth/confirmation', to: 'public#index'
+  get '/auth/unlock', to: 'public#index'
+  get '/auth/reset-password', to: 'public#index'
+
   get '/benchmarks', to: 'projects#index'
   get '/rules/:id/edit', to: 'projects#index'
 
