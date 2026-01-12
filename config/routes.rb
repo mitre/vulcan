@@ -148,6 +148,7 @@ Rails.application.routes.draw do
   # Use PublicController (no auth required) instead of ProjectsController
   get '/auth/confirmation', to: 'public#index'
   get '/auth/unlock', to: 'public#index'
+  get '/auth/forgot-password', to: 'public#index'
   get '/auth/reset-password', to: 'public#index'
 
   get '/benchmarks', to: 'projects#index'
