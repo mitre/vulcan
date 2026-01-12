@@ -22,6 +22,7 @@ const {
   slack,
   project,
   app,
+  banner,
   loadSettings,
 } = useAdminSettings()
 
@@ -235,6 +236,52 @@ onMounted(loadSettings)
                 <BBadge :variant="project?.create_permission_enabled ? 'warning' : 'success'">
                   {{ project?.create_permission_enabled ? 'Requires Permission' : 'All Users' }}
                 </BBadge>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- App Banner -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="bi bi-info-square me-2" />
+                App Banner
+              </h5>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Banner Display</span>
+                <BBadge :variant="banner?.enabled ? 'success' : 'secondary'">
+                  {{ banner?.enabled ? 'Enabled' : 'Disabled' }}
+                </BBadge>
+              </li>
+              <li v-if="banner?.enabled" class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Banner Text</span>
+                <code class="small">{{ banner?.text || '(empty)' }}</code>
+              </li>
+              <li v-if="banner?.enabled" class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>Preview</span>
+                </div>
+                <div
+                  class="text-center py-1 small fw-bold user-select-none rounded"
+                  :style="{
+                    backgroundColor: banner?.background_color || '#198754',
+                    color: banner?.text_color || '#ffffff',
+                  }"
+                >
+                  {{ banner?.text }}
+                </div>
+              </li>
+              <li v-if="banner?.enabled" class="list-group-item d-flex justify-content-between">
+                <span>Background Color</span>
+                <code class="small">{{ banner?.background_color }}</code>
+              </li>
+              <li v-if="banner?.enabled" class="list-group-item d-flex justify-content-between">
+                <span>Text Color</span>
+                <code class="small">{{ banner?.text_color }}</code>
               </li>
             </ul>
           </div>

@@ -21,6 +21,7 @@ export function useAdminSettings() {
   const slack = computed(() => settings.value?.slack ?? null)
   const project = computed(() => settings.value?.project ?? null)
   const app = computed(() => settings.value?.app ?? null)
+  const banner = computed(() => settings.value?.banner ?? null)
 
   // Derived properties
   const isLocalLoginEnabled = computed(() => authentication.value?.local_login.enabled ?? false)
@@ -63,6 +64,7 @@ export function useAdminSettings() {
     slack,
     project,
     app,
+    banner,
 
     // Derived flags
     isLocalLoginEnabled,

@@ -54,6 +54,12 @@ module Admin
         app: {
           url: Settings.app_url,
           contact_email: Settings.contact_email
+        },
+        banner: {
+          enabled: Settings.banner.enabled,
+          text: Settings.banner.text,
+          background_color: Settings.banner.background_color,
+          text_color: Settings.banner.text_color
         }
       }
     end

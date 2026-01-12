@@ -65,6 +65,69 @@ These are automatically derived from the primitives above. Only override when ne
 | `VULCAN_WELCOME_TEXT` | Welcome message on login page | `Welcome to Vulcan` | `Welcome to MITRE Vulcan` |
 | `VULCAN_CONTACT_EMAIL` | Contact email for notifications and default SMTP sender | - | `support@example.com` |
 
+### App Banner
+
+Optional colored banner at top and bottom of page. Useful for environment indicators, classification levels, or public release notices.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_BANNER_ENABLED` | Show/hide banner | `false` | `true` |
+| `VULCAN_BANNER_TEXT` | Banner text | Empty | `DEVELOPMENT`, `PUBLIC RELEASE`, `UNCLASSIFIED` |
+| `VULCAN_BANNER_BACKGROUND_COLOR` | Background color (see below) | `success` | `warning`, `#FF5733`, `var(--bs-danger)` |
+| `VULCAN_BANNER_TEXT_COLOR` | Text color (see below) | `white` | `dark`, `#000000`, `var(--bs-white)` |
+
+**Color Formats Supported:**
+- **Bootstrap color names**: `primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`, `white`
+- **CSS variables**: `var(--bs-success)`, `var(--custom-color)`
+- **Hex codes**: `#198754`, `#ffffff`
+
+**Common Use Cases:**
+```bash
+# Development environment (orange banner)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=DEVELOPMENT
+VULCAN_BANNER_BACKGROUND_COLOR=warning
+VULCAN_BANNER_TEXT_COLOR=dark
+
+# Staging environment (blue banner)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=STAGING
+VULCAN_BANNER_BACKGROUND_COLOR=info
+VULCAN_BANNER_TEXT_COLOR=white
+
+# Public release (green banner)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=PUBLIC RELEASE
+VULCAN_BANNER_BACKGROUND_COLOR=success
+VULCAN_BANNER_TEXT_COLOR=white
+
+# Classification marking (custom colors)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=UNCLASSIFIED
+VULCAN_BANNER_BACKGROUND_COLOR=#198754
+VULCAN_BANNER_TEXT_COLOR=#ffffff
+```
+
+### Footer Legal Text
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_FOOTER_COPYRIGHT_SYMBOL` | Copyright symbol (©, ®, ™) | `©` | `©` |
+| `VULCAN_FOOTER_COPYRIGHT_YEAR` | Copyright year | Current year | `2025` |
+| `VULCAN_FOOTER_ORGANIZATION` | Organization name | `The MITRE Corporation` | `Acme Corp` |
+| `VULCAN_FOOTER_COPYRIGHT_STATEMENT` | Copyright statement | `All rights reserved` | `All rights reserved` |
+| `VULCAN_FOOTER_TRADEMARK_PRODUCTS` | Trademark products list | `MITRE Vulcan and the MITRE Vulcan logo` | `MyProduct and the MyProduct logo` |
+| `VULCAN_FOOTER_PERMISSION_STATEMENT` | Distribution/usage permission text | `Material on this site may be copied and distributed with permission only` | Custom permission text |
+
+**Footer Template:**
+```
+Copyright {symbol} {year}, {organization}. {copyright_statement}.
+{trademark_products} are trademarks of {organization}.
+{permission_statement}.
+```
+
+**Note:** These variables need to be added to the vulcan-helm chart values.
+
 ## Authentication Settings
 
 ### Local Login
