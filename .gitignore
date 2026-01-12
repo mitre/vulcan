@@ -86,3 +86,9 @@ node_modules
 *.local
 
 .beads/recovery-context.md
+
+# Session recovery and internal documentation files
+*RECOVERY*.md
+*SESSION*.md
+session.md
+recovery-prompt.md
