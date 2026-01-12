@@ -20,7 +20,7 @@
         document.documentElement.setAttribute('data-bs-theme', mode);
       })();
 
-      // Minimal bootstrap data for SPA - auth state only
+      // Bootstrap data for SPA
       window.vueAppData = {
         signedIn: #{user_signed_in?.to_json},
         currentUser: #{current_user.to_json},
@@ -30,7 +30,11 @@
           text: #{Settings.banner.text.to_json},
           backgroundColor: #{Settings.banner.background_color.to_json},
           textColor: #{Settings.banner.text_color.to_json}
-        }
+        },
+        // Auth configuration for login page
+        localLoginEnabled: #{Settings.local_login.enabled.to_json},
+        registrationEnabled: #{Settings.user_registration.enabled.to_json},
+        authProviders: #{auth_providers.to_json}
       };
   %body
     #app

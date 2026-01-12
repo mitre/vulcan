@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
 
   helper :all
   include SlackNotificationsHelper
+  include AuthProvidersHelper
 
   before_action :setup_navigation, :authenticate_user!, unless: :devise_controller?
   before_action :check_access_request_notifications
