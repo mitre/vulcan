@@ -72,3 +72,37 @@ export function updateProfile(data: IProfileUpdate) {
 export function deleteAccount() {
   return http.delete('/users')
 }
+
+/**
+ * Resend email confirmation instructions
+ */
+export function resendConfirmation(email: string) {
+  return http.post('/users/confirmation', { user: { email } })
+}
+
+/**
+ * Resend account unlock instructions
+ */
+export function resendUnlock(email: string) {
+  return http.post('/users/unlock', { user: { email } })
+}
+
+/**
+ * Validate password reset token
+ */
+export function validateResetToken(token: string) {
+  return http.get('/users/password/edit', { params: { reset_password_token: token } })
+}
+
+/**
+ * Reset password with token
+ */
+export function resetPassword(token: string, password: string, passwordConfirmation: string) {
+  return http.put('/users/password', {
+    user: {
+      reset_password_token: token,
+      password,
+      password_confirmation: passwordConfirmation,
+    },
+  })
+}

@@ -6,7 +6,8 @@
  *   const { user, isAdmin, signedIn, login, logout } = useAuth()
  */
 
-import type { IUserLogin, IUserRegister } from '@/types'
+import type { IProfileUpdate } from '@/apis/auth.api'
+import type { IUser, IUserLogin, IUserRegister } from '@/types'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { useAppToast } from './useToast'
@@ -81,6 +82,106 @@ export function useAuth() {
     }
   }
 
+  /**
+   * Resend email confirmation instructions
+   * @returns true if successful, false if failed
+   */
+  async function resendConfirmation(email: string): Promise<boolean> {
+    try {
+      await store.resendConfirmation(email)
+      toast.success('Confirmation instructions sent to your email', 'Check Your Email')
+      return true
+    }
+    catch (err) {
+      toast.error('Failed to send confirmation', err instanceof Error ? err.message : 'Unknown error')
+      return false
+    }
+  }
+
+  /**
+   * Resend account unlock instructions
+   * @returns true if successful, false if failed
+   */
+  async function resendUnlock(email: string): Promise<boolean> {
+    try {
+      await store.resendUnlock(email)
+      toast.success('Unlock instructions sent to your email', 'Check Your Email')
+      return true
+    }
+    catch (err) {
+      toast.error('Failed to send unlock instructions', err instanceof Error ? err.message : 'Unknown error')
+      return false
+    }
+  }
+
+  /**
+   * Validate password reset token
+   * @returns true if valid, false if invalid
+   */
+  async function validateResetToken(token: string): Promise<boolean> {
+    try {
+      const response = await store.validateResetToken(token)
+      return response.data.valid === true
+    }
+    catch {
+      return false
+    }
+  }
+
+  /**
+   * Reset password with token
+   * @returns true if successful, false if failed
+   */
+  async function resetPassword(token: string, password: string, passwordConfirmation: string): Promise<boolean> {
+    try {
+      const response = await store.resetPassword(token, password, passwordConfirmation)
+      if (response.data.success) {
+        toast.success('Password changed successfully', 'Success')
+        return true
+      }
+      else {
+        toast.error(response.data.error || 'Failed to reset password')
+        return false
+      }
+    }
+    catch (err) {
+      toast.error('Failed to reset password', err instanceof Error ? err.message : 'Unknown error')
+      return false
+    }
+  }
+
+  async function getProfile(): Promise<IUser | null> {
+    try {
+      const response = await store.fetchProfile()
+      if (response.data.user) {
+        return response.data.user
+      }
+      return null
+    }
+    catch (err) {
+      toast.error('Failed to load profile', err instanceof Error ? err.message : 'Unknown error')
+      return null
+    }
+  }
+
+  async function updateProfile(data: IProfileUpdate): Promise<boolean> {
+    try {
+      const response = await store.updateProfile(data)
+      if (response.data.success) {
+        toast.success(response.data.toast || 'Profile updated successfully', 'Success')
+        return true
+      }
+      else {
+        toast.error(response.data.error || 'Failed to update profile')
+        return false
+      }
+    }
+    catch (err) {
+      toast.error('Failed to update profile', err instanceof Error ? err.message : 'Unknown error')
+      return false
+    }
+  }
+
   return {
     // Reactive state
     user,
@@ -97,5 +198,11 @@ export function useAuth() {
     logout,
     checkAuth,
     register,
+    resendConfirmation,
+    resendUnlock,
+    validateResetToken,
+    resetPassword,
+    getProfile,
+    updateProfile,
   }
 }

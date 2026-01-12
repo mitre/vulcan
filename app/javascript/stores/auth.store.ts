@@ -21,7 +21,11 @@ import {
   login as apiLogin,
   logout as apiLogout,
   register as apiRegister,
+  resendConfirmation as apiResendConfirmation,
+  resendUnlock as apiResendUnlock,
+  resetPassword as apiResetPassword,
   updateProfile as apiUpdateProfile,
+  validateResetToken as apiValidateResetToken,
 } from '@/apis/auth.api'
 import { withAsyncAction } from '@/utils'
 
@@ -175,6 +179,49 @@ export const useAuthStore = defineStore('auth.store', () => {
   }
 
   /**
+   * Resend email confirmation instructions
+   */
+  async function resendConfirmation(email: string) {
+    return withAsyncAction(loading, error, 'Failed to resend confirmation', async () => {
+      const response = await apiResendConfirmation(email)
+      return response
+    })
+  }
+
+  /**
+   * Resend account unlock instructions
+   */
+  async function resendUnlock(email: string) {
+    return withAsyncAction(loading, error, 'Failed to resend unlock instructions', async () => {
+      const response = await apiResendUnlock(email)
+      return response
+    })
+  }
+
+  /**
+   * Validate password reset token
+   */
+  async function validateResetToken(token: string) {
+    return withAsyncAction(loading, error, 'Failed to validate token', async () => {
+      const response = await apiValidateResetToken(token)
+      return response
+    })
+  }
+
+  /**
+   * Reset password with token
+   */
+  async function resetPassword(token: string, password: string, passwordConfirmation: string) {
+    return withAsyncAction(loading, error, 'Failed to reset password', async () => {
+      const response = await apiResetPassword(token, password, passwordConfirmation)
+      if (response.data.success && response.data.user) {
+        setUser(response.data.user)
+      }
+      return response
+    })
+  }
+
+  /**
    * Reset store to initial state
    */
   function reset() {
@@ -206,6 +253,10 @@ export const useAuthStore = defineStore('auth.store', () => {
     fetchProfile,
     updateProfile,
     deleteAccount,
+    resendConfirmation,
+    resendUnlock,
+    validateResetToken,
+    resetPassword,
     reset,
   }
 })

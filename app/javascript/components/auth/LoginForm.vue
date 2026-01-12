@@ -57,11 +57,21 @@ async function handleSubmit() {
       label="Password"
       placeholder="Enter password"
       autocomplete="current-password"
-      hint='<a href="/users/password/new" class="text-primary">Forgot password?</a>'
+      hint="<a href=&quot;/users/password/new&quot; class=&quot;text-primary&quot;>Forgot password?</a>"
     />
 
     <button type="submit" class="btn btn-primary w-100" :disabled="loading">
       {{ loading ? 'Signing in...' : 'Sign in' }}
     </button>
+
+    <!-- Auth Helper Links -->
+    <div class="text-center mt-3 small text-muted">
+      Need help?
+      <div class="mt-1">
+        <a href="/auth/confirmation" class="text-decoration-none">Resend confirmation</a>
+        <span class="mx-2">•</span>
+        <a href="/auth/unlock" class="text-decoration-none">Unlock account</a>
+      </div>
+    </div>
   </form>
 </template>
