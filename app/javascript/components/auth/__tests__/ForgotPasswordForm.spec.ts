@@ -21,7 +21,7 @@ vi.mock('@/composables/useToast', () => ({
 }))
 
 // Mock fetch
-global.fetch = vi.fn()
+globalThis.fetch = vi.fn()
 
 describe('forgotPasswordForm', () => {
   let wrapper: VueWrapper
@@ -69,7 +69,7 @@ describe('forgotPasswordForm', () => {
 
   describe('form submission', () => {
     it('sends password reset request on submit', async () => {
-      ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({}),
       } as Response)
@@ -86,7 +86,7 @@ describe('forgotPasswordForm', () => {
       await flushPromises()
 
       // Verify fetch was called with correct params
-      expect(global.fetch).toHaveBeenCalledWith('/users/password', {
+      expect(globalThis.fetch).toHaveBeenCalledWith('/users/password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ describe('forgotPasswordForm', () => {
     })
 
     it('shows success toast on successful request', async () => {
-      ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({}),
       } as Response)
@@ -122,7 +122,7 @@ describe('forgotPasswordForm', () => {
     })
 
     it('clears email field after successful submission', async () => {
-      ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({}),
       } as Response)
@@ -140,7 +140,7 @@ describe('forgotPasswordForm', () => {
     })
 
     it('shows error toast on failed request', async () => {
-      ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: false,
         json: async () => ({ error: 'Email not found' }),
       } as Response)
@@ -161,7 +161,7 @@ describe('forgotPasswordForm', () => {
     })
 
     it('shows generic error on network failure', async () => {
-      ;(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
         new Error('Network error'),
       )
 
@@ -183,7 +183,7 @@ describe('forgotPasswordForm', () => {
 
   describe('loading state', () => {
     it('disables button while submitting', async () => {
-      ;(global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(
         () => new Promise(resolve => setTimeout(resolve, 100)),
       )
 
@@ -201,7 +201,7 @@ describe('forgotPasswordForm', () => {
     })
 
     it('shows loading text while submitting', async () => {
-      ;(global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(
         () => new Promise(resolve => setTimeout(resolve, 100)),
       )
 

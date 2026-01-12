@@ -69,9 +69,9 @@ async function handleSubmit() {
     </button>
 
     <div class="text-center">
-      <a href="/users/sign_in" class="text-decoration-none">
+      <router-link to="/users/sign_in" class="text-decoration-none">
         Back to sign in
-      </a>
+      </router-link>
     </div>
   </form>
 </template>

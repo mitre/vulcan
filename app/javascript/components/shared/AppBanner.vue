@@ -37,17 +37,17 @@ declare global {
 // Map Bootstrap color names to CSS variables
 // This integrates with Bootstrap's theming system
 const bootstrapColors: Record<string, string> = {
-  'primary': 'var(--bs-primary)',
-  'secondary': 'var(--bs-secondary)',
-  'success': 'var(--bs-success)',
-  'danger': 'var(--bs-danger)',
-  'warning': 'var(--bs-warning)',
-  'info': 'var(--bs-info)',
-  'light': 'var(--bs-light)',
-  'dark': 'var(--bs-dark)',
-  'white': 'var(--bs-white)',
-  'black': 'var(--bs-black)',
-  'muted': 'var(--bs-secondary)',
+  primary: 'var(--bs-primary)',
+  secondary: 'var(--bs-secondary)',
+  success: 'var(--bs-success)',
+  danger: 'var(--bs-danger)',
+  warning: 'var(--bs-warning)',
+  info: 'var(--bs-info)',
+  light: 'var(--bs-light)',
+  dark: 'var(--bs-dark)',
+  white: 'var(--bs-white)',
+  black: 'var(--bs-black)',
+  muted: 'var(--bs-secondary)',
 }
 
 // Convert color name/hex/variable to valid CSS color

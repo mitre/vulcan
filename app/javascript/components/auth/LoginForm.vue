@@ -57,7 +57,7 @@ async function handleSubmit() {
       label="Password"
       placeholder="Enter password"
       autocomplete="current-password"
-      hint="<a href=&quot;/users/password/new&quot; class=&quot;text-primary&quot;>Forgot password?</a>"
+      hint="<a href=&quot;/auth/forgot-password&quot; class=&quot;text-primary&quot;>Forgot password?</a>"
     />
 
     <button type="submit" class="btn btn-primary w-100" :disabled="loading">
@@ -68,9 +68,13 @@ async function handleSubmit() {
     <div class="text-center mt-3 small text-muted">
       Need help?
       <div class="mt-1">
-        <a href="/auth/confirmation" class="text-decoration-none">Resend confirmation</a>
+        <router-link to="/auth/confirmation" class="text-decoration-none">
+          Resend confirmation
+        </router-link>
         <span class="mx-2">•</span>
-        <a href="/auth/unlock" class="text-decoration-none">Unlock account</a>
+        <router-link to="/auth/unlock" class="text-decoration-none">
+          Unlock account
+        </router-link>
       </div>
     </div>
   </form>

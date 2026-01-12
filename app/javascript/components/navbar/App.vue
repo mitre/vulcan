@@ -7,9 +7,9 @@
  */
 
 import { computed, onMounted } from 'vue'
+import AppBanner from '@/components/shared/AppBanner.vue'
 import { useColorMode, useReleaseCheck } from '@/composables'
 import { primaryModifierSymbol } from '@/composables/useKeyboardShortcuts'
-import AppBanner from '@/components/shared/AppBanner.vue'
 import NavbarItem from './NavbarItem.vue'
 
 // Types

@@ -3,13 +3,13 @@
  * Protects CSS Grid layout from regression
  */
 
+import type { VueWrapper } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { createRouter, createWebHistory } from 'vue-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
 
 // Mock composables
@@ -31,7 +31,7 @@ const router = createRouter({
   ],
 })
 
-describe('App.vue Layout', () => {
+describe('app.vue Layout', () => {
   let wrapper: VueWrapper
 
   beforeEach(() => {
@@ -109,7 +109,7 @@ describe('App.vue Layout', () => {
  * - Actual footer content was ~100px tall
  * - Solution: Removed height constraint + CSS Grid layout
  */
-describe('App.vue Layout - Regression Protection', () => {
+describe('app.vue Layout - Regression Protection', () => {
   it('prevents footer height constraint from being added (ROOT CAUSE)', () => {
     // Read SCSS file
     const scssPath = join(process.cwd(), 'app/javascript/application.scss')
@@ -117,7 +117,7 @@ describe('App.vue Layout - Regression Protection', () => {
 
     // Check that no .footer class with height/min-height exists
     // This regex matches: .footer { ... height: var(--app-footer-height) ... }
-    const footerHeightPattern = /\.footer\s*\{[^}]*(?:min-)?height:\s*var\(--app-footer-height\)/s
+    const footerHeightPattern = /\.footer\s*\{[^}]*height:\s*var\(--app-footer-height\)/
 
     expect(scssContent).not.toMatch(footerHeightPattern)
   })

@@ -46,7 +46,7 @@ defineProps<{
               src="https://mitre.github.io/saf-training/logo.svg"
               alt="MITRE SAF"
               style="height: 1.5rem; width: auto;"
-            />
+            >
           </a>
         </div>
       </div>
