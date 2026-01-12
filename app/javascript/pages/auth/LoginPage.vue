@@ -71,7 +71,7 @@ function showRegistrationForm() {
 
 <template>
   <!-- Login page content - App.vue handles header/footer/banners -->
-  <div class="d-flex align-items-center justify-content-center min-vh-100 p-4">
+  <div class="d-flex align-items-center justify-content-center p-4 h-100">
     <div class="card shadow-sm mx-auto" style="max-width: 28rem;">
           <div class="card-body p-4">
             <!-- Icon + Title -->

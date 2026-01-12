@@ -166,12 +166,6 @@ html {
   max-width: var(--app-container-max-width);
 }
 
-// Footer with enforced height (ensures consistent layout)
-.footer {
-  height: var(--app-footer-height);
-  min-height: var(--app-footer-height);
-}
-
 // Main content area height constraint
 .main-content {
   height: var(--app-main-height);

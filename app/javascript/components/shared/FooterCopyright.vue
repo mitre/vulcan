@@ -48,10 +48,10 @@ const line2 = computed(() =>
 
 <template>
   <div class="footer-copyright text-center py-2">
-    <p class="mb-1 text-light-emphasis">
+    <p class="mb-1 text-white-50">
       {{ line1 }}
     </p>
-    <p class="mb-0 text-light-emphasis">
+    <p class="mb-0 text-white-50">
       {{ line2 }}
     </p>
   </div>

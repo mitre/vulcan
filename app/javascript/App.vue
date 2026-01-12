@@ -53,13 +53,18 @@ onMounted(() => {
 
 <template>
   <BApp>
-    <div class="d-flex flex-column min-vh-100">
+    <div class="app-container">
       <!-- Command Palette (Cmd+J) - only show when authenticated -->
       <CommandPalette v-if="authStore.signedIn" />
 
-      <!-- Conditional Header: Simple header for login/auth, full navbar when authenticated -->
-      <AuthHeader v-if="showSimpleHeader" />
-      <header v-else id="navbar" class="flex-shrink-0 sticky-top shadow-sm">
+      <!-- Toast container - positioned absolutely -->
+      <div class="toast-container">
+        <Toaster />
+      </div>
+
+      <!-- Header -->
+      <AuthHeader v-if="showSimpleHeader" class="app-header" />
+      <header v-else id="navbar" class="app-header shadow-sm">
         <Navbar
           :navigation="navigationStore.links"
           :signed_in="authStore.signedIn"
@@ -71,16 +76,8 @@ onMounted(() => {
         />
       </header>
 
-      <!-- Toast container for notifications -->
-      <div id="toaster">
-        <Toaster />
-      </div>
-
-      <!-- Main content area - flex-grow to fill remaining space -->
-      <!-- overflow-auto allows standard pages to scroll while keeping footer visible -->
-      <!-- Pages managing their own scroll (ControlsPage) use explicit height -->
-      <!-- bg-body-secondary provides softer off-white background (reduces eye strain) -->
-      <main class="flex-grow-1 overflow-auto bg-body-secondary">
+      <!-- Main content - scrolls if needed -->
+      <main class="app-main bg-body-secondary">
         <RouterView v-slot="{ Component }">
           <template v-if="Component">
             <ErrorBoundary>
@@ -98,14 +95,38 @@ onMounted(() => {
       </main>
 
       <!-- Footer -->
-      <AppFooter />
+      <AppFooter class="app-footer" />
     </div>
   </BApp>
 </template>
 
-<style scoped>
-/* Fix: min-height: 0 allows flex item to shrink for proper scrolling */
-main {
+<style>
+.app-container {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  width: 100%;
+}
+
+.app-header {
+  grid-row: 1;
+}
+
+.app-main {
+  grid-row: 2;
+  overflow-y: auto;
   min-height: 0;
 }
+
+.app-footer {
+  grid-row: 3;
+}
+
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+}
 </style>
+
