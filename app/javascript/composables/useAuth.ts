@@ -115,6 +115,22 @@ export function useAuth() {
   }
 
   /**
+   * Request password reset instructions
+   * @returns true if successful, false if failed
+   */
+  async function requestPasswordReset(email: string): Promise<boolean> {
+    try {
+      await store.requestPasswordReset(email)
+      toast.success('Password reset instructions sent to your email', 'Check Your Email')
+      return true
+    }
+    catch (err) {
+      toast.error('Failed to send reset instructions', err instanceof Error ? err.message : 'Unknown error')
+      return false
+    }
+  }
+
+  /**
    * Validate password reset token
    * @returns true if valid, false if invalid
    */
@@ -200,6 +216,7 @@ export function useAuth() {
     register,
     resendConfirmation,
     resendUnlock,
+    requestPasswordReset,
     validateResetToken,
     resetPassword,
     getProfile,

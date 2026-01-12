@@ -1,47 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAppToast } from '@/composables/useToast'
+import { useAuth } from '@/composables/useAuth'
 
-const toast = useAppToast()
+const { requestPasswordReset, loading } = useAuth()
 
 // Form state
 const email = ref('')
-const loading = ref(false)
 
 async function handleSubmit() {
-  loading.value = true
-
   try {
-    // Get CSRF token
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-
-    const response = await fetch('/users/password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken || '',
-      },
-      body: JSON.stringify({
-        user: {
-          email: email.value,
-        },
-      }),
-    })
-
-    if (response.ok) {
-      toast.success('Password reset instructions sent to your email', 'Check Your Email')
-      email.value = '' // Clear form
-    }
-    else {
-      const data = await response.json()
-      toast.error(data.error || 'Failed to send reset instructions', 'Error')
-    }
+    await requestPasswordReset(email.value)
   }
-  catch (error) {
-    toast.error('Network error. Please try again.', 'Error')
+  catch {
+    // Error handled by composable (shows toast)
   }
   finally {
-    loading.value = false
+    // Clear form on success or failure
+    email.value = ''
   }
 }
 </script>

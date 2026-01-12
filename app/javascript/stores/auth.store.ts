@@ -21,6 +21,7 @@ import {
   login as apiLogin,
   logout as apiLogout,
   register as apiRegister,
+  requestPasswordReset as apiRequestPasswordReset,
   resendConfirmation as apiResendConfirmation,
   resendUnlock as apiResendUnlock,
   resetPassword as apiResetPassword,
@@ -199,6 +200,16 @@ export const useAuthStore = defineStore('auth.store', () => {
   }
 
   /**
+   * Request password reset instructions
+   */
+  async function requestPasswordReset(email: string) {
+    return withAsyncAction(loading, error, 'Failed to request password reset', async () => {
+      const response = await apiRequestPasswordReset(email)
+      return response
+    })
+  }
+
+  /**
    * Validate password reset token
    */
   async function validateResetToken(token: string) {
@@ -255,6 +266,7 @@ export const useAuthStore = defineStore('auth.store', () => {
     deleteAccount,
     resendConfirmation,
     resendUnlock,
+    requestPasswordReset,
     validateResetToken,
     resetPassword,
     reset,

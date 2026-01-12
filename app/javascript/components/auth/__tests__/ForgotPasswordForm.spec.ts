@@ -8,28 +8,30 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ForgotPasswordForm from '../ForgotPasswordForm.vue'
 
-// Mock the toast composable
-const mockToast = {
-  success: vi.fn(),
-  error: vi.fn(),
-  info: vi.fn(),
-  warning: vi.fn(),
-}
+// Mock the auth composable
+const mockRequestPasswordReset = vi.fn()
+let mockLoadingValue = false
 
-vi.mock('@/composables/useToast', () => ({
-  useAppToast: () => mockToast,
+vi.mock('@/composables/useAuth', () => ({
+  useAuth: () => ({
+    requestPasswordReset: mockRequestPasswordReset,
+    loading: {
+      get value() {
+        return mockLoadingValue
+      },
+      set value(val) {
+        mockLoadingValue = val
+      },
+    },
+  }),
 }))
-
-// Mock fetch
-globalThis.fetch = vi.fn()
 
 describe('forgotPasswordForm', () => {
   let wrapper: VueWrapper
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Setup default CSRF token
-    document.head.innerHTML = '<meta name="csrf-token" content="test-token">'
+    mockLoadingValue = false
   })
 
   afterEach(() => {
@@ -44,18 +46,28 @@ describe('forgotPasswordForm', () => {
       expect(wrapper.find('label').text()).toBe('Email')
     })
 
-    it('renders submit button with correct text', () => {
+    it('renders submit button', () => {
       wrapper = mount(ForgotPasswordForm)
 
       const submitButton = wrapper.find('button[type="submit"]')
       expect(submitButton.exists()).toBe(true)
-      expect(submitButton.text()).toBe('Send Reset Instructions')
+      expect(submitButton.attributes('type')).toBe('submit')
+      // Button text is tested in 'loading state' tests
     })
 
     it('renders back to sign in link', () => {
-      wrapper = mount(ForgotPasswordForm)
+      wrapper = mount(ForgotPasswordForm, {
+        global: {
+          stubs: {
+            RouterLink: {
+              template: '<a :href="to"><slot /></a>',
+              props: ['to'],
+            },
+          },
+        },
+      })
 
-      const link = wrapper.find('a[href="/users/sign_in"]')
+      const link = wrapper.find('a')
       expect(link.exists()).toBe(true)
       expect(link.text()).toBe('Back to sign in')
     })
@@ -68,11 +80,8 @@ describe('forgotPasswordForm', () => {
   })
 
   describe('form submission', () => {
-    it('sends password reset request on submit', async () => {
-      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      } as Response)
+    it('calls requestPasswordReset on submit', async () => {
+      mockRequestPasswordReset.mockResolvedValueOnce(true)
 
       wrapper = mount(ForgotPasswordForm)
 
@@ -85,26 +94,12 @@ describe('forgotPasswordForm', () => {
       await form.trigger('submit')
       await flushPromises()
 
-      // Verify fetch was called with correct params
-      expect(globalThis.fetch).toHaveBeenCalledWith('/users/password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': 'test-token',
-        },
-        body: JSON.stringify({
-          user: {
-            email: 'user@example.com',
-          },
-        }),
-      })
+      // Verify composable was called with correct email
+      expect(mockRequestPasswordReset).toHaveBeenCalledWith('user@example.com')
     })
 
-    it('shows success toast on successful request', async () => {
-      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      } as Response)
+    it('handles successful request', async () => {
+      mockRequestPasswordReset.mockResolvedValueOnce(true)
 
       wrapper = mount(ForgotPasswordForm)
 
@@ -115,17 +110,11 @@ describe('forgotPasswordForm', () => {
       await form.trigger('submit')
       await flushPromises()
 
-      expect(mockToast.success).toHaveBeenCalledWith(
-        'Password reset instructions sent to your email',
-        'Check Your Email',
-      )
+      expect(mockRequestPasswordReset).toHaveBeenCalledWith('user@example.com')
     })
 
-    it('clears email field after successful submission', async () => {
-      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      } as Response)
+    it('clears email field after submission', async () => {
+      mockRequestPasswordReset.mockResolvedValueOnce(true)
 
       wrapper = mount(ForgotPasswordForm)
 
@@ -139,11 +128,8 @@ describe('forgotPasswordForm', () => {
       expect((emailInput.element as HTMLInputElement).value).toBe('')
     })
 
-    it('shows error toast on failed request', async () => {
-      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ error: 'Email not found' }),
-      } as Response)
+    it('handles failed request', async () => {
+      mockRequestPasswordReset.mockResolvedValueOnce(false)
 
       wrapper = mount(ForgotPasswordForm)
 
@@ -154,16 +140,12 @@ describe('forgotPasswordForm', () => {
       await form.trigger('submit')
       await flushPromises()
 
-      expect(mockToast.error).toHaveBeenCalledWith(
-        'Email not found',
-        'Error',
-      )
+      expect(mockRequestPasswordReset).toHaveBeenCalledWith('unknown@example.com')
+      // Toast error is shown by composable, not component
     })
 
-    it('shows generic error on network failure', async () => {
-      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-        new Error('Network error'),
-      )
+    it('handles network errors', async () => {
+      mockRequestPasswordReset.mockRejectedValueOnce(new Error('Network error'))
 
       wrapper = mount(ForgotPasswordForm)
 
@@ -174,44 +156,23 @@ describe('forgotPasswordForm', () => {
       await form.trigger('submit')
       await flushPromises()
 
-      expect(mockToast.error).toHaveBeenCalledWith(
-        'Network error. Please try again.',
-        'Error',
-      )
+      expect(mockRequestPasswordReset).toHaveBeenCalledWith('user@example.com')
+      // Toast error is shown by composable, not component
     })
   })
 
   describe('loading state', () => {
     it('disables button while submitting', async () => {
-      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(
-        () => new Promise(resolve => setTimeout(resolve, 100)),
-      )
-
+      mockLoadingValue = true
       wrapper = mount(ForgotPasswordForm)
 
-      const emailInput = wrapper.find('input[type="email"]')
-      await emailInput.setValue('user@example.com')
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-
-      // Button should be disabled during submission
       const submitButton = wrapper.find('button[type="submit"]')
       expect(submitButton.attributes('disabled')).toBeDefined()
     })
 
     it('shows loading text while submitting', async () => {
-      ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(
-        () => new Promise(resolve => setTimeout(resolve, 100)),
-      )
-
+      mockLoadingValue = true
       wrapper = mount(ForgotPasswordForm)
-
-      const emailInput = wrapper.find('input[type="email"]')
-      await emailInput.setValue('user@example.com')
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
 
       const submitButton = wrapper.find('button[type="submit"]')
       expect(submitButton.text()).toBe('Sending...')

@@ -88,6 +88,13 @@ export function resendUnlock(email: string) {
 }
 
 /**
+ * Request password reset instructions
+ */
+export function requestPasswordReset(email: string) {
+  return http.post('/users/password', { user: { email } })
+}
+
+/**
  * Validate password reset token
  */
 export function validateResetToken(token: string) {

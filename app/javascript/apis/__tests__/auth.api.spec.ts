@@ -6,13 +6,14 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http } from '@/services/http.service'
-import { getCurrentUser, login, logout } from '../auth.api'
+import { getCurrentUser, login, logout, requestPasswordReset } from '../auth.api'
 
 vi.mock('@/services/http.service', () => ({
   http: {
     post: vi.fn(),
     delete: vi.fn(),
     get: vi.fn(),
+    put: vi.fn(),
   },
 }))
 
@@ -211,6 +212,73 @@ describe('auth.api', () => {
       const result = await getCurrentUser()
 
       expect(result.data.user.admin).toBe(true)
+    })
+  })
+
+  describe('requestPasswordReset', () => {
+    beforeEach(() => {
+      vi.mocked(http.post).mockResolvedValue({
+        data: { message: 'Password reset instructions sent' },
+        status: 200,
+      })
+    })
+
+    it('calls POST /users/password', async () => {
+      await requestPasswordReset('test@example.com')
+
+      expect(http.post).toHaveBeenCalledWith('/users/password', {
+        user: { email: 'test@example.com' },
+      })
+    })
+
+    it('returns success message from response', async () => {
+      const result = await requestPasswordReset('test@example.com')
+
+      expect(result.data.message).toBe('Password reset instructions sent')
+      expect(result.status).toBe(200)
+    })
+
+    it('handles empty email', async () => {
+      await requestPasswordReset('')
+
+      expect(http.post).toHaveBeenCalledWith('/users/password', {
+        user: { email: '' },
+      })
+    })
+
+    it('handles special characters in email', async () => {
+      await requestPasswordReset('user+test@example.com')
+
+      expect(http.post).toHaveBeenCalledWith('/users/password', {
+        user: { email: 'user+test@example.com' },
+      })
+    })
+
+    it('propagates 404 not found errors', async () => {
+      const mockError = {
+        response: {
+          status: 404,
+          data: { error: 'Email not found' },
+        },
+      }
+      vi.mocked(http.post).mockRejectedValue(mockError)
+
+      await expect(requestPasswordReset('unknown@example.com')).rejects.toEqual(mockError)
+    })
+
+    it('propagates network errors', async () => {
+      const mockError = new Error('Network error')
+      vi.mocked(http.post).mockRejectedValue(mockError)
+
+      await expect(requestPasswordReset('test@example.com')).rejects.toThrow('Network error')
+    })
+
+    it('handles whitespace in email', async () => {
+      await requestPasswordReset('  test@example.com  ')
+
+      expect(http.post).toHaveBeenCalledWith('/users/password', {
+        user: { email: '  test@example.com  ' },
+      })
     })
   })
 })
