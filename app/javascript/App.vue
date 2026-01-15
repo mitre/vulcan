@@ -5,11 +5,12 @@ import AuthHeader from '@/components/auth/AuthHeader.vue'
 import Navbar from '@/components/navbar/App.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
 import CommandPalette from '@/components/shared/CommandPalette.vue'
+import ConsentModal from '@/components/shared/ConsentModal.vue'
 import ErrorBoundary from '@/components/shared/ErrorBoundary.vue'
 import PageContainer from '@/components/shared/PageContainer.vue'
 import PageSpinner from '@/components/shared/PageSpinner.vue'
 import Toaster from '@/components/toaster/Toaster.vue'
-import { useColorMode, useCommandPalette } from '@/composables'
+import { useColorMode, useCommandPalette, useConsentBanner } from '@/composables'
 import { useAuthStore, useNavigationStore } from '@/stores'
 
 const route = useRoute()
@@ -19,6 +20,9 @@ const navigationStore = useNavigationStore()
 
 // Command palette composable (manages open state, Cmd+J shortcut)
 const { open: showCommandPalette } = useCommandPalette()
+
+// Consent banner composable (manages acknowledgment state)
+const { hasAcknowledged, consentBanner, acknowledge, fetchBanner } = useConsentBanner()
 
 // Initialize color mode early to prevent flash
 useColorMode()
@@ -43,7 +47,10 @@ watch(
   },
 )
 
-onMounted(() => {
+onMounted(async () => {
+  // Fetch consent banner configuration (public endpoint, no auth required)
+  await fetchBanner()
+
   // Fetch navigation if user is already signed in
   if (authStore.signedIn) {
     navigationStore.fetchNavigation()
@@ -54,6 +61,14 @@ onMounted(() => {
 <template>
   <BApp>
     <div class="app-container">
+      <!-- Consent Modal - shown BEFORE authentication, blocks all access -->
+      <ConsentModal
+        v-if="consentBanner"
+        :show="!hasAcknowledged && consentBanner.enabled"
+        :content="consentBanner.content"
+        @acknowledge="acknowledge"
+      />
+
       <!-- Command Palette (Cmd+J) - only show when authenticated -->
       <CommandPalette v-if="authStore.signedIn" />
 

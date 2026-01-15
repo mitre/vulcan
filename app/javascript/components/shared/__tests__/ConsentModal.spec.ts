@@ -1,0 +1,109 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { shallowMount } from '@vue/test-utils'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+import ConsentModal from '../ConsentModal.vue'
+
+describe('ConsentModal', () => {
+  const defaultProps = {
+    show: true,
+    content: '## Terms\n\nTest content',
+  }
+
+  beforeEach(() => {
+    // Note: We use shallowMount to avoid Bootstrap modal teleport issues in tests
+  })
+
+  describe('markdown rendering', () => {
+    it('converts markdown to HTML', () => {
+      const content = '## Header\n\n**Bold** text'
+      const wrapper = shallowMount(ConsentModal, {
+        props: { show: true, content },
+      })
+
+      const vm = wrapper.vm as any
+      const html = vm.htmlContent
+
+      expect(html).toContain('<h2')
+      expect(html).toContain('Header')
+      expect(html).toContain('<strong>')
+      expect(html).toContain('Bold')
+    })
+
+    it('sanitizes dangerous HTML', () => {
+      const content = '## Test\n\n<script>alert("xss")</script>'
+      const wrapper = shallowMount(ConsentModal, {
+        props: { show: true, content },
+      })
+
+      const vm = wrapper.vm as any
+      const html = vm.htmlContent
+
+      expect(html).not.toContain('<script>')
+      expect(html).not.toContain('alert')
+    })
+
+    it('preserves safe markdown formatting', () => {
+      const content = '- Item 1\n- Item 2\n\n**Bold** and *italic*'
+      const wrapper = shallowMount(ConsentModal, {
+        props: { show: true, content },
+      })
+
+      const vm = wrapper.vm as any
+      const html = vm.htmlContent
+
+      expect(html).toContain('<li>')
+      expect(html).toContain('Item 1')
+      expect(html).toContain('<strong>')
+      expect(html).toContain('<em>')
+    })
+  })
+
+  describe('component behavior', () => {
+    it('emits acknowledge event when button clicked', async () => {
+      const wrapper = shallowMount(ConsentModal, {
+        props: defaultProps,
+      })
+
+      await wrapper.vm.handleAcknowledge()
+
+      expect(wrapper.emitted('acknowledge')).toBeTruthy()
+      expect(wrapper.emitted('acknowledge')).toHaveLength(1)
+    })
+
+    it('receives show prop', () => {
+      const wrapper = shallowMount(ConsentModal, {
+        props: { ...defaultProps, show: false },
+      })
+
+      expect(wrapper.props('show')).toBe(false)
+    })
+
+    it('receives content prop', () => {
+      const content = '## Custom content'
+      const wrapper = shallowMount(ConsentModal, {
+        props: { show: true, content },
+      })
+
+      expect(wrapper.props('content')).toBe(content)
+    })
+  })
+
+  describe('markdown+DOMPurify integration', () => {
+    it('uses marked to parse markdown', () => {
+      const markdown = '## Test'
+      const result = marked.parse(markdown) as string
+
+      expect(result).toContain('<h2')
+      expect(result).toContain('Test')
+    })
+
+    it('uses DOMPurify to sanitize HTML', () => {
+      const dirty = '<script>alert("xss")</script><p>Safe</p>'
+      const clean = DOMPurify.sanitize(dirty)
+
+      expect(clean).not.toContain('<script>')
+      expect(clean).toContain('<p>Safe</p>')
+    })
+  })
+})
