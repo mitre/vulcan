@@ -48,7 +48,6 @@ yarn-debug.log*
 .yarn-integrity
 
 # Ignore generated assets
-/app/assets/builds/
 
 # Ignore development logs
 *.log
@@ -72,3 +71,5 @@ vulcan-wiki-local/
 /certs/*
 !/certs/README.md
 !/certs/.gitkeep
+/app/assets/builds/*
+!/app/assets/builds/.keep
