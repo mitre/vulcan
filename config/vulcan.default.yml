@@ -25,6 +25,22 @@ defaults: &defaults
     text: <%= ENV['VULCAN_BANNER_TEXT'] || '' %>
     background_color: <%= ENV['VULCAN_BANNER_BACKGROUND_COLOR'] || '#198754' %>
     text_color: <%= ENV['VULCAN_BANNER_TEXT_COLOR'] || '#ffffff' %>
+  # Consent banner (modal shown before authentication)
+  # Set VULCAN_CONSENT_BANNER_CONTENT to customize the banner text (markdown supported)
+  consent_banner:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_CONSENT_BANNER_ENABLED']) || false %>
+    version: <%= ENV['VULCAN_CONSENT_BANNER_VERSION'] || 1 %>
+    content: |
+      ## Terms of Use
+
+      By accessing this system, you acknowledge and agree to the following:
+
+      - Your use of this system may be monitored and recorded for security and auditing purposes
+      - You will use this system only for authorized and lawful purposes
+      - You will not attempt to gain unauthorized access to any resources
+      - You will protect any credentials provided to you
+
+      If you do not agree to these terms, please disconnect now.
   smtp:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SMTP']) %>
     settings:

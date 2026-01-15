@@ -23,6 +23,9 @@ Rails.application.routes.draw do
     get 'navigation', to: 'navigation#show'
     get 'search/global', to: 'search#global'
 
+    # Public settings (no auth required)
+    get 'settings/consent_banner', to: 'settings#consent_banner'
+
     # Project member management
     resources :projects, only: [] do
       member do
