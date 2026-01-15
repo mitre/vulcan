@@ -108,6 +108,74 @@ VULCAN_BANNER_BACKGROUND_COLOR=#198754
 VULCAN_BANNER_TEXT_COLOR=#ffffff
 ```
 
+### Consent Banner (Modal)
+
+Modal shown before authentication requiring user acknowledgment. Blocks all access until user clicks "I Agree". Useful for terms of use, DoD warning banners, or acceptable use policies.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_CONSENT_BANNER_ENABLED` | Show/hide consent modal | `false` | `true` |
+| `VULCAN_CONSENT_BANNER_VERSION` | Version number (increment to re-prompt all users) | `1` | `2` |
+| `VULCAN_CONSENT_BANNER_CONTENT` | Custom markdown content (optional) | See default below | See examples below |
+
+**Features:**
+- **Blocks access** until acknowledged (backdrop="static", no close button)
+- **localStorage tracking** per version (incrementing version re-prompts all users)
+- **Markdown support** with XSS protection (DOMPurify sanitization)
+- **Blurred background** overlay (8px backdrop blur)
+
+**Default Content:**
+```markdown
+## Terms of Use
+
+By accessing this system, you acknowledge and agree to the following:
+
+- Your use of this system may be monitored and recorded for security and auditing purposes
+- You will use this system only for authorized and lawful purposes
+- You will not attempt to gain unauthorized access to any resources
+- You will protect any credentials provided to you
+
+If you do not agree to these terms, please disconnect now.
+```
+
+**Example Configurations:**
+
+```bash
+# Enable with default content
+VULCAN_CONSENT_BANNER_ENABLED=true
+VULCAN_CONSENT_BANNER_VERSION=1
+
+# DoD Warning Banner (custom content)
+VULCAN_CONSENT_BANNER_ENABLED=true
+VULCAN_CONSENT_BANNER_VERSION=1
+VULCAN_CONSENT_BANNER_CONTENT="## System Access Warning\n\nYou are accessing a U.S. Government information system...\n\n**Unauthorized use may result in criminal prosecution.**"
+
+# Re-prompt all users (increment version)
+VULCAN_CONSENT_BANNER_ENABLED=true
+VULCAN_CONSENT_BANNER_VERSION=2  # Users who acknowledged v1 will see modal again
+```
+
+**Markdown Formatting:**
+```markdown
+## Heading 2
+### Heading 3
+
+**Bold text** and *italic text*
+
+- Bulleted list item 1
+- Bulleted list item 2
+
+1. Numbered list item 1
+2. Numbered list item 2
+
+`inline code`
+```
+
+**Version Management:**
+- Users who acknowledge version 1 won't see modal again (stored in localStorage: `vulcan-consent-v1`)
+- Incrementing `VULCAN_CONSENT_BANNER_VERSION=2` shows modal to all users again (checks for `vulcan-consent-v2`)
+- Each user's acknowledgment is tracked per version in their browser
+
 ### Footer Legal Text
 
 | Variable | Description | Default | Example |
