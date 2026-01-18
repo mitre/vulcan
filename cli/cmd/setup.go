@@ -255,26 +255,73 @@ func runDevSetup(config *SetupConfig, projectRoot string) {
 	printInfo("Checking prerequisites...")
 	fmt.Println()
 
-	checks := []struct {
-		name    string
-		command string
-		args    []string
-	}{
-		{"Docker", "docker", []string{"info"}},
-		{"Ruby", "ruby", []string{"--version"}},
-		{"pnpm", "pnpm", []string{"--version"}},
-	}
-
-	for _, check := range checks {
-		cmd := exec.Command(check.command, check.args...)
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		if err := cmd.Run(); err != nil {
-			printError(check.name + " not found. Please install it first.")
-			os.Exit(1)
+	// Check Docker - needs daemon running, not just installed
+	dockerCmd := exec.Command("docker", "info")
+	dockerOutput, dockerErr := dockerCmd.CombinedOutput()
+	if dockerErr != nil {
+		printError("Docker check failed")
+		// Check if Docker is installed but daemon not running
+		if strings.Contains(string(dockerOutput), "Cannot connect") ||
+			strings.Contains(string(dockerOutput), "connection refused") ||
+			strings.Contains(string(dockerOutput), "Is the docker daemon running") ||
+			strings.Contains(string(dockerOutput), "no such file or directory") {
+			printError("Docker is installed but the daemon is not running.")
+			printError("Please start Docker Desktop, OrbStack, or the Docker daemon.")
+		} else if _, err := exec.LookPath("docker"); err != nil {
+			printError("Docker is not installed. Please install Docker first.")
+		} else {
+			printError("Docker error: " + string(dockerOutput))
 		}
-		printSuccess(check.name + " found")
+		os.Exit(1)
 	}
+	printSuccess("Docker found")
+
+	// Check Ruby - verify version meets requirements
+	rubyCmd := exec.Command("ruby", "--version")
+	rubyOutput, rubyErr := rubyCmd.CombinedOutput()
+	if rubyErr != nil {
+		printError("Ruby check failed")
+		if _, err := exec.LookPath("ruby"); err != nil {
+			printError("Ruby is not installed. Please install Ruby first.")
+		} else {
+			printError("Ruby error: " + string(rubyOutput))
+		}
+		os.Exit(1)
+	}
+	rubyVersion := strings.TrimSpace(string(rubyOutput))
+	// Check if using system Ruby (typically 2.6.x on macOS)
+	if strings.Contains(rubyVersion, "ruby 2.6") || strings.Contains(rubyVersion, "ruby 2.7") {
+		printError("Ruby check failed")
+		printError("Found system Ruby: " + rubyVersion)
+		printError("Vulcan requires Ruby 3.x. Please install Ruby using a version manager:")
+		printError("  - rbenv: brew install rbenv && rbenv install 3.4.7")
+		printError("  - mise:  brew install mise && mise install ruby@3.4.7")
+		printError("  - asdf:  brew install asdf && asdf install ruby 3.4.7")
+		// Check for .ruby-version file
+		if _, err := os.Stat(filepath.Join(projectRoot, ".ruby-version")); err == nil {
+			requiredVersion, _ := os.ReadFile(filepath.Join(projectRoot, ".ruby-version"))
+			printError("Required version (from .ruby-version): " + strings.TrimSpace(string(requiredVersion)))
+		}
+		os.Exit(1)
+	}
+	printSuccess("Ruby found (" + rubyVersion + ")")
+
+	// Check pnpm
+	pnpmCmd := exec.Command("pnpm", "--version")
+	pnpmOutput, pnpmErr := pnpmCmd.CombinedOutput()
+	if pnpmErr != nil {
+		printError("pnpm check failed")
+		if _, err := exec.LookPath("pnpm"); err != nil {
+			printError("pnpm is not installed. Please install pnpm first:")
+			printError("  npm install -g pnpm")
+			printError("  or: brew install pnpm")
+		} else {
+			printError("pnpm error: " + string(pnpmOutput))
+		}
+		os.Exit(1)
+	}
+	printSuccess("pnpm found (v" + strings.TrimSpace(string(pnpmOutput)) + ")")
+
 	fmt.Println()
 
 	// Create .env file
@@ -338,17 +385,35 @@ func runDevSetup(config *SetupConfig, projectRoot string) {
 	} else {
 		for _, step := range steps {
 			var stepErr error
+			var stepOutput []byte
 			spinner.New().
 				Title(step.title).
 				Action(func() {
 					cmd := exec.Command(step.command, step.args...)
 					cmd.Dir = projectRoot
-					stepErr = cmd.Run()
+					stepOutput, stepErr = cmd.CombinedOutput()
 				}).
 				Run()
 			if stepErr != nil {
 				printError("Failed: " + step.title)
-				printError(stepErr.Error())
+				fmt.Println()
+				// Show the command that was run
+				printError("Command: " + step.command + " " + strings.Join(step.args, " "))
+				fmt.Println()
+				// Show the actual error output
+				if len(stepOutput) > 0 {
+					printError("Output:")
+					// Indent and display the output
+					lines := strings.Split(string(stepOutput), "\n")
+					for _, line := range lines {
+						if line != "" {
+							fmt.Println("  " + line)
+						}
+					}
+				} else {
+					printError("Error: " + stepErr.Error())
+				}
+				fmt.Println()
 				os.Exit(1)
 			}
 			printSuccess(strings.TrimSuffix(step.title, "..."))
@@ -802,4 +867,3 @@ WEB_CONCURRENCY=2
 	os.Chmod(path, 0600)
 	printSuccess("Created .env file")
 }
-
