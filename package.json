@@ -76,7 +76,7 @@
   "scripts": {
     "lint": "eslint --fix app/javascript",
     "lint:ci": "eslint --max-warnings 0 app/javascript",
-    "build": "bin/vite build",
+    "build": "bundle exec vite build",
     "dev": "foreman start -f Procfile.dev",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",

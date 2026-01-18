@@ -5,7 +5,7 @@
 web: bundle exec rails s -p ${VULCAN_RAILS_PORT:-${PORT:-3000}}
 
 # Vite dev server with HMR
-vite: bin/vite dev
+vite: bundle exec vite dev
 
 # Prometheus metrics exporter (configurable via VULCAN_PROMETHEUS_PORT, defaults to 9394)
 # Uncomment if you need metrics in local development

@@ -112,7 +112,7 @@ COPY . .
 RUN bundle exec bootsnap precompile app/ lib/
 
 # Build Vite assets for production (includes gzip/brotli compression)
-RUN bin/vite build
+RUN bundle exec vite build
 
 # Precompile Rails assets
 RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile

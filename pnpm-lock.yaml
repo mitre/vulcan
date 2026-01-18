@@ -227,28 +227,6 @@ importers:
         specifier: ^3.5.18
         version: 3.5.26(typescript@5.9.3)
 
-  playground:
-    dependencies:
-      bootstrap:
-        specifier: ^5.3.3
-        version: 5.3.8(@popperjs/core@2.11.8)
-      bootstrap-vue-next:
-        specifier: 0.40.8
-        version: 0.40.8(@floating-ui/vue@1.1.9(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@14.1.0(vue@3.5.26(typescript@5.9.3)))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3))
-      vue:
-        specifier: ^3.5.13
-        version: 3.5.26(typescript@5.9.3)
-    devDependencies:
-      '@vitejs/plugin-vue':
-        specifier: ^5.2.1
-        version: 5.2.4(vite@6.4.1(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2))(vue@3.5.26(typescript@5.9.3))
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
-      vite:
-        specifier: ^6.0.3
-        version: 6.4.1(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2)
-
 packages:
 
   '@acemir/cssom@0.9.29':
@@ -1507,13 +1485,6 @@ packages:
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
 
-  '@vitejs/plugin-vue@5.2.4':
-    resolution: {integrity: sha512-7Yx/SXSOcQq5HiiV3orevHUFn+pmMB4cgbEkDYgnkUWb0WfeQ/wa2yFv6D5ICiCQOVpjA7vYDXrC7AGO8yjDHA==}
-    engines: {node: ^18.0.0 || >=20.0.0}
-    peerDependencies:
-      vite: ^5.0.0 || ^6.0.0
-      vue: ^3.2.25
-
   '@vitejs/plugin-vue@6.0.3':
     resolution: {integrity: sha512-TlGPkLFLVOY3T7fZrwdvKpjprR3s4fxRln0ORDo1VQ7HHyxJwTlrjKU3kpVWTlaAjIEuCTokmjkZnr8Tpc925w==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1817,21 +1788,6 @@ packages:
 
   bootstrap-icons@1.13.1:
     resolution: {integrity: sha512-ijombt4v6bv5CLeXvRWKy7CuM3TRTuPEuGaGKvTV5cz65rQSY8RQ2JcHt6b90cBBAC7s8fsf2EkQDldzCoXUjw==}
-
-  bootstrap-vue-next@0.40.8:
-    resolution: {integrity: sha512-8uS/UuL7RCeDgR+FD2Tr0yyUHxPDJVL8AjugeEgrXVpch36oiO+iFtfIeZVNRRWSz56h12wT2lSFmpy4b9qsBg==}
-    peerDependencies:
-      '@floating-ui/vue': '*'
-      '@vueuse/core': '*'
-      vue: ^3.5.13
-      vue-router: '*'
-    peerDependenciesMeta:
-      '@floating-ui/vue':
-        optional: true
-      '@vueuse/core':
-        optional: true
-      vue-router:
-        optional: true
 
   bootstrap-vue-next@0.42.0:
     resolution: {integrity: sha512-CSkk2jL8Y2U9zgdutxjbBx4DRhKFmxTmaTQhhMYXVvczkVksw2mzRu1MU//950z0lvUwSqJo3R7y0opoyEA8zg==}
@@ -4301,46 +4257,6 @@ packages:
     peerDependencies:
       vite: '>=5.0.0'
 
-  vite@6.4.1:
-    resolution: {integrity: sha512-+Oxm7q9hDoLMyJOYfUYBuHQo+dkAloi33apOPP56pzj+vsdJDzr+j1NISE5pyaAuKL4A3UD34qd0lx5+kfKp2g==}
-    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
-    hasBin: true
-    peerDependencies:
-      '@types/node': ^18.0.0 || ^20.0.0 || >=22.0.0
-      jiti: '>=1.21.0'
-      less: '*'
-      lightningcss: ^1.21.0
-      sass: '*'
-      sass-embedded: '*'
-      stylus: '*'
-      sugarss: '*'
-      terser: ^5.16.0
-      tsx: ^4.8.1
-      yaml: ^2.4.2
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-      jiti:
-        optional: true
-      less:
-        optional: true
-      lightningcss:
-        optional: true
-      sass:
-        optional: true
-      sass-embedded:
-        optional: true
-      stylus:
-        optional: true
-      sugarss:
-        optional: true
-      terser:
-        optional: true
-      tsx:
-        optional: true
-      yaml:
-        optional: true
-
   vite@7.3.0:
     resolution: {integrity: sha512-dZwN5L1VlUBewiP6H9s2+B3e3Jg96D0vzN+Ry73sOefebhYr9f94wwkMNN/9ouoU8pV1BqA1d1zGk8928cx0rg==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -5730,11 +5646,6 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
-  '@vitejs/plugin-vue@5.2.4(vite@6.4.1(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2))(vue@3.5.26(typescript@5.9.3))':
-    dependencies:
-      vite: 6.4.1(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2)
-      vue: 3.5.26(typescript@5.9.3)
-
   '@vitejs/plugin-vue@6.0.3(vite@7.3.0(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2))(vue@3.5.26(typescript@5.9.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.0-beta.53
@@ -6059,14 +5970,6 @@ snapshots:
   boolbase@1.0.0: {}
 
   bootstrap-icons@1.13.1: {}
-
-  bootstrap-vue-next@0.40.8(@floating-ui/vue@1.1.9(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@14.1.0(vue@3.5.26(typescript@5.9.3)))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3)):
-    dependencies:
-      vue: 3.5.26(typescript@5.9.3)
-    optionalDependencies:
-      '@floating-ui/vue': 1.1.9(vue@3.5.26(typescript@5.9.3))
-      '@vueuse/core': 14.1.0(vue@3.5.26(typescript@5.9.3))
-      vue-router: 4.6.4(vue@3.5.26(typescript@5.9.3))
 
   bootstrap-vue-next@0.42.0(@floating-ui/vue@1.1.9(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@14.1.0(vue@3.5.26(typescript@5.9.3)))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3)):
     dependencies:
@@ -8879,21 +8782,6 @@ snapshots:
       vite: 7.3.0(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2)
     transitivePeerDependencies:
       - supports-color
-
-  vite@6.4.1(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2):
-    dependencies:
-      esbuild: 0.25.12
-      fdir: 6.5.0(picomatch@4.0.3)
-      picomatch: 4.0.3
-      postcss: 8.5.6
-      rollup: 4.53.3
-      tinyglobby: 0.2.15
-    optionalDependencies:
-      '@types/node': 24.10.4
-      fsevents: 2.3.3
-      sass: 1.97.1
-      sass-embedded: 1.93.3
-      yaml: 2.8.2
 
   vite@7.3.0(@types/node@24.10.4)(sass-embedded@1.93.3)(sass@1.97.1)(yaml@2.8.2):
     dependencies:
