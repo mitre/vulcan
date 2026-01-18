@@ -72,3 +72,23 @@ vulcan-wiki-local/
 /certs/*
 !/certs/README.md
 !/certs/.gitkeep
+
+# Security audit files - DO NOT COMMIT
+SECURITY-*.md
+security-audit*.md
+*-security-audit.md
+
+# Vite Ruby
+/public/vite*
+node_modules
+# Vite uses dotenv and suggests to ignore local-only env files. See
+# https://vitejs.dev/guide/env-and-mode.html#env-files
+*.local
+
+.beads/recovery-context.md
+
+# Session recovery and internal documentation files
+*RECOVERY*.md
+*SESSION*.md
+session.md
+recovery-prompt.md

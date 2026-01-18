@@ -2,26 +2,39 @@
 
 source 'https://rubygems.org'
 
-ruby '3.3.9'
+ruby '3.4.7'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
-gem 'puma', '~> 5.6'
-# Asset pipeline for JavaScript bundling
-gem 'jsbundling-rails'
+gem 'puma', '~> 6.4'
+# Vite.js integration for modern JavaScript bundling
+gem 'vite_rails'
 # Asset pipeline for Rails
 gem 'propshaft'
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
 gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 2.7'
+# Fast, declarative JSON serializers for Ruby
+gem 'blueprinter'
+# Fast, efficient pagination
+gem 'pagy', '~> 9.0'
 # Use HAML instead of ERB
 gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
 gem 'devise'
+# Health check endpoints for Kubernetes and monitoring
+gem 'health_check'
+
+# Prometheus metrics exporter for monitoring and observability
+gem 'prometheus_exporter'
+# Email validation (format, MX records, disposable email detection)
+gem 'valid_email2'
+# Application version management (standardized version handling)
+gem 'rails_app_version'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
 # LDAP Auth
@@ -50,10 +63,14 @@ gem 'bootsnap', '>= 1.4.2', require: false
 # Ruby 3.4 compatibility - these will be removed from stdlib
 gem 'abbrev'
 gem 'csv'
+gem 'nkf'
 
 gem 'audited', '~> 5.8.0'
 
 gem 'activerecord-import'
+
+# PostgreSQL full-text search with trigrams, fuzzy matching, and ranking
+gem 'pg_search'
 
 gem 'ffaker', '~> 2.10'
 
@@ -85,6 +102,8 @@ group :development do
   gem 'letter_opener'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
+  # Dockerfile generator following Rails/Docker best practices
+  gem 'dockerfile-rails'
   # Git hooks management
   gem 'overcommit', require: false
   # Security vulnerability scanner for Ruby dependencies
@@ -125,3 +144,11 @@ gem 'highline', '~> 2.0'
 gem 'slack-ruby-client', '1.0.0'
 # Slack notification formatting
 gem 'slack_block_kit', '0.3.3'
+
+# Rate limiting and abuse prevention
+gem 'rack-attack'
+
+gem 'rubocop-capybara', '~> 2.22', groups: %i[development test]
+gem 'rubocop-factory_bot', '~> 2.28', groups: %i[development test]
+gem 'rubocop-rspec_rails', '~> 2.32', groups: %i[development test]
+gem 'parallel_tests', group: [:development, :test]

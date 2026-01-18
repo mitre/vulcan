@@ -1,0 +1,263 @@
+name: Release Vulcan
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v2.3.0
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate tag format
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid tag format: $TAG"
+            echo "Expected format: v2.3.0"
+            exit 1
+          fi
+          echo "✅ Valid tag: $TAG"
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION_NUMBER="${VERSION#v}"  # Remove 'v' prefix
+          echo "VERSION=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "TAG=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.7'
+          bundler-cache: true
+
+      - name: Check version consistency
+        run: |
+          # Read version from VERSION file
+          FILE_VERSION=$(cat VERSION | tr -d '\n')
+          TAG_VERSION="${{ steps.version.outputs.VERSION }}"
+
+          if [[ "$FILE_VERSION" != "$TAG_VERSION" ]]; then
+            echo "❌ Version mismatch!"
+            echo "   Tag version: $TAG_VERSION"
+            echo "   VERSION file: $FILE_VERSION"
+            echo ""
+            echo "Please update VERSION file to match the tag:"
+            echo "  echo '$TAG_VERSION' > VERSION"
+            echo "  bundle exec rails version:sync"
+            echo "  git add VERSION package.json"
+            echo "  git commit --amend --no-edit"
+            echo "  git tag -f ${{ github.ref_name }}"
+            echo "  git push -f origin ${{ github.ref_name }}"
+            exit 1
+          fi
+
+          # Also check package.json is synced
+          PACKAGE_VERSION=$(cat package.json | jq -r '.version')
+          if [[ "$PACKAGE_VERSION" != "$TAG_VERSION" ]]; then
+            echo "❌ package.json not synced!"
+            echo "   Tag version: $TAG_VERSION"
+            echo "   package.json: $PACKAGE_VERSION"
+            echo ""
+            echo "Run: bundle exec rails version:sync"
+            exit 1
+          fi
+
+          echo "✅ All versions match: $TAG_VERSION"
+
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-24.04
+    needs: validate
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vulcan_vue_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.7'
+          bundler-cache: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: |
+          bundle install
+          pnpm install
+
+      - name: Setup database
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vulcan_vue_test
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+
+      - name: Run frontend tests
+        run: pnpm vitest run
+
+      - name: Run backend tests
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vulcan_vue_test
+        run: bundle exec parallel_rspec spec/
+
+      - name: Run RuboCop
+        run: bundle exec rubocop
+
+      - name: Run Brakeman security scan
+        run: bundle exec brakeman --no-pager
+
+  create-draft-release:
+    name: Create Draft Release
+    runs-on: ubuntu-24.04
+    needs: [validate, test]
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION_NUMBER="${VERSION#v}"
+          echo "VERSION=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "TAG=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: changelog
+        run: |
+          # Extract changelog for this version if CHANGELOG.md exists
+          if [ -f CHANGELOG.md ]; then
+            # Get content between this version and previous version
+            NOTES=$(awk "/## \[${{ steps.version.outputs.VERSION }}\]/,/## \[/" CHANGELOG.md | head -n -1 | tail -n +2)
+            if [ -z "$NOTES" ]; then
+              NOTES="See CHANGELOG.md for details"
+            fi
+          else
+            NOTES="Release ${{ steps.version.outputs.TAG }}"
+          fi
+
+          # Save to file for multiline handling
+          echo "$NOTES" > release_notes.md
+
+      - name: Create Draft Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Vulcan ${{ steps.version.outputs.TAG }}
+          body_path: release_notes.md
+          draft: true  # Create as draft - will publish after Docker succeeds
+          prerelease: false
+          generate_release_notes: true  # Auto-generate from commits
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-docker:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-24.04
+    needs: [validate, test, create-draft-release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          echo "TAG=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and push multi-platform images
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: production
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            mitre/vulcan:${{ steps.version.outputs.TAG }}
+            mitre/vulcan:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: mitre/vulcan
+          short-description: "STIG-ready security guidance documentation platform"
+          readme-filepath: ./README.md
+
+  publish-release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-24.04
+    needs: [validate, test, create-draft-release, build-docker]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: false  # Publish the draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify success
+        run: |
+          echo "🎉 Release ${{ github.ref_name }} published successfully!"
+          echo ""
+          echo "✅ GitHub Release: https://github.com/mitre/vulcan/releases/tag/${{ github.ref_name }}"
+          echo "✅ Docker Hub: https://hub.docker.com/r/mitre/vulcan/tags"
+          echo ""
+          echo "Verify the release:"
+          echo "  docker pull mitre/vulcan:${{ github.ref_name }}"
+          echo "  curl https://your-instance.com/status | jq '.application.version'"

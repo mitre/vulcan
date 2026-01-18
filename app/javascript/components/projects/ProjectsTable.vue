@@ -1,321 +1,386 @@
+<script setup lang="ts">
+/**
+ * ProjectsTable.vue
+ *
+ * Displays a table of projects with search, filter toggles, pagination, and row actions.
+ * Uses BaseTable for consistent table UI.
+ */
+import type { IProject } from '@/types'
+import axios from 'axios'
+import { BFormCheckbox } from 'bootstrap-vue-next'
+import { computed, onMounted, reactive, watch } from 'vue'
+import ActionMenu from '@/components/shared/ActionMenu.vue'
+import BaseTable from '@/components/shared/BaseTable.vue'
+import DeleteModal from '@/components/shared/DeleteModal.vue'
+import { formatDateTime, useAppToast, useBaseTable, useConfirmModal, useDeleteConfirmation } from '@/composables'
+import UpdateProjectDetailsModal from './UpdateProjectDetailsModal.vue'
+
+const props = defineProps<{
+  projects: IProject[]
+  is_vulcan_admin: boolean
+}>()
+
+const emit = defineEmits<{
+  projectUpdated: []
+}>()
+
+// Toast notifications
+const toast = useAppToast()
+
+// Confirmation modal
+const { confirm } = useConfirmModal()
+
+// Filter state with localStorage persistence
+const filter = reactive({
+  allToggled: props.is_vulcan_admin,
+  myProjectsToggled: true,
+  discoverableToggled: props.is_vulcan_admin,
+})
+
+// Apply filters to get base items for table
+const filteredByToggle = computed(() => {
+  if (filter.allToggled) {
+    return props.projects
+  }
+  else if (filter.discoverableToggled && !filter.myProjectsToggled) {
+    return props.projects.filter(p => p.visibility === 'discoverable')
+  }
+  else if (filter.myProjectsToggled && !filter.discoverableToggled) {
+    return props.projects.filter(p => p.is_member)
+  }
+  else if (filter.myProjectsToggled && filter.discoverableToggled) {
+    return props.projects
+  }
+  return []
+})
+
+// Use composable for search/pagination on filtered items
+const { search, currentPage, paginatedItems, totalRows } = useBaseTable({
+  items: filteredByToggle,
+  searchFields: ['name'] as (keyof IProject)[],
+})
+
+// Delete confirmation with composable
+const {
+  showModal: showDeleteModal,
+  itemToDelete: projectToDelete,
+  isDeleting: deleting,
+  confirmDelete,
+  executeDelete,
+} = useDeleteConfirmation<IProject>({
+  onDelete: async (project) => {
+    await axios.delete(`/projects/${project.id}`)
+    emit('projectUpdated')
+  },
+  onError: () => {
+    toast.error('Failed to delete project. Please try again.')
+  },
+})
+
+// Text truncation state
+const truncated = reactive<Record<number, boolean>>({})
+
+// Column definitions
+const columns = [
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'description', label: 'Description' },
+  { key: 'memberships_count', label: 'Members', sortable: true },
+  { key: 'updated_at', label: 'Last Updated', sortable: true },
+  { key: 'actions', label: '', thClass: 'text-end', tdClass: 'text-end' },
+]
+
+// Counts
+const projectCount = computed(() => props.projects.length)
+const discoverableProjectCount = computed(() =>
+  props.projects.filter(p => p.visibility === 'discoverable').length,
+)
+
+// Initialize truncation state
+onMounted(() => {
+  props.projects.forEach((project) => {
+    truncated[project.id] = true
+  })
+
+  // Load filter state from localStorage
+  const stored = localStorage.getItem('projectTableFilters')
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored)
+      if (typeof parsed.allToggled === 'boolean') filter.allToggled = parsed.allToggled
+      if (typeof parsed.myProjectsToggled === 'boolean') filter.myProjectsToggled = parsed.myProjectsToggled
+      if (typeof parsed.discoverableToggled === 'boolean') filter.discoverableToggled = parsed.discoverableToggled
+    }
+    catch {
+      localStorage.removeItem('projectTableFilters')
+    }
+  }
+})
+
+// Persist filter state and handle toggle logic
+watch(
+  () => filter.allToggled,
+  (newValue) => {
+    if (newValue) {
+      filter.discoverableToggled = true
+      filter.myProjectsToggled = true
+    }
+    saveFilters()
+  },
+)
+
+watch(
+  () => filter.discoverableToggled,
+  (newValue) => {
+    if (newValue && filter.myProjectsToggled) {
+      filter.allToggled = true
+    }
+    else {
+      filter.allToggled = false
+    }
+    saveFilters()
+  },
+)
+
+watch(
+  () => filter.myProjectsToggled,
+  (newValue) => {
+    if (newValue && filter.discoverableToggled) {
+      filter.allToggled = true
+    }
+    else {
+      filter.allToggled = false
+    }
+    saveFilters()
+  },
+)
+
+function saveFilters() {
+  localStorage.setItem('projectTableFilters', JSON.stringify({
+    allToggled: filter.allToggled,
+    myProjectsToggled: filter.myProjectsToggled,
+    discoverableToggled: filter.discoverableToggled,
+  }))
+}
+
+/**
+ * Truncate text with expand/collapse
+ */
+function truncateText(text: string | undefined, id: number) {
+  if (!text) return ''
+  if (truncated[id] && text.length > 75) {
+    return text.substring(0, 75)
+  }
+  return text
+}
+
+function toggleTruncate(id: number) {
+  truncated[id] = !truncated[id]
+}
+
+/**
+ * Get actions for a project row
+ */
+function getActions(project: IProject) {
+  const actions = []
+
+  // View is always available for members
+  if (project.is_member) {
+    actions.push({ id: 'view', label: 'View Project', icon: 'bi-eye' })
+  }
+
+  // Request access for non-members without pending request
+  if (!project.is_member && !project.access_request_id) {
+    actions.push({ id: 'request-access', label: 'Request Access', icon: 'bi-person-plus' })
+  }
+
+  // Cancel request for pending requests
+  if (project.access_request_id) {
+    actions.push({ id: 'cancel-request', label: 'Cancel Request', icon: 'bi-x-circle', variant: 'danger' as const })
+  }
+
+  // Delete for admins
+  if (props.is_vulcan_admin) {
+    actions.push({ id: 'delete', label: 'Remove Project', icon: 'bi-trash', variant: 'danger' as const, dividerBefore: actions.length > 0 })
+  }
+
+  return actions
+}
+
+/**
+ * Handle action menu selection
+ */
+function handleAction(actionId: string, project: IProject) {
+  switch (actionId) {
+    case 'view':
+      window.location.href = `/projects/${project.id}`
+      break
+    case 'request-access':
+      requestAccess(project)
+      break
+    case 'cancel-request':
+      cancelAccessRequest(project)
+      break
+    case 'delete':
+      confirmDelete(project)
+      break
+  }
+}
+
+/**
+ * Request access to a project
+ */
+async function requestAccess(project: IProject) {
+  try {
+    await axios.post(`/projects/${project.id}/project_access_requests`)
+    toast.success('Your request for access has been sent.', 'Access Requested')
+    emit('projectUpdated')
+  }
+  catch (error) {
+    console.error('Failed to request access:', error)
+    toast.error('Failed to request access. Please try again.')
+  }
+}
+
+/**
+ * Cancel access request
+ */
+async function cancelAccessRequest(project: IProject) {
+  if (!project.access_request_id) return
+
+  const confirmed = await confirm(
+    `Are you sure you want to cancel your request to access project ${project.name}?`,
+    'Cancel Access Request',
+  )
+  if (!confirmed) return
+
+  try {
+    await axios.delete(`/projects/${project.id}/project_access_requests/${project.access_request_id}`)
+    toast.success(`Your request to access ${project.name} has been cancelled.`, 'Request Cancelled')
+    emit('projectUpdated')
+  }
+  catch (error) {
+    console.error('Failed to cancel request:', error)
+    toast.error('Failed to cancel request. Please try again.')
+  }
+}
+
+/**
+ * Refresh projects after modal update
+ */
+function refreshProjects() {
+  emit('projectUpdated')
+}
+</script>
+
 <template>
   <div>
     <!-- Table information -->
-    <p>
-      <b>Project Count:</b> <b-badge variant="info">{{ projectCount }}</b-badge>
+    <p class="mb-2">
+      <strong>Project Count:</strong>
+      <span class="badge bg-info ms-1">{{ projectCount }}</span>
     </p>
-    <small v-if="projectCount > 0" class="text-info">
-      {{ discoverableProjectCount }} Discoverable Project{{
-        discoverableProjectCount > 1 ? "s" : ""
-      }}
+    <small v-if="projectCount > 0" class="text-info d-block mb-3">
+      {{ discoverableProjectCount }} Discoverable Project{{ discoverableProjectCount !== 1 ? 's' : '' }}
     </small>
 
-    <!-- Project search -->
-    <div class="d-flex flex-md-row flex-sm-column justify-content-start">
-      <div class="col-lg-6">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text">
-              <b-icon icon="search" aria-hidden="true" />
-            </div>
-          </div>
-          <input
-            id="projectSearch"
-            v-model="search"
-            type="text"
-            class="form-control"
-            placeholder="Search projects by name..."
+    <BaseTable
+      :items="paginatedItems"
+      :columns="columns"
+      :total-rows="totalRows"
+      :current-page="currentPage"
+      :search="search"
+      search-placeholder="Search projects by name..."
+      @update:search="search = $event"
+      @update:current-page="currentPage = $event"
+    >
+      <!-- Custom filters slot -->
+      <template #filters>
+        <div class="d-flex flex-wrap gap-3 mb-3">
+          <BFormCheckbox
+            v-model="filter.allToggled"
+            :disabled="filter.allToggled"
+            switch
+          >
+            <small>All Projects</small>
+          </BFormCheckbox>
+          <BFormCheckbox v-model="filter.myProjectsToggled" switch>
+            <small>Show My Projects</small>
+            <i
+              class="bi bi-info-circle ms-1"
+              aria-hidden="true"
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title="Projects I am a member of"
+            />
+          </BFormCheckbox>
+          <BFormCheckbox v-model="filter.discoverableToggled" switch>
+            <small>Show Discoverable Projects</small>
+            <i
+              class="bi bi-info-circle ms-1"
+              aria-hidden="true"
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
+            />
+          </BFormCheckbox>
+        </div>
+      </template>
+
+      <!-- Name column -->
+      <template #cell-name="{ item }">
+        <a v-if="item.is_member" :href="`/projects/${item.id}`">
+          {{ item.name }}
+        </a>
+        <span v-else>{{ item.name }}</span>
+      </template>
+
+      <!-- Description column with truncation -->
+      <template #cell-description="{ item }">
+        {{ truncateText(item.description, item.id) }}
+        <a
+          v-if="item.description && item.description.length > 75"
+          href="#"
+          class="text-primary"
+          @click.prevent="toggleTruncate(item.id)"
+        >
+          {{ truncated[item.id] ? '...' : 'read less' }}
+        </a>
+      </template>
+
+      <!-- Updated at column -->
+      <template #cell-updated_at="{ item }">
+        {{ formatDateTime(item.updated_at) }}
+      </template>
+
+      <!-- Actions column -->
+      <template #cell-actions="{ item }">
+        <div class="d-flex justify-content-end align-items-center gap-2">
+          <!-- Edit modal for admins -->
+          <UpdateProjectDetailsModal
+            v-if="is_vulcan_admin || item.admin"
+            :project="item"
+            :is_project_table="true"
+            @project-updated="refreshProjects"
+          />
+
+          <!-- Action menu (handles single action as button automatically) -->
+          <ActionMenu
+            :actions="getActions(item)"
+            @action="handleAction($event, item)"
           />
         </div>
-      </div>
-      <div class="d-flex flex-wrap mx-auto mt-sm-2 mt-md-0 justify-content-lg-start">
-        <b-form-checkbox
-          v-model="filter.allToggled"
-          :disabled="filter.allToggled"
-          size="lg"
-          class="ml-3"
-          switch
-        >
-          <small>All Projects</small>
-        </b-form-checkbox>
-        <b-form-checkbox v-model="filter.myProjectsToggled" size="lg" class="ml-3" switch>
-          <small>Show My Projects</small>
-          <b-icon
-            v-b-tooltip.hover.html
-            icon="info-circle"
-            aria-hidden="true"
-            title="Projects I am a member of"
-          />
-        </b-form-checkbox>
-        <b-form-checkbox v-model="filter.discoverableToggled" size="lg" class="ml-3" switch>
-          <small>Show Discoverable Projects</small>
-          <b-icon
-            v-b-tooltip.hover.html
-            icon="info-circle"
-            aria-hidden="true"
-            title="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
-          />
-        </b-form-checkbox>
-      </div>
-    </div>
-
-    <br />
-
-    <!-- Projects table -->
-    <b-table
-      id="projects-table"
-      :items="searchedProjects"
-      :fields="fields"
-      :per-page="perPage"
-      :current-page="currentPage"
-      sort-icon-left
-    >
-      <template #cell(name)="data">
-        <b-link v-if="data.item.is_member" :href="getProjectAction(data.item)">
-          {{ data.item.name }}
-        </b-link>
-        <span v-else>{{ data.item.name }}</span>
       </template>
+    </BaseTable>
 
-      <template #cell(description)="data">
-        {{ truncate(data.item.description, data.item.id) }}
-        <b-link v-if="data.item.description" @click="toggleTruncate(data.item.id)">
-          {{ truncated[data.item.id] ? "..." : "read less" }}
-        </b-link>
-      </template>
-
-      <template #cell(updated_at)="data">
-        {{ friendlyDateTime(data.item.updated_at) }}
-      </template>
-
-      <template #cell(actions)="data">
-        <UpdateProjectDetailsModal
-          v-if="is_vulcan_admin || data.item.admin"
-          :project="data.item"
-          :is_project_table="true"
-          class="floatright"
-          @projectUpdated="refreshProjects"
-        />
-        <span v-if="!data.item.is_member && !data.item.access_request_id">
-          <b-button
-            class="btn btn-info text-nowrap mx-2 my-3"
-            data-method="post"
-            :href="requestAccessAction(data.item)"
-            rel="nofollow"
-          >
-            <b-icon icon="person-plus" aria-hidden="true" />
-            Request Access
-          </b-button>
-        </span>
-        <span v-if="data.item.access_request_id">
-          <b-button
-            class="btn btn-danger text-nowrap mx-2 my-3"
-            :data-confirm="getLabel(data.item, 'cancel request')"
-            data-method="delete"
-            :href="cancelAccessRequestAction(data.item)"
-            rel="nofollow"
-          >
-            <b-icon icon="x-circle" aria-hidden="true" />
-            Cancel Access Request
-          </b-button>
-        </span>
-        <span v-if="is_vulcan_admin">
-          <b-button
-            class="px-2 m-2"
-            variant="danger"
-            :data-confirm="getLabel(data.item, 'remove project')"
-            data-method="delete"
-            :href="destroyAction(data.item)"
-            rel="nofollow"
-          >
-            <b-icon icon="trash" aria-hidden="true" />
-            Remove
-          </b-button>
-        </span>
-      </template>
-    </b-table>
-
-    <!-- Pagination controls -->
-    <b-pagination
-      v-model="currentPage"
-      :total-rows="rows"
-      :per-page="perPage"
-      aria-controls="projects-table"
+    <!-- Delete Confirmation Modal -->
+    <DeleteModal
+      v-model="showDeleteModal"
+      title="Confirm Delete"
+      :item-name="projectToDelete?.name"
+      :loading="deleting"
+      danger-text="This will delete all components and data associated with this project."
+      confirm-button-text="Delete Project"
+      @confirm="executeDelete"
     />
   </div>
 </template>
-
-<script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
-
-export default {
-  name: "ProjectsTable",
-  components: { UpdateProjectDetailsModal },
-  mixins: [DateFormatMixinVue],
-  props: {
-    projects: {
-      type: Array,
-      required: true,
-    },
-    is_vulcan_admin: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-  },
-  data: function () {
-    return {
-      search: "",
-      perPage: 10,
-      currentPage: 1,
-      truncated: {}, // store the truncated state for each project description
-      filter: {
-        discoverableToggled: this.is_vulcan_admin,
-        myProjectsToggled: true,
-        allToggled: this.is_vulcan_admin,
-      },
-      fields: [
-        { key: "name", sortable: true },
-        { key: "description", label: "Description" },
-        { key: "memberships_count", label: "Members", sortable: true },
-        { key: "updated_at", label: "Last Updated", sortable: true },
-        {
-          key: "actions",
-          label: "Actions",
-          thClass: "text-right",
-          tdClass: "p-0 text-right",
-        },
-      ],
-    };
-  },
-  computed: {
-    // Search projects based on name
-    searchedProjects: function () {
-      let projects = [];
-      if (this.filter.allToggled) {
-        projects = this.projects;
-      } else if (this.filter.discoverableToggled) {
-        projects = this.projects.filter((project) => project.visibility === "discoverable");
-      } else if (this.filter.myProjectsToggled) {
-        projects = this.projects.filter((project) => project.is_member);
-      }
-      let downcaseSearch = this.search.toLowerCase();
-      return projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
-    },
-    // Used by b-pagination to know how many total rows there are
-    rows: function () {
-      return this.searchedProjects.length;
-    },
-    // Total number of user's projects
-    projectCount: function () {
-      return this.projects.length;
-    },
-    // Total number of discoverable projects in the system
-    discoverableProjectCount: function () {
-      return this.projects.filter((project) => project.visibility === "discoverable").length;
-    },
-  },
-  watch: {
-    filter: {
-      handler(_) {
-        localStorage.setItem("projectTableFilters", JSON.stringify(this.filter));
-      },
-      deep: true,
-    },
-    "filter.allToggled": function (newValue, oldValue) {
-      // Handle changes in individual field checkboxes
-      if (newValue) {
-        this.filter.discoverableToggled = true;
-        this.filter.myProjectsToggled = true;
-      }
-    },
-    "filter.discoverableToggled": function (newValue, oldValue) {
-      // Handle changes in individual field checkboxes
-      if (newValue && this.filter.myProjectsToggled) {
-        this.filter.allToggled = true;
-      } else {
-        this.filter.allToggled = false;
-      }
-    },
-    "filter.myProjectsToggled": function (newValue, oldValue) {
-      // Handle changes in individual field checkboxes
-      if (newValue && this.filter.discoverableToggled) {
-        this.filter.allToggled = true;
-      } else {
-        this.filter.allToggled = false;
-      }
-    },
-  },
-  mounted: function () {
-    // Persist `filters` across page loads
-    if (localStorage.getItem("projectTableFilters")) {
-      try {
-        this.filter = JSON.parse(localStorage.getItem("projectTableFilters"));
-      } catch (e) {
-        localStorage.removeItem("projectTableFilters");
-      }
-    }
-  },
-  destroyed() {
-    window.removeEventListener("scroll", this.handleScroll);
-  },
-  created: function () {
-    this.projects.forEach((project) => {
-      this.$set(this.truncated, project.id, true);
-    });
-  },
-  methods: {
-    // Path to POST/DELETE to when updating/deleting a project
-    formAction: function (project) {
-      return `/projects/${project.id}`;
-    },
-    // Path to the manage project members page
-    manageProjectMembersAction: function (project) {
-      return `/projects/${project.id}/project_members`;
-    },
-    // Path to the project controls page
-    projectControlsAction: function (project) {
-      return `/projects/${project.id}/controls`;
-    },
-    getProjectAction: function (project) {
-      return `/projects/${project.id}`;
-    },
-    destroyAction: function (project) {
-      return `/projects/${project.id}`;
-    },
-    // Path to POST/DELETE action to when requesting access to project or cancelling request
-    requestAccessAction: function (project) {
-      return `/projects/${project.id}/project_access_requests`;
-    },
-    cancelAccessRequestAction: function (project) {
-      return `/projects/${project.id}/project_access_requests/${project.access_request_id}`;
-    },
-    getLabel: function (project, action) {
-      if (action === "remove project") {
-        return `Are you sure you want to completely remove project ${project.name} and all of its related data?`;
-      } else {
-        return `Are you sure you want to cancel your request to access project ${project.name}?`;
-      }
-    },
-    refreshProjects: function () {
-      this.$emit("projectUpdated");
-    },
-    toggleTruncate: function (id) {
-      this.$set(this.truncated, id, !this.truncated[id]);
-    },
-    truncate: function (text, id) {
-      if (this.truncated[id] && text && text.length > 75) {
-        return text.substring(0, 75);
-      }
-      return text;
-    },
-  },
-};
-</script>
-
-<style scoped>
-.floatright {
-  float: right;
-}
-</style>

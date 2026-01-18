@@ -1,78 +1,223 @@
-FROM ruby:3.3.9
+# syntax=docker/dockerfile:1
+# check=error=true
+
+# =============================================================================
+# Vulcan Multi-Stage Dockerfile
+# =============================================================================
+# Supports multiple build targets:
+#   - development: Full dev environment with all dependencies
+#   - production:  Optimized production image (default)
+#
+# Build commands:
+#   docker build -t vulcan:dev --target development .
+#   docker build -t vulcan:prod --target production .
+#   docker buildx bake production
+#   docker buildx bake dev
+#
+# Or use the CLI:
+#   vulcan build
+#   vulcan build --target development
+# =============================================================================
+
+# Make sure versions match .ruby-version and .nvmrc
+ARG RUBY_VERSION=3.4.7
+ARG NODE_VERSION=24.11.1
+ARG BUNDLER_VERSION=2.6.5
+
+# =============================================================================
+# BASE STAGE - Common foundation for all stages
+# =============================================================================
+FROM docker.io/library/ruby:${RUBY_VERSION}-slim AS base
+
+WORKDIR /rails
+
+# Install base packages including jemalloc for better memory management
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      ca-certificates \
+      curl \
+      libjemalloc2 \
+      libvips \
+      libyaml-0-2 \
+      postgresql-client && \
+    ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install custom SSL certificates if provided
-# Users can place .crt, .pem, or .cer files in the certs/ directory
-# These will be added to the system certificate store
 COPY certs/ /usr/local/share/ca-certificates/custom/
 WORKDIR /usr/local/share/ca-certificates/custom
-RUN for cert in ./*.pem; do \
-      [ -f "$cert" ] && cp "$cert" "${cert%.pem}.crt" || true; \
+RUN for cert in ./*.pem ./*.cer; do \
+      [ -f "$cert" ] && mv "$cert" "${cert%.*}.crt" || true; \
     done && \
-    for cert in ./*.cer; do \
-      [ -f "$cert" ] && cp "$cert" "${cert%.cer}.crt" || true; \
-    done && \
-    # Check if we have any certificates to install
-    if ls ./*.crt ./*.pem 2>/dev/null | grep -q .; then \
-      echo "Installing custom certificates..." && \
+    if ls ./*.crt 2>/dev/null | grep -q .; then \
       update-ca-certificates; \
-    else \
-      echo "No custom certificates found"; \
-    fi
+    fi && \
+    rm -rf /usr/local/share/ca-certificates/custom/README.md
+WORKDIR /rails
 
-# Reset working directory back to root
-WORKDIR /
+# Common environment for all stages
+ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
+    MALLOC_ARENA_MAX="2" \
+    NODE_EXTRA_CA_CERTS="/etc/ssl/certs/ca-certificates.crt" \
+    BUNDLE_PATH="/usr/local/bundle"
 
-# Set Node to use system certificates for all subsequent commands
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+# =============================================================================
+# BUILD STAGE - Compile gems and assets
+# =============================================================================
+FROM base AS build
 
-# Install dependencies and Node.js/Yarn (using signed-by instead of deprecated apt-key)
+# Install packages needed to build gems and node modules
 RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
-    # Update certificates again after installing ca-certificates package
-    update-ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-    apt-get update -qq && apt-get install -y build-essential nodejs yarn && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      git \
+      gnupg \
+      libpq-dev \
+      libyaml-dev \
+      pkg-config \
+      zlib1g-dev && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-ENV APP_HOME=/app
-ENV RAILS_ENV=production
-ENV RACK_ENV=production
+# Install Node.js LTS and pnpm using official binaries
+ARG NODE_VERSION
+ARG TARGETARCH
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
+    rm node.tar.xz && \
+    npm install -g pnpm@10
 
-# Logging configuration
-ENV RAILS_LOG_TO_STDOUT=true
-ENV RAILS_LOG_LEVEL=info
+# Build stage environment - production mode for asset compilation
+ARG BUNDLER_VERSION
+ENV RAILS_ENV="production" \
+    NODE_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_WITHOUT="development:test"
 
-# Asset serving for containerized deployments
-ENV RAILS_SERVE_STATIC_FILES=true
+COPY Gemfile Gemfile.lock ./
+RUN gem install bundler -v ${BUNDLER_VERSION} && \
+    bundle install && \
+    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
+    bundle exec bootsnap precompile --gemfile
 
-# Performance and concurrency settings
-ENV RAILS_MAX_THREADS=5
-ENV WEB_CONCURRENCY=2
+# Install node modules (including dev dependencies for build)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml vite.config.ts ./
+COPY config/vite.json ./config/
+RUN pnpm install --frozen-lockfile
 
-# Memory optimization
-ENV MALLOC_ARENA_MAX=2
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
+# Copy application code
+COPY . .
 
-RUN gem install bundler:2.3.27
-COPY Gemfile* $APP_HOME/
-RUN bundle config set --local without 'development test' && \
+# Precompile bootsnap code for faster boot times
+RUN bundle exec bootsnap precompile app/ lib/
+
+# Build Vite assets for production (includes gzip/brotli compression)
+RUN bin/vite build
+
+# Precompile Rails assets
+RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
+
+# Remove dev/test files and node_modules BEFORE copying to production stage
+# This is critical - doing it here reduces the final image size significantly
+RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec test .git
+
+# =============================================================================
+# DEVELOPMENT STAGE - Full development environment
+# =============================================================================
+FROM base AS development
+
+# Install development packages
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      git \
+      gnupg \
+      libpq-dev \
+      libyaml-dev \
+      pkg-config \
+      zlib1g-dev \
+      vim \
+      less && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Install Node.js and pnpm
+ARG NODE_VERSION
+ARG TARGETARCH
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
+    rm node.tar.xz && \
+    npm install -g pnpm@10
+
+# Development environment
+ENV RAILS_ENV="development" \
+    BUNDLE_WITHOUT="" \
+    BUNDLE_DEPLOYMENT="0"
+
+# Install all gems including dev/test
+ARG BUNDLER_VERSION
+COPY Gemfile Gemfile.lock ./
+RUN gem install bundler -v ${BUNDLER_VERSION} && \
     bundle install
 
-COPY . $APP_HOME
-# Install all dependencies (including dev) for build and build assets
-# Don't set NODE_ENV during the build to ensure all modules are available
-# Then remove dev dependencies after build to reduce image size
-RUN yarn install --frozen-lockfile && \
-    SECRET_KEY_BASE=dummyvalue bundle exec rake assets:precompile && \
-    yarn install --production --ignore-scripts --prefer-offline
+# Install node modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml vite.config.ts ./
+COPY config/vite.json ./config/
+RUN pnpm install
 
-# Now set NODE_ENV for runtime
-ENV NODE_ENV=production
+# Copy application code
+COPY . .
 
-RUN chown -R 1000:2000 /app
-USER 1000
+# Create non-root user
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails .
 
-CMD ["rails","server","-b","0.0.0.0"]
+USER 1000:1000
+
+# Port configuration
+ARG WEB_PORT=3000
+ARG PROMETHEUS_PORT=9394
+EXPOSE ${WEB_PORT} ${PROMETHEUS_PORT}
+
+# Development server with file watching
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
+
+# =============================================================================
+# PRODUCTION STAGE - Optimized for deployment (default)
+# =============================================================================
+FROM base AS production
+
+# Production environment
+ENV RAILS_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_WITHOUT="development:test" \
+    RAILS_LOG_TO_STDOUT="true" \
+    RAILS_SERVE_STATIC_FILES="true"
+
+# Copy built artifacts from build stage
+# Note: cleanup already done in build stage to minimize copy size
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build /rails /rails
+
+# Create non-root user and set ownership
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails db log storage tmp public
+
+USER 1000:1000
+
+# Port configuration
+ARG WEB_PORT=3000
+ARG PROMETHEUS_PORT=9394
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:${WEB_PORT}/up || exit 1
+
+EXPOSE ${WEB_PORT} ${PROMETHEUS_PORT}
+
+# Production server
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

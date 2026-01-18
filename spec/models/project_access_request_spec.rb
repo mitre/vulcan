@@ -3,7 +3,7 @@
 # spec/models/project_access_request_spec.rb
 require 'rails_helper'
 
-RSpec.describe ProjectAccessRequest, type: :model do
+RSpec.describe ProjectAccessRequest do
   let(:user1) { create(:user) }
   let(:user2) { create(:user) }
   let(:project) { create(:project) }

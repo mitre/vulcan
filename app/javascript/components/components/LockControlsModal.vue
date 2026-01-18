@@ -1,113 +1,133 @@
+<script setup lang="ts">
+/**
+ * LockControlsModal.vue
+ * Modal for bulk locking all controls in a component
+ * Vue 3 Composition API + Bootstrap 5
+ */
+import { ref } from 'vue'
+import { useAppToast } from '@/composables'
+import { http } from '@/services/http.service'
+
+// Props
+const props = defineProps<{
+  component_id: number
+}>()
+
+// Emits
+const emit = defineEmits<{
+  projectUpdated: []
+}>()
+
+// Toast for notifications
+const toast = useAppToast()
+
+// State
+const showModal = ref(false)
+const comment = ref('')
+const loading = ref(false)
+
+// Methods
+function openModal() {
+  comment.value = ''
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+}
+
+function lockControls() {
+  // Validation
+  if (!comment.value.trim()) {
+    toast.error('Please enter a comment')
+    return
+  }
+
+  loading.value = true
+
+  http.post(`/components/${props.component_id}/lock`, {
+    review: { action: 'lock_control', comment: comment.value },
+  })
+    .then((response) => {
+      toast.fromResponse(response)
+      closeModal()
+      emit('projectUpdated')
+    })
+    .catch((err) => {
+      toast.fromError(err)
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+</script>
+
 <template>
   <span>
-    <!-- Modal trigger button -->
-    <span @click="showModal()">
+    <!-- Modal trigger button (slot) -->
+    <span @click="openModal">
       <slot name="opener">
-        <b-button class="px-2 m-2" variant="primary"> Lock Component Controls </b-button>
+        <button class="btn btn-primary px-2 m-2">
+          Lock Component Controls
+        </button>
       </slot>
     </span>
 
-    <!-- Add component modal -->
-    <b-modal
-      ref="LockControlsModal"
-      title="Lock Component Controls"
-      size="lg"
-      :ok-title="loading ? 'Loading...' : 'Lock Controls'"
-      :ok-disabled="loading"
-      @ok="lockControls"
-    >
-      <!-- Searchable projects -->
-      <b-form @submit="lockControls()">
-        <input
-          id="NewProjectAuthenticityToken"
-          type="hidden"
-          name="authenticity_token"
-          :value="authenticityToken"
-        />
-        <b-row>
-          <b-col>
-            <!-- Set the comment -->
-            <b-form-group label="Comment">
-              <b-form-textarea
-                v-model="comment"
-                placeholder="Leave a comment..."
-                rows="3"
-                required
+    <!-- Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showModal"
+        class="modal fade show d-block"
+        tabindex="-1"
+        style="background-color: rgba(0,0,0,0.5);"
+        @click.self="closeModal"
+      >
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Lock Component Controls</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="Close"
+                @click="closeModal"
               />
-            </b-form-group>
-          </b-col>
-        </b-row>
-      </b-form>
-    </b-modal>
+            </div>
+            <div class="modal-body">
+              <form @submit.prevent="lockControls">
+                <div class="mb-3">
+                  <label for="lockComment" class="form-label">Comment</label>
+                  <textarea
+                    id="lockComment"
+                    v-model="comment"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Leave a comment..."
+                    required
+                  />
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="closeModal"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                :disabled="loading"
+                @click="lockControls"
+              >
+                {{ loading ? 'Loading...' : 'Lock Controls' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </span>
 </template>
-
-<script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-
-export default {
-  name: "LockControlsModal",
-  mixins: [AlertMixinVue, FormMixinVue],
-  props: {
-    component_id: {
-      type: Number,
-      required: true,
-    },
-  },
-  data: function () {
-    return {
-      comment: "",
-      loading: false,
-    };
-  },
-  methods: {
-    showModal: function () {
-      this.comment = "";
-      this.$refs["LockControlsModal"].show();
-    },
-    lockControls: function (bvModalEvt) {
-      this.loading = true;
-      let failed = false;
-      bvModalEvt.preventDefault();
-
-      // Guard before POST
-      if (!this.comment) {
-        this.$bvToast.toast("Please enter a comment", {
-          title: "Error",
-          variant: "danger",
-          solid: true,
-        });
-        failed = true;
-      }
-      if (failed) {
-        this.loading = false;
-        return;
-      }
-
-      axios
-        .post(`/components/${this.component_id}/lock`, {
-          review: { action: "lock_control", comment: this.comment },
-        })
-        .then(this.lockControlsSuccess)
-        .catch(this.alertOrNotifyResponse)
-        .finally(this.completeLoading);
-    },
-    completeLoading: function () {
-      this.loading = false;
-    },
-    lockControlsSuccess: function (response) {
-      this.alertOrNotifyResponse(response);
-      this.$refs["LockControlsModal"].hide();
-      this.$emit("projectUpdated");
-    },
-  },
-};
-</script>
-
-<style scoped>
-.flex1 {
-  flex: 1;
-}
-</style>

@@ -1,3 +1,59 @@
+<script>
+import FormFeedbackMixinVue from '../../../mixins/FormFeedbackMixin.vue'
+
+export default {
+  name: 'AdditionalAnswerForm',
+  mixins: [FormFeedbackMixinVue],
+  props: {
+    rule: {
+      type: Object,
+      required: true,
+    },
+    question: {
+      type: Object,
+      required: true,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      validurl: true,
+    }
+  },
+  methods: {
+    addOrUpdateAnswer(event, question_id) {
+      if (this.question.question_type === 'url' && event.length > 0) {
+        const reg
+          = /^(http|https):\/\/[-\w@:%.+~#=]{2,256}\.[a-z]{2,16}\b([-\w@:%+.~#?&/=]*)$/gi
+        this.validurl = reg.test(event)
+      }
+      else {
+        this.validurl = true
+      }
+
+      const all_answers = this.rule.additional_answers_attributes
+      const index = all_answers.findIndex(answer => answer.additional_question_id === question_id)
+      if (index !== -1) {
+        all_answers[index].answer = event
+      }
+      else {
+        all_answers.push({ additional_question_id: question_id, answer: event })
+      }
+
+      this.$root.$emit('update:rule', { ...this.rule, additional_answers_attributes: all_answers })
+    },
+    findAnswerText(question_id) {
+      return this.rule.additional_answers_attributes.find(
+        element => element.additional_question_id == question_id,
+      )?.answer
+    },
+  },
+}
+</script>
+
 <template>
   <div>
     <label :for="`ruleEditor-additional-question-${question.name}`">
@@ -16,7 +72,7 @@
       :id="`ruleEditor-additional-field-${question.id}`"
       :value="findAnswerText(question.id)"
       :disabled="disabled"
-      :options="question.options"
+      :options="question.options || []"
       :class="inputClass(question.name)"
       @input="addOrUpdateAnswer($event, question.id)"
     />
@@ -48,57 +104,3 @@
     />
   </div>
 </template>
-
-<script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-
-export default {
-  name: "AdditionalAnswerForm",
-  mixins: [FormFeedbackMixinVue],
-  props: {
-    rule: {
-      type: Object,
-      required: true,
-    },
-    question: {
-      type: Object,
-      required: true,
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  data: function () {
-    return {
-      validurl: true,
-    };
-  },
-  methods: {
-    addOrUpdateAnswer: function (event, question_id) {
-      if (this.question.question_type === "url" && event.length > 0) {
-        var reg =
-          /^(http|https):\/\/[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,16}\b([-a-zA-Z0-9@:%_\+.~#?&\/=]*)$/gi;
-        this.validurl = reg.test(event);
-      } else {
-        this.validurl = true;
-      }
-
-      let all_answers = this.rule.additional_answers_attributes;
-      let index = all_answers.findIndex((answer) => answer.additional_question_id === question_id);
-      if (index !== -1) {
-        all_answers[index].answer = event;
-      } else {
-        all_answers.push({ additional_question_id: question_id, answer: event });
-      }
-
-      this.$root.$emit("update:rule", { ...this.rule, additional_answers_attributes: all_answers });
-    },
-    findAnswerText: function (question_id) {
-      return this.rule.additional_answers_attributes.find(
-        (element) => element.additional_question_id == question_id,
-      )?.answer;
-    },
-  },
-};
-</script>

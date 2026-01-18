@@ -1,8 +1,1 @@
-- content_for :assets do
-  = javascript_include_tag 'security_requirements_guides'
-
-#SecurityRequirementsGuides
-  %SecurityRequirementsGuides{                                          |
-    'v-bind:givensrgs': @srgs.to_json,                                  |
-    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" ) |
-  }
+/ SPA handles all content via Vue Router

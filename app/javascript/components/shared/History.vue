@@ -1,3 +1,103 @@
+<script>
+import DateFormatMixinVue from '../../mixins/DateFormatMixin.vue'
+import HistoryGroupingMixinVue from '../../mixins/HistoryGroupingMixin.vue'
+import HumanizedTypesMixInVue from '../../mixins/HumanizedTypesMixIn.vue'
+import RuleRevertModal from './../rules/RuleRevertModal.vue'
+
+export default {
+  name: 'History',
+  components: { RuleRevertModal },
+  mixins: [DateFormatMixinVue, HumanizedTypesMixInVue, HistoryGroupingMixinVue],
+  props: {
+    histories: {
+      type: Array,
+      default: () => [],
+    },
+    rule: {
+      type: Object,
+      required: false,
+    },
+    statuses: {
+      type: Array,
+      required: false,
+    },
+    severities: {
+      type: Array,
+      required: false,
+    },
+    revertable: {
+      type: Boolean,
+      default: true,
+    },
+    component: {
+      type: Object,
+      required: false,
+    },
+    abbreviateType: {
+      type: String,
+      required: false,
+    },
+  },
+  data() {
+    return {
+      numShownHistories: 2,
+    }
+  },
+  computed: {
+    groupedHistories() {
+      return this.groupHistories(this.histories)
+    },
+    shownGroupedHistories() {
+      return this.groupedHistories.slice(0, this.numShownHistories)
+    },
+  },
+  methods: {
+    userIdentifier(history) {
+      return (
+        this.humanizedType(history.audited_name)
+        || `${this.humanizedType(history.auditable_type)} ${history.auditable_id}`
+      )
+    },
+    computeCreationText(history) {
+      if (history.auditable_type == 'Membership') {
+        return `added as a member with ${
+          history.audited_changes.find(element => element.field == 'role').new_value
+        } permissions`
+      }
+      else {
+        return 'Created'
+      }
+    },
+    computeUpdateText(changes, abbreviated) {
+      if (changes.field == 'admin') {
+        return `was ${changes.new_value ? 'promoted to' : 'demoted from'} admin`
+      }
+      else {
+        return `${changes.field} was updated from ${this.prettifyObjects(
+          changes.prev_value,
+        )} to ${this.prettifyObjects(changes.new_value)}`
+      }
+    },
+    prettifyObjects(value) {
+      if (typeof value === 'object') {
+        return JSON.stringify(value, null, 4)
+      }
+      else {
+        return value
+      }
+    },
+    computeDeletionText(history) {
+      if (history.auditable_type == 'Membership') {
+        return 'removed as a member'
+      }
+      else {
+        return 'Deleted'
+      }
+    },
+  },
+}
+</script>
+
 <template>
   <div>
     <div v-for="group in shownGroupedHistories" :key="group.id">
@@ -24,7 +124,9 @@
             >
               {{ userIdentifier(history) }} was deleted
             </p>
-            <p v-else class="ml-3 mb-0 text-info">{{ userIdentifier(history) }} was updated</p>
+            <p v-else class="ml-3 mb-0 text-info">
+              {{ userIdentifier(history) }} was updated
+            </p>
           </template>
         </template>
         <template v-else>
@@ -76,101 +178,5 @@
     </div>
   </div>
 </template>
-
-<script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
-import RuleRevertModal from "./../rules/RuleRevertModal.vue";
-import HistoryGroupingMixinVue from "../../mixins/HistoryGroupingMixin.vue";
-
-export default {
-  name: "History",
-  components: { RuleRevertModal },
-  mixins: [DateFormatMixinVue, HumanizedTypesMixInVue, HistoryGroupingMixinVue],
-  props: {
-    histories: {
-      type: Array,
-      default: () => [],
-    },
-    rule: {
-      type: Object,
-      required: false,
-    },
-    statuses: {
-      type: Array,
-      required: false,
-    },
-    severities: {
-      type: Array,
-      required: false,
-    },
-    revertable: {
-      type: Boolean,
-      default: true,
-    },
-    component: {
-      type: Object,
-      required: false,
-    },
-    abbreviateType: {
-      type: String,
-      required: false,
-    },
-  },
-  data: function () {
-    return {
-      numShownHistories: 2,
-    };
-  },
-  computed: {
-    groupedHistories() {
-      return this.groupHistories(this.histories);
-    },
-    shownGroupedHistories() {
-      return this.groupedHistories.slice(0, this.numShownHistories);
-    },
-  },
-  methods: {
-    userIdentifier: function (history) {
-      return (
-        this.humanizedType(history.audited_name) ||
-        `${this.humanizedType(history.auditable_type)} ${history.auditable_id}`
-      );
-    },
-    computeCreationText: function (history) {
-      if (history.auditable_type == "Membership") {
-        return `added as a member with ${
-          history.audited_changes.find((element) => element["field"] == "role")["new_value"]
-        } permissions`;
-      } else {
-        return "Created";
-      }
-    },
-    computeUpdateText: function (changes, abbreviated) {
-      if (changes.field == "admin") {
-        return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
-      } else {
-        return `${changes.field} was updated from ${this.prettifyObjects(
-          changes.prev_value,
-        )} to ${this.prettifyObjects(changes.new_value)}`;
-      }
-    },
-    prettifyObjects: function (value) {
-      if (typeof value === "object") {
-        return JSON.stringify(value, null, 4);
-      } else {
-        return value;
-      }
-    },
-    computeDeletionText: function (history) {
-      if (history.auditable_type == "Membership") {
-        return "removed as a member";
-      } else {
-        return "Deleted";
-      }
-    },
-  },
-};
-</script>
 
 <style scoped></style>

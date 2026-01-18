@@ -1,14 +1,12 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
-// Import the individual components
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
+import { createApp } from 'vue'
+import { registerComponents } from '../bootstrap-vue-next-components'
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue);
-Vue.use(IconsPlugin);
+// Import Bootstrap and BootstrapVueNext styles
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
 
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
-    el: "#login",
-  });
-});
+document.addEventListener('DOMContentLoaded', () => {
+  const app = createApp({})
+  registerComponents(app)
+  app.mount('#login')
+})

@@ -26,11 +26,13 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = true
+  # SSL Configuration - controlled by FORCE_SSL environment variable
+  # - When true: Assumes SSL termination at proxy, forces HTTPS, uses secure cookies (production default)
+  # - When false: Allows HTTP, generates http:// URLs (for local/dev Kubernetes without ingress)
+  force_ssl_enabled = ENV.fetch('FORCE_SSL', 'true') == 'true'
 
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  config.assume_ssl = force_ssl_enabled
+  config.force_ssl = force_ssl_enabled
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
@@ -59,7 +61,11 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: 'example.com' }
+  # Uses VULCAN_APP_URL environment variable
+  config.action_mailer.default_url_options = {
+    host: ENV.fetch('VULCAN_APP_URL', 'http://localhost:3000').then { |url| URI.parse(url).host },
+    port: ENV.fetch('VULCAN_APP_URL', 'http://localhost:3000').then { |url| URI.parse(url).port }
+  }
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
   # config.action_mailer.smtp_settings = {

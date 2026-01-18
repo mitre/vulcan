@@ -1,100 +1,15 @@
-<template>
-  <div class="row">
-    <div id="sidebar-wrapper" class="col-2 pr-0">
-      <RuleNavigator
-        :component-id="component.id"
-        :rules="rules"
-        :selected-rule-id="selectedRuleId"
-        :project-prefix="component.prefix"
-        :effective-permissions="effectivePermissions"
-        :open-rule-ids="openRuleIds"
-        @ruleSelected="handleRuleSelected($event)"
-        @ruleDeselected="handleRuleDeselected($event)"
-      />
-    </div>
-
-    <template v-if="selectedRule()">
-      <div class="col-10 mb-5">
-        <RuleEditorHeader
-          :rule="selectedRule()"
-          :rules="rules"
-          :project-prefix="component.prefix"
-          :effective-permissions="effectivePermissions"
-          :current-user-id="currentUserId"
-          @ruleSelected="handleRuleSelected($event)"
-        />
-
-        <hr />
-
-        <div class="row">
-          <!-- Main editor column -->
-          <div class="col-8 border-right">
-            <RuleEditor
-              :rule="selectedRule()"
-              :statuses="statuses"
-              :severities="severities"
-              :severities_map="severities_map"
-              :advanced_fields="component.advanced_fields"
-              :additional_questions="component.additional_questions"
-            />
-          </div>
-
-          <!-- Additional info column -->
-          <div class="col-4">
-            <!-- Related Rules modal-->
-            <RelatedRulesModal
-              :read-only="selectedRule().locked || !!selectedRule().review_requestor_id"
-              :rule="selectedRule()"
-              :rule-stig-id="`${component.prefix}-${selectedRule().rule_id}`"
-            />
-            <hr class="mt-0" />
-            <RuleSatisfactions
-              :component="component"
-              :rule="selectedRule()"
-              :selected-rule-id="selectedRuleId"
-              :project-prefix="component.prefix"
-              @ruleSelected="handleRuleSelected($event)"
-            />
-            <br />
-            <RuleReviews
-              :rule="selectedRule()"
-              :effective-permissions="effectivePermissions"
-              :current-user-id="currentUserId"
-            />
-            <br />
-            <RuleHistories
-              :rule="selectedRule()"
-              :component="component"
-              :statuses="statuses"
-              :severities="severities"
-            />
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <template v-else>
-      <div class="col-10">
-        <p class="text-center">
-          No control currently selected. Select a control on the left to view or edit.
-        </p>
-      </div>
-    </template>
-  </div>
-</template>
-
 <script>
-import RuleEditorHeader from "./RuleEditorHeader.vue";
-import RuleEditor from "./RuleEditor.vue";
-import RuleNavigator from "./RuleNavigator.vue";
-import RuleHistories from "./RuleHistories.vue";
-import RuleReviews from "./RuleReviews.vue";
-import RuleSatisfactions from "./RuleSatisfactions.vue";
-import RelatedRulesModal from "./RelatedRulesModal.vue";
-import SelectedRulesMixin from "../../mixins/SelectedRulesMixin.vue";
+import SelectedRulesMixin from '../../mixins/SelectedRulesMixin.vue'
+import RelatedRulesModal from './RelatedRulesModal.vue'
+import RuleEditor from './RuleEditor.vue'
+import RuleEditorHeader from './RuleEditorHeader.vue'
+import RuleHistories from './RuleHistories.vue'
+import RuleNavigator from './RuleNavigator.vue'
+import RuleReviews from './RuleReviews.vue'
+import RuleSatisfactions from './RuleSatisfactions.vue'
 
 export default {
-  name: "RulesCodeEditorView",
+  name: 'RulesCodeEditorView',
   components: {
     RuleNavigator,
     RuleEditor,
@@ -142,11 +57,96 @@ export default {
   mounted() {
     if (this.selectedRuleId) {
       setTimeout(() => {
-        this.$root.$emit("refresh:rule", this.selectedRuleId);
-      }, 1);
+        this.$root.$emit('refresh:rule', this.selectedRuleId)
+      }, 1)
     }
   },
-};
+}
 </script>
+
+<template>
+  <div class="row">
+    <div id="sidebar-wrapper" class="col-2 pr-0">
+      <RuleNavigator
+        :component-id="component.id"
+        :rules="rules"
+        :selected-rule-id="selectedRuleId"
+        :project-prefix="component.prefix"
+        :effective-permissions="effectivePermissions"
+        :open-rule-ids="openRuleIds"
+        @rule-selected="handleRuleSelected($event)"
+        @rule-deselected="handleRuleDeselected($event)"
+      />
+    </div>
+
+    <template v-if="selectedRule()">
+      <div class="col-10 mb-5">
+        <RuleEditorHeader
+          :rule="selectedRule()"
+          :rules="rules"
+          :project-prefix="component.prefix"
+          :effective-permissions="effectivePermissions"
+          :current-user-id="currentUserId"
+          @rule-selected="handleRuleSelected($event)"
+        />
+
+        <hr>
+
+        <div class="row">
+          <!-- Main editor column -->
+          <div class="col-8 border-right">
+            <RuleEditor
+              :rule="selectedRule()"
+              :statuses="statuses"
+              :severities="severities"
+              :severities_map="severities_map"
+              :advanced_fields="component.advanced_fields"
+              :additional_questions="component.additional_questions"
+            />
+          </div>
+
+          <!-- Additional info column -->
+          <div class="col-4">
+            <!-- Related Rules modal -->
+            <RelatedRulesModal
+              :read-only="selectedRule().locked || !!selectedRule().review_requestor_id"
+              :rule="selectedRule()"
+              :rule-stig-id="`${component.prefix}-${selectedRule().rule_id}`"
+            />
+            <hr class="mt-0">
+            <RuleSatisfactions
+              :component="component"
+              :rule="selectedRule()"
+              :selected-rule-id="selectedRuleId"
+              :project-prefix="component.prefix"
+              @rule-selected="handleRuleSelected($event)"
+            />
+            <br>
+            <RuleReviews
+              :rule="selectedRule()"
+              :effective-permissions="effectivePermissions"
+              :current-user-id="currentUserId"
+            />
+            <br>
+            <RuleHistories
+              :rule="selectedRule()"
+              :component="component"
+              :statuses="statuses"
+              :severities="severities"
+            />
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="col-10">
+        <p class="text-center">
+          No control currently selected. Select a control on the left to view or edit.
+        </p>
+      </div>
+    </template>
+  </div>
+</template>
 
 <style scoped></style>

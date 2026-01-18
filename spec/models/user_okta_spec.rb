@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe User, type: :model do
+RSpec.describe User do
   OKTA_UID = 'okta-uid-12345' # rubocop:disable Lint/ConstantDefinitionInBlock
   include LoginHelpers
 

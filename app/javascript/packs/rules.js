@@ -1,16 +1,14 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import Rules from "../components/rules/Rules.vue";
+import { createApp } from 'vue'
+import { registerComponents } from '../bootstrap-vue-next-components'
+import Rules from '../components/rules/Rules.vue'
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue);
-Vue.use(IconsPlugin);
+document.addEventListener('DOMContentLoaded', () => {
+  const app = createApp({
+    components: {
+      Rules,
+    },
+  })
 
-Vue.component("Rules", Rules);
-
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
-    el: "#Rules",
-  });
-});
+  registerComponents(app)
+  app.mount('#Rules')
+})

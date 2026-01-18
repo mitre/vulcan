@@ -1,19 +1,16 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import ProjectComponents from "../components/components/ProjectComponents.vue";
-import linkify from "v-linkify";
+import linkify from 'v-linkify'
+import { createApp } from 'vue'
+import { registerComponents } from '../bootstrap-vue-next-components'
+import ProjectComponents from '../components/components/ProjectComponents.vue'
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue);
-Vue.use(IconsPlugin);
+document.addEventListener('DOMContentLoaded', () => {
+  const app = createApp({
+    components: {
+      Projectcomponents: ProjectComponents,
+    },
+  })
 
-Vue.directive("linkified", linkify);
-
-Vue.component("Projectcomponents", ProjectComponents);
-
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
-    el: "#projectcomponents",
-  });
-});
+  registerComponents(app)
+  app.directive('linkified', linkify)
+  app.mount('#projectcomponents')
+})

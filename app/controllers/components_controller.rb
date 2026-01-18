@@ -14,18 +14,20 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
-  before_action :authorize_admin_component, only: %i[update], if: lambda {
-    params
-      .expect(component: [:advanced_fields])[:advanced_fields]
-      .present?
-  }
+  # Require admin for advanced_fields updates (separate callback to avoid overwriting destroy authorization)
+  before_action :authorize_admin_for_advanced_fields, only: %i[update]
 
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
   before_action :authorize_logged_in, only: %i[search]
-  before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
+  before_action :authorize_logged_in_for_released_show, only: %i[show]
 
   def index
-    @components_json = Component.eager_load(:based_on).where(released: true).to_json
+    @components = Component.eager_load(:based_on).where(released: true)
+                           .select(:id, :name, :prefix, :version, :release, :title, :released, :created_at, :project_id, :security_requirements_guide_id)
+    respond_to do |format|
+      format.html { @components_json = @components.to_json }
+      format.json { render json: @components }
+    end
   end
 
   def search
@@ -68,11 +70,12 @@ class ComponentsController < ApplicationController
     # When importing from an existing spreadsheet, some errors are set before
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
-    if component.errors.empty? && component.save
+    # Note: XCCDF imports save early (need ID for from_mapping), so check persisted? too
+    if component.errors.empty? && (component.save || component.persisted?)
       component.admin_name = component_create_params[:admin_name].presence || current_user.name
       component.admin_email = component_create_params[:admin_email].presence || current_user.email
       component.duplicate_reviews_and_history(component_create_params[:id])
-      component.create_rule_satisfactions if component_create_params[:file]
+      component.create_rule_satisfactions if component_create_params[:file] && !component_create_params[:file].original_filename.end_with?('.xml')
       component.rules_count = component.rules.where(deleted_at: nil).size
       if component_create_params[:slack_channel_id].present?
         component.component_metadata_attributes = { data: {
@@ -163,7 +166,10 @@ class ComponentsController < ApplicationController
   end
 
   def based_on_same_srg
-    srg_title = Component.find(params[:id]).based_on.title
+    component = Component.find(params[:id])
+    srg_title = component.based_on&.title
+    return render json: [] if srg_title.nil?
+
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
                           .order(:project_id)
@@ -226,26 +232,20 @@ class ComponentsController < ApplicationController
   end
 
   def find
-    find_param = params.require(:find).downcase
-    component_id = params.require(:id)
+    find_param = params.require(:find)
+    component = Component.find(params.require(:id))
 
-    rules = Component.find_by(id: component_id).rules
-    checks = Check.where(base_rule: rules).where('LOWER(content) LIKE ?', "%#{find_param}%")
-    descriptions = DisaRuleDescription.where(base_rule: rules).where(
-      'LOWER(vuln_discussion) LIKE ? OR LOWER(mitigations) LIKE ?', "%#{find_param}%", "%#{find_param}%"
-    )
-    rules = rules.where(
-      "LOWER(title) LIKE ? OR
-      LOWER(fixtext) LIKE ? OR
-      LOWER(vendor_comments) LIKE ? OR
-      LOWER(status_justification) LIKE ? OR
-      LOWER(artifact_description) LIKE ? OR
-      id IN (?) ", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
-      "%#{find_param}%", checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id)
-    )
-                 .order(:rule_id)
+    # Use pg_search gem for advanced full-text search
+    # Features: partial word matching, fuzzy/typo tolerance, relevance ranking
+    # Searches across: title, fixtext, vendor_comments, status_justification, artifact_description,
+    #                  checks.content, disa_rule_descriptions (vuln_discussion, mitigations)
+    rules = Rule.where(component_id: component.id)
+                .search_content(find_param)
+                .with_pg_search_rank
+                .limit(200)
 
-    render json: rules
+    # Use Blueprinter for efficient JSON serialization
+    render json: RuleBlueprint.render(rules)
   end
 
   private
@@ -264,10 +264,40 @@ class ComponentsController < ApplicationController
     elsif component_create_params[:component_id]
       Component.find(component_create_params[:component_id]).overlay(@project.id)
     elsif component_create_params[:file]
-      # Create a new component from the provided parameters and then pass the spreadsheet
-      # to the component for further parsing
+      # Create a new component from the provided parameters
       component = @project.components.new(component_create_params.except(:id, :duplicate, :file))
-      component.from_spreadsheet(component_create_params[:file])
+      file = component_create_params[:file]
+
+      # Detect file type and route to appropriate import method
+      Rails.logger.info "File type: #{file.content_type}, filename: #{file.original_filename}"
+      if file.content_type.in?(['application/xml', 'text/xml']) || file.original_filename.end_with?('.xml')
+        Rails.logger.info 'Routing to from_xccdf'
+        # XCCDF import requires component to be saved first (needs ID for from_mapping)
+        # But we need to extract prefix first before validation
+        parsed_benchmark = Xccdf::Benchmark.parse(file.read)
+        component.name ||= parsed_benchmark.title&.first || 'Imported Component'
+
+        # Extract prefix from first rule
+        if parsed_benchmark.group&.any?
+          first_group = parsed_benchmark.group.first
+          first_rule_id = first_group.rule&.first&.id
+          if first_rule_id
+            prefix_match = first_rule_id.match(/SV-([A-Z]+-\d+)-/)
+            component.prefix = prefix_match[1] if prefix_match
+          end
+        end
+
+        component.skip_import_srg_rules = true
+        component.save! # Save with prefix
+
+        # Rewind file and import
+        file.rewind
+        component.from_xccdf(file)
+      else
+        Rails.logger.info 'Routing to from_spreadsheet'
+        component.from_spreadsheet(file)
+      end
+      Rails.logger.info "Component errors: #{component.errors.full_messages}"
       component
     else
       Component.new(component_create_params.except(:id, :duplicate, :component_id, :file).merge({ project: @project }))
@@ -356,6 +386,22 @@ class ComponentsController < ApplicationController
     return if component_update_params[:component_metadata_attributes]&.dig('data', 'Slack Channel ID').blank?
 
     authorize_admin_component
+  end
+
+  # Require admin permissions when updating advanced_fields
+  # This is a separate method to avoid overwriting the authorize_admin_component callback for :destroy
+  def authorize_admin_for_advanced_fields
+    return unless params.dig(:component, :advanced_fields).present?
+
+    authorize_admin_component
+  end
+
+  # Require login for viewing released components
+  # Separate method to avoid overwriting authorize_logged_in for :search
+  def authorize_logged_in_for_released_show
+    return unless @component.released
+
+    authorize_logged_in
   end
 
   def component_update_params

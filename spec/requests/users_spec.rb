@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Users', type: :request do
+RSpec.describe 'Users' do
   before do
     Rails.application.reload_routes!
   end
@@ -29,7 +29,7 @@ RSpec.describe 'Users', type: :request do
     it 'sets success flash message' do
       put "/users/#{target_user.id}", params: valid_params
 
-      follow_redirect!
+      # Check flash is set before following redirect (avoids CookieOverflow in test)
       expect(flash[:notice]).to eq('Successfully updated user.')
     end
 

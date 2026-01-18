@@ -1,9 +1,1 @@
-- content_for :assets do
-  = javascript_include_tag 'projects'
-  -# = stylesheet_link_tag 'projects'
-
-#Projects
-  %Projects{                                                                 |
-    'v-bind:projects': @projects.to_json,                                    |
-    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" )      |
-  }
+/ SPA handles all content via Vue Router

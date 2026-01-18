@@ -1,25 +1,8 @@
-<template>
-  <div>
-    <b-form-group
-      v-for="question in additional_questions"
-      :key="`additional-question-${question.id}`"
-    >
-      <AdditionalAnswerForm
-        :rule="rule"
-        :question="question"
-        :disabled="disabled"
-        :invalid-feedback="invalidFeedback"
-        :valid-feedback="validFeedback"
-      />
-    </b-form-group>
-  </div>
-</template>
-
 <script>
-import AdditionalAnswerForm from "./AdditionalAnswerForm";
+import AdditionalAnswerForm from './AdditionalAnswerForm'
 
 export default {
-  name: "AdditionalQuestions",
+  name: 'AdditionalQuestions',
   components: { AdditionalAnswerForm },
   props: {
     rule: {
@@ -44,5 +27,22 @@ export default {
     },
   },
   methods: {},
-};
+}
 </script>
+
+<template>
+  <div>
+    <b-form-group
+      v-for="question in additional_questions"
+      :key="`additional-question-${question.id}`"
+    >
+      <AdditionalAnswerForm
+        :rule="rule"
+        :question="question"
+        :disabled="disabled"
+        :invalid-feedback="invalidFeedback"
+        :valid-feedback="validFeedback"
+      />
+    </b-form-group>
+  </div>
+</template>

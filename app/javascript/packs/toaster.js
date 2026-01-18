@@ -1,17 +1,18 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
-// Import the individual components
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import Toaster from "../components/toaster/Toaster.vue";
+import { createApp } from 'vue'
+import { registerComponents } from '../bootstrap-vue-next-components'
+import Toaster from '../components/toaster/Toaster.vue'
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue);
-Vue.use(IconsPlugin);
+// Import Bootstrap and BootstrapVueNext styles
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
 
-Vue.component("Toaster", Toaster);
+document.addEventListener('DOMContentLoaded', () => {
+  const app = createApp({
+    components: {
+      Toaster,
+    },
+  })
 
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
-    el: "#Toaster",
-  });
-});
+  registerComponents(app)
+  app.mount('#Toaster')
+})

@@ -20,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Documentation navigation reorganized with top-level Deployment, Authentication, and Security sections
 - Improved compliance documentation with source code verification and cross-references
-- Documentation dependencies isolated from main application to avoid Vue 2/3 conflicts
 - LICENSE file renamed to LICENSE.md for consistency with other project documentation
 - Simplified CI/CD workflow by removing symlink preprocessing script (no longer needed)
 - All project documentation files now use consistent .md extensions
@@ -152,11 +151,15 @@ This release represents a major modernization of the Vulcan platform, bringing i
 
 5. **Update test environment** if you have custom settings in `config/environments/test.rb`
 
-### 🔮 Coming Soon
+### 🔮 Coming in v2.3.0
 
-- Vue 3 migration (currently Vue 2.6.11)
-- Bootstrap 5 upgrade (currently Bootstrap 4.4.1)
-- Turbolinks removal for simplified architecture
+- ✅ Vue 3.5 migration with Composition API and Pinia (completed)
+- ✅ Bootstrap 5 upgrade with Bootstrap-Vue-Next (completed)
+- ✅ Turbolinks removal, Vue Router for SPA navigation (completed)
+- Command Palette with global search
+- Ruby 3.4.7 and Node.js 24 LTS upgrades
+- PostgreSQL 16 upgrade
+- Docker image optimization (~550MB production image)
 
 ---
 

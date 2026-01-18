@@ -1,51 +1,235 @@
+<script setup lang="ts">
+/**
+ * NewMembership.vue
+ *
+ * Form for adding a new member to a project/component.
+ * Uses Reka UI Combobox for user selection and radio buttons for role selection.
+ *
+ * Built with Reka UI (https://reka-ui.com/) - Headless UI primitives
+ */
+import type { IAvailableMember, MemberRole, MembershipType } from '@/types'
+import { useDebounceFn } from '@vueuse/core'
+import { BAlert, BCol, BRow, BSpinner } from 'bootstrap-vue-next'
+import capitalize from 'lodash/capitalize'
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxRoot,
+} from 'reka-ui'
+import { computed, ref, watch } from 'vue'
+import { searchUsers } from '@/apis/members.api'
+import { useRailsForm } from '@/composables'
+
+const props = withDefaults(
+  defineProps<{
+    membership_type: MembershipType
+    membership_id: number
+    available_roles: MemberRole[]
+    selected_member?: IAvailableMember | null
+    access_request_id?: number | null
+  }>(),
+  {
+    selected_member: null,
+    access_request_id: null,
+  },
+)
+
+const { csrfToken } = useRailsForm()
+
+// State
+const selectedUser = ref<IAvailableMember | null>(props.selected_member)
+const selectedRole = ref<MemberRole | null>(null)
+const searchQuery = ref('')
+const searchResults = ref<IAvailableMember[]>([])
+const isSearching = ref(false)
+const open = ref(false)
+
+// Watch for prop changes (when Accept is clicked, parent passes selected_member)
+watch(() => props.selected_member, (newMember) => {
+  if (newMember) {
+    selectedUser.value = newMember
+  }
+})
+
+// Debounced search function (Slack model: always search, even on empty)
+const performSearch = useDebounceFn(async (query: string) => {
+  isSearching.value = true
+  try {
+    const response = await searchUsers({
+      projectId: props.membership_id,
+      query,
+    })
+    searchResults.value = response.users
+  }
+  catch (error) {
+    console.error('Failed to search users:', error)
+    searchResults.value = []
+  }
+  finally {
+    isSearching.value = false
+  }
+}, 300)
+
+// Watch search input
+watch(searchQuery, (newQuery) => {
+  performSearch(newQuery)
+})
+
+// Trigger search on open (Slack model)
+watch(open, (isOpen) => {
+  if (isOpen && searchResults.value.length === 0) {
+    performSearch(searchQuery.value)
+  }
+})
+
+const roleDescriptions = [
+  'Read only access to the Project or Component',
+  'Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.',
+  'Author and approve changes to a Control.',
+  'Full control of a Project or Component. Lock Controls, revert controls, and manage members.',
+]
+
+// Computed
+const isSubmitDisabled = computed(() => {
+  return !(selectedUser.value !== null && selectedRole.value !== null)
+})
+
+const selectedUserId = computed(() => selectedUser.value?.id)
+
+// Methods
+function capitalizeRole(roleString: string) {
+  return capitalize(roleString)
+}
+
+function setSelectedRole(role: MemberRole) {
+  selectedRole.value = role
+}
+
+function clearSelectedUser() {
+  selectedUser.value = null
+  searchQuery.value = ''
+  searchResults.value = []
+}
+
+function formAction() {
+  return `/memberships/`
+}
+
+// Reset all state (called when modal is canceled)
+function reset() {
+  selectedUser.value = null
+  selectedRole.value = null
+  searchQuery.value = ''
+  searchResults.value = []
+  open.value = false
+}
+
+// Form ref for parent to submit
+const formRef = ref<HTMLFormElement | null>(null)
+
+// Expose for parent component (and testing)
+defineExpose({
+  isSubmitDisabled,
+  submitForm: () => {
+    if (formRef.value) {
+      formRef.value.submit()
+    }
+  },
+  reset,
+  // For testing Reka UI v-model bindings
+  searchQuery,
+  open,
+})
+</script>
+
 <template>
   <div>
-    <b-row>
-      <b-col class="d-flex">
+    <BRow>
+      <BCol class="position-relative">
         <template v-if="!selectedUser">
-          <b-input-group>
-            <b-input-group-prepend>
-              <b-input-group-text><b-icon icon="search" aria-hidden="true" /></b-input-group-text>
-            </b-input-group-prepend>
-            <vue-simple-suggest
-              ref="userSearch"
-              v-model="search"
-              :list="available_members"
-              :filter-by-query="true"
-              display-attribute="email"
-              placeholder="Search for a user by email..."
-              :styles="userSearchStyles"
-              @select="setSelectedUser($refs.userSearch.selected)"
-            />
-          </b-input-group>
+          <!-- Reka UI Combobox -->
+          <ComboboxRoot
+            v-model="selectedUser"
+            v-model:open="open"
+            v-model:search-term="searchQuery"
+            :display-value="(user: IAvailableMember) => user?.name || ''"
+            class="combobox-root"
+          >
+            <ComboboxAnchor class="combobox-anchor">
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="bi bi-search" aria-hidden="true" />
+                </span>
+                <ComboboxInput
+                  class="form-control"
+                  placeholder="Search for a user by name or email..."
+                  autocomplete="off"
+                />
+                <span v-if="isSearching" class="input-group-text">
+                  <BSpinner small />
+                </span>
+              </div>
+            </ComboboxAnchor>
+
+            <ComboboxContent
+              class="combobox-content shadow-sm"
+            >
+              <ComboboxEmpty class="combobox-empty">
+                <template v-if="searchQuery">
+                  No users found matching "{{ searchQuery }}"
+                </template>
+                <template v-else>
+                  No available users to invite
+                </template>
+              </ComboboxEmpty>
+
+              <ComboboxItem
+                v-for="user in searchResults"
+                :key="user.id"
+                :value="user"
+                class="combobox-item"
+              >
+                <div class="fw-bold">
+                  {{ user.name }}
+                </div>
+                <small class="text-muted">{{ user.email }}</small>
+              </ComboboxItem>
+            </ComboboxContent>
+          </ComboboxRoot>
         </template>
+
         <template v-else>
-          <b-alert
+          <BAlert
             show
             variant="info"
             dismissible
             class="w-100 mb-0"
-            @dismissed="setSelectedUser(null)"
+            @close="clearSelectedUser"
           >
             <p class="mb-0">
               <b>{{ selectedUser.name }}</b>
             </p>
-            <p class="mb-0">{{ selectedUser.email }}</p>
-          </b-alert>
+            <p class="mb-0">
+              {{ selectedUser.email }}
+            </p>
+          </BAlert>
         </template>
-      </b-col>
-    </b-row>
+      </BCol>
+    </BRow>
+
     <div v-if="selectedUser">
-      <br />
-      <b-row>
-        <b-col>
+      <br>
+      <BRow>
+        <BCol>
           Choose a role
-          <hr class="mt-1" />
-        </b-col>
-      </b-row>
-      <b-row v-for="(role, index) in available_roles" :key="role">
-        <b-col>
-          <!-- <b-form-radio :key="role" v-for="role in available_roles"  name="role" :value="role">{{ role }}</b-form-radio> -->
+          <hr class="mt-1">
+        </BCol>
+      </BRow>
+      <BRow v-for="(role, index) in available_roles" :key="role">
+        <BCol>
           <div class="d-flex mb-3">
             <span>
               <input
@@ -54,182 +238,87 @@
                 name="roles"
                 :value="role"
                 @click="setSelectedRole(role)"
-              />
+              >
             </span>
             <div>
-              <h5 class="d-flex flex-items-center mb-0 role-label">{{ capitalizeRole(role) }}</h5>
-              <span
-                ><small class="muted role-description">{{ roleDescriptions[index] }}</small></span
-              >
+              <h5 class="d-flex flex-items-center mb-0 role-label">
+                {{ capitalizeRole(role) }}
+              </h5>
+              <span><small class="muted role-description">{{ roleDescriptions[index] }}</small></span>
             </div>
           </div>
-        </b-col>
-      </b-row>
+        </BCol>
+      </BRow>
     </div>
-    <br />
-    <b-row>
-      <b-col>
-        <form :action="formAction()" method="post">
-          <input
-            id="NewProjectMemberAuthenticityToken"
-            type="hidden"
-            name="authenticity_token"
-            :value="authenticityToken"
-          />
-          <input
-            id="NewMembershipMembershipType"
-            type="hidden"
-            name="membership[membership_type]"
-            :value="membership_type"
-          />
-          <input
-            id="NewMembershipMembershipId"
-            type="hidden"
-            name="membership[membership_id]"
-            :value="membership_id"
-          />
-          <input
-            id="NewMembershipEmail"
-            type="hidden"
-            name="membership[user_id]"
-            :value="selectedUserId"
-          />
-          <input
-            id="access_request_id"
-            type="hidden"
-            name="membership[access_request_id]"
-            :value="access_request_id"
-          />
-          <input
-            id="NewMembershipRole"
-            type="hidden"
-            name="membership[role]"
-            :value="selectedRole"
-          />
-          <b-button
-            block
-            type="submit"
-            variant="primary"
-            :disabled="isSubmitDisabled"
-            rel="nofollow"
-          >
-            Add User to Project
-          </b-button>
-        </form>
-      </b-col>
-    </b-row>
+
+    <!-- Hidden form for submission (parent will submit via modal footer) -->
+    <form ref="formRef" :action="formAction()" method="post" style="display: none;">
+      <input id="NewProjectMemberAuthenticityToken" type="hidden" name="authenticity_token" :value="csrfToken">
+      <input id="NewMembershipMembershipType" type="hidden" name="membership[membership_type]" :value="membership_type">
+      <input id="NewMembershipMembershipId" type="hidden" name="membership[membership_id]" :value="membership_id">
+      <input id="NewMembershipEmail" type="hidden" name="membership[user_id]" :value="selectedUserId">
+      <input id="access_request_id" type="hidden" name="membership[access_request_id]" :value="access_request_id">
+      <input id="NewMembershipRole" type="hidden" name="membership[role]" :value="selectedRole">
+    </form>
   </div>
 </template>
 
-<script>
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
-import capitalize from "lodash/capitalize";
-
-export default {
-  name: "NewMembership",
-  components: {
-    VueSimpleSuggest,
-  },
-  props: {
-    membership_type: {
-      type: String,
-      required: true,
-    },
-    membership_id: {
-      type: Number,
-      required: true,
-    },
-    available_members: {
-      type: Array,
-      required: true,
-    },
-    available_roles: {
-      type: Array,
-      required: true,
-    },
-    selected_member: {
-      type: Object,
-      required: false,
-    },
-    access_request_id: {
-      type: Number,
-      required: false,
-    },
-  },
-  data: function () {
-    return {
-      search: "",
-      selectedUser: this.selected_member,
-      selectedRole: null,
-      roleDescriptions: [
-        "Read only access to the Project or Component",
-        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
-        "Author and approve changes to a Control.",
-        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
-      ],
-      userSearchStyles: {
-        vueSimpleSuggest: "userSearchVueSimpleSuggest",
-        inputWrapper: "",
-        defaultInput: "",
-        suggestions: "",
-        suggestItem: "",
-      },
-    };
-  },
-  computed: {
-    authenticityToken: function () {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
-    searchedAvailableMembers: function () {
-      let downcaseSearch = this.search.toLowerCase();
-      return this.available_members.filter((pm) => pm.email.toLowerCase().includes(downcaseSearch));
-    },
-    isSubmitDisabled: function () {
-      return !(this.selectedUser !== null && this.selectedRole !== null);
-    },
-    selectedUserId: function () {
-      return this.selectedUser?.id;
-    },
-  },
-  methods: {
-    capitalizeRole: function (roleString) {
-      return capitalize(roleString);
-    },
-    setSelectedRole: function (role) {
-      this.selectedRole = role;
-    },
-    setSelectedUser: function (user) {
-      this.selectedUser = user;
-      this.search = "";
-    },
-    formAction: function () {
-      return `/memberships/`;
-    },
-  },
-};
-</script>
-
 <style scoped>
-.role-input {
-  position: inherit;
+.flex-grow-1 { flex-grow: 1; }
+.role-input { position: inherit; }
+.role-label { line-height: 1; font-size: 14px; font-weight: 700; }
+.role-description { line-height: 1; }
+
+/* Reka UI Combobox Styling */
+.combobox-root {
+  position: relative;
+  width: 100%;
 }
 
-.role-label {
-  line-height: 1;
-  font-size: 14px;
-  font-weight: 700;
+.combobox-anchor {
+  width: 100%;
 }
 
-.role-description {
-  line-height: 1;
+.combobox-content {
+  position: absolute;
+  z-index: 1050;
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  margin-top: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
-.userSearchVueSimpleSuggest {
-  flex: 1;
+.combobox-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color);
 }
 
-.role-description {
-  line-height: 1;
+.combobox-item {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--bs-border-color);
+  transition: background-color 0.15s ease-in-out;
+}
+
+.combobox-item:last-child {
+  border-bottom: none;
+}
+
+.combobox-item:hover,
+.combobox-item[data-highlighted] {
+  background-color: var(--bs-primary);
+  color: var(--bs-white);
+}
+
+.combobox-item:hover .text-muted,
+.combobox-item[data-highlighted] .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
 }
 </style>

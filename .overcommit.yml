@@ -60,8 +60,8 @@ PreCommit:
   EsLint:
     enabled: true
     description: 'Analyze JavaScript/Vue with ESLint'
-    required_executable: 'yarn'
-    command: ['yarn', 'lint']
+    required_executable: 'pnpm'
+    command: ['pnpm', 'lint']
     include:
       - '**/*.js'
       - '**/*.vue'
@@ -80,7 +80,7 @@ PreCommit:
       - '**/bin/rake'
       - '**/bin/webpack'
       - '**/bin/webpack-dev-server'
-      - '**/bin/yarn'
+      - '**/bin/pnpm'
 
   # General hooks
   TrailingWhitespace:
@@ -128,9 +128,9 @@ PostCheckout:
     enabled: true
     description: 'Install bundle dependencies'
 
-  YarnInstall:
+  PnpmInstall:
     enabled: true
-    description: 'Install yarn dependencies'
+    description: 'Install pnpm dependencies'
 
   ActiveRecordMigrations:
     enabled: true
@@ -141,7 +141,7 @@ PostMerge:
   BundleInstall:
     enabled: true
 
-  YarnInstall:
+  PnpmInstall:
     enabled: true
 
   ActiveRecordMigrations:
@@ -152,5 +152,5 @@ PostRewrite:
   BundleInstall:
     enabled: true
 
-  YarnInstall:
+  PnpmInstall:
     enabled: true

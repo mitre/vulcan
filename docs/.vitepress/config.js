@@ -39,6 +39,7 @@ export default defineConfig({
           { text: "Kubernetes", link: "/deployment/kubernetes" },
           { text: "Heroku", link: "/deployment/heroku" },
           { text: "Bare Metal", link: "/deployment/bare-metal" },
+          { text: "Health Monitoring", link: "/deployment/monitoring" },
         ],
       },
       {
@@ -109,6 +110,7 @@ export default defineConfig({
             { text: "Installation", link: "/getting-started/installation" },
             { text: "Configuration", link: "/getting-started/configuration" },
             { text: "Environment Variables", link: "/getting-started/environment-variables" },
+            { text: "CLI Reference", link: "/getting-started/cli" },
           ],
         },
       ],
@@ -120,6 +122,7 @@ export default defineConfig({
             { text: "Bare Metal", link: "/deployment/bare-metal" },
             { text: "Heroku", link: "/deployment/heroku" },
             { text: "Kubernetes", link: "/deployment/kubernetes" },
+            { text: "Health Monitoring", link: "/deployment/monitoring" },
           ],
         },
         {
@@ -140,7 +143,6 @@ export default defineConfig({
             { text: "Architecture", link: "/development/architecture" },
             { text: "Testing", link: "/development/testing" },
             { text: "Release Process", link: "/development/release-process" },
-            { text: "Vue 3 Migration", link: "/development/vue3-migration" },
           ],
         },
         {

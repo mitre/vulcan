@@ -6,29 +6,35 @@
     %title Vulcan Profile Builder
     = csrf_meta_tags
     = csp_meta_tag
-    = stylesheet_link_tag 'application', 'data-turbolinks-track': 'reload'
-    = stylesheet_link_tag 'bootstrap-vue', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'application', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'navbar', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'toaster', 'data-turbolinks-track': 'reload'
+    = vite_client_tag
+    = vite_javascript_tag 'application'
 
-    / CSS customizations can be added here if needed
+    :javascript
+      // Color mode initialization - runs before Vue to prevent flash
+      (function() {
+        var stored = localStorage.getItem('vulcan-color-mode');
+        var mode = stored || 'light';
+        if (mode === 'auto') {
+          mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-bs-theme', mode);
+      })();
 
-    = yield :assets
+      // Bootstrap data for SPA
+      window.vueAppData = {
+        signedIn: #{user_signed_in?.to_json},
+        currentUser: #{current_user.to_json},
+        csrfToken: '#{form_authenticity_token}',
+        banner: {
+          enabled: #{Settings.banner_app.enabled.to_json},
+          text: #{Settings.banner_app.text.to_json},
+          backgroundColor: #{Settings.banner_app.background_color.to_json},
+          textColor: #{Settings.banner_app.text_color.to_json}
+        },
+        // Auth configuration for login page
+        localLoginEnabled: #{Settings.local_login.enabled.to_json},
+        registrationEnabled: #{Settings.user_registration.enabled.to_json},
+        authProviders: #{auth_providers.to_json}
+      };
   %body
-    #navbar
-      %navbar{
-        'v-bind:navigation': @navigation.to_json,
-        'v-bind:signed_in': user_signed_in?.to_json,
-        'v-bind:users_path': (current_user&.admin ? users_path : '').to_json,
-        'v-bind:profile_path': edit_user_registration_path.to_json,
-        'v-bind:sign_out_path': destroy_user_session_path.to_json,
-        'v-bind:access_requests': @access_requests.to_json
-      }
-    #Toaster
-      %toaster{
-        'v-bind:notice': notice.to_json,
-        'v-bind:alert': alert.to_json
-      }
-    .pt-3.container-fluid{"data-behavior" => "vue"}
-      = yield
+    #app

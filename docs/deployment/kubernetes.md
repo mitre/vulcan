@@ -2,9 +2,52 @@
 
 ## Overview
 
-Vulcan can be deployed to Kubernetes using the provided example manifests. This guide covers deployment, configuration, and best practices for running Vulcan in a Kubernetes environment.
+Vulcan can be deployed to Kubernetes using either the official Helm chart (recommended) or manual Kubernetes manifests. This guide covers both approaches.
 
-## Prerequisites
+## Recommended: Official Helm Chart
+
+The **easiest and most robust** way to deploy Vulcan to Kubernetes:
+
+### Quick Start
+
+```bash
+# Add the MITRE Helm repository
+helm repo add mitre https://mitre.github.io/vulcan-helm
+helm repo update
+
+# Install Vulcan
+helm install vulcan mitre/vulcan --namespace vulcan --create-namespace
+
+# Or with custom values
+helm install vulcan mitre/vulcan -f my-values.yaml --namespace vulcan --create-namespace
+```
+
+### Features
+
+The official Helm chart provides production-ready features:
+
+- ✅ **Health Probes** - Liveness, readiness, and startup probes
+- ✅ **High Availability** - PodDisruptionBudget for zero-downtime updates
+- ✅ **Security** - Security contexts, NetworkPolicy, non-root containers
+- ✅ **Resource Management** - CPU/memory requests and limits
+- ✅ **External Database** - Support for AWS RDS, Cloud SQL, etc.
+- ✅ **Autoscaling** - Horizontal Pod Autoscaler support
+- ✅ **Ingress** - Nginx ingress with TLS support
+- ✅ **Monitoring** - Prometheus-ready endpoints
+
+### Resources
+
+- **Repository**: https://github.com/mitre/vulcan-helm
+- **Chart Documentation**: [Helm Chart README](https://github.com/mitre/vulcan-helm/blob/main/vulcan/README.md)
+- **ArtifactHub**: Coming soon
+
+## Alternative: Manual Kubernetes Manifests
+
+For learning, customization, or environments where Helm isn't available, you can use manual YAML manifests.
+
+**Note:** These examples are simplified for education. The Helm chart includes additional production features like PodDisruptionBudget, NetworkPolicy, resource limits, and external database support.
+
+### Prerequisites
 
 - Kubernetes cluster (1.21+)
 - kubectl configured with cluster access
@@ -145,7 +188,7 @@ spec:
       automountServiceAccountToken: false  # Security best practice
       containers:
       - name: vulcan-web
-        image: mitre/vulcan:v2.2.1
+        image: mitre/vulcan:v2.3.0
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -178,6 +221,8 @@ spec:
           value: "true"
         - name: RAILS_LOG_TO_STDOUT
           value: "true"
+        - name: FORCE_SSL
+          value: "true"  # Set to false for local/dev clusters without ingress TLS
         - name: SECRET_KEY_BASE
           valueFrom:
             secretKeyRef:
@@ -245,25 +290,28 @@ spec:
         # Health Checks
         livenessProbe:
           httpGet:
-            path: /health
+            path: /up
             port: 3000
-          initialDelaySeconds: 60
-          periodSeconds: 30
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
+            path: /health_check/database
             port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         startupProbe:
           httpGet:
-            path: /health
+            path: /health_check
             port: 3000
-          initialDelaySeconds: 0
+            scheme: HTTP
+          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 30
@@ -402,7 +450,7 @@ spec:
         spec:
           containers:
           - name: postgres-backup
-            image: postgres:15
+            image: postgres:16-alpine
             env:
             - name: PGPASSWORD
               valueFrom:

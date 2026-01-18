@@ -7,7 +7,7 @@ This guide covers deploying Vulcan directly on Linux servers without containeriz
 - Ubuntu 20.04+ or RHEL/CentOS 8+ server
 - Root or sudo access
 - Minimum 2GB RAM, 2 CPU cores
-- PostgreSQL 12+ database server
+- PostgreSQL 16+ database server
 - Domain name with SSL certificate (recommended)
 
 ## System Preparation
@@ -53,9 +53,9 @@ source ~/.bashrc
 # Install ruby-build
 git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 
-# Install Ruby 3.3.9
-rbenv install 3.3.9
-rbenv global 3.3.9
+# Install Ruby 3.4.7
+rbenv install 3.4.7
+rbenv global 3.4.7
 ruby -v  # Verify installation
 ```
 
@@ -66,9 +66,9 @@ ruby -v  # Verify installation
 curl -sSL https://get.rvm.io | bash -s stable
 source ~/.rvm/scripts/rvm
 
-# Install Ruby 3.3.9
-rvm install 3.3.9
-rvm use 3.3.9 --default
+# Install Ruby 3.4.7
+rvm install 3.4.7
+rvm use 3.4.7 --default
 ruby -v  # Verify installation
 ```
 
@@ -130,8 +130,8 @@ bundle config set --local without 'development test'
 bundle install
 
 # Install Node.js dependencies
-npm install -g yarn
-yarn install --production
+npm install -g pnpm
+pnpm install --prod
 ```
 
 ### 4. Configure Application
@@ -507,7 +507,7 @@ find /var/www/vulcan -type f -exec chmod 644 {} \;
 cd /var/www/vulcan
 git pull origin main
 bundle install
-yarn install
+pnpm install
 bundle exec rails db:migrate
 bundle exec rails assets:precompile
 sudo systemctl restart vulcan

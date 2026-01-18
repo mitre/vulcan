@@ -71,19 +71,157 @@ class Component < ApplicationRecord
            :cannot_unrelease_component,
            :cannot_overlay_self
 
+  # Batch fetch all component summaries for a project in a single SQL query
+  # Returns hash: { component_id => { total: X, locked: Y, ... } }
+  def self.batch_rules_summary(component_ids)
+    return {} if component_ids.empty?
+
+    # Single query to get all counts grouped by component_id
+    sql = <<-SQL.squish
+      SELECT
+        component_id,
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE locked = true) as locked,
+        COUNT(*) FILTER (WHERE locked = false AND review_requestor_id IS NOT NULL) as under_review,
+        COUNT(*) FILTER (WHERE locked = false AND review_requestor_id IS NULL) as not_under_review,
+        COUNT(*) FILTER (WHERE changes_requested = true) as changes_requested,
+        COUNT(*) FILTER (WHERE status = 'Not Yet Determined') as not_yet_determined,
+        COUNT(*) FILTER (WHERE status = 'Applicable - Configurable') as applicable_configurable,
+        COUNT(*) FILTER (WHERE status = 'Applicable - Inherently Meets') as applicable_inherently_meets,
+        COUNT(*) FILTER (WHERE status = 'Applicable - Does Not Meet') as applicable_does_not_meet,
+        COUNT(*) FILTER (WHERE status = 'Not Applicable') as not_applicable
+      FROM base_rules
+      WHERE component_id IN (#{component_ids.join(',')})
+        AND deleted_at IS NULL
+        AND type = 'Rule'
+      GROUP BY component_id
+    SQL
+
+    # Also get nested/primary counts (rules with satisfied_by relationships)
+    nested_sql = <<-SQL.squish
+      SELECT r.component_id, COUNT(DISTINCT rs.rule_id) as nested_count
+      FROM rule_satisfactions rs
+      JOIN base_rules r ON r.id = rs.rule_id
+      WHERE r.component_id IN (#{component_ids.join(',')})
+        AND r.deleted_at IS NULL
+      GROUP BY r.component_id
+    SQL
+
+    results = ActiveRecord::Base.connection.execute(sql)
+    nested_results = ActiveRecord::Base.connection.execute(nested_sql)
+
+    nested_by_component = nested_results.to_a.to_h { |r| [r['component_id'], r['nested_count'].to_i] }
+
+    results.to_a.to_h do |row|
+      component_id = row['component_id']
+      nested = nested_by_component[component_id] || 0
+      total = row['total'].to_i
+
+      [component_id, {
+        total: total,
+        primary_count: total - nested,
+        nested_count: nested,
+        locked: row['locked'].to_i,
+        under_review: row['under_review'].to_i,
+        not_under_review: row['not_under_review'].to_i,
+        changes_requested: row['changes_requested'].to_i,
+        not_yet_determined: row['not_yet_determined'].to_i,
+        applicable_configurable: row['applicable_configurable'].to_i,
+        applicable_inherently_meets: row['applicable_inherently_meets'].to_i,
+        applicable_does_not_meet: row['applicable_does_not_meet'].to_i,
+        not_applicable: row['not_applicable'].to_i
+      }]
+    end
+  end
+
   def as_json(options = {})
-    methods = (options[:methods] || []) + %i[releasable additional_questions]
+    methods = (options[:methods] || []) + %i[releasable additional_questions parent_rules_count primary_controls_count rules_summary]
     super(options.merge(methods: methods)).merge(
       {
-        based_on_title: based_on.title,
-        based_on_version: based_on.version
+        based_on_title: based_on&.title,
+        based_on_version: based_on&.version
       }
     )
+  end
+
+  # Count of primary controls (rules that satisfy/consolidate other rules)
+  # These are the controls that actually need implementation work
+  # Used to show "15 primary / 273 total" on component cards
+  def parent_rules_count
+    # Use preloaded rules if available to avoid N+1
+    if rules.loaded?
+      rules.count { |r| r.deleted_at.nil? && r.satisfies.any? }
+    else
+      rules.where(deleted_at: nil).joins(:satisfies).distinct.count
+    end
+  end
+
+  # Count of controls that need individual implementation
+  # This is total minus nested (controls covered by primary controls)
+  def primary_controls_count
+    if rules.loaded?
+      active = rules.select { |r| r.deleted_at.nil? }
+      total = active.size
+      nested = active.count { |r| r.satisfied_by.any? }
+    else
+      active_rules = rules.where(deleted_at: nil)
+      total = active_rules.count
+      nested = active_rules.joins(:satisfied_by).distinct.count
+    end
+    total - nested
+  end
+
+  # Status and review counts for component overview
+  # Returns hash with all counts needed for component card metrics
+  # Mirrors the logic in RuleNavigator.vue ruleStatusCounts
+  def rules_summary
+    # Use preloaded rules if available to avoid N+1 queries
+    if rules.loaded?
+      active = rules.select { |r| r.deleted_at.nil? }
+      nested_count = active.count { |r| r.satisfied_by.any? }
+
+      {
+        total: active.size,
+        primary_count: active.size - nested_count,
+        nested_count: nested_count,
+        locked: active.count(&:locked),
+        under_review: active.count { |r| !r.locked && r.review_requestor_id.present? },
+        not_under_review: active.count { |r| !r.locked && r.review_requestor_id.nil? },
+        changes_requested: active.count(&:changes_requested),
+        not_yet_determined: active.count { |r| r.status == 'Not Yet Determined' },
+        applicable_configurable: active.count { |r| r.status == 'Applicable - Configurable' },
+        applicable_inherently_meets: active.count { |r| r.status == 'Applicable - Inherently Meets' },
+        applicable_does_not_meet: active.count { |r| r.status == 'Applicable - Does Not Meet' },
+        not_applicable: active.count { |r| r.status == 'Not Applicable' }
+      }
+    else
+      active_rules = rules.where(deleted_at: nil)
+
+      {
+        total: active_rules.count,
+        primary_count: primary_controls_count,
+        nested_count: active_rules.joins(:satisfied_by).distinct.count,
+        locked: active_rules.where(locked: true).count,
+        under_review: active_rules.where(locked: false).where.not(review_requestor_id: nil).count,
+        not_under_review: active_rules.where(locked: false, review_requestor_id: nil).count,
+        changes_requested: active_rules.where(changes_requested: true).count,
+        not_yet_determined: active_rules.where(status: 'Not Yet Determined').count,
+        applicable_configurable: active_rules.where(status: 'Applicable - Configurable').count,
+        applicable_inherently_meets: active_rules.where(status: 'Applicable - Inherently Meets').count,
+        applicable_does_not_meet: active_rules.where(status: 'Applicable - Does Not Meet').count,
+        not_applicable: active_rules.where(status: 'Not Applicable').count
+      }
+    end
   end
 
   # Fill out component based on spreadsheet
   def from_spreadsheet(spreadsheet)
     self.skip_import_srg_rules = true
+
+    # Validate file type before processing
+    validate_spreadsheet_file(spreadsheet)
+    return if errors.any?
+
     # Parse the spreadsheet and extract data from the first sheet. Include headers so data is of the form
     # {VulDiscussion: 'Value', SRG ID: 'Value', etc...}
     parsed = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
@@ -230,7 +368,12 @@ class Component < ApplicationRecord
     return false if released_was
 
     # If all rules are locked, then component may be released
-    rules.where(locked: false).empty?
+    # Use preloaded rules if available to avoid N+1
+    if rules.loaded?
+      rules.none? { |r| r.deleted_at.nil? && !r.locked }
+    else
+      rules.where(locked: false).empty?
+    end
   end
 
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
@@ -254,7 +397,7 @@ class Component < ApplicationRecord
     # Manual Updates required for any 'configurable' requirements with updated underlying SRG requirements
 
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
-    return copied_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
+    return copied_component if new_srg.nil? || based_on.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
 
     # update the based_on field to the new srg
     copied_component.based_on = new_srg
@@ -353,7 +496,8 @@ class Component < ApplicationRecord
 
   def create_rule_satisfactions
     rules.where('vendor_comments LIKE ?', '%Satisfied By: %').find_each do |rule|
-      vc = rule.vendor_comments.gsub('Satisfied By: ', '').delete('.').strip.split(/[,\s]+/).uniq
+      # Extract satisfied by list, removing "Satisfied By: " prefix and optional trailing period
+      vc = rule.vendor_comments.gsub('Satisfied By: ', '').sub(/\.\s*\z/, '').strip.split(/[,\s]+/).uniq
       vc.each do |sb|
         sb_rule_id = sb.strip.split('-').last
         sb_rule = rules.find_by(rule_id: sb_rule_id)
@@ -366,11 +510,222 @@ class Component < ApplicationRecord
     end
   end
 
+  def create_rule_satisfactions_from_xccdf
+    # Parse satisfaction relationships from VulnDiscussion field in XCCDF imports
+    # Handle multiple formats:
+    # - "Satisfies: SRG-OS-000024, SRG-OS-000027" (this control satisfies these requirements)
+    # - "Satisfied By: CTRL-1, CTRL-2" (this requirement is satisfied by these controls)
+    rules.includes(:disa_rule_descriptions, :srg_rule).find_each do |rule|
+      # Find description with actual content (not empty template from SRG)
+      desc_with_content = rule.disa_rule_descriptions.find { |d| d.vuln_discussion.present? }
+      next unless desc_with_content
+
+      vuln_discussion = desc_with_content.vuln_discussion
+      next unless vuln_discussion
+
+      # Check for "Satisfies:" pattern (control satisfies requirements)
+      if vuln_discussion.include?('Satisfies:')
+        satisfies_match = vuln_discussion.match(%r{Satisfies:\s*(.+?)(?:\n\n|</VulnDiscussion>|$)}m)
+        if satisfies_match
+          satisfies_list = satisfies_match[1].strip.split(/[,\s]+/).uniq
+
+          satisfies_list.each do |satisfied_id|
+            satisfied_id = satisfied_id.strip
+
+            # Find the rule this satisfies (can be SRG ID or component version)
+            satisfied_rule = if satisfied_id.start_with?('SRG-')
+                               # Find SRG requirement by its srg_rule version
+                               rules.includes(:srg_rule).find { |r| r.srg_rule&.version == satisfied_id }
+                             else
+                               # Find component rule by version
+                               rules.find_by(version: satisfied_id)
+                             end
+
+            next if satisfied_rule.nil?
+
+            # This rule SATISFIES the found rule
+            rule.satisfies << satisfied_rule unless rule.satisfies.include?(satisfied_rule)
+            satisfied_rule.save
+          end
+
+          # Clean up
+          clean_vuln = vuln_discussion.gsub(%r{Satisfies:\s*.+?(?=</VulnDiscussion>|$)}m, '').strip
+          desc_with_content.update(vuln_discussion: clean_vuln)
+        end
+      end
+
+      # Check for "Satisfied By:" pattern (requirement is satisfied by controls)
+      if vuln_discussion.include?('Satisfied By:')
+        satisfied_by_match = vuln_discussion.match(%r{Satisfied By:\s*(.+?)(?:\n\n|</VulnDiscussion>|$)}m)
+        if satisfied_by_match
+          satisfied_by_list = satisfied_by_match[1].strip.split(/[,\s]+/).uniq
+
+          satisfied_by_list.each do |satisfier_id|
+            satisfier_id = satisfier_id.strip
+
+            # Find the control that satisfies this requirement
+            satisfier_rule = if satisfier_id.start_with?('SRG-')
+                               rules.includes(:srg_rule).find { |r| r.srg_rule&.version == satisfier_id }
+                             else
+                               rules.find_by(version: satisfier_id)
+                             end
+
+            next if satisfier_rule.nil?
+
+            # This rule IS SATISFIED BY the found rule
+            rule.satisfied_by << satisfier_rule unless rule.satisfied_by.include?(satisfier_rule)
+            satisfier_rule.save
+          end
+
+          # Clean up
+          clean_vuln = vuln_discussion.gsub(%r{Satisfied By:\s*.+?(?=</VulnDiscussion>|$)}m, '').strip
+          desc_with_content.update(vuln_discussion: clean_vuln)
+        end
+      end
+    end
+  end
+
   def overlay(project_id)
     new_component = amoeba_dup
     new_component.project_id = project_id
     new_component.component_id = id
     new_component
+  end
+
+  def from_xccdf(xccdf_file)
+    self.skip_import_srg_rules = true
+
+    # Validate file type before processing
+    unless xccdf_file.content_type.in?(['application/xml', 'text/xml']) ||
+           xccdf_file.original_filename.end_with?('.xml')
+      errors.add(:base, 'File must be an XCCDF XML file')
+      return
+    end
+
+    # Parse XCCDF
+    Rails.logger.info "Parsing XCCDF file: #{xccdf_file.original_filename}"
+    parsed_benchmark = Xccdf::Benchmark.parse(xccdf_file.read)
+    Rails.logger.info "Parsed #{parsed_benchmark.group&.count} groups from XCCDF"
+
+    # Extract component metadata from benchmark
+    self.name ||= parsed_benchmark.title&.first || 'Imported Component'
+    self.title = parsed_benchmark.title&.first
+    self.description = parsed_benchmark.description&.first
+    self.version ||= parsed_benchmark.version&.version&.to_i || 1
+
+    # Extract prefix from first rule ID (e.g., "SV-PHOS-03-000001" → "PHOS-03")
+    if parsed_benchmark.group&.any?
+      first_group = parsed_benchmark.group.first
+      first_rule_id = first_group.rule&.first&.id
+      if first_rule_id
+        # Extract prefix from format "SV-PREFIX-RULEID"
+        prefix_match = first_rule_id.match(/SV-([A-Z]+-\d+)-/)
+        self.prefix = prefix_match[1] if prefix_match
+      end
+    end
+
+    # Component must be saved first before we can import rules
+    unless persisted?
+      errors.add(:base, 'Component must be saved before importing XCCDF content')
+      return false
+    end
+
+    # Get SRG rules for mapping (from the selected SRG)
+    srg = SecurityRequirementsGuide.find(security_requirements_guide_id)
+    srg_rules_map = srg.srg_rules.pluck(:version, :id).to_h
+
+    # STEP 1: Parse all "Satisfies:" lists to find which SRG requirements we need to import
+    all_satisfied_srg_ids = Set.new
+    parsed_benchmark.group.each do |group|
+      rule_xml = group.rule.first
+      desc_xml = rule_xml.description&.first
+      next unless desc_xml
+
+      # Extract Satisfies section
+      next unless desc_xml.include?('Satisfies:')
+
+      satisfies_match = desc_xml.match(%r{Satisfies:\s*(.+?)(?:</VulnDiscussion>|$)}m)
+      if satisfies_match
+        srg_ids = satisfies_match[1].strip.split(/[,\s]+/).uniq
+        all_satisfied_srg_ids.merge(srg_ids.select { |id| id.start_with?('SRG-') })
+      end
+    end
+
+    Rails.logger.info "Found #{all_satisfied_srg_ids.size} SRG requirements to import from Satisfies: lists"
+
+    # STEP 2: Import only the SRG requirements that are mentioned in Satisfies lists
+    if all_satisfied_srg_ids.any?
+      from_mapping(srg, all_satisfied_srg_ids.to_a, 0)
+      reload
+    end
+
+    # STEP 3: Import the authored controls from XCCDF
+    Rails.logger.info "Importing #{parsed_benchmark.group.count} authored controls from XCCDF"
+    starting_rule_id = rules.maximum(:rule_id).to_i + 1
+
+    parsed_benchmark.group.each_with_index do |group, idx|
+      rule_xml = group.rule.first
+      srg_version = group.title&.first # e.g., "SRG-OS-000023"
+
+      # Find matching SRG rule for reference
+      srg_rule_id = srg_rules_map[srg_version]
+
+      # CREATE a new rule with authored content (don't update existing)
+      # Use SRG version as the rule version (matching XLSX import behavior)
+      new_rule = rules.create!(
+        rule_id: (starting_rule_id + idx).to_s.rjust(6, '0'),
+        srg_rule_id: srg_rule_id,
+        status: rule_xml.status&.first&.status || 'Applicable - Configurable',
+        rule_severity: rule_xml.severity || 'medium',
+        rule_weight: rule_xml.weight || '10.0',
+        version: srg_version, # Use SRG ID as version (SRG-OS-000023) like XLSX import
+        title: rule_xml.title&.first,
+        ident: rule_xml.ident&.reject(&:legacy)&.map(&:ident)&.join(', '),
+        legacy_ids: rule_xml.ident&.select(&:legacy)&.map(&:ident)&.join(', '),
+        ident_system: rule_xml.ident&.reject(&:legacy)&.first&.system,
+        fixtext: rule_xml.fixtext&.first&.fixtext,
+        fixtext_fixref: rule_xml.fixtext&.first&.fixref,
+        fix_id: rule_xml.fix&.first&.id
+      )
+
+      # Add/update description
+      if rule_xml.description&.first
+        desc_data = DisaRuleDescription.from_mapping(rule_xml.description.first)
+
+        # Update existing description if present (from SRG import), otherwise create new
+        if new_rule.disa_rule_descriptions.any?
+          new_rule.disa_rule_descriptions.first.update!(desc_data)
+        else
+          new_rule.disa_rule_descriptions.create!(desc_data)
+        end
+      end
+
+      # Add/update check
+      if rule_xml.check&.first
+        check_data = Check.from_mapping(rule_xml.check.first)
+        Rails.logger.info "Adding check for #{new_rule.version}: content length = #{check_data[:content]&.length || 'NIL'}"
+
+        # Update existing check if present (from SRG import), otherwise create new
+        if new_rule.checks.any?
+          new_rule.checks.first.update!(check_data)
+        else
+          new_rule.checks.create!(check_data)
+        end
+      end
+
+      # Add reference
+      new_rule.references.create!(Reference.from_mapping(rule_xml.reference.first)) if rule_xml.reference&.first
+    end
+
+    reload
+    # Parse "Satisfies:" relationships from VulnDiscussion field
+    create_rule_satisfactions_from_xccdf
+    true
+  rescue StandardError => e
+    message = e.message[0, 100]
+    message += '...' if e.message.size >= 100
+    errors.add(:base, "Error parsing XCCDF file: #{message}")
+    false
   end
 
   # Benchmark: parsed XML (Xccdf::Benchmark.parse(xml))
@@ -424,19 +779,17 @@ class Component < ApplicationRecord
   ##
   # Available members for a component are:
   # - not an admin on the project (due to equal or lesser permissions constraint)
-  # - not already memebers of the component
+  # - not already members of the component
+  # Limited to project members only to prevent email enumeration
   def available_members
-    exclude_user_ids = Membership.where(
-      membership_type: 'Project',
-      membership_id: project_id,
-      role: 'admin'
-    ).or(
-      Membership.where(
+    # Only show users who are already project members
+    # This prevents exposing all registered users' emails
+    project.users.where.not(
+      id: Membership.where(
         membership_type: 'Component',
         membership_id: id
-      )
-    ).pluck(:user_id)
-    User.where.not(id: exclude_user_ids).select(:id, :name, :email)
+      ).select(:user_id)
+    ).select(:id, :name, :email)
   end
 
   def reviews
@@ -506,4 +859,23 @@ class Component < ApplicationRecord
 
     errors.add(:base, 'Cannot release a component that contains rules that are not yet locked')
   end
+end
+
+def validate_spreadsheet_file(file)
+  # Security: Validate file type before processing
+  return unless file
+
+  file_path = file.respond_to?(:path) ? file.path : file.to_s
+  extension = File.extname(file_path).downcase.delete('.')
+
+  allowed_extensions = %w[xlsx xls csv ods]
+  unless allowed_extensions.include?(extension)
+    errors.add(:file, "must be a spreadsheet file (#{allowed_extensions.join(', ')})")
+    return
+  end
+
+  # Additional safety: Check file isn't too large (100MB max)
+  return unless file.respond_to?(:size) && file.size > 100.megabytes
+
+  errors.add(:file, 'is too large (maximum 100MB)')
 end

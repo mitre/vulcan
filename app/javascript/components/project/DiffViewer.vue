@@ -1,3 +1,167 @@
+<script>
+import axios from 'axios'
+import MonacoEditor from 'vue-monaco'
+import AlertMixinVue from '../../mixins/AlertMixin.vue'
+
+export default {
+  name: 'DiffViewer',
+  components: {
+    MonacoEditor,
+  },
+  mixins: [AlertMixinVue],
+  props: {
+    project: {
+      type: Object,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      sidebarOffset: 0, // How far the sidebar is from the top of the screen
+      editorKey: 0,
+      monacoEditorOptions: {
+        automaticLayout: true,
+        language: 'ruby',
+        readOnly: true,
+        renderSideBySide: true,
+        tabSize: 2,
+        theme: 'vs-dark',
+      },
+      baseComponent: null,
+      diffComponent: null,
+      filters: {
+        rcFilterChecked: true, // Rule Changed
+      },
+      compareList: [],
+      ruleDiffs: {},
+      ruleDiffFilterCounts: {
+        rc: 0,
+      },
+      filteredRuleDiffIds: [],
+      selectedRuleId: null,
+      baseControl: '',
+      diffControl: '',
+    }
+  },
+  computed: {
+    sidebarStyle() {
+      return {
+        'max-height': `calc(100vh - ${this.sidebarOffset}px)`,
+      }
+    },
+  },
+  watch: {
+    ruleDiffs() {
+      this.ruleDiffFilterCounts = this.calculateRuleDiffFilterCounts()
+      this.filteredRuleDiffIds = this.filterRuleDiffIds()
+    },
+    filters: {
+      handler() {
+        this.filteredRuleDiffIds = this.filterRuleDiffIds()
+        localStorage.setItem(`diffViewerFilters-${this.componentId}`, JSON.stringify(this.filters))
+      },
+      deep: true,
+    },
+  },
+  mounted() {
+    // Persist `filters` across page loads
+    if (localStorage.getItem(`diffViewerFilters-${this.componentId}`)) {
+      try {
+        this.filters = JSON.parse(localStorage.getItem(`diffViewerFilters-${this.componentId}`))
+      }
+      catch (e) {
+        localStorage.removeItem(`diffViewerFilters-${this.componentId}`)
+      }
+    }
+    window.addEventListener('scroll', this.handleScroll)
+    this.handleScroll()
+    // Load saved theme
+    const savedTheme = localStorage.getItem('monacoEditorTheme')
+    if (savedTheme) {
+      this.monacoEditorOptions.theme = savedTheme
+      this.editorKey += 1
+    }
+  },
+  unmounted() {
+    window.removeEventListener('scroll', this.handleScroll)
+  },
+  methods: {
+    calculateRuleDiffFilterCounts() {
+      return {
+        rc: Object.values(this.ruleDiffs).filter(ruleDiff => ruleDiff.changed).length,
+      }
+    },
+    filterRuleDiffIds(ruleDiffs) {
+      return Object.entries(this.ruleDiffs)
+        .filter(([_, ruleDiff]) => {
+          return this.filters.rcFilterChecked ? ruleDiff.changed : true
+        })
+        .map(([ruleId, _]) => {
+          return ruleId
+        })
+    },
+    // Dynamically set the class of each rule row
+    ruleRowClass(rule_id) {
+      return {
+        ruleRow: true,
+        clickable: true,
+        selectedRuleRow: this.selectedRuleId == rule_id,
+      }
+    },
+    ruleSelected(rule_id) {
+      this.selectedRuleId = rule_id
+      const control = this.ruleDiffs[rule_id]
+      this.baseControl = control.base
+      this.diffControl = control.diff
+    },
+    ruleDeselected() {
+      this.selectedRuleId = null
+      this.baseControl = ''
+      this.diffControl = ''
+    },
+    updateCompareList() {
+      this.ruleDeselected()
+      if (this.baseComponent) {
+        axios
+          .get(`/components/${this.baseComponent.id}/search/based_on_same_srg`)
+          .then((response) => {
+            this.compareList = response.data
+          })
+          .catch(this.alertOrNotifyResponse)
+      }
+    },
+    compareComponents() {
+      this.ruleDeselected()
+      if (
+        this.baseComponent
+        && this.diffComponent
+        && this.baseComponent.id !== this.diffComponent.id
+      ) {
+        axios
+          .get(`/components/${this.baseComponent.id}/compare/${this.diffComponent.id}`)
+          .then((response) => {
+            this.ruleDiffs = response.data
+          })
+          .catch(this.alertOrNotifyResponse)
+      }
+    },
+    updateSettings(setting, value) {
+      this.monacoEditorOptions[setting] = value
+      this.editorKey += 1
+    },
+    handleScroll() {
+      this.$nextTick(() => {
+        // Get the distance from the top of the sidebar to the top of the page
+        const top = this.$refs.sidebar?.getBoundingClientRect().top
+        // if top is set and greater than 0 then set the sidebar offset to keep
+        // the scrollbar from going off the page
+        this.sidebarOffset = top > 0 ? top : 0
+      })
+    },
+  },
+}
+</script>
+
 <template>
   <div class="my-1">
     <b-row class="my-1">
@@ -26,9 +190,9 @@
               @click="ruleSelected(rule_id)"
             >
               {{ baseComponent.prefix }}-{{ rule_id }}
-              <b-icon
+              <i
                 v-if="ruleDiffs[rule_id].changed"
-                icon="file-earmark-text"
+                class="bi bi-file-earmark-text"
                 aria-hidden="true"
               />
             </div>
@@ -37,9 +201,9 @@
       </b-col>
       <b-col md="10">
         <b-input-group size="sm" class="mb-2">
-          <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Base</b-input-group-text>
-          </b-input-group-prepend>
+          <b-input-group-text class="rounded-0">
+            Base
+          </b-input-group-text>
           <b-form-select
             id="diffComponent"
             v-model="diffComponent"
@@ -56,17 +220,17 @@
               {{
                 selectOption.version || selectOption.release
                   ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
+                    selectOption.version ? `Version ${selectOption.version}` : "",
+                    selectOption.release ? `Release ${selectOption.release}` : "",
+                  ].join(", ")})`
                   : ""
               }}
               {{ selectOption.project_name && `- ${selectOption.project_name}` }}
             </option>
           </b-form-select>
-          <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
-          </b-input-group-prepend>
+          <b-input-group-text class="rounded-0">
+            Compare
+          </b-input-group-text>
           <b-form-select
             id="baseComponent"
             v-model="baseComponent"
@@ -82,9 +246,9 @@
               {{
                 selectOption.version || selectOption.release
                   ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
+                    selectOption.version ? `Version ${selectOption.version}` : "",
+                    selectOption.release ? `Release ${selectOption.release}` : "",
+                  ].join(", ")})`
                   : ""
               }}
             </option>
@@ -111,170 +275,6 @@
     </b-row>
   </div>
 </template>
-
-<script>
-import _ from "lodash";
-import axios from "axios";
-import MonacoEditor from "vue-monaco";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-
-export default {
-  name: "DiffViewer",
-  components: {
-    MonacoEditor,
-  },
-  mixins: [AlertMixinVue],
-  props: {
-    project: {
-      type: Object,
-      required: true,
-    },
-  },
-  data: function () {
-    return {
-      sidebarOffset: 0, // How far the sidebar is from the top of the screen
-      editorKey: 0,
-      monacoEditorOptions: {
-        automaticLayout: true,
-        language: "ruby",
-        readOnly: true,
-        renderSideBySide: true,
-        tabSize: 2,
-        theme: "vs-dark",
-      },
-      baseComponent: null,
-      diffComponent: null,
-      filters: {
-        rcFilterChecked: true, // Rule Changed
-      },
-      compareList: [],
-      ruleDiffs: {},
-      ruleDiffFilterCounts: {
-        rc: 0,
-      },
-      filteredRuleDiffIds: [],
-      selectedRuleId: null,
-      baseControl: "",
-      diffControl: "",
-    };
-  },
-  computed: {
-    sidebarStyle: function () {
-      return {
-        "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
-      };
-    },
-  },
-  watch: {
-    ruleDiffs: function () {
-      this.ruleDiffFilterCounts = this.calculateRuleDiffFilterCounts();
-      this.filteredRuleDiffIds = this.filterRuleDiffIds();
-    },
-    filters: {
-      handler() {
-        this.filteredRuleDiffIds = this.filterRuleDiffIds();
-        localStorage.setItem(`diffViewerFilters-${this.componentId}`, JSON.stringify(this.filters));
-      },
-      deep: true,
-    },
-  },
-  mounted: function () {
-    // Persist `filters` across page loads
-    if (localStorage.getItem(`diffViewerFilters-${this.componentId}`)) {
-      try {
-        this.filters = JSON.parse(localStorage.getItem(`diffViewerFilters-${this.componentId}`));
-      } catch (e) {
-        localStorage.removeItem(`diffViewerFilters-${this.componentId}`);
-      }
-    }
-    window.addEventListener("scroll", this.handleScroll);
-    this.handleScroll();
-    // Load saved theme
-    const savedTheme = localStorage.getItem("monacoEditorTheme");
-    if (savedTheme) {
-      this.monacoEditorOptions.theme = savedTheme;
-      this.editorKey += 1;
-    }
-  },
-  destroyed() {
-    window.removeEventListener("scroll", this.handleScroll);
-  },
-  methods: {
-    calculateRuleDiffFilterCounts: function () {
-      return {
-        rc: Object.values(this.ruleDiffs).filter((ruleDiff) => ruleDiff.changed).length,
-      };
-    },
-    filterRuleDiffIds: function (ruleDiffs) {
-      return Object.entries(this.ruleDiffs)
-        .filter(([_, ruleDiff]) => {
-          return this.filters.rcFilterChecked ? ruleDiff.changed : true;
-        })
-        .map(([ruleId, _]) => {
-          return ruleId;
-        });
-    },
-    // Dynamically set the class of each rule row
-    ruleRowClass: function (rule_id) {
-      return {
-        ruleRow: true,
-        clickable: true,
-        selectedRuleRow: this.selectedRuleId == rule_id,
-      };
-    },
-    ruleSelected: function (rule_id) {
-      this.selectedRuleId = rule_id;
-      const control = this.ruleDiffs[rule_id];
-      this.baseControl = control["base"];
-      this.diffControl = control["diff"];
-    },
-    ruleDeselected: function () {
-      this.selectedRuleId = null;
-      this.baseControl = "";
-      this.diffControl = "";
-    },
-    updateCompareList: function () {
-      this.ruleDeselected();
-      if (this.baseComponent) {
-        axios
-          .get(`/components/${this.baseComponent.id}/search/based_on_same_srg`)
-          .then((response) => {
-            this.compareList = response.data;
-          })
-          .catch(this.alertOrNotifyResponse);
-      }
-    },
-    compareComponents: function () {
-      this.ruleDeselected();
-      if (
-        this.baseComponent &&
-        this.diffComponent &&
-        this.baseComponent.id !== this.diffComponent.id
-      ) {
-        axios
-          .get(`/components/${this.baseComponent.id}/compare/${this.diffComponent.id}`)
-          .then((response) => {
-            this.ruleDiffs = response.data;
-          })
-          .catch(this.alertOrNotifyResponse);
-      }
-    },
-    updateSettings: function (setting, value) {
-      this.monacoEditorOptions[setting] = value;
-      this.editorKey += 1;
-    },
-    handleScroll: function () {
-      this.$nextTick(() => {
-        // Get the distance from the top of the sidebar to the top of the page
-        let top = this.$refs.sidebar?.getBoundingClientRect().top;
-        // if top is set and greater than 0 then set the sidebar offset to keep
-        // the scrollbar from going off the page
-        this.sidebarOffset = top > 0 ? top : 0;
-      });
-    },
-  },
-};
-</script>
 
 <style scoped>
 #scrolling-sidebar {

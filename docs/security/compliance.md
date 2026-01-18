@@ -288,7 +288,7 @@ server {
 
 ```dockerfile
 # Secure Dockerfile Example
-FROM ruby:3.3.9-slim AS production
+FROM ruby:3.4.7-slim AS production
 
 # Security: Run as non-root user
 RUN groupadd -r app && useradd -r -g app app
@@ -563,7 +563,7 @@ The following improvements are tracked as GitHub issues:
 | **Medium** | [#634](https://github.com/mitre/vulcan/issues/634) | Implement per-user session limits | v2.3.0 |
 | **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v2.3.0 |
 
-These improvements will be addressed as part of the Vue 3 migration and Turbolinks removal work in v2.3.0.
+These security improvements are being addressed in v2.3.0 alongside the completed Vue 3 migration.
 
 ## Resources & Support
 

@@ -6,9 +6,9 @@ This guide walks through setting up a local Vulcan development environment.
 
 ### Required Software
 
-- **Ruby 3.3.9** (use rbenv or rvm for version management)
-- **Node.js 22 LTS** and **Yarn** package manager
-- **PostgreSQL 12+** database server
+- **Ruby 3.4.7** (use rbenv or rvm for version management)
+- **Node.js 24 LTS** and **pnpm** package manager
+- **PostgreSQL 16+** database server
 - **Git** version control
 - **Redis** (optional, for caching)
 
@@ -41,11 +41,11 @@ bundle install
 
 #### JavaScript Dependencies
 ```bash
-# Install yarn if not present
-npm install -g yarn
+# Install pnpm if not present
+npm install -g pnpm
 
 # Install packages
-yarn install
+pnpm install
 ```
 
 ### 3. Database Setup
@@ -72,7 +72,7 @@ foreman start -f Procfile.dev
 rails server
 
 # Terminal 2: JavaScript bundler
-yarn build:watch
+pnpm build:watch
 ```
 
 Visit http://localhost:3000
@@ -93,8 +93,8 @@ echo 'eval "$(rbenv init -)"' >> ~/.bashrc
 git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 
 # Install Ruby
-rbenv install 3.3.9
-rbenv local 3.3.9
+rbenv install 3.4.7
+rbenv local 3.4.7
 ```
 
 #### Using rvm
@@ -104,12 +104,12 @@ rbenv local 3.3.9
 \curl -sSL https://get.rvm.io | bash -s stable
 
 # Install Ruby
-rvm install 3.3.9
-rvm use 3.3.9
+rvm install 3.4.7
+rvm use 3.4.7
 
 # Create gemset (optional)
 rvm gemset create vulcan
-rvm use 3.3.9@vulcan
+rvm use 3.4.7@vulcan
 ```
 
 ### Database Configuration
@@ -118,8 +118,8 @@ rvm use 3.3.9@vulcan
 
 ```bash
 # macOS
-brew install postgresql@14
-brew services start postgresql@14
+brew install postgresql@16
+brew services start postgresql@16
 
 # Ubuntu/Debian
 sudo apt-get install postgresql postgresql-contrib
@@ -250,13 +250,13 @@ bundle exec rubocop --autocorrect-all
 #### JavaScript Style
 ```bash
 # Run ESLint
-yarn lint
+pnpm lint
 
 # Auto-fix issues
-yarn lint --fix
+pnpm lint --fix
 
 # CI mode (fails on warnings)
-yarn lint:ci
+pnpm lint:ci
 ```
 
 ### Testing
@@ -267,7 +267,7 @@ yarn lint:ci
 bundle exec rspec
 
 # JavaScript tests
-yarn test
+pnpm test
 
 # Specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -311,7 +311,7 @@ rails assets:precompile
 rails assets:clean
 
 # Watch for changes
-yarn build:watch
+pnpm build:watch
 ```
 
 ## IDE Configuration
@@ -339,7 +339,7 @@ Recommended extensions:
 
 ### RubyMine
 
-1. Set Ruby SDK to 3.3.9
+1. Set Ruby SDK to 3.4.7
 2. Configure Rails project
 3. Enable RuboCop inspection
 4. Set JavaScript version to ES6+
@@ -376,14 +376,14 @@ rails db:drop db:create db:migrate
 ```bash
 # Clear cache
 rails tmp:clear
-yarn cache clean
+pnpm store prune
 
 # Reinstall dependencies
-rm -rf node_modules yarn.lock
-yarn install
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
 
 # Rebuild
-yarn build
+pnpm build
 ```
 
 ### Port Already in Use
@@ -401,28 +401,46 @@ rails server -p 3001
 
 ## Docker Development
 
-### Using Docker Compose
+Vulcan uses a unified multi-stage Dockerfile with separate targets for development and production.
+
+### Building the Development Image
 
 ```bash
-# Build containers
-docker-compose build
+# Build development image (~2.7GB, includes all dev tools)
+docker build -t vulcan:dev --target development .
 
-# Start services
-docker-compose up
+# Or use the CLI
+vulcan build --target dev
+```
+
+### Using Docker Compose for Development
+
+```bash
+# Start development environment
+docker-compose -f docker-compose.dev.yml up
 
 # Run migrations
-docker-compose run web rails db:create db:migrate
+docker-compose -f docker-compose.dev.yml run --rm web rails db:create db:migrate
 
-# Access container
-docker-compose exec web bash
+# Access container shell
+docker-compose -f docker-compose.dev.yml exec web bash
 ```
 
 ### Docker Development Tips
 
-1. Use volumes for code hot-reload
-2. Separate services for web, db, redis
-3. Use .dockerignore for faster builds
-4. Override configs with docker-compose.override.yml
+1. **Hot-reload**: Mount source code as volume for live changes
+2. **Database**: Use `docker-compose.dev.yml` for local PostgreSQL
+3. **Faster builds**: The `.dockerignore` excludes unnecessary files
+4. **Build cache**: Docker caches layers, so rebuilds are fast after initial build
+
+### Build Targets
+
+| Target | Use Case | Size |
+|--------|----------|------|
+| `development` | Local development with all tools | ~2.7GB |
+| `production` | Optimized deployment | ~550MB |
+
+See [Docker Deployment](../deployment/docker.md#building-docker-images) for full build documentation.
 
 ## Performance Optimization
 
@@ -517,7 +535,7 @@ bundle exec bundler-audit check --update
 bundle exec brakeman
 
 # JavaScript audit
-yarn audit
+pnpm audit
 ```
 
 ## Useful Commands

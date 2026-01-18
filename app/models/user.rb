@@ -9,11 +9,15 @@ class User < ApplicationRecord
 
   include ProjectMemberConstants
 
-  devise :database_authenticatable, :registerable, :rememberable, :recoverable, :confirmable, :trackable, :validatable
+  devise :database_authenticatable, :registerable, :rememberable, :recoverable, :confirmable, :trackable, :validatable,
+         :lockable
 
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
 
   validates :name, presence: true
+  # Enhanced email validation beyond Devise's basic format check
+  # Validates format and blocks disposable email providers
+  validates :email, 'valid_email_2/email': { disposable: true }
 
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
 

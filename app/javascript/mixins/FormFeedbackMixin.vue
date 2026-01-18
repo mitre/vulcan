@@ -11,32 +11,33 @@ export default {
       type: Object,
       required: false,
       default() {
-        return {};
+        return {}
       },
     },
     invalidFeedback: {
       type: Object,
       required: false,
       default() {
-        return {};
+        return {}
       },
     },
   },
   methods: {
-    inputClass: function (field) {
+    inputClass(field) {
       if (this.hasInvalidFeedback(field)) {
-        return "is-invalid";
-      } else if (this.hasValidFeedback(field)) {
-        return "is-valid";
+        return 'is-invalid'
       }
-      return "";
+      else if (this.hasValidFeedback(field)) {
+        return 'is-valid'
+      }
+      return ''
     },
-    hasValidFeedback: function (field) {
-      return this.validFeedback.hasOwnProperty(field);
+    hasValidFeedback(field) {
+      return this.validFeedback.hasOwnProperty(field)
     },
-    hasInvalidFeedback: function (field) {
-      return this.invalidFeedback.hasOwnProperty(field);
+    hasInvalidFeedback(field) {
+      return this.invalidFeedback.hasOwnProperty(field)
     },
   },
-};
+}
 </script>

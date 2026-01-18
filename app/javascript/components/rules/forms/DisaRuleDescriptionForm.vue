@@ -1,3 +1,88 @@
+<script>
+import FormFeedbackMixinVue from '../../../mixins/FormFeedbackMixin.vue'
+
+export default {
+  name: 'DisaRuleDescriptionForm',
+  mixins: [FormFeedbackMixinVue],
+  // `rule` and `index` are necessary if edits are to be made
+  props: {
+    description: {
+      type: Object,
+      required: true,
+    },
+    rule: {
+      type: Object,
+    },
+    index: {
+      type: Number,
+      default: -1,
+    },
+    disabled: {
+      type: Boolean,
+      required: true,
+    },
+    fields: {
+      type: Object,
+      default: () => {
+        return {
+          displayed: [
+            'documentable',
+            'vuln_discussion',
+            'false_positives',
+            'false_negatives',
+            'mitigations_available',
+            'mitigations',
+            'poam_available',
+            'poam',
+            'severity_override_guidance',
+            'potential_impacts',
+            'third_party_tools',
+            'mitigation_control',
+            'responsibility',
+            'ia_controls',
+          ],
+          disabled: [],
+        }
+      },
+    },
+  },
+  data() {
+    return {
+      mod: Math.floor(Math.random() * 1000),
+    }
+  },
+  computed: {
+    tooltips() {
+      return {
+        documentable: null,
+        vuln_discussion: 'Discuss, in detail, the rationale for this control\'s vulnerability',
+        false_positives: 'List any likely false-positives associated with evaluating this control',
+        false_negatives: 'List any likely false-negatives associated with evaluating this control',
+        mitigations: [
+          'Not Yet Determined',
+          'Applicable - Configurable',
+          'Applicable - Inherently Meets',
+          'Not Applicable',
+        ].includes(this.rule.status)
+          ? null
+          : 'Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it',
+        poam:
+          this.rule.status === 'Applicable - Does Not Meet'
+            ? 'Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action'
+            : null,
+        severity_override_guidance: null,
+        potential_impacts:
+          'List the potential operational impacts on a system when applying fix discussed in this control',
+        third_party_tools: null,
+        mitigation_control: null,
+        responsibility: null,
+        ia_controls: 'The Common Control Indicator (CCI) that applies to this vulnerability',
+      }
+    },
+  },
+}
+</script>
+
 <template>
   <div v-if="description._destroy != true">
     <!-- documentable -->
@@ -15,12 +100,12 @@
         "
       >
         Documentable
-        <b-icon
-          v-if="tooltips['documentable']"
+        <i
+          v-if="tooltips.documentable"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['documentable']"
+          :title="tooltips.documentable"
         />
       </b-form-checkbox>
     </b-form-group>
@@ -32,12 +117,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-vuln_discussion-${mod}`">
         Vulnerability Discussion
-        <b-icon
-          v-if="tooltips['vuln_discussion']"
+        <i
+          v-if="tooltips.vuln_discussion"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['vuln_discussion']"
+          :title="tooltips.vuln_discussion"
         />
       </label>
       <b-form-textarea
@@ -46,9 +131,9 @@
         :class="inputClass('vuln_discussion')"
         placeholder=""
         :disabled="
-          disabled ||
-          fields.disabled.includes('vuln_discussion') ||
-          rule.status == 'Not Yet Determined'
+          disabled
+            || fields.disabled.includes('vuln_discussion')
+            || rule.status == 'Not Yet Determined'
         "
         rows="1"
         max-rows="99"
@@ -62,10 +147,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('vuln_discussion')">
-        {{ validFeedback["vuln_discussion"] }}
+        {{ validFeedback.vuln_discussion }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('vuln_discussion')">
-        {{ invalidFeedback["vuln_discussion"] }}
+        {{ invalidFeedback.vuln_discussion }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -76,12 +161,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-false_positives-${mod}`">
         False Positives
-        <b-icon
-          v-if="tooltips['false_positives']"
+        <i
+          v-if="tooltips.false_positives"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['false_positives']"
+          :title="tooltips.false_positives"
         />
       </label>
       <b-form-textarea
@@ -102,10 +187,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('false_positives')">
-        {{ validFeedback["false_positives"] }}
+        {{ validFeedback.false_positives }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('false_positives')">
-        {{ invalidFeedback["false_positives"] }}
+        {{ invalidFeedback.false_positives }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -116,12 +201,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-false_negatives-${mod}`">
         False Negatives
-        <b-icon
-          v-if="tooltips['false_negatives']"
+        <i
+          v-if="tooltips.false_negatives"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['false_negatives']"
+          :title="tooltips.false_negatives"
         />
       </label>
       <b-form-textarea
@@ -142,10 +227,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('false_negatives')">
-        {{ validFeedback["false_negatives"] }}
+        {{ validFeedback.false_negatives }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('false_negatives')">
-        {{ invalidFeedback["false_negatives"] }}
+        {{ invalidFeedback.false_negatives }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -178,12 +263,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-mitigations-${mod}`">
         Mitigations
-        <b-icon
-          v-if="tooltips['mitigations']"
+        <i
+          v-if="tooltips.mitigations"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['mitigations']"
+          :title="tooltips.mitigations"
         />
       </label>
       <b-form-textarea
@@ -204,10 +289,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('mitigations')">
-        {{ validFeedback["mitigations"] }}
+        {{ validFeedback.mitigations }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('mitigations')">
-        {{ invalidFeedback["mitigations"] }}
+        {{ invalidFeedback.mitigations }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -240,12 +325,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-poam-${mod}`">
         POA&amp;M
-        <b-icon
-          v-if="tooltips['poam']"
+        <i
+          v-if="tooltips.poam"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['poam']"
+          :title="tooltips.poam"
         />
       </label>
       <b-form-textarea
@@ -261,10 +346,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('poam')">
-        {{ validFeedback["poam"] }}
+        {{ validFeedback.poam }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('poam')">
-        {{ invalidFeedback["poam"] }}
+        {{ invalidFeedback.poam }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -275,12 +360,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`">
         Security Override Guidance
-        <b-icon
-          v-if="tooltips['severity_override_guidance']"
+        <i
+          v-if="tooltips.severity_override_guidance"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['severity_override_guidance']"
+          :title="tooltips.severity_override_guidance"
         />
       </label>
       <b-form-textarea
@@ -301,10 +386,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('severity_override_guidance')">
-        {{ validFeedback["severity_override_guidance"] }}
+        {{ validFeedback.severity_override_guidance }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('severity_override_guidance')">
-        {{ invalidFeedback["severity_override_guidance"] }}
+        {{ invalidFeedback.severity_override_guidance }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -315,12 +400,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-potential_impacts-${mod}`">
         Potential Impacts
-        <b-icon
-          v-if="tooltips['potential_impacts']"
+        <i
+          v-if="tooltips.potential_impacts"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['potential_impacts']"
+          :title="tooltips.potential_impacts"
         />
       </label>
       <b-form-textarea
@@ -341,10 +426,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('potential_impacts')">
-        {{ validFeedback["potential_impacts"] }}
+        {{ validFeedback.potential_impacts }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('potential_impacts')">
-        {{ invalidFeedback["potential_impacts"] }}
+        {{ invalidFeedback.potential_impacts }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -355,12 +440,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-third_party_tools-${mod}`">
         Third Party Tools
-        <b-icon
-          v-if="tooltips['third_party_tools']"
+        <i
+          v-if="tooltips.third_party_tools"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['third_party_tools']"
+          :title="tooltips.third_party_tools"
         />
       </label>
       <b-form-textarea
@@ -381,10 +466,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('third_party_tools')">
-        {{ validFeedback["third_party_tools"] }}
+        {{ validFeedback.third_party_tools }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('third_party_tools')">
-        {{ invalidFeedback["third_party_tools"] }}
+        {{ invalidFeedback.third_party_tools }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -395,12 +480,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-mitigation_control-${mod}`">
         Mitigation Control
-        <b-icon
-          v-if="tooltips['mitigation_control']"
+        <i
+          v-if="tooltips.mitigation_control"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['mitigation_control']"
+          :title="tooltips.mitigation_control"
         />
       </label>
       <b-form-textarea
@@ -421,10 +506,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('mitigation_control')">
-        {{ validFeedback["mitigation_control"] }}
+        {{ validFeedback.mitigation_control }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('mitigation_control')">
-        {{ invalidFeedback["mitigation_control"] }}
+        {{ invalidFeedback.mitigation_control }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -435,12 +520,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-responsibility-${mod}`">
         Responsibility
-        <b-icon
-          v-if="tooltips['responsibility']"
+        <i
+          v-if="tooltips.responsibility"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['responsibility']"
+          :title="tooltips.responsibility"
         />
       </label>
       <b-form-textarea
@@ -461,10 +546,10 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('responsibility')">
-        {{ validFeedback["responsibility"] }}
+        {{ validFeedback.responsibility }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('responsibility')">
-        {{ invalidFeedback["responsibility"] }}
+        {{ invalidFeedback.responsibility }}
       </b-form-invalid-feedback>
     </b-form-group>
 
@@ -475,12 +560,12 @@
     >
       <label :for="`ruleEditor-disa_rule_description-ia_controls-${mod}`">
         IA Controls
-        <b-icon
-          v-if="tooltips['ia_controls']"
+        <i
+          v-if="tooltips.ia_controls"
           v-b-tooltip.hover.html
-          icon="info-circle"
+          class="bi bi-info-circle"
           aria-hidden="true"
-          :title="tooltips['ia_controls']"
+          :title="tooltips.ia_controls"
         />
       </label>
       <b-form-textarea
@@ -501,97 +586,13 @@
         "
       />
       <b-form-valid-feedback v-if="hasValidFeedback('ia_controls')">
-        {{ validFeedback["ia_controls"] }}
+        {{ validFeedback.ia_controls }}
       </b-form-valid-feedback>
       <b-form-invalid-feedback v-if="hasInvalidFeedback('ia_controls')">
-        {{ invalidFeedback["ia_controls"] }}
+        {{ invalidFeedback.ia_controls }}
       </b-form-invalid-feedback>
     </b-form-group>
   </div>
 </template>
-
-<script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-export default {
-  name: "DisaRuleDescriptionForm",
-  mixins: [FormFeedbackMixinVue],
-  // `rule` and `index` are necessary if edits are to be made
-  props: {
-    description: {
-      type: Object,
-      required: true,
-    },
-    rule: {
-      type: Object,
-    },
-    index: {
-      type: Number,
-      default: -1,
-    },
-    disabled: {
-      type: Boolean,
-      required: true,
-    },
-    fields: {
-      type: Object,
-      default: () => {
-        return {
-          displayed: [
-            "documentable",
-            "vuln_discussion",
-            "false_positives",
-            "false_negatives",
-            "mitigations_available",
-            "mitigations",
-            "poam_available",
-            "poam",
-            "severity_override_guidance",
-            "potential_impacts",
-            "third_party_tools",
-            "mitigation_control",
-            "responsibility",
-            "ia_controls",
-          ],
-          disabled: [],
-        };
-      },
-    },
-  },
-  data: function () {
-    return {
-      mod: Math.floor(Math.random() * 1000),
-    };
-  },
-  computed: {
-    tooltips: function () {
-      return {
-        documentable: null,
-        vuln_discussion: "Discuss, in detail, the rationale for this control's vulnerability",
-        false_positives: "List any likely false-positives associated with evaluating this control",
-        false_negatives: "List any likely false-negatives associated with evaluating this control",
-        mitigations: [
-          "Not Yet Determined",
-          "Applicable - Configurable",
-          "Applicable - Inherently Meets",
-          "Not Applicable",
-        ].includes(this.rule.status)
-          ? null
-          : "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
-        poam:
-          this.rule.status === "Applicable - Does Not Meet"
-            ? "Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action"
-            : null,
-        severity_override_guidance: null,
-        potential_impacts:
-          "List the potential operational impacts on a system when applying fix discussed in this control",
-        third_party_tools: null,
-        mitigation_control: null,
-        responsibility: null,
-        ia_controls: "The Common Control Indicator (CCI) that applies to this vulnerability",
-      };
-    },
-  },
-};
-</script>
 
 <style scoped></style>

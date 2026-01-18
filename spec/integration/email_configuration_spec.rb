@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Email Configuration Integration - Core Validation', type: :request do
+RSpec.describe 'Email Configuration Integration - Core Validation' do
   # Simple integration tests that validate our email configuration fixes work
   # Focus on configuration validation rather than complex email rendering
 
@@ -23,7 +23,10 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
   end
 
   after do
-    # Reset ActionMailer settings after each test
+    # Reset ActionMailer settings after each test (parallel-safe)
+    # Must reset BOTH config and Base (initializer sets both)
+    Rails.application.config.action_mailer.delivery_method = :test
+    ActionMailer::Base.delivery_method = :test
     ActionMailer::Base.smtp_settings = {}
   end
 

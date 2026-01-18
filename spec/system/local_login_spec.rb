@@ -13,7 +13,7 @@ end
 
 # This test requires chromedriver to be installed for Selenium tests.
 # If chromedriver is not available, the test will be skipped.
-RSpec.describe 'Local Login', skip: (chromedriver_available? ? false : 'Chromedriver not installed'), type: :system do
+RSpec.describe 'Local Login', skip: (chromedriver_available? ? false : 'Chromedriver not installed') do
   LOCAL_LOGIN_TAB = 'Local Login' # rubocop:disable Lint/ConstantDefinitionInBlock
   include LoginHelpers
 
@@ -30,10 +30,10 @@ RSpec.describe 'Local Login', skip: (chromedriver_available? ? false : 'Chromedr
         .not_to change(user1, :sign_in_count)
 
       expect(page)
-        .to have_selector('.b-toast-danger', text: 'Invalid Email or password.')
+        .to have_css('.b-toast-danger', text: 'Invalid Email or password.')
 
-      # Expect the Local Login tab to be active on page reload
-      expect(page.find('a', text: LOCAL_LOGIN_TAB)[:class]).to include('active')
+      # Vue SPA - login form remains visible after error
+      expect(page).to have_button('Sign in')
     end
   end
 end

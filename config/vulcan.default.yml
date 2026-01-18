@@ -6,11 +6,41 @@
 # and simply input your settings instead.
 #
 # Any changes to this file will requre a restart of the Vulcan service.
+#
+# 12-Factor Configuration:
+# - PORT and HOST are the primitives (single source of truth)
+# - APP_URL and OIDC redirect URI are derived automatically
+# - Override VULCAN_APP_URL only if behind a proxy with different external URL
 
 defaults: &defaults
   welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || nil %>
   contact_email: <%= ENV['VULCAN_CONTACT_EMAIL']%>
-  app_url: <%= ENV['VULCAN_APP_URL'] || nil %>
+  # Derive app_url from HOST/PORT if not explicitly set
+  # Production behind proxy: set VULCAN_APP_URL explicitly (e.g., https://vulcan.example.com)
+  # Development/Docker: derived from HOST:PORT automatically
+  app_url: <%= ENV['VULCAN_APP_URL'] || "#{ENV.fetch('VULCAN_SCHEME', 'http')}://#{ENV.fetch('HOST', 'localhost')}:#{ENV.fetch('PORT', '3000')}" %>
+  # App banner (colored bar at top/bottom of page)
+  banner_app:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_BANNER_ENABLED']) || false %>
+    text: <%= ENV['VULCAN_BANNER_TEXT'] || '' %>
+    background_color: <%= ENV['VULCAN_BANNER_BACKGROUND_COLOR'] || '#198754' %>
+    text_color: <%= ENV['VULCAN_BANNER_TEXT_COLOR'] || '#ffffff' %>
+  # Consent banner (modal shown before authentication)
+  # Set VULCAN_CONSENT_BANNER_CONTENT to customize the banner text (markdown supported)
+  banner_consent:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_CONSENT_BANNER_ENABLED']) || false %>
+    version: <%= ENV['VULCAN_CONSENT_BANNER_VERSION'] || 1 %>
+    title: <%= ENV['VULCAN_CONSENT_BANNER_TITLE'] || 'Terms of Use' %>
+    title_align: <%= ENV['VULCAN_CONSENT_BANNER_TITLE_ALIGN'] || 'center' %>
+    content: |
+      By accessing this system, you acknowledge and agree to the following:
+
+      - Your use of this system may be monitored and recorded for security and auditing purposes
+      - You will use this system only for authorized and lawful purposes
+      - You will not attempt to gain unauthorized access to any resources
+      - You will protect any credentials provided to you
+
+      If you do not agree to these terms, please disconnect now.
   smtp:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SMTP']) %>
     settings:
@@ -27,6 +57,11 @@ defaults: &defaults
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCAL_LOGIN']) != false %>
     email_confirmation: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION']) || false %>
     session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
+  # Account lockout settings
+  lockable:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCKABLE']) != false %>
+    max_attempts: <%= ENV['VULCAN_LOCKABLE_MAX_ATTEMPTS'] || 5 %>
+    unlock_in_minutes: <%= ENV['VULCAN_LOCKABLE_UNLOCK_IN_MINUTES'] || 30 %>
   user_registration:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
   project:
@@ -68,7 +103,8 @@ defaults: &defaults
         host: <%= ENV['VULCAN_OIDC_HOST'] %>
         identifier: <%= ENV['VULCAN_OIDC_CLIENT_ID'] %>
         secret: <%= ENV['VULCAN_OIDC_CLIENT_SECRET'] %>
-        redirect_uri: <%= ENV['VULCAN_OIDC_REDIRECT_URI'] %>
+        # Derive redirect_uri from app_url if not explicitly set
+        redirect_uri: <%= ENV['VULCAN_OIDC_REDIRECT_URI'] || "#{ENV['VULCAN_APP_URL'] || "#{ENV.fetch('VULCAN_SCHEME', 'http')}://#{ENV.fetch('HOST', 'localhost')}:#{ENV.fetch('PORT', '3000')}"}/users/auth/oidc/callback" %>
         # Fallback/override endpoints (only used if discovery fails or disabled)
         authorization_endpoint: <%= ENV['VULCAN_OIDC_AUTHORIZATION_URL'] %>
         token_endpoint: <%= ENV['VULCAN_OIDC_TOKEN_URL'] %>

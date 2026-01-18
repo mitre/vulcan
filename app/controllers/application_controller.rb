@@ -3,15 +3,19 @@
 # This is the base controller for the application. Things should only be
 # placed here if they are shared between multiple controllers
 class ApplicationController < ActionController::Base
+  include Pagy::Backend
+
   helper :all
   include SlackNotificationsHelper
+  include AuthProvidersHelper
 
-  before_action :setup_navigation, :authenticate_user!
+  before_action :setup_navigation, :authenticate_user!, unless: :devise_controller?
   before_action :check_access_request_notifications
 
-  rescue_from NotAuthorizedError, with: :not_authorized
-
+  # Order matters: more specific handlers must come AFTER generic ones
+  # Rails processes rescue_from in reverse order (last defined = highest priority)
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
+  rescue_from NotAuthorizedError, with: :not_authorized
 
   def set_project_permissions
     @effective_permissions = current_user&.effective_permissions(@project)
@@ -221,7 +225,7 @@ class ApplicationController < ActionController::Base
             message: exception.message,
             variant: 'danger'
           }
-        }, status: :unauthorized
+        }, status: :forbidden # 403, not 401 - user is authenticated but lacks permission
       end
     end
   end

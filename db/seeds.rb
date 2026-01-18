@@ -5,6 +5,17 @@
 # Populate the database for demonstration use.
 raise 'This task is only for use in a development environment' unless Rails.env.development? || ENV.fetch('DISABLE_DATABASE_ENVIRONMENT_CHECK', false)
 
+# Check if database has already been seeded
+# Seeds are meant to run once on a fresh database (Rails convention)
+if User.exists?(email: 'admin@example.com')
+  puts "\n✅ Database already contains seed data"
+  puts ''
+  puts 'To reset and reseed the database, use:'
+  puts '  bin/rails db:reset'
+  puts ''
+  exit 0
+end
+
 puts "Populating database for demo use:\n\n"
 
 # --------------- #
@@ -32,6 +43,7 @@ photon3 = Project.create!(name: 'Photon 3')
 photon4 = Project.create!(name: 'Photon 4')
 vsphere = Project.create!(name: 'vSphere 7.0')
 dummy_project = Project.create!(name: 'Nothing to See Here')
+container_project = Project.create!(name: 'Container Security Requirements Guide')
 puts 'Created Projects'
 
 # ------------------------- #
@@ -43,6 +55,8 @@ User.find_each do |user|
   project_members << Membership.new(user: user, membership_id: photon3.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: photon4.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: vsphere.id, membership_type: 'Project')
+  project_members << Membership.new(user: user, membership_id: dummy_project.id, membership_type: 'Project')
+  project_members << Membership.new(user: user, membership_id: container_project.id, membership_type: 'Project')
 end
 Membership.import(project_members)
 puts 'Project Members added'
@@ -65,7 +79,28 @@ parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
 gpos_srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
 gpos_srg.xml = srg_xml
 gpos_srg.save!
+
+# New SRGs for testing markdown editor
+puts 'Creating Application Core SRG...'
+srg_xml = File.read('./Application_Core_SRG_Core.xml')
+parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
+app_core_srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
+app_core_srg.xml = srg_xml
+app_core_srg.save!
+
+puts 'Creating Operating System Core SRG...'
+srg_xml = File.read('./Operating_System_Core_Core.xml')
+parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
+os_core_srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
+os_core_srg.xml = srg_xml
+os_core_srg.save!
 puts 'Created SRGs'
+
+# ---------------------------------- #
+# Seeds for Container SRG Project    #
+# ---------------------------------- #
+# Note: This project is created here, container_project variable is used below in memberships
+container_project = nil
 
 # ---------------------------- #
 # Seeds for Project Components #

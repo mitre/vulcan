@@ -7,6 +7,8 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 ## Index
 
 - [Configure Welcome Text and Contact Email](#configure-welcome-text-and-contact-email)
+- [Configure App Banner:](#configure-app-banner) Colored banner for environment/classification labels
+- [Configure Consent Banner:](#configure-consent-banner) Pre-authentication modal for terms of use
 - [Configure SMTP:](#configure-smtp) Sets up the smtp mailing server
 - [Configure Local Login:](#configure-local-login) Enables user to log in as well as turn email confirmation on and off
 - [Configure User Registration:](#configure-user-registration) Enables user sign-ups
@@ -20,6 +22,93 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **welcome_text:** Welcome text is the text shown on the homepage below the "What is Vulcan" blurb on the homepage. It can be configured by the administrator to provide users with any information that may be relevant to their access and usage of the Vulcan application. `(ENV: VULCAN_WELCOME_TEXT)(default: nil)`
 - **contact_email:** Contact email is the reply email shown to users on confirmation and notification emails. Also serves as the default SMTP username when not explicitly configured, ensuring authentication alignment. By default this will revert to `vulcan-support@example.com` if no email is specified. `(ENV: VULCAN_CONTACT_EMAIL)(default: vulcan-support@example.com)`
 - **app_url:** Allows hyper-linking of vulcan urls when notifications are sent `(ENV: VULCAN_APP_URL)`
+
+## Configure App Banner
+
+Optional colored banner at top and bottom of page. Useful for environment indicators (development/staging), classification levels (UNCLASSIFIED), or public release notices.
+
+- **enabled:** Show/hide banner `(ENV: VULCAN_BANNER_ENABLED)(default: false)`
+- **text:** Banner text content `(ENV: VULCAN_BANNER_TEXT)(default: empty)`
+- **background_color:** Background color - supports Bootstrap names, hex codes, or CSS variables `(ENV: VULCAN_BANNER_BACKGROUND_COLOR)(default: success)`
+- **text_color:** Text color - supports Bootstrap names, hex codes, or CSS variables `(ENV: VULCAN_BANNER_TEXT_COLOR)(default: white)`
+
+### Color Formats Supported
+
+- **Bootstrap color names**: `primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`, `white`
+- **CSS variables**: `var(--bs-success)`, `var(--custom-color)`
+- **Hex codes**: `#198754`, `#ffffff`
+
+### Common Use Cases
+
+```bash
+# Development environment (orange banner)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=DEVELOPMENT
+VULCAN_BANNER_BACKGROUND_COLOR=warning
+VULCAN_BANNER_TEXT_COLOR=dark
+
+# Staging environment (blue banner)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=STAGING
+VULCAN_BANNER_BACKGROUND_COLOR=info
+VULCAN_BANNER_TEXT_COLOR=white
+
+# Public release (green banner)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=PUBLIC RELEASE
+VULCAN_BANNER_BACKGROUND_COLOR=success
+VULCAN_BANNER_TEXT_COLOR=white
+
+# Classification marking (custom hex colors)
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=UNCLASSIFIED
+VULCAN_BANNER_BACKGROUND_COLOR=#198754
+VULCAN_BANNER_TEXT_COLOR=#ffffff
+```
+
+## Configure Consent Banner
+
+Modal shown before authentication requiring user acknowledgment. Blocks all access until user clicks "I Agree". Useful for terms of use, DoD warning banners, or acceptable use policies.
+
+- **enabled:** Show/hide consent modal `(ENV: VULCAN_CONSENT_BANNER_ENABLED)(default: false)`
+- **version:** Version tracking number - increment to re-prompt all users when terms change `(ENV: VULCAN_CONSENT_BANNER_VERSION)(default: 1)`
+- **title:** Modal title text `(ENV: VULCAN_CONSENT_BANNER_TITLE)(default: Terms of Use)`
+- **title_align:** Title alignment: `left`, `center`, or `right` `(ENV: VULCAN_CONSENT_BANNER_TITLE_ALIGN)(default: center)`
+- **content:** Custom markdown content - if not set, uses default from `config/vulcan.default.yml` `(ENV: VULCAN_CONSENT_BANNER_CONTENT)`
+
+### How Versions Work
+
+Version numbers are **tracking numbers you control**, not predefined templates:
+
+1. **Initial deployment**: Set `VULCAN_CONSENT_BANNER_VERSION=1`
+2. **User acknowledges**: Saves `vulcan-consent-v1` to browser localStorage
+3. **Next visit**: App checks for `vulcan-consent-v1`, finds it → no modal
+4. **You update terms**: Change content and set `VULCAN_CONSENT_BANNER_VERSION=2`
+5. **Next visit**: App checks for `vulcan-consent-v2`, doesn't find it → shows modal again
+
+**Key Point**: Increment version whenever you change terms to force re-acknowledgment.
+
+### Markdown Content
+
+Content accepts markdown but is written as a string in `.env` with `\n` for line breaks:
+
+```bash
+# Example: DoD Warning Banner
+VULCAN_CONSENT_BANNER_ENABLED=true
+VULCAN_CONSENT_BANNER_VERSION=1
+VULCAN_CONSENT_BANNER_TITLE="System Access Warning"
+VULCAN_CONSENT_BANNER_TITLE_ALIGN=left
+VULCAN_CONSENT_BANNER_CONTENT="## WARNING\n\nYou are accessing a **U.S. Government** information system.\n\n**Unauthorized use may result in criminal prosecution.**"
+```
+
+### Features
+
+- Blocks access until acknowledged (no close button, no escape key, no backdrop dismiss)
+- localStorage tracking per version
+- Markdown support with XSS protection (DOMPurify)
+- Blurred background overlay
+- Full accessibility via Reka UI Dialog (ARIA, focus trap, keyboard navigation, screen reader support)
+- Dark mode support (automatically adapts to system preference)
 
 ## Configure SMTP:
 

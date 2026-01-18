@@ -33,18 +33,40 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 
 ## 🚀 Quick Start
 
-### Latest Release: [v2.2.1](https://github.com/mitre/vulcan/releases/tag/v2.2.1)
+### Latest Release: [v2.3.0](https://github.com/mitre/vulcan/releases/tag/v2.3.0)
+
+#### Using the Vulcan CLI (Recommended)
 
 ```bash
-# Pull the latest Docker image
-docker pull mitre/vulcan:v2.2.1
+git clone https://github.com/mitre/vulcan.git && cd vulcan
 
-# Or use docker-compose for a complete setup
-wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
-wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
-chmod +x setup-docker-secrets.sh
-./setup-docker-secrets.sh
-docker-compose up
+# Development setup (interactive wizard)
+./bin/vulcan setup dev
+
+# Start services
+./bin/vulcan start
+```
+
+The CLI handles everything: PostgreSQL, dependencies, frontend build, database setup, and starts the server.
+
+#### Alternative: Traditional Setup Script
+
+```bash
+git clone https://github.com/mitre/vulcan.git && cd vulcan && bin/setup
+```
+
+#### Production Docker
+
+```bash
+# Clone and setup with CLI
+git clone https://github.com/mitre/vulcan.git && cd vulcan
+
+# Production setup (interactive wizard)
+./bin/vulcan setup production
+
+# Or manual setup
+./bin/vulcan config edit    # Configure .env
+./bin/vulcan start -d       # Start in background
 ```
 
 Default credentials for testing:
@@ -66,43 +88,44 @@ For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
 The documentation uses [VitePress](https://vitepress.dev/) and is located in the `docs/` directory.
 
-**Important:** The documentation has its own `package.json` separate from the main application to avoid Vue version conflicts (main app uses Vue 2, VitePress uses Vue 3). This separation will be removed once the main application migrates to Vue 3.
+**Note:** The documentation has its own `package.json` in the `docs/` directory for build isolation.
 
 ```bash
 # Start documentation dev server
-yarn docs:dev  # Runs at http://localhost:5173/vulcan/
+pnpm docs:dev  # Runs at http://localhost:5173/vulcan/
 
 # Build documentation (only works in CI/CD currently)
-yarn docs:build
+pnpm docs:build
 
 # Work directly in docs directory
 cd docs
-yarn install  # Install docs-specific dependencies
-yarn dev      # Start dev server
+pnpm install  # Install docs-specific dependencies
+pnpm dev      # Start dev server
 ```
 
 ## 🛠️ Technology Stack
 
 ### Core Framework
-- **Ruby 3.3.9** with **Rails 8.0.2.1**
-- **PostgreSQL 12+** database
-- **Node.js 22 LTS** for JavaScript runtime
+- **Ruby 3.4.7** with **Rails 8.0.2.1**
+- **PostgreSQL 16** database
+- **Node.js 24 LTS** (Krypton) for JavaScript runtime
 
 ### Frontend
-- **Vue 2.6.11** (14 separate instances for different pages)
-- **Bootstrap 4.4.1** with Bootstrap-Vue 2.13.0
-- **Turbolinks 5.2.0** for navigation optimization
-- **esbuild** for JavaScript bundling (replaced Webpacker)
+- **Vue 3.5** with Composition API and Pinia state management
+- **Bootstrap 5.3** with Bootstrap-Vue-Next
+- **Vue Router 4** for SPA navigation
+- **esbuild** for JavaScript bundling
 
 ### Testing & Quality
-- **RSpec** for Ruby testing (190+ tests)
+- **RSpec** with parallel_tests for Ruby testing (453 tests)
+- **Vitest** for Vue component testing (381 tests)
 - **ESLint** & **Prettier** for JavaScript linting
 - **RuboCop** for Ruby style enforcement
 - **Brakeman** for security scanning
 - **bundler-audit** for dependency vulnerability scanning
 
 ### DevOps & Deployment
-- **Docker** with optimized production images (1.76GB)
+- **Docker** with optimized production images (~550MB)
 - **GitHub Actions** for CI/CD
 - **Heroku** compatible
 - **SonarCloud** integration for code quality
@@ -111,44 +134,76 @@ yarn dev      # Start dev server
 
 ### Prerequisites
 
-- Ruby 3.3.9 (use rbenv or rvm)
-- PostgreSQL 12+
-- Node.js 22 LTS
-- Yarn package manager
+- Ruby 3.4.7 (use rbenv or rvm)
+- PostgreSQL 16 (or Docker)
+- Node.js 24 LTS
+- pnpm package manager
+- Go 1.21+ (only if rebuilding CLI)
 
-### Local Installation
+### Using the CLI (Recommended)
 
 ```bash
 # Clone the repository
 git clone https://github.com/mitre/vulcan.git
 cd vulcan
 
-# Install Ruby dependencies
-bundle install
+# Interactive setup wizard
+./bin/vulcan setup dev
 
-# Install JavaScript dependencies
-yarn install
+# Start development server
+./bin/vulcan start
 
-# Setup database
-bin/setup
-
-# Seed the database with sample data
-rails db:seed
-
-# Start the development server
-foreman start -f Procfile.dev
-
-# Or start services separately
-rails server
-yarn build:watch
+# Common development commands
+./bin/vulcan status           # Check service status
+./bin/vulcan logs -f          # Follow logs
+./bin/vulcan db migrate       # Run migrations
+./bin/vulcan test             # Run test suite
 ```
 
 Access the application at `http://localhost:3000`
 
+### Manual Installation (Alternative)
+
+```bash
+# Clone the repository
+git clone https://github.com/mitre/vulcan.git
+cd vulcan
+
+# Start PostgreSQL with Docker
+docker-compose -f docker-compose.dev.yml up -d
+
+# Install dependencies
+bundle install
+pnpm install
+
+# Build frontend assets
+pnpm build
+
+# Setup database
+rails db:create db:migrate db:seed
+
+# Start the development server
+foreman start -f Procfile.dev
+```
+
+**Note:** The `docker-compose.dev.yml` starts PostgreSQL 16 on port 5432 with:
+- User: `postgres`
+- Password: `postgres`
+- Database: `vulcan_vue_development`
+
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (frontend + backend)
+pnpm test
+
+# Run frontend tests only (Vitest)
+pnpm vitest run
+
+# Run backend tests only (parallel - fast)
+bundle exec parallel_rspec spec/
+
+# Run backend tests (single-threaded)
 bundle exec rspec
 
 # Run specific test file
@@ -156,7 +211,7 @@ bundle exec rspec spec/models/user_spec.rb
 
 # Run linters
 bundle exec rubocop --autocorrect-all
-yarn lint
+pnpm lint
 
 # Security scanning
 bundle exec brakeman
@@ -166,6 +221,25 @@ bundle exec bundler-audit
 ## 🐳 Docker Deployment
 
 ### Production-Ready Docker Setup
+
+#### Using the CLI (Recommended)
+
+```bash
+# Interactive production setup
+./bin/vulcan setup production
+
+# Configure authentication
+./bin/vulcan auth setup-oidc    # or setup-ldap
+
+# Start in background
+./bin/vulcan start -d
+
+# Monitor
+./bin/vulcan status
+./bin/vulcan logs -f
+```
+
+#### Manual Setup (Alternative)
 
 1. **Generate secure configuration**:
    ```bash
@@ -195,11 +269,59 @@ bundle exec bundler-audit
 
 ### Docker Image Features
 
-- **Optimized size**: 1.76GB (reduced from 6.5GB)
+- **Optimized size**: ~550MB
 - **Memory efficiency**: jemalloc for 20-40% reduction
 - **Multi-stage builds** for security and size
-- **Health checks** configured
+- **Health checks** configured (see below)
 - **Non-root user** execution
+
+## 🏥 Health Check Endpoints
+
+Vulcan provides comprehensive health check endpoints for Kubernetes probes and monitoring:
+
+### `/up` - Basic Liveness Check
+Rails 8 built-in endpoint. Returns 200 if application is running.
+```bash
+curl http://localhost:3000/up
+# Returns: green HTML page with 200 status
+```
+
+**Use for:** Kubernetes liveness probes
+
+### `/health_check` - Comprehensive Health Check
+Validates database connectivity and migration status.
+```bash
+curl http://localhost:3000/health_check
+# Returns: "ok" or error message
+
+curl http://localhost:3000/health_check.json
+# Returns: {"healthy":true,"message":"success"}
+```
+
+**Use for:** Kubernetes readiness probes, monitoring dashboards
+
+### `/health_check/database` - Database-Specific Check
+Checks only database connectivity.
+```bash
+curl http://localhost:3000/health_check/database
+# Returns: "ok" if database is accessible
+```
+
+**Use for:** Troubleshooting database issues
+
+### `/status` - Application Status
+Detailed application status including configuration and setup state.
+```bash
+curl http://localhost:3000/status | jq
+```
+
+Returns:
+- Application version and environment
+- Health status (database, LDAP, OIDC)
+- Setup state (admin user, auth providers, features)
+- System metrics (uptime, database connections)
+
+**Use for:** Deployment verification, support troubleshooting
 
 ## 🔐 Authentication Configuration
 
@@ -231,6 +353,56 @@ VULCAN_LDAP_BASE=dc=example,dc=com
 VULCAN_LDAP_BIND_DN=cn=admin,dc=example,dc=com
 VULCAN_LDAP_BIND_PASSWORD=your-password
 ```
+
+## 🖥️ Vulcan CLI
+
+Vulcan includes a command-line interface for managing deployments, built with Go and the [Charm](https://charm.sh/) stack.
+
+### Quick Start
+
+```bash
+# Run from project root
+./bin/vulcan --help
+
+# Or add to PATH
+export PATH="$PATH:$(pwd)/bin"
+vulcan --help
+```
+
+### Common Commands
+
+```bash
+# Service Management
+vulcan start                    # Start services (auto-detects dev/prod)
+vulcan stop                     # Stop services
+vulcan status                   # Check status
+vulcan logs -f                  # Follow logs
+
+# Docker Builds
+vulcan build                    # Build production image
+vulcan build --info             # Show build configuration
+vulcan build --push             # Build and push to registry
+vulcan build -p linux/amd64,linux/arm64 --push  # Multi-arch build
+
+# Database
+vulcan db migrate               # Run migrations
+vulcan db snapshot before-change # Create named snapshot
+vulcan db snapshot --restore latest # Restore snapshot
+vulcan db backup -o backup.sql  # Create backup
+vulcan db restore backup.sql    # Restore backup
+
+# User Management
+vulcan user list                # List users
+vulcan user create-admin        # Create admin
+vulcan user reset-password      # Reset password
+
+# Configuration
+vulcan config show              # Show config
+vulcan config rotate            # Rotate secrets
+vulcan auth setup-oidc          # Configure OIDC
+```
+
+See [cli/README.md](./cli/README.md) for full documentation.
 
 ## 📋 Maintenance Tasks
 
@@ -266,14 +438,20 @@ We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTIN
 
 ## 📈 Roadmap
 
-### Upcoming Features (v2.3+)
+### Completed in v2.3.0
 
-- **Vue 3 Migration**: Modernize frontend framework
-- **Bootstrap 5 Upgrade**: Update UI components
-- **Turbolinks Removal**: Simplify navigation architecture
+- ✅ **Vue 3 Migration**: Full SPA with Composition API and Pinia
+- ✅ **Bootstrap 5 Upgrade**: Modern UI with Bootstrap-Vue-Next
+- ✅ **Turbolinks Removal**: Vue Router for SPA navigation
+- ✅ **Command Palette**: Global search with Cmd+K shortcut
+- ✅ **Parallel Tests**: 453 backend tests run in ~90 seconds
+
+### Upcoming Features (v2.4+)
+
 - **API v2**: Enhanced REST API with GraphQL support
 - **Multi-tenancy**: Support for multiple organizations
 - **Advanced Reporting**: Custom dashboards and metrics
+- **Database Refactor**: 3NF normalization for better performance
 
 See our [detailed roadmap](./ROADMAP.md) for more information.
 

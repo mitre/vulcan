@@ -1,155 +1,180 @@
+<script setup lang="ts">
+/**
+ * Navbar Component
+ *
+ * Main navigation bar for the application.
+ * Uses composables for color mode and release checking.
+ */
+
+import { computed, onMounted } from 'vue'
+import AppBanner from '@/components/shared/AppBanner.vue'
+import { useColorMode, useReleaseCheck } from '@/composables'
+import { primaryModifierSymbol } from '@/composables/useKeyboardShortcuts'
+import NavbarItem from './NavbarItem.vue'
+
+// Types
+interface INavItem {
+  name: string
+  link: string
+  icon?: string
+}
+
+interface IAccessRequest {
+  id: number
+  project: { id: number, name: string }
+  user: { id: number, name: string, email: string }
+  created_at: string
+}
+
+// Props
+defineProps<{
+  navigation: INavItem[]
+  signed_in: boolean
+  users_path?: string
+  profile_path?: string
+  sign_out_path?: string
+  access_requests?: IAccessRequest[]
+}>()
+
+// Emits
+const emit = defineEmits<{
+  openCommandPalette: []
+}>()
+
+// Composables
+const { colorMode, resolvedMode, cycleColorMode } = useColorMode()
+const { currentVersion, latestRelease, updateAvailable, dismissUpdate, fetchLatestRelease } = useReleaseCheck()
+
+// Computed
+const colorModeIcon = computed(() => {
+  if (colorMode.value === 'auto') return 'bi-circle-half'
+  return resolvedMode.value === 'dark' ? 'bi-moon-fill' : 'bi-sun-fill'
+})
+
+const colorModeTitle = computed(() => {
+  const modes: Record<string, string> = {
+    light: 'Light mode',
+    dark: 'Dark mode',
+    auto: 'System preference',
+  }
+  return modes[colorMode.value]
+})
+
+// Actions
+function openCommandPalette() {
+  emit('openCommandPalette')
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchLatestRelease()
+})
+</script>
+
 <template>
   <div>
-    <b-navbar toggleable="lg" type="dark" variant="dark">
-      <b-navbar-brand id="heading" href="/">
-        <b-icon icon="broadcast" aria-hidden="true" />
-        VULCAN
-        <b-link href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
-          <span class="latest-release">{{ currentVersion }}</span>
-        </b-link>
-      </b-navbar-brand>
-      <b-navbar-toggle target="nav-collapse" />
+    <!-- App banner (optional colored bar at top) -->
+    <AppBanner />
 
-      <b-collapse id="nav-collapse" is-nav>
-        <div class="d-flex w-100 justify-content-lg-center text-lg-center">
-          <b-navbar-nav>
-            <div v-for="item in navigation" :key="item.name">
-              <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
-            </div>
-          </b-navbar-nav>
-        </div>
+    <BNavbar v-b-color-mode="'dark'" toggleable="lg" variant="dark" class="navbar-dark bg-dark border-bottom">
+      <div class="container-fluid container-app d-flex align-items-center">
+        <BNavbarBrand id="heading" href="/">
+          <i class="bi bi-broadcast" aria-hidden="true" />
+          VULCAN
+          <BLink href="https://vulcan.mitre.org/CHANGELOG.html" target="_blank">
+            <span class="latest-release">{{ currentVersion }}</span>
+          </BLink>
+        </BNavbarBrand>
+        <BNavbarToggle target="nav-collapse" />
 
-        <div v-if="signed_in" class="d-flex justify-content-between right-container">
-          <SrgIdSearch />
-          <!-- Notification Dropdown -->
-          <!-- Right aligned nav items -->
-          <b-navbar-nav class="ml-auto">
-            <b-nav-item-dropdown right no-caret class="position-relative ml-3">
-              <template #button-content>
-                <b-icon icon="bell" aria-hidden="true" />
-                <b-badge
-                  v-if="access_requests.length"
-                  variant="danger"
-                  class="rounded-pill position-absolute top-0 start-100 translate-middle"
-                  style="top: 0; right: 0"
-                >
-                  {{ access_requests.length }}
-                </b-badge>
-              </template>
-              <b-dropdown-item
-                v-for="(access_request, index) in access_requests"
-                :key="index"
-                :href="`/projects/${access_request.project_id}`"
+        <BCollapse id="nav-collapse" is-nav>
+          <div class="d-flex w-100 justify-content-lg-center text-lg-center">
+            <BNavbarNav>
+              <div v-for="item in navigation" :key="item.name">
+                <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
+              </div>
+            </BNavbarNav>
+          </div>
+
+          <div v-if="signed_in" class="d-flex justify-content-between right-container">
+            <!-- Global Search Button -->
+            <button
+              type="button"
+              class="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
+              title="Search (Cmd+J)"
+              @click="openCommandPalette"
+            >
+              <i class="bi bi-search" />
+              <span class="d-none d-md-inline">Search</span>
+              <kbd class="d-none d-lg-inline ms-1">{{ primaryModifierSymbol }}J</kbd>
+            </button>
+            <!-- Right aligned nav items -->
+            <BNavbarNav class="ml-auto">
+              <!-- Color Mode Toggle -->
+              <BNavItem
+                class="color-mode-toggle"
+                :title="colorModeTitle"
+                @click="cycleColorMode"
               >
-                {{
-                  `${access_request.user.name} has requested access to project ${access_request.project.name}`
-                }}
-              </b-dropdown-item>
-            </b-nav-item-dropdown>
-            <b-nav-item-dropdown right>
-              <template #button-content>
-                <b-icon icon="person-circle" aria-hidden="true" />
-              </template>
-              <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
-              <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
-              <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
-            </b-nav-item-dropdown>
-          </b-navbar-nav>
-        </div>
-      </b-collapse>
-    </b-navbar>
-    <b-alert
+                <i class="bi" :class="[colorModeIcon]" aria-hidden="true" />
+              </BNavItem>
+              <!-- Notification Dropdown -->
+              <BNavItemDropdown right no-caret class="position-relative ml-3">
+                <template #button-content>
+                  <i class="bi bi-bell" aria-hidden="true" />
+                  <BBadge
+                    v-if="access_requests?.length"
+                    variant="danger"
+                    class="rounded-pill position-absolute top-0 start-100 translate-middle"
+                    style="top: 0; right: 0"
+                  >
+                    {{ access_requests.length }}
+                  </BBadge>
+                </template>
+                <BDropdownItem
+                  v-for="(access_request, index) in access_requests"
+                  :key="index"
+                  :href="`/projects/${access_request.project.id}#members`"
+                >
+                  {{
+                    `${access_request.user.name} has requested access to project ${access_request.project.name}`
+                  }}
+                </BDropdownItem>
+              </BNavItemDropdown>
+              <BNavItemDropdown right>
+                <template #button-content>
+                  <i class="bi bi-person-circle" aria-hidden="true" />
+                </template>
+                <BDropdownItem :href="profile_path">
+                  <i class="bi bi-person-gear me-1" />
+                  Account Settings
+                </BDropdownItem>
+                <BDropdownItem v-if="users_path" href="/admin">
+                  <i class="bi bi-gear me-1" />
+                  Admin Panel
+                </BDropdownItem>
+                <BDropdownDivider v-if="users_path" />
+                <BDropdownItem :href="sign_out_path">
+                  <i class="bi bi-box-arrow-right me-1" />
+                  Sign Out
+                </BDropdownItem>
+              </BNavItemDropdown>
+            </BNavbarNav>
+          </div>
+        </BCollapse>
+      </div>
+    </BNavbar>
+    <BAlert
       dismissible
       fade
-      :show="updateAvailable"
+      :model-value="updateAvailable"
       class="text-center"
-      @dismissed="updateAvailable = false"
+      @update:model-value="dismissUpdate"
     >
       New version: Vulcan {{ latestRelease }} is now available!!
-    </b-alert>
+    </BAlert>
   </div>
 </template>
-
-<script>
-import semver from "semver";
-import NavbarItem from "./NavbarItem.vue";
-import SrgIdSearch from "./SrgIdSearch.vue";
-import { version } from "../../../../package.json";
-
-export default {
-  name: "Navbar",
-  components: { NavbarItem, SrgIdSearch },
-  props: {
-    navigation: {
-      type: Array,
-      required: true,
-    },
-    signed_in: {
-      type: Boolean,
-      required: true,
-    },
-    users_path: {
-      type: String,
-      required: false,
-    },
-    profile_path: {
-      type: String,
-      required: false,
-    },
-    sign_out_path: {
-      type: String,
-      required: false,
-    },
-    access_requests: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-  },
-  data() {
-    return {
-      latestRelease: "",
-      currentVersion: version,
-      updateAvailable: false,
-    };
-  },
-  mounted() {
-    this.fetchLatestRelease();
-  },
-  methods: {
-    fetchLatestRelease() {
-      const owner = "mitre";
-      const repo = "vulcan";
-      // Make the API request to fetch the latest release
-      fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`)
-        .then((response) => response.json())
-        .then((data) => {
-          this.latestRelease = data.tag_name.substring(1);
-          this.updateAvailable = this.checkUpdateAvailable();
-        })
-        .catch((error) => {
-          this.latestRelease = "";
-        });
-    },
-    checkUpdateAvailable() {
-      if (!this.latestRelease || this.latestRelease.trim() === "") return false;
-
-      // Use semver.gt to check if latest is greater than current
-      // Clean versions by removing 'v' prefix if present
-      const latest = this.latestRelease.replace(/^v/, "");
-      const current = this.currentVersion.replace(/^v/, "");
-
-      try {
-        return semver.gt(latest, current);
-      } catch (error) {
-        // Silently handle version comparison errors - likely malformed version strings
-        // In this case, don't show the update banner
-        return false;
-      }
-    },
-  },
-};
-</script>
 
 <style scoped>
 #heading {
@@ -163,5 +188,27 @@ export default {
 }
 .right-container {
   gap: 32px;
+}
+.color-mode-toggle {
+  cursor: pointer;
+}
+.color-mode-toggle :deep(.nav-link) {
+  padding: 0.5rem 0.75rem;
+}
+.color-mode-toggle i {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+.color-mode-toggle:hover i {
+  transform: rotate(15deg);
+}
+/* Search button keyboard hint */
+.btn kbd {
+  padding: 0.125rem 0.25rem;
+  font-size: 0.625rem;
+  font-family: var(--bs-font-monospace);
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 </style>

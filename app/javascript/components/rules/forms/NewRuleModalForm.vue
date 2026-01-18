@@ -1,18 +1,8 @@
-<template>
-  <div>
-    <b-modal :id="`${idPrefix}-rule-modal`" ref="modal" :title="title" centered @ok="handleSubmit">
-      <form ref="form" method="post">
-        <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
-        <div v-if="forDuplicate">Clone control {{ selectedRuleText }}?</div>
-        <div v-else>Create a new control in this project?</div>
-      </form>
-    </b-modal>
-  </div>
-</template>
 <script>
-import FormMixinVue from "../../../mixins/FormMixin.vue";
+import FormMixinVue from '../../../mixins/FormMixin.vue'
+
 export default {
-  name: "NewRuleModalForm",
+  name: 'NewRuleModalForm',
   mixins: [FormMixinVue],
   props: {
     idPrefix: {
@@ -37,16 +27,33 @@ export default {
     },
   },
   methods: {
-    handleSubmit: function () {
+    handleSubmit() {
       this.$root.$emit(
-        "create:rule",
+        'create:rule',
         { duplicate: this.forDuplicate, id: this.selectedRuleId },
         (response) => {
-          this.$emit("ruleSelected", response.data.data);
+          this.$emit('ruleSelected', response.data.data)
         },
-      );
+      )
     },
   },
-};
+}
 </script>
+
+<template>
+  <div>
+    <b-modal :id="`${idPrefix}-rule-modal`" ref="modal" :title="title" centered @ok="handleSubmit">
+      <form ref="form" method="post">
+        <!-- Hide the rule_id (SV-#) input when duplicating the control and show a confirmation -->
+        <div v-if="forDuplicate">
+          Clone control {{ selectedRuleText }}?
+        </div>
+        <div v-else>
+          Create a new control in this project?
+        </div>
+      </form>
+    </b-modal>
+  </div>
+</template>
+
 <style scoped></style>

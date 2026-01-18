@@ -3,29 +3,29 @@
 export default {
   methods: {
     roundToNearestMinute(dateString) {
-      const date = new Date(dateString);
-      date.setSeconds(0);
-      date.setMilliseconds(0);
-      return date.toISOString();
+      const date = new Date(dateString)
+      date.setSeconds(0)
+      date.setMilliseconds(0)
+      return date.toISOString()
     },
     groupHistories(histories) {
-      const grouped = {};
+      const grouped = {}
 
       histories.forEach((history) => {
-        const roundedCreatedAt = this.roundToNearestMinute(history.created_at);
-        const key = `${history.name}-${roundedCreatedAt}-${history.comment}`;
+        const roundedCreatedAt = this.roundToNearestMinute(history.created_at)
+        const key = `${history.name}-${roundedCreatedAt}-${history.comment}`
         if (!grouped[key]) {
           grouped[key] = {
             id: key,
-            history: history,
+            history,
             histories: [],
-          };
+          }
         }
-        grouped[key].histories.push(history);
-      });
+        grouped[key].histories.push(history)
+      })
 
-      return Object.values(grouped);
+      return Object.values(grouped)
     },
   },
-};
+}
 </script>

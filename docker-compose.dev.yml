@@ -1,39 +1,20 @@
 services:
   db:
-    image: postgres:12-alpine
+    image: postgres:16-alpine
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: vulcan_vue_development
-      # Additional databases (vulcan_vue_test) will be created by Rails setup
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
     volumes:
       - vulcan_dev_dbdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
-  # Optional: Add web service for development containers
-  # Uncomment if you want to run the full app in Docker for development
-  # web:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile  # Uses the regular Dockerfile for dev
-  #   environment:
-  #     DATABASE_URL: postgres://postgres:postgres@db/vulcan_vue_development
-  #     RAILS_ENV: development
-  #     NODE_ENV: development
-  #   volumes:
-  #     - .:/app  # Mount source code for live reloading
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   command: foreman start -f Procfile.dev
 
 volumes:
   vulcan_dev_dbdata:

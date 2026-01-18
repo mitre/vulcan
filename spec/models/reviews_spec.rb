@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Review, type: :model do
+RSpec.describe Review do
   before do
     srg_xml = file_fixture('U_Web_Server_V2R3_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
