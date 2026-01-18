@@ -29,8 +29,8 @@ export { useCommandPalette } from './useCommandPalette'
 export { useComponents } from './useComponents'
 // Confirmation modal composable (programmatic dialogs)
 export { useConfirmModal } from './useConfirmModal'
-export { useConsentBanner } from './useConsentBanner'
 export type { ConfirmOptions } from './useConfirmModal'
+export { useConsentBanner } from './useConsentBanner'
 // Rails integration composables
 export { useCsrfToken } from './useCsrfToken'
 export { formatDate, formatDateTime, formatRelative, useDateTime } from './useDateTime'

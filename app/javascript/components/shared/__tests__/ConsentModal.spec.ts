@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { marked } from 'marked'
+import { beforeEach, describe, expect, it } from 'vitest'
 import ConsentModal from '../ConsentModal.vue'
 
-describe('ConsentModal', () => {
+describe('consentModal', () => {
   const defaultProps = {
     show: true,
     title: 'Terms of Use',
