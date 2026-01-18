@@ -84,9 +84,9 @@ See [Configuration docs](docs/getting-started/configuration.md#configure-app-ban
 | `VULCAN_CONSENT_BANNER_VERSION` | Version tracking number | `1` | `2` |
 | `VULCAN_CONSENT_BANNER_TITLE` | Modal title text | `Terms of Use` | `System Access Warning` |
 | `VULCAN_CONSENT_BANNER_TITLE_ALIGN` | Title alignment | `center` | `left`, `right` |
-| `VULCAN_CONSENT_BANNER_CONTENT` | Custom markdown content | See config | Markdown string with `\n` |
+| `VULCAN_CONSENT_BANNER_CONTENT` | Custom markdown content | See config | Shell: `"text\n\nmore"` / Container: multiline YAML |
 
-See [Configuration docs](docs/getting-started/configuration.md#configure-consent-banner) for details.
+**Note**: For shell/systemd use `\n` escaping. For Kubernetes/Docker Compose use native YAML multiline (`|`). See [Configuration docs](docs/getting-started/configuration.md#configure-consent-banner) for deployment examples.
 
 ### Footer Legal Text
 

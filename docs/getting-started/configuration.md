@@ -101,6 +101,116 @@ VULCAN_CONSENT_BANNER_TITLE_ALIGN=left
 VULCAN_CONSENT_BANNER_CONTENT="## WARNING\n\nYou are accessing a **U.S. Government** information system.\n\n**Unauthorized use may result in criminal prosecution.**"
 ```
 
+### 12-Factor Configuration Pattern
+
+Vulcan follows 12-factor app principles for consent banner content:
+
+**Default (config file)**: Readable default text in `config/vulcan.default.yml` for RPM/package deployments
+```yaml
+banner_consent:
+  content: |
+    By accessing this system, you acknowledge and agree to the following:
+
+    - Your use of this system may be monitored...
+```
+
+**Override (ENV variable)**: `VULCAN_CONSENT_BANNER_CONTENT` takes precedence, checked at runtime in controller layer
+
+This pattern supports:
+- ✅ **Container/Kubernetes**: Use ConfigMaps/Secrets for multiline text
+- ✅ **RPM/Package installs**: Use readable defaults or edit config directly
+- ✅ **Docker Compose**: Use YAML multiline strings
+- ✅ **Shell/systemd**: Use `\n` escaping for single-line ENV vars
+
+### Deployment Examples
+
+#### Kubernetes/Helm (ConfigMap)
+
+```yaml
+# values.yaml or configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vulcan-config
+data:
+  VULCAN_CONSENT_BANNER_ENABLED: "true"
+  VULCAN_CONSENT_BANNER_VERSION: "1"
+  VULCAN_CONSENT_BANNER_TITLE: "Terms of Service"
+  VULCAN_CONSENT_BANNER_TITLE_ALIGN: "center"
+  VULCAN_CONSENT_BANNER_CONTENT: |
+    By accessing this system, you acknowledge and agree to the following:
+
+    - Your use may be monitored for security purposes
+    - Use only for authorized and lawful purposes
+    - Do not attempt unauthorized access
+    - Protect your credentials
+
+    If you do not agree, disconnect now.
+```
+
+#### Docker Compose
+
+```yaml
+# docker-compose.yml
+services:
+  vulcan:
+    image: vulcan:latest
+    environment:
+      VULCAN_CONSENT_BANNER_ENABLED: "true"
+      VULCAN_CONSENT_BANNER_VERSION: "1"
+      VULCAN_CONSENT_BANNER_TITLE: "Acceptable Use Policy"
+      VULCAN_CONSENT_BANNER_CONTENT: |
+        ## System Access Policy
+
+        By using this system, you agree to:
+
+        - Comply with organizational security policies
+        - Use resources only for business purposes
+        - Report any security incidents immediately
+```
+
+#### Shell / .env File
+
+```bash
+# .env or /etc/vulcan/vulcan.env
+export VULCAN_CONSENT_BANNER_ENABLED=true
+export VULCAN_CONSENT_BANNER_VERSION=1
+export VULCAN_CONSENT_BANNER_TITLE="Terms of Use"
+export VULCAN_CONSENT_BANNER_CONTENT="By accessing this system:\n\n- You consent to monitoring\n- Authorized use only\n- Report security issues"
+```
+
+#### Systemd Service
+
+```ini
+# /etc/systemd/system/vulcan.service
+[Service]
+Environment="VULCAN_CONSENT_BANNER_ENABLED=true"
+Environment="VULCAN_CONSENT_BANNER_VERSION=1"
+Environment="VULCAN_CONSENT_BANNER_CONTENT=By accessing this system:\n\n- Monitoring may occur\n- Authorized use only"
+```
+
+#### RPM/Package Install (No ENV Override)
+
+For traditional package installs, edit the config file directly:
+
+```bash
+# Edit /opt/vulcan/config/vulcan.default.yml
+sudo vim /opt/vulcan/config/vulcan.default.yml
+
+# Update the banner_consent section
+banner_consent:
+  enabled: true
+  version: 1
+  title: "Company Policy"
+  content: |
+    Your custom content here...
+
+# Restart service to reload config
+sudo systemctl restart vulcan
+```
+
+**Note**: Vulcan uses `Settingslogic` which caches config at startup - restart the service after config file changes.
+
 ### Features
 
 - Blocks access until acknowledged (no close button, no escape key, no backdrop dismiss)
