@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useConsentBanner } from '../useConsentBanner'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSettingsStore } from '@/stores/settings.store'
+import { useConsentBanner } from '../useConsentBanner'
 
 // Mock localStorage
 const localStorageMock = (() => {

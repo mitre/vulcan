@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { marked } from 'marked'
 import {
   DialogClose,
   DialogContent,
@@ -11,6 +10,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from 'reka-ui'
+import { computed } from 'vue'
 
 const props = defineProps<{
   show: boolean
