@@ -1,0 +1,270 @@
+# Vulcan Task Runner
+# Install: https://taskfile.dev/installation/
+# Usage: task <command>
+
+version: '3'
+
+vars:
+  CLI_NAME: vulcan
+  CLI_DIR: cli
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+  BUILD_TIME:
+    sh: date -u '+%Y-%m-%d_%H:%M:%S'
+
+tasks:
+  # Default task
+  default:
+    cmds:
+      - task --list
+
+  # ============================================================================
+  # Setup & Installation
+  # ============================================================================
+
+  setup:
+    desc: Run interactive setup wizard
+    cmds:
+      - task: cli:build
+      - ./bin/vulcan setup {{.CLI_ARGS}}
+
+  setup:dev:
+    desc: Quick development setup
+    cmds:
+      - task: cli:build
+      - ./bin/vulcan setup dev
+
+  setup:prod:
+    desc: Production setup wizard
+    cmds:
+      - task: cli:build
+      - ./bin/vulcan setup production
+
+  # ============================================================================
+  # Development
+  # ============================================================================
+
+  dev:
+    desc: Start development server
+    cmds:
+      - foreman start -f Procfile.dev
+
+  start:
+    desc: Start Vulcan (dev or prod based on environment)
+    cmds:
+      - ./bin/vulcan start {{.CLI_ARGS}}
+
+  stop:
+    desc: Stop all services
+    cmds:
+      - ./bin/vulcan stop {{.CLI_ARGS}}
+
+  status:
+    desc: Show service status
+    cmds:
+      - ./bin/vulcan status
+
+  logs:
+    desc: View logs
+    cmds:
+      - ./bin/vulcan logs {{.CLI_ARGS}}
+
+  # ============================================================================
+  # Testing
+  # ============================================================================
+
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test:frontend
+      - task: test:backend
+
+  test:frontend:
+    desc: Run frontend tests (Vitest)
+    cmds:
+      - pnpm vitest run
+
+  test:backend:
+    desc: Run backend tests (RSpec)
+    cmds:
+      - bundle exec parallel_rspec spec/
+
+  test:watch:
+    desc: Run frontend tests in watch mode
+    cmds:
+      - pnpm vitest
+
+  # ============================================================================
+  # Linting & Quality
+  # ============================================================================
+
+  lint:
+    desc: Run all linters
+    cmds:
+      - task: lint:ruby
+      - task: lint:js
+
+  lint:ruby:
+    desc: Run RuboCop
+    cmds:
+      - bundle exec rubocop --autocorrect-all
+
+  lint:js:
+    desc: Run ESLint
+    cmds:
+      - pnpm lint
+
+  security:
+    desc: Run security scans
+    cmds:
+      - bundle exec brakeman
+      - bundle exec bundler-audit check --update
+
+  # ============================================================================
+  # Database
+  # ============================================================================
+
+  db:migrate:
+    desc: Run database migrations
+    cmds:
+      - bin/rails db:migrate
+
+  db:seed:
+    desc: Seed the database
+    cmds:
+      - bin/rails db:seed
+
+  db:reset:
+    desc: Reset database (drop, create, migrate, seed)
+    cmds:
+      - bin/rails db:reset
+
+  db:console:
+    desc: Open database console
+    cmds:
+      - ./bin/vulcan db console
+
+  # ============================================================================
+  # Build
+  # ============================================================================
+
+  build:
+    desc: Build all (frontend + CLI)
+    cmds:
+      - task: build:frontend
+      - task: cli:build
+
+  build:frontend:
+    desc: Build frontend assets
+    cmds:
+      - pnpm build
+
+  build:docker:
+    desc: Build Docker image
+    cmds:
+      - ./bin/vulcan build {{.CLI_ARGS}}
+
+  build:docker:multiarch:
+    desc: Build multi-arch Docker images (amd64 + arm64)
+    cmds:
+      - ./bin/vulcan build --platform linux/amd64,linux/arm64 {{.CLI_ARGS}}
+
+  build:docker:push:
+    desc: Build and push to registry
+    cmds:
+      - ./bin/vulcan build --push {{.CLI_ARGS}}
+
+  # ============================================================================
+  # CLI
+  # ============================================================================
+
+  cli:build:
+    desc: Build the Vulcan CLI
+    dir: "{{.CLI_DIR}}"
+    cmds:
+      - |
+        go build -ldflags="-s -w \
+          -X 'main.Version={{.VERSION}}' \
+          -X 'main.Commit={{.COMMIT}}' \
+          -X 'main.BuildTime={{.BUILD_TIME}}'" \
+          -o ../bin/vulcan .
+    sources:
+      - "{{.CLI_DIR}}/**/*.go"
+    generates:
+      - bin/vulcan
+
+  cli:install:
+    desc: Install CLI globally
+    dir: "{{.CLI_DIR}}"
+    cmds:
+      - go install .
+
+  cli:dev:
+    desc: Run CLI in development (go run)
+    dir: "{{.CLI_DIR}}"
+    cmds:
+      - go run . {{.CLI_ARGS}}
+
+  # ============================================================================
+  # Docker
+  # ============================================================================
+
+  docker:up:
+    desc: Start production Docker stack
+    cmds:
+      - docker compose up -d
+
+  docker:down:
+    desc: Stop production Docker stack
+    cmds:
+      - docker compose down
+
+  docker:dev:up:
+    desc: Start dev database
+    cmds:
+      - docker compose -f docker-compose.dev.yml up -d
+
+  docker:dev:down:
+    desc: Stop dev database
+    cmds:
+      - docker compose -f docker-compose.dev.yml down
+
+  docker:logs:
+    desc: View Docker logs
+    cmds:
+      - docker compose logs -f {{.CLI_ARGS}}
+
+  # ============================================================================
+  # Utilities
+  # ============================================================================
+
+  console:
+    desc: Open Rails console
+    cmds:
+      - bin/rails console
+
+  routes:
+    desc: Show Rails routes
+    cmds:
+      - bin/rails routes {{.CLI_ARGS}}
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf bin/vulcan
+      - rm -rf tmp/cache
+      - rm -rf node_modules/.cache
+
+  deps:
+    desc: Install all dependencies
+    cmds:
+      - bundle install
+      - pnpm install
+
+  update:
+    desc: Update dependencies
+    cmds:
+      - bundle update
+      - pnpm update
