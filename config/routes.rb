@@ -24,7 +24,8 @@ Rails.application.routes.draw do
     get 'search/global', to: 'search#global'
 
     # Public settings (no auth required)
-    get 'settings/consent_banner', to: 'settings#consent_banner'
+    get 'settings', to: 'settings#index'
+    get 'settings/consent_banner', to: 'settings#consent_banner' # Legacy endpoint
 
     # Project member management
     resources :projects, only: [] do

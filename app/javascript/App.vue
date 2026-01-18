@@ -65,6 +65,8 @@ onMounted(async () => {
       <ConsentModal
         v-if="consentBanner"
         :show="!hasAcknowledged && consentBanner.enabled"
+        :title="consentBanner.title"
+        :title-align="consentBanner.titleAlign"
         :content="consentBanner.content"
         @acknowledge="acknowledge"
       />

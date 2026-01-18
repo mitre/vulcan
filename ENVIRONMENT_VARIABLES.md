@@ -67,114 +67,26 @@ These are automatically derived from the primitives above. Only override when ne
 
 ### App Banner
 
-Optional colored banner at top and bottom of page. Useful for environment indicators, classification levels, or public release notices.
-
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `VULCAN_BANNER_ENABLED` | Show/hide banner | `false` | `true` |
-| `VULCAN_BANNER_TEXT` | Banner text | Empty | `DEVELOPMENT`, `PUBLIC RELEASE`, `UNCLASSIFIED` |
-| `VULCAN_BANNER_BACKGROUND_COLOR` | Background color (see below) | `success` | `warning`, `#FF5733`, `var(--bs-danger)` |
-| `VULCAN_BANNER_TEXT_COLOR` | Text color (see below) | `white` | `dark`, `#000000`, `var(--bs-white)` |
+| `VULCAN_BANNER_TEXT` | Banner text | Empty | `DEVELOPMENT`, `UNCLASSIFIED` |
+| `VULCAN_BANNER_BACKGROUND_COLOR` | Background color | `success` | `warning`, `#FF5733` |
+| `VULCAN_BANNER_TEXT_COLOR` | Text color | `white` | `dark`, `#000000` |
 
-**Color Formats Supported:**
-- **Bootstrap color names**: `primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`, `white`
-- **CSS variables**: `var(--bs-success)`, `var(--custom-color)`
-- **Hex codes**: `#198754`, `#ffffff`
+See [Configuration docs](docs/getting-started/configuration.md#configure-app-banner) for details.
 
-**Common Use Cases:**
-```bash
-# Development environment (orange banner)
-VULCAN_BANNER_ENABLED=true
-VULCAN_BANNER_TEXT=DEVELOPMENT
-VULCAN_BANNER_BACKGROUND_COLOR=warning
-VULCAN_BANNER_TEXT_COLOR=dark
-
-# Staging environment (blue banner)
-VULCAN_BANNER_ENABLED=true
-VULCAN_BANNER_TEXT=STAGING
-VULCAN_BANNER_BACKGROUND_COLOR=info
-VULCAN_BANNER_TEXT_COLOR=white
-
-# Public release (green banner)
-VULCAN_BANNER_ENABLED=true
-VULCAN_BANNER_TEXT=PUBLIC RELEASE
-VULCAN_BANNER_BACKGROUND_COLOR=success
-VULCAN_BANNER_TEXT_COLOR=white
-
-# Classification marking (custom colors)
-VULCAN_BANNER_ENABLED=true
-VULCAN_BANNER_TEXT=UNCLASSIFIED
-VULCAN_BANNER_BACKGROUND_COLOR=#198754
-VULCAN_BANNER_TEXT_COLOR=#ffffff
-```
-
-### Consent Banner (Modal)
-
-Modal shown before authentication requiring user acknowledgment. Blocks all access until user clicks "I Agree". Useful for terms of use, DoD warning banners, or acceptable use policies.
+### Consent Banner
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `VULCAN_CONSENT_BANNER_ENABLED` | Show/hide consent modal | `false` | `true` |
-| `VULCAN_CONSENT_BANNER_VERSION` | Version number (increment to re-prompt all users) | `1` | `2` |
-| `VULCAN_CONSENT_BANNER_CONTENT` | Custom markdown content (optional) | See default below | See examples below |
+| `VULCAN_CONSENT_BANNER_VERSION` | Version tracking number | `1` | `2` |
+| `VULCAN_CONSENT_BANNER_TITLE` | Modal title text | `Terms of Use` | `System Access Warning` |
+| `VULCAN_CONSENT_BANNER_TITLE_ALIGN` | Title alignment | `center` | `left`, `right` |
+| `VULCAN_CONSENT_BANNER_CONTENT` | Custom markdown content | See config | Markdown string with `\n` |
 
-**Features:**
-- **Blocks access** until acknowledged (backdrop="static", no close button)
-- **localStorage tracking** per version (incrementing version re-prompts all users)
-- **Markdown support** with XSS protection (DOMPurify sanitization)
-- **Blurred background** overlay (8px backdrop blur)
-
-**Default Content:**
-```markdown
-## Terms of Use
-
-By accessing this system, you acknowledge and agree to the following:
-
-- Your use of this system may be monitored and recorded for security and auditing purposes
-- You will use this system only for authorized and lawful purposes
-- You will not attempt to gain unauthorized access to any resources
-- You will protect any credentials provided to you
-
-If you do not agree to these terms, please disconnect now.
-```
-
-**Example Configurations:**
-
-```bash
-# Enable with default content
-VULCAN_CONSENT_BANNER_ENABLED=true
-VULCAN_CONSENT_BANNER_VERSION=1
-
-# DoD Warning Banner (custom content)
-VULCAN_CONSENT_BANNER_ENABLED=true
-VULCAN_CONSENT_BANNER_VERSION=1
-VULCAN_CONSENT_BANNER_CONTENT="## System Access Warning\n\nYou are accessing a U.S. Government information system...\n\n**Unauthorized use may result in criminal prosecution.**"
-
-# Re-prompt all users (increment version)
-VULCAN_CONSENT_BANNER_ENABLED=true
-VULCAN_CONSENT_BANNER_VERSION=2  # Users who acknowledged v1 will see modal again
-```
-
-**Markdown Formatting:**
-```markdown
-## Heading 2
-### Heading 3
-
-**Bold text** and *italic text*
-
-- Bulleted list item 1
-- Bulleted list item 2
-
-1. Numbered list item 1
-2. Numbered list item 2
-
-`inline code`
-```
-
-**Version Management:**
-- Users who acknowledge version 1 won't see modal again (stored in localStorage: `vulcan-consent-v1`)
-- Incrementing `VULCAN_CONSENT_BANNER_VERSION=2` shows modal to all users again (checks for `vulcan-consent-v2`)
-- Each user's acknowledgment is tracked per version in their browser
+See [Configuration docs](docs/getting-started/configuration.md#configure-consent-banner) for details.
 
 ### Footer Legal Text
 

@@ -7,18 +7,20 @@ import ConsentModal from '../ConsentModal.vue'
 describe('ConsentModal', () => {
   const defaultProps = {
     show: true,
+    title: 'Terms of Use',
+    titleAlign: 'center' as const,
     content: '## Terms\n\nTest content',
   }
 
   beforeEach(() => {
-    // Note: We use shallowMount to avoid Bootstrap modal teleport issues in tests
+    // Note: We use shallowMount to avoid Reka UI Dialog teleport issues in tests
   })
 
   describe('markdown rendering', () => {
     it('converts markdown to HTML', () => {
       const content = '## Header\n\n**Bold** text'
       const wrapper = shallowMount(ConsentModal, {
-        props: { show: true, content },
+        props: { ...defaultProps, content },
       })
 
       const vm = wrapper.vm as any
@@ -33,7 +35,7 @@ describe('ConsentModal', () => {
     it('sanitizes dangerous HTML', () => {
       const content = '## Test\n\n<script>alert("xss")</script>'
       const wrapper = shallowMount(ConsentModal, {
-        props: { show: true, content },
+        props: { ...defaultProps, content },
       })
 
       const vm = wrapper.vm as any
@@ -46,7 +48,7 @@ describe('ConsentModal', () => {
     it('preserves safe markdown formatting', () => {
       const content = '- Item 1\n- Item 2\n\n**Bold** and *italic*'
       const wrapper = shallowMount(ConsentModal, {
-        props: { show: true, content },
+        props: { ...defaultProps, content },
       })
 
       const vm = wrapper.vm as any
@@ -79,10 +81,26 @@ describe('ConsentModal', () => {
       expect(wrapper.props('show')).toBe(false)
     })
 
+    it('receives title prop', () => {
+      const wrapper = shallowMount(ConsentModal, {
+        props: { ...defaultProps, title: 'Custom Title' },
+      })
+
+      expect(wrapper.props('title')).toBe('Custom Title')
+    })
+
+    it('receives titleAlign prop', () => {
+      const wrapper = shallowMount(ConsentModal, {
+        props: { ...defaultProps, titleAlign: 'left' },
+      })
+
+      expect(wrapper.props('titleAlign')).toBe('left')
+    })
+
     it('receives content prop', () => {
       const content = '## Custom content'
       const wrapper = shallowMount(ConsentModal, {
-        props: { show: true, content },
+        props: { ...defaultProps, content },
       })
 
       expect(wrapper.props('content')).toBe(content)

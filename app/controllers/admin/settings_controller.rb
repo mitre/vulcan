@@ -55,11 +55,19 @@ module Admin
           url: Settings.app_url,
           contact_email: Settings.contact_email
         },
-        banner: {
-          enabled: Settings.banner.enabled,
-          text: Settings.banner.text,
-          background_color: Settings.banner.background_color,
-          text_color: Settings.banner.text_color
+        banners: {
+          app: {
+            enabled: Settings.banner_app.enabled,
+            text: Settings.banner_app.text,
+            background_color: Settings.banner_app.background_color,
+            text_color: Settings.banner_app.text_color
+          },
+          consent: {
+            enabled: Settings.banner_consent.enabled,
+            version: Settings.banner_consent.version,
+            title: Settings.banner_consent.title,
+            title_align: Settings.banner_consent.title_align
+          }
         }
       }
     end

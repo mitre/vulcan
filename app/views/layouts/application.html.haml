@@ -26,10 +26,10 @@
         currentUser: #{current_user.to_json},
         csrfToken: '#{form_authenticity_token}',
         banner: {
-          enabled: #{Settings.banner.enabled.to_json},
-          text: #{Settings.banner.text.to_json},
-          backgroundColor: #{Settings.banner.background_color.to_json},
-          textColor: #{Settings.banner.text_color.to_json}
+          enabled: #{Settings.banner_app.enabled.to_json},
+          text: #{Settings.banner_app.text.to_json},
+          backgroundColor: #{Settings.banner_app.background_color.to_json},
+          textColor: #{Settings.banner_app.text_color.to_json}
         },
         // Auth configuration for login page
         localLoginEnabled: #{Settings.local_login.enabled.to_json},

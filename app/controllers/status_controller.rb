@@ -9,6 +9,7 @@ class StatusController < ApplicationController
       application: application_info,
       health: health_status,
       setup: setup_status,
+      ui: ui_status,
       system: system_status
     }
   end
@@ -85,5 +86,17 @@ class StatusController < ApplicationController
     providers << 'ldap' if Settings.ldap&.enabled
     providers << 'oidc' if Settings.oidc&.enabled
     providers
+  end
+
+  def ui_status
+    {
+      bannerApp: {
+        enabled: Settings.banner_app&.enabled || false
+      },
+      bannerConsent: {
+        enabled: Settings.banner_consent&.enabled || false,
+        version: Settings.banner_consent&.version || 1
+      }
+    }
   end
 end

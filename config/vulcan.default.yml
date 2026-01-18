@@ -20,19 +20,19 @@ defaults: &defaults
   # Development/Docker: derived from HOST:PORT automatically
   app_url: <%= ENV['VULCAN_APP_URL'] || "#{ENV.fetch('VULCAN_SCHEME', 'http')}://#{ENV.fetch('HOST', 'localhost')}:#{ENV.fetch('PORT', '3000')}" %>
   # App banner (colored bar at top/bottom of page)
-  banner:
+  banner_app:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_BANNER_ENABLED']) || false %>
     text: <%= ENV['VULCAN_BANNER_TEXT'] || '' %>
     background_color: <%= ENV['VULCAN_BANNER_BACKGROUND_COLOR'] || '#198754' %>
     text_color: <%= ENV['VULCAN_BANNER_TEXT_COLOR'] || '#ffffff' %>
   # Consent banner (modal shown before authentication)
   # Set VULCAN_CONSENT_BANNER_CONTENT to customize the banner text (markdown supported)
-  consent_banner:
+  banner_consent:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_CONSENT_BANNER_ENABLED']) || false %>
     version: <%= ENV['VULCAN_CONSENT_BANNER_VERSION'] || 1 %>
+    title: <%= ENV['VULCAN_CONSENT_BANNER_TITLE'] || 'Terms of Use' %>
+    title_align: <%= ENV['VULCAN_CONSENT_BANNER_TITLE_ALIGN'] || 'center' %>
     content: |
-      ## Terms of Use
-
       By accessing this system, you acknowledge and agree to the following:
 
       - Your use of this system may be monitored and recorded for security and auditing purposes
