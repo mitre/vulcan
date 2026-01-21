@@ -64,9 +64,9 @@ RUN apt-get update -qq && \
 
 # Install Node.js and Yarn
 ARG NODE_VERSION=22
-RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \
-    npm install -g yarn && \
+    corepack enable && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 # Install application gems
@@ -88,8 +88,10 @@ RUN bundle exec bootsnap precompile app/ lib/
 # Precompiling assets for production
 RUN SECRET_KEY_BASE=dummyvalue ./bin/rails assets:precompile
 
-# Remove node_modules after build to save space
-RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec
+# Remove node_modules and unnecessary files after build to save space
+# Note: Keep app/assets/builds as it contains compiled JS/CSS needed at runtime
+RUN rm -rf node_modules tmp/cache vendor/assets spec \
+    && rm -rf app/assets/images app/assets/stylesheets
 
 # Final stage for app image
 FROM base
