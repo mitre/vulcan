@@ -16,6 +16,26 @@ abort('The Rails environment is running in production mode!') if Rails.env.produ
 require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
 
+# Check that JavaScript assets are built before running tests
+# This prevents confusing failures where views can't find JS files
+assets_dir = Rails.root.join('app/assets/builds')
+unless assets_dir.exist? && assets_dir.glob('*.js').any?
+  abort <<~ERROR
+    \e[31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ERROR: JavaScript assets not built!
+
+    Tests require compiled JavaScript assets. Please run:
+
+        yarn install --frozen-lockfile && yarn build
+
+    Or run the full setup:
+
+        bin/setup --skip-server
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m
+  ERROR
+end
+
 # Rails 8 lazy loading fix - ensure Devise routes are loaded for tests
 Rails.application.reload_routes!
 
