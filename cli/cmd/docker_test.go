@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -94,4 +96,68 @@ func TestDetectRuntime(t *testing.T) {
 	}
 
 	t.Logf("Detected runtime: %s", runtime)
+}
+
+func TestGetDockerSocketPaths(t *testing.T) {
+	paths := getDockerSocketPaths()
+
+	t.Logf("Found %d potential socket paths", len(paths))
+	for i, p := range paths {
+		t.Logf("  [%d] %s", i, p)
+	}
+
+	// Should find at least one socket on a system with Docker/OrbStack/etc
+	if len(paths) == 0 {
+		t.Log("No Docker sockets found - this is expected if no container runtime is installed")
+	}
+
+	// All paths should be valid unix socket URIs
+	for _, p := range paths {
+		if !strings.HasPrefix(p, "unix://") {
+			t.Errorf("Socket path should have unix:// prefix: %s", p)
+		}
+	}
+}
+
+func TestGetDockerSocketPathsWithEnvOverride(t *testing.T) {
+	// Save original DOCKER_HOST
+	originalHost := os.Getenv("DOCKER_HOST")
+	defer os.Setenv("DOCKER_HOST", originalHost)
+
+	// Set custom DOCKER_HOST
+	testHost := "unix:///tmp/test-docker.sock"
+	os.Setenv("DOCKER_HOST", testHost)
+
+	paths := getDockerSocketPaths()
+
+	if len(paths) == 0 {
+		t.Fatal("Expected at least one path when DOCKER_HOST is set")
+	}
+
+	// First path should be the env override
+	if paths[0] != testHost {
+		t.Errorf("First path should be DOCKER_HOST value, got: %s", paths[0])
+	}
+}
+
+func TestNewDockerClientAutoDetect(t *testing.T) {
+	// This tests the auto-detection logic
+	cli, err := NewDockerClient()
+	if err != nil {
+		// Not an error if no Docker runtime available
+		t.Logf("Docker client creation failed (expected if no runtime): %v", err)
+		return
+	}
+	defer cli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	runtime, version, err := cli.GetRuntimeInfo(ctx)
+	if err != nil {
+		t.Errorf("Failed to get runtime info after auto-detect: %v", err)
+		return
+	}
+
+	t.Logf("Auto-detected and connected to: %s v%s", runtime, version)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -30,14 +31,81 @@ type ContainerInfo struct {
 	Created time.Time
 }
 
+// getDockerSocketPaths returns a list of possible Docker socket paths to try.
+// Order matters: environment variable first, then common runtime locations.
+func getDockerSocketPaths() []string {
+	home := os.Getenv("HOME")
+	paths := []string{}
+
+	// If DOCKER_HOST is set, use it first (user override)
+	if dockerHost := os.Getenv("DOCKER_HOST"); dockerHost != "" {
+		paths = append(paths, dockerHost)
+	}
+
+	// Common socket locations (in order of preference)
+	commonSockets := []string{
+		"/var/run/docker.sock",                    // Standard Docker/Linux
+		home + "/.orbstack/run/docker.sock",       // OrbStack
+		home + "/.docker/run/docker.sock",         // Docker Desktop (newer)
+		home + "/.colima/default/docker.sock",     // Colima
+		home + "/.rd/docker.sock",                 // Rancher Desktop
+		"/run/podman/podman.sock",                 // Podman (rootful)
+		home + "/.local/share/containers/podman/machine/podman.sock", // Podman machine
+	}
+
+	for _, sock := range commonSockets {
+		// Check if socket exists before adding
+		if _, err := os.Stat(strings.TrimPrefix(sock, "unix://")); err == nil {
+			if !strings.HasPrefix(sock, "unix://") {
+				sock = "unix://" + sock
+			}
+			paths = append(paths, sock)
+		}
+	}
+
+	return paths
+}
+
 // NewDockerClient creates a new Docker client that auto-detects the runtime.
-// Works on macOS, Linux, and Windows - the SDK handles socket/pipe differences.
+// Tries multiple socket locations to support Docker Desktop, OrbStack, Colima,
+// Rancher Desktop, and Podman on macOS, Linux, and Windows.
 func NewDockerClient() (*DockerClient, error) {
+	socketPaths := getDockerSocketPaths()
+
+	// If we found sockets to try, attempt each one
+	var lastErr error
+	for _, sockPath := range socketPaths {
+		cli, err := client.NewClientWithOpts(
+			client.WithHost(sockPath),
+			client.WithAPIVersionNegotiation(),
+		)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		// Test the connection
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_, err = cli.Ping(ctx)
+		cancel()
+
+		if err == nil {
+			return &DockerClient{cli: cli}, nil
+		}
+
+		cli.Close()
+		lastErr = err
+	}
+
+	// Fallback: try default SDK behavior (reads DOCKER_HOST, uses defaults)
 	cli, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
 	)
 	if err != nil {
+		if lastErr != nil {
+			return nil, fmt.Errorf("failed to create Docker client: %w (also tried: %v)", err, lastErr)
+		}
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
 	}
 
