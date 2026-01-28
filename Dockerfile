@@ -1,78 +1,205 @@
-FROM ruby:3.3.9
+# syntax=docker/dockerfile:1
+# check=error=true
+
+# =============================================================================
+# Vulcan v2.2.x Multi-Stage Dockerfile
+# =============================================================================
+# Supports multiple build targets:
+#   - development: Full dev environment with all dependencies
+#   - production:  Optimized production image (default)
+#
+# Build commands:
+#   docker build -t vulcan:dev --target development .
+#   docker build -t vulcan:prod --target production .
+#
+# Multi-arch support (amd64/arm64):
+#   docker buildx build --platform linux/amd64,linux/arm64 --target production -t vulcan:prod .
+# =============================================================================
+
+# Make sure versions match .ruby-version
+ARG RUBY_VERSION=3.3.9
+ARG NODE_VERSION=22.16.0
+
+# =============================================================================
+# BASE STAGE - Common foundation for all stages
+# =============================================================================
+FROM docker.io/library/ruby:${RUBY_VERSION}-slim AS base
+
+WORKDIR /rails
+
+# Install base packages including jemalloc for better memory management
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      ca-certificates \
+      curl \
+      libjemalloc2 \
+      libpq5 \
+      libvips42 \
+      libyaml-0-2 \
+      postgresql-client && \
+    ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install custom SSL certificates if provided
-# Users can place .crt, .pem, or .cer files in the certs/ directory
-# These will be added to the system certificate store
 COPY certs/ /usr/local/share/ca-certificates/custom/
 WORKDIR /usr/local/share/ca-certificates/custom
-RUN for cert in ./*.pem; do \
-      [ -f "$cert" ] && cp "$cert" "${cert%.pem}.crt" || true; \
+RUN for cert in ./*.pem ./*.cer; do \
+      [ -f "$cert" ] && mv "$cert" "${cert%.*}.crt" || true; \
     done && \
-    for cert in ./*.cer; do \
-      [ -f "$cert" ] && cp "$cert" "${cert%.cer}.crt" || true; \
-    done && \
-    # Check if we have any certificates to install
-    if ls ./*.crt ./*.pem 2>/dev/null | grep -q .; then \
-      echo "Installing custom certificates..." && \
+    if ls ./*.crt 2>/dev/null | grep -q .; then \
       update-ca-certificates; \
-    else \
-      echo "No custom certificates found"; \
-    fi
+    fi && \
+    rm -rf /usr/local/share/ca-certificates/custom/README.md
+WORKDIR /rails
 
-# Reset working directory back to root
-WORKDIR /
+# Common environment for all stages
+ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
+    MALLOC_ARENA_MAX="2" \
+    NODE_EXTRA_CA_CERTS="/etc/ssl/certs/ca-certificates.crt" \
+    BUNDLE_PATH="/usr/local/bundle"
 
-# Set Node to use system certificates for all subsequent commands
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+# =============================================================================
+# BUILD STAGE - Compile gems and assets (for production)
+# =============================================================================
+FROM base AS build
 
-# Install dependencies and Node.js/Yarn (using signed-by instead of deprecated apt-key)
+# Install packages needed to build gems and node modules
 RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
-    # Update certificates again after installing ca-certificates package
-    update-ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-    apt-get update -qq && apt-get install -y build-essential nodejs yarn && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      git \
+      gnupg \
+      libpq-dev \
+      libyaml-dev \
+      pkg-config \
+      zlib1g-dev && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-ENV APP_HOME=/app
-ENV RAILS_ENV=production
-ENV RACK_ENV=production
+# Install Node.js LTS using official binaries
+ARG NODE_VERSION
+ARG TARGETARCH
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
+    rm node.tar.xz && \
+    npm install -g yarn@1.22.22
 
-# Logging configuration
-ENV RAILS_LOG_TO_STDOUT=true
-ENV RAILS_LOG_LEVEL=info
+# Build stage environment - production mode for asset compilation
+# Note: NODE_ENV is NOT set here because yarn skips devDependencies when NODE_ENV=production
+# and we need devDependencies (esbuild, sass-plugin, etc.) to build assets
+ENV RAILS_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_WITHOUT="development:test"
 
-# Asset serving for containerized deployments
-ENV RAILS_SERVE_STATIC_FILES=true
+COPY Gemfile Gemfile.lock ./
+RUN bundle install && \
+    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
+    bundle exec bootsnap precompile --gemfile
 
-# Performance and concurrency settings
-ENV RAILS_MAX_THREADS=5
-ENV WEB_CONCURRENCY=2
+# Install node modules (including dev dependencies needed for asset build)
+COPY package.json yarn.lock esbuild.config.js ./
+RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
 
-# Memory optimization
-ENV MALLOC_ARENA_MAX=2
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
+# Copy application code
+COPY . .
 
-RUN gem install bundler:2.3.27
-COPY Gemfile* $APP_HOME/
-RUN bundle config set --local without 'development test' && \
-    bundle install
+# Precompile bootsnap code for faster boot times
+RUN bundle exec bootsnap precompile app/ lib/
 
-COPY . $APP_HOME
-# Install all dependencies (including dev) for build and build assets
-# Don't set NODE_ENV during the build to ensure all modules are available
-# Then remove dev dependencies after build to reduce image size
-RUN yarn install --frozen-lockfile && \
-    SECRET_KEY_BASE=dummyvalue bundle exec rake assets:precompile && \
-    yarn install --production --ignore-scripts --prefer-offline
+# Precompile Rails assets
+RUN SECRET_KEY_BASE=dummyvalue ./bin/rails assets:precompile
 
-# Now set NODE_ENV for runtime
-ENV NODE_ENV=production
+# Remove dev/test files and node_modules BEFORE copying to production stage
+# This is critical - doing it here reduces the final image size significantly
+RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec test .git
 
-RUN chown -R 1000:2000 /app
-USER 1000
+# =============================================================================
+# DEVELOPMENT STAGE - Full development environment
+# =============================================================================
+FROM base AS development
 
-CMD ["rails","server","-b","0.0.0.0"]
+# Install development packages
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      git \
+      gnupg \
+      libpq-dev \
+      libyaml-dev \
+      pkg-config \
+      zlib1g-dev \
+      vim \
+      less && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Install Node.js and yarn
+ARG NODE_VERSION
+ARG TARGETARCH
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
+    rm node.tar.xz && \
+    npm install -g yarn@1.22.22
+
+# Development environment
+ENV RAILS_ENV="development" \
+    BUNDLE_WITHOUT="" \
+    BUNDLE_DEPLOYMENT="0"
+
+# Install all gems including dev/test
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+# Install node modules
+COPY package.json yarn.lock esbuild.config.js ./
+RUN yarn install --frozen-lockfile
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails .
+
+USER 1000:1000
+
+EXPOSE 3000
+
+# Development server
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
+
+# =============================================================================
+# PRODUCTION STAGE - Optimized for deployment (default)
+# =============================================================================
+FROM base AS production
+
+# Production environment
+ENV RAILS_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_WITHOUT="development:test" \
+    RAILS_LOG_TO_STDOUT="true" \
+    RAILS_SERVE_STATIC_FILES="true"
+
+# Copy built artifacts from build stage
+# Note: cleanup already done in build stage to minimize copy size
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build /rails /rails
+
+# Create non-root user and set ownership
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails db log storage tmp public
+
+USER 1000:1000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/up || exit 1
+
+EXPOSE 3000
+
+# Production server
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

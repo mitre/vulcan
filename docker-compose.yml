@@ -19,7 +19,8 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.production
+      dockerfile: Dockerfile
+      target: production
     environment:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db/vulcan_postgres_production
       RAILS_SERVE_STATIC_FILES: "true"
