@@ -21,6 +21,8 @@ chmod +x setup-docker-secrets.sh
 docker-compose up -d
 ```
 
+> **Note**: For local testing without SSL/reverse proxy, add `RAILS_FORCE_SSL=false` to your `.env` file to prevent redirect loops. For production with SSL termination (nginx, traefik), keep the default `RAILS_FORCE_SSL=true`.
+
 ### Using Docker Run
 
 ```bash
@@ -93,7 +95,11 @@ VULCAN_LDAP_BASE=dc=example,dc=com
 
 ### 3. SSL/TLS Setup
 
-For HTTPS, use a reverse proxy like nginx:
+For HTTPS, use a reverse proxy like nginx. The proxy should set the `X-Forwarded-Proto` header so Rails knows the original request was HTTPS.
+
+> **Important**: Keep `RAILS_FORCE_SSL=true` (default) when using a reverse proxy. Only set `RAILS_FORCE_SSL=false` for local Docker testing without SSL termination.
+
+Example nginx configuration:
 
 ```nginx
 server {

@@ -26,11 +26,13 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = true
+  # Don't blindly assume SSL - the reverse proxy should set X-Forwarded-Proto header.
+  # Setting this to true causes issues when accessing the app directly (e.g., Docker quickstart).
+  config.assume_ssl = false
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  # Secure by default. Set RAILS_FORCE_SSL=false for local Docker testing without SSL.
+  config.force_ssl = ENV.fetch("RAILS_FORCE_SSL", "true").downcase != "false"
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
