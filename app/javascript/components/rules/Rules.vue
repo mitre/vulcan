@@ -111,14 +111,46 @@ export default {
   methods: {
     /**
      * Event handler for @addSatisfied:rule
+     *
+     * Updates relationship arrays locally to preserve unsaved changes.
+     * Previously called refreshRule() which overwrote local changes with server data.
      */
     addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          this.refreshRule(rule_id);
-          this.refreshRule(satisfied_by_rule_id);
+
+          // Update relationships locally instead of full refresh
+          // This preserves any unsaved local changes (status, title, etc.)
+          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+          const satisfiedByIndex = this.reactiveRules.findIndex(
+            (r) => r.id == satisfied_by_rule_id,
+          );
+
+          if (ruleIndex >= 0 && satisfiedByIndex >= 0) {
+            const rule = this.reactiveRules[ruleIndex];
+            const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
+
+            // Add to satisfied_by array (rule is satisfied by satisfiedByRule)
+            if (!rule.satisfied_by.some((r) => r.id === satisfied_by_rule_id)) {
+              rule.satisfied_by.push({
+                id: satisfiedByRule.id,
+                rule_id: satisfiedByRule.rule_id,
+                version: satisfiedByRule.version,
+                fixtext: satisfiedByRule.fixtext,
+              });
+            }
+
+            // Add to satisfies array (satisfiedByRule satisfies rule)
+            if (!satisfiedByRule.satisfies.some((r) => r.id === rule_id)) {
+              satisfiedByRule.satisfies.push({
+                id: rule.id,
+                rule_id: rule.rule_id,
+                version: rule.version,
+              });
+            }
+          }
 
           if (successCallback) {
             try {
@@ -130,14 +162,34 @@ export default {
     },
     /**
      * Event handler for @removeSatisfied:rule
+     *
+     * Updates relationship arrays locally to preserve unsaved changes.
+     * Previously called refreshRule() which overwrote local changes with server data.
      */
     removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          this.refreshRule(rule_id);
-          this.refreshRule(satisfied_by_rule_id);
+
+          // Update relationships locally instead of full refresh
+          // This preserves any unsaved local changes (status, title, etc.)
+          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+          const satisfiedByIndex = this.reactiveRules.findIndex(
+            (r) => r.id == satisfied_by_rule_id,
+          );
+
+          if (ruleIndex >= 0) {
+            const rule = this.reactiveRules[ruleIndex];
+            // Remove from satisfied_by array
+            rule.satisfied_by = rule.satisfied_by.filter((r) => r.id !== satisfied_by_rule_id);
+          }
+
+          if (satisfiedByIndex >= 0) {
+            const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
+            // Remove from satisfies array
+            satisfiedByRule.satisfies = satisfiedByRule.satisfies.filter((r) => r.id !== rule_id);
+          }
 
           if (successCallback) {
             try {
