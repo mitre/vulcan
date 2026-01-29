@@ -183,27 +183,42 @@
           id="also-satisfies-modal"
           title="Also Satisfies"
           centered
-          @ok="$root.$emit('addSatisfied:rule', satisfies_rule_id, rule.id)"
+          size="lg"
+          @ok="addMultipleSatisfiedRules"
+          @hidden="clearSelectedRules"
         >
-          <b-form-group label="Select a control that this one satisfies:">
-            <vue-simple-suggest
-              :key="`componentKey-${rules[0].component_id}`"
-              ref="controlSearch"
-              :list="filteredSelectRules"
-              display-attribute="text"
-              value-attribute="value"
-              placeholder="Search for eligible control..."
-              :filter-by-query="true"
-              :min-length="0"
-              :max-suggestions="0"
-              :number="0"
-              @select="satisfies_rule_id = $refs.controlSearch.selected.value"
-            />
+          <b-form-group label="Select controls that this one satisfies:">
+            <multiselect
+              v-model="selectedSatisfiesRuleIds"
+              :options="filteredSelectRules"
+              :multiple="true"
+              :close-on-select="false"
+              :clear-on-select="false"
+              :preserve-search="true"
+              placeholder="Search and select controls..."
+              label="text"
+              track-by="value"
+              :preselect-first="false"
+            >
+              <template slot="selection" slot-scope="{ values, isOpen }">
+                <span v-if="values.length && !isOpen" class="multiselect__single">
+                  {{ values.length }} control(s) selected
+                </span>
+              </template>
+            </multiselect>
           </b-form-group>
+          <div class="mt-2 text-muted">
+            <small>{{ selectedSatisfiesRuleIds.length }} control(s) selected</small>
+          </div>
           <template #modal-footer="{ cancel, ok }">
-            <!-- Emulate built in modal footer ok and cancel button actions -->
             <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="info" @click="ok()"> OK </b-button>
+            <b-button
+              variant="info"
+              :disabled="selectedSatisfiesRuleIds.length === 0"
+              @click="ok()"
+            >
+              Add {{ selectedSatisfiesRuleIds.length }} Control(s)
+            </b-button>
           </template>
         </b-modal>
       </div>
@@ -218,12 +233,12 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
+import Multiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal, NewRuleModalForm, VueSimpleSuggest },
+  components: { CommentModal, NewRuleModalForm, Multiselect },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
@@ -255,7 +270,8 @@ export default {
     return {
       showSRGIdChecked: localStorage.getItem(`showSRGIdChecked-${this.rules[0].component_id}`),
       filteredSelectRules: [],
-      satisfies_rule_id: null,
+      selectedSatisfiesRuleIds: [], // Array for multi-select
+      satisfiesSearchText: "", // Search filter text
       selectedReviewAction: null,
       showReviewPane: false,
       reviewComment: "",
@@ -476,6 +492,19 @@ export default {
           this.$root.$emit("refresh:rule", r.id, "all");
         });
       }
+    },
+    addMultipleSatisfiedRules: function () {
+      // Add all selected rules as satisfied by this rule
+      // selectedSatisfiesRuleIds contains objects with {value, text} from multiselect
+      this.selectedSatisfiesRuleIds.forEach((item) => {
+        const ruleId = typeof item === "object" ? item.value : item;
+        this.$root.$emit("addSatisfied:rule", ruleId, this.rule.id);
+      });
+    },
+    clearSelectedRules: function () {
+      // Clear selections when modal is hidden
+      this.selectedSatisfiesRuleIds = [];
+      this.satisfiesSearchText = "";
     },
   },
 };

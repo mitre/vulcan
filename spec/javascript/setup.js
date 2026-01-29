@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import BootstrapVue from 'bootstrap-vue'
+import axios from 'axios'
 
 Vue.use(BootstrapVue)
 Vue.config.productionTip = false
@@ -11,3 +12,7 @@ if (typeof document !== 'undefined') {
   meta.setAttribute('content', 'test-csrf-token')
   document.head.appendChild(meta)
 }
+
+// Initialize axios defaults for FormMixin
+axios.defaults.headers = axios.defaults.headers || {}
+axios.defaults.headers.common = axios.defaults.headers.common || {}

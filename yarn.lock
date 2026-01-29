@@ -3571,6 +3571,11 @@ vue-monaco@^1.2.2:
     monaco-editor "^0.20.0"
     nano-assign "^1.0.0"
 
+vue-multiselect@^2.1.9:
+  version "2.1.9"
+  resolved "https://registry.yarnpkg.com/vue-multiselect/-/vue-multiselect-2.1.9.tgz#803628d5ff6c5925320930c965bdaae8934b92b1"
+  integrity sha512-nGEppmzhQQT2iDz4cl+ZCX3BpeNhygK50zWFTIRS+r7K7i61uWXJWSioMuf+V/161EPQjexI8NaEBdUlF3dp+g==
+
 vue-simple-suggest@^1.11.1:
   version "1.11.2"
   resolved "https://registry.yarnpkg.com/vue-simple-suggest/-/vue-simple-suggest-1.11.2.tgz#d1b879bd7c9e27d63459984733881d784cda8422"

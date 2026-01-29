@@ -20,6 +20,7 @@
     "vue": "~2.7.16",
     "vue-loader": "^15.10.0",
     "vue-monaco": "^1.2.2",
+    "vue-multiselect": "^2.1.9",
     "vue-simple-suggest": "^1.11.1",
     "vue-template-compiler": "~2.7.16",
     "vue-turbolinks": "^2.1.0"
@@ -27,6 +28,7 @@
   "version": "2.2.2",
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@vitejs/plugin-vue2": "^2.3.4",
     "@vue/test-utils": "1",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.1.2",
@@ -41,7 +43,6 @@
     "jsdom": "^27.4.0",
     "prettier": "3.6.2",
     "sass": "^1.85.1",
-    "@vitejs/plugin-vue2": "^2.3.4",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
   },
