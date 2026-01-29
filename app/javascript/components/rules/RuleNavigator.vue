@@ -26,135 +26,6 @@
         />
       </div>
 
-      <!-- Filter by rule status -->
-      <b-form-group class="mt-3" label="Filter by Control Status">
-        <b-form-checkbox
-          id="acFilterChecked-filter"
-          v-model="filters.acFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="acFilterChecked-filter"
-        >
-          <span class="d-flex flex-column align-items-center">
-            <span
-              ><strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
-            </span>
-            <small v-if="ruleStatusCounts.acsb" class="text-info"
-              >{{ ruleStatusCounts.acsb }} Satisfied by other
-            </small>
-          </span>
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="aimFilterChecked-filter"
-          v-model="filters.aimFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="aimFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.aim }})</strong> Applicable - Inherently Meets
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="adnmFilterChecked-filter"
-          v-model="filters.adnmFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="adnmFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.adnm }})</strong> Applicable - Does Not Meet
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="naFilterChecked-filter"
-          v-model="filters.naFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="naFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.na }})</strong> Not Applicable
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="nydFilterChecked-filter"
-          v-model="filters.nydFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="nydFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.nyd }})</strong> Not Yet Determined
-        </b-form-checkbox>
-      </b-form-group>
-
-      <!-- Filter by review status -->
-      <b-form-group class="mt-3" label="Filter by Review Status">
-        <b-form-checkbox
-          id="nurFilterChecked-filter"
-          v-model="filters.nurFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="nurFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.nur }})</strong> Not Under Review
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="urFilterChecked-filter"
-          v-model="filters.urFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="urFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.ur }})</strong> Under Review
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="lckFilterChecked-filter"
-          v-model="filters.lckFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="lckFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.lck }})</strong> Locked
-        </b-form-checkbox>
-      </b-form-group>
-
-      <!-- Toggle display -->
-      <b-form-group class="mt-3" label="Toggle Display">
-        <!-- Nest satisfied controls -->
-        <b-form-checkbox
-          id="nestSatisfiedRulesChecked"
-          v-model="filters.nestSatisfiedRulesChecked"
-          class="mb-1 unselectable"
-          switch
-          name="nestSatisfiedRulesChecked-fitler"
-        >
-          Nest Satisfied Controls
-        </b-form-checkbox>
-
-        <!-- Toggle STIG ID/SRG ID -->
-        <b-form-checkbox
-          id="showSRGIdChecked"
-          v-model="filters.showSRGIdChecked"
-          class="mb-1 unselectable"
-          switch
-          name="showSRGIdChecked-fitler"
-        >
-          Show SRG ID
-        </b-form-checkbox>
-
-        <!-- Toggle Sort by SRG ID -->
-        <b-form-checkbox
-          id="sortBySRGIdChecked"
-          v-model="filters.sortBySRGIdChecked"
-          class="mb-1 unselectable"
-          switch
-          name="sortBySRGIdChecked-fitler"
-        >
-          Sort by SRG ID
-        </b-form-checkbox>
-      </b-form-group>
-
       <hr class="mt-2 mb-2" />
 
       <!-- Currently opened controls -->
@@ -389,28 +260,35 @@ export default {
       type: Boolean,
       default: false,
     },
+    externalFilters: {
+      type: Object,
+      default: null,
+    },
   },
   data: function () {
     return {
       rule_form_rule_id: "",
-      sidebarOffset: 0, // How far the sidebar is from the top of the screen
-      filters: {
+      sidebarOffset: 0,
+      localFilters: {
         search: "",
-        acFilterChecked: true, // Applicable - Configurable
-        aimFilterChecked: true, // Applicable - Inherently Meets
-        adnmFilterChecked: true, // Applicable - Does Not Meet
-        naFilterChecked: true, // Not Applicable
-        nydFilterChecked: true, // Not Yet Determined
-        nurFilterChecked: true, // Not under review
-        urFilterChecked: true, // Under review
-        lckFilterChecked: true, // Locked
-        nestSatisfiedRulesChecked: false, // Nests Satisfied Rules
-        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
-        sortBySRGIdChecked: false, // Sort by SRG ID
+        acFilterChecked: true,
+        aimFilterChecked: true,
+        adnmFilterChecked: true,
+        naFilterChecked: true,
+        nydFilterChecked: true,
+        nurFilterChecked: true,
+        urFilterChecked: true,
+        lckFilterChecked: true,
+        nestSatisfiedRulesChecked: false,
+        showSRGIdChecked: false,
+        sortBySRGIdChecked: false,
       },
     };
   },
   computed: {
+    filters() {
+      return this.externalFilters || this.localFilters;
+    },
     sidebarStyle: function () {
       return {
         "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
@@ -743,6 +621,24 @@ export default {
 #scrolling-sidebar {
   display: block;
   overflow-y: auto;
+}
+
+.filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.15rem 0;
+}
+
+.filter-toggle {
+  flex: 1;
+}
+
+.filter-count {
+  font-size: 0.85em;
+  color: #6c757d;
+  min-width: 40px;
+  text-align: right;
 }
 
 @media (min-width: 1200px) {
