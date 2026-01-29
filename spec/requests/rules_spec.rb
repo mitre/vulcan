@@ -128,7 +128,7 @@ RSpec.describe 'Rules', type: :request do
     end
 
     context 'when updating without id in nested attributes' do
-      it 'should still work or show clear error' do
+      it 'still works or shows a clear error' do
         new_content = 'Updated without id'
 
         put "/rules/#{rule.id}", params: {

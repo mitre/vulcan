@@ -18,7 +18,7 @@ require 'rspec/rails'
 
 # Check that JavaScript assets are built before running tests
 # This prevents confusing failures where views can't find JS files
-assets_dir = Rails.root.join('app/assets/builds')
+assets_dir = Rails.root.join('app', 'assets', 'builds')
 unless assets_dir.exist? && assets_dir.glob('*.js').any?
   abort <<~ERROR
     \e[31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

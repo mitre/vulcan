@@ -149,6 +149,7 @@ class RulesController < ApplicationController
     # Rails 8: Use require.permit for nested array attributes (checks_attributes, etc.)
     # params.expect doesn't handle nested arrays well - causes them to be filtered out
     # See: https://github.com/mitre/vulcan/issues/692
+    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks nested attributes (issue #692)
     params.require(:rule).permit(
       :status, :status_justification, :artifact_description, :vendor_comments,
       :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
@@ -163,6 +164,7 @@ class RulesController < ApplicationController
         third_party_tools mitigation_control responsibility ia_controls _destroy
       ]
     )
+    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def manage_lock_params
