@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config'
-import { createVuePlugin } from 'vite-plugin-vue2'
+import vue from '@vitejs/plugin-vue2'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [createVuePlugin()],
+  plugins: [vue()],
   resolve: {
     alias: {
       // Critical: Vue Test Utils uses CJS, Vitest uses ESM
@@ -11,6 +11,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'app/javascript')
     },
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue']
+  },
+  css: {
+    // Skip PostCSS processing in tests (postcss-import etc. are not installed as devDeps)
+    postcss: {}
   },
   test: {
     globals: true,
