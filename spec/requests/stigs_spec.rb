@@ -8,7 +8,9 @@ RSpec.describe 'Stigs', type: :request do
   end
 
   let(:stig) { create(:stig) }
-  let(:user) { create(:user, admin: true) }
+  # Use let! to ensure admin user is created first (before user2)
+  # This prevents user2 from being promoted to admin by first-user-admin callback
+  let!(:user) { create(:user, admin: true) }
   let(:user2) { create(:user) }
 
   describe 'POST /stigs' do

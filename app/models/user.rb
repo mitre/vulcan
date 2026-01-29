@@ -16,6 +16,7 @@ class User < ApplicationRecord
   validates :name, presence: true
 
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
+  after_create :promote_first_user_to_admin
 
   has_many :reviews, dependent: :nullify
   has_many :memberships, dependent: :destroy
@@ -185,6 +186,30 @@ class User < ApplicationRecord
       memberships.max do |role_a, role_b|
         PROJECT_MEMBER_ROLES.index(role_a) <=> PROJECT_MEMBER_ROLES.index(role_b)
       end
+    end
+  end
+
+  private
+
+  # Promotes the first user to admin if VULCAN_FIRST_USER_ADMIN is enabled
+  # and no admin users exist yet. This makes Docker deployments functional
+  # immediately without manual admin setup.
+  #
+  # Uses advisory lock to prevent race condition where multiple concurrent
+  # registrations could all become admin. See:
+  # - https://github.com/ClosureTree/with_advisory_lock
+  # - WordPress installer race condition vulnerability for why this matters
+  def promote_first_user_to_admin
+    return unless Settings.admin_bootstrap.first_user_admin
+
+    # Use advisory lock to ensure only one user can be promoted to admin
+    # The lock name is application-wide since we're checking for ANY admin
+    User.with_advisory_lock('vulcan_first_user_admin_promotion', timeout_seconds: 5) do
+      # Re-check inside lock to handle race condition
+      return if User.exists?(admin: true)
+
+      update_column(:admin, true) # rubocop:disable Rails/SkipsModelValidations -- intentional: avoid callback loop inside after_create
+      Rails.logger.info "First user #{email} promoted to admin (VULCAN_FIRST_USER_ADMIN=true)"
     end
   end
 end

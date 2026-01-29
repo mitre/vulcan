@@ -29,6 +29,10 @@ defaults: &defaults
     session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
   user_registration:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
+  admin_bootstrap:
+    # When true, the first user to register/login becomes an admin (if no admins exist)
+    # This makes Docker deployments functional immediately without manual setup
+    first_user_admin: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_FIRST_USER_ADMIN']) != false %>
   project:
     create_permission_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_PROJECT_CREATE_PERMISSION_ENABLED']) != false %>
   ldap:

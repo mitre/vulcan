@@ -53,6 +53,12 @@ gem 'csv'
 
 gem 'audited', '~> 5.8.0'
 
+# Advisory locks for preventing race conditions (PostgreSQL/MySQL)
+gem 'with_advisory_lock', '~> 5.1'
+
+# Health check endpoints for Kubernetes/Docker probes
+gem 'health_check', '~> 3.1'
+
 gem 'activerecord-import'
 
 gem 'ffaker', '~> 2.10'

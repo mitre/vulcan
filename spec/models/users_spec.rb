@@ -73,5 +73,85 @@ RSpec.describe User, type: :model do
         expect(described_class.where(email: 'test@domain.com').count).to eq(1)
       end
     end
+
+    # First-user-admin via callback with advisory lock for race condition protection
+    context 'when VULCAN_FIRST_USER_ADMIN is true (default)' do
+      let(:new_user) { build(:user) }
+
+      before do
+        # Stub first_user_admin setting to true
+        stub_admin_bootstrap_setting(first_user_admin: true)
+      end
+
+      context 'and no admin users exist' do # rubocop:disable RSpec/NestedGroups
+        before do
+          # Ensure no admin users exist
+          described_class.where(admin: true).destroy_all
+        end
+
+        it 'promotes the first new user to admin' do
+          auth = mock_omniauth_response(new_user)
+          created_user = described_class.from_omniauth(auth)
+
+          expect(created_user.admin).to be true
+        end
+
+        it 'does not promote subsequent new users to admin' do
+          # First user becomes admin
+          first_user_data = build(:user)
+          auth1 = mock_omniauth_response(first_user_data)
+          first_user = described_class.from_omniauth(auth1)
+          expect(first_user.admin).to be true
+
+          # Second user should NOT become admin
+          second_user_data = build(:user)
+          auth2 = mock_omniauth_response(second_user_data)
+          second_user = described_class.from_omniauth(auth2)
+          expect(second_user.admin).to be false
+        end
+
+        it 'does not promote an existing user logging in again' do
+          # Create an admin FIRST so subsequent users don't get promoted
+          create(:user, admin: true)
+          # Create a non-admin user (won't be promoted because admin exists)
+          existing_user = create(:user, admin: false)
+
+          # Existing user logs in via omniauth - should NOT be promoted
+          auth = mock_omniauth_response(existing_user)
+          returned_user = described_class.from_omniauth(auth)
+
+          expect(returned_user.admin).to be false
+        end
+      end
+
+      context 'and admin users already exist' do # rubocop:disable RSpec/NestedGroups
+        let!(:existing_admin) { create(:user, admin: true) } # rubocop:disable RSpec/LetSetup -- side effect: prevents first-user-admin promotion
+
+        it 'does not promote new users to admin' do
+          auth = mock_omniauth_response(new_user)
+          created_user = described_class.from_omniauth(auth)
+
+          expect(created_user.admin).to be false
+        end
+      end
+    end
+
+    context 'when VULCAN_FIRST_USER_ADMIN is false' do
+      let(:new_user) { build(:user) }
+
+      before do
+        # Stub first_user_admin setting to false
+        stub_admin_bootstrap_setting(first_user_admin: false)
+        # Ensure no admin users exist
+        described_class.where(admin: true).destroy_all
+      end
+
+      it 'does not promote first user to admin even when no admins exist' do
+        auth = mock_omniauth_response(new_user)
+        created_user = described_class.from_omniauth(auth)
+
+        expect(created_user.admin).to be false
+      end
+    end
   end
 end

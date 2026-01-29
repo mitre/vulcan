@@ -13,6 +13,10 @@ module LoginHelpers
     allow(Settings).to receive_messages(to_settings(messages))
   end
 
+  def stub_admin_bootstrap_setting(messages)
+    allow(Settings.admin_bootstrap).to receive_messages(to_settings(messages))
+  end
+
   def mock_omniauth_response(user, provider: 'ldap')
     # This sets up an object that is similar to what LDAP and GitHub return to
     # the User.from_omniauth method

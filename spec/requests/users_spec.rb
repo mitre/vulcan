@@ -7,7 +7,9 @@ RSpec.describe 'Users', type: :request do
     Rails.application.reload_routes!
   end
 
-  let(:admin_user) { create(:user, admin: true) }
+  # Use let! to ensure admin_user is created first (before regular_user/target_user)
+  # This prevents regular_user from being promoted to admin by first-user-admin callback
+  let!(:admin_user) { create(:user, admin: true) }
   let(:regular_user) { create(:user, admin: false) }
   let(:target_user) { create(:user, admin: false) }
 
