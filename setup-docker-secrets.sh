@@ -43,9 +43,6 @@ if [ ! -f "$TEMPLATE" ]; then
     exit 1
 fi
 
-# Copy template
-cp "$TEMPLATE" .env
-
 # Generate secure secrets
 echo "Generating secure secrets..."
 POSTGRES_PASSWORD=$(openssl rand -hex 33)
@@ -53,20 +50,17 @@ SECRET_KEY_BASE=$(openssl rand -hex 64)
 CIPHER_PASSWORD=$(openssl rand -hex 64)
 CIPHER_SALT=$(openssl rand -hex 32)
 
-# Replace placeholders based on OS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    sed -i '' "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$POSTGRES_PASSWORD|" .env
-    sed -i '' "s|^SECRET_KEY_BASE=.*|SECRET_KEY_BASE=$SECRET_KEY_BASE|" .env
-    sed -i '' "s|^CIPHER_PASSWORD=.*|CIPHER_PASSWORD=$CIPHER_PASSWORD|" .env
-    sed -i '' "s|^CIPHER_SALT=.*|CIPHER_SALT=$CIPHER_SALT|" .env
-else
-    # Linux
-    sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$POSTGRES_PASSWORD|" .env
-    sed -i "s|^SECRET_KEY_BASE=.*|SECRET_KEY_BASE=$SECRET_KEY_BASE|" .env
-    sed -i "s|^CIPHER_PASSWORD=.*|CIPHER_PASSWORD=$CIPHER_PASSWORD|" .env
-    sed -i "s|^CIPHER_SALT=.*|CIPHER_SALT=$CIPHER_SALT|" .env
-fi
+# Process template line by line, replacing secret placeholders with generated values.
+# This avoids sed entirely - no OS-specific behavior (macOS vs GNU sed).
+while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+        POSTGRES_PASSWORD=*) echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" ;;
+        SECRET_KEY_BASE=*)   echo "SECRET_KEY_BASE=$SECRET_KEY_BASE" ;;
+        CIPHER_PASSWORD=*)   echo "CIPHER_PASSWORD=$CIPHER_PASSWORD" ;;
+        CIPHER_SALT=*)       echo "CIPHER_SALT=$CIPHER_SALT" ;;
+        *)                   echo "$line" ;;
+    esac
+done < "$TEMPLATE" > .env
 
 # Set secure permissions
 chmod 600 .env
@@ -77,14 +71,14 @@ echo
 echo "Next steps:"
 if [ "$ENV_CHOICE" = "1" ]; then
     echo "1. The test Okta credentials are already configured"
-    echo "2. Start the application with: docker-compose up"
+    echo "2. Start the application with: docker compose up"
     echo "3. Access Vulcan at: http://localhost:3000"
 else
     echo "1. Edit .env and configure your OIDC/LDAP settings"
     echo "2. Update VULCAN_APP_URL with your production URL"
     echo "3. Configure SMTP settings if needed"
     echo "4. Place SSL certificates in ./certs/ if behind a corporate proxy"
-    echo "5. Start the application with: docker-compose up -d"
+    echo "5. Start the application with: docker compose up -d"
 fi
 echo
-echo "For more information, see README.md"
+echo "For more information, see docs/deployment/docker.md"

@@ -82,7 +82,7 @@ RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
     curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
     tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
     rm node.tar.xz && \
-    npm install -g yarn@1.22.22
+    corepack enable
 
 # Build stage environment - production mode for asset compilation
 # Note: NODE_ENV is NOT set here because yarn skips devDependencies when NODE_ENV=production
@@ -109,8 +109,8 @@ RUN bundle exec bootsnap precompile app/ lib/
 # Precompile Rails assets
 RUN SECRET_KEY_BASE=dummyvalue ./bin/rails assets:precompile
 
-# Remove dev/test files and node_modules BEFORE copying to production stage
-# This is critical - doing it here reduces the final image size significantly
+# Remove dev/test files and node_modules to reduce image size
+# Note: app/assets/ can be deleted - assets:precompile copies to public/assets/
 RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec test .git
 
 # =============================================================================
@@ -139,7 +139,7 @@ RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
     curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
     tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
     rm node.tar.xz && \
-    npm install -g yarn@1.22.22
+    corepack enable
 
 # Development environment
 ENV RAILS_ENV="development" \
@@ -175,12 +175,35 @@ CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
 # =============================================================================
 FROM base AS production
 
-# Production environment
+# Production environment with sensible defaults for Docker deployments
+# These defaults allow `docker compose up` to work immediately without a .env file
+# Override any of these via environment variables or a .env file
+#
+# Note: Database credentials (POSTGRES_PASSWORD) are NOT set here to avoid
+# the SecretsUsedInArgOrEnv lint warning. They are set in docker-compose.yml
+# via variable substitution with defaults: ${POSTGRES_PASSWORD:-postgres}
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test" \
     RAILS_LOG_TO_STDOUT="true" \
-    RAILS_SERVE_STATIC_FILES="true"
+    RAILS_SERVE_STATIC_FILES="true" \
+    # Database defaults (credentials provided by docker-compose.yml or DATABASE_URL)
+    POSTGRES_USER="postgres" \
+    POSTGRES_DB="vulcan_postgres_production" \
+    DATABASE_HOST="db" \
+    DATABASE_PORT="5432" \
+    # Authentication defaults (local login enabled for quick demos)
+    VULCAN_ENABLE_LOCAL_LOGIN="true" \
+    VULCAN_ENABLE_USER_REGISTRATION="true" \
+    VULCAN_ENABLE_OIDC="false" \
+    VULCAN_ENABLE_LDAP="false" \
+    # Admin bootstrap: first user to register becomes admin (for demos/dev)
+    # For production, use VULCAN_ADMIN_EMAIL + VULCAN_ADMIN_PASSWORD instead
+    VULCAN_FIRST_USER_ADMIN="true" \
+    # SSL: disabled by default for Docker quickstart (enable via reverse proxy)
+    RAILS_FORCE_SSL="false" \
+    # Server port
+    PORT="3000"
 
 # Copy built artifacts from build stage
 # Note: cleanup already done in build stage to minimize copy size
@@ -200,6 +223,9 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/up || exit 1
 
 EXPOSE 3000
+
+# Entrypoint handles db:prepare on server start (Rails standard pattern)
+ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Production server
 CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+# Remove stale PID file if present (prevents "server is already running" errors)
+rm -f /rails/tmp/pids/server.pid
+
+# If running the rails server then create or migrate existing database
+# db:prepare is idempotent: creates DB if missing, runs pending migrations if exists
+# This also triggers admin:bootstrap (hooked into db:prepare)
+if [[ "$@" == *"server"* ]]; then
+  ./bin/rails db:prepare
+fi
+
+exec "${@}"

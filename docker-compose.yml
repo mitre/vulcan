@@ -1,3 +1,20 @@
+# Vulcan Docker Compose Configuration
+#
+# Quick Start:
+#   ./setup-docker-secrets.sh    # Generate .env with secrets (one time)
+#   docker compose up            # Start Vulcan
+#   Open http://localhost:3000
+#   Register first user - they become admin automatically
+#
+# For production deployments:
+#   1. Run ./setup-docker-secrets.sh
+#   2. Edit .env to configure authentication (OIDC, LDAP, or local)
+#   3. Set VULCAN_ADMIN_EMAIL and VULCAN_ADMIN_PASSWORD for admin bootstrap
+#   4. docker compose up -d
+#
+# Database setup (db:prepare) runs automatically on container start via
+# the docker-entrypoint script. Admin bootstrap hooks into db:prepare.
+
 services:
   db:
     image: postgres:12-alpine
@@ -5,9 +22,9 @@ services:
     volumes:
       - vulcan_dbdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: vulcan_postgres_production
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_postgres_production}
     expose:
       - "5432"
     healthcheck:
@@ -22,14 +39,19 @@ services:
       dockerfile: Dockerfile
       target: production
     environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db/vulcan_postgres_production
+      # Database connection - uses defaults from Dockerfile if not set
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db/${POSTGRES_DB:-vulcan_postgres_production}
       RAILS_SERVE_STATIC_FILES: "true"
       RAILS_ENV: production
       NODE_ENV: production
       # jemalloc is enabled in the Dockerfile
       LD_PRELOAD: /usr/local/lib/libjemalloc.so
       MALLOC_ARENA_MAX: "2"
-    env_file: .env
+    # .env file provides secrets (SECRET_KEY_BASE, CIPHER_PASSWORD, etc.)
+    # Generate with: ./setup-docker-secrets.sh
+    env_file:
+      - path: .env
+        required: false
     restart: unless-stopped
     ports:
       - "3000:3000"
