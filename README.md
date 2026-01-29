@@ -33,23 +33,21 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 
 ## 🚀 Quick Start
 
-### Latest Release: [v2.2.1](https://github.com/mitre/vulcan/releases/tag/v2.2.1)
+### Latest Release: [v2.2.2](https://github.com/mitre/vulcan/releases/tag/v2.2.2)
 
 ```bash
 # Pull the latest Docker image
-docker pull mitre/vulcan:v2.2.1
+docker pull mitre/vulcan:v2.2.2
 
-# Or use docker-compose for a complete setup
+# Or use docker compose for a complete setup
 wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
 wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
 chmod +x setup-docker-secrets.sh
 ./setup-docker-secrets.sh
-docker-compose up
+docker compose up
 ```
 
-Default credentials for testing:
-- **Email**: admin@example.com
-- **Password**: 1234567ab!
+The first user to register becomes admin automatically.
 
 For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
