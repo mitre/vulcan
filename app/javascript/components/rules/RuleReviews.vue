@@ -1,42 +1,36 @@
 <template>
   <div>
-    <!-- Collapsable header -->
-    <div class="clickable" @click="showReviews = !showReviews">
-      <h2 class="m-0 d-inline-block">Reviews &amp; Comments</h2>
-      <b-badge pill class="ml-1 superVerticalAlign">{{ rule.reviews.length }}</b-badge>
-
-      <b-icon v-if="showReviews" icon="chevron-down" />
-      <b-icon v-if="!showReviews" icon="chevron-up" />
+    <div class="mb-2">
+      <strong>Reviews &amp; Comments</strong>
+      <b-badge pill variant="info" class="ml-1">{{ rule.reviews.length }}</b-badge>
     </div>
 
-    <b-collapse id="collapse-reviews" v-model="showReviews">
-      <!-- All reviews -->
-      <div v-for="review in shownReviews" :key="review.id">
-        <p class="ml-2 mb-0 mt-2">
-          <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
-        </p>
-        <p class="ml-2 mb-0">
-          <small>{{ friendlyDateTime(review.created_at) }}</small>
-        </p>
-        <p class="ml-3 mb-2 white-space-pre-wrap">{{ review.comment }}</p>
-      </div>
-      <div class="d-flex justify-content-center align-items-center">
-        <p
-          v-if="numShownReviews < rule.reviews.length"
-          class="text-primary clickable"
-          @click="numShownReviews += 2"
-        >
-          show older reviews...
-        </p>
-        <p
-          v-if="numShownReviews > 2 && rule.reviews.length > 2"
-          class="ml-4 text-primary clickable"
-          @click="numShownReviews -= 2"
-        >
-          hide older reviews...
-        </p>
-      </div>
-    </b-collapse>
+    <div v-for="review in shownReviews" :key="review.id" class="mb-3">
+      <p class="mb-0">
+        <strong>{{ review.name }}</strong>
+        <small class="text-muted ml-2">{{ actionDescriptions[review.action] }}</small>
+      </p>
+      <p class="mb-1">
+        <small class="text-muted">{{ friendlyDateTime(review.created_at) }}</small>
+      </p>
+      <p class="mb-0 white-space-pre-wrap">{{ review.comment }}</p>
+    </div>
+
+    <p v-if="rule.reviews.length === 0" class="text-muted small">No reviews or comments yet.</p>
+
+    <div v-if="rule.reviews.length > 2" class="d-flex justify-content-center">
+      <b-button
+        v-if="numShownReviews < rule.reviews.length"
+        size="sm"
+        variant="link"
+        @click="numShownReviews += 2"
+      >
+        Show older...
+      </b-button>
+      <b-button v-if="numShownReviews > 2" size="sm" variant="link" @click="numShownReviews -= 2">
+        Show fewer
+      </b-button>
+    </div>
   </div>
 </template>
 
@@ -66,7 +60,6 @@ export default {
   data: function () {
     return {
       numShownReviews: 2,
-      showReviews: true,
       actionDescriptions: {
         comment: "Commented",
         request_review: "Requested Review",

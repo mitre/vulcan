@@ -1,15 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div>
-    <a
-      v-b-modal.related-rules-modal
-      v-b-tooltip.hover.html
-      class="m"
-      title="Rules in other components or STIGs that have the same SRG ID"
-    >
-      <h3>View Related Rules</h3>
-    </a>
-
+    <!-- Modal triggered by button group in RulesCodeEditorView -->
     <b-modal
       id="related-rules-modal"
       ref="modal"
