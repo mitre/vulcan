@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  # Rails 8 built-in health check endpoint (simple liveness probe)
+  get '/up' => 'rails/health#show', as: :rails_health_check
+
+  # Health check gem routes for comprehensive checks (readiness probes)
+  # Provides /health_check, /health_check/database, /health_check/migrations etc.
+  health_check_routes
+
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
     registrations: 'users/registrations',
