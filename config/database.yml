@@ -70,6 +70,13 @@ test:
 #
 production:
   <<: *default
-  database: vulcan_vue_production
-  username: vulcan_vue
-  password: <%= ENV['VULCAN_VUE_DATABASE_PASSWORD'] %>
+  # DATABASE_URL takes precedence (12-factor standard)
+  # Recommended for Heroku, Kubernetes, and docker-compose deployments
+  url: <%= ENV['DATABASE_URL'] %>
+  # Fallback configuration if DATABASE_URL is not set
+  host: <%= ENV.fetch('DATABASE_HOST', 'localhost') %>
+  port: <%= ENV.fetch('DATABASE_PORT', 5432) %>
+  database: <%= ENV.fetch('POSTGRES_DB', 'vulcan_postgres_production') %>
+  username: <%= ENV.fetch('POSTGRES_USER', 'postgres') %>
+  # Support both new POSTGRES_PASSWORD and legacy VULCAN_VUE_DATABASE_PASSWORD
+  password: <%= ENV['POSTGRES_PASSWORD'] || ENV['VULCAN_VUE_DATABASE_PASSWORD'] %>
