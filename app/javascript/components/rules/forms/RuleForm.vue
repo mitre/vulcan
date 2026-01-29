@@ -1,9 +1,17 @@
 <template>
   <div>
     <b-form>
-      <!-- status -->
-      <template v-if="fields.displayed.includes('status')">
-        <b-form-group :id="`ruleEditor-status-group-${mod}`">
+      <!-- Status and Severity row -->
+      <div
+        v-if="fields.displayed.includes('status') || fields.displayed.includes('rule_severity')"
+        class="row"
+      >
+        <!-- status -->
+        <b-form-group
+          v-if="fields.displayed.includes('status')"
+          :id="`ruleEditor-status-group-${mod}`"
+          class="col-md-8"
+        >
           <label :for="`ruleEditor-status-${mod}`">
             Status
             <b-icon
@@ -29,7 +37,45 @@
             {{ invalidFeedback["status"] }}
           </b-form-invalid-feedback>
         </b-form-group>
-      </template>
+
+        <!-- rule_severity (moved here from below) -->
+        <b-form-group
+          v-if="fields.displayed.includes('rule_severity')"
+          :id="`ruleEditor-rule_severity-top-group-${mod}`"
+          class="col-md-4"
+        >
+          <label :for="`ruleEditor-rule_severity-top-${mod}`">
+            Severity
+            <b-icon
+              v-if="tooltips['rule_severity']"
+              v-b-tooltip.hover.html
+              icon="info-circle"
+              aria-hidden="true"
+              :title="tooltips['rule_severity']"
+            />
+          </label>
+          <b-form-select
+            :id="`ruleEditor-rule_severity-top-${mod}`"
+            :value="rule.rule_severity"
+            :class="inputClass('rule_severity')"
+            :options="severities"
+            :disabled="disabled || fields.disabled.includes('rule_severity')"
+            @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
+          >
+            <template v-if="!Array.isArray(severities) && !severities[rule.rule_severity]" #first>
+              <b-form-select-option :value="rule.rule_severity" disabled>{{
+                rule.rule_severity
+              }}</b-form-select-option>
+            </template>
+          </b-form-select>
+          <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
+            {{ validFeedback["rule_severity"] }}
+          </b-form-valid-feedback>
+          <b-form-invalid-feedback v-if="hasInvalidFeedback('rule_severity')">
+            {{ invalidFeedback["rule_severity"] }}
+          </b-form-invalid-feedback>
+        </b-form-group>
+      </div>
 
       <!-- status_justification -->
       <template v-if="fields.displayed.includes('status_justification')">
@@ -288,44 +334,6 @@
       </b-form-group>
 
       <div class="row">
-        <!-- rule_severity -->
-        <b-form-group
-          v-if="fields.displayed.includes('rule_severity')"
-          :id="`ruleEditor-rule_severity-group-${mod}`"
-          class="col-6"
-        >
-          <label :for="`ruleEditor-rule_severity-${mod}`">
-            Severity
-            <b-icon
-              v-if="tooltips['rule_severity']"
-              v-b-tooltip.hover.html
-              icon="info-circle"
-              aria-hidden="true"
-              :title="tooltips['rule_severity']"
-            />
-          </label>
-          <b-form-select
-            :id="`ruleEditor-rule_severity-${mod}`"
-            :value="rule.rule_severity"
-            :class="inputClass('rule_severity')"
-            :options="severities"
-            :disabled="disabled || fields.disabled.includes('rule_severity')"
-            @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
-          >
-            <template v-if="!Array.isArray(severities) && !severities[rule.rule_severity]" #first>
-              <b-form-select-option :value="rule.rule_severity" disabled>{{
-                rule.rule_severity
-              }}</b-form-select-option>
-            </template>
-          </b-form-select>
-          <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
-            {{ validFeedback["rule_severity"] }}
-          </b-form-valid-feedback>
-          <b-form-invalid-feedback v-if="hasInvalidFeedback('rule_severity')">
-            {{ invalidFeedback["rule_severity"] }}
-          </b-form-invalid-feedback>
-        </b-form-group>
-
         <!-- rule_weight -->
         <b-form-group
           v-if="fields.displayed.includes('rule_weight')"
