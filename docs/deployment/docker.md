@@ -6,22 +6,52 @@ Vulcan provides production-ready Docker images for easy deployment. The images a
 
 ## Quick Start
 
-### Using Docker Compose (Recommended)
-
 ```bash
-# Download the docker-compose file
-wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
+# Clone or download the repository
+git clone https://github.com/mitre/vulcan.git
+cd vulcan
 
-# Generate secure configuration
-wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
-chmod +x setup-docker-secrets.sh
+# Generate secrets (one time)
 ./setup-docker-secrets.sh
 
 # Start Vulcan
-docker-compose up -d
+docker compose up
+
+# Open http://localhost:3000
+# Register your first user - they become admin automatically
 ```
 
-> **Note**: For local testing without SSL/reverse proxy, add `RAILS_FORCE_SSL=false` to your `.env` file to prevent redirect loops. For production with SSL termination (nginx, traefik), keep the default `RAILS_FORCE_SSL=true`.
+**What happens on first start:**
+- PostgreSQL starts with generated credentials
+- The entrypoint runs `db:prepare` (creates database, runs migrations)
+- Admin bootstrap runs automatically (hooked into `db:prepare`)
+- First user to register becomes admin (via `VULCAN_FIRST_USER_ADMIN=true`)
+
+### Admin Bootstrap Options
+
+Vulcan provides three ways to create the initial admin:
+
+1. **First User Admin** (Default): First user to register becomes admin
+   - Enabled by default via `VULCAN_FIRST_USER_ADMIN=true`
+   - Protected by PostgreSQL advisory lock against race conditions
+
+2. **Environment Variables** (Recommended for Production):
+   ```bash
+   # Add to .env
+   VULCAN_ADMIN_EMAIL=admin@example.com
+   VULCAN_ADMIN_PASSWORD=SecurePassword123!
+   VULCAN_FIRST_USER_ADMIN=false
+   ```
+   - Admin created automatically during `db:prepare`
+   - If password omitted, a secure random password is generated and logged
+
+3. **Manual Rake Task**:
+   ```bash
+   docker compose exec web rails db:create_admin
+   ```
+
+> **Note**: For local testing without SSL/reverse proxy, add `RAILS_FORCE_SSL=false` to your `.env` file.
+> For production with SSL termination (nginx, traefik), keep the default `RAILS_FORCE_SSL=true`.
 
 ### Using Docker Run
 
@@ -121,25 +151,58 @@ server {
 
 ### 4. Database Initialization
 
-First time only:
+The Docker entrypoint automatically runs `db:prepare` on first startup, which creates the database and runs migrations. No manual database initialization is needed.
+
+To run migrations manually:
 ```bash
-docker-compose run --rm web bundle exec rails db:create db:schema:load db:migrate
+docker compose run --rm web bundle exec rails db:migrate
 ```
 
 ## Monitoring
 
-### Health Check
+### Health Check Endpoints
 
-The Docker image includes a health check:
+Vulcan provides health check endpoints for container orchestration and monitoring:
+
+| Endpoint | Purpose | Response |
+|----------|---------|----------|
+| `GET /up` | Liveness probe (is process alive?) | HTML with green background |
+| `GET /health_check` | Readiness probe (database connected?) | `ok` or `service unavailable` |
+| `GET /health_check/database` | Database connectivity only | `ok` or `service unavailable` |
+| `GET /health_check/migrations` | Pending migrations check | `ok` or `service unavailable` |
+
+**Docker Compose health check** (built into image):
 ```bash
+# Check container health status
 docker inspect --format='{{.State.Health.Status}}' vulcan
+
+# Manual endpoint test
+curl http://localhost:3000/up
+curl http://localhost:3000/health_check
+```
+
+**Kubernetes probe configuration:**
+```yaml
+livenessProbe:
+  httpGet:
+    path: /up
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health_check
+    port: 3000
+  initialDelaySeconds: 15
+  periodSeconds: 5
 ```
 
 ### Logs
 
 ```bash
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Or for single container
 docker logs -f vulcan
@@ -151,10 +214,10 @@ docker logs -f vulcan
 
 ```bash
 # Backup
-docker-compose exec postgres pg_dump -U vulcan vulcan_production > backup.sql
+docker compose exec postgres pg_dump -U vulcan vulcan_production > backup.sql
 
 # Restore
-docker-compose exec -T postgres psql -U vulcan vulcan_production < backup.sql
+docker compose exec -T postgres psql -U vulcan vulcan_production < backup.sql
 ```
 
 ### Application Data
@@ -177,7 +240,7 @@ tar -xzf uploads-backup.tar.gz
    - Verify network connectivity
 
 2. **Asset compilation errors**
-   - Run: `docker-compose run --rm web bundle exec rails assets:precompile`
+   - Run: `docker compose run --rm web bundle exec rails assets:precompile`
 
 3. **Permission errors**
    - Check volume mount permissions
@@ -187,7 +250,7 @@ tar -xzf uploads-backup.tar.gz
 
 ```bash
 # Run with debug output
-docker-compose run --rm -e RAILS_LOG_LEVEL=debug web
+docker compose run --rm -e RAILS_LOG_LEVEL=debug web
 ```
 
 ## Security Considerations

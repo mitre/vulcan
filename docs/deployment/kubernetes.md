@@ -145,7 +145,7 @@ spec:
       automountServiceAccountToken: false  # Security best practice
       containers:
       - name: vulcan-web
-        image: mitre/vulcan:v2.2.1
+        image: mitre/vulcan:v2.2.2
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -243,17 +243,18 @@ spec:
               key: oidc-client-secret
         
         # Health Checks
+        # /up = fast liveness (no DB), /health_check = readiness (DB check)
         livenessProbe:
           httpGet:
-            path: /health
+            path: /up
             port: 3000
-          initialDelaySeconds: 60
+          initialDelaySeconds: 10
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
+            path: /health_check
             port: 3000
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -261,7 +262,7 @@ spec:
           successThreshold: 1
         startupProbe:
           httpGet:
-            path: /health
+            path: /up
             port: 3000
           initialDelaySeconds: 0
           periodSeconds: 10
@@ -474,9 +475,14 @@ metadata:
 
 ### Health Checks
 
-Vulcan provides health endpoints:
-- `/health` - Basic health check
-- `/readiness` - Database connectivity check
+Vulcan provides health endpoints for Kubernetes probes:
+
+| Endpoint | Purpose | Use For |
+|----------|---------|---------|
+| `/up` | Liveness probe (process alive, no DB check) | `livenessProbe` |
+| `/health_check` | Readiness probe (database connected) | `readinessProbe` |
+| `/health_check/database` | Database connectivity only | Custom checks |
+| `/health_check/migrations` | Pending migrations status | CI/CD pipelines |
 
 ## Security Best Practices
 

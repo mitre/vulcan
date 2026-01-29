@@ -37,7 +37,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 
 ## Configure Local Login
 
-- **enabled:** Allows for users to be able to log in as a local user instead of using ldap. `(ENV: VULCAN_ENABEL_LOCAL_LOGIN)(default: true)`
+- **enabled:** Allows for users to be able to log in as a local user instead of using ldap. `(ENV: VULCAN_ENABLE_LOCAL_LOGIN)(default: true)`
 - **email_confirmation:** Turns on email confirmation for local registration. `(ENV: VULCAN_ENABLE_EMAIL_CONFIRMATION)(default: false)`
 - **session_timeout:** Automatically logs user out after a period of time of inactivity in minutes. `(ENV: VULCAN_SESSION_TIMEOUT)(default: 60)`
 
@@ -53,7 +53,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **servers:**
   - **main:**
     - **host:** `(ENV: VULCAN_LDAP_HOST)(default: localhost)`
-    - **port:** Port which the LDAP server communicates through `(ENV: VULCAN_LDAP_POST)(default: 389)`
+    - **port:** Port which the LDAP server communicates through `(ENV: VULCAN_LDAP_PORT)(default: 389)`
     - **title:** `(ENV: VULCAN_LDAP_TITLE)(default: LDAP)`
     - **uid:** Attribute for the username `(ENV: VULCAN_LDAP_ATTRIBUTE)(default: uid)`
     - **encryption:** `(ENV: VULCAN_LDAP_ENCRYPTION)(default: plain)`

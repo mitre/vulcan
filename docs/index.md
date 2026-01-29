@@ -57,19 +57,19 @@ git clone https://github.com/mitre/vulcan.git
 cd vulcan
 
 # Generate secure configuration
-./.github/setup-docker-secrets.sh
+./setup-docker-secrets.sh
 
 # Start the application stack
-docker-compose -f .github/docker-compose.yml up
+docker compose up
 ```
 
 ## Latest Release
 
 ::: info Current Version
-**v2.2.1** - Released August 16, 2025
+**v2.2.2** - Released January 2026
 
-Security patch release addressing critical vulnerability fixes.
-[View Release Notes →](/release-notes/v2.2.1)
+Docker deployment improvements, admin bootstrap, and security updates.
+[View Release Notes →](/release-notes/v2.2.2)
 :::
 
 ## Why Vulcan?

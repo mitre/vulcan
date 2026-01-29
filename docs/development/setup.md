@@ -405,16 +405,16 @@ rails server -p 3001
 
 ```bash
 # Build containers
-docker-compose build
+docker compose build
 
 # Start services
-docker-compose up
+docker compose up
 
 # Run migrations
-docker-compose run web rails db:create db:migrate
+docker compose run web rails db:create db:migrate
 
 # Access container
-docker-compose exec web bash
+docker compose exec web bash
 ```
 
 ### Docker Development Tips

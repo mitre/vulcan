@@ -23,24 +23,23 @@ Before installing, you can try Vulcan directly:
 # Pull the latest Docker image
 docker pull mitre/vulcan:latest
 
-# Or use docker-compose for a complete setup
+# Or use docker compose for a complete setup
 wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
 wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
 chmod +x setup-docker-secrets.sh
 ./setup-docker-secrets.sh
-docker-compose up
+docker compose up
 ```
 
 ### 2. Access Vulcan
 
 Open your browser and navigate to: `http://localhost:3000`
 
-Default credentials for testing:
-- **Email**: admin@example.com
-- **Password**: 1234567ab!
+The first user to register becomes admin automatically.
 
-!!! warning "Security Notice"
-    These are development credentials only. Never use default credentials in production!
+::: tip Admin Bootstrap
+For automated deployments, you can pre-configure an admin account via environment variables (`VULCAN_ADMIN_EMAIL` and `VULCAN_ADMIN_PASSWORD`). See [Environment Variables](environment-variables.md) for details.
+:::
 
 ### 3. First Steps
 

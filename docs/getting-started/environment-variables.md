@@ -13,8 +13,15 @@ This document lists all environment variables that can be used to configure Vulc
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | - | `postgres://user:pass@localhost:5432/vulcan_development` |
-| `VULCAN_VUE_DATABASE_PASSWORD` | PostgreSQL password (production only) | - | `postgres_password` |
+| `DATABASE_URL` | PostgreSQL connection string (12-factor, takes precedence) | - | `postgres://user:pass@localhost:5432/vulcan_production` |
+| `POSTGRES_USER` | PostgreSQL username | `postgres` | `vulcan_user` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `postgres` | `secure_password` |
+| `POSTGRES_DB` | PostgreSQL database name | `vulcan_postgres_production` | `vulcan_prod` |
+| `DATABASE_PORT` | PostgreSQL port | `5432` | `5432` |
+
+**Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
+
+**Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` is deprecated. Use `POSTGRES_PASSWORD` instead.
 
 ## General Application Settings
 
@@ -37,6 +44,34 @@ This document lists all environment variables that can be used to configure Vulc
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `VULCAN_ENABLE_USER_REGISTRATION` | Allow new users to register | `true` | `true` or `false` |
+
+### Admin Bootstrap
+
+Vulcan provides multiple ways to create the initial admin user. These are evaluated in priority order:
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_ADMIN_EMAIL` | Email for auto-created admin user | - | `admin@example.com` |
+| `VULCAN_ADMIN_PASSWORD` | Password for auto-created admin user | Auto-generated | `SecurePass123!` |
+| `VULCAN_FIRST_USER_ADMIN` | First registered user becomes admin | `true` (Docker) | `true` or `false` |
+
+**Priority Order:**
+1. **Environment Variables** (Most Secure): Set `VULCAN_ADMIN_EMAIL` and optionally `VULCAN_ADMIN_PASSWORD`
+   - Admin is created automatically during `db:prepare`
+   - If password is omitted, a secure random password is generated and logged
+   - Best for: Production, CI/CD, Kubernetes
+
+2. **First User Admin** (Convenience): Set `VULCAN_FIRST_USER_ADMIN=true`
+   - First user to register or login becomes admin automatically
+   - Protected by database advisory lock to prevent race conditions
+   - Best for: Quick demos, development, evaluations
+
+3. **Manual Rake Task**: Run `rails db:create_admin`
+   - Interactive terminal prompt
+   - Best for: Traditional deployments, manual setup
+
+**Docker Default**: In Docker deployments, `VULCAN_FIRST_USER_ADMIN=true` is the default, allowing
+immediate use after `docker compose up`. For production, disable this and use `VULCAN_ADMIN_EMAIL`.
 
 ### OIDC/OAuth (e.g., Okta, Auth0, Keycloak)
 
