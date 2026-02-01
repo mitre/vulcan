@@ -172,8 +172,10 @@ export default {
     },
     tooltips: function () {
       // Rules with satisfied_by behave like Applicable - Configurable
+      // Note: satisfied_by may be undefined for STIG rules, so we check for its existence first
       const isConfigurable =
-        this.rule.satisfied_by.length > 0 || this.rule.status === "Applicable - Configurable";
+        (this.rule.satisfied_by && this.rule.satisfied_by.length > 0) ||
+        this.rule.status === "Applicable - Configurable";
       return {
         system: null,
         content_ref_name: null,
