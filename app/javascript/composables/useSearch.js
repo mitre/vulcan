@@ -3,7 +3,8 @@ import axios from "axios";
 
 /**
  * Composable for global search functionality.
- * Searches across projects, components, and rules using the /api/search/global endpoint.
+ * Searches across projects, components, rules, SRGs, STIGs, STIG rules, and SRG rules
+ * using the /api/search/global endpoint.
  *
  * @param {Object} options - Configuration options
  * @param {number} options.limit - Maximum results per category (default: 10)
@@ -33,18 +34,34 @@ export function useSearch(options = {}) {
   const projects = ref([]);
   const components = ref([]);
   const rules = ref([]);
+  const srgs = ref([]);
+  const stigs = ref([]);
+  const stigRules = ref([]);
+  const srgRules = ref([]);
 
   // Computed
   const hasResults = computed(() => {
     return (
       projects.value.length > 0 ||
       components.value.length > 0 ||
-      rules.value.length > 0
+      rules.value.length > 0 ||
+      srgs.value.length > 0 ||
+      stigs.value.length > 0 ||
+      stigRules.value.length > 0 ||
+      srgRules.value.length > 0
     );
   });
 
   const totalResults = computed(() => {
-    return projects.value.length + components.value.length + rules.value.length;
+    return (
+      projects.value.length +
+      components.value.length +
+      rules.value.length +
+      srgs.value.length +
+      stigs.value.length +
+      stigRules.value.length +
+      srgRules.value.length
+    );
   });
 
   /**
@@ -73,6 +90,10 @@ export function useSearch(options = {}) {
       projects.value = response.data.projects || [];
       components.value = response.data.components || [];
       rules.value = response.data.rules || [];
+      srgs.value = response.data.srgs || [];
+      stigs.value = response.data.stigs || [];
+      stigRules.value = response.data.stig_rules || [];
+      srgRules.value = response.data.srg_rules || [];
     } catch (err) {
       error.value = err.message || "Search failed";
       throw err;
@@ -88,6 +109,10 @@ export function useSearch(options = {}) {
     projects.value = [];
     components.value = [];
     rules.value = [];
+    srgs.value = [];
+    stigs.value = [];
+    stigRules.value = [];
+    srgRules.value = [];
     error.value = null;
   }
 
@@ -109,6 +134,10 @@ export function useSearch(options = {}) {
     projects,
     components,
     rules,
+    srgs,
+    stigs,
+    stigRules,
+    srgRules,
 
     // Computed
     hasResults,
