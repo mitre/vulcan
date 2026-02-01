@@ -53,11 +53,16 @@ Rails.application.routes.draw do
   post '/components/:id/find', to: 'components#find'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
-  # SRG ID Search
+  # SRG ID Search (legacy routes)
   get '/search/projects', to: 'projects#search'
   get '/search/components', to: 'components#search'
   get '/search/rules', to: 'rules#search'
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
+
+  # API namespace for JSON endpoints
+  namespace :api do
+    get 'search/global', to: 'search#global'
+  end
 
   root to: 'projects#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
