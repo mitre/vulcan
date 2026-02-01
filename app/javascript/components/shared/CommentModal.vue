@@ -9,7 +9,7 @@
       :title="buttonDisabled ? 'Cannot replace on read only mode' : ''"
       @click="$bvModal.show(`comment-modal-${mod}`)"
     >
-      {{ buttonText }}
+      <b-icon v-if="buttonIcon" :icon="buttonIcon" /> {{ buttonText }}
     </b-button>
 
     <b-modal
@@ -53,6 +53,10 @@ export default {
     buttonText: {
       type: String,
       required: true,
+    },
+    buttonIcon: {
+      type: String,
+      default: null,
     },
     buttonVariant: {
       type: String,

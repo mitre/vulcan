@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { shallowMount, createLocalVue } from '@vue/test-utils'
 import BootstrapVue from 'bootstrap-vue'
 import RuleCommandBar from '@/components/rules/RuleCommandBar.vue'
@@ -6,6 +6,16 @@ import RuleCommandBar from '@/components/rules/RuleCommandBar.vue'
 const localVue = createLocalVue()
 localVue.use(BootstrapVue)
 
+/**
+ * RuleCommandBar Component Tests
+ *
+ * After refactoring, RuleCommandBar only contains:
+ * - Context group: Rule ID, version, status icons, last editor
+ * - Panels group: Related, Satisfies, Reviews, History buttons
+ *
+ * Action buttons (Clone, Delete, Save, Comment, Review, Lock/Unlock)
+ * have been moved to RuleActionsToolbar.vue
+ */
 describe('RuleCommandBar', () => {
   let wrapper
 
@@ -29,14 +39,10 @@ describe('RuleCommandBar', () => {
       propsData: {
         rule: mockRule,
         componentPrefix: 'TEST',
-        effectivePermissions: 'admin',
-        currentUserId: 1,
-        readOnly: false,
         activePanel: null,
         ...props
       },
       stubs: {
-        CommentModal: true,
         BIcon: true
       }
     })
@@ -103,71 +109,6 @@ describe('RuleCommandBar', () => {
     })
   })
 
-  describe('action buttons', () => {
-    it('shows Clone button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Clone')
-    })
-
-    it('shows Delete button for admin', () => {
-      wrapper = createWrapper({ effectivePermissions: 'admin' })
-      expect(wrapper.text()).toContain('Delete')
-    })
-
-    it('hides Delete button for non-admin', () => {
-      wrapper = createWrapper({ effectivePermissions: 'author' })
-      expect(wrapper.text()).not.toContain('Delete')
-    })
-
-    it('shows Save button (via CommentModal)', () => {
-      wrapper = createWrapper()
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const saveModal = modals.wrappers.find(m => m.props('buttonText') === 'Save')
-      expect(saveModal).toBeTruthy()
-    })
-
-    it('shows Comment button (via CommentModal)', () => {
-      wrapper = createWrapper()
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const commentModal = modals.wrappers.find(m => m.props('buttonText') === 'Comment')
-      expect(commentModal).toBeTruthy()
-    })
-
-    it('shows Review button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Review')
-    })
-
-    it('shows Lock button for admin when rule is not locked (via CommentModal)', () => {
-      wrapper = createWrapper({
-        effectivePermissions: 'admin',
-        rule: { ...mockRule, locked: false }
-      })
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const lockModal = modals.wrappers.find(m => m.props('buttonText') === 'Lock')
-      expect(lockModal).toBeTruthy()
-    })
-
-    it('shows Unlock button for admin when rule is locked (via CommentModal)', () => {
-      wrapper = createWrapper({
-        effectivePermissions: 'admin',
-        rule: { ...mockRule, locked: true }
-      })
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const unlockModal = modals.wrappers.find(m => m.props('buttonText') === 'Unlock')
-      expect(unlockModal).toBeTruthy()
-    })
-
-    it('hides Lock/Unlock buttons for non-admin', () => {
-      wrapper = createWrapper({ effectivePermissions: 'author' })
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const lockModal = modals.wrappers.find(
-        m => m.props('buttonText') === 'Lock' || m.props('buttonText') === 'Unlock'
-      )
-      expect(lockModal).toBeFalsy()
-    })
-  })
-
   describe('panel toggle buttons', () => {
     it('shows Related button', () => {
       wrapper = createWrapper()
@@ -203,13 +144,6 @@ describe('RuleCommandBar', () => {
   })
 
   describe('events', () => {
-    it('emits clone event when Clone button is clicked', async () => {
-      wrapper = createWrapper()
-      const cloneButton = wrapper.find('[variant="outline-info"]')
-      await cloneButton.trigger('click')
-      expect(wrapper.emitted('clone')).toBeTruthy()
-    })
-
     it('emits toggle-panel with panel name when panel button is clicked', async () => {
       wrapper = createWrapper()
       const satisfiesButton = wrapper.findAll('b-button-stub').wrappers.find(
@@ -228,86 +162,9 @@ describe('RuleCommandBar', () => {
       await relatedButton.trigger('click')
       expect(wrapper.emitted('open-related-modal')).toBeTruthy()
     })
-
-    it('emits open-review-modal when Review button is clicked', async () => {
-      wrapper = createWrapper()
-      const reviewButton = wrapper.findAll('b-button-stub').wrappers.find(
-        btn => btn.text().includes('Review') && !btn.text().includes('Reviews')
-      )
-      await reviewButton.trigger('click')
-      expect(wrapper.emitted('open-review-modal')).toBeTruthy()
-    })
-
-    it('emits delete event when Delete button is clicked', async () => {
-      wrapper = createWrapper({ effectivePermissions: 'admin' })
-      const deleteButton = wrapper.find('[variant="outline-danger"]')
-      await deleteButton.trigger('click')
-      expect(wrapper.emitted('delete')).toBeTruthy()
-    })
-  })
-
-  describe('read-only mode', () => {
-    it('disables Save button when rule is locked', () => {
-      wrapper = createWrapper({
-        rule: { ...mockRule, locked: true }
-      })
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const saveModal = modals.wrappers.find(m => m.props('buttonText') === 'Save')
-      expect(saveModal).toBeTruthy()
-      expect(saveModal.props('buttonDisabled')).toBe(true)
-    })
-
-    it('disables Save button when rule is under review', () => {
-      wrapper = createWrapper({
-        rule: { ...mockRule, review_requestor_id: 123 }
-      })
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const saveModal = modals.wrappers.find(m => m.props('buttonText') === 'Save')
-      expect(saveModal).toBeTruthy()
-      expect(saveModal.props('buttonDisabled')).toBe(true)
-    })
-
-    it('disables Delete button when rule is locked', () => {
-      wrapper = createWrapper({
-        effectivePermissions: 'admin',
-        rule: { ...mockRule, locked: true }
-      })
-      const deleteButton = wrapper.find('[variant="outline-danger"]')
-      expect(deleteButton.attributes('disabled')).toBe('true')
-    })
-
-    it('disables Lock button when rule is under review', () => {
-      wrapper = createWrapper({
-        effectivePermissions: 'admin',
-        rule: { ...mockRule, review_requestor_id: 123 }
-      })
-      const modals = wrapper.findAllComponents({ name: 'CommentModal' })
-      const lockModal = modals.wrappers.find(m => m.props('buttonText') === 'Lock')
-      expect(lockModal).toBeTruthy()
-      expect(lockModal.props('buttonDisabled')).toBe(true)
-    })
   })
 
   describe('computed properties', () => {
-    it('computes isReadOnly correctly when locked', () => {
-      wrapper = createWrapper({
-        rule: { ...mockRule, locked: true }
-      })
-      expect(wrapper.vm.isReadOnly).toBe(true)
-    })
-
-    it('computes isReadOnly correctly when under review', () => {
-      wrapper = createWrapper({
-        rule: { ...mockRule, review_requestor_id: 123 }
-      })
-      expect(wrapper.vm.isReadOnly).toBe(true)
-    })
-
-    it('computes isReadOnly as false when neither locked nor under review', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.isReadOnly).toBe(false)
-    })
-
     it('computes reviewCount from rule.reviews', () => {
       wrapper = createWrapper()
       expect(wrapper.vm.reviewCount).toBe(2)

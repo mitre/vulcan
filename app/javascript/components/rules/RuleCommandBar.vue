@@ -27,82 +27,8 @@
         </small>
       </div>
 
-      <!-- Group 2: Actions -->
-      <div class="command-group actions-group">
-        <b-button-group size="sm">
-          <!-- Clone -->
-          <b-button variant="outline-info" @click="$emit('clone')">
-            <b-icon icon="files" /> Clone
-          </b-button>
-          <!-- Delete (admin only) -->
-          <b-button
-            v-if="effectivePermissions === 'admin'"
-            variant="outline-danger"
-            :disabled="isReadOnly"
-            @click="$emit('delete')"
-          >
-            <b-icon icon="trash" /> Delete
-          </b-button>
-          <!-- Save -->
-          <CommentModal
-            title="Save Control"
-            message="Provide a comment that summarizes your changes to this control."
-            :require-non-empty="true"
-            button-text="Save"
-            button-variant="outline-success"
-            button-size="sm"
-            :button-disabled="isReadOnly"
-            wrapper-class="d-inline-block"
-            @comment="$emit('save', $event)"
-          />
-          <!-- Comment -->
-          <CommentModal
-            title="Comment"
-            message="Submit general feedback on the control"
-            :require-non-empty="true"
-            button-text="Comment"
-            button-variant="outline-secondary"
-            button-size="sm"
-            :button-disabled="false"
-            wrapper-class="d-inline-block"
-            @comment="$emit('comment', $event)"
-          />
-          <!-- Review -->
-          <b-button variant="outline-primary" size="sm" @click="$emit('open-review-modal')">
-            <b-icon icon="clipboard-check" /> Review
-          </b-button>
-          <!-- Lock/Unlock (admin only) -->
-          <template v-if="effectivePermissions === 'admin'">
-            <CommentModal
-              v-if="rule.locked"
-              title="Unlock Control"
-              message="Provide a reason for unlocking this control."
-              :require-non-empty="true"
-              button-text="Unlock"
-              button-variant="outline-warning"
-              button-size="sm"
-              :button-disabled="false"
-              wrapper-class="d-inline-block"
-              @comment="$emit('unlock', $event)"
-            />
-            <CommentModal
-              v-else
-              title="Lock Control"
-              message="Provide a reason for locking this control."
-              :require-non-empty="true"
-              button-text="Lock"
-              button-variant="outline-dark"
-              button-size="sm"
-              :button-disabled="isUnderReview"
-              wrapper-class="d-inline-block"
-              @comment="$emit('lock', $event)"
-            />
-          </template>
-        </b-button-group>
-      </div>
-
-      <!-- Group 3: Panels (right) -->
-      <div class="command-group panels-group">
+      <!-- Group 2: Panels -->
+      <div class="command-group panels-group ml-auto">
         <b-button-group size="sm">
           <b-button variant="outline-secondary" @click="$emit('open-related-modal')">
             <b-icon icon="link-45deg" /> Related
@@ -135,14 +61,10 @@
 </template>
 
 <script>
-import CommentModal from "../shared/CommentModal.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 
 export default {
   name: "RuleCommandBar",
-  components: {
-    CommentModal,
-  },
   mixins: [DateFormatMixinVue],
   props: {
     rule: {
@@ -152,18 +74,6 @@ export default {
     componentPrefix: {
       type: String,
       required: true,
-    },
-    effectivePermissions: {
-      type: String,
-      required: true,
-    },
-    currentUserId: {
-      type: Number,
-      required: true,
-    },
-    readOnly: {
-      type: Boolean,
-      default: false,
     },
     activePanel: {
       type: String,
@@ -176,12 +86,6 @@ export default {
     },
     ruleUrl() {
       return `/components/${this.rule.component_id}/${this.ruleDisplayId}`;
-    },
-    isReadOnly() {
-      return this.rule.locked || !!this.rule.review_requestor_id;
-    },
-    isUnderReview() {
-      return !!this.rule.review_requestor_id;
     },
     reviewCount() {
       return this.rule.reviews ? this.rule.reviews.length : 0;

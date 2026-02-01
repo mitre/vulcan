@@ -2,6 +2,20 @@
   <div>
     <b-tabs>
       <b-tab title="Documentation" class="pt-3" active>
+        <!-- Actions Toolbar (always visible, buttons disabled when read-only) -->
+        <RuleActionsToolbar
+          :rule="rule"
+          :effective-permissions="effectivePermissions"
+          :read-only="readOnly"
+          @clone="$emit('clone')"
+          @delete="$emit('delete')"
+          @save="$emit('save', $event)"
+          @comment="$emit('comment', $event)"
+          @open-review-modal="$emit('open-review-modal')"
+          @lock="$emit('lock', $event)"
+          @unlock="$emit('unlock', $event)"
+        />
+
         <div v-if="advanced_fields" class="mb-3 font-weight-bold">
           <b-form-checkbox
             v-model="advancedEditor"
@@ -45,10 +59,11 @@
 import BasicRuleForm from "./forms/BasicRuleForm.vue";
 import AdvancedRuleForm from "./forms/AdvancedRuleForm.vue";
 import InspecControlEditor from "./InspecControlEditor.vue";
+import RuleActionsToolbar from "./RuleActionsToolbar.vue";
 
 export default {
   name: "RuleEditor",
-  components: { BasicRuleForm, AdvancedRuleForm, InspecControlEditor },
+  components: { BasicRuleForm, AdvancedRuleForm, InspecControlEditor, RuleActionsToolbar },
   props: {
     rule: {
       type: Object,
@@ -69,6 +84,10 @@ export default {
     readOnly: {
       type: Boolean,
       default: false,
+    },
+    effectivePermissions: {
+      type: String,
+      default: "",
     },
     advanced_fields: {
       type: Boolean,
