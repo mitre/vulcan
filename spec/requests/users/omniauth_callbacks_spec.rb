@@ -89,7 +89,7 @@ RSpec.describe 'Remember Me Functionality', type: :request do
 
     it 'controller has remember_me handling code' do
       # Verify the controller code includes remember_me handling
-      controller_path = Rails.root.join('app', 'controllers', 'users', 'omniauth_callbacks_controller.rb')
+      controller_path = Rails.root.join('app/controllers/users/omniauth_callbacks_controller.rb')
       controller_code = File.read(controller_path)
 
       expect(controller_code).to include('remember_me')

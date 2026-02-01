@@ -13,8 +13,11 @@ AllCops:
     - node_modules/**/*
     - docs/node_modules/**/*
     - "vendor/**/*"
+# DISABLED: Following Standard Ruby - line length auto-correction is destructive
+# It can corrupt code when combined with other cops (e.g., Rails/FilePath path duplication)
+# See: https://github.com/standardrb/standard
 Layout/LineLength:
-  Max: 200
+  Enabled: false
 Metrics/PerceivedComplexity:
   Enabled: false
 Metrics/CyclomaticComplexity:
@@ -37,8 +40,10 @@ Rails/ContentTag:
   Enabled: true
   Exclude:
     - "app/lib/**/*"
+# 'slashes' style is simpler and avoids potential auto-correction issues
+# Rails.root.join('path/to/file') vs Rails.root.join('path', 'to', 'file')
 Rails/FilePath:
-  EnforcedStyle: "arguments"
+  EnforcedStyle: slashes
 Rails/HasAndBelongsToMany:
   Enabled: false
 # RSpec configuration - more lenient for existing codebase

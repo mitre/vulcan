@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'SMTP Settings Initializer' do
   let(:original_env) { Rails.env }
-  let(:smtp_initializer_path) { Rails.root.join('config', 'initializers', 'smtp_settings.rb') }
+  let(:smtp_initializer_path) { Rails.root.join("config/initializers/smtp_settings.rb") }
   let(:test_contact_email) { 'support@myapp.com' }
 
   before do

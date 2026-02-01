@@ -31,7 +31,7 @@ namespace :stig_and_srg_puller do
         else
           zip_response = RestClient.get(item['url'])
           # create a temp dir to extract zip contents
-          temp_dir = Rails.root.join('tmp', 'zip_extraction')
+          temp_dir = Rails.root.join("tmp/zip_extraction")
           FileUtils.mkdir_p(temp_dir)
           zip_file_path = File.join(temp_dir, 'download_zip')
           File.binwrite(zip_file_path, zip_response.body)
