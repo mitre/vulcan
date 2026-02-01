@@ -1,9 +1,10 @@
 import { ref, computed } from "vue";
 
 /**
- * Default filter state - all status/review filters enabled, display options disabled
+ * Default filter state - all status/review filters enabled, nest + sort by SRG enabled
+ * Exported so other components can use the same defaults (DRY)
  */
-function getDefaultFilters() {
+export function getDefaultFilters() {
   return {
     search: "",
     // Status filters
@@ -17,9 +18,9 @@ function getDefaultFilters() {
     urFilterChecked: true, // Under Review
     lckFilterChecked: true, // Locked
     // Display options
-    nestSatisfiedRulesChecked: false,
+    nestSatisfiedRulesChecked: true,
     showSRGIdChecked: false,
-    sortBySRGIdChecked: false,
+    sortBySRGIdChecked: true,
   };
 }
 

@@ -122,12 +122,33 @@
           @click="ruleSelected(rule)"
         >
           <span>
+            <!-- Expand/collapse toggle for parents with children -->
+            <template v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
+              <b-icon
+                :icon="isParentExpanded(rule.id) ? 'chevron-down' : 'chevron-right'"
+                class="tree-toggle mr-1"
+                @click="toggleParentExpanded(rule.id, $event)"
+              />
+            </template>
+            <!-- Spacer for leaf nodes to align with parents that have chevrons -->
+            <template v-else-if="filters.nestSatisfiedRulesChecked">
+              <span class="tree-toggle-spacer" />
+            </template>
             <span v-if="filters.showSRGIdChecked">
               {{ rule.version }}
             </span>
             <span v-else>
               {{ formatRuleId(rule.rule_id) }}
             </span>
+            <!-- Child count badge for collapsed parents -->
+            <b-badge
+              v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+              variant="secondary"
+              pill
+              class="ml-1 child-count"
+            >
+              {{ rule.satisfies.length }}
+            </b-badge>
           </span>
           <span>
             <i
@@ -168,12 +189,16 @@
             />
           </span>
         </div>
-        <div v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
+        <div
+          v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+          v-show="isParentExpanded(rule.id)"
+          class="nested-children"
+        >
           <div
             v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
             :class="ruleRowClass(satisfies)"
-            class="d-flex justify-content-between text-responsive"
+            class="d-flex justify-content-between text-responsive child-row"
             @click="ruleSelected(satisfies)"
           >
             <span>
@@ -228,6 +253,7 @@ import _ from "lodash";
 import axios from "axios";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import { getDefaultFilters } from "../../composables/useRuleFilters";
 export default {
   name: "RuleNavigator",
   components: { FindAndReplace, NewRuleModalForm },
@@ -269,20 +295,8 @@ export default {
     return {
       rule_form_rule_id: "",
       sidebarOffset: 0,
-      localFilters: {
-        search: "",
-        acFilterChecked: true,
-        aimFilterChecked: true,
-        adnmFilterChecked: true,
-        naFilterChecked: true,
-        nydFilterChecked: true,
-        nurFilterChecked: true,
-        urFilterChecked: true,
-        lckFilterChecked: true,
-        nestSatisfiedRulesChecked: false,
-        showSRGIdChecked: false,
-        sortBySRGIdChecked: false,
-      },
+      expandedParents: new Set(), // Track which parent rules are expanded
+      localFilters: getDefaultFilters(),
     };
   },
   computed: {
@@ -381,11 +395,30 @@ export default {
     },
   },
   mounted: function () {
-    // Persist `filters` across page loads
+    // Restore status/review filters from localStorage, but keep display defaults
     if (localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`)) {
       try {
-        this.filters = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
-        this.$refs.ruleSearch.value = this.filters.search;
+        const saved = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
+        // Only restore status and review filters, NOT display options
+        const statusReviewKeys = [
+          "search",
+          "acFilterChecked",
+          "aimFilterChecked",
+          "adnmFilterChecked",
+          "naFilterChecked",
+          "nydFilterChecked",
+          "nurFilterChecked",
+          "urFilterChecked",
+          "lckFilterChecked",
+        ];
+        statusReviewKeys.forEach((key) => {
+          if (key in saved) {
+            this.filters[key] = saved[key];
+          }
+        });
+        if (this.$refs.ruleSearch) {
+          this.$refs.ruleSearch.value = this.filters.search;
+        }
       } catch (e) {
         localStorage.removeItem(`ruleNavigatorFilters-${this.componentId}`);
       }
@@ -397,6 +430,23 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
+    // Collapsible tree methods
+    isParentExpanded(ruleId) {
+      return this.expandedParents.has(ruleId);
+    },
+    toggleParentExpanded(ruleId, event) {
+      // Prevent selecting the rule when clicking the expand/collapse toggle
+      if (event) {
+        event.stopPropagation();
+      }
+      if (this.expandedParents.has(ruleId)) {
+        this.expandedParents.delete(ruleId);
+      } else {
+        this.expandedParents.add(ruleId);
+      }
+      // Force reactivity update since Set changes aren't tracked
+      this.expandedParents = new Set(this.expandedParents);
+    },
     searchUpdated: _.debounce(function (newSearch) {
       this.filters.search = newSearch;
     }, 500),
@@ -463,7 +513,7 @@ export default {
         sortedRules.sort((a, b) => a.version.localeCompare(b.version));
       }
 
-      return sortedRules.filter((rule) => {
+      let filteredRules = sortedRules.filter((rule) => {
         return (
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
@@ -471,6 +521,16 @@ export default {
           (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
         );
       });
+
+      // When nesting is enabled, sort parents (rules that satisfy others) before leaves
+      // This creates a logical tree structure in the UI
+      if (this.filters.nestSatisfiedRulesChecked) {
+        const parents = filteredRules.filter((rule) => rule.satisfies.length > 0);
+        const leaves = filteredRules.filter((rule) => rule.satisfies.length === 0);
+        filteredRules = [...parents, ...leaves];
+      }
+
+      return filteredRules;
     },
     sortAlsoSatisfies: function (rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
@@ -551,20 +611,7 @@ export default {
     // Helper to clear all filters
     clearFilters: function () {
       this.$refs.ruleSearch.value = "";
-      this.filters = {
-        search: "",
-        acFilterChecked: true, // Applicable - Configurable
-        aimFilterChecked: true, // Applicable - Inherently Meets
-        adnmFilterChecked: true, // Applicable - Does Not Meet
-        naFilterChecked: true, // Not Applicable
-        nydFilterChecked: true, // Not Yet Determined
-        nurFilterChecked: true, // Not under review
-        urFilterChecked: true, // Under review
-        lckFilterChecked: true, // Locked
-        nestSatisfiedRulesChecked: false, // Nests satisfied rules
-        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
-        sortBySRGIdChecked: false, // Sort by SRG ID
-      };
+      this.filters = getDefaultFilters();
     },
     handleScroll: function () {
       this.$nextTick(() => {
@@ -631,6 +678,13 @@ export default {
   overflow-y: auto;
 }
 
+/* Mobile: limit sidebar height so main content is visible below */
+@media (max-width: 767.98px) {
+  #scrolling-sidebar {
+    max-height: 40vh !important;
+  }
+}
+
 .filter-row {
   display: flex;
   justify-content: space-between;
@@ -657,5 +711,39 @@ export default {
   .spacing-responsive {
     letter-spacing: 0.01em;
   }
+}
+
+/* Collapsible tree styles */
+.tree-toggle {
+  cursor: pointer;
+  color: #6c757d;
+  transition: transform 0.15s ease;
+}
+
+.tree-toggle:hover {
+  color: #007bff;
+}
+
+/* Spacer for leaf nodes to align text with parent nodes */
+.tree-toggle-spacer {
+  display: inline-block;
+  width: 1em;
+  margin-right: 0.25rem;
+}
+
+.nested-children {
+  margin-left: 1rem;
+  border-left: 1px solid #dee2e6;
+  padding-left: 0.5rem;
+}
+
+.child-row {
+  font-size: 0.9em;
+  color: #495057;
+}
+
+.child-count {
+  font-size: 0.75em;
+  font-weight: normal;
 }
 </style>

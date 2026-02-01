@@ -40,11 +40,11 @@ describe('useRuleFilters', () => {
       expect(filters.value.lckFilterChecked).toBe(true)
     })
 
-    it('initializes with display options disabled', () => {
+    it('initializes with display options (nest + sort by SRG enabled, show SRG ID disabled)', () => {
       const { filters } = useRuleFilters(mockRules, componentId)
-      expect(filters.value.nestSatisfiedRulesChecked).toBe(false)
+      expect(filters.value.nestSatisfiedRulesChecked).toBe(true)
       expect(filters.value.showSRGIdChecked).toBe(false)
-      expect(filters.value.sortBySRGIdChecked).toBe(false)
+      expect(filters.value.sortBySRGIdChecked).toBe(true)
     })
 
     it('initializes with empty search', () => {
@@ -90,11 +90,11 @@ describe('useRuleFilters', () => {
       expect(filters.value.acFilterChecked).toBe(false)
     })
 
-    it('toggles a filter from false to true', () => {
+    it('toggles a filter from true to false', () => {
       const { filters, toggleFilter } = useRuleFilters(mockRules, componentId)
-      expect(filters.value.nestSatisfiedRulesChecked).toBe(false)
-      toggleFilter('nestSatisfiedRulesChecked')
       expect(filters.value.nestSatisfiedRulesChecked).toBe(true)
+      toggleFilter('nestSatisfiedRulesChecked')
+      expect(filters.value.nestSatisfiedRulesChecked).toBe(false)
     })
   })
 
@@ -128,7 +128,7 @@ describe('useRuleFilters', () => {
 
       // Verify defaults restored
       expect(filters.value.acFilterChecked).toBe(true)
-      expect(filters.value.nestSatisfiedRulesChecked).toBe(false)
+      expect(filters.value.nestSatisfiedRulesChecked).toBe(true)
       expect(filters.value.search).toBe('')
     })
   })

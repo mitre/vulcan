@@ -11,17 +11,8 @@
         v-if="selectedRule"
         :rule="selectedRule"
         :component-prefix="component.prefix"
-        :effective-permissions="effectivePermissions"
-        :current-user-id="currentUserId"
         :active-panel="activePanel"
         class="mb-3"
-        @clone="$bvModal.show('duplicate-rule-modal')"
-        @delete="$bvModal.show('delete-rule-modal')"
-        @save="saveRule($event)"
-        @comment="commentFormSubmitted($event)"
-        @lock="lockRule($event)"
-        @unlock="unlockRule($event)"
-        @open-review-modal="$bvModal.show('review-modal')"
         @open-related-modal="$bvModal.show('related-rules-modal')"
         @toggle-panel="togglePanel($event)"
       />
@@ -80,54 +71,58 @@
           centered
           @ok="$root.$emit('delete:rule', selectedRule.id)"
         >
-        <p class="my-2">
-          Are you sure you want to delete this control?<br />This cannot be undone.
-        </p>
-        <template #modal-footer="{ cancel, ok }">
-          <b-button @click="cancel()">Cancel</b-button>
-          <b-button variant="danger" @click="ok()">Permanently Delete Control</b-button>
-        </template>
-      </b-modal>
+          <p class="my-2">
+            Are you sure you want to delete this control?<br />This cannot be undone.
+          </p>
+          <template #modal-footer="{ cancel, ok }">
+            <b-button @click="cancel()">Cancel</b-button>
+            <b-button variant="danger" @click="ok()">Permanently Delete Control</b-button>
+          </template>
+        </b-modal>
 
-      <!-- Also Satisfies Modal (multi-select) -->
-      <b-modal
-        id="also-satisfies-modal"
-        title="Also Satisfies"
-        centered
-        size="lg"
-        @ok="addMultipleSatisfiedRules"
-        @hidden="clearSelectedRules"
-      >
-        <b-form-group label="Select controls that this one satisfies:">
-          <multiselect
-            v-model="selectedSatisfiesRuleIds"
-            :options="filteredSelectRules"
-            :multiple="true"
-            :close-on-select="false"
-            :clear-on-select="false"
-            :preserve-search="true"
-            placeholder="Search and select controls..."
-            label="text"
-            track-by="value"
-            :preselect-first="false"
-          >
-            <template slot="selection" slot-scope="{ values, isOpen }">
-              <span v-if="values.length && !isOpen" class="multiselect__single">
-                {{ values.length }} control(s) selected
-              </span>
-            </template>
-          </multiselect>
-        </b-form-group>
-        <div class="mt-2 text-muted">
-          <small>{{ selectedSatisfiesRuleIds.length }} control(s) selected</small>
-        </div>
-        <template #modal-footer="{ cancel, ok }">
-          <b-button @click="cancel()">Cancel</b-button>
-          <b-button variant="info" :disabled="selectedSatisfiesRuleIds.length === 0" @click="ok()">
-            Add {{ selectedSatisfiesRuleIds.length }} Control(s)
-          </b-button>
-        </template>
-      </b-modal>
+        <!-- Also Satisfies Modal (multi-select) -->
+        <b-modal
+          id="also-satisfies-modal"
+          title="Also Satisfies"
+          centered
+          size="lg"
+          @ok="addMultipleSatisfiedRules"
+          @hidden="clearSelectedRules"
+        >
+          <b-form-group label="Select controls that this one satisfies:">
+            <multiselect
+              v-model="selectedSatisfiesRuleIds"
+              :options="filteredSelectRules"
+              :multiple="true"
+              :close-on-select="false"
+              :clear-on-select="false"
+              :preserve-search="true"
+              placeholder="Search and select controls..."
+              label="text"
+              track-by="value"
+              :preselect-first="false"
+            >
+              <template slot="selection" slot-scope="{ values, isOpen }">
+                <span v-if="values.length && !isOpen" class="multiselect__single">
+                  {{ values.length }} control(s) selected
+                </span>
+              </template>
+            </multiselect>
+          </b-form-group>
+          <div class="mt-2 text-muted">
+            <small>{{ selectedSatisfiesRuleIds.length }} control(s) selected</small>
+          </div>
+          <template #modal-footer="{ cancel, ok }">
+            <b-button @click="cancel()">Cancel</b-button>
+            <b-button
+              variant="info"
+              :disabled="selectedSatisfiesRuleIds.length === 0"
+              @click="ok()"
+            >
+              Add {{ selectedSatisfiesRuleIds.length }} Control(s)
+            </b-button>
+          </template>
+        </b-modal>
       </template>
 
       <!-- Related Rules Modal -->
@@ -159,8 +154,17 @@
           :statuses="statuses"
           :severities="severities"
           :severities_map="severities_map"
+          :read-only="isViewerOnly"
+          :effective-permissions="effectivePermissions"
           :advanced_fields="component.advanced_fields"
           :additional_questions="component.additional_questions"
+          @clone="$bvModal.show('duplicate-rule-modal')"
+          @delete="$bvModal.show('delete-rule-modal')"
+          @save="saveRule($event)"
+          @comment="commentFormSubmitted($event)"
+          @lock="lockRule($event)"
+          @unlock="unlockRule($event)"
+          @open-review-modal="$bvModal.show('review-modal')"
         />
       </template>
     </template>
@@ -344,13 +348,27 @@ export default {
     };
 
     // Load filters from localStorage on init
+    // Only load status/review filters - display options use code defaults
     const loadFiltersFromStorage = () => {
       const saved = localStorage.getItem(`ruleNavigatorFilters-${componentId}`);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          Object.keys(parsed).forEach((key) => {
-            if (key in filters.value) {
+          // Only restore status and review filters, NOT display options
+          // This ensures new display defaults take effect
+          const statusReviewKeys = [
+            "search",
+            "acFilterChecked",
+            "aimFilterChecked",
+            "adnmFilterChecked",
+            "naFilterChecked",
+            "nydFilterChecked",
+            "nurFilterChecked",
+            "urFilterChecked",
+            "lckFilterChecked",
+          ];
+          statusReviewKeys.forEach((key) => {
+            if (key in parsed && key in filters.value) {
               filters.value[key] = parsed[key];
             }
           });
