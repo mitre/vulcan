@@ -3,7 +3,7 @@
 module Api
   ##
   # API controller for global search functionality
-  # Returns search results across projects, components, and rules
+  # Returns search results across projects, components, rules, SRGs, and STIGs
   #
   class SearchController < BaseController
     before_action :authenticate_user!
@@ -31,14 +31,18 @@ module Api
       render json: {
         projects: search_projects(limit),
         components: search_components(limit),
-        rules: search_rules(limit)
+        rules: search_rules(limit),
+        srgs: search_srgs(limit),
+        stigs: search_stigs(limit),
+        stig_rules: search_stig_rules(limit),
+        srg_rules: search_srg_rules(limit)
       }
     end
 
     private
 
     def empty_results
-      { projects: [], components: [], rules: [] }
+      { projects: [], components: [], rules: [], srgs: [], stigs: [], stig_rules: [], srg_rules: [] }
     end
 
     def search_projects(limit)
@@ -112,6 +116,160 @@ module Api
           snippet: generate_snippet(rule, @query[:normalized])
         }
       end
+    end
+
+    ##
+    # Search SRGs (Security Requirements Guides)
+    # SRGs are public resources - any authenticated user can search them
+    #
+    def search_srgs(limit)
+      SecurityRequirementsGuide
+        .where(*build_ilike_conditions(%w[name title srg_id]))
+        .limit(limit)
+        .map do |srg|
+          {
+            id: srg.id,
+            srg_id: srg.srg_id,
+            name: srg.name,
+            title: srg.title,
+            version: srg.version
+          }
+        end
+    end
+
+    ##
+    # Search STIGs (Security Technical Implementation Guides)
+    # STIGs are public resources - any authenticated user can search them
+    #
+    def search_stigs(limit)
+      Stig
+        .where(*build_ilike_conditions(%w[name title stig_id description]))
+        .limit(limit)
+        .map do |stig|
+          {
+            id: stig.id,
+            stig_id: stig.stig_id,
+            name: stig.name,
+            title: stig.title,
+            version: stig.version,
+            description: stig.description
+          }
+        end
+    end
+
+    ##
+    # Search STIG Rules (rules within published STIGs)
+    # STIG rules are public resources - any authenticated user can search them
+    # Searches: rule_id, vuln_id, title, fixtext, ident (CCIs), check content
+    #
+    def search_stig_rules(limit)
+      # Build search across rule fields and joined check content
+      conditions = build_stig_rule_conditions
+
+      StigRule
+        .left_joins(:checks)
+        .where(conditions)
+        .includes(:stig)
+        .distinct
+        .limit(limit)
+        .map do |rule|
+          {
+            id: rule.id,
+            rule_id: rule.rule_id,
+            vuln_id: rule.vuln_id,
+            title: rule.title,
+            fixtext: rule.fixtext,
+            ident: rule.ident,
+            stig_id: rule.stig_id,
+            stig_name: rule.stig&.name
+          }
+        end
+    end
+
+    ##
+    # Search SRG Rules (rules within Security Requirements Guides)
+    # SRG rules are public resources - any authenticated user can search them
+    # Searches: rule_id, title, fixtext, ident (CCIs), check content
+    #
+    def search_srg_rules(limit)
+      # Build search across rule fields and joined check content
+      conditions = build_srg_rule_conditions
+
+      SrgRule
+        .left_joins(:checks)
+        .where(conditions)
+        .includes(:security_requirements_guide)
+        .distinct
+        .limit(limit)
+        .map do |rule|
+          {
+            id: rule.id,
+            rule_id: rule.rule_id,
+            title: rule.title,
+            fixtext: rule.fixtext,
+            ident: rule.ident,
+            srg_id: rule.security_requirements_guide_id,
+            srg_name: rule.security_requirements_guide&.name
+          }
+        end
+    end
+
+    ##
+    # Build ILIKE conditions for STIG rule search across multiple fields
+    # Including check content via join
+    #
+    def build_stig_rule_conditions
+      # Search across rule_id, vuln_id, title, fixtext, ident (CCIs)
+      columns = %w[base_rules.rule_id base_rules.vuln_id base_rules.title base_rules.fixtext base_rules.ident]
+      check_columns = %w[checks.content]
+
+      conditions = []
+      values = []
+
+      @search_terms.each do |term|
+        # Rule fields
+        rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
+        # Check content
+        check_conditions = check_columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
+        # Combine
+        conditions << "(#{rule_conditions} OR #{check_conditions})"
+
+        # Add values for rule columns
+        columns.size.times { values << "%#{term}%" }
+        # Add values for check columns
+        check_columns.size.times { values << "%#{term}%" }
+      end
+
+      [conditions.join(' OR ')] + values
+    end
+
+    ##
+    # Build ILIKE conditions for SRG rule search across multiple fields
+    # Including check content via join
+    #
+    def build_srg_rule_conditions
+      # Search across rule_id, title, fixtext, ident (CCIs)
+      columns = %w[base_rules.rule_id base_rules.title base_rules.fixtext base_rules.ident]
+      check_columns = %w[checks.content]
+
+      conditions = []
+      values = []
+
+      @search_terms.each do |term|
+        # Rule fields
+        rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
+        # Check content
+        check_conditions = check_columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
+        # Combine
+        conditions << "(#{rule_conditions} OR #{check_conditions})"
+
+        # Add values for rule columns
+        columns.size.times { values << "%#{term}%" }
+        # Add values for check columns
+        check_columns.size.times { values << "%#{term}%" }
+      end
+
+      [conditions.join(' OR ')] + values
     end
 
     ##
