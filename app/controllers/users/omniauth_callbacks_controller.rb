@@ -36,6 +36,13 @@ module Users
         Rails.logger.warn "No ID token in OmniAuth credentials for user: #{user.email}"
       end
 
+      # Handle remember_me for OmniAuth logins
+      # The checkbox sends remember_me=1 - check both regular params and omniauth.params
+      # OmniAuth may pass form data via request.env['omniauth.params'] in some configurations
+      omniauth_params = request.env['omniauth.params'] || {}
+      should_remember = params[:remember_me] == '1' || omniauth_params['remember_me'] == '1'
+      remember_me(user) if should_remember
+
       flash.notice = I18n.t('devise.sessions.signed_in')
       sign_in_and_redirect(user) && return
     end
