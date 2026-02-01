@@ -10,14 +10,18 @@
           }}</b-badge>
         </div>
         <b-button
-          v-if="!readOnly && rule.status === 'Applicable - Configurable'"
+          v-if="rule.status === 'Applicable - Configurable'"
           v-b-modal.also-satisfies-modal
           size="sm"
           variant="outline-primary"
+          :disabled="readOnly"
         >
           <b-icon icon="plus" /> Add
         </b-button>
       </div>
+      <p v-if="readOnly" class="text-muted small mb-2">
+        <em>Edit mode required to modify</em>
+      </p>
 
       <div
         v-for="satisfies in rule.satisfies"
@@ -29,11 +33,11 @@
           {{ projectPrefix }}-{{ satisfies.rule_id }}
         </span>
         <b-button
-          v-if="!readOnly"
           v-b-modal.unmark-satisfies-modal
           size="sm"
           variant="outline-danger"
           class="ml-2"
+          :disabled="readOnly"
           @click="satisfies_rule = satisfies"
         >
           Remove
@@ -68,6 +72,9 @@
         <strong>Satisfied By</strong>
         <b-badge pill variant="info" class="ml-1">{{ rule.satisfied_by.length }}</b-badge>
       </div>
+      <p v-if="readOnly" class="text-muted small mb-2">
+        <em>Edit mode required to modify</em>
+      </p>
 
       <div
         v-for="satisfied_by in rule.satisfied_by"
@@ -79,11 +86,11 @@
           {{ projectPrefix }}-{{ satisfied_by.rule_id }}
         </span>
         <b-button
-          v-if="!readOnly"
           v-b-modal.unmark-satisfied-by-modal
           size="sm"
           variant="outline-danger"
           class="ml-2"
+          :disabled="readOnly"
           @click="satisfied_by_rule = satisfied_by"
         >
           Remove
@@ -189,5 +196,12 @@ export default {
 .closeRuleButton:hover {
   border: 1px solid red;
   border-radius: 0.2em;
+}
+
+/* Disabled button styling */
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>
