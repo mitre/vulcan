@@ -59,6 +59,9 @@ gem 'with_advisory_lock', '~> 5.1'
 # Health check endpoints for Kubernetes/Docker probes
 gem 'health_check', '~> 3.1'
 
+# PostgreSQL full-text search with trigrams, fuzzy matching, and ranking
+gem 'pg_search'
+
 gem 'activerecord-import'
 
 gem 'ffaker', '~> 2.10'

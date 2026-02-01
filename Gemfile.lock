@@ -402,6 +402,9 @@ GEM
     pg (1.6.1-arm64-darwin)
     pg (1.6.1-x86_64-linux)
     pg (1.6.1-x86_64-linux-musl)
+    pg_search (2.3.7)
+      activerecord (>= 6.1)
+      activesupport (>= 6.1)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
@@ -701,6 +704,7 @@ DEPENDENCIES
   overcommit
   ox
   pg (>= 0.18, < 2.0)
+  pg_search
   propshaft
   puma (~> 5.6)
   rails (~> 8.0.0)
