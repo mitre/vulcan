@@ -9,8 +9,8 @@
       <b-form-input
         id="srg-id-search"
         v-model="searchText"
-        debounce="250"
-        placeholder="Search by SRG Version"
+        debounce="300"
+        placeholder="Search projects, components, rules..."
         @focus="focus = true"
         @blur="focus = false"
       />
@@ -54,8 +54,7 @@
             v-for="rule in rules"
             :key="rule[0]"
             class="text-truncate"
-            :href="`/components/${rule[2]}`"
-            @click="selectRule(rule[2], rule[0])"
+            :href="`/components/${rule[2]}?stig_id=${rule[1]}`"
             >{{ `${rule[3]}-${rule[1]}` }}</b-list-group-item
           >
         </b-list-group>
@@ -73,17 +72,14 @@
 
 <script>
 import axios from "axios";
-import SelectedRulesMixin from "../../mixins/SelectedRulesMixin";
 
 export default {
-  name: "SrgIdSearch",
-  mixins: [SelectedRulesMixin],
+  name: "GlobalSearch",
   data() {
     return {
       focus: false,
       loading: false,
       searchText: "",
-      component: {}, // This will be set when navigating to a rule
       projects: [],
       components: [],
       rules: [],
@@ -105,20 +101,41 @@ export default {
   },
   watch: {
     searchText: async function (query) {
-      const [projectResp, componentResp, ruleResp] = await Promise.all([
-        axios.get("/search/projects", { params: { q: query } }),
-        axios.get("/search/components", { params: { q: query } }),
-        axios.get("/search/rules", { params: { q: query } }),
-      ]);
-      this.projects = projectResp.data.projects;
-      this.components = componentResp.data.components;
-      this.rules = ruleResp.data.rules;
-    },
-  },
-  methods: {
-    selectRule: function (componentId, ruleId) {
-      this.component = { id: componentId }; // Needs to be set for SelectedRulesMixin
-      this.handleRuleSelected(ruleId);
+      // Only search for 2+ character queries
+      if (!query || query.trim().length < 2) {
+        this.projects = [];
+        this.components = [];
+        this.rules = [];
+        return;
+      }
+
+      this.loading = true;
+      try {
+        // Use new unified search API
+        const response = await axios.get("/api/search/global", {
+          params: { q: query, limit: 10 },
+        });
+
+        // Transform API response to match expected format
+        // projects: [[id, name], ...]
+        this.projects = (response.data.projects || []).map((p) => [p.id, p.name]);
+        // components: [[id, name], ...]
+        this.components = (response.data.components || []).map((c) => [c.id, c.name]);
+        // rules: [[id, rule_id, component_id, component_prefix], ...]
+        this.rules = (response.data.rules || []).map((r) => [
+          r.id,
+          r.rule_id,
+          r.component_id,
+          r.component_prefix || "",
+        ]);
+      } catch (error) {
+        console.error("Search failed:", error);
+        this.projects = [];
+        this.components = [];
+        this.rules = [];
+      } finally {
+        this.loading = false;
+      }
     },
   },
 };

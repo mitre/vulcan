@@ -20,7 +20,7 @@
         </div>
 
         <div v-if="signed_in" class="d-flex justify-content-between right-container">
-          <SrgIdSearch />
+          <GlobalSearch />
           <!-- Notification Dropdown -->
           <!-- Right aligned nav items -->
           <b-navbar-nav class="ml-auto">
@@ -73,12 +73,12 @@
 <script>
 import semver from "semver";
 import NavbarItem from "./NavbarItem.vue";
-import SrgIdSearch from "./SrgIdSearch.vue";
+import GlobalSearch from "./GlobalSearch.vue";
 import { version } from "../../../../package.json";
 
 export default {
   name: "Navbar",
-  components: { NavbarItem, SrgIdSearch },
+  components: { NavbarItem, GlobalSearch },
   props: {
     navigation: {
       type: Array,
