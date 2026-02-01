@@ -5,7 +5,59 @@ require 'inspec/objects'
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < BaseRule
+  include PgSearch::Model
+
   attr_accessor :skip_update_inspec_code
+
+  # pg_search scope for full-text search across searchable columns
+  # Weighted by importance: title (A), fixtext (B), vendor_comments/status_justification (C), artifact_description (D)
+  pg_search_scope :search_content,
+                  against: {
+                    title: 'A',                    # Highest weight
+                    fixtext: 'B',                  # High weight
+                    vendor_comments: 'C',          # Medium weight
+                    status_justification: 'C',
+                    artifact_description: 'D'      # Lower weight
+                  },
+                  associated_against: {
+                    checks: :content,
+                    disa_rule_descriptions: %i[vuln_discussion mitigations]
+                  },
+                  using: {
+                    tsearch: {
+                      prefix: true,           # Enable partial word matching
+                      dictionary: 'english',  # Stemming (finds "systems" when searching "system")
+                      any_word: false         # Require ALL words in multi-word queries
+                    },
+                    trigram: {
+                      threshold: 0.2          # Fuzzy matching (typo tolerance)
+                    }
+                  },
+                  ranked_by: ':tsearch + (0.5 * :trigram)' # Prioritize exact matches, but allow fuzzy
+
+  ##
+  # Phrase search using PostgreSQL's websearch_to_tsquery
+  # Supports Google-like syntax: "exact phrase", -excluded, OR
+  #
+  # @param query [String] the search query with optional quoted phrases
+  # @return [ActiveRecord::Relation] matching rules
+  #
+  scope :search_phrase, lambda { |query|
+    return none if query.blank?
+
+    # Build tsvector from searchable columns
+    # Use table_name (base_rules) instead of hardcoded name due to STI
+    tsvector_sql = <<~SQL.squish
+      setweight(to_tsvector('english', coalesce(#{table_name}.title, '')), 'A') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.fixtext, '')), 'B') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.vendor_comments, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.status_justification, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.artifact_description, '')), 'D')
+    SQL
+
+    where("(#{tsvector_sql}) @@ websearch_to_tsquery('english', ?)", query)
+      .order(Arel.sql("ts_rank((#{tsvector_sql}), websearch_to_tsquery('english', #{connection.quote(query)})) DESC"))
+  }
 
   amoeba do
     # Using set review_requestor_id: nil does not work as expected, must use nullify
