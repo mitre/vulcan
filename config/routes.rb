@@ -31,8 +31,10 @@ Rails.application.routes.draw do
     resources :project_access_requests, only: %i[create destroy]
   end
   resources :rule_satisfactions, only: %i[create destroy]
-  # Alias rules#index to controls for convenience
-  get '/components/:component_id/controls', to: 'rules#index'
+  # Edit controls for a component (rules#index with editor view)
+  get '/components/:component_id/edit', to: 'rules#index'
+  # Legacy alias - redirect to new path
+  get '/components/:component_id/controls', to: redirect('/components/%{component_id}/edit')
 
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'

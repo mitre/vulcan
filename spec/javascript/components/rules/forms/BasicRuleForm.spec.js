@@ -7,12 +7,33 @@ const localVue = createLocalVue()
 localVue.use(BootstrapVue)
 
 describe('BasicRuleForm', () => {
+  const defaultStatuses = [
+    'Not Yet Determined',
+    'Applicable - Configurable',
+    'Applicable - Inherently Meets',
+    'Applicable - Does Not Meet',
+    'Not Applicable'
+  ]
+
+  const defaultSeveritiesMap = {
+    low: 'CAT III',
+    medium: 'CAT II',
+    high: 'CAT I'
+  }
+
   const createWrapper = (ruleOverrides = {}) => {
     const defaultRule = {
       status: 'Not Yet Determined',
       satisfied_by: [],
+      locked: false,
+      review_requestor_id: null,
       disa_rule_descriptions_attributes: [{ vuln_discussion: '' }],
       checks_attributes: [{ content: '' }],
+      // Props passed to RuleSecurityRequirementsGuideInformation
+      nist_control_family: 'AC',
+      srg_rule_attributes: { title: 'Test SRG Rule' },
+      ident: 'CCI-000001',
+      srg_info: { title: 'Test SRG' },
       ...ruleOverrides
     }
 
@@ -20,8 +41,8 @@ describe('BasicRuleForm', () => {
       localVue,
       propsData: {
         rule: defaultRule,
-        disabled: false,
-        fields: { displayed: [], disabled: [] }
+        statuses: defaultStatuses,
+        severities_map: defaultSeveritiesMap
       }
     })
   }

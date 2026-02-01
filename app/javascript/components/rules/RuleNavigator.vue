@@ -286,8 +286,16 @@ export default {
     };
   },
   computed: {
-    filters() {
-      return this.externalFilters || this.localFilters;
+    filters: {
+      get() {
+        return this.externalFilters || this.localFilters;
+      },
+      set(value) {
+        // Only allow setting if using local filters (no external filters provided)
+        if (!this.externalFilters) {
+          this.localFilters = value;
+        }
+      },
     },
     sidebarStyle: function () {
       return {
