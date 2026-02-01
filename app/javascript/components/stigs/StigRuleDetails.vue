@@ -22,10 +22,9 @@
           <label :for="`stig-rule-fixtext-${selectedRule.id}`">
             Fix
             <b-icon
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="'Describe how to correctly configure the requirement to remediate the system vulnerability'"
               icon="info-circle"
               aria-hidden="true"
-              title="Describe how to correctly configure the requirement to remediate the system vulnerability"
             />
           </label>
           <b-form-textarea
@@ -43,10 +42,9 @@
           <label :for="`stig-rule-vendor-comments-${selectedRule.id}`">
             Vendor Comments
             <b-icon
-              v-b-tooltip.hover.html
+              v-b-tooltip.hover.html="'Provide context to a reviewing authority; not a published field'"
               icon="info-circle"
               aria-hidden="true"
-              title="Provide context to a reviewing authority; not a published field"
             />
           </label>
           <b-form-textarea

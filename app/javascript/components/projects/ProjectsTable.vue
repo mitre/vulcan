@@ -41,19 +41,17 @@
         <b-form-checkbox v-model="filter.myProjectsToggled" size="lg" class="ml-3" switch>
           <small>Show My Projects</small>
           <b-icon
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="'Projects I am a member of'"
             icon="info-circle"
             aria-hidden="true"
-            title="Projects I am a member of"
           />
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.discoverableToggled" size="lg" class="ml-3" switch>
           <small>Show Discoverable Projects</small>
           <b-icon
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="'Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project'"
             icon="info-circle"
             aria-hidden="true"
-            title="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
           />
         </b-form-checkbox>
       </div>

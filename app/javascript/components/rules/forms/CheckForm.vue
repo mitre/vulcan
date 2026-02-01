@@ -9,10 +9,9 @@
         System
         <b-icon
           v-if="tooltips['system']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['system']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['system']"
         />
       </label>
       <b-form-input
@@ -40,10 +39,9 @@
         Reference Name
         <b-icon
           v-if="tooltips['content_ref_name']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['content_ref_name']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['content_ref_name']"
         />
       </label>
       <b-form-input
@@ -71,10 +69,9 @@
         Reference Link
         <b-icon
           v-if="tooltips['content_ref_href']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['content_ref_href']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['content_ref_href']"
         />
       </label>
       <b-form-input
@@ -102,10 +99,9 @@
         Check
         <b-icon
           v-if="tooltips['content']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['content']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['content']"
         />
       </label>
       <b-form-textarea

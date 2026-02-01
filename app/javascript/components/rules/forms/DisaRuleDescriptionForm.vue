@@ -17,10 +17,9 @@
         Documentable
         <b-icon
           v-if="tooltips['documentable']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['documentable']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['documentable']"
         />
       </b-form-checkbox>
     </b-form-group>
@@ -34,10 +33,9 @@
         Vulnerability Discussion
         <b-icon
           v-if="tooltips['vuln_discussion']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['vuln_discussion']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['vuln_discussion']"
         />
       </label>
       <b-form-textarea
@@ -78,10 +76,9 @@
         False Positives
         <b-icon
           v-if="tooltips['false_positives']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['false_positives']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['false_positives']"
         />
       </label>
       <b-form-textarea
@@ -118,10 +115,9 @@
         False Negatives
         <b-icon
           v-if="tooltips['false_negatives']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['false_negatives']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['false_negatives']"
         />
       </label>
       <b-form-textarea
@@ -180,10 +176,9 @@
         Mitigations
         <b-icon
           v-if="tooltips['mitigations']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['mitigations']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['mitigations']"
         />
       </label>
       <b-form-textarea
@@ -242,10 +237,9 @@
         POA&amp;M
         <b-icon
           v-if="tooltips['poam']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['poam']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['poam']"
         />
       </label>
       <b-form-textarea
@@ -277,10 +271,9 @@
         Security Override Guidance
         <b-icon
           v-if="tooltips['severity_override_guidance']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['severity_override_guidance']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['severity_override_guidance']"
         />
       </label>
       <b-form-textarea
@@ -317,10 +310,9 @@
         Potential Impacts
         <b-icon
           v-if="tooltips['potential_impacts']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['potential_impacts']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['potential_impacts']"
         />
       </label>
       <b-form-textarea
@@ -357,10 +349,9 @@
         Third Party Tools
         <b-icon
           v-if="tooltips['third_party_tools']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['third_party_tools']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['third_party_tools']"
         />
       </label>
       <b-form-textarea
@@ -397,10 +388,9 @@
         Mitigation Control
         <b-icon
           v-if="tooltips['mitigation_control']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['mitigation_control']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['mitigation_control']"
         />
       </label>
       <b-form-textarea
@@ -437,10 +427,9 @@
         Responsibility
         <b-icon
           v-if="tooltips['responsibility']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['responsibility']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['responsibility']"
         />
       </label>
       <b-form-textarea
@@ -477,10 +466,9 @@
         IA Controls
         <b-icon
           v-if="tooltips['ia_controls']"
-          v-b-tooltip.hover.html
+          v-b-tooltip.hover.html="tooltips['ia_controls']"
           icon="info-circle"
           aria-hidden="true"
-          :title="tooltips['ia_controls']"
         />
       </label>
       <b-form-textarea

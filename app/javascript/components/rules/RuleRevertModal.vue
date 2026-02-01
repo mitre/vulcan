@@ -36,10 +36,9 @@
             <template #head(prev_value)="">
               Changed From
               <b-icon
-                v-b-tooltip.hover.html
+                v-b-tooltip.hover.html="'This is the state of the record before the author made the change.<br>When a row is selected, the record will revert to this value.'"
                 icon="info-circle"
                 aria-hidden="true"
-                title="This is the state of the record before the author made the change.<br></b-icon>When a row is selected, the record will revert to this value."
               />
             </template>
 
@@ -47,10 +46,9 @@
             <template #head(new_value)="">
               Changed To
               <b-icon
-                v-b-tooltip.hover.html
+                v-b-tooltip.hover.html="'This is the state of the record after the author made the change.'"
                 icon="info-circle"
                 aria-hidden="true"
-                title="This is the state of the record after the author made the change."
               />
             </template>
 

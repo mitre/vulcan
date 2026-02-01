@@ -7,10 +7,9 @@
           Rule Description
           <b-icon
             v-if="tooltips['rule_description']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['rule_description']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['rule_description']"
           />
         </label>
         <b-form-textarea
