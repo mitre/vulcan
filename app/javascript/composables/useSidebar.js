@@ -1,0 +1,57 @@
+import { ref } from "vue";
+
+/**
+ * Valid panel names for the sidebar
+ */
+export const panelNames = ["related", "satisfies", "reviews", "history"];
+
+/**
+ * Composable for managing sidebar panel state.
+ * Controls which panel (if any) is currently open.
+ *
+ * @returns {Object} Sidebar state and methods
+ */
+export function useSidebar() {
+  // State
+  const activePanel = ref(null);
+
+  // Methods
+  function togglePanel(panelName) {
+    if (activePanel.value === panelName) {
+      activePanel.value = null;
+    } else {
+      activePanel.value = panelName;
+    }
+  }
+
+  function openPanel(panelName) {
+    activePanel.value = panelName;
+  }
+
+  function closePanel() {
+    activePanel.value = null;
+  }
+
+  function isSidebarOpen(panelName) {
+    return activePanel.value === panelName;
+  }
+
+  function isPanelActive(panelName) {
+    return activePanel.value === panelName;
+  }
+
+  return {
+    // State
+    activePanel,
+
+    // Constants
+    panelNames,
+
+    // Methods
+    togglePanel,
+    openPanel,
+    closePanel,
+    isSidebarOpen,
+    isPanelActive,
+  };
+}
