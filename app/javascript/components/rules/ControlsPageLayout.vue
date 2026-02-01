@@ -6,9 +6,9 @@
     </template>
 
     <!-- Filter Bar - Full Width -->
-    <template v-if="showFilterBar">
+    <div v-if="showFilterBar" class="filter-bar-wrapper mb-3">
       <slot name="filter-bar" />
-    </template>
+    </div>
 
     <!-- Two-Column Layout -->
     <div class="row">

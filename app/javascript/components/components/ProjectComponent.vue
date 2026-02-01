@@ -5,6 +5,7 @@
     <ControlsPageLayout
       :has-selected-rule="!!selectedRule"
       :show-command-bar="true"
+      :show-filter-bar="true"
       :sidebar-width="2"
       empty-state-message="Select a control on the left to view."
     >
@@ -22,6 +23,18 @@
         />
       </template>
 
+      <!-- Filter Bar (Status + Display for view page) -->
+      <template #filter-bar>
+        <RuleFilterBar
+          :filters="filters"
+          :counts="counts"
+          :show-status="true"
+          :show-review="false"
+          :show-display="true"
+          @update:filter="updateFilter"
+        />
+      </template>
+
       <!-- Left Sidebar -->
       <template #left-sidebar>
         <RuleNavigator
@@ -32,6 +45,7 @@
           :project-prefix="component.prefix"
           :read-only="true"
           :open-rule-ids="openRuleIds"
+          :external-filters="filters"
           @ruleSelected="handleRuleSelected"
           @ruleDeselected="handleRuleDeselected"
         />
@@ -46,6 +60,7 @@
             :severities="severities"
             :severities_map="severities_map"
             :read-only="true"
+            :effective-permissions="effective_permissions"
             :advanced_fields="component.advanced_fields"
             :additional_questions="component.additional_questions"
           />
@@ -100,10 +115,12 @@
               <p class="mb-2"><strong>Description:</strong> {{ component.description }}</p>
             </div>
             <div>
-              <p class="mb-2"><strong>PoC Name:</strong> {{ component.admin_name || 'Not set' }}</p>
+              <p class="mb-2"><strong>PoC Name:</strong> {{ component.admin_name || "Not set" }}</p>
             </div>
             <div>
-              <p class="mb-2"><strong>PoC Email:</strong> {{ component.admin_email || 'Not set' }}</p>
+              <p class="mb-2">
+                <strong>PoC Email:</strong> {{ component.admin_email || "Not set" }}
+              </p>
             </div>
             <UpdateComponentDetailsModal
               v-if="role_gte_to(effective_permissions, 'admin')"
@@ -135,7 +152,9 @@
               For Slack notifications, add metadata with key "Slack Channel ID".
             </small>
             <div v-for="(value, propertyName) in component.metadata" :key="propertyName">
-              <p class="mb-2"><strong>{{ propertyName }}:</strong> {{ value }}</p>
+              <p class="mb-2">
+                <strong>{{ propertyName }}:</strong> {{ value }}
+              </p>
             </div>
             <div v-if="!component.metadata || Object.keys(component.metadata).length === 0">
               <p class="text-muted">No metadata defined.</p>
@@ -167,13 +186,15 @@
               <p class="mb-2">
                 <strong>{{ question.name }}:</strong>
                 <template v-if="question.question_type === 'dropdown'">
-                  Options: {{ question.options.join(', ') }}
+                  Options: {{ question.options.join(", ") }}
                 </template>
                 <template v-else-if="question.question_type === 'url'">URL</template>
                 <template v-else>Freeform Text</template>
               </p>
             </div>
-            <div v-if="!component.additional_questions || component.additional_questions.length === 0">
+            <div
+              v-if="!component.additional_questions || component.additional_questions.length === 0"
+            >
               <p class="text-muted">No additional questions defined.</p>
             </div>
             <AddQuestionsModal
@@ -306,9 +327,10 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
-import { useRuleSelection, useSidebar } from "../../composables";
+import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
 import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
 import ComponentCommandBar from "./ComponentCommandBar.vue";
+import RuleFilterBar from "../rules/RuleFilterBar.vue";
 import RuleNavigator from "../rules/RuleNavigator.vue";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
@@ -326,6 +348,7 @@ export default {
   components: {
     ControlsPageLayout,
     ComponentCommandBar,
+    RuleFilterBar,
     RuleNavigator,
     RuleEditor,
     RuleSatisfactions,
@@ -390,19 +413,23 @@ export default {
     const componentId = component.id;
 
     // Use composables
-    const {
-      selectedRuleId,
-      openRuleIds,
-      selectedRule,
-      selectRule,
-      deselectRule,
-    } = useRuleSelection(rulesRef, componentId);
+    const { selectedRuleId, openRuleIds, selectedRule, selectRule, deselectRule } =
+      useRuleSelection(rulesRef, componentId);
+
+    const { filters, counts, setFilter } = useRuleFilters(rulesRef, componentId);
 
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
     // Backward compatibility aliases
     const handleRuleSelected = selectRule;
     const handleRuleDeselected = deselectRule;
+
+    // Filter update with localStorage persistence
+    const updateFilter = (filterName, value) => {
+      setFilter(filterName, value);
+      localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
+      localStorage.setItem(`showSRGIdChecked-${componentId}`, filters.value.showSRGIdChecked);
+    };
 
     return {
       selectedRuleId,
@@ -412,6 +439,9 @@ export default {
       deselectRule,
       handleRuleSelected,
       handleRuleDeselected,
+      filters,
+      counts,
+      updateFilter,
       activePanel,
       togglePanel,
       closePanel,
@@ -475,7 +505,7 @@ export default {
     toggleAdvancedFields(advanced_fields) {
       if (
         confirm(
-          `Are you sure you want to ${advanced_fields ? "enable" : "disable"} advanced fields?`
+          `Are you sure you want to ${advanced_fields ? "enable" : "disable"} advanced fields?`,
         )
       ) {
         const payload = {

@@ -112,7 +112,15 @@
         </b-list-group>
       </b-card>
       <b-card
-        v-if="!showRules && !showComponents && !showProjects && !showSrgs && !showStigs && !showStigRules && !showSrgRules"
+        v-if="
+          !showRules &&
+          !showComponents &&
+          !showProjects &&
+          !showSrgs &&
+          !showStigs &&
+          !showStigRules &&
+          !showSrgRules
+        "
         no-body
         class="search-card overflow-auto shadow border-light"
       >

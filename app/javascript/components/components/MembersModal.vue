@@ -31,12 +31,7 @@
                 debounce="300"
               />
             </b-input-group>
-            <b-button
-              v-if="isEditable"
-              variant="primary"
-              size="sm"
-              @click="showAddMemberModal"
-            >
+            <b-button v-if="isEditable" variant="primary" size="sm" @click="showAddMemberModal">
               <b-icon icon="person-plus" /> Add Member
             </b-button>
           </div>
@@ -73,8 +68,13 @@
               </div>
             </div>
 
-            <p v-if="filteredComponentMembers.length === 0" class="text-muted text-center py-3 mb-0">
-              {{ componentSearch ? 'No members match your search.' : 'No component-specific members.' }}
+            <p
+              v-if="filteredComponentMembers.length === 0"
+              class="text-muted text-center py-3 mb-0"
+            >
+              {{
+                componentSearch ? "No members match your search." : "No component-specific members."
+              }}
             </p>
           </div>
         </div>
@@ -84,7 +84,9 @@
       <b-tab>
         <template #title>
           Inherited from Project
-          <b-badge variant="secondary" pill class="ml-1">{{ component.inherited_memberships.length }}</b-badge>
+          <b-badge variant="secondary" pill class="ml-1">{{
+            component.inherited_memberships.length
+          }}</b-badge>
         </template>
 
         <div class="p-3">
@@ -101,7 +103,8 @@
           </b-input-group>
 
           <p class="text-muted small mb-3">
-            <b-icon icon="info-circle" /> These members are inherited from the project and cannot be modified here.
+            <b-icon icon="info-circle" /> These members are inherited from the project and cannot be
+            modified here.
           </p>
 
           <!-- Inherited Members List -->
@@ -118,8 +121,11 @@
               <span class="text-muted">{{ member.role }}</span>
             </div>
 
-            <p v-if="filteredInheritedMembers.length === 0" class="text-muted text-center py-3 mb-0">
-              {{ inheritedSearch ? 'No members match your search.' : 'No inherited members.' }}
+            <p
+              v-if="filteredInheritedMembers.length === 0"
+              class="text-muted text-center py-3 mb-0"
+            >
+              {{ inheritedSearch ? "No members match your search." : "No inherited members." }}
             </p>
           </div>
         </div>
@@ -146,11 +152,7 @@
         </b-form-select>
       </b-form-group>
       <b-form-group label="Role" label-for="new-member-role">
-        <b-form-select
-          id="new-member-role"
-          v-model="newMember.role"
-          :options="availableRoles"
-        />
+        <b-form-select id="new-member-role" v-model="newMember.role" :options="availableRoles" />
       </b-form-group>
     </b-modal>
 
@@ -163,7 +165,10 @@
       ok-title="Remove"
       @ok="removeMember"
     >
-      <p>Are you sure you want to remove <strong>{{ memberToRemove && memberToRemove.name }}</strong> from this component?</p>
+      <p>
+        Are you sure you want to remove
+        <strong>{{ memberToRemove && memberToRemove.name }}</strong> from this component?
+      </p>
     </b-modal>
   </b-modal>
 </template>
@@ -218,9 +223,7 @@ export default {
       }
       const search = this.componentSearch.toLowerCase();
       return this.component.memberships.filter(
-        (m) =>
-          m.name.toLowerCase().includes(search) ||
-          m.email.toLowerCase().includes(search)
+        (m) => m.name.toLowerCase().includes(search) || m.email.toLowerCase().includes(search),
       );
     },
     filteredInheritedMembers() {
@@ -229,9 +232,7 @@ export default {
       }
       const search = this.inheritedSearch.toLowerCase();
       return this.component.inherited_memberships.filter(
-        (m) =>
-          m.name.toLowerCase().includes(search) ||
-          m.email.toLowerCase().includes(search)
+        (m) => m.name.toLowerCase().includes(search) || m.email.toLowerCase().includes(search),
       );
     },
     availableMemberOptions() {

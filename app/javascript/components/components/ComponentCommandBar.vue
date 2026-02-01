@@ -4,11 +4,7 @@
       <!-- Left: Actions -->
       <div class="d-flex align-items-center">
         <b-button-group size="sm" class="mr-3">
-          <b-button
-            v-if="canEdit"
-            variant="primary"
-            :href="`/components/${component.id}/edit`"
-          >
+          <b-button v-if="canEdit" variant="primary" :href="`/components/${component.id}/edit`">
             <b-icon icon="pencil" /> Edit
           </b-button>
           <b-button
@@ -19,10 +15,7 @@
           >
             <b-icon icon="patch-check" /> Release
           </b-button>
-          <b-button
-            variant="outline-secondary"
-            @click="onOpenMembers"
-          >
+          <b-button variant="outline-secondary" @click="onOpenMembers">
             <b-icon icon="people" /> Members
           </b-button>
         </b-button-group>
