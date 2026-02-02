@@ -14,6 +14,76 @@ RSpec.describe 'Rules', type: :request do
     Membership.create!(user: user, membership: project, role: 'admin')
   end
 
+  # ==========================================================================
+  # DATA FLOW CONTRACT: EDIT page must receive component data with
+  # histories, reviews, and metadata for sidebars to display correctly
+  #
+  # REQUIREMENT: When user visits the EDIT page, the component data passed
+  # to the Vue app must include histories, reviews, and metadata so the
+  # sidebar panels can display this information.
+  # ==========================================================================
+  describe 'GET /components/:component_id/edit (rules#index)' do
+    context 'component data contract' do
+      it 'includes histories in component JSON for sidebar display' do
+        # Create a review which generates history via audited gem
+        Review.create!(
+          user: user,
+          rule: rule,
+          action: 'comment',
+          comment: 'Test review comment for history'
+        )
+
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        # HAML embeds JSON in v-bind attribute - quotes are HTML-escaped as &quot;
+        # Verify the histories key is present in the component JSON
+        expect(response.body).to include('&quot;histories&quot;')
+      end
+
+      it 'includes reviews in component JSON for sidebar display' do
+        # Create a review on a rule in this component
+        Review.create!(
+          user: user,
+          rule: rule,
+          action: 'comment',
+          comment: 'Test sidebar review'
+        )
+
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        # Verify the reviews key is present in the component JSON
+        expect(response.body).to include('&quot;reviews&quot;')
+        # Verify the actual review content is included
+        expect(response.body).to include('Test sidebar review')
+      end
+
+      it 'includes metadata in component JSON for sidebar display' do
+        # Add metadata via component_metadata association (metadata is a delegate method)
+        component.create_component_metadata!(data: { 'Environment' => 'Production', 'Team' => 'Security' })
+
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        # Verify the metadata key is present in the component JSON
+        expect(response.body).to include('&quot;metadata&quot;')
+        # Verify the actual metadata values are included
+        expect(response.body).to include('Production')
+        expect(response.body).to include('Security')
+      end
+
+      it 'includes all_users in component JSON for UpdateComponentDetailsModal PoC dropdown' do
+        # REQUIREMENT: UpdateComponentDetailsModal needs all_users for PoC selection dropdown
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        # Verify the all_users key is present in the component JSON
+        expect(response.body).to include('&quot;all_users&quot;')
+      end
+    end
+  end
+
   describe 'PUT /rules/:id' do
     context 'when updating nested attributes' do
       it 'updates check content (check text)' do

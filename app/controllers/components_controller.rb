@@ -15,9 +15,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_author_component, only: %i[update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :authorize_admin_component, only: %i[update], if: lambda {
-    params
-      .expect(component: [:advanced_fields])[:advanced_fields]
-      .present?
+    params.dig(:component, :advanced_fields).present?
   }
 
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
