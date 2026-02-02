@@ -299,7 +299,7 @@ export default {
       deselectRule,
       closeAllRules,
       isRuleOpen,
-    } = useRuleSelection(rulesRef, componentId);
+    } = useRuleSelection(rulesRef, componentId, { autoSelectFirst: true });
 
     const {
       filters,

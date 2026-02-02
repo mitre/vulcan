@@ -188,4 +188,179 @@ describe('useRuleSelection', () => {
       expect(isRuleOpen(2)).toBe(false)
     })
   })
+
+  describe('autoSelectFirst option', () => {
+    it('does not auto-select when autoSelectFirst is false (default)', () => {
+      const { selectedRuleId } = useRuleSelection(mockRules, componentId)
+      expect(selectedRuleId.value).toBeNull()
+    })
+
+    it('auto-selects first rule when autoSelectFirst is true', () => {
+      const { selectedRuleId, selectedRule } = useRuleSelection(mockRules, componentId, { autoSelectFirst: true })
+      expect(selectedRuleId.value).toBe(1)
+      expect(selectedRule.value).toEqual(mockRules.value[0])
+    })
+
+    it('does not override existing selection from localStorage', () => {
+      localStorage.setItem(`selectedRuleId-${componentId}`, JSON.stringify(2))
+      const { selectedRuleId } = useRuleSelection(mockRules, componentId, { autoSelectFirst: true })
+      expect(selectedRuleId.value).toBe(2)
+    })
+
+    it('does not auto-select when rules array is empty', () => {
+      const emptyRules = ref([])
+      const { selectedRuleId } = useRuleSelection(emptyRules, componentId, { autoSelectFirst: true })
+      expect(selectedRuleId.value).toBeNull()
+    })
+
+    it('adds first rule to openRuleIds when auto-selecting', () => {
+      const { openRuleIds } = useRuleSelection(mockRules, componentId, { autoSelectFirst: true })
+      expect(openRuleIds.value).toContain(1)
+    })
+  })
+
+  describe('autoSelectFirst with nested rules (satisfies/satisfied_by)', () => {
+    // Rules with nesting relationships:
+    // - PARENT: has satisfies (children nested under it)
+    // - CHILD: has satisfied_by (hidden when nesting enabled)
+    // - STANDALONE: no relationships (always visible)
+    //
+    // When nesting is enabled, display order is: Parents first, then Standalone leaves
+    // Children are hidden from main list (shown nested under parent)
+    //
+    // Auto-select should pick the first VISIBLE rule:
+    // 1. First parent (if any)
+    // 2. Else first standalone
+    // 3. Never pick a child (it would be hidden)
+
+    const nestedRules = ref([
+      {
+        id: 1,
+        rule_id: '000001',
+        satisfies: [],
+        satisfied_by: [{ id: 10 }], // CHILD - nested under rule 10
+        histories: []
+      },
+      {
+        id: 2,
+        rule_id: '000002',
+        satisfies: [],
+        satisfied_by: [{ id: 10 }], // CHILD - nested under rule 10
+        histories: []
+      },
+      {
+        id: 3,
+        rule_id: '000003',
+        satisfies: [],
+        satisfied_by: [], // STANDALONE
+        histories: []
+      },
+      {
+        id: 10,
+        rule_id: '000010',
+        satisfies: [{ id: 1 }, { id: 2 }], // PARENT - has 2 children
+        satisfied_by: [],
+        histories: []
+      },
+      {
+        id: 11,
+        rule_id: '000011',
+        satisfies: [],
+        satisfied_by: [], // STANDALONE
+        histories: []
+      }
+    ])
+
+    it('selects first parent rule when parents exist (not first by rule_id)', () => {
+      // Rule 000001 is first by rule_id but it's a CHILD (hidden in tree view)
+      // Rule 000010 is a PARENT and should be selected first
+      const { selectedRuleId } = useRuleSelection(nestedRules, componentId, { autoSelectFirst: true })
+      expect(selectedRuleId.value).toBe(10) // Parent, not child 000001
+    })
+
+    it('selects first standalone when no parents exist', () => {
+      const standaloneOnlyRules = ref([
+        {
+          id: 1,
+          rule_id: '000001',
+          satisfies: [],
+          satisfied_by: [{ id: 99 }], // CHILD (parent not in list)
+          histories: []
+        },
+        {
+          id: 2,
+          rule_id: '000002',
+          satisfies: [],
+          satisfied_by: [], // STANDALONE
+          histories: []
+        },
+        {
+          id: 3,
+          rule_id: '000003',
+          satisfies: [],
+          satisfied_by: [], // STANDALONE
+          histories: []
+        }
+      ])
+      const { selectedRuleId } = useRuleSelection(standaloneOnlyRules, componentId, { autoSelectFirst: true })
+      expect(selectedRuleId.value).toBe(2) // First standalone, not child
+    })
+
+    it('never selects a child rule (satisfied_by) as first', () => {
+      const childFirstRules = ref([
+        {
+          id: 1,
+          rule_id: '000001',
+          satisfies: [],
+          satisfied_by: [{ id: 10 }], // CHILD
+          histories: []
+        },
+        {
+          id: 2,
+          rule_id: '000002',
+          satisfies: [],
+          satisfied_by: [{ id: 10 }], // CHILD
+          histories: []
+        },
+        {
+          id: 10,
+          rule_id: '000010',
+          satisfies: [{ id: 1 }, { id: 2 }], // PARENT
+          satisfied_by: [],
+          histories: []
+        }
+      ])
+      const { selectedRuleId } = useRuleSelection(childFirstRules, componentId, { autoSelectFirst: true })
+      // Should select parent (10), not first child (1)
+      expect(selectedRuleId.value).toBe(10)
+    })
+
+    it('falls back to first rule if all rules are children (edge case)', () => {
+      const allChildrenRules = ref([
+        {
+          id: 1,
+          rule_id: '000001',
+          satisfies: [],
+          satisfied_by: [{ id: 99 }], // CHILD (parent not in list)
+          histories: []
+        },
+        {
+          id: 2,
+          rule_id: '000002',
+          satisfies: [],
+          satisfied_by: [{ id: 99 }], // CHILD
+          histories: []
+        }
+      ])
+      const { selectedRuleId } = useRuleSelection(allChildrenRules, componentId, { autoSelectFirst: true })
+      // Fallback to first rule when no parents or standalone exist
+      expect(selectedRuleId.value).toBe(1)
+    })
+
+    it('handles rules without satisfies/satisfied_by properties (backwards compatibility)', () => {
+      // Original mockRules don't have these properties - should still work
+      const { selectedRuleId } = useRuleSelection(mockRules, componentId, { autoSelectFirst: true })
+      expect(selectedRuleId.value).toBe(1) // First rule as before
+    })
+  })
 })

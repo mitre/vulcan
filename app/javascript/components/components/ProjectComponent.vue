@@ -207,7 +207,7 @@ export default {
 
     // Use composables
     const { selectedRuleId, openRuleIds, selectedRule, selectRule, deselectRule } =
-      useRuleSelection(rulesRef, componentId);
+      useRuleSelection(rulesRef, componentId, { autoSelectFirst: true });
 
     const { filters, counts, setFilter } = useRuleFilters(rulesRef, componentId);
 

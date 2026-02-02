@@ -1,6 +1,38 @@
 import { ref, computed, watch } from "vue";
 
 /**
+ * Determines the first "visible" rule for auto-selection.
+ * When nesting is enabled in the UI, rules are displayed as:
+ *   1. Parents first (rules that have satisfies - they have children nested under them)
+ *   2. Standalone leaves (rules with no relationships)
+ *   3. Children are hidden from main list (rules that have satisfied_by)
+ *
+ * This function returns the first rule that would be visible at the top level:
+ *   - First parent (has satisfies.length > 0), OR
+ *   - First standalone (no satisfied_by), OR
+ *   - Fallback to first rule (edge case: all rules are children)
+ *
+ * @param {Array} rules - Array of rule objects
+ * @returns {Object|null} The first visible rule, or null if empty
+ */
+export function getFirstVisibleRule(rules) {
+  if (!rules || rules.length === 0) return null;
+
+  // First, try to find a parent (has children nested under it)
+  // Parents are shown first when nesting is enabled
+  const firstParent = rules.find((r) => r.satisfies?.length > 0);
+  if (firstParent) return firstParent;
+
+  // Then, find first standalone (not nested under another rule)
+  // These are always visible in the main list
+  const firstStandalone = rules.find((r) => !r.satisfied_by?.length);
+  if (firstStandalone) return firstStandalone;
+
+  // Fallback to first rule (edge case: all rules are children with no parent in list)
+  return rules[0];
+}
+
+/**
  * Composable for managing rule selection state.
  * Replaces SelectedRulesMixin with Composition API.
  *
@@ -8,10 +40,11 @@ import { ref, computed, watch } from "vue";
  * @param {number} componentId - Component ID for localStorage key scoping
  * @param {Object} options - Optional configuration
  * @param {boolean} options.persist - Enable localStorage persistence (default: true)
+ * @param {boolean} options.autoSelectFirst - Auto-select first rule if none selected (default: false)
  * @returns {Object} Selection state and methods
  */
 export function useRuleSelection(rules, componentId, options = {}) {
-  const { persist = true } = options;
+  const { persist = true, autoSelectFirst = false } = options;
 
   // localStorage keys
   const selectedRuleIdKey = `selectedRuleId-${componentId}`;
@@ -107,6 +140,22 @@ export function useRuleSelection(rules, componentId, options = {}) {
 
   function isRuleOpen(ruleId) {
     return openRuleIds.value.includes(ruleId);
+  }
+
+  // Auto-select first visible rule if enabled and no rule is currently selected
+  if (autoSelectFirst) {
+    watch(
+      () => rules.value,
+      (newRules) => {
+        if (selectedRuleId.value === null && newRules && newRules.length > 0) {
+          const firstVisible = getFirstVisibleRule(newRules);
+          if (firstVisible) {
+            selectRule(firstVisible.id);
+          }
+        }
+      },
+      { immediate: true }
+    );
   }
 
   return {
