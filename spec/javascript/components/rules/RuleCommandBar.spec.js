@@ -9,12 +9,14 @@ localVue.use(BootstrapVue)
 /**
  * RuleCommandBar Component Tests
  *
- * After refactoring, RuleCommandBar only contains:
+ * REQUIREMENTS:
+ * RuleCommandBar displays rule-level context information and provides
+ * access to related rules. It contains:
  * - Context group: Rule ID, version, status icons, last editor
- * - Panels group: Related, Satisfies, Reviews, History buttons
+ * - Related button: Opens modal to view related rules
  *
- * Action buttons (Clone, Delete, Save, Comment, Review, Lock/Unlock)
- * have been moved to RuleActionsToolbar.vue
+ * NOTE: Satisfies, Reviews, History buttons were moved to ComponentCommandBar
+ * as part of the DRY refactor to eliminate duplication between VIEW and EDIT pages.
  */
 describe('RuleCommandBar', () => {
   let wrapper
@@ -39,7 +41,6 @@ describe('RuleCommandBar', () => {
       propsData: {
         rule: mockRule,
         componentPrefix: 'TEST',
-        activePanel: null,
         ...props
       },
       stubs: {
@@ -109,49 +110,11 @@ describe('RuleCommandBar', () => {
     })
   })
 
-  describe('panel toggle buttons', () => {
+  describe('Related button', () => {
+    // REQUIREMENT: RuleCommandBar shows Related button to open RelatedRulesModal
     it('shows Related button', () => {
       wrapper = createWrapper()
       expect(wrapper.text()).toContain('Related')
-    })
-
-    it('shows Satisfies button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Satisfies')
-    })
-
-    it('shows Reviews button with count badge', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Reviews')
-      // Badge should show count of 2
-      const badge = wrapper.find('.badge')
-      expect(badge.exists()).toBe(true)
-      expect(badge.text()).toBe('2')
-    })
-
-    it('shows History button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('History')
-    })
-
-    it('highlights active panel button', () => {
-      wrapper = createWrapper({ activePanel: 'reviews' })
-      const reviewsButton = wrapper.findAll('b-button-stub').wrappers.find(
-        btn => btn.text().includes('Reviews')
-      )
-      expect(reviewsButton.attributes('variant')).toBe('secondary')
-    })
-  })
-
-  describe('events', () => {
-    it('emits toggle-panel with panel name when panel button is clicked', async () => {
-      wrapper = createWrapper()
-      const satisfiesButton = wrapper.findAll('b-button-stub').wrappers.find(
-        btn => btn.text().includes('Satisfies')
-      )
-      await satisfiesButton.trigger('click')
-      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
-      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['satisfies'])
     })
 
     it('emits open-related-modal when Related button is clicked', async () => {
@@ -162,21 +125,32 @@ describe('RuleCommandBar', () => {
       await relatedButton.trigger('click')
       expect(wrapper.emitted('open-related-modal')).toBeTruthy()
     })
+
+    // REQUIREMENT: Satisfies, Reviews, History are NOT in RuleCommandBar
+    // They are in ComponentCommandBar (single source of truth)
+    it('does NOT show Satisfies button (moved to ComponentCommandBar)', () => {
+      wrapper = createWrapper()
+      expect(wrapper.text()).not.toContain('Satisfies')
+    })
+
+    it('does NOT show Reviews button (moved to ComponentCommandBar)', () => {
+      wrapper = createWrapper()
+      // Should not contain standalone "Reviews" button
+      // Note: "Related" contains these letters but is different
+      const buttons = wrapper.findAll('b-button-stub')
+      const reviewsButton = buttons.wrappers.find(btn => btn.text().trim() === 'Reviews')
+      expect(reviewsButton).toBeUndefined()
+    })
+
+    it('does NOT show History button (moved to ComponentCommandBar)', () => {
+      wrapper = createWrapper()
+      const buttons = wrapper.findAll('b-button-stub')
+      const historyButton = buttons.wrappers.find(btn => btn.text().trim() === 'History')
+      expect(historyButton).toBeUndefined()
+    })
   })
 
   describe('computed properties', () => {
-    it('computes reviewCount from rule.reviews', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.reviewCount).toBe(2)
-    })
-
-    it('computes reviewCount as 0 when no reviews', () => {
-      wrapper = createWrapper({
-        rule: { ...mockRule, reviews: [] }
-      })
-      expect(wrapper.vm.reviewCount).toBe(0)
-    })
-
     it('computes lastEditor from histories', () => {
       wrapper = createWrapper()
       expect(wrapper.vm.lastEditor).toBe('John Doe')

@@ -27,32 +27,11 @@
         </small>
       </div>
 
-      <!-- Group 2: Panels -->
+      <!-- Group 2: Related Rules -->
       <div class="command-group panels-group ml-auto">
         <b-button-group size="sm">
           <b-button variant="outline-secondary" @click="$emit('open-related-modal')">
             <b-icon icon="link-45deg" /> Related
-          </b-button>
-          <b-button
-            :variant="activePanel === 'satisfies' ? 'secondary' : 'outline-secondary'"
-            @click="$emit('toggle-panel', 'satisfies')"
-          >
-            <b-icon icon="check2-square" /> Satisfies
-          </b-button>
-          <b-button
-            :variant="activePanel === 'reviews' ? 'secondary' : 'outline-secondary'"
-            @click="$emit('toggle-panel', 'reviews')"
-          >
-            <b-icon icon="chat-left-text" /> Reviews
-            <b-badge v-if="reviewCount > 0" variant="dark" pill class="ml-1 badge">
-              {{ reviewCount }}
-            </b-badge>
-          </b-button>
-          <b-button
-            :variant="activePanel === 'history' ? 'secondary' : 'outline-secondary'"
-            @click="$emit('toggle-panel', 'history')"
-          >
-            <b-icon icon="clock-history" /> History
           </b-button>
         </b-button-group>
       </div>
@@ -75,10 +54,6 @@ export default {
       type: String,
       required: true,
     },
-    activePanel: {
-      type: String,
-      default: null,
-    },
   },
   computed: {
     ruleDisplayId() {
@@ -86,9 +61,6 @@ export default {
     },
     ruleUrl() {
       return `/components/${this.rule.component_id}/${this.ruleDisplayId}`;
-    },
-    reviewCount() {
-      return this.rule.reviews ? this.rule.reviews.length : 0;
     },
     lastEditor() {
       if (this.rule.histories && this.rule.histories.length > 0) {

@@ -4,7 +4,14 @@
       <!-- Left: Actions -->
       <div class="d-flex align-items-center">
         <b-button-group size="sm" class="mr-3">
-          <b-button v-if="canEdit" variant="primary" :href="`/components/${component.id}/edit`">
+          <b-button v-if="editMode" variant="outline-primary" :href="`/components/${component.id}`">
+            <b-icon icon="eye" /> View
+          </b-button>
+          <b-button
+            v-else-if="canEdit"
+            variant="primary"
+            :href="`/components/${component.id}/edit`"
+          >
             <b-icon icon="pencil" /> Edit
           </b-button>
           <b-button
@@ -77,16 +84,16 @@
             <b-icon icon="check2-square" /> Satisfies
           </b-button>
           <b-button
-            :variant="isPanelActive('reviews') ? 'secondary' : 'outline-secondary'"
+            :variant="isPanelActive('rule-reviews') ? 'secondary' : 'outline-secondary'"
             :disabled="!hasSelectedRule"
-            @click="onTogglePanel('reviews')"
+            @click="onTogglePanel('rule-reviews')"
           >
             <b-icon icon="chat-left-text" /> Reviews
           </b-button>
           <b-button
-            :variant="isPanelActive('history') ? 'secondary' : 'outline-secondary'"
+            :variant="isPanelActive('rule-history') ? 'secondary' : 'outline-secondary'"
             :disabled="!hasSelectedRule"
-            @click="onTogglePanel('history')"
+            @click="onTogglePanel('rule-history')"
           >
             <b-icon icon="clock-history" /> History
           </b-button>
@@ -119,6 +126,10 @@ export default {
       type: String,
       default: null,
     },
+    editMode: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
     canEdit() {
@@ -140,7 +151,7 @@ export default {
       return ["details", "metadata", "questions", "comp-history", "comp-reviews"];
     },
     rulePanels() {
-      return ["satisfies", "reviews", "history"];
+      return ["satisfies", "rule-reviews", "rule-history"];
     },
   },
   methods: {

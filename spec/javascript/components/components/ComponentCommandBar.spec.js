@@ -1,10 +1,11 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, createLocalVue } from '@vue/test-utils'
-import BootstrapVue from 'bootstrap-vue'
+import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import ComponentCommandBar from '@/components/components/ComponentCommandBar.vue'
 
 const localVue = createLocalVue()
 localVue.use(BootstrapVue)
+localVue.use(IconsPlugin)
 
 /**
  * ComponentCommandBar Requirements:
