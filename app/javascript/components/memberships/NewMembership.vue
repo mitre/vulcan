@@ -125,6 +125,7 @@
 import VueSimpleSuggest from "vue-simple-suggest";
 import "vue-simple-suggest/dist/styles.css";
 import capitalize from "lodash/capitalize";
+import { ROLE_DESCRIPTIONS } from "../../constants/terminology";
 
 export default {
   name: "NewMembership",
@@ -162,12 +163,7 @@ export default {
       search: "",
       selectedUser: this.selected_member,
       selectedRole: null,
-      roleDescriptions: [
-        "Read only access to the Project or Component",
-        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
-        "Author and approve changes to a Control.",
-        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
-      ],
+      roleDescriptions: ROLE_DESCRIPTIONS,
       userSearchStyles: {
         vueSimpleSuggest: "userSearchVueSimpleSuggest",
         inputWrapper: "",
