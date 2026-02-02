@@ -22,7 +22,9 @@
           <label :for="`stig-rule-fixtext-${selectedRule.id}`">
             Fix
             <b-icon
-              v-b-tooltip.hover.html="'Describe how to correctly configure the requirement to remediate the system vulnerability'"
+              v-b-tooltip.hover.html="
+                'Describe how to correctly configure the requirement to remediate the system vulnerability'
+              "
               icon="info-circle"
               aria-hidden="true"
             />
@@ -42,7 +44,9 @@
           <label :for="`stig-rule-vendor-comments-${selectedRule.id}`">
             Vendor Comments
             <b-icon
-              v-b-tooltip.hover.html="'Provide context to a reviewing authority; not a published field'"
+              v-b-tooltip.hover.html="
+                'Provide context to a reviewing authority; not a published field'
+              "
               icon="info-circle"
               aria-hidden="true"
             />

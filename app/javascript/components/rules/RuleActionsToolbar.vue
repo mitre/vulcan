@@ -41,7 +41,12 @@
         @comment="$emit('comment', $event)"
       />
       <!-- Review -->
-      <b-button variant="outline-primary" size="sm" :disabled="readOnly" @click="$emit('open-review-modal')">
+      <b-button
+        variant="outline-primary"
+        size="sm"
+        :disabled="readOnly"
+        @click="$emit('open-review-modal')"
+      >
         <b-icon icon="clipboard-check" /> Review
       </b-button>
       <!-- Lock/Unlock (admin only) -->
