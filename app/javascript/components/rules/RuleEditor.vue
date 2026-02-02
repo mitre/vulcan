@@ -12,6 +12,7 @@
           @save="$emit('save', $event)"
           @comment="$emit('comment', $event)"
           @open-review-modal="$emit('open-review-modal')"
+          @open-related-modal="$emit('open-related-modal')"
           @lock="$emit('lock', $event)"
           @unlock="$emit('unlock', $event)"
         />

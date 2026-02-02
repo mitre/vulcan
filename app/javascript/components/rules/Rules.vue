@@ -2,12 +2,6 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
-    <h1>
-      {{ component.name }}
-      <span v-if="component.version">V{{ component.version }}</span>
-      <span v-if="component.release">R{{ component.release }}</span> - Controls
-    </h1>
-
     <RulesCodeEditorView
       :project="project"
       :component="component"
@@ -17,6 +11,7 @@
       :severities_map="severities_map"
       :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
+      :available-roles="available_roles"
     />
   </div>
 </template>
@@ -66,6 +61,10 @@ export default {
       type: Object,
       required: true,
     },
+    available_roles: {
+      type: Array,
+      required: true,
+    },
   },
   data: function () {
     return {
@@ -74,6 +73,13 @@ export default {
   },
   computed: {
     breadcrumbs: function () {
+      // Build component name with version (e.g., "Test 2 V1R1")
+      let componentText = this.component.name;
+      if (this.component.version || this.component.release) {
+        componentText += " ";
+        if (this.component.version) componentText += `V${this.component.version}`;
+        if (this.component.release) componentText += `R${this.component.release}`;
+      }
       return [
         {
           text: "Projects",
@@ -84,11 +90,11 @@ export default {
           href: "/projects/" + this.project.id,
         },
         {
-          text: this.component.name,
+          text: componentText,
           href: "/components/" + this.component.id,
         },
         {
-          text: "Controls",
+          text: "Edit",
           active: true,
         },
       ];
