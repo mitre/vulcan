@@ -1,7 +1,7 @@
 <template>
   <div>
     <CommentModal
-      title="Revert Rule History"
+      :title="msg.revertHistoryTitle"
       message="Provide a reason for reverting this change."
       :require-non-empty="true"
       :button-text="buttonText"
@@ -208,6 +208,7 @@ import RuleDescriptionForm from "./forms/RuleDescriptionForm";
 import DisaRuleDescriptionForm from "./forms/DisaRuleDescriptionForm";
 import CheckForm from "./forms/CheckForm";
 import CommentModal from "../shared/CommentModal.vue";
+import { MESSAGE_LABELS } from "../../constants/terminology";
 
 export default {
   name: "RuleRevertModal",
@@ -250,6 +251,7 @@ export default {
   },
   data: function () {
     return {
+      msg: MESSAGE_LABELS,
       selectedRevertRows: [],
       revertFields: ["selected", "field", "prev_value", "new_value"],
     };

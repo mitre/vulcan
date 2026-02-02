@@ -1,36 +1,14 @@
 <template>
   <div class="rule-actions-toolbar mb-3">
     <b-button-group size="sm">
-      <!-- Clone -->
-      <b-button variant="outline-info" :disabled="readOnly" @click="$emit('clone')">
-        <b-icon icon="files" /> Clone
+      <!-- Related (info/reference - always available) -->
+      <b-button variant="outline-secondary" size="sm" @click="$emit('open-related-modal')">
+        <b-icon icon="link-45deg" /> Related
       </b-button>
-      <!-- Delete (admin only) -->
-      <b-button
-        v-if="effectivePermissions === 'admin'"
-        variant="outline-danger"
-        :disabled="isReadOnly"
-        @click="$emit('delete')"
-      >
-        <b-icon icon="trash" /> Delete
-      </b-button>
-      <!-- Save -->
-      <CommentModal
-        title="Save Control"
-        message="Provide a comment that summarizes your changes to this control."
-        :require-non-empty="true"
-        button-text="Save"
-        button-icon="save"
-        button-variant="outline-success"
-        button-size="sm"
-        :button-disabled="isReadOnly"
-        wrapper-class="d-inline-block"
-        @comment="$emit('save', $event)"
-      />
-      <!-- Comment -->
+      <!-- Comment (collaboration - always available) -->
       <CommentModal
         title="Comment"
-        message="Submit general feedback on the control"
+        :message="msg.commentMessage"
         :require-non-empty="true"
         button-text="Comment"
         button-icon="chat-left-text"
@@ -40,7 +18,7 @@
         wrapper-class="d-inline-block"
         @comment="$emit('comment', $event)"
       />
-      <!-- Review -->
+      <!-- Review (collaboration - edit mode) -->
       <b-button
         variant="outline-primary"
         size="sm"
@@ -49,12 +27,38 @@
       >
         <b-icon icon="clipboard-check" /> Review
       </b-button>
-      <!-- Lock/Unlock (admin only) -->
+      <!-- Save (primary edit action) -->
+      <CommentModal
+        :title="msg.saveTitle"
+        :message="msg.saveMessage"
+        :require-non-empty="true"
+        button-text="Save"
+        button-icon="save"
+        button-variant="outline-success"
+        button-size="sm"
+        :button-disabled="isReadOnly"
+        wrapper-class="d-inline-block"
+        @comment="$emit('save', $event)"
+      />
+      <!-- Clone (creation action) -->
+      <b-button variant="outline-info" :disabled="readOnly" @click="$emit('clone')">
+        <b-icon icon="files" /> Clone
+      </b-button>
+      <!-- Delete (destructive - admin only) -->
+      <b-button
+        v-if="effectivePermissions === 'admin'"
+        variant="outline-danger"
+        :disabled="isReadOnly"
+        @click="$emit('delete')"
+      >
+        <b-icon icon="trash" /> Delete
+      </b-button>
+      <!-- Lock/Unlock (admin only - protects from accidents) -->
       <template v-if="effectivePermissions === 'admin'">
         <CommentModal
           v-if="rule.locked"
-          title="Unlock Control"
-          message="Provide a reason for unlocking this control."
+          :title="msg.unlockTitle"
+          :message="msg.unlockMessage"
           :require-non-empty="true"
           button-text="Unlock"
           button-icon="unlock"
@@ -66,8 +70,8 @@
         />
         <CommentModal
           v-else
-          title="Lock Control"
-          message="Provide a reason for locking this control."
+          :title="msg.lockTitle"
+          :message="msg.lockMessage"
           :require-non-empty="true"
           button-text="Lock"
           button-icon="lock"
@@ -84,11 +88,17 @@
 
 <script>
 import CommentModal from "../shared/CommentModal.vue";
+import { MESSAGE_LABELS } from "../../constants/terminology";
 
 export default {
   name: "RuleActionsToolbar",
   components: {
     CommentModal,
+  },
+  data() {
+    return {
+      msg: MESSAGE_LABELS,
+    };
   },
   props: {
     rule: {

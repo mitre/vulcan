@@ -7,14 +7,15 @@
   >
     <!-- Command Bar -->
     <template #command-bar>
-      <RuleCommandBar
-        v-if="selectedRule"
-        :rule="selectedRule"
-        :component-prefix="component.prefix"
+      <ControlsCommandBar
+        :component="component"
+        :selected-rule="selectedRule"
+        :effective-permissions="effectivePermissions"
         :active-panel="activePanel"
-        class="mb-3"
-        @open-related-modal="$bvModal.show('related-rules-modal')"
-        @toggle-panel="togglePanel($event)"
+        :read-only="false"
+        @toggle-advanced-fields="toggleAdvancedFields"
+        @open-members="$bvModal.show('members-modal')"
+        @toggle-panel="togglePanel"
       />
 
       <!-- Review Modal -->
@@ -55,9 +56,16 @@
 
     <!-- Modals -->
     <template #modals>
+      <!-- Members Modal -->
+      <MembersModal
+        :component="component"
+        :effective-permissions="effectivePermissions"
+        :available-roles="availableRoles"
+      />
+
       <template v-if="selectedRule">
         <NewRuleModalForm
-          :title="'Clone Control'"
+          :title="msg.cloneTitle"
           :id-prefix="'duplicate'"
           :for-duplicate="true"
           :selected-rule-id="selectedRule.id"
@@ -67,16 +75,14 @@
 
         <b-modal
           id="delete-rule-modal"
-          title="Delete Control"
+          :title="msg.deleteTitle"
           centered
           @ok="$root.$emit('delete:rule', selectedRule.id)"
         >
-          <p class="my-2">
-            Are you sure you want to delete this control?<br />This cannot be undone.
-          </p>
+          <p class="my-2">{{ msg.deleteConfirmMessage }}</p>
           <template #modal-footer="{ cancel, ok }">
             <b-button @click="cancel()">Cancel</b-button>
-            <b-button variant="danger" @click="ok()">Permanently Delete Control</b-button>
+            <b-button variant="danger" @click="ok()">{{ msg.deleteConfirmButton }}</b-button>
           </template>
         </b-modal>
 
@@ -89,7 +95,7 @@
           @ok="addMultipleSatisfiedRules"
           @hidden="clearSelectedRules"
         >
-          <b-form-group label="Select controls that this one satisfies:">
+          <b-form-group :label="msg.satisfiesPrompt">
             <multiselect
               v-model="selectedSatisfiesRuleIds"
               :options="filteredSelectRules"
@@ -97,20 +103,20 @@
               :close-on-select="false"
               :clear-on-select="false"
               :preserve-search="true"
-              placeholder="Search and select controls..."
+              :placeholder="msg.satisfiesPlaceholder"
               label="text"
               track-by="value"
               :preselect-first="false"
             >
               <template slot="selection" slot-scope="{ values, isOpen }">
                 <span v-if="values.length && !isOpen" class="multiselect__single">
-                  {{ values.length }} control(s) selected
+                  {{ selectedCountLabel(values.length) }}
                 </span>
               </template>
             </multiselect>
           </b-form-group>
           <div class="mt-2 text-muted">
-            <small>{{ selectedSatisfiesRuleIds.length }} control(s) selected</small>
+            <small>{{ selectedCountLabel(selectedSatisfiesRuleIds.length) }}</small>
           </div>
           <template #modal-footer="{ cancel, ok }">
             <b-button @click="cancel()">Cancel</b-button>
@@ -119,7 +125,7 @@
               :disabled="selectedSatisfiesRuleIds.length === 0"
               @click="ok()"
             >
-              Add {{ selectedSatisfiesRuleIds.length }} Control(s)
+              Add {{ selectedSatisfiesRuleIds.length }} {{ term.plural }}
             </b-button>
           </template>
         </b-modal>
@@ -165,71 +171,26 @@
           @lock="lockRule($event)"
           @unlock="unlockRule($event)"
           @open-review-modal="$bvModal.show('review-modal')"
+          @open-related-modal="$bvModal.show('related-rules-modal')"
         />
       </template>
     </template>
 
-    <!-- Right Panels -->
+    <!-- Right Panels (Slideovers) - Using shared component -->
     <template #right-panels>
-      <b-sidebar
-        id="sidebar-satisfies"
-        title="Also Satisfies"
-        right
-        shadow
-        backdrop
-        width="400px"
-        :visible="activePanel === 'satisfies'"
-        @hidden="closePanel"
-      >
-        <div v-if="selectedRule" class="px-3 py-2">
-          <RuleSatisfactions
-            :component="component"
-            :rule="selectedRule"
-            :selected-rule-id="selectedRuleId"
-            :project-prefix="component.prefix"
-            @ruleSelected="handleRuleSelected($event)"
-          />
-        </div>
-      </b-sidebar>
-
-      <b-sidebar
-        id="sidebar-reviews"
-        title="Reviews"
-        right
-        shadow
-        backdrop
-        width="400px"
-        :visible="activePanel === 'reviews'"
-        @hidden="closePanel"
-      >
-        <div v-if="selectedRule" class="px-3 py-2">
-          <RuleReviews
-            :rule="selectedRule"
-            :effective-permissions="effectivePermissions"
-            :current-user-id="currentUserId"
-          />
-        </div>
-      </b-sidebar>
-
-      <b-sidebar
-        id="sidebar-history"
-        title="History"
-        right
-        shadow
-        backdrop
-        width="400px"
-        :visible="activePanel === 'history'"
-        @hidden="closePanel"
-      >
-        <div v-if="selectedRule" class="px-3 py-2">
-          <RuleHistories
-            :rule="selectedRule"
-            :component="component"
-            :statuses="statuses"
-            :severities="severities"
-          />
-        </div>
-      </b-sidebar>
+      <ControlsSidepanels
+        :component="component"
+        :selected-rule="selectedRule"
+        :selected-rule-id="selectedRuleId"
+        :active-panel="activePanel"
+        :effective-permissions="effectivePermissions"
+        :current-user-id="currentUserId"
+        :statuses="statuses"
+        :severities="severities"
+        @close-panel="closePanel"
+        @component-updated="refreshComponent"
+        @rule-selected="handleRuleSelected"
+      />
     </template>
   </ControlsPageLayout>
 </template>
@@ -245,14 +206,22 @@ import RuleSatisfactions from "./RuleSatisfactions.vue";
 import RelatedRulesModal from "./RelatedRulesModal.vue";
 import RuleReviewModal from "./RuleReviewModal.vue";
 import RuleFilterBar from "./RuleFilterBar.vue";
-import RuleCommandBar from "./RuleCommandBar.vue";
+import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
+import MembersModal from "../components/MembersModal.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import Multiselect from "vue-multiselect";
+import History from "../shared/History.vue";
+import UpdateComponentDetailsModal from "../components/UpdateComponentDetailsModal.vue";
+import UpdateMetadataModal from "../components/UpdateMetadataModal.vue";
+import AddQuestionsModal from "../components/AddQuestionsModal.vue";
+import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import "vue-multiselect/dist/vue-multiselect.min.css";
+import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
 
 export default {
   name: "RulesCodeEditorView",
@@ -265,12 +234,18 @@ export default {
     RelatedRulesModal,
     RuleReviewModal,
     RuleFilterBar,
-    RuleCommandBar,
+    ControlsCommandBar,
+    MembersModal,
     ControlsPageLayout,
     NewRuleModalForm,
     Multiselect,
+    History,
+    UpdateComponentDetailsModal,
+    UpdateMetadataModal,
+    AddQuestionsModal,
+    ControlsSidepanels,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin],
   props: {
     effectivePermissions: {
       type: String,
@@ -302,6 +277,10 @@ export default {
     },
     severities_map: {
       type: Object,
+      required: true,
+    },
+    availableRoles: {
+      type: Array,
       required: true,
     },
   },
@@ -415,9 +394,20 @@ export default {
   },
   data() {
     return {
+      term: RULE_TERM,
+      msg: MESSAGE_LABELS,
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
       showSRGIdChecked: null,
+      actionDescriptions: {
+        comment: "Commented",
+        request_review: "Requested Review",
+        revoke_review_request: "Revoked Request for Review",
+        request_changes: "Requested Changes",
+        approve: "Approved",
+        lock_control: "Locked",
+        unlock_control: "Unlocked",
+      },
     };
   },
   computed: {
@@ -451,6 +441,7 @@ export default {
     }
   },
   methods: {
+    selectedCountLabel,
     updateShowSRGIdChecked() {
       const componentId = this.component.id;
       this.showSRGIdChecked = localStorage.getItem(`showSRGIdChecked-${componentId}`);
@@ -543,6 +534,23 @@ export default {
         }
       }
     },
+    toggleAdvancedFields(advancedFields) {
+      if (
+        confirm(
+          `Are you sure you want to ${advancedFields ? "enable" : "disable"} advanced fields?`,
+        )
+      ) {
+        const payload = {
+          component: {
+            advanced_fields: advancedFields,
+          },
+        };
+        axios
+          .patch(`/components/${this.component.id}`, payload)
+          .then(this.alertOrNotifyResponse)
+          .catch(this.alertOrNotifyResponse);
+      }
+    },
     lockRule(comment) {
       if (!comment.trim()) return;
       const rule = this.selectedRule;
@@ -590,10 +598,28 @@ export default {
     clearSelectedRules() {
       this.selectedSatisfiesRuleIds = [];
     },
+    refreshComponent() {
+      console.log("refreshComponent called, fetching:", `/components/${this.component.id}.json`);
+      axios
+        .get(`/components/${this.component.id}.json`)
+        .then((response) => {
+          console.log("refreshComponent response:", response.data);
+          // Update component properties in-place for Vue reactivity
+          Object.assign(this.component, response.data);
+          console.log("Component after update:", this.component.name);
+        })
+        .catch((error) => {
+          console.error("Failed to refresh component:", error);
+        });
+    },
   },
 };
 </script>
 
 <style scoped>
-/* Command bar styles are now in RuleCommandBar.vue */
+/* Command bar styles are in ControlsCommandBar.vue */
+
+.white-space-pre-wrap {
+  white-space: pre-wrap;
+}
 </style>

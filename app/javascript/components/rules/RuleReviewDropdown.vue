@@ -59,6 +59,7 @@
 <script>
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { REVIEW_ACTION_LABELS } from "../../constants/terminology";
 
 export default {
   name: "RuleReviewDropdown",
@@ -83,6 +84,7 @@ export default {
   },
   data() {
     return {
+      reviewLabels: REVIEW_ACTION_LABELS,
       selectedReviewAction: null,
       reviewComment: "",
     };
@@ -93,75 +95,76 @@ export default {
       const isReviewer = !this.readOnly && this.effectivePermissions === "reviewer";
       const isRequestor = !this.readOnly && this.currentUserId === this.rule.review_requestor_id;
       const isUnderReview = this.rule.review_requestor_id != null;
+      const labels = this.reviewLabels;
 
       return [
         {
           value: "request_review",
-          name: "Request Review",
-          description: "Control will not be editable during the review process",
+          name: labels.requestReview.name,
+          description: labels.requestReview.description,
           disabledTooltip: isUnderReview
-            ? "Control is already under review"
+            ? labels.requestReview.alreadyUnderReview
             : this.rule.locked
-              ? "Control is currently locked"
+              ? labels.requestReview.isLocked
               : null,
         },
         {
           value: "revoke_review_request",
-          name: "Revoke Review Request",
-          description: "Revoke your request for review - control will be editable again",
+          name: labels.revokeReview.name,
+          description: labels.revokeReview.description,
           disabledTooltip: !(isAdmin || isRequestor)
-            ? "Only an admin or the review requestor can revoke the current review request"
+            ? labels.revokeReview.notAllowed
             : !isUnderReview
-              ? "Control is not currently under review"
+              ? labels.revokeReview.notUnderReview
               : null,
         },
         {
           value: "request_changes",
-          name: "Request Changes",
-          description: "Request changes on the control - control will be editable again",
+          name: labels.requestChanges.name,
+          description: labels.requestChanges.description,
           disabledTooltip: !(isAdmin || isReviewer)
-            ? "Only an admin or reviewer can request changes"
+            ? labels.requestChanges.notAllowed
             : !isUnderReview
-              ? "Control is not currently under review"
+              ? labels.requestChanges.notUnderReview
               : null,
         },
         {
           value: "approve",
-          name: "Approve",
-          description: "Approve the control - control will become locked",
+          name: labels.approve.name,
+          description: labels.approve.description,
           disabledTooltip: !(isAdmin || isReviewer)
-            ? "Only an admin or reviewer can approve"
+            ? labels.approve.notAllowed
             : !isUnderReview
-              ? "Control is not currently under review"
+              ? labels.approve.notUnderReview
               : null,
         },
         {
           value: "lock_control",
-          name: "Lock Control",
-          description: "Skip the review process - control will be immediately locked",
+          name: labels.lock.name,
+          description: labels.lock.description,
           disabledTooltip: !isAdmin
-            ? "Only an admin can directly lock a control"
+            ? labels.lock.notAllowed
             : isUnderReview
-              ? "Cannot lock a control that is currently under review"
+              ? labels.lock.underReview
               : this.rule.locked
-                ? "Cannot lock a control that is already locked"
+                ? labels.lock.alreadyLocked
                 : this.rule.status === "Applicable - Does Not Meet" &&
                     this.rule.disa_rule_descriptions_attributes?.[0]?.mitigations?.length === 0
-                  ? "Cannot lock control: Mitigation is required for Applicable - Does Not Meet"
+                  ? labels.lock.mitigationRequired
                   : this.rule.status === "Applicable - Inherently Meets" &&
                       (!this.rule.artifact_description ||
                         this.rule.artifact_description.length === 0)
-                    ? "Cannot lock control: Artifact Description is required for Applicable - Inherently Meets"
+                    ? labels.lock.artifactRequired
                     : null,
         },
         {
           value: "unlock_control",
-          name: "Unlock Control",
-          description: "Unlock the control - control will be editable again",
+          name: labels.unlock.name,
+          description: labels.unlock.description,
           disabledTooltip: !isAdmin
-            ? "Only an admin can unlock a control"
+            ? labels.unlock.notAllowed
             : !this.rule.locked
-              ? "Cannot unlock a control that is not locked"
+              ? labels.unlock.notLocked
               : null,
         },
       ];

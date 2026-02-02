@@ -91,7 +91,7 @@ describe('RulesCodeEditorView', () => {
         RelatedRulesModal: true,
         RuleReviewModal: true,
         RuleFilterBar: true,
-        RuleCommandBar: true,
+        ControlsCommandBar: true,
         ControlsPageLayout: true,
         NewRuleModalForm: true,
         Multiselect: true,
@@ -130,12 +130,9 @@ describe('RulesCodeEditorView', () => {
       expect(wrapper.findComponent({ name: 'ControlsPageLayout' }).exists()).toBe(true)
     })
 
-    it('renders RuleCommandBar when rule is selected', async () => {
+    it('renders ControlsCommandBar', () => {
       wrapper = createWrapper()
-      // Select a rule first
-      wrapper.vm.selectRule(1)
-      await wrapper.vm.$nextTick()
-      expect(wrapper.findComponent({ name: 'RuleCommandBar' }).exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'ControlsCommandBar' }).exists()).toBe(true)
     })
 
     it('renders RuleFilterBar', () => {
@@ -258,7 +255,7 @@ describe('RulesCodeEditorView', () => {
       // The @ruleSelected should be connected to selectRule (or handleRuleSelected)
     })
 
-    it('passes activePanel to RuleCommandBar', async () => {
+    it('passes activePanel to ControlsCommandBar', async () => {
       wrapper = createWrapper()
       wrapper.vm.togglePanel('reviews')
       await wrapper.vm.$nextTick()
