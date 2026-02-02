@@ -21,16 +21,16 @@
           ref="ruleSearch"
           type="text"
           class="form-control"
-          placeholder="Search controls..."
+          :placeholder="navLabels.searchPlaceholder"
           @input="searchUpdated($event.target.value)"
         />
       </div>
 
       <hr class="mt-2 mb-2" />
 
-      <!-- Currently opened controls -->
+      <!-- Currently opened rules -->
       <p class="mt-0 mb-1 d-flex justify-content-between align-items-center spacing-responsive">
-        <strong>Open Controls</strong>
+        <strong>{{ navLabels.openRules }}</strong>
         <template v-if="openRuleIds.length > 0">
           <span class="clickable text-primary" @click="rulesDeselected(openRules)">
             <b-icon icon="x" class="clickable" />
@@ -39,7 +39,7 @@
         </template>
       </p>
       <div v-if="openRules.length === 0">
-        <em>No controls selected</em>
+        <em>{{ navLabels.noRulesSelected }}</em>
       </div>
       <div v-else>
         <div
@@ -96,9 +96,9 @@
 
       <hr class="mt-2 mb-2" />
 
-      <!-- All project controls -->
+      <!-- All project rules -->
       <p class="mt-0 mb-0 d-flex justify-content-between align-items-center spacing-responsive">
-        <strong>All Controls</strong>
+        <strong>{{ navLabels.allRules }}</strong>
         <template v-if="!readOnly">
           <span v-b-modal.create-rule-modal class="text-primary clickable">
             <b-icon v-b-modal.create-rule-modal icon="plus" /> add
@@ -108,7 +108,7 @@
 
       <!-- New rule modal -->
       <NewRuleModalForm
-        title="Create New Control"
+        :title="navLabels.createNew"
         :for-duplicate="false"
         id-prefix="create"
         @ruleSelected="ruleSelected($event)"
@@ -254,6 +254,7 @@ import axios from "axios";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { getDefaultFilters } from "../../composables/useRuleFilters";
+import { NAVIGATOR_LABELS } from "../../constants/terminology";
 export default {
   name: "RuleNavigator",
   components: { FindAndReplace, NewRuleModalForm },
@@ -293,6 +294,7 @@ export default {
   },
   data: function () {
     return {
+      navLabels: NAVIGATOR_LABELS,
       rule_form_rule_id: "",
       sidebarOffset: 0,
       expandedParents: new Set(), // Track which parent rules are expanded
