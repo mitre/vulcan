@@ -1,14 +1,15 @@
 <template>
-  <div class="filter-group">
+  <div class="filter-group" :class="{ 'filter-group-disabled': disabled }">
     <div class="filter-group-header">
       <strong>{{ title }}</strong>
-      <span class="reset-link" @click="$emit('reset')">reset</span>
+      <span v-if="!disabled" class="reset-link" @click="$emit('reset')">reset</span>
     </div>
     <div class="filter-group-body">
       <div v-for="item in items" :key="item.key" class="filter-item">
         <b-form-checkbox
           :id="`filter-${_uid}-${item.key}`"
           :checked="item.checked"
+          :disabled="disabled"
           switch
           size="sm"
           @change="onToggleChange(item.key, $event)"
@@ -32,6 +33,10 @@ export default {
       type: Array,
       required: true,
       // items: [{ key: string, label: string, count?: number, checked: boolean }]
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
   },
   methods: {
@@ -85,5 +90,33 @@ export default {
 
 .reset-link:hover {
   text-decoration: underline;
+}
+
+/* Disabled state - greyed out appearance matching Bootstrap pattern */
+.filter-group-disabled {
+  background-color: #f8f9fa;
+}
+
+.filter-group-disabled .filter-group-header {
+  color: #6c757d;
+}
+
+.filter-group-disabled .filter-group-body {
+  pointer-events: none;
+  color: #6c757d;
+}
+
+/* Grey out switch toggles when disabled */
+.filter-group-disabled :deep(.custom-switch .custom-control-label::before) {
+  background-color: #dee2e6;
+  border-color: #adb5bd;
+}
+
+.filter-group-disabled :deep(.custom-switch .custom-control-label::after) {
+  background-color: #adb5bd;
+}
+
+.filter-group-disabled :deep(.custom-control-label) {
+  color: #6c757d;
 }
 </style>

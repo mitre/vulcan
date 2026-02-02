@@ -115,12 +115,14 @@ describe('FilterBar', () => {
   })
 
   describe('group order', () => {
-    it('renders groups in order: Status, Review, Display', () => {
+    // REQUIREMENT: Groups render in order Status, Display, Review
+    // Review is last because it can be toggled on/off (disabled in view mode)
+    it('renders groups in order: Status, Display, Review', () => {
       wrapper = createWrapper()
       const groups = wrapper.findAllComponents({ name: 'FilterGroup' })
       expect(groups.at(0).props('title')).toBe('Status')
-      expect(groups.at(1).props('title')).toBe('Review')
-      expect(groups.at(2).props('title')).toBe('Display')
+      expect(groups.at(1).props('title')).toBe('Display')
+      expect(groups.at(2).props('title')).toBe('Review')
     })
   })
 
@@ -135,22 +137,24 @@ describe('FilterBar', () => {
       expect(items[0].count).toBe(264)
     })
 
-    it('passes review items to Review group', () => {
-      wrapper = createWrapper()
-      const reviewGroup = wrapper.findAllComponents({ name: 'FilterGroup' }).at(1)
-      const items = reviewGroup.props('items')
-      expect(items.length).toBe(3)
-      expect(items[0].key).toBe('nurFilterChecked')
-    })
-
     it('passes display items to Display group', () => {
       wrapper = createWrapper()
-      const displayGroup = wrapper.findAllComponents({ name: 'FilterGroup' }).at(2)
+      // Display is now index 1 (after Status)
+      const displayGroup = wrapper.findAllComponents({ name: 'FilterGroup' }).at(1)
       const items = displayGroup.props('items')
       expect(items.length).toBe(3)
       expect(items[0].key).toBe('nestSatisfiedRulesChecked')
       // Display items should not have counts
       expect(items[0].count).toBeUndefined()
+    })
+
+    it('passes review items to Review group', () => {
+      wrapper = createWrapper()
+      // Review is now index 2 (last)
+      const reviewGroup = wrapper.findAllComponents({ name: 'FilterGroup' }).at(2)
+      const items = reviewGroup.props('items')
+      expect(items.length).toBe(3)
+      expect(items[0].key).toBe('nurFilterChecked')
     })
   })
 

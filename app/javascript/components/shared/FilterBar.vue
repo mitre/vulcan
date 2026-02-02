@@ -5,17 +5,9 @@
       v-if="showStatus"
       title="Status"
       :items="statusItems"
+      :disabled="disabledStatus"
       @update:items="onStatusUpdate"
       @reset="onStatusReset"
-    />
-
-    <!-- Review Group -->
-    <FilterGroup
-      v-if="showReview"
-      title="Review"
-      :items="reviewItems"
-      @update:items="onReviewUpdate"
-      @reset="onReviewReset"
     />
 
     <!-- Display Group -->
@@ -23,8 +15,19 @@
       v-if="showDisplay"
       title="Display"
       :items="displayItems"
+      :disabled="disabledDisplay"
       @update:items="onDisplayUpdate"
       @reset="onDisplayReset"
+    />
+
+    <!-- Review Group (last - toggles on/off between modes) -->
+    <FilterGroup
+      v-if="showReview"
+      title="Review"
+      :items="reviewItems"
+      :disabled="disabledReview"
+      @update:items="onReviewUpdate"
+      @reset="onReviewReset"
     />
   </div>
 </template>
@@ -56,6 +59,18 @@ export default {
     showDisplay: {
       type: Boolean,
       default: true,
+    },
+    disabledStatus: {
+      type: Boolean,
+      default: false,
+    },
+    disabledReview: {
+      type: Boolean,
+      default: false,
+    },
+    disabledDisplay: {
+      type: Boolean,
+      default: false,
     },
   },
   computed: {

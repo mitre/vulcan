@@ -5,6 +5,9 @@
     :show-status="showStatus"
     :show-review="showReview"
     :show-display="showDisplay"
+    :disabled-status="disabledStatus"
+    :disabled-review="disabledReview"
+    :disabled-display="disabledDisplay"
     @update:filters="handleFiltersUpdate"
   />
 </template>
@@ -35,6 +38,18 @@ export default {
     showDisplay: {
       type: Boolean,
       default: true,
+    },
+    disabledStatus: {
+      type: Boolean,
+      default: false,
+    },
+    disabledReview: {
+      type: Boolean,
+      default: false,
+    },
+    disabledDisplay: {
+      type: Boolean,
+      default: false,
     },
   },
   methods: {
