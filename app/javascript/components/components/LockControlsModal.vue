@@ -3,16 +3,16 @@
     <!-- Modal trigger button -->
     <span @click="showModal()">
       <slot name="opener">
-        <b-button class="px-2 m-2" variant="primary"> Lock Component Controls </b-button>
+        <b-button class="px-2 m-2" variant="primary">{{ msg.lockAllTitle }}</b-button>
       </slot>
     </span>
 
-    <!-- Add component modal -->
+    <!-- Lock rules modal -->
     <b-modal
       ref="LockControlsModal"
-      title="Lock Component Controls"
+      :title="msg.lockAllTitle"
       size="lg"
-      :ok-title="loading ? 'Loading...' : 'Lock Controls'"
+      :ok-title="loading ? 'Loading...' : msg.lockAllButton"
       :ok-disabled="loading"
       @ok="lockControls"
     >
@@ -46,6 +46,7 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { MESSAGE_LABELS } from "../../constants/terminology";
 
 export default {
   name: "LockControlsModal",
@@ -58,6 +59,7 @@ export default {
   },
   data: function () {
     return {
+      msg: MESSAGE_LABELS,
       comment: "",
       loading: false,
     };

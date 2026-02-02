@@ -36,7 +36,7 @@
           <div class="text-right">
             <b-badge v-if="component.rules_count > 0" variant="info" pill class="px-3 py-2">
               <b-icon icon="shield-check" class="mr-1" />
-              {{ component.rules_count }} Control{{ component.rules_count !== 1 ? "s" : "" }}
+              {{ ruleCountLabel(component.rules_count) }}
               <span v-if="component.component_id" class="ml-1">(Overlaid)</span>
             </b-badge>
             <b-badge v-else variant="secondary" pill class="px-3 py-2">
@@ -173,6 +173,7 @@ import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMi
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
+import { ruleCountLabel } from "../../constants/terminology";
 
 export default {
   name: "ComponentCard",
@@ -215,6 +216,7 @@ export default {
     },
   },
   methods: {
+    ruleCountLabel,
     downloadExport: function (type) {
       axios
         .get(`/components/${this.component.id}/export/${type}`)

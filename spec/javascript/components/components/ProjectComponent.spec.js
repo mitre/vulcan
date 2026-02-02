@@ -92,7 +92,8 @@ describe('ProjectComponent', () => {
       },
       stubs: {
         ControlsPageLayout: true,
-        ComponentCommandBar: true,
+        ControlsCommandBar: true,
+        ControlsSidepanels: true,
         RuleNavigator: true,
         RuleEditor: true,
         RuleSatisfactions: true,
@@ -128,9 +129,9 @@ describe('ProjectComponent', () => {
       expect(wrapper.findComponent({ name: 'ControlsPageLayout' }).exists()).toBe(true)
     })
 
-    it('renders ComponentCommandBar', () => {
+    it('renders ControlsCommandBar', () => {
       wrapper = createWrapper()
-      expect(wrapper.findComponent({ name: 'ComponentCommandBar' }).exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'ControlsCommandBar' }).exists()).toBe(true)
     })
 
     it('renders RuleNavigator', () => {
@@ -222,19 +223,21 @@ describe('ProjectComponent', () => {
   })
 
   describe('rule panels (enabled when rule selected)', () => {
+    // REQUIREMENT: Rule panels use namespaced IDs to avoid collision with component panels
+    // 'rule-reviews' instead of 'reviews', 'rule-history' instead of 'history'
     it('has satisfies slideover', () => {
       wrapper = createWrapper()
       expect(wrapper.vm.rulePanels).toContain('satisfies')
     })
 
-    it('has reviews slideover', () => {
+    it('has rule-reviews slideover', () => {
       wrapper = createWrapper()
-      expect(wrapper.vm.rulePanels).toContain('reviews')
+      expect(wrapper.vm.rulePanels).toContain('rule-reviews')
     })
 
-    it('has history slideover', () => {
+    it('has rule-history slideover', () => {
       wrapper = createWrapper()
-      expect(wrapper.vm.rulePanels).toContain('history')
+      expect(wrapper.vm.rulePanels).toContain('rule-history')
     })
   })
 
@@ -244,11 +247,73 @@ describe('ProjectComponent', () => {
       expect(wrapper.findComponent({ name: 'BTabs' }).exists()).toBe(false)
     })
 
-    it('uses slideovers instead of right sidebar column', () => {
+    it('uses ControlsSidepanels for slideovers', () => {
       wrapper = createWrapper()
-      // The component uses b-sidebar for panels, not a fixed column
-      const sidebars = wrapper.findAllComponents({ name: 'BSidebar' })
-      expect(sidebars.length).toBeGreaterThan(0)
+      // Sidebars are now in the shared ControlsSidepanels component
+      const controlsSidepanels = wrapper.findComponent({ name: 'ControlsSidepanels' })
+      expect(controlsSidepanels.exists()).toBe(true)
+    })
+  })
+
+  describe('refreshComponent', () => {
+    // REQUIREMENT: When component details are updated via modal, the sidepanel
+    // should reactively display the new data WITHOUT a full page reload.
+    // The refreshComponent method should fetch updated data and update
+    // the component properties in-place for Vue reactivity.
+
+    it('fetches component data as JSON', async () => {
+      const axios = (await import('axios')).default
+      wrapper = createWrapper()
+
+      // Call refreshComponent
+      wrapper.vm.refreshComponent()
+
+      // Verify axios.get was called with .json extension
+      expect(axios.get).toHaveBeenCalledWith('/components/41.json')
+    })
+
+    it('updates component properties in-place on successful fetch', async () => {
+      const axios = (await import('axios')).default
+      const updatedData = {
+        id: 41,
+        name: 'Updated Component Name',
+        title: 'Updated Title',
+        description: 'Updated Description'
+      }
+      axios.get.mockResolvedValueOnce({ data: updatedData })
+
+      wrapper = createWrapper()
+
+      // Call refreshComponent and wait for promise
+      await wrapper.vm.refreshComponent()
+
+      // Wait for Vue to process updates
+      await wrapper.vm.$nextTick()
+
+      // Component properties should be updated in-place
+      expect(wrapper.vm.component.name).toBe('Updated Component Name')
+      expect(wrapper.vm.component.title).toBe('Updated Title')
+    })
+
+    it('does NOT reload the page', async () => {
+      const axios = (await import('axios')).default
+      axios.get.mockResolvedValueOnce({ data: { id: 41, name: 'Test' } })
+
+      // Mock location.reload to track if it's called
+      const originalReload = window.location.reload
+      const mockReload = vi.fn()
+      delete window.location
+      window.location = { reload: mockReload }
+
+      wrapper = createWrapper()
+      await wrapper.vm.refreshComponent()
+      await wrapper.vm.$nextTick()
+
+      // CRITICAL: Should NOT call location.reload
+      expect(mockReload).not.toHaveBeenCalled()
+
+      // Restore
+      window.location.reload = originalReload
     })
   })
 })

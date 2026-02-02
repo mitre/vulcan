@@ -7,15 +7,16 @@
       :show-command-bar="true"
       :show-filter-bar="true"
       :sidebar-width="2"
-      empty-state-message="Select a control on the left to view."
+      :empty-state-message="msg.selectRule"
     >
       <!-- Command Bar -->
       <template #command-bar>
-        <ComponentCommandBar
+        <ControlsCommandBar
           :component="component"
           :selected-rule="selectedRule"
           :effective-permissions="effective_permissions"
           :active-panel="activePanel"
+          :read-only="true"
           @release="confirmComponentRelease"
           @toggle-advanced-fields="toggleAdvancedFields"
           @open-members="$bvModal.show('members-modal')"
@@ -23,14 +24,15 @@
         />
       </template>
 
-      <!-- Filter Bar (Status + Display for view page) -->
+      <!-- Filter Bar (Review panel disabled in view mode) -->
       <template #filter-bar>
         <RuleFilterBar
           :filters="filters"
           :counts="counts"
           :show-status="true"
-          :show-review="false"
+          :show-review="true"
           :show-display="true"
+          :disabled-review="true"
           @update:filter="updateFilter"
         />
       </template>
@@ -63,6 +65,7 @@
             :effective-permissions="effective_permissions"
             :advanced_fields="component.advanced_fields"
             :additional_questions="component.additional_questions"
+            @open-related-modal="$bvModal.show('related-rules-modal')"
           />
         </template>
       </template>
@@ -85,235 +88,22 @@
         />
       </template>
 
-      <!-- Right Panels (Slideovers) -->
+      <!-- Right Panels (Slideovers) - Using shared component -->
       <template #right-panels>
-        <!-- Component Details -->
-        <b-sidebar
-          id="sidebar-details"
-          title="Component Details"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'details'"
-          @hidden="closePanel"
-        >
-          <div class="px-3 py-2">
-            <div v-if="component.name">
-              <p class="mb-2"><strong>Name:</strong> {{ component.name }}</p>
-            </div>
-            <div v-if="component.version">
-              <p class="mb-2"><strong>Version:</strong> {{ component.version }}</p>
-            </div>
-            <div v-if="component.release">
-              <p class="mb-2"><strong>Release:</strong> {{ component.release }}</p>
-            </div>
-            <div v-if="component.title">
-              <p class="mb-2"><strong>Title:</strong> {{ component.title }}</p>
-            </div>
-            <div v-if="component.description">
-              <p class="mb-2"><strong>Description:</strong> {{ component.description }}</p>
-            </div>
-            <div>
-              <p class="mb-2"><strong>PoC Name:</strong> {{ component.admin_name || "Not set" }}</p>
-            </div>
-            <div>
-              <p class="mb-2">
-                <strong>PoC Email:</strong> {{ component.admin_email || "Not set" }}
-              </p>
-            </div>
-            <UpdateComponentDetailsModal
-              v-if="role_gte_to(effective_permissions, 'admin')"
-              :component="component"
-              @componentUpdated="refreshComponent"
-            />
-          </div>
-        </b-sidebar>
-
-        <!-- Component Metadata -->
-        <b-sidebar
-          id="sidebar-metadata"
-          title="Component Metadata"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'metadata'"
-          @hidden="closePanel"
-        >
-          <div class="px-3 py-2">
-            <small
-              v-if="
-                role_gte_to(effective_permissions, 'admin') &&
-                (!component.metadata || !component.metadata.hasOwnProperty('Slack Channel ID'))
-              "
-              class="text-muted d-block mb-3"
-            >
-              For Slack notifications, add metadata with key "Slack Channel ID".
-            </small>
-            <div v-for="(value, propertyName) in component.metadata" :key="propertyName">
-              <p class="mb-2">
-                <strong>{{ propertyName }}:</strong> {{ value }}
-              </p>
-            </div>
-            <div v-if="!component.metadata || Object.keys(component.metadata).length === 0">
-              <p class="text-muted">No metadata defined.</p>
-            </div>
-            <UpdateMetadataModal
-              v-if="role_gte_to(effective_permissions, 'author')"
-              :component="component"
-              @componentUpdated="refreshComponent"
-            />
-          </div>
-        </b-sidebar>
-
-        <!-- Component Additional Questions -->
-        <b-sidebar
-          id="sidebar-questions"
-          title="Additional Questions"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'questions'"
-          @hidden="closePanel"
-        >
-          <div class="px-3 py-2">
-            <div
-              v-for="question in component.additional_questions"
-              :key="question.id + question.question_type + question.name"
-            >
-              <p class="mb-2">
-                <strong>{{ question.name }}:</strong>
-                <template v-if="question.question_type === 'dropdown'">
-                  Options: {{ question.options.join(", ") }}
-                </template>
-                <template v-else-if="question.question_type === 'url'">URL</template>
-                <template v-else>Freeform Text</template>
-              </p>
-            </div>
-            <div
-              v-if="!component.additional_questions || component.additional_questions.length === 0"
-            >
-              <p class="text-muted">No additional questions defined.</p>
-            </div>
-            <AddQuestionsModal
-              v-if="role_gte_to(effective_permissions, 'author')"
-              :component="component"
-              @componentUpdated="refreshComponent"
-            />
-          </div>
-        </b-sidebar>
-
-        <!-- Component History -->
-        <b-sidebar
-          id="sidebar-comp-history"
-          title="Component History"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'comp-history'"
-          @hidden="closePanel"
-        >
-          <div class="px-3 py-2">
-            <History
-              :histories="component.histories"
-              :revertable="false"
-              abbreviate-type="BaseRule"
-            />
-          </div>
-        </b-sidebar>
-
-        <!-- Component Reviews -->
-        <b-sidebar
-          id="sidebar-comp-reviews"
-          title="Component Reviews"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'comp-reviews'"
-          @hidden="closePanel"
-        >
-          <div class="px-3 py-2">
-            <div v-for="review in component.reviews" :key="review.id">
-              <p class="mb-1">
-                <strong>{{ review.displayed_rule_name }}</strong>
-              </p>
-              <p class="mb-1">
-                <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
-              </p>
-              <p class="mb-1">
-                <small class="text-muted">{{ friendlyDateTime(review.created_at) }}</small>
-              </p>
-              <p class="mb-3 white-space-pre-wrap">{{ review.comment }}</p>
-            </div>
-            <div v-if="!component.reviews || component.reviews.length === 0">
-              <p class="text-muted">No reviews yet.</p>
-            </div>
-          </div>
-        </b-sidebar>
-
-        <!-- Rule Satisfies -->
-        <b-sidebar
-          id="sidebar-satisfies"
-          title="Also Satisfies"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'satisfies'"
-          @hidden="closePanel"
-        >
-          <div v-if="selectedRule" class="px-3 py-2">
-            <RuleSatisfactions
-              :component="component"
-              :rule="selectedRule"
-              :selected-rule-id="selectedRuleId"
-              :project-prefix="component.prefix"
-              :read-only="true"
-              @ruleSelected="handleRuleSelected"
-            />
-          </div>
-        </b-sidebar>
-
-        <!-- Rule Reviews -->
-        <b-sidebar
-          id="sidebar-reviews"
-          title="Rule Reviews"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'reviews'"
-          @hidden="closePanel"
-        >
-          <div v-if="selectedRule" class="px-3 py-2">
-            <RuleReviews :rule="selectedRule" />
-          </div>
-        </b-sidebar>
-
-        <!-- Rule History -->
-        <b-sidebar
-          id="sidebar-history"
-          title="Rule History"
-          right
-          shadow
-          backdrop
-          width="400px"
-          :visible="activePanel === 'history'"
-          @hidden="closePanel"
-        >
-          <div v-if="selectedRule" class="px-3 py-2">
-            <RuleHistories
-              :rule="selectedRule"
-              :component="component"
-              :statuses="statuses"
-              :severities="severities"
-            />
-          </div>
-        </b-sidebar>
+        <ControlsSidepanels
+          :component="component"
+          :selected-rule="selectedRule"
+          :selected-rule-id="selectedRuleId"
+          :active-panel="activePanel"
+          :effective-permissions="effective_permissions"
+          :current-user-id="current_user_id"
+          :statuses="statuses"
+          :severities="severities"
+          :read-only="true"
+          @close-panel="closePanel"
+          @component-updated="refreshComponent"
+          @rule-selected="handleRuleSelected"
+        />
       </template>
     </ControlsPageLayout>
   </div>
@@ -328,8 +118,9 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
+import { MESSAGE_LABELS } from "../../constants/terminology";
 import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
-import ComponentCommandBar from "./ComponentCommandBar.vue";
+import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import RuleFilterBar from "../rules/RuleFilterBar.vue";
 import RuleNavigator from "../rules/RuleNavigator.vue";
 import RuleEditor from "../rules/RuleEditor.vue";
@@ -338,6 +129,7 @@ import RuleReviews from "../rules/RuleReviews.vue";
 import RuleHistories from "../rules/RuleHistories.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import History from "../shared/History.vue";
+import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import MembersModal from "./MembersModal.vue";
 import UpdateComponentDetailsModal from "./UpdateComponentDetailsModal.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
@@ -347,7 +139,7 @@ export default {
   name: "ProjectComponent",
   components: {
     ControlsPageLayout,
-    ComponentCommandBar,
+    ControlsCommandBar,
     RuleFilterBar,
     RuleNavigator,
     RuleEditor,
@@ -356,6 +148,7 @@ export default {
     RuleHistories,
     RelatedRulesModal,
     History,
+    ControlsSidepanels,
     MembersModal,
     UpdateComponentDetailsModal,
     UpdateMetadataModal,
@@ -450,6 +243,7 @@ export default {
   data() {
     return {
       component: this.initialComponentState,
+      msg: MESSAGE_LABELS,
       actionDescriptions: {
         comment: "Commented",
         request_review: "Requested Review",
@@ -466,6 +260,13 @@ export default {
       return [...this.component.rules].sort(this.compareRules);
     },
     breadcrumbs() {
+      // Build component name with version (e.g., "Test 2 V1R1")
+      let componentText = this.component.name;
+      if (this.component.version || this.component.release) {
+        componentText += " ";
+        if (this.component.version) componentText += `V${this.component.version}`;
+        if (this.component.release) componentText += `R${this.component.release}`;
+      }
       return [
         {
           text: "Projects",
@@ -476,7 +277,7 @@ export default {
           href: `/projects/${this.project.id}`,
         },
         {
-          text: this.component.name,
+          text: componentText,
           active: true,
         },
       ];
@@ -485,7 +286,7 @@ export default {
       return ["details", "metadata", "questions", "comp-history", "comp-reviews"];
     },
     rulePanels() {
-      return ["satisfies", "reviews", "history"];
+      return ["satisfies", "rule-reviews", "rule-history"];
     },
   },
   mounted() {
@@ -497,10 +298,15 @@ export default {
   },
   methods: {
     refreshComponent() {
-      axios.get(`/components/${this.component.id}`).then((response) => {
-        this.component = response.data;
-        location.reload();
-      });
+      axios
+        .get(`/components/${this.component.id}.json`)
+        .then((response) => {
+          // Update component properties in-place for Vue reactivity
+          Object.assign(this.component, response.data);
+        })
+        .catch((error) => {
+          console.error("Failed to refresh component:", error);
+        });
     },
     toggleAdvancedFields(advanced_fields) {
       if (
