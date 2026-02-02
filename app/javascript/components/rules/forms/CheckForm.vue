@@ -17,7 +17,7 @@
       <b-form-input
         :id="`ruleEditor-check-system-${mod}`"
         :value="check.system"
-        :class="inputClass('system')"
+        :input-class="inputClass('system')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('system')"
         @input="$root.$emit('update:check', rule, { ...check, system: $event }, index)"
@@ -47,7 +47,7 @@
       <b-form-input
         :id="`ruleEditor-check-content_ref_name-${mod}`"
         :value="check.content_ref_name"
-        :class="inputClass('content_ref_name')"
+        :input-class="inputClass('content_ref_name')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('content_ref_name')"
         @input="$root.$emit('update:check', rule, { ...check, content_ref_name: $event }, index)"
@@ -77,7 +77,7 @@
       <b-form-input
         :id="`ruleEditor-check-content_ref_href-${mod}`"
         :value="check.content_ref_href"
-        :class="inputClass('content_ref_href')"
+        :input-class="inputClass('content_ref_href')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('content_ref_href')"
         @input="$root.$emit('update:check', rule, { ...check, content_ref_href: $event }, index)"
@@ -104,10 +104,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-check-content-${mod}`"
         :value="check.content"
-        :class="inputClass('content')"
+        :input-class="inputClass('content')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('content')"
         rows="1"
@@ -126,9 +126,11 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 
 export default {
   name: "CheckForm",
+  components: { MarkdownTextarea },
   mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {

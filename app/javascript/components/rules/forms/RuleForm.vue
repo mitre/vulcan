@@ -24,7 +24,7 @@
           <b-form-select
             :id="`ruleEditor-status-${mod}`"
             :value="status_text"
-            :class="inputClass('status')"
+            :input-class="inputClass('status')"
             :options="statuses"
             :disabled="disabled || fields.disabled.includes('status')"
             @input="$root.$emit('update:rule', { ...rule, status: $event })"
@@ -55,7 +55,7 @@
           <b-form-select
             :id="`ruleEditor-rule_severity-top-${mod}`"
             :value="rule.rule_severity"
-            :class="inputClass('rule_severity')"
+            :input-class="inputClass('rule_severity')"
             :options="severities"
             :disabled="disabled || fields.disabled.includes('rule_severity')"
             @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
@@ -87,10 +87,10 @@
               aria-hidden="true"
             />
           </label>
-          <b-form-textarea
+          <MarkdownTextarea
             :id="`ruleEditor-status_justification-${mod}`"
             :value="rule.status_justification"
-            :class="inputClass('status_justification')"
+            :input-class="inputClass('status_justification')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('status_justification')"
             rows="1"
@@ -121,10 +121,10 @@
               aria-hidden="true"
             />
           </label>
-          <b-form-textarea
+          <MarkdownTextarea
             :id="`ruleEditor-title-${mod}`"
             :value="rule.title"
-            :class="inputClass('title')"
+            :input-class="inputClass('title')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('title')"
             rows="1"
@@ -169,7 +169,7 @@
         <b-form-input
           :id="`ruleEditor-version-${mod}`"
           :value="rule.version"
-          :class="inputClass('version')"
+          :input-class="inputClass('version')"
           placeholder=""
           :disabled="disabled || fields.disabled.includes('version')"
           @input="$root.$emit('update:rule', { ...rule, version: $event })"
@@ -196,10 +196,10 @@
             aria-hidden="true"
           />
         </label>
-        <b-form-textarea
+        <MarkdownTextarea
           :id="`ruleEditor-artifact_description-${mod}`"
           :value="rule.artifact_description"
-          :class="inputClass('artifact_description')"
+          :input-class="inputClass('artifact_description')"
           placeholder=""
           :disabled="disabled || fields.disabled.includes('artifact_description')"
           rows="1"
@@ -247,7 +247,7 @@
           <b-form-input
             :id="`ruleEditor-fix_id-${mod}`"
             :value="rule.fix_id"
-            :class="inputClass('fix_id')"
+            :input-class="inputClass('fix_id')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('fix_id')"
             @input="$root.$emit('update:rule', { ...rule, fix_id: $event })"
@@ -278,7 +278,7 @@
           <b-form-input
             :id="`ruleEditor-fixtext_fixref-${mod}`"
             :value="rule.fixtext_fixref"
-            :class="inputClass('fixtext_fixref')"
+            :input-class="inputClass('fixtext_fixref')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('fixtext_fixref')"
             @input="$root.$emit('update:rule', { ...rule, fixtext_fixref: $event })"
@@ -306,10 +306,10 @@
             aria-hidden="true"
           />
         </label>
-        <b-form-textarea
+        <MarkdownTextarea
           :id="`ruleEditor-fixtext-${mod}`"
           :value="rule.satisfied_by.length > 0 ? rule.satisfied_by[0].fixtext : rule.fixtext"
-          :class="inputClass('fixtext')"
+          :input-class="inputClass('fixtext')"
           placeholder=""
           :disabled="disabled || fields.disabled.includes('fixtext')"
           rows="1"
@@ -343,7 +343,7 @@
           <b-form-input
             :id="`ruleEditor-rule_weight-${mod}`"
             :value="rule.rule_weight"
-            :class="inputClass('rule_weight')"
+            :input-class="inputClass('rule_weight')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('rule_weight').disabled"
             @input="$root.$emit('update:rule', { ...rule, rule_weight: $event })"
@@ -376,7 +376,7 @@
           <b-form-input
             :id="`ruleEditor-ident-${mod}`"
             :value="rule.ident"
-            :class="inputClass('ident')"
+            :input-class="inputClass('ident')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('ident')"
             @input="$root.$emit('update:rule', { ...rule, ident: $event })"
@@ -407,7 +407,7 @@
           <b-form-input
             :id="`ruleEditor-ident_system-${mod}`"
             :value="rule.ident_system"
-            :class="inputClass('ident_system')"
+            :input-class="inputClass('ident_system')"
             placeholder=""
             :disabled="disabled || fields.disabled.includes('ident_system')"
             @input="$root.$emit('update:rule', { ...rule, ident_system: $event })"
@@ -435,10 +435,10 @@
             aria-hidden="true"
           />
         </label>
-        <b-form-textarea
+        <MarkdownTextarea
           :id="`ruleEditor-vendor_comments-${mod}`"
           :value="rule.vendor_comments"
-          :class="inputClass('vendor_comments')"
+          :input-class="inputClass('vendor_comments')"
           placeholder=""
           :disabled="disabled || fields.disabled.includes('vendor_comments')"
           rows="1"
@@ -464,13 +464,14 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
 import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
 
 export default {
   name: "RuleForm",
-  components: { DisaRuleDescriptionForm, CheckForm, AdditionalQuestions },
+  components: { DisaRuleDescriptionForm, CheckForm, AdditionalQuestions, MarkdownTextarea },
   mixins: [FormFeedbackMixinVue],
   props: {
     rule: {

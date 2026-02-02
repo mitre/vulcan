@@ -12,10 +12,10 @@
             aria-hidden="true"
           />
         </label>
-        <b-form-textarea
+        <MarkdownTextarea
           :id="`ruleEditor-rule_description-${mod}`"
           :value="description.description"
-          :class="inputClass('description')"
+          :input-class="inputClass('description')"
           placeholder=""
           :disabled="disabled"
           rows="1"
@@ -37,9 +37,11 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 
 export default {
   name: "RuleDescriptionForm",
+  components: { MarkdownTextarea },
   mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {

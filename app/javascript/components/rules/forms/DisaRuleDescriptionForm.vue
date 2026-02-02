@@ -38,10 +38,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-vuln_discussion-${mod}`"
         :value="description.vuln_discussion"
-        :class="inputClass('vuln_discussion')"
+        :input-class="inputClass('vuln_discussion')"
         placeholder=""
         :disabled="
           disabled ||
@@ -81,10 +81,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-false_positives-${mod}`"
         :value="description.false_positives"
-        :class="inputClass('false_positives')"
+        :input-class="inputClass('false_positives')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('false_positives')"
         rows="1"
@@ -120,10 +120,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-false_negatives-${mod}`"
         :value="description.false_negatives"
-        :class="inputClass('false_negatives')"
+        :input-class="inputClass('false_negatives')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('false_negatives')"
         rows="1"
@@ -181,10 +181,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-mitigations-${mod}`"
         :value="description.mitigations"
-        :class="inputClass('mitigations')"
+        :input-class="inputClass('mitigations')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('mitigations')"
         rows="1"
@@ -242,10 +242,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-poam-${mod}`"
         :value="description.poam"
-        :class="inputClass('poam')"
+        :input-class="inputClass('poam')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('poam')"
         rows="1"
@@ -276,10 +276,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`"
         :value="description.severity_override_guidance"
-        :class="inputClass('severity_override_guidance')"
+        :input-class="inputClass('severity_override_guidance')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('severity_override_guidance')"
         rows="1"
@@ -315,10 +315,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-potential_impacts-${mod}`"
         :value="description.potential_impacts"
-        :class="inputClass('potential_impacts')"
+        :input-class="inputClass('potential_impacts')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('potential_impacts')"
         rows="1"
@@ -354,10 +354,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-third_party_tools-${mod}`"
         :value="description.third_party_tools"
-        :class="inputClass('third_party_tools')"
+        :input-class="inputClass('third_party_tools')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('third_party_tools')"
         rows="1"
@@ -393,10 +393,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-mitigation_control-${mod}`"
         :value="description.mitigation_control"
-        :class="inputClass('mitigation_control')"
+        :input-class="inputClass('mitigation_control')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('mitigation_control')"
         rows="1"
@@ -432,10 +432,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-responsibility-${mod}`"
         :value="description.responsibility"
-        :class="inputClass('responsibility')"
+        :input-class="inputClass('responsibility')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('responsibility')"
         rows="1"
@@ -471,10 +471,10 @@
           aria-hidden="true"
         />
       </label>
-      <b-form-textarea
+      <MarkdownTextarea
         :id="`ruleEditor-disa_rule_description-ia_controls-${mod}`"
         :value="description.ia_controls"
-        :class="inputClass('ia_controls')"
+        :input-class="inputClass('ia_controls')"
         placeholder=""
         :disabled="disabled || fields.disabled.includes('ia_controls')"
         rows="1"
@@ -500,8 +500,10 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 export default {
   name: "DisaRuleDescriptionForm",
+  components: { MarkdownTextarea },
   mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {
