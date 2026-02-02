@@ -11,12 +11,12 @@ localVue.use(BootstrapVue)
  *
  * REQUIREMENTS:
  * RuleCommandBar displays rule-level context information and provides
- * access to related rules. It contains:
+ * access to rule-specific panels. It contains:
  * - Context group: Rule ID, version, status icons, last editor
- * - Related button: Opens modal to view related rules
+ * - Panel buttons: Related, Satisfies, Rule History, Rule Reviews
  *
- * NOTE: Satisfies, Reviews, History buttons were moved to ComponentCommandBar
- * as part of the DRY refactor to eliminate duplication between VIEW and EDIT pages.
+ * These are rule-specific panels that should be on the rule command bar,
+ * not the component command bar.
  */
 describe('RuleCommandBar', () => {
   let wrapper
@@ -110,7 +110,7 @@ describe('RuleCommandBar', () => {
     })
   })
 
-  describe('Related button', () => {
+  describe('panel buttons', () => {
     // REQUIREMENT: RuleCommandBar shows Related button to open RelatedRulesModal
     it('shows Related button', () => {
       wrapper = createWrapper()
@@ -126,27 +126,50 @@ describe('RuleCommandBar', () => {
       expect(wrapper.emitted('open-related-modal')).toBeTruthy()
     })
 
-    // REQUIREMENT: Satisfies, Reviews, History are NOT in RuleCommandBar
-    // They are in ComponentCommandBar (single source of truth)
-    it('does NOT show Satisfies button (moved to ComponentCommandBar)', () => {
+    // REQUIREMENT: Rule-specific panels belong on the Rule command bar
+    it('shows Satisfies button', () => {
       wrapper = createWrapper()
-      expect(wrapper.text()).not.toContain('Satisfies')
+      expect(wrapper.text()).toContain('Satisfies')
     })
 
-    it('does NOT show Reviews button (moved to ComponentCommandBar)', () => {
+    it('shows Reviews button', () => {
       wrapper = createWrapper()
-      // Should not contain standalone "Reviews" button
-      // Note: "Related" contains these letters but is different
-      const buttons = wrapper.findAll('b-button-stub')
-      const reviewsButton = buttons.wrappers.find(btn => btn.text().trim() === 'Reviews')
-      expect(reviewsButton).toBeUndefined()
+      expect(wrapper.text()).toContain('Reviews')
     })
 
-    it('does NOT show History button (moved to ComponentCommandBar)', () => {
+    it('shows History button', () => {
       wrapper = createWrapper()
-      const buttons = wrapper.findAll('b-button-stub')
-      const historyButton = buttons.wrappers.find(btn => btn.text().trim() === 'History')
-      expect(historyButton).toBeUndefined()
+      expect(wrapper.text()).toContain('History')
+    })
+
+    it('emits toggle-panel with "satisfies" when Satisfies clicked', async () => {
+      wrapper = createWrapper()
+      const btn = wrapper.findAll('b-button-stub').wrappers.find(
+        b => b.text().includes('Satisfies')
+      )
+      await btn.trigger('click')
+      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
+      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['satisfies'])
+    })
+
+    it('emits toggle-panel with "rule-reviews" when Reviews clicked', async () => {
+      wrapper = createWrapper()
+      const btn = wrapper.findAll('b-button-stub').wrappers.find(
+        b => b.text().includes('Reviews')
+      )
+      await btn.trigger('click')
+      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
+      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['rule-reviews'])
+    })
+
+    it('emits toggle-panel with "rule-history" when History clicked', async () => {
+      wrapper = createWrapper()
+      const btn = wrapper.findAll('b-button-stub').wrappers.find(
+        b => b.text().includes('History')
+      )
+      await btn.trigger('click')
+      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
+      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['rule-history'])
     })
   })
 
