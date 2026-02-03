@@ -273,4 +273,49 @@ RSpec.describe Review, type: :model do
       expect(@p1r1.ident).to eq('CCI-000054, CCI-000068')
     end
   end
+
+  context 'as_json with missing SRG data' do
+    it 'handles rule with nil srg_rule gracefully' do
+      # Create a rule without an srg_rule
+      rule_without_srg = Rule.create(
+        component: @p1_c1,
+        rule_id: 'NO-SRG-001',
+        status: 'Applicable - Configurable',
+        rule_severity: 'medium',
+        srg_rule: nil
+      )
+      # Should not raise an error
+      json = nil
+      expect { json = rule_without_srg.as_json }.not_to raise_error
+      expect(json[:srg_rule_attributes]).to be_nil
+      expect(json[:srg_info][:version]).to be_nil
+    end
+
+    it 'handles rule with srg_rule but nil security_requirements_guide_id' do
+      # Create an SRG rule without a security_requirements_guide_id
+      orphan_srg_rule = SrgRule.create(
+        version: 'SRG-TEST-001',
+        title: 'Test SRG Rule',
+        security_requirements_guide_id: nil
+      )
+      rule_with_orphan_srg = Rule.create(
+        component: @p1_c1,
+        rule_id: 'ORPHAN-SRG-001',
+        status: 'Applicable - Configurable',
+        rule_severity: 'medium',
+        srg_rule: orphan_srg_rule
+      )
+      # Should not raise an error
+      json = nil
+      expect { json = rule_with_orphan_srg.as_json }.not_to raise_error
+      expect(json[:srg_info][:version]).to be_nil
+    end
+
+    it 'returns correct SRG version when all data is present' do
+      # Use the existing @p1r1 which has a valid srg_rule
+      json = @p1r1.as_json
+      expect(json[:srg_info][:version]).not_to be_nil
+      expect(json[:srg_info][:version]).to eq('V2R1')
+    end
+  end
 end

@@ -141,17 +141,17 @@ class Rule < BaseRule
       result = result.merge(
         {
           reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-          srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
-                                                       'status_justification', 'artifact_description',
-                                                       'vendor_comments', 'review_requestor_id',
-                                                       'component_id', 'changes_requested', 'srg_rule_id',
-                                                       'security_requirements_guide_id'),
+          srg_rule_attributes: srg_rule&.as_json&.except('id', 'locked', 'created_at', 'updated_at', 'status',
+                                                         'status_justification', 'artifact_description',
+                                                         'vendor_comments', 'review_requestor_id',
+                                                         'component_id', 'changes_requested', 'srg_rule_id',
+                                                         'security_requirements_guide_id'),
           satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
           satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
           additional_answers_attributes: additional_answers.as_json.map do |c|
             c.except('rule_id', 'created_at', 'updated_at')
           end,
-          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule.security_requirements_guide_id).version }
+          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule&.security_requirements_guide_id)&.version }
         }
       )
     end
