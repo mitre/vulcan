@@ -73,31 +73,7 @@
             <b-icon icon="chat-left-text" /> Reviews
           </b-button>
         </b-button-group>
-
-        <!-- Rule Panels (disabled when no rule selected) -->
-        <b-button-group size="sm">
-          <b-button
-            :variant="isPanelActive('satisfies') ? 'secondary' : 'outline-secondary'"
-            :disabled="!hasSelectedRule"
-            @click="onTogglePanel('satisfies')"
-          >
-            <b-icon icon="check2-square" /> Satisfies
-          </b-button>
-          <b-button
-            :variant="isPanelActive('rule-reviews') ? 'secondary' : 'outline-secondary'"
-            :disabled="!hasSelectedRule"
-            @click="onTogglePanel('rule-reviews')"
-          >
-            <b-icon icon="chat-left-text" /> Reviews
-          </b-button>
-          <b-button
-            :variant="isPanelActive('rule-history') ? 'secondary' : 'outline-secondary'"
-            :disabled="!hasSelectedRule"
-            @click="onTogglePanel('rule-history')"
-          >
-            <b-icon icon="clock-history" /> History
-          </b-button>
-        </b-button-group>
+        <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
       </div>
     </div>
   </div>

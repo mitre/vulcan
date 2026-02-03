@@ -80,31 +80,7 @@
             <b-icon icon="chat-left-text" /> {{ labels.compReviews }}
           </b-button>
         </b-button-group>
-
-        <!-- Rule Panels (rule-level info, disabled when no rule selected) -->
-        <b-button-group size="sm">
-          <b-button
-            :variant="isPanelActive('satisfies') ? 'secondary' : 'outline-secondary'"
-            :disabled="!hasSelectedRule"
-            @click="onTogglePanel('satisfies')"
-          >
-            <b-icon icon="check2-square" /> {{ labels.satisfies }}
-          </b-button>
-          <b-button
-            :variant="isPanelActive('rule-history') ? 'secondary' : 'outline-secondary'"
-            :disabled="!hasSelectedRule"
-            @click="onTogglePanel('rule-history')"
-          >
-            <b-icon icon="clock-history" /> {{ labels.ruleHistory }}
-          </b-button>
-          <b-button
-            :variant="isPanelActive('rule-reviews') ? 'secondary' : 'outline-secondary'"
-            :disabled="!hasSelectedRule"
-            @click="onTogglePanel('rule-reviews')"
-          >
-            <b-icon icon="chat-left-text" /> {{ labels.ruleReviews }}
-          </b-button>
-        </b-button-group>
+        <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
       </div>
     </div>
 

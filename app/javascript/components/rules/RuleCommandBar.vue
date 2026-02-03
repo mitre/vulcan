@@ -27,23 +27,7 @@
         </small>
       </div>
 
-      <!-- Group 2: Rule Panels (right) -->
-      <div class="command-group panels-group ml-auto">
-        <b-button-group size="sm">
-          <b-button variant="outline-secondary" @click="$emit('open-related-modal')">
-            <b-icon icon="link-45deg" /> Related
-          </b-button>
-          <b-button variant="outline-secondary" @click="$emit('toggle-panel', 'satisfies')">
-            <b-icon icon="diagram-3" /> Satisfies
-          </b-button>
-          <b-button variant="outline-secondary" @click="$emit('toggle-panel', 'rule-reviews')">
-            <b-icon icon="chat-left-text" /> Reviews
-          </b-button>
-          <b-button variant="outline-secondary" @click="$emit('toggle-panel', 'rule-history')">
-            <b-icon icon="clock-history" /> History
-          </b-button>
-        </b-button-group>
-      </div>
+      <!-- Rule panels and actions moved to RuleActionsToolbar -->
     </div>
   </div>
 </template>

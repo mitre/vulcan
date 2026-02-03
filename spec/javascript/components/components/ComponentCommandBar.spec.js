@@ -21,10 +21,7 @@ localVue.use(IconsPlugin)
  *    - Always enabled (component-level info)
  *    - Toggle on click, emit 'toggle-panel' event
  *
- * 3. Rule Panels (right side):
- *    - Satisfies, Reviews, History
- *    - DISABLED when no rule selected
- *    - ENABLED when rule selected
+ * 3. Rule Panels: Moved to RuleActionsToolbar (rule-level, not component-level)
  *
  * 4. Visual feedback:
  *    - Active panel button has 'secondary' variant
@@ -226,70 +223,8 @@ describe('ComponentCommandBar', () => {
     })
   })
 
-  describe('rule panel buttons', () => {
-    // REQUIREMENT: Rule-level panels (Satisfies, Reviews, History) must be
-    // DISABLED when no rule is selected (they show rule-specific info that
-    // doesn't make sense without a rule). They should be ENABLED when a
-    // rule IS selected.
-
-    describe('when no rule selected', () => {
-      it('Satisfies button exists and is disabled', () => {
-        wrapper = createWrapper({ selectedRule: null })
-        const satisfiesBtn = wrapper.findAll('button').wrappers.find(b =>
-          b.text().includes('Satisfies')
-        )
-        // CRITICAL: Button must exist - fail loudly if missing
-        expect(satisfiesBtn).toBeDefined()
-        // CRITICAL: Must be disabled without rule selected
-        expect(satisfiesBtn.attributes('disabled')).toBe('disabled')
-      })
-
-      it('exactly 3 buttons are disabled (rule-level panels)', () => {
-        wrapper = createWrapper({ selectedRule: null })
-        const allButtons = wrapper.findAll('button')
-        const disabledButtons = allButtons.wrappers.filter(b =>
-          b.attributes('disabled') === 'disabled'
-        )
-        // Satisfies + Reviews + History (rule-level)
-        expect(disabledButtons.length).toBe(3)
-      })
-    })
-
-    describe('when rule is selected', () => {
-      const selectedRule = { id: 1, rule_id: '001' }
-
-      it('Satisfies button exists and is NOT disabled', () => {
-        wrapper = createWrapper({ selectedRule })
-        const satisfiesBtn = wrapper.findAll('button').wrappers.find(b =>
-          b.text().includes('Satisfies')
-        )
-        // CRITICAL: Button must exist
-        expect(satisfiesBtn).toBeDefined()
-        // CRITICAL: Must NOT be disabled when rule selected
-        expect(satisfiesBtn.attributes('disabled')).toBeUndefined()
-      })
-
-      it('no buttons are disabled', () => {
-        wrapper = createWrapper({ selectedRule })
-        const allButtons = wrapper.findAll('button')
-        const disabledButtons = allButtons.wrappers.filter(b =>
-          b.attributes('disabled') === 'disabled'
-        )
-        expect(disabledButtons.length).toBe(0)
-      })
-
-      it('clicking Satisfies button emits toggle-panel with satisfies', async () => {
-        wrapper = createWrapper({ selectedRule })
-        const satisfiesBtn = wrapper.findAll('button').wrappers.find(b =>
-          b.text().includes('Satisfies')
-        )
-        expect(satisfiesBtn).toBeDefined()
-        await satisfiesBtn.trigger('click')
-        expect(wrapper.emitted('toggle-panel')).toBeTruthy()
-        expect(wrapper.emitted('toggle-panel').some(e => e[0] === 'satisfies')).toBe(true)
-      })
-    })
-  })
+  // Rule panel tests moved to RuleActionsToolbar.spec.js
+  // (Satisfies, History, Reviews are now rule-level actions)
 
   describe('active panel visual feedback', () => {
     it('active panel button has secondary variant', () => {

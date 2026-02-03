@@ -10,13 +10,11 @@ localVue.use(BootstrapVue)
  * RuleCommandBar Component Tests
  *
  * REQUIREMENTS:
- * RuleCommandBar displays rule-level context information and provides
- * access to rule-specific panels. It contains:
+ * RuleCommandBar displays rule-level context information:
  * - Context group: Rule ID, version, status icons, last editor
- * - Panel buttons: Related, Satisfies, Rule History, Rule Reviews
  *
- * These are rule-specific panels that should be on the rule command bar,
- * not the component command bar.
+ * NOTE: Panel buttons (Related, Satisfies, History, Reviews) and actions
+ * are now in RuleActionsToolbar, grouped with other rule-level actions.
  */
 describe('RuleCommandBar', () => {
   let wrapper
@@ -110,68 +108,8 @@ describe('RuleCommandBar', () => {
     })
   })
 
-  describe('panel buttons', () => {
-    // REQUIREMENT: RuleCommandBar shows Related button to open RelatedRulesModal
-    it('shows Related button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Related')
-    })
-
-    it('emits open-related-modal when Related button is clicked', async () => {
-      wrapper = createWrapper()
-      const relatedButton = wrapper.findAll('b-button-stub').wrappers.find(
-        btn => btn.text().includes('Related')
-      )
-      await relatedButton.trigger('click')
-      expect(wrapper.emitted('open-related-modal')).toBeTruthy()
-    })
-
-    // REQUIREMENT: Rule-specific panels belong on the Rule command bar
-    it('shows Satisfies button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Satisfies')
-    })
-
-    it('shows Reviews button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Reviews')
-    })
-
-    it('shows History button', () => {
-      wrapper = createWrapper()
-      expect(wrapper.text()).toContain('History')
-    })
-
-    it('emits toggle-panel with "satisfies" when Satisfies clicked', async () => {
-      wrapper = createWrapper()
-      const btn = wrapper.findAll('b-button-stub').wrappers.find(
-        b => b.text().includes('Satisfies')
-      )
-      await btn.trigger('click')
-      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
-      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['satisfies'])
-    })
-
-    it('emits toggle-panel with "rule-reviews" when Reviews clicked', async () => {
-      wrapper = createWrapper()
-      const btn = wrapper.findAll('b-button-stub').wrappers.find(
-        b => b.text().includes('Reviews')
-      )
-      await btn.trigger('click')
-      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
-      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['rule-reviews'])
-    })
-
-    it('emits toggle-panel with "rule-history" when History clicked', async () => {
-      wrapper = createWrapper()
-      const btn = wrapper.findAll('b-button-stub').wrappers.find(
-        b => b.text().includes('History')
-      )
-      await btn.trigger('click')
-      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
-      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['rule-history'])
-    })
-  })
+  // Panel buttons moved to RuleActionsToolbar.spec.js
+  // (Related, Satisfies, History, Reviews are now with rule actions)
 
   describe('computed properties', () => {
     it('computes lastEditor from histories', () => {

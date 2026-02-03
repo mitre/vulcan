@@ -28,10 +28,7 @@ localVue.use(IconsPlugin)
  *    - Always enabled (component-level info doesn't depend on rule)
  *    - Toggle on click, emit 'toggle-panel' event
  *
- * 4. RULE PANELS (right side):
- *    - Satisfies, Rule History, Rule Reviews
- *    - DISABLED when no rule selected
- *    - ENABLED when rule selected
+ * 4. RULE PANELS: Moved to RuleActionsToolbar (rule-level, not component-level)
  *
  * 5. RULE CONTEXT BAR (shown when rule selected):
  *    - Displays rule ID with prefix, version
@@ -280,67 +277,11 @@ describe('ControlsCommandBar', () => {
   })
 
   // ==========================================
-  // RULE PANELS
+  // RULE PANELS - Moved to RuleActionsToolbar
   // ==========================================
-  describe('rule panel buttons', () => {
-    it('renders all 3 rule panel buttons with correct labels from terminology', () => {
-      wrapper = createWrapper({ selectedRule: defaultRule })
-      expect(wrapper.text()).toContain(PANEL_LABELS.satisfies)
-      expect(wrapper.text()).toContain(PANEL_LABELS.ruleHistory)
-      expect(wrapper.text()).toContain(PANEL_LABELS.ruleReviews)
-    })
-
-    describe('when no rule selected', () => {
-      it('Satisfies button exists and is disabled', () => {
-        wrapper = createWrapper({ selectedRule: null })
-        const satisfiesBtn = wrapper.findAll('button').wrappers.find(b =>
-          b.text().includes(PANEL_LABELS.satisfies)
-        )
-        expect(satisfiesBtn).toBeDefined()
-        expect(satisfiesBtn.attributes('disabled')).toBe('disabled')
-      })
-
-      it('exactly 3 buttons are disabled (rule-level panels)', () => {
-        wrapper = createWrapper({ selectedRule: null })
-        const allButtons = wrapper.findAll('button')
-        const disabledButtons = allButtons.wrappers.filter(b =>
-          b.attributes('disabled') === 'disabled'
-        )
-        // Satisfies + Rule History + Rule Reviews (rule-level)
-        expect(disabledButtons.length).toBe(3)
-      })
-    })
-
-    describe('when rule is selected', () => {
-      it('Satisfies button exists and is NOT disabled', () => {
-        wrapper = createWrapper({ selectedRule: defaultRule })
-        const satisfiesBtn = wrapper.findAll('button').wrappers.find(b =>
-          b.text().includes(PANEL_LABELS.satisfies)
-        )
-        expect(satisfiesBtn).toBeDefined()
-        expect(satisfiesBtn.attributes('disabled')).toBeUndefined()
-      })
-
-      it('no panel buttons are disabled', () => {
-        wrapper = createWrapper({ selectedRule: defaultRule })
-        const allButtons = wrapper.findAll('button')
-        const disabledButtons = allButtons.wrappers.filter(b =>
-          b.attributes('disabled') === 'disabled'
-        )
-        expect(disabledButtons.length).toBe(0)
-      })
-
-      it('clicking Satisfies button emits toggle-panel with satisfies', async () => {
-        wrapper = createWrapper({ selectedRule: defaultRule })
-        const satisfiesBtn = wrapper.findAll('button').wrappers.find(b =>
-          b.text().includes(PANEL_LABELS.satisfies)
-        )
-        await satisfiesBtn.trigger('click')
-        expect(wrapper.emitted('toggle-panel')).toBeTruthy()
-        expect(wrapper.emitted('toggle-panel').some(e => e[0] === 'satisfies')).toBe(true)
-      })
-    })
-  })
+  // Rule-level panels (Satisfies, History, Reviews) are now in RuleActionsToolbar
+  // because they operate on the selected rule, not the component.
+  // See spec/javascript/components/rules/RuleActionsToolbar.spec.js
 
   // ==========================================
   // RULE CONTEXT BAR
