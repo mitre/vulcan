@@ -8,9 +8,12 @@ import { ref, computed, watch } from "vue";
  *   3. Children are hidden from main list (rules that have satisfied_by)
  *
  * This function returns the first rule that would be visible at the top level:
- *   - First parent (has satisfies.length > 0), OR
- *   - First standalone (no satisfied_by), OR
- *   - Fallback to first rule (edge case: all rules are children)
+ *   - First parent by rule_id (has satisfies.length > 0), OR
+ *   - First standalone by rule_id (no satisfied_by), OR
+ *   - Fallback to first rule by rule_id (edge case: all rules are children)
+ *
+ * Note: Rules are sorted by rule_id to ensure consistent selection regardless
+ * of array order (which may be database insertion order).
  *
  * @param {Array} rules - Array of rule objects
  * @returns {Object|null} The first visible rule, or null if empty
@@ -18,18 +21,26 @@ import { ref, computed, watch } from "vue";
 export function getFirstVisibleRule(rules) {
   if (!rules || rules.length === 0) return null;
 
+  // Sort by rule_id to ensure consistent selection
+  // (input array may be in database order, not display order)
+  const sortedRules = [...rules].sort((a, b) => {
+    const aId = a.rule_id || "";
+    const bId = b.rule_id || "";
+    return aId.localeCompare(bId);
+  });
+
   // First, try to find a parent (has children nested under it)
   // Parents are shown first when nesting is enabled
-  const firstParent = rules.find((r) => r.satisfies?.length > 0);
+  const firstParent = sortedRules.find((r) => r.satisfies?.length > 0);
   if (firstParent) return firstParent;
 
   // Then, find first standalone (not nested under another rule)
   // These are always visible in the main list
-  const firstStandalone = rules.find((r) => !r.satisfied_by?.length);
+  const firstStandalone = sortedRules.find((r) => !r.satisfied_by?.length);
   if (firstStandalone) return firstStandalone;
 
   // Fallback to first rule (edge case: all rules are children with no parent in list)
-  return rules[0];
+  return sortedRules[0];
 }
 
 /**

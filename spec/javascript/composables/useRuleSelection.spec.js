@@ -362,5 +362,65 @@ describe('useRuleSelection', () => {
       const { selectedRuleId } = useRuleSelection(mockRules, componentId, { autoSelectFirst: true })
       expect(selectedRuleId.value).toBe(1) // First rule as before
     })
+
+    it('sorts by rule_id before selecting (handles unsorted arrays)', () => {
+      // Array is NOT in rule_id order - simulates real database order
+      const unsortedRules = ref([
+        {
+          id: 50,
+          rule_id: '000050',
+          satisfies: [],
+          satisfied_by: [], // STANDALONE but not first by rule_id
+          histories: []
+        },
+        {
+          id: 10,
+          rule_id: '000010',
+          satisfies: [],
+          satisfied_by: [], // STANDALONE - should be selected (first by rule_id)
+          histories: []
+        },
+        {
+          id: 30,
+          rule_id: '000030',
+          satisfies: [],
+          satisfied_by: [], // STANDALONE
+          histories: []
+        }
+      ])
+      const { selectedRuleId } = useRuleSelection(unsortedRules, componentId, { autoSelectFirst: true })
+      // Should select rule_id 000010 (id: 10), not 000050 (id: 50) which is first in array
+      expect(selectedRuleId.value).toBe(10)
+    })
+
+    it('sorts parents by rule_id when selecting first parent', () => {
+      // Parents not in rule_id order
+      const unsortedParentRules = ref([
+        {
+          id: 20,
+          rule_id: '000020',
+          satisfies: [{ id: 1 }], // PARENT but not first by rule_id
+          satisfied_by: [],
+          histories: []
+        },
+        {
+          id: 5,
+          rule_id: '000005',
+          satisfies: [{ id: 2 }], // PARENT - should be selected (first parent by rule_id)
+          satisfied_by: [],
+          histories: []
+        },
+        {
+          id: 1,
+          rule_id: '000001',
+          satisfies: [],
+          satisfied_by: [{ id: 20 }], // CHILD
+          histories: []
+        }
+      ])
+      const { selectedRuleId } = useRuleSelection(unsortedParentRules, componentId, { autoSelectFirst: true })
+      // Should select parent with rule_id 000005 (id: 5), not 000020 (id: 20)
+      expect(selectedRuleId.value).toBe(5)
+    })
   })
 })
