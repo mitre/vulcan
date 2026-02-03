@@ -393,34 +393,64 @@ describe('useRuleSelection', () => {
       expect(selectedRuleId.value).toBe(10)
     })
 
-    it('sorts parents by rule_id when selecting first parent', () => {
-      // Parents not in rule_id order
+    it('sorts parents by version (SRG ID) when selecting first parent', () => {
+      // Parents with different version vs rule_id ordering
+      // Matches real Component 41 data where:
+      // - rule_id 000020 has version SRG-OS-000001 (first by version)
+      // - rule_id 000030 has version SRG-OS-000021 (second)
+      // - rule_id 000010 has version SRG-OS-000023 (third)
       const unsortedParentRules = ref([
+        {
+          id: 10,
+          rule_id: '000010',
+          version: 'SRG-OS-000023', // Third by version
+          satisfies: [{ id: 1 }], // PARENT
+          satisfied_by: [],
+          histories: []
+        },
         {
           id: 20,
           rule_id: '000020',
-          satisfies: [{ id: 1 }], // PARENT but not first by rule_id
+          version: 'SRG-OS-000001', // First by version - should be selected
+          satisfies: [{ id: 2 }], // PARENT
           satisfied_by: [],
           histories: []
         },
         {
-          id: 5,
-          rule_id: '000005',
-          satisfies: [{ id: 2 }], // PARENT - should be selected (first parent by rule_id)
+          id: 30,
+          rule_id: '000030',
+          version: 'SRG-OS-000021', // Second by version
+          satisfies: [{ id: 3 }], // PARENT
           satisfied_by: [],
-          histories: []
-        },
-        {
-          id: 1,
-          rule_id: '000001',
-          satisfies: [],
-          satisfied_by: [{ id: 20 }], // CHILD
           histories: []
         }
       ])
       const { selectedRuleId } = useRuleSelection(unsortedParentRules, componentId, { autoSelectFirst: true })
-      // Should select parent with rule_id 000005 (id: 5), not 000020 (id: 20)
-      expect(selectedRuleId.value).toBe(5)
+      // Should select parent with version SRG-OS-000001 (id: 20), not rule_id 000010 (id: 10)
+      expect(selectedRuleId.value).toBe(20)
+    })
+
+    it('falls back to rule_id sort when version is missing', () => {
+      // Rules without version property (backwards compatibility)
+      const noVersionRules = ref([
+        {
+          id: 20,
+          rule_id: '000020',
+          satisfies: [],
+          satisfied_by: [],
+          histories: []
+        },
+        {
+          id: 10,
+          rule_id: '000010',
+          satisfies: [],
+          satisfied_by: [],
+          histories: []
+        }
+      ])
+      const { selectedRuleId } = useRuleSelection(noVersionRules, componentId, { autoSelectFirst: true })
+      // Without version, should fall back to rule_id sort - 000010 first
+      expect(selectedRuleId.value).toBe(10)
     })
   })
 })

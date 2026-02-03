@@ -8,12 +8,12 @@ import { ref, computed, watch } from "vue";
  *   3. Children are hidden from main list (rules that have satisfied_by)
  *
  * This function returns the first rule that would be visible at the top level:
- *   - First parent by rule_id (has satisfies.length > 0), OR
- *   - First standalone by rule_id (no satisfied_by), OR
- *   - Fallback to first rule by rule_id (edge case: all rules are children)
+ *   - First parent by version/SRG ID (has satisfies.length > 0), OR
+ *   - First standalone by version/SRG ID (no satisfied_by), OR
+ *   - Fallback to first rule by version/SRG ID (edge case: all rules are children)
  *
- * Note: Rules are sorted by rule_id to ensure consistent selection regardless
- * of array order (which may be database insertion order).
+ * Note: Rules are sorted by version (SRG ID) to match the default UI display order
+ * (sortBySRGIdChecked: true). Falls back to rule_id if version is missing.
  *
  * @param {Array} rules - Array of rule objects
  * @returns {Object|null} The first visible rule, or null if empty
@@ -21,9 +21,16 @@ import { ref, computed, watch } from "vue";
 export function getFirstVisibleRule(rules) {
   if (!rules || rules.length === 0) return null;
 
-  // Sort by rule_id to ensure consistent selection
-  // (input array may be in database order, not display order)
+  // Sort by version (SRG ID) to match default UI display order
+  // Falls back to rule_id for backwards compatibility when version is missing
   const sortedRules = [...rules].sort((a, b) => {
+    const aVersion = a.version || "";
+    const bVersion = b.version || "";
+    // If both have version, sort by version
+    if (aVersion && bVersion) {
+      return aVersion.localeCompare(bVersion);
+    }
+    // Fall back to rule_id if version is missing
     const aId = a.rule_id || "";
     const bId = b.rule_id || "";
     return aId.localeCompare(bId);
