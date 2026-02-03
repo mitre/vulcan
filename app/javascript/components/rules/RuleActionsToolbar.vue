@@ -1,10 +1,21 @@
 <template>
   <div class="rule-actions-toolbar mb-3">
     <b-button-group size="sm">
-      <!-- Related (info/reference - always available) -->
+      <!-- INFO/REFERENCE GROUP (read-only panels - always available) -->
       <b-button variant="outline-secondary" size="sm" @click="$emit('open-related-modal')">
         <b-icon icon="link-45deg" /> Related
       </b-button>
+      <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'satisfies')">
+        <b-icon icon="diagram-3" /> Satisfies
+      </b-button>
+      <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'rule-history')">
+        <b-icon icon="clock-history" /> History
+      </b-button>
+      <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'rule-reviews')">
+        <b-icon icon="chat-left-text" /> Reviews
+      </b-button>
+
+      <!-- COLLABORATION GROUP -->
       <!-- Comment (collaboration - always available) -->
       <CommentModal
         title="Comment"
@@ -132,7 +143,25 @@ export default {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
-  text-align: center;
+}
+
+/* Button group: flex layout with equal-width buttons */
+.rule-actions-toolbar >>> .btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Equal-width buttons */
+.rule-actions-toolbar >>> .btn-group > .btn,
+.rule-actions-toolbar >>> .btn-group > .d-inline-block {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* CommentModal wrapper buttons also need flex */
+.rule-actions-toolbar >>> .btn-group > .d-inline-block > .btn {
+  width: 100%;
 }
 
 /* Disabled buttons should be clearly grayed out */
