@@ -264,6 +264,53 @@ describe('RulesCodeEditorView', () => {
     })
   })
 
+  describe('RuleEditor event forwarding', () => {
+    // CRITICAL: RuleEditor must forward toggle-panel events so panel buttons work.
+    // This was a regression where buttons did nothing because events weren't wired up.
+
+    it('forwards toggle-panel events from RuleEditor to togglePanel', async () => {
+      wrapper = createWrapper()
+      // Select a rule first so RuleEditor renders
+      wrapper.vm.selectRule(1)
+      await wrapper.vm.$nextTick()
+
+      // Find RuleEditor and emit toggle-panel
+      const ruleEditor = wrapper.findComponent({ name: 'RuleEditor' })
+      expect(ruleEditor.exists()).toBe(true)
+
+      // Emit toggle-panel from RuleEditor
+      ruleEditor.vm.$emit('toggle-panel', 'satisfies')
+      await wrapper.vm.$nextTick()
+
+      // Verify the panel was toggled
+      expect(wrapper.vm.activePanel).toBe('satisfies')
+    })
+
+    it('opens rule-history panel when RuleEditor emits toggle-panel', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.selectRule(1)
+      await wrapper.vm.$nextTick()
+
+      const ruleEditor = wrapper.findComponent({ name: 'RuleEditor' })
+      ruleEditor.vm.$emit('toggle-panel', 'rule-history')
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.activePanel).toBe('rule-history')
+    })
+
+    it('opens rule-reviews panel when RuleEditor emits toggle-panel', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.selectRule(1)
+      await wrapper.vm.$nextTick()
+
+      const ruleEditor = wrapper.findComponent({ name: 'RuleEditor' })
+      ruleEditor.vm.$emit('toggle-panel', 'rule-reviews')
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.activePanel).toBe('rule-reviews')
+    })
+  })
+
   describe('computed properties', () => {
     it('isViewerOnly returns true for viewer permissions', () => {
       wrapper = createWrapper({ effectivePermissions: 'viewer' })

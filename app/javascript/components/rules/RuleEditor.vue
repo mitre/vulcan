@@ -15,6 +15,7 @@
           @open-related-modal="$emit('open-related-modal')"
           @lock="$emit('lock', $event)"
           @unlock="$emit('unlock', $event)"
+          @toggle-panel="$emit('toggle-panel', $event)"
         />
 
         <div v-if="advanced_fields" class="mb-3 font-weight-bold">

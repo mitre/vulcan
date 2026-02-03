@@ -66,6 +66,7 @@
             :advanced_fields="component.advanced_fields"
             :additional_questions="component.additional_questions"
             @open-related-modal="$bvModal.show('related-rules-modal')"
+            @toggle-panel="togglePanel"
           />
         </template>
       </template>

@@ -172,6 +172,7 @@
           @unlock="unlockRule($event)"
           @open-review-modal="$bvModal.show('review-modal')"
           @open-related-modal="$bvModal.show('related-rules-modal')"
+          @toggle-panel="togglePanel"
         />
       </template>
     </template>
