@@ -21,7 +21,7 @@ localVue.use(IconsPlugin)
  *    - Edit/View button: toggles based on mode, requires author+ permission
  *    - Release button: admin only, disabled when not releasable
  *    - Members button: always visible, opens members modal
- *    - Advanced Fields toggle: admin only
+ *    - Advanced Fields toggle: MOVED to RuleEditor (per-component DB setting)
  *
  * 3. COMPONENT PANELS (right side):
  *    - Details, Metadata, Questions, Comp History, Comp Reviews
@@ -202,24 +202,7 @@ describe('ControlsCommandBar', () => {
     })
   })
 
-  describe('Advanced Fields toggle', () => {
-    it('shows toggle for admin', () => {
-      wrapper = createWrapper({ effectivePermissions: 'admin' })
-      expect(wrapper.text()).toContain('Advanced')
-    })
-
-    it('hides toggle for non-admin', () => {
-      wrapper = createWrapper({ effectivePermissions: 'author' })
-      expect(wrapper.text()).not.toContain('Advanced')
-    })
-
-    it('emits toggle-advanced-fields when changed', async () => {
-      wrapper = createWrapper({ effectivePermissions: 'admin' })
-      const checkbox = wrapper.find('input[type="checkbox"]')
-      await checkbox.setChecked(true)
-      expect(wrapper.emitted('toggle-advanced-fields')).toBeTruthy()
-    })
-  })
+  // Advanced Fields toggle moved to RuleEditor (per-component setting)
 
   // ==========================================
   // COMPONENT PANELS

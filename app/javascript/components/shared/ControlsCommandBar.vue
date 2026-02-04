@@ -33,16 +33,6 @@
             <b-icon icon="patch-check" /> Release
           </b-button>
         </b-button-group>
-
-        <b-form-checkbox
-          v-if="canToggleAdvancedFields"
-          :checked="component.advanced_fields"
-          switch
-          size="sm"
-          @change="onToggleAdvancedFields"
-        >
-          Advanced
-        </b-form-checkbox>
       </div>
 
       <!-- Right: Panel Toggles -->
@@ -167,9 +157,6 @@ export default {
     isReleasable() {
       return this.component.releasable && !this.component.released;
     },
-    canToggleAdvancedFields() {
-      return this.effectivePermissions === "admin";
-    },
     hasSelectedRule() {
       return !!this.selectedRule;
     },
@@ -198,9 +185,6 @@ export default {
     },
     onRelease() {
       this.$emit("release");
-    },
-    onToggleAdvancedFields(value) {
-      this.$emit("toggle-advanced-fields", value);
     },
     onOpenMembers() {
       this.$emit("open-members");

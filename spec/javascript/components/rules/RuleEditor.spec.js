@@ -112,4 +112,129 @@ describe('RuleEditor', () => {
       expect(wrapper.emitted('open-related-modal')).toBeTruthy()
     })
   })
+
+  // ==========================================
+  // ADVANCED FIELDS TOGGLE
+  // ==========================================
+  describe('Advanced Fields toggle', () => {
+    /**
+     * REQUIREMENTS:
+     * 1. Toggle is ALWAYS visible (not conditional on advanced_fields prop)
+     * 2. Toggle reflects component.advanced_fields state (from props)
+     * 3. When enabling, show confirmation dialog with warning
+     * 4. When confirmed, emit toggle-advanced-fields event
+     * 5. When canceled, do not emit event
+     * 6. Shows AdvancedRuleForm when advanced_fields is true
+     * 7. Helper text explains most users don't need this
+     */
+
+    it('always shows Advanced Fields toggle regardless of advanced_fields prop', () => {
+      // Even when advanced_fields is false, toggle should be visible
+      wrapper = createWrapper({ advanced_fields: false })
+      const toggle = wrapper.find('[data-testid="advanced-fields-toggle"]')
+      expect(toggle.exists()).toBe(true)
+    })
+
+    it('toggle reflects current advanced_fields prop value', async () => {
+      wrapper = createWrapper({ advanced_fields: true })
+      const checkbox = wrapper.find('[data-testid="advanced-fields-toggle"] input[type="checkbox"]')
+      expect(checkbox.element.checked).toBe(true)
+    })
+
+    it('toggle is unchecked when advanced_fields is false', () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      const checkbox = wrapper.find('[data-testid="advanced-fields-toggle"] input[type="checkbox"]')
+      expect(checkbox.element.checked).toBe(false)
+    })
+
+    it('shows confirmation dialog when enabling advanced fields', async () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      // Call the method directly to simulate checkbox change
+      wrapper.vm.onAdvancedFieldsToggle(true)
+      await wrapper.vm.$nextTick()
+
+      // Modal should be shown
+      expect(wrapper.vm.showConfirmModal).toBe(true)
+    })
+
+    it('emits toggle-advanced-fields when confirmation is accepted', async () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      // Trigger the toggle
+      wrapper.vm.onAdvancedFieldsToggle(true)
+      await wrapper.vm.$nextTick()
+
+      // Confirm
+      wrapper.vm.confirmEnableAdvanced()
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.emitted('toggle-advanced-fields')).toBeTruthy()
+      expect(wrapper.emitted('toggle-advanced-fields')[0]).toEqual([true])
+    })
+
+    it('does not emit event when confirmation is canceled', async () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      // Trigger the toggle
+      wrapper.vm.onAdvancedFieldsToggle(true)
+      await wrapper.vm.$nextTick()
+
+      // Cancel
+      wrapper.vm.cancelEnableAdvanced()
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.emitted('toggle-advanced-fields')).toBeFalsy()
+    })
+
+    it('resets checkbox state when confirmation is canceled', async () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      // Simulate checkbox being clicked (which sets localAdvancedFields to true)
+      wrapper.vm.localAdvancedFields = true
+      wrapper.vm.onAdvancedFieldsToggle(true)
+      await wrapper.vm.$nextTick()
+
+      // Cancel should reset local state back to prop value
+      wrapper.vm.cancelEnableAdvanced()
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+    })
+
+    it('emits toggle-advanced-fields immediately when disabling (no confirmation needed)', async () => {
+      wrapper = createWrapper({ advanced_fields: true })
+      // Call method directly - disabling should emit immediately
+      wrapper.vm.onAdvancedFieldsToggle(false)
+      await wrapper.vm.$nextTick()
+
+      // Should emit immediately without confirmation
+      expect(wrapper.emitted('toggle-advanced-fields')).toBeTruthy()
+      expect(wrapper.emitted('toggle-advanced-fields')[0]).toEqual([false])
+    })
+
+    it('shows AdvancedRuleForm when advanced_fields is true', () => {
+      wrapper = createWrapper({ advanced_fields: true })
+      expect(wrapper.findComponent({ name: 'AdvancedRuleForm' }).exists()).toBe(true)
+    })
+
+    it('hides AdvancedRuleForm when advanced_fields is false', () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      expect(wrapper.findComponent({ name: 'AdvancedRuleForm' }).exists()).toBe(false)
+    })
+
+    it('shows helper text explaining advanced fields are not needed by most users', () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      const helperText = wrapper.find('[data-testid="advanced-fields-helper"]')
+      expect(helperText.exists()).toBe(true)
+      expect(helperText.text().toLowerCase()).toContain('most users')
+    })
+
+    it('syncs local state when prop changes (e.g., after API update)', async () => {
+      wrapper = createWrapper({ advanced_fields: false })
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+
+      // Simulate parent updating prop after API call
+      await wrapper.setProps({ advanced_fields: true })
+
+      // Local state should sync with prop
+      expect(wrapper.vm.localAdvancedFields).toBe(true)
+    })
+  })
 })

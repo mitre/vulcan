@@ -18,7 +18,6 @@
           :active-panel="activePanel"
           :read-only="true"
           @release="confirmComponentRelease"
-          @toggle-advanced-fields="toggleAdvancedFields"
           @open-members="$bvModal.show('members-modal')"
           @toggle-panel="togglePanel"
         />
@@ -67,6 +66,7 @@
             :additional_questions="component.additional_questions"
             @open-related-modal="$bvModal.show('related-rules-modal')"
             @toggle-panel="togglePanel"
+            @toggle-advanced-fields="toggleAdvancedFields"
           />
         </template>
       </template>
@@ -310,21 +310,20 @@ export default {
         });
     },
     toggleAdvancedFields(advanced_fields) {
-      if (
-        confirm(
-          `Are you sure you want to ${advanced_fields ? "enable" : "disable"} advanced fields?`,
-        )
-      ) {
-        const payload = {
-          component: {
-            advanced_fields: advanced_fields,
-          },
-        };
-        axios
-          .patch(`/components/${this.component.id}`, payload)
-          .then(this.alertOrNotifyResponse)
-          .catch(this.alertOrNotifyResponse);
-      }
+      // Confirmation is now handled in RuleEditor component
+      const payload = {
+        component: {
+          advanced_fields: advanced_fields,
+        },
+      };
+      axios
+        .patch(`/components/${this.component.id}`, payload)
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          // Update local component state for reactivity
+          this.component.advanced_fields = advanced_fields;
+        })
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };
