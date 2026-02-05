@@ -1,14 +1,13 @@
 <template>
-  <div class="command-bar bg-light px-3 py-2">
-    <!-- Main Toolbar Row -->
-    <div class="d-flex align-items-center justify-content-between flex-wrap">
-      <!-- Left: Core Action (Edit/View only) -->
-      <div class="d-flex align-items-center">
+  <BaseCommandBar>
+    <!-- Left: Actions (Edit/View, Members, Release) -->
+    <template #left>
         <!-- VIEW mode: Show Edit button -->
         <b-button
           v-if="readOnly && canEdit"
           variant="primary"
           size="sm"
+          class="mr-2"
           :href="`/components/${component.id}/edit`"
         >
           <b-icon icon="pencil" /> Edit
@@ -18,15 +17,13 @@
           v-if="!readOnly && canEdit"
           variant="outline-primary"
           size="sm"
+          class="mr-2"
           :href="`/components/${component.id}`"
         >
           <b-icon icon="eye" /> View
         </b-button>
-      </div>
 
-      <!-- Right: Action Buttons + Panel Toggles -->
-      <div class="d-flex align-items-center">
-        <!-- Action Buttons -->
+        <!-- Members Button -->
         <b-button
           variant="outline-secondary"
           size="sm"
@@ -35,17 +32,26 @@
         >
           <b-icon icon="people" /> Members
         </b-button>
-        <b-button
-          v-if="canRelease"
-          variant="success"
-          size="sm"
-          class="mr-3"
-          :disabled="!isReleasable"
-          @click="onRelease"
-        >
-          <b-icon icon="patch-check" /> Release
-        </b-button>
 
+        <!-- Release Button (with tooltip for disabled state) -->
+        <span
+          v-if="canRelease"
+          v-b-tooltip.hover
+          :title="releaseComponentTooltip"
+        >
+          <b-button
+            variant="outline-success"
+            size="sm"
+            :disabled="!isReleasable"
+            @click="onRelease"
+          >
+            <b-icon icon="patch-check" /> Release
+          </b-button>
+        </span>
+    </template>
+
+    <!-- Right: Panel Toggles -->
+    <template #right>
         <!-- Component Panels (component-level info, always available) -->
         <b-button-group size="sm">
           <b-button
@@ -80,11 +86,11 @@
           </b-button>
         </b-button-group>
         <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
-      </div>
-    </div>
+    </template>
 
     <!-- Rule Context Bar (shown when rule is selected) -->
-    <div v-if="hasSelectedRule" class="rule-context-bar mt-2 pt-2 border-top">
+    <template #below>
+      <div v-if="hasSelectedRule" class="rule-context-bar mt-3 pt-3 pb-3 border-top">
       <div class="d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center">
           <h5 class="mb-0 mr-2">
@@ -115,19 +121,21 @@
             Updated {{ friendlyDateTime(selectedRule.updated_at) }} by {{ lastEditor }}
           </small>
         </div>
-
       </div>
     </div>
-  </div>
+    </template>
+  </BaseCommandBar>
 </template>
 
 <script>
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import BaseCommandBar from "./BaseCommandBar.vue";
 import { PANEL_LABELS } from "../../constants/terminology";
 
 export default {
   name: "ControlsCommandBar",
+  components: { BaseCommandBar },
   mixins: [RoleComparisonMixin, DateFormatMixinVue],
   data() {
     return {
@@ -165,6 +173,15 @@ export default {
     },
     isReleasable() {
       return this.component.releasable && !this.component.released;
+    },
+    releaseComponentTooltip() {
+      if (this.component.released) {
+        return "Component has already been released";
+      }
+      if (this.component.releasable) {
+        return "Release Component";
+      }
+      return "All rules must be locked to release a component";
     },
     hasSelectedRule() {
       return !!this.selectedRule;

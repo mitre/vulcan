@@ -1,8 +1,7 @@
 <template>
-  <div class="command-bar bg-light px-3 py-2">
-    <div class="d-flex align-items-center justify-content-between flex-wrap">
-      <!-- Left: Actions -->
-      <div class="d-flex align-items-center">
+  <BaseCommandBar>
+    <!-- Left: Actions -->
+    <template #left>
         <!-- New Component Button (admin only) -->
         <b-button
           v-if="isAdmin"
@@ -15,17 +14,6 @@
           <b-icon icon="plus" /> New Component
         </b-button>
 
-        <!-- Download Button -->
-        <b-button
-          variant="outline-secondary"
-          size="sm"
-          class="mr-2"
-          data-testid="download-btn"
-          @click="$emit('download')"
-        >
-          <b-icon icon="download" /> Download
-        </b-button>
-
         <!-- Members Button (opens modal) -->
         <b-button
           variant="outline-secondary"
@@ -35,6 +23,17 @@
           @click="$emit('open-members')"
         >
           <b-icon icon="people" /> Members
+        </b-button>
+
+        <!-- Download Button -->
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          class="mr-2"
+          data-testid="download-btn"
+          @click="$emit('download')"
+        >
+          <b-icon icon="download" /> Download
         </b-button>
 
         <!-- Visibility Toggle (admin only) - placed last for better responsive wrapping -->
@@ -51,10 +50,10 @@
             <small>{{ localVisibility ? 'Discoverable' : 'Hidden' }}</small>
           </b-form-checkbox>
         </div>
-      </div>
+    </template>
 
-      <!-- Right: Panel Toggles -->
-      <div class="d-flex align-items-center">
+    <!-- Right: Panel Toggles -->
+    <template #right>
         <b-button-group size="sm">
           <b-button
             :variant="isPanelActive('proj-details') ? 'secondary' : 'outline-secondary'"
@@ -81,16 +80,17 @@
             <b-icon icon="journal-text" /> Revisions
           </b-button>
         </b-button-group>
-      </div>
-    </div>
-  </div>
+    </template>
+  </BaseCommandBar>
 </template>
 
 <script>
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import BaseCommandBar from "../shared/BaseCommandBar.vue";
 
 export default {
   name: "ProjectCommandBar",
+  components: { BaseCommandBar },
   mixins: [RoleComparisonMixin],
   props: {
     project: {
