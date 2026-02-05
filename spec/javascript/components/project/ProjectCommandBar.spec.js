@@ -152,10 +152,10 @@ describe('ProjectCommandBar', () => {
   })
 
   // ==========================================
-  // NEW COMPONENT BUTTON (Admin only)
+  // MODAL ACTION BUTTONS (Left side: New Component, Download, Members)
   // ==========================================
-  describe('new component button', () => {
-    it('shows new component button for admin', () => {
+  describe('modal action buttons', () => {
+    it('shows new component button for admin (grouped with Download and Members)', () => {
       wrapper = createWrapper({ effectivePermissions: 'admin' })
       const btn = wrapper.find('[data-testid="new-component-btn"]')
       expect(btn.exists()).toBe(true)
@@ -165,6 +165,14 @@ describe('ProjectCommandBar', () => {
       wrapper = createWrapper({ effectivePermissions: 'viewer' })
       const btn = wrapper.find('[data-testid="new-component-btn"]')
       expect(btn.exists()).toBe(false)
+    })
+
+    it('new component button is positioned before Download button (modal actions group)', () => {
+      wrapper = createWrapper({ effectivePermissions: 'admin' })
+      // New Component, Download, and Members should all be on left side
+      expect(wrapper.text()).toContain('New Component')
+      expect(wrapper.text()).toContain('Download')
+      expect(wrapper.text()).toContain('Members')
     })
 
     it('emits new-component when clicked', async () => {
@@ -226,7 +234,7 @@ describe('ProjectCommandBar', () => {
 
     it('emits open-members when Members clicked (opens modal, not panel)', async () => {
       wrapper = createWrapper()
-      const btn = wrapper.findAll('button').wrappers.find(b => b.text().includes('Members'))
+      const btn = wrapper.find('[data-testid="members-btn"]')
       await btn.trigger('click')
       expect(wrapper.emitted('open-members')).toBeTruthy()
     })

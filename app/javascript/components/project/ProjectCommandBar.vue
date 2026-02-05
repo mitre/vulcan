@@ -3,22 +3,6 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap">
       <!-- Left: Actions -->
       <div class="d-flex align-items-center">
-        <!-- Visibility Toggle (admin only) -->
-        <div
-          v-if="isAdmin"
-          class="mr-3"
-          data-testid="visibility-toggle"
-        >
-          <b-form-checkbox
-            v-model="localVisibility"
-            switch
-            size="sm"
-            @change="onVisibilityToggle"
-          >
-            <small>{{ localVisibility ? 'Discoverable' : 'Hidden' }}</small>
-          </b-form-checkbox>
-        </div>
-
         <!-- New Component Button (admin only) -->
         <b-button
           v-if="isAdmin"
@@ -35,14 +19,41 @@
         <b-button
           variant="outline-secondary"
           size="sm"
+          class="mr-2"
           data-testid="download-btn"
           @click="$emit('download')"
         >
           <b-icon icon="download" /> Download
         </b-button>
+
+        <!-- Members Button (opens modal) -->
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          class="mr-2"
+          data-testid="members-btn"
+          @click="$emit('open-members')"
+        >
+          <b-icon icon="people" /> Members
+        </b-button>
+
+        <!-- Visibility Toggle (admin only) - placed last for better responsive wrapping -->
+        <div
+          v-if="isAdmin"
+          data-testid="visibility-toggle"
+        >
+          <b-form-checkbox
+            v-model="localVisibility"
+            switch
+            size="sm"
+            @change="onVisibilityToggle"
+          >
+            <small>{{ localVisibility ? 'Discoverable' : 'Hidden' }}</small>
+          </b-form-checkbox>
+        </div>
       </div>
 
-      <!-- Right: Panel Toggles + Members Button -->
+      <!-- Right: Panel Toggles -->
       <div class="d-flex align-items-center">
         <b-button-group size="sm">
           <b-button
@@ -68,12 +79,6 @@
             @click="$emit('toggle-panel', 'proj-revision-history')"
           >
             <b-icon icon="journal-text" /> Revisions
-          </b-button>
-          <b-button
-            variant="outline-secondary"
-            @click="$emit('open-members')"
-          >
-            <b-icon icon="people" /> Members
           </b-button>
         </b-button-group>
       </div>
