@@ -1,5 +1,17 @@
 <template>
   <div>
+    <!-- Delete Confirmation Modal -->
+    <ConfirmDeleteModal
+      v-model="showDeleteModal"
+      :item-name="projectToDelete ? projectToDelete.name : ''"
+      item-type="project"
+      :is-deleting="isDeleting"
+      warning-message="This will permanently delete the project and all related data."
+      deleting-message="Removing project and all components..."
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
+
     <!-- Table information -->
     <p>
       <b>Project Count:</b> <b-badge variant="info">{{ projectCount }}</b-badge>
@@ -123,10 +135,8 @@
           <b-button
             class="px-2 m-2"
             variant="danger"
-            :data-confirm="getLabel(data.item, 'remove project')"
-            data-method="delete"
-            :href="destroyAction(data.item)"
-            rel="nofollow"
+            data-testid="remove-project-btn"
+            @click="openDeleteModal(data.item)"
           >
             <b-icon icon="trash" aria-hidden="true" />
             Remove
@@ -146,13 +156,36 @@
 </template>
 
 <script>
+import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
+import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+import { useDeleteConfirmation } from "../../composables";
 
 export default {
   name: "ProjectsTable",
-  components: { UpdateProjectDetailsModal },
-  mixins: [DateFormatMixinVue],
+  components: { UpdateProjectDetailsModal, ConfirmDeleteModal },
+  mixins: [DateFormatMixinVue, AlertMixinVue],
+  setup() {
+    const {
+      showModal: showDeleteModal,
+      itemToDelete: projectToDelete,
+      isDeleting,
+      openModal: openDeleteModal,
+      cancel: cancelDelete,
+      confirm: confirmDeleteAction,
+    } = useDeleteConfirmation();
+
+    return {
+      showDeleteModal,
+      projectToDelete,
+      isDeleting,
+      openDeleteModal,
+      cancelDelete,
+      confirmDeleteAction,
+    };
+  },
   props: {
     projects: {
       type: Array,
@@ -300,6 +333,18 @@ export default {
     },
     refreshProjects: function () {
       this.$emit("projectUpdated");
+    },
+    async confirmDelete() {
+      const { success, error } = await this.confirmDeleteAction(async (project) => {
+        const response = await axios.delete(`/projects/${project.id}.json`);
+        this.alertOrNotifyResponse(response);
+      });
+
+      if (success) {
+        this.$emit("projectUpdated");
+      } else if (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     toggleTruncate: function (id) {
       this.$set(this.truncated, id, !this.truncated[id]);

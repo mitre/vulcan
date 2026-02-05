@@ -1,13 +1,19 @@
 <template>
-  <b-overlay :show="showDeleteConfirmation" class="m-3" :opacity="0.95">
+  <b-overlay :show="showDeleteConfirmation || isDeleting" class="m-3" :opacity="0.95">
     <!-- Overlay content -->
     <template #overlay>
-      <div class="text-center">
+      <!-- Deleting in progress -->
+      <div v-if="isDeleting" class="text-center">
+        <b-spinner variant="danger" class="mb-2" />
+        <p class="mb-0">Removing component...</p>
+      </div>
+      <!-- Confirmation prompt -->
+      <div v-else class="text-center">
         <p>Are you sure you want to remove this component from the project?</p>
         <b-button variant="outline-secondary" @click="showDeleteConfirmation = false">
           Cancel
         </b-button>
-        <b-button variant="danger" @click="$emit('deleteComponent', component.id)">Remove</b-button>
+        <b-button variant="danger" @click="confirmDelete">Remove</b-button>
       </div>
     </template>
 
@@ -200,6 +206,7 @@ export default {
   data: function () {
     return {
       showDeleteConfirmation: false,
+      isDeleting: false,
     };
   },
   computed: {
@@ -217,6 +224,10 @@ export default {
   },
   methods: {
     ruleCountLabel,
+    confirmDelete() {
+      this.isDeleting = true;
+      this.$emit("deleteComponent", this.component.id);
+    },
     downloadExport: function (type) {
       axios
         .get(`/components/${this.component.id}/export/${type}`)
