@@ -14,6 +14,64 @@ module Users
       end
     end
 
+    def edit
+      # Load user's audit history for the activity panel
+      @histories = Audited.audit_class.includes(:user)
+                          .where(user_id: current_user.id)
+                          .order(created_at: :desc)
+                          .limit(50)
+                          .map(&:format)
+      super
+    end
+
+    def update
+      self.resource = resource_class.to_adapter.get!(send(:"current_#{resource_name}").to_key)
+      prev_unconfirmed_email = resource.unconfirmed_email if resource.respond_to?(:unconfirmed_email)
+
+      resource_updated = update_resource(resource, account_update_params)
+
+      if resource_updated
+        respond_to do |format|
+          format.html do
+            bypass_sign_in resource, scope: resource_name if sign_in_after_change_password?
+            flash[:notice] = 'Profile updated successfully.'
+            redirect_to after_update_path_for(resource)
+          end
+          format.json { render json: { toast: 'Profile updated successfully.' } }
+        end
+      else
+        respond_to do |format|
+          format.html do
+            clean_up_passwords resource
+            set_minimum_password_length
+            respond_with resource
+          end
+          format.json do
+            render json: {
+              toast: {
+                title: 'Could not update profile.',
+                message: resource.errors.full_messages,
+                variant: 'danger'
+              }
+            }, status: :unprocessable_entity
+          end
+        end
+      end
+    end
+
+    def destroy
+      resource.destroy
+      Devise.sign_out_all_scopes ? sign_out : sign_out(resource_name)
+
+      respond_to do |format|
+        format.html do
+          flash[:notice] = 'Your account has been successfully deleted.'
+          redirect_to root_path
+        end
+        format.json { render json: { toast: 'Account deleted successfully.' } }
+      end
+    end
+
     protected
 
     def update_resource(resource, params)
