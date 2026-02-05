@@ -15,8 +15,6 @@ module ApplicationHelper
       { icon: 'clipboard', name: 'SRGs', link: srgs_path }
     ]
 
-    nav_links.insert(1, { icon: 'hourglass-split', name: 'Start New Project', link: new_project_path }) if current_user&.admin? || Settings.project.create_permission_enabled
-
     nav_links
   end
 end
