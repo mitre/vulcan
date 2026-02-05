@@ -75,30 +75,16 @@
               :href="`/components/${component.id}`"
               variant="primary"
               size="sm"
-              class="mr-2"
             >
               <b-icon icon="box-arrow-up-right" class="mr-1" />
               Open Component
             </b-button>
-
-            <!-- Export Dropdown -->
-            <b-dropdown size="sm" variant="outline-secondary" text="Export">
-              <b-dropdown-item @click="downloadExport('csv')">
-                <b-icon icon="file-earmark-text" class="mr-2" />CSV
-              </b-dropdown-item>
-              <b-dropdown-item @click="downloadExport('inspec')">
-                <b-icon icon="shield-check" class="mr-2" />InSpec
-              </b-dropdown-item>
-              <b-dropdown-item @click="downloadExport('xccdf')">
-                <b-icon icon="file-earmark-code" class="mr-2" />XCCDF
-              </b-dropdown-item>
-            </b-dropdown>
           </div>
 
           <!-- Admin Actions -->
           <div v-if="actionable && component.id" class="d-flex align-items-center">
             <!-- All action buttons in one group -->
-            <div class="btn-toolbar">
+            <b-button-group size="sm">
               <LockControlsModal
                 v-if="role_gte_to(effectivePermissions, 'reviewer')"
                 :component_id="component.id"
@@ -108,11 +94,10 @@
                   <b-button
                     v-b-tooltip.hover
                     variant="outline-warning"
-                    title="Lock all controls"
                     size="sm"
-                    class="mr-1"
+                    title="Lock all rules in this component"
                   >
-                    <b-icon icon="lock" />
+                    <b-icon icon="lock" font-scale="0.9" /> Lock
                   </b-button>
                 </template>
               </LockControlsModal>
@@ -125,45 +110,47 @@
                 :predetermined_security_requirements_guide_id="
                   component.security_requirements_guide_id
                 "
+                :show-opener="true"
                 @projectUpdated="$emit('projectUpdated')"
               >
                 <template #opener>
                   <b-button
                     v-b-tooltip.hover
                     variant="outline-info"
-                    title="Duplicate component"
                     size="sm"
-                    class="mr-1"
+                    title="Create a duplicate of this component"
                   >
-                    <b-icon icon="files" />
+                    <b-icon icon="files" font-scale="0.9" /> Duplicate
                   </b-button>
                 </template>
               </NewComponentModal>
 
-              <b-button
+              <span
                 v-if="effectivePermissions == 'admin' && !component.released"
                 v-b-tooltip.hover
-                variant="outline-success"
-                :disabled="!component.releasable"
                 :title="releaseComponentTooltip"
-                size="sm"
-                class="mr-1"
-                @click="confirmComponentRelease"
               >
-                <b-icon icon="tag" />
-              </b-button>
+                <b-button
+                  variant="outline-success"
+                  size="sm"
+                  :disabled="!component.releasable"
+                  @click="confirmComponentRelease"
+                >
+                  <b-icon icon="tag" font-scale="0.9" /> Release
+                </b-button>
+              </span>
 
               <b-button
                 v-if="effectivePermissions == 'admin'"
                 v-b-tooltip.hover
                 variant="outline-danger"
-                title="Remove from project"
                 size="sm"
+                title="Remove this component from the project"
                 @click="showDeleteConfirmation = !showDeleteConfirmation"
               >
-                <b-icon icon="trash" />
+                <b-icon icon="trash" font-scale="0.9" /> Delete
               </b-button>
-            </div>
+            </b-button-group>
           </div>
         </div>
       </div>
@@ -227,16 +214,6 @@ export default {
     confirmDelete() {
       this.isDeleting = true;
       this.$emit("deleteComponent", this.component.id);
-    },
-    downloadExport: function (type) {
-      axios
-        .get(`/components/${this.component.id}/export/${type}`)
-        .then((_res) => {
-          // Once it is validated that there is content to download, prompt
-          // the user to save the file
-          window.open(`/components/${this.component.id}/export/${type}`);
-        })
-        .catch(this.alertOrNotifyResponse);
     },
   },
 };
