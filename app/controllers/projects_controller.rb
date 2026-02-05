@@ -11,7 +11,7 @@ class ProjectsController < ApplicationController
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy]
   before_action :authorize_viewer_project, only: %i[show]
-  before_action :authorize_logged_in, only: %i[index new search]
+  before_action :authorize_logged_in, only: %i[index search]
   before_action :authorize_admin_or_create_permission_enabled, only: %i[create]
   before_action :check_permission_to_update, only: %i[update]
 
@@ -60,8 +60,6 @@ class ProjectsController < ApplicationController
       format.json { render json: @project_json }
     end
   end
-
-  def new; end
 
   def create
     project = Project.new(
