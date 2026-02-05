@@ -1,21 +1,31 @@
 <template>
   <div>
-    <b-row>
-      <b-col md="10">
-        <h1>
-          Security Technical Implementation Guides
-          <b-badge variant="secondary">{{ stigs.length }}</b-badge>
-        </h1>
-        <h6 class="card-subtitle text-muted mb-2">Published STIGs</h6>
-      </b-col>
-      <b-col v-if="is_vulcan_admin" md="2" class="align-self-center">
-        <b-button href="#" class="float-right" @click="showUploadComponent = !showUploadComponent">
-          <b-icon icon="cloud-upload" aria-hidden="true" />
-          Upload STIG
+    <b-breadcrumb :items="breadcrumbs" />
+
+    <!-- Command Bar -->
+    <BaseCommandBar>
+      <template #left>
+        <b-button
+          v-if="is_vulcan_admin"
+          variant="primary"
+          size="sm"
+          data-testid="upload-stig-btn"
+          @click="openUploadModal"
+        >
+          <b-icon icon="cloud-upload" /> Upload STIG
         </b-button>
-      </b-col>
-    </b-row>
+      </template>
+      <template #right>
+        <!-- No panels for list page -->
+      </template>
+    </BaseCommandBar>
+
+    <p>
+      <b>STIG Count:</b> <b-badge variant="secondary">{{ stigs.length }}</b-badge>
+    </p>
+
     <SecurityRequirementsGuidesTable :srgs="stigs" :is_vulcan_admin="is_vulcan_admin" type="STIG" />
+
     <SecurityRequirementsGuidesUpload
       v-model="showUploadComponent"
       post_path="/stigs"
@@ -27,12 +37,17 @@
 <script>
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable";
 import SecurityRequirementsGuidesUpload from "../security_requirements_guides/SecurityRequirementsGuidesUpload";
 
 export default {
   name: "Stigs",
-  components: { SecurityRequirementsGuidesTable, SecurityRequirementsGuidesUpload },
+  components: {
+    BaseCommandBar,
+    SecurityRequirementsGuidesTable,
+    SecurityRequirementsGuidesUpload
+  },
   mixins: [AlertMixinVue],
   props: {
     givenstigs: {
@@ -50,10 +65,18 @@ export default {
       stigs: [],
     };
   },
+  computed: {
+    breadcrumbs() {
+      return [{ text: 'STIGs', active: true }];
+    },
+  },
   mounted: function () {
     this.stigs = this.givenstigs;
   },
   methods: {
+    openUploadModal() {
+      this.showUploadComponent = true;
+    },
     loadStigs: function () {
       axios
         .get("/stigs")
