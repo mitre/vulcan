@@ -7,6 +7,7 @@
       title="Project Details"
       right
       shadow
+      backdrop
       :visible="activePanel === 'proj-details'"
       @hidden="$emit('close-panel')"
     >
@@ -75,6 +76,7 @@
       title="Project Metadata"
       right
       shadow
+      backdrop
       :visible="activePanel === 'proj-metadata'"
       @hidden="$emit('close-panel')"
     >
@@ -101,18 +103,38 @@
       </div>
     </b-sidebar>
 
-    <!-- Project History Sidebar -->
+    <!-- Project Activity Sidebar -->
     <b-sidebar
       id="proj-history-sidebar"
       data-testid="proj-history-sidebar"
-      title="Project History"
+      title="Project Activity"
       right
       shadow
+      backdrop
       :visible="activePanel === 'proj-history'"
       @hidden="$emit('close-panel')"
     >
       <div class="px-3 py-2">
         <History :histories="project.histories" :revertable="false" />
+      </div>
+    </b-sidebar>
+
+    <!-- Project Revisions Sidebar -->
+    <b-sidebar
+      id="proj-revision-history-sidebar"
+      data-testid="proj-revision-history-sidebar"
+      title="Component Revisions"
+      right
+      shadow
+      backdrop
+      :visible="activePanel === 'proj-revision-history'"
+      @hidden="$emit('close-panel')"
+    >
+      <div class="px-3 py-2">
+        <RevisionHistory
+          :project="project"
+          :unique-component-names="uniqueComponentNames"
+        />
       </div>
     </b-sidebar>
   </div>
@@ -123,6 +145,7 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import History from "../shared/History.vue";
 import UpdateProjectDetailsModal from "../projects/UpdateProjectDetailsModal.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
+import RevisionHistory from "./RevisionHistory.vue";
 
 export default {
   name: "ProjectSidepanels",
@@ -130,6 +153,7 @@ export default {
     History,
     UpdateProjectDetailsModal,
     UpdateMetadataModal,
+    RevisionHistory,
   },
   mixins: [RoleComparisonMixin],
   props: {
@@ -144,6 +168,10 @@ export default {
     activePanel: {
       type: String,
       default: null,
+    },
+    uniqueComponentNames: {
+      type: Array,
+      default: () => [],
     },
   },
   computed: {

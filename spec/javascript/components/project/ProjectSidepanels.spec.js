@@ -67,7 +67,8 @@ describe('ProjectSidepanels', () => {
         BSidebar: true,
         History: true,
         UpdateProjectDetailsModal: true,
-        UpdateMetadataModal: true
+        UpdateMetadataModal: true,
+        RevisionHistory: true
       }
     })
   }
@@ -87,10 +88,10 @@ describe('ProjectSidepanels', () => {
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('renders all 3 sidebars', () => {
+    it('renders all 4 sidebars (Details, Metadata, History, Revision History)', () => {
       wrapper = createWrapper()
       const sidebars = wrapper.findAllComponents({ name: 'BSidebar' })
-      expect(sidebars.length).toBe(3)
+      expect(sidebars.length).toBe(4)
     })
   })
 
@@ -116,14 +117,22 @@ describe('ProjectSidepanels', () => {
       expect(sidebar.attributes('visible')).toBe('true')
     })
 
+    it('shows proj-revision-history sidebar when activePanel is proj-revision-history', () => {
+      wrapper = createWrapper({ activePanel: 'proj-revision-history' })
+      const sidebar = wrapper.find('[data-testid="proj-revision-history-sidebar"]')
+      expect(sidebar.attributes('visible')).toBe('true')
+    })
+
     it('hides all sidebars when activePanel is null', () => {
       wrapper = createWrapper({ activePanel: null })
       const detailsSidebar = wrapper.find('[data-testid="proj-details-sidebar"]')
       const metadataSidebar = wrapper.find('[data-testid="proj-metadata-sidebar"]')
       const historySidebar = wrapper.find('[data-testid="proj-history-sidebar"]')
+      const revisionSidebar = wrapper.find('[data-testid="proj-revision-history-sidebar"]')
       expect(detailsSidebar.attributes('visible')).toBeFalsy()
       expect(metadataSidebar.attributes('visible')).toBeFalsy()
       expect(historySidebar.attributes('visible')).toBeFalsy()
+      expect(revisionSidebar.attributes('visible')).toBeFalsy()
     })
   })
 
@@ -193,6 +202,22 @@ describe('ProjectSidepanels', () => {
       wrapper = createWrapper({ activePanel: 'proj-history' })
       const history = wrapper.findComponent({ name: 'History' })
       expect(history.props('histories')).toEqual(defaultProps.project.histories)
+    })
+  })
+
+  // ==========================================
+  // REVISION HISTORY PANEL
+  // ==========================================
+  describe('revision history panel', () => {
+    it('renders RevisionHistory component', () => {
+      wrapper = createWrapper({ activePanel: 'proj-revision-history' })
+      expect(wrapper.findComponent({ name: 'RevisionHistory' }).exists()).toBe(true)
+    })
+
+    it('passes project to RevisionHistory', () => {
+      wrapper = createWrapper({ activePanel: 'proj-revision-history' })
+      const revisionHistory = wrapper.findComponent({ name: 'RevisionHistory' })
+      expect(revisionHistory.props('project')).toEqual(defaultProps.project)
     })
   })
 })
