@@ -1,7 +1,7 @@
 <template>
   <div>
-    <!-- Modal trigger button -->
-    <b-button class="px-2 m-2" variant="primary" @click="showModal()">
+    <!-- Modal trigger button (opt-in via showButton prop) -->
+    <b-button v-if="showButton" class="px-2 m-2" variant="primary" @click="showModal()">
       Import a Released Component
     </b-button>
 
@@ -98,6 +98,10 @@ export default {
     available_components: {
       type: Array,
       required: true,
+    },
+    showButton: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {

@@ -36,29 +36,9 @@
           <!-- Project components -->
           <b-tab :title="`Components (${project.components.length})`">
             <h2>Project Components</h2>
-            <div>
-              <NewComponentModal
-                ref="newComponentModal"
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                :project_id="project.id"
-                :project="project"
-                @projectUpdated="refreshProject"
-              />
-              <NewComponentModal
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                :project_id="project.id"
-                :project="project"
-                :spreadsheet_import="true"
-                @projectUpdated="refreshProject"
-              />
-              <NewComponentModal
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                :project_id="project.id"
-                :project="project"
-                :copy_component="true"
-                @projectUpdated="refreshProject"
-              />
-            </div>
+            <p v-if="sortedRegularComponents().length === 0" class="text-muted">
+              No components yet. Click <strong>New Component</strong> to get started.
+            </p>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
                 <ComponentCard
@@ -70,13 +50,11 @@
               </b-col>
             </b-row>
 
-            <h2>Overlaid Components</h2>
-            <AddComponentModal
-              v-if="role_gte_to(effective_permissions, 'admin')"
-              :project_id="project.id"
-              :available_components="sortedAvailableComponents"
-              @projectUpdated="refreshProject"
-            />
+            <h2 class="mt-5">Overlaid Components</h2>
+            <p v-if="sortedOverlayComponents().length === 0" class="text-muted">
+              No overlaid components. To add one, click
+              <strong>New Component</strong> → <strong>Add Overlaid Component</strong>.
+            </p>
             <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
               <b-col v-for="component in sortedOverlayComponents()" :key="component.id">
                 <ComponentCard
@@ -105,6 +83,45 @@
       :unique-component-names="uniqueComponentNames"
       @close-panel="closePanel"
       @project-updated="refreshProject"
+    />
+
+    <!-- Component Action Picker (NEW) -->
+    <ComponentActionPicker
+      v-model="showComponentActionPicker"
+      @next="handleComponentAction"
+      @cancel="showComponentActionPicker = false"
+    />
+
+    <!-- Component Creation Modals (showOpener=false, triggered via refs) -->
+    <NewComponentModal
+      ref="newComponentModal"
+      v-if="role_gte_to(effective_permissions, 'admin')"
+      :project_id="project.id"
+      :project="project"
+      @projectUpdated="refreshProject"
+    />
+    <NewComponentModal
+      ref="importComponentModal"
+      v-if="role_gte_to(effective_permissions, 'admin')"
+      :project_id="project.id"
+      :project="project"
+      :spreadsheet_import="true"
+      @projectUpdated="refreshProject"
+    />
+    <NewComponentModal
+      ref="copyComponentModal"
+      v-if="role_gte_to(effective_permissions, 'admin')"
+      :project_id="project.id"
+      :project="project"
+      :copy_component="true"
+      @projectUpdated="refreshProject"
+    />
+    <AddComponentModal
+      ref="addComponentModal"
+      v-if="role_gte_to(effective_permissions, 'admin')"
+      :project_id="project.id"
+      :available_components="sortedAvailableComponents"
+      @projectUpdated="refreshProject"
     />
 
     <!-- Project Members Modal -->
@@ -145,6 +162,7 @@ import ProjectCommandBar from "./ProjectCommandBar.vue";
 import ProjectSidepanels from "./ProjectSidepanels.vue";
 import ExportModal from "../shared/ExportModal.vue";
 import ProjectMembersModal from "./ProjectMembersModal.vue";
+import ComponentActionPicker from "./ComponentActionPicker.vue";
 
 export default {
   name: "Project",
@@ -162,6 +180,7 @@ export default {
     ProjectSidepanels,
     ExportModal,
     ProjectMembersModal,
+    ComponentActionPicker,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   setup() {
@@ -198,6 +217,8 @@ export default {
       projectTabIndex: 0,
       // Export modal state
       showExportModal: false,
+      // Component action picker state
+      showComponentActionPicker: false,
       // Visibility modal state
       showVisibilityModal: false,
       pendingVisibility: false,
@@ -301,8 +322,31 @@ export default {
       }
     },
     openNewComponentModal() {
-      if (this.$refs.newComponentModal) {
-        this.$refs.newComponentModal.showModal();
+      this.showComponentActionPicker = true;
+    },
+    handleComponentAction(actionType) {
+      // Route to appropriate modal based on action type
+      switch (actionType) {
+        case 'create':
+          if (this.$refs.newComponentModal) {
+            this.$refs.newComponentModal.showModal();
+          }
+          break;
+        case 'import':
+          if (this.$refs.importComponentModal) {
+            this.$refs.importComponentModal.showModal();
+          }
+          break;
+        case 'copy':
+          if (this.$refs.copyComponentModal) {
+            this.$refs.copyComponentModal.showModal();
+          }
+          break;
+        case 'overlay':
+          if (this.$refs.addComponentModal) {
+            this.$refs.addComponentModal.showModal();
+          }
+          break;
       }
     },
     openExportModal() {

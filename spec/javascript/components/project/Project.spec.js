@@ -89,6 +89,7 @@ describe('Project', () => {
         ProjectCommandBar: true,
         ProjectSidepanels: true,
         ExportModal: true,
+        ComponentActionPicker: true,
         BBreadcrumb: true,
         BTabs: true,
         BTab: true,
@@ -267,18 +268,123 @@ describe('Project', () => {
   })
 
   // ==========================================
-  // NEW COMPONENT MODAL
+  // COMPONENT ACTION PICKER WORKFLOW (CONTRACT)
   // ==========================================
-  describe('new component modal', () => {
-    it('openNewComponentModal calls the modal showModal method', () => {
+  describe('component action picker workflow', () => {
+    it('renders ComponentActionPicker for selecting component creation method', () => {
       wrapper = createWrapper()
-      // Mock the newComponentModal ref
+      expect(wrapper.findComponent({ name: 'ComponentActionPicker' }).exists()).toBe(true)
+    })
+
+    it('clicking New Component button shows ComponentActionPicker modal', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.showComponentActionPicker).toBe(false)
+      wrapper.vm.openNewComponentModal()
+      expect(wrapper.vm.showComponentActionPicker).toBe(true)
+    })
+
+    it('routes "create" action to NewComponentModal (default mode)', () => {
+      wrapper = createWrapper()
       const showModalMock = vi.fn()
       wrapper.vm.$refs.newComponentModal = { showModal: showModalMock }
 
-      wrapper.vm.openNewComponentModal()
+      wrapper.vm.handleComponentAction('create')
 
       expect(showModalMock).toHaveBeenCalled()
+    })
+
+    it('routes "import" action to NewComponentModal (spreadsheet mode)', () => {
+      wrapper = createWrapper()
+      const showModalMock = vi.fn()
+      wrapper.vm.$refs.importComponentModal = { showModal: showModalMock }
+
+      wrapper.vm.handleComponentAction('import')
+
+      expect(showModalMock).toHaveBeenCalled()
+    })
+
+    it('routes "copy" action to NewComponentModal (copy mode)', () => {
+      wrapper = createWrapper()
+      const showModalMock = vi.fn()
+      wrapper.vm.$refs.copyComponentModal = { showModal: showModalMock }
+
+      wrapper.vm.handleComponentAction('copy')
+
+      expect(showModalMock).toHaveBeenCalled()
+    })
+
+    it('routes "overlay" action to AddComponentModal', () => {
+      wrapper = createWrapper()
+      const showModalMock = vi.fn()
+      wrapper.vm.$refs.addComponentModal = { showModal: showModalMock }
+
+      wrapper.vm.handleComponentAction('overlay')
+
+      expect(showModalMock).toHaveBeenCalled()
+    })
+  })
+
+  // ==========================================
+  // EMPTY STATE MESSAGES
+  // ==========================================
+  describe('empty state messages', () => {
+    it('shows helpful message when no regular components', () => {
+      const emptyProject = {
+        ...defaultProps.initialProjectState,
+        components: []
+      }
+      wrapper = createWrapper({ initialProjectState: emptyProject })
+      expect(wrapper.text()).toContain('No components yet')
+      expect(wrapper.text()).toContain('New Component')
+    })
+
+    it('shows helpful message when no overlaid components', () => {
+      wrapper = createWrapper()
+      // Default project has no overlaid components
+      expect(wrapper.text()).toContain('No overlaid components')
+      expect(wrapper.text()).toContain('Add Overlaid Component')
+    })
+
+    it('does not show empty message when regular components exist', () => {
+      const projectWithComponents = {
+        ...defaultProps.initialProjectState,
+        components: [
+          { id: 1, name: 'Test Component', component_id: null }
+        ]
+      }
+      wrapper = createWrapper({ initialProjectState: projectWithComponents })
+      expect(wrapper.text()).not.toContain('No components yet')
+    })
+  })
+
+  // ==========================================
+  // MODAL INSTANCES (NO OPENER BUTTONS)
+  // ==========================================
+  describe('modal instances without opener buttons', () => {
+    it('NewComponentModal instances exist for programmatic access', () => {
+      wrapper = createWrapper()
+      // Modals exist in template but don't render opener buttons (showOpener=false)
+      expect(wrapper.findAllComponents({ name: 'NewComponentModal' }).length).toBeGreaterThan(0)
+    })
+
+    it('AddComponentModal exists for programmatic access', () => {
+      wrapper = createWrapper()
+      expect(wrapper.findComponent({ name: 'AddComponentModal' }).exists()).toBe(true)
+    })
+
+    it('NewComponentModal does not pass showOpener prop (defaults to false = no button)', () => {
+      wrapper = createWrapper()
+      const modals = wrapper.findAllComponents({ name: 'NewComponentModal' })
+      modals.wrappers.forEach(modal => {
+        // showOpener prop should not be set (defaults to false)
+        expect(modal.props('showOpener')).toBeFalsy()
+      })
+    })
+
+    it('AddComponentModal does not pass showButton prop (defaults to false = no button)', () => {
+      wrapper = createWrapper()
+      const modal = wrapper.findComponent({ name: 'AddComponentModal' })
+      expect(modal.props('showButton')).toBeFalsy()
     })
   })
 

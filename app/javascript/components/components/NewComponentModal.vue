@@ -1,7 +1,7 @@
 <template>
   <span>
-    <!-- Modal trigger button -->
-    <span @click="showModal()">
+    <!-- Modal trigger button (only if showOpener prop is true) -->
+    <span v-if="showOpener" @click="showModal()">
       <slot name="opener">
         <b-button class="px-2 m-2" variant="primary"> {{ buttonText }} </b-button>
       </slot>
@@ -222,6 +222,10 @@ export default {
       type: Number,
       required: false,
       default: null,
+    },
+    showOpener: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {
