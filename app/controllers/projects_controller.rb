@@ -125,11 +125,30 @@ class ProjectsController < ApplicationController
   def destroy
     if @project.destroy
       send_slack_notification(:remove_project, @project) if Settings.slack.enabled
-      flash.notice = 'Successfully removed project.'
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully removed project.'
+          redirect_to action: 'index'
+        end
+        format.json { render json: { toast: 'Successfully removed project.' } }
+      end
     else
-      flash.alert = "Unable to remove project. #{@project.errors.full_messages}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to remove project. #{@project.errors.full_messages}"
+          redirect_to action: 'index'
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not remove project.',
+              message: @project.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to action: 'index'
   end
 
   def export

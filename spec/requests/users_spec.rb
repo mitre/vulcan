@@ -105,4 +105,63 @@ RSpec.describe 'Users', type: :request do
       expect(response.content_type).to include('application/json')
     end
   end
+
+  describe 'DELETE /users/:id HTML format' do
+    before { sign_in admin_user }
+
+    it 'destroys the user and redirects to index' do
+      user_to_delete = target_user # ensure created
+
+      expect do
+        delete "/users/#{user_to_delete.id}"
+      end.to change(User, :count).by(-1)
+
+      expect(response).to redirect_to(users_path)
+      follow_redirect!
+      expect(flash[:notice]).to eq('Successfully removed user.')
+    end
+  end
+
+  describe 'DELETE /users/:id JSON format' do
+    before { sign_in admin_user }
+
+    let(:json_headers) { { 'Accept' => 'application/json' } }
+
+    it 'destroys the user and returns success JSON' do
+      user_to_delete = target_user # ensure created
+
+      expect do
+        delete "/users/#{user_to_delete.id}", headers: json_headers
+      end.to change(User, :count).by(-1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.content_type).to include('application/json')
+      json = response.parsed_body
+      expect(json['toast']).to eq('Successfully removed user.')
+    end
+
+    it 'returns JSON error response on failure' do
+      user_to_delete = target_user # Ensure user created before mocking
+
+      allow_any_instance_of(User).to receive(:destroy).and_return(false)
+      allow_any_instance_of(User).to receive_message_chain(:errors, :full_messages).and_return(['Cannot delete'])
+
+      delete "/users/#{user_to_delete.id}", headers: json_headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.content_type).to include('application/json')
+      json = response.parsed_body
+      expect(json['toast']['title']).to include('Could not remove')
+    end
+  end
+
+  describe 'DELETE /users/:id with non-admin user' do
+    before { sign_in regular_user }
+
+    it 'redirects with authorization error' do
+      delete "/users/#{target_user.id}"
+
+      expect(response).to redirect_to(root_path)
+    end
+  end
 end

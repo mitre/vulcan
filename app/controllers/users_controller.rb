@@ -48,11 +48,30 @@ class UsersController < ApplicationController
 
   def destroy
     if @user.destroy
-      flash.notice = 'Successfully removed user.'
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully removed user.'
+          redirect_to action: 'index'
+        end
+        format.json { render json: { toast: 'Successfully removed user.' } }
+      end
     else
-      flash.alert = "Unable to remove user. #{@user.errors.full_messages}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to remove user. #{@user.errors.full_messages}"
+          redirect_to action: 'index'
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not remove user.',
+              message: @user.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to action: 'index'
   end
 
   private

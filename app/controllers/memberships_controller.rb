@@ -79,7 +79,6 @@ class MembershipsController < ApplicationController
 
   def destroy
     if @membership.destroy
-      flash.notice = 'Successfully removed membership.'
       send_smtp_notification(UserMailer, 'remove_membership', current_user, @membership) if Settings.smtp.enabled
       case @membership.membership_type
       when 'Project'
@@ -87,10 +86,31 @@ class MembershipsController < ApplicationController
       when 'Component'
         send_membership_notification(:remove_component_membership, @membership)
       end
+
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully removed membership.'
+          redirect_to @membership.membership
+        end
+        format.json { render json: { toast: 'Successfully removed membership.' } }
+      end
     else
-      flash.alert = "Unable to remove membership. #{@membership.errors.full_messages}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to remove membership. #{@membership.errors.full_messages}"
+          redirect_to @membership.membership
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not remove membership.',
+              message: @membership.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to @membership.membership
   end
 
   private

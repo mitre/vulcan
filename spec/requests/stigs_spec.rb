@@ -66,5 +66,35 @@ RSpec.describe 'Stigs', type: :request do
         delete "/stigs/#{stig2.id}"
       end.not_to change(Stig, :count)
     end
+
+    context 'with JSON format' do
+      let(:json_headers) { { 'Accept' => 'application/json' } }
+
+      it 'returns JSON response on success' do
+        sign_in user
+
+        expect do
+          delete "/stigs/#{stig2.id}", headers: json_headers
+        end.to change(Stig, :count).by(-1)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to include('application/json')
+        json = response.parsed_body
+        expect(json['toast']).to include('Successfully removed')
+      end
+
+      it 'returns JSON error response on failure' do
+        sign_in user
+        allow_any_instance_of(Stig).to receive(:destroy).and_return(false)
+        allow_any_instance_of(Stig).to receive_message_chain(:errors, :full_messages).and_return(['Cannot delete'])
+
+        delete "/stigs/#{stig2.id}", headers: json_headers
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to include('application/json')
+        json = response.parsed_body
+        expect(json['toast']['title']).to include('Could not remove')
+      end
+    end
   end
 end
