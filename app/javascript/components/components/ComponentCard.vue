@@ -136,7 +136,7 @@
                   :disabled="!component.releasable"
                   @click="confirmComponentRelease"
                 >
-                  <b-icon icon="tag" font-scale="0.9" /> Release
+                  <b-icon icon="patch-check" font-scale="0.9" /> Release
                 </b-button>
               </span>
 
