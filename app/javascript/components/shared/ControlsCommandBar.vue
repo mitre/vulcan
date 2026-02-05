@@ -2,43 +2,52 @@
   <div class="command-bar bg-light px-3 py-2">
     <!-- Main Toolbar Row -->
     <div class="d-flex align-items-center justify-content-between flex-wrap">
-      <!-- Left: Actions (ordered by frequency: Edit/View, Members, Release) -->
+      <!-- Left: Core Action (Edit/View only) -->
       <div class="d-flex align-items-center">
-        <b-button-group size="sm" class="mr-3">
-          <!-- VIEW mode: Show Edit button -->
-          <b-button
-            v-if="readOnly && canEdit"
-            variant="primary"
-            :href="`/components/${component.id}/edit`"
-          >
-            <b-icon icon="pencil" /> Edit
-          </b-button>
-          <!-- EDIT mode: Show View button -->
-          <b-button
-            v-if="!readOnly && canEdit"
-            variant="outline-primary"
-            :href="`/components/${component.id}`"
-          >
-            <b-icon icon="eye" /> View
-          </b-button>
-          <b-button variant="outline-secondary" @click="onOpenMembers">
-            <b-icon icon="people" /> Members
-          </b-button>
-          <b-button
-            v-if="canRelease"
-            variant="success"
-            :disabled="!isReleasable"
-            @click="onRelease"
-          >
-            <b-icon icon="patch-check" /> Release
-          </b-button>
-        </b-button-group>
+        <!-- VIEW mode: Show Edit button -->
+        <b-button
+          v-if="readOnly && canEdit"
+          variant="primary"
+          size="sm"
+          :href="`/components/${component.id}/edit`"
+        >
+          <b-icon icon="pencil" /> Edit
+        </b-button>
+        <!-- EDIT mode: Show View button -->
+        <b-button
+          v-if="!readOnly && canEdit"
+          variant="outline-primary"
+          size="sm"
+          :href="`/components/${component.id}`"
+        >
+          <b-icon icon="eye" /> View
+        </b-button>
       </div>
 
-      <!-- Right: Panel Toggles -->
+      <!-- Right: Action Buttons + Panel Toggles -->
       <div class="d-flex align-items-center">
+        <!-- Action Buttons -->
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          class="mr-2"
+          @click="onOpenMembers"
+        >
+          <b-icon icon="people" /> Members
+        </b-button>
+        <b-button
+          v-if="canRelease"
+          variant="success"
+          size="sm"
+          class="mr-3"
+          :disabled="!isReleasable"
+          @click="onRelease"
+        >
+          <b-icon icon="patch-check" /> Release
+        </b-button>
+
         <!-- Component Panels (component-level info, always available) -->
-        <b-button-group size="sm" class="mr-3">
+        <b-button-group size="sm">
           <b-button
             :variant="isPanelActive('details') ? 'secondary' : 'outline-secondary'"
             @click="onTogglePanel('details')"

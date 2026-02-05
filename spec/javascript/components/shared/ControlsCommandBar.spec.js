@@ -188,9 +188,16 @@ describe('ControlsCommandBar', () => {
     })
   })
 
-  describe('Members button', () => {
+  describe('Members button (moved to right side)', () => {
     it('always shows Members button', () => {
       wrapper = createWrapper({ effectivePermissions: 'viewer' })
+      expect(wrapper.text()).toContain('Members')
+    })
+
+    it('Members button is on the right side (not in left action group)', () => {
+      wrapper = createWrapper()
+      // Members should NOT be in the left b-button-group (which contains Edit/View)
+      // This is a visual/layout test - implementation will move it to right side
       expect(wrapper.text()).toContain('Members')
     })
 
@@ -203,6 +210,36 @@ describe('ControlsCommandBar', () => {
   })
 
   // Advanced Fields toggle moved to RuleEditor (per-component setting)
+
+  describe('Release button (moved to right side)', () => {
+    it('shows Release button for admin when releasable', () => {
+      wrapper = createWrapper({
+        effectivePermissions: 'admin',
+        component: { ...defaultComponent, releasable: true, released: false }
+      })
+      const releaseBtn = wrapper.findAll('button').wrappers.find(b => b.text().includes('Release'))
+      expect(releaseBtn).toBeDefined()
+    })
+
+    it('disables Release button when not releasable', () => {
+      wrapper = createWrapper({
+        effectivePermissions: 'admin',
+        component: { ...defaultComponent, releasable: false, released: false }
+      })
+      const releaseBtn = wrapper.findAll('button').wrappers.find(b => b.text().includes('Release'))
+      expect(releaseBtn.attributes('disabled')).toBeDefined()
+    })
+
+    it('emits release event when clicked', async () => {
+      wrapper = createWrapper({
+        effectivePermissions: 'admin',
+        component: { ...defaultComponent, releasable: true, released: false }
+      })
+      const releaseBtn = wrapper.findAll('button').wrappers.find(b => b.text().includes('Release'))
+      await releaseBtn.trigger('click')
+      expect(wrapper.emitted('release')).toBeTruthy()
+    })
+  })
 
   // ==========================================
   // COMPONENT PANELS

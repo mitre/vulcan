@@ -287,10 +287,10 @@ describe('terminology constants', () => {
     })
 
     it('changing COMPONENT_TERM would update all derived labels', () => {
-      const expectedCompHistoryPattern = new RegExp(`${COMPONENT_TERM.label}.*History`)
+      const expectedCompActivityPattern = new RegExp(`${COMPONENT_TERM.label}.*Activity`)
       const expectedCompReviewsPattern = new RegExp(`${COMPONENT_TERM.label}.*Reviews`)
 
-      expect(PANEL_LABELS.compHistory).toMatch(expectedCompHistoryPattern)
+      expect(PANEL_LABELS.compHistory).toMatch(expectedCompActivityPattern)
       expect(PANEL_LABELS.compReviews).toMatch(expectedCompReviewsPattern)
     })
   })

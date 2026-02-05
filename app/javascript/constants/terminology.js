@@ -28,7 +28,7 @@ export const PANEL_LABELS = {
   details: 'Details',
   metadata: 'Metadata',
   questions: 'Questions',
-  compHistory: `${COMPONENT_TERM.label} History`,
+  compHistory: `${COMPONENT_TERM.label} Activity`,
   compReviews: `${COMPONENT_TERM.label} Reviews`,
 
   // Rule panels (require selected rule)
@@ -42,7 +42,7 @@ export const SIDEBAR_TITLES = {
   details: `${COMPONENT_TERM.labelFull} Details`,
   metadata: `${COMPONENT_TERM.labelFull} Metadata`,
   questions: 'Additional Questions',
-  compHistory: `${COMPONENT_TERM.labelFull} History`,
+  compHistory: `${COMPONENT_TERM.labelFull} Activity`,
   compReviews: `${COMPONENT_TERM.labelFull} Reviews`,
   satisfies: 'Also Satisfies',
   ruleHistory: `${RULE_TERM.singular} History`,
