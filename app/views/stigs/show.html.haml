@@ -3,9 +3,6 @@
   = stylesheet_link_tag 'project_component'
 
 #stig
-  %stig{                                                                |
-    'v-bind:queried-rule': (@rule_json || {}.to_json),                                              |
-    'v-bind:stig': @stig_json,                                                      |
-    'v-bind:severities': RuleConstants::SEVERITIES.to_json,                         |
-    'v-bind:severities_map': RuleConstants::SEVERITIES_MAP.to_json,                 |
+  %stig{                                   |
+    'v-bind:stig': @stig_json              |
   }

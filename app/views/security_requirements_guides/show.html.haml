@@ -1,0 +1,9 @@
+- content_for :assets do
+  = javascript_include_tag 'stig'
+  = stylesheet_link_tag 'project_component'
+
+#benchmark-viewer
+  %benchmarkviewer{                        |
+    'v-bind:benchmark': @srg_json,         |
+    'v-bind:type': "'srg'".html_safe       |
+  }

@@ -30,6 +30,9 @@
       <template v-if="type === 'STIG'" #cell(stig_id)="data">
         <b-link :href="`/stigs/${data.item.id}`">{{ data.item.stig_id }}</b-link>
       </template>
+      <template v-else #cell(srg_id)="data">
+        <b-link :href="`/srgs/${data.item.id}`">{{ data.item.srg_id }}</b-link>
+      </template>
       <template #cell(actions)="data">
         <b-button
           v-if="is_vulcan_admin"
