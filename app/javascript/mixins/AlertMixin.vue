@@ -1,4 +1,6 @@
 <script>
+import _ from "lodash";
+
 // This mixin is for generating bootstrap toasts
 export default {
   methods: {
