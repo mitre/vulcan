@@ -109,6 +109,25 @@ describe('MembersModal', () => {
       wrapper = createWrapper({ component: moreMembers })
       expect(wrapper.vm.modalTitle).toBe('Members (7)')
     })
+
+    it('handles undefined inherited_memberships gracefully', () => {
+      const componentWithoutInherited = {
+        ...defaultProps.component,
+        inherited_memberships: undefined
+      }
+      wrapper = createWrapper({ component: componentWithoutInherited })
+      // Should only count component members (2), inherited = 0
+      expect(wrapper.vm.modalTitle).toBe('Members (2)')
+    })
+
+    it('handles null inherited_memberships gracefully', () => {
+      const componentWithNullInherited = {
+        ...defaultProps.component,
+        inherited_memberships: null
+      }
+      wrapper = createWrapper({ component: componentWithNullInherited })
+      expect(wrapper.vm.modalTitle).toBe('Members (2)')
+    })
   })
 
   describe('permissions logic', () => {
@@ -159,6 +178,25 @@ describe('MembersModal', () => {
       wrapper = createWrapper()
       await wrapper.setData({ componentSearch: 'nonexistent' })
       expect(wrapper.vm.filteredComponentMembers.length).toBe(0)
+    })
+
+    it('handles undefined inherited_memberships in filter', () => {
+      const componentWithoutInherited = {
+        ...defaultProps.component,
+        inherited_memberships: undefined
+      }
+      wrapper = createWrapper({ component: componentWithoutInherited })
+      // Should return empty array, not crash
+      expect(wrapper.vm.filteredInheritedMembers).toEqual([])
+    })
+
+    it('handles null inherited_memberships in filter', () => {
+      const componentWithNullInherited = {
+        ...defaultProps.component,
+        inherited_memberships: null
+      }
+      wrapper = createWrapper({ component: componentWithNullInherited })
+      expect(wrapper.vm.filteredInheritedMembers).toEqual([])
     })
   })
 

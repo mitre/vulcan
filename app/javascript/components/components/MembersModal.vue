@@ -5,6 +5,7 @@
     size="lg"
     centered
     scrollable
+    lazy
     ok-only
     ok-title="Close"
     body-class="p-0"
@@ -81,11 +82,11 @@
       </b-tab>
 
       <!-- Inherited Members Tab -->
-      <b-tab>
+      <b-tab v-if="component && component.inherited_memberships !== undefined">
         <template #title>
           Inherited from Project
           <b-badge variant="secondary" pill class="ml-1">{{
-            component.inherited_memberships.length
+            (component.inherited_memberships || []).length
           }}</b-badge>
         </template>
 
@@ -211,7 +212,8 @@ export default {
       return "members-modal";
     },
     modalTitle() {
-      const count = this.component.memberships_count + this.component.inherited_memberships.length;
+      const inheritedCount = this.component.inherited_memberships?.length || 0;
+      const count = this.component.memberships_count + inheritedCount;
       return `Members (${count})`;
     },
     isEditable() {
@@ -227,11 +229,12 @@ export default {
       );
     },
     filteredInheritedMembers() {
+      const inherited = this.component.inherited_memberships || [];
       if (!this.inheritedSearch) {
-        return this.component.inherited_memberships;
+        return inherited;
       }
       const search = this.inheritedSearch.toLowerCase();
-      return this.component.inherited_memberships.filter(
+      return inherited.filter(
         (m) => m.name.toLowerCase().includes(search) || m.email.toLowerCase().includes(search),
       );
     },

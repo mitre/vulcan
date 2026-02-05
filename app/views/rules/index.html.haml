@@ -5,7 +5,7 @@
 #Rules
   %Rules{                                                                           |
     'v-bind:project': @project.to_json,                                             |
-    'v-bind:component': @component.to_json(methods: %i[histories reviews metadata all_users]), |
+    'v-bind:component': @component.to_json(include: :memberships, methods: %i[histories reviews metadata all_users inherited_memberships]), |
     'v-bind:rules': @rules.to_json,                                                 |
     'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |
     'v-bind:severities': RuleConstants::SEVERITIES.to_json,                         |

@@ -81,6 +81,36 @@ RSpec.describe 'Rules', type: :request do
         # Verify the all_users key is present in the component JSON
         expect(response.body).to include('&quot;all_users&quot;')
       end
+
+      it 'includes memberships association in component JSON for MembersModal display' do
+        # REQUIREMENT: MembersModal needs memberships association to show component-specific members
+        # Create a component-level membership
+        component_user = create(:user)
+        Membership.create!(user: component_user, membership: component, role: 'author')
+
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        # Verify the memberships array is present in the component JSON
+        expect(response.body).to include('&quot;memberships&quot;')
+        # Verify the component member is included
+        expect(response.body).to include(component_user.email)
+      end
+
+      it 'includes inherited_memberships in component JSON for MembersModal display' do
+        # REQUIREMENT: MembersModal needs inherited_memberships to show project-level members
+        # Create a project-level membership (inherited by component)
+        other_user = create(:user)
+        Membership.create!(user: other_user, membership: project, role: 'viewer')
+
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        # Verify the inherited_memberships key is present in the component JSON
+        expect(response.body).to include('&quot;inherited_memberships&quot;')
+        # Verify the inherited member is included
+        expect(response.body).to include(other_user.email)
+      end
     end
   end
 
