@@ -1,6 +1,23 @@
 <template>
   <div>
-    <h1>Released Components</h1>
+    <b-breadcrumb :items="breadcrumbs" />
+
+    <!-- Command Bar -->
+    <BaseCommandBar>
+      <template #left>
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          data-testid="download-btn"
+          @click="openExportModal"
+        >
+          <b-icon icon="download" /> Download
+        </b-button>
+      </template>
+      <template #right>
+        <!-- No panels for list page -->
+      </template>
+    </BaseCommandBar>
 
     <p>
       <b>Component Count:</b> <span>{{ components.length }}</span>
@@ -33,17 +50,32 @@
         <ComponentCard :component="component" :actionable="false" />
       </b-col>
     </b-row>
+
+    <!-- Export Modal -->
+    <ExportModal
+      v-model="showExportModal"
+      :components="components"
+      @export="handleExport"
+      @cancel="showExportModal = false"
+    />
   </div>
 </template>
 
 <script>
+import axios from "axios";
 import ComponentCard from "./ComponentCard.vue";
+import BaseCommandBar from "../shared/BaseCommandBar.vue";
+import ExportModal from "../shared/ExportModal.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
   name: "Projectcomponent",
   components: {
     ComponentCard,
+    BaseCommandBar,
+    ExportModal,
   },
+  mixins: [AlertMixinVue],
   props: {
     components: {
       type: Array,
@@ -53,9 +85,31 @@ export default {
   data: function () {
     return {
       search: "",
+      showExportModal: false,
     };
   },
+  computed: {
+    breadcrumbs() {
+      return [{ text: 'Released Components', active: true }];
+    },
+  },
   methods: {
+    openExportModal() {
+      this.showExportModal = true;
+    },
+    handleExport({ type, componentIds }) {
+      this.downloadExport(type, componentIds);
+    },
+    downloadExport(type, componentIds) {
+      // Export released components
+      const idsParam = componentIds.join(',');
+      axios
+        .get(`/components/export/${type}?component_ids=${idsParam}`)
+        .then(() => {
+          window.open(`/components/export/${type}?component_ids=${idsParam}`);
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
     sortedFilteredComponents() {
       let downcaseSearch = this.search.toLowerCase();
       let filteredComponents = this.components.filter((component) =>
