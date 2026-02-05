@@ -1,34 +1,56 @@
 <template>
   <div>
-    <h1>Manage Vulcan Users</h1>
-    <b-col>
-      <b-row>
-        <b-col md="10" class="border-right">
-          <UsersTable :users="users" />
-        </b-col>
-        <b-col>
-          <div class="clickable" @click="showHistory = !showHistory">
-            <h5 class="m-0 d-inline-block">User History</h5>
+    <b-breadcrumb :items="breadcrumbs" />
 
-            <b-icon v-if="showHistory" icon="chevron-down" />
-            <b-icon v-if="!showHistory" icon="chevron-up" />
-          </div>
-          <b-collapse id="collapse-metadata" v-model="showHistory">
-            <History :histories="histories" :revertable="false" />
-          </b-collapse>
-        </b-col>
-      </b-row>
-    </b-col>
+    <!-- Command Bar -->
+    <BaseCommandBar>
+      <template #left>
+        <!-- No actions for now -->
+      </template>
+      <template #right>
+        <b-button-group size="sm">
+          <b-button
+            :variant="isPanelActive('user-history') ? 'secondary' : 'outline-secondary'"
+            @click="togglePanel('user-history')"
+          >
+            <b-icon icon="clock-history" /> User Activity
+          </b-button>
+        </b-button-group>
+      </template>
+    </BaseCommandBar>
+
+    <UsersTable :users="users" />
+
+    <!-- User History Slideover -->
+    <b-sidebar
+      id="user-history-sidebar"
+      title="User Activity"
+      right
+      shadow
+      backdrop
+      :visible="activePanel === 'user-history'"
+      @hidden="closePanel"
+    >
+      <div class="px-3 py-2">
+        <History :histories="histories" :revertable="false" />
+      </div>
+    </b-sidebar>
   </div>
 </template>
 
 <script>
 import UsersTable from "./UsersTable.vue";
 import History from "../shared/History.vue";
+import BaseCommandBar from "../shared/BaseCommandBar.vue";
+import { useSidebar } from "../../composables";
 
 export default {
   name: "Users",
-  components: { UsersTable, History },
+  components: { UsersTable, History, BaseCommandBar },
+  setup() {
+    const { activePanel, togglePanel, closePanel } = useSidebar();
+    return { activePanel, togglePanel, closePanel };
+  },
   props: {
     users: {
       type: Array,
@@ -39,10 +61,13 @@ export default {
       required: true,
     },
   },
-  data: function () {
-    return {
-      showHistory: true,
-    };
+  computed: {
+    breadcrumbs() {
+      return [{ text: 'Users', active: true }];
+    },
+    isPanelActive() {
+      return (panel) => this.activePanel === panel;
+    },
   },
 };
 </script>
