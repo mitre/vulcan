@@ -75,7 +75,7 @@ describe('ProjectCommandBar', () => {
       wrapper = createWrapper()
       expect(wrapper.text()).toContain('Details')
       expect(wrapper.text()).toContain('Metadata')
-      expect(wrapper.text()).toContain('History')
+      expect(wrapper.text()).toContain('Activity')
     })
   })
 
@@ -101,22 +101,53 @@ describe('ProjectCommandBar', () => {
       await checkbox.setChecked(true)
       expect(wrapper.emitted('toggle-visibility')).toBeTruthy()
     })
+
+    it('localVisibility syncs with project.visibility prop', async () => {
+      // Start with hidden project
+      wrapper = createWrapper({
+        effectivePermissions: 'admin',
+        project: { id: 1, name: 'Test', visibility: 'hidden', components: [] }
+      })
+      expect(wrapper.vm.localVisibility).toBe(false)
+
+      // Change prop to discoverable
+      await wrapper.setProps({
+        project: { id: 1, name: 'Test', visibility: 'discoverable', components: [] }
+      })
+      expect(wrapper.vm.localVisibility).toBe(true)
+    })
+
+    it('resetVisibilityToggle resets local state to match prop', async () => {
+      wrapper = createWrapper({
+        effectivePermissions: 'admin',
+        project: { id: 1, name: 'Test', visibility: 'hidden', components: [] }
+      })
+      // Simulate user toggling to true
+      wrapper.vm.localVisibility = true
+      expect(wrapper.vm.localVisibility).toBe(true)
+
+      // Reset should restore to match prop (hidden = false)
+      wrapper.vm.resetVisibilityToggle()
+      expect(wrapper.vm.localVisibility).toBe(false)
+    })
   })
 
   // ==========================================
-  // DOWNLOAD DROPDOWN
+  // DOWNLOAD BUTTON
   // ==========================================
-  describe('download dropdown', () => {
-    it('shows download dropdown', () => {
+  describe('download button', () => {
+    it('shows download button', () => {
       wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Download')
+      const btn = wrapper.find('[data-testid="download-btn"]')
+      expect(btn.exists()).toBe(true)
+      expect(btn.text()).toContain('Download')
     })
 
-    it('emits download event with type when option clicked', async () => {
+    it('emits download event when clicked', async () => {
       wrapper = createWrapper()
-      // Find and click dropdown item
-      const dropdown = wrapper.find('[data-testid="download-dropdown"]')
-      expect(dropdown.exists()).toBe(true)
+      const btn = wrapper.find('[data-testid="download-btn"]')
+      await btn.trigger('click')
+      expect(wrapper.emitted('download')).toBeTruthy()
     })
   })
 
@@ -148,15 +179,17 @@ describe('ProjectCommandBar', () => {
   // PANEL BUTTONS
   // ==========================================
   describe('panel buttons', () => {
-    it('renders all 3 project panel buttons', () => {
+    it('renders all 4 panel buttons (Details, Metadata, Activity, Revisions)', () => {
       wrapper = createWrapper()
-      const buttons = wrapper.findAll('button')
-      const panelButtons = buttons.wrappers.filter(b =>
-        b.text().includes('Details') ||
-        b.text().includes('Metadata') ||
-        b.text().includes('History')
-      )
-      expect(panelButtons.length).toBe(3)
+      expect(wrapper.text()).toContain('Details')
+      expect(wrapper.text()).toContain('Metadata')
+      expect(wrapper.text()).toContain('Activity')
+      expect(wrapper.text()).toContain('Revisions')
+    })
+
+    it('renders Members as action button (not panel button)', () => {
+      wrapper = createWrapper()
+      expect(wrapper.text()).toContain('Members')
     })
 
     it('emits toggle-panel with "proj-details" when Details clicked', async () => {
@@ -175,12 +208,27 @@ describe('ProjectCommandBar', () => {
       expect(wrapper.emitted('toggle-panel')[0]).toEqual(['proj-metadata'])
     })
 
-    it('emits toggle-panel with "proj-history" when History clicked', async () => {
+    it('emits toggle-panel with "proj-history" when Activity clicked', async () => {
       wrapper = createWrapper()
-      const btn = wrapper.findAll('button').wrappers.find(b => b.text().includes('History'))
+      const btn = wrapper.findAll('button').wrappers.find(b => b.text().includes('Activity'))
       await btn.trigger('click')
       expect(wrapper.emitted('toggle-panel')).toBeTruthy()
       expect(wrapper.emitted('toggle-panel')[0]).toEqual(['proj-history'])
+    })
+
+    it('emits toggle-panel with "proj-revision-history" when Revisions clicked', async () => {
+      wrapper = createWrapper()
+      const btn = wrapper.findAll('button').wrappers.find(b => b.text().includes('Revisions'))
+      await btn.trigger('click')
+      expect(wrapper.emitted('toggle-panel')).toBeTruthy()
+      expect(wrapper.emitted('toggle-panel')[0]).toEqual(['proj-revision-history'])
+    })
+
+    it('emits open-members when Members clicked (opens modal, not panel)', async () => {
+      wrapper = createWrapper()
+      const btn = wrapper.findAll('button').wrappers.find(b => b.text().includes('Members'))
+      await btn.trigger('click')
+      expect(wrapper.emitted('open-members')).toBeTruthy()
     })
   })
 
