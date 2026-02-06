@@ -112,7 +112,7 @@
                 v-model="file"
                 placeholder="Choose or drop a filled out SRG Spreadsheet here..."
                 drop-placeholder="Drop SRG Spreadsheet here..."
-                accept="appliction/xlsx, application/xls"
+                accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
               />
             </b-form-group>
             <!-- Set the prefix -->
