@@ -98,7 +98,13 @@ export default {
         };
       } else if (this.rule.status == "Applicable - Inherently Meets") {
         return {
-          displayed: ["status", "rule_severity", "status_justification", "artifact_description", "vendor_comments"],
+          displayed: [
+            "status",
+            "rule_severity",
+            "status_justification",
+            "artifact_description",
+            "vendor_comments",
+          ],
           disabled: ["rule_severity"],
         };
       } else if (this.rule.status == "Applicable - Does Not Meet") {
@@ -108,7 +114,13 @@ export default {
         };
       } else if (this.rule.status == "Not Applicable") {
         return {
-          displayed: ["status", "rule_severity", "status_justification", "artifact_description", "vendor_comments"],
+          displayed: [
+            "status",
+            "rule_severity",
+            "status_justification",
+            "artifact_description",
+            "vendor_comments",
+          ],
           disabled: ["rule_severity"],
         };
       }

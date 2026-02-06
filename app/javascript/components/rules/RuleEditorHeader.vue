@@ -16,7 +16,8 @@
         </h2>
       </div>
       <p v-if="!readOnly && rule.locked" class="text-danger font-weight-bold">
-        This {{ term.singular.toLowerCase() }} is locked and must first be unlocked if changes or deletion are required.
+        This {{ term.singular.toLowerCase() }} is locked and must first be unlocked if changes or
+        deletion are required.
       </p>
       <p v-if="!readOnly && rule.review_requestor_id" class="text-danger font-weight-bold">
         This {{ term.singular.toLowerCase() }} is under review and cannot be edited at this time.
@@ -53,11 +54,7 @@
           >
             <b-button variant="danger" disabled>{{ msg.deleteTitle }}</b-button>
           </span>
-          <span
-            v-b-tooltip.hover
-            class="d-inline-block"
-            :title="msg.cannotSaveLocked"
-          >
+          <span v-b-tooltip.hover class="d-inline-block" :title="msg.cannotSaveLocked">
             <b-button variant="success" disabled>{{ msg.saveTitle }}</b-button>
           </span>
         </template>
@@ -233,7 +230,12 @@ import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS, selectedCountLabel } from "../../constants/terminology";
+import {
+  RULE_TERM,
+  MESSAGE_LABELS,
+  REVIEW_ACTION_LABELS,
+  selectedCountLabel,
+} from "../../constants/terminology";
 
 export default {
   name: "RuleEditorHeader",

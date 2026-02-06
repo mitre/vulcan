@@ -90,7 +90,7 @@ export default {
   },
   computed: {
     breadcrumbs() {
-      return [{ text: 'Released Components', active: true }];
+      return [{ text: "Released Components", active: true }];
     },
   },
   methods: {
@@ -102,7 +102,7 @@ export default {
     },
     downloadExport(type, componentIds) {
       // Export released components
-      const idsParam = componentIds.join(',');
+      const idsParam = componentIds.join(",");
       axios
         .get(`/components/export/${type}?component_ids=${idsParam}`)
         .then(() => {

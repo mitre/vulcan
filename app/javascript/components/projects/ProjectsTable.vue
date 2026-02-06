@@ -167,6 +167,17 @@ export default {
   name: "ProjectsTable",
   components: { UpdateProjectDetailsModal, ConfirmDeleteModal },
   mixins: [DateFormatMixinVue, AlertMixinVue],
+  props: {
+    projects: {
+      type: Array,
+      required: true,
+    },
+    is_vulcan_admin: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+  },
   setup() {
     const {
       showModal: showDeleteModal,
@@ -185,17 +196,6 @@ export default {
       cancelDelete,
       confirmDeleteAction,
     };
-  },
-  props: {
-    projects: {
-      type: Array,
-      required: true,
-    },
-    is_vulcan_admin: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
   },
   data: function () {
     return {

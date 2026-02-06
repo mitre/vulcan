@@ -25,7 +25,8 @@
       @hidden="onVisibilityModalHidden"
     >
       Are you sure you want to change the visibility of this project to
-      <mark>{{ pendingVisibility ? "discoverable" : "hidden" }}</mark>?
+      <mark>{{ pendingVisibility ? "discoverable" : "hidden" }}</mark
+      >?
     </b-modal>
 
     <!-- Main Content (full width, no right sidebar) -->
@@ -94,31 +95,31 @@
 
     <!-- Component Creation Modals (showOpener=false, triggered via refs) -->
     <NewComponentModal
-      ref="newComponentModal"
       v-if="role_gte_to(effective_permissions, 'admin')"
+      ref="newComponentModal"
       :project_id="project.id"
       :project="project"
       @projectUpdated="refreshProject"
     />
     <NewComponentModal
-      ref="importComponentModal"
       v-if="role_gte_to(effective_permissions, 'admin')"
+      ref="importComponentModal"
       :project_id="project.id"
       :project="project"
       :spreadsheet_import="true"
       @projectUpdated="refreshProject"
     />
     <NewComponentModal
-      ref="copyComponentModal"
       v-if="role_gte_to(effective_permissions, 'admin')"
+      ref="copyComponentModal"
       :project_id="project.id"
       :project="project"
       :copy_component="true"
       @projectUpdated="refreshProject"
     />
     <AddComponentModal
-      ref="addComponentModal"
       v-if="role_gte_to(effective_permissions, 'admin')"
+      ref="addComponentModal"
       :project_id="project.id"
       :available_components="sortedAvailableComponents"
       @projectUpdated="refreshProject"
@@ -183,10 +184,6 @@ export default {
     ComponentActionPicker,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
-  setup() {
-    const { activePanel, togglePanel, closePanel } = useSidebar();
-    return { activePanel, togglePanel, closePanel };
-  },
   props: {
     effective_permissions: {
       type: String,
@@ -210,6 +207,10 @@ export default {
       type: Array,
       required: true,
     },
+  },
+  setup() {
+    const { activePanel, togglePanel, closePanel } = useSidebar();
+    return { activePanel, togglePanel, closePanel };
   },
   data: function () {
     return {
@@ -327,22 +328,22 @@ export default {
     handleComponentAction(actionType) {
       // Route to appropriate modal based on action type
       switch (actionType) {
-        case 'create':
+        case "create":
           if (this.$refs.newComponentModal) {
             this.$refs.newComponentModal.showModal();
           }
           break;
-        case 'import':
+        case "import":
           if (this.$refs.importComponentModal) {
             this.$refs.importComponentModal.showModal();
           }
           break;
-        case 'copy':
+        case "copy":
           if (this.$refs.copyComponentModal) {
             this.$refs.copyComponentModal.showModal();
           }
           break;
-        case 'overlay':
+        case "overlay":
           if (this.$refs.addComponentModal) {
             this.$refs.addComponentModal.showModal();
           }
@@ -377,7 +378,9 @@ export default {
         .then((_res) => {
           // Once it is validated that there is content to download, prompt
           // the user to save the file
-          window.open(`/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`);
+          window.open(
+            `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`,
+          );
         })
         .catch(this.alertOrNotifyResponse);
     },

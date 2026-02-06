@@ -44,12 +44,16 @@
           @hidden="cancelEnableAdvanced"
         >
           <p>
-            Advanced fields provide additional control over rule metadata.
-            Most users do not need to modify these fields.
+            Advanced fields provide additional control over rule metadata. Most users do not need to
+            modify these fields.
           </p>
           <p class="mb-0">Are you sure you want to enable advanced fields?</p>
           <template #modal-footer="{ ok, cancel }">
-            <b-button variant="secondary" data-testid="advanced-fields-cancel-btn" @click="cancel()">
+            <b-button
+              variant="secondary"
+              data-testid="advanced-fields-cancel-btn"
+              @click="cancel()"
+            >
               Cancel
             </b-button>
             <b-button variant="primary" data-testid="advanced-fields-confirm-btn" @click="ok()">

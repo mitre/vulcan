@@ -11,15 +11,15 @@
     <!-- Hide table headings since modal has title -->
     <div class="memberships-modal-wrapper">
       <MembershipsTable
-      :editable="isEditable"
-      membership_type="Project"
-      :membership_id="project.id"
-      :memberships="project.memberships"
-      :memberships_count="project.memberships_count"
-      :available_members="project.available_members"
-      :available_roles="availableRoles"
-      :access_requests="project.access_requests"
-    />
+        :editable="isEditable"
+        membership_type="Project"
+        :membership_id="project.id"
+        :memberships="project.memberships"
+        :memberships_count="project.memberships_count"
+        :available_members="project.available_members"
+        :available_roles="availableRoles"
+        :access_requests="project.access_requests"
+      />
     </div>
   </b-modal>
 </template>

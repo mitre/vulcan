@@ -2,127 +2,113 @@
   <BaseCommandBar>
     <!-- Left: Actions (Edit/View, Members, Release) -->
     <template #left>
-        <!-- VIEW mode: Show Edit button -->
-        <b-button
-          v-if="readOnly && canEdit"
-          variant="primary"
-          size="sm"
-          class="mr-2"
-          :href="`/components/${component.id}/edit`"
-        >
-          <b-icon icon="pencil" /> Edit
-        </b-button>
-        <!-- EDIT mode: Show View button -->
-        <b-button
-          v-if="!readOnly && canEdit"
-          variant="outline-primary"
-          size="sm"
-          class="mr-2"
-          :href="`/components/${component.id}`"
-        >
-          <b-icon icon="eye" /> View
-        </b-button>
+      <!-- VIEW mode: Show Edit button -->
+      <b-button
+        v-if="readOnly && canEdit"
+        variant="primary"
+        size="sm"
+        class="mr-2"
+        :href="`/components/${component.id}/edit`"
+      >
+        <b-icon icon="pencil" /> Edit
+      </b-button>
+      <!-- EDIT mode: Show View button -->
+      <b-button
+        v-if="!readOnly && canEdit"
+        variant="outline-primary"
+        size="sm"
+        class="mr-2"
+        :href="`/components/${component.id}`"
+      >
+        <b-icon icon="eye" /> View
+      </b-button>
 
-        <!-- Members Button -->
-        <b-button
-          variant="outline-secondary"
-          size="sm"
-          class="mr-2"
-          @click="onOpenMembers"
-        >
-          <b-icon icon="people" /> Members
-        </b-button>
+      <!-- Members Button -->
+      <b-button variant="outline-secondary" size="sm" class="mr-2" @click="onOpenMembers">
+        <b-icon icon="people" /> Members
+      </b-button>
 
-        <!-- Release Button (with tooltip for disabled state) -->
-        <span
-          v-if="canRelease"
-          v-b-tooltip.hover
-          :title="releaseComponentTooltip"
-        >
-          <b-button
-            variant="outline-success"
-            size="sm"
-            :disabled="!isReleasable"
-            @click="onRelease"
-          >
-            <b-icon icon="patch-check" /> Release
-          </b-button>
-        </span>
+      <!-- Release Button (with tooltip for disabled state) -->
+      <span v-if="canRelease" v-b-tooltip.hover :title="releaseComponentTooltip">
+        <b-button variant="outline-success" size="sm" :disabled="!isReleasable" @click="onRelease">
+          <b-icon icon="patch-check" /> Release
+        </b-button>
+      </span>
     </template>
 
     <!-- Right: Panel Toggles -->
     <template #right>
-        <!-- Component Panels (component-level info, always available) -->
-        <b-button-group size="sm">
-          <b-button
-            :variant="isPanelActive('details') ? 'secondary' : 'outline-secondary'"
-            @click="onTogglePanel('details')"
-          >
-            <b-icon icon="info-circle" /> {{ labels.details }}
-          </b-button>
-          <b-button
-            :variant="isPanelActive('metadata') ? 'secondary' : 'outline-secondary'"
-            @click="onTogglePanel('metadata')"
-          >
-            <b-icon icon="tags" /> {{ labels.metadata }}
-          </b-button>
-          <b-button
-            :variant="isPanelActive('questions') ? 'secondary' : 'outline-secondary'"
-            @click="onTogglePanel('questions')"
-          >
-            <b-icon icon="question-circle" /> {{ labels.questions }}
-          </b-button>
-          <b-button
-            :variant="isPanelActive('comp-history') ? 'secondary' : 'outline-secondary'"
-            @click="onTogglePanel('comp-history')"
-          >
-            <b-icon icon="clock-history" /> {{ labels.compHistory }}
-          </b-button>
-          <b-button
-            :variant="isPanelActive('comp-reviews') ? 'secondary' : 'outline-secondary'"
-            @click="onTogglePanel('comp-reviews')"
-          >
-            <b-icon icon="chat-left-text" /> {{ labels.compReviews }}
-          </b-button>
-        </b-button-group>
-        <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
+      <!-- Component Panels (component-level info, always available) -->
+      <b-button-group size="sm">
+        <b-button
+          :variant="isPanelActive('details') ? 'secondary' : 'outline-secondary'"
+          @click="onTogglePanel('details')"
+        >
+          <b-icon icon="info-circle" /> {{ labels.details }}
+        </b-button>
+        <b-button
+          :variant="isPanelActive('metadata') ? 'secondary' : 'outline-secondary'"
+          @click="onTogglePanel('metadata')"
+        >
+          <b-icon icon="tags" /> {{ labels.metadata }}
+        </b-button>
+        <b-button
+          :variant="isPanelActive('questions') ? 'secondary' : 'outline-secondary'"
+          @click="onTogglePanel('questions')"
+        >
+          <b-icon icon="question-circle" /> {{ labels.questions }}
+        </b-button>
+        <b-button
+          :variant="isPanelActive('comp-history') ? 'secondary' : 'outline-secondary'"
+          @click="onTogglePanel('comp-history')"
+        >
+          <b-icon icon="clock-history" /> {{ labels.compHistory }}
+        </b-button>
+        <b-button
+          :variant="isPanelActive('comp-reviews') ? 'secondary' : 'outline-secondary'"
+          @click="onTogglePanel('comp-reviews')"
+        >
+          <b-icon icon="chat-left-text" /> {{ labels.compReviews }}
+        </b-button>
+      </b-button-group>
+      <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
     </template>
 
     <!-- Rule Context Bar (shown when rule is selected) -->
     <template #below>
       <div v-if="hasSelectedRule" class="rule-context-bar mt-3 pt-3 pb-3 border-top">
-      <div class="d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center">
-          <h5 class="mb-0 mr-2">
-            <b-icon
-              v-if="selectedRule.locked"
-              icon="lock"
-              aria-hidden="true"
-              class="text-warning"
-            />
-            <b-icon
-              v-if="selectedRule.review_requestor_id"
-              icon="file-earmark-search"
-              aria-hidden="true"
-              class="text-info"
-            />
-            <b-icon
-              v-if="selectedRule.changes_requested"
-              icon="exclamation-triangle"
-              aria-hidden="true"
-              class="text-danger"
-            />
-            <a class="text-dark" :href="ruleUrl">
-              {{ ruleDisplayId }}
-            </a>
-            <small class="text-muted ml-1">// {{ selectedRule.version }}</small>
-          </h5>
-          <small v-if="lastEditor" class="text-muted">
-            Updated {{ friendlyDateTime(selectedRule.updated_at) }} by {{ lastEditor }}
-          </small>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <h5 class="mb-0 mr-2">
+              <b-icon
+                v-if="selectedRule.locked"
+                icon="lock"
+                aria-hidden="true"
+                class="text-warning"
+              />
+              <b-icon
+                v-if="selectedRule.review_requestor_id"
+                icon="file-earmark-search"
+                aria-hidden="true"
+                class="text-info"
+              />
+              <b-icon
+                v-if="selectedRule.changes_requested"
+                icon="exclamation-triangle"
+                aria-hidden="true"
+                class="text-danger"
+              />
+              <a class="text-dark" :href="ruleUrl">
+                {{ ruleDisplayId }}
+              </a>
+              <small class="text-muted ml-1">// {{ selectedRule.version }}</small>
+            </h5>
+            <small v-if="lastEditor" class="text-muted">
+              Updated {{ friendlyDateTime(selectedRule.updated_at) }} by {{ lastEditor }}
+            </small>
+          </div>
         </div>
       </div>
-    </div>
     </template>
   </BaseCommandBar>
 </template>
@@ -137,11 +123,6 @@ export default {
   name: "ControlsCommandBar",
   components: { BaseCommandBar },
   mixins: [RoleComparisonMixin, DateFormatMixinVue],
-  data() {
-    return {
-      labels: PANEL_LABELS,
-    };
-  },
   props: {
     component: {
       type: Object,
@@ -163,6 +144,11 @@ export default {
       type: Boolean,
       default: true,
     },
+  },
+  data() {
+    return {
+      labels: PANEL_LABELS,
+    };
   },
   computed: {
     canEdit() {

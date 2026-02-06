@@ -162,11 +162,14 @@ export default {
   },
   computed: {
     check: function () {
-      return (
+      const targetRule =
         this.rule.satisfied_by && this.rule.satisfied_by.length > 0
           ? this.rule.satisfied_by[0]
-          : this.rule
-      ).checks_attributes[0];
+          : this.rule;
+
+      return targetRule && targetRule.checks_attributes && targetRule.checks_attributes.length > 0
+        ? targetRule.checks_attributes[0]
+        : {};
     },
     tooltips: function () {
       // Rules with satisfied_by behave like Applicable - Configurable

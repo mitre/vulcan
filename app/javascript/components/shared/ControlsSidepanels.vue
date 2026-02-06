@@ -31,9 +31,7 @@
           <p class="mb-2"><strong>PoC Name:</strong> {{ component.admin_name || "Not set" }}</p>
         </div>
         <div>
-          <p class="mb-2">
-            <strong>PoC Email:</strong> {{ component.admin_email || "Not set" }}
-          </p>
+          <p class="mb-2"><strong>PoC Email:</strong> {{ component.admin_email || "Not set" }}</p>
         </div>
         <UpdateComponentDetailsModal
           v-if="canAdmin"
@@ -56,7 +54,10 @@
     >
       <div class="px-3 py-2">
         <small
-          v-if="canAdmin && (!component.metadata || !component.metadata.hasOwnProperty('Slack Channel ID'))"
+          v-if="
+            canAdmin &&
+            (!component.metadata || !component.metadata.hasOwnProperty('Slack Channel ID'))
+          "
           class="text-muted d-block mb-3"
         >
           For Slack notifications, add metadata with key "Slack Channel ID".
@@ -125,11 +126,7 @@
       @hidden="$emit('close-panel')"
     >
       <div class="px-3 py-2">
-        <History
-          :histories="component.histories"
-          :revertable="false"
-          abbreviate-type="BaseRule"
-        />
+        <History :histories="component.histories" :revertable="false" abbreviate-type="BaseRule" />
       </div>
     </b-sidebar>
 

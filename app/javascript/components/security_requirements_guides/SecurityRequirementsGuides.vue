@@ -42,7 +42,7 @@ export default {
   components: {
     BaseCommandBar,
     SecurityRequirementsGuidesTable,
-    SecurityRequirementsGuidesUpload
+    SecurityRequirementsGuidesUpload,
   },
   mixins: [AlertMixinVue],
   props: {
@@ -63,7 +63,7 @@ export default {
   },
   computed: {
     breadcrumbs() {
-      return [{ text: 'SRGs', active: true }];
+      return [{ text: "SRGs", active: true }];
     },
   },
   mounted: function () {

@@ -2,84 +2,76 @@
   <BaseCommandBar>
     <!-- Left: Actions -->
     <template #left>
-        <!-- New Component Button (admin only) -->
-        <b-button
-          v-if="isAdmin"
-          variant="primary"
-          size="sm"
-          class="mr-2"
-          data-testid="new-component-btn"
-          @click="$emit('new-component')"
-        >
-          <b-icon icon="plus" /> New Component
-        </b-button>
+      <!-- New Component Button (admin only) -->
+      <b-button
+        v-if="isAdmin"
+        variant="primary"
+        size="sm"
+        class="mr-2"
+        data-testid="new-component-btn"
+        @click="$emit('new-component')"
+      >
+        <b-icon icon="plus" /> New Component
+      </b-button>
 
-        <!-- Members Button (opens modal) -->
-        <b-button
-          variant="outline-secondary"
-          size="sm"
-          class="mr-2"
-          data-testid="members-btn"
-          @click="$emit('open-members')"
-        >
-          <b-icon icon="people" /> Members
-        </b-button>
+      <!-- Members Button (opens modal) -->
+      <b-button
+        variant="outline-secondary"
+        size="sm"
+        class="mr-2"
+        data-testid="members-btn"
+        @click="$emit('open-members')"
+      >
+        <b-icon icon="people" /> Members
+      </b-button>
 
-        <!-- Download Button -->
-        <b-button
-          variant="outline-secondary"
-          size="sm"
-          class="mr-2"
-          data-testid="download-btn"
-          @click="$emit('download')"
-        >
-          <b-icon icon="download" /> Download
-        </b-button>
+      <!-- Download Button -->
+      <b-button
+        variant="outline-secondary"
+        size="sm"
+        class="mr-2"
+        data-testid="download-btn"
+        @click="$emit('download')"
+      >
+        <b-icon icon="download" /> Download
+      </b-button>
 
-        <!-- Visibility Toggle (admin only) - placed last for better responsive wrapping -->
-        <div
-          v-if="isAdmin"
-          data-testid="visibility-toggle"
-        >
-          <b-form-checkbox
-            v-model="localVisibility"
-            switch
-            size="sm"
-            @change="onVisibilityToggle"
-          >
-            <small>{{ localVisibility ? 'Discoverable' : 'Hidden' }}</small>
-          </b-form-checkbox>
-        </div>
+      <!-- Visibility Toggle (admin only) - placed last for better responsive wrapping -->
+      <div v-if="isAdmin" data-testid="visibility-toggle">
+        <b-form-checkbox v-model="localVisibility" switch size="sm" @change="onVisibilityToggle">
+          <small>{{ localVisibility ? "Discoverable" : "Hidden" }}</small>
+        </b-form-checkbox>
+      </div>
     </template>
 
     <!-- Right: Panel Toggles -->
     <template #right>
-        <b-button-group size="sm">
-          <b-button
-            :variant="isPanelActive('proj-details') ? 'secondary' : 'outline-secondary'"
-            @click="$emit('toggle-panel', 'proj-details')"
-          >
-            <b-icon icon="info-circle" /> Details
-          </b-button>
-          <b-button
-            :variant="isPanelActive('proj-metadata') ? 'secondary' : 'outline-secondary'"
-            @click="$emit('toggle-panel', 'proj-metadata')"
-          >
-            <b-icon icon="tags" /> Metadata
-          </b-button>
-          <b-button
-            :variant="isPanelActive('proj-history') ? 'secondary' : 'outline-secondary'"
-            @click="$emit('toggle-panel', 'proj-history')"
-          >
-            <b-icon icon="clock-history" /> Activity
-          </b-button>
-          <b-button
-            :variant="isPanelActive('proj-revision-history') ? 'secondary' : 'outline-secondary'"
-            @click="$emit('toggle-panel', 'proj-revision-history')"
-          >
-            <b-icon icon="journal-text" /> Revisions
-          </b-button>
-        </b-button-group>
+      <b-button-group size="sm">
+        <b-button
+          :variant="isPanelActive('proj-details') ? 'secondary' : 'outline-secondary'"
+          @click="$emit('toggle-panel', 'proj-details')"
+        >
+          <b-icon icon="info-circle" /> Details
+        </b-button>
+        <b-button
+          :variant="isPanelActive('proj-metadata') ? 'secondary' : 'outline-secondary'"
+          @click="$emit('toggle-panel', 'proj-metadata')"
+        >
+          <b-icon icon="tags" /> Metadata
+        </b-button>
+        <b-button
+          :variant="isPanelActive('proj-history') ? 'secondary' : 'outline-secondary'"
+          @click="$emit('toggle-panel', 'proj-history')"
+        >
+          <b-icon icon="clock-history" /> Activity
+        </b-button>
+        <b-button
+          :variant="isPanelActive('proj-revision-history') ? 'secondary' : 'outline-secondary'"
+          @click="$emit('toggle-panel', 'proj-revision-history')"
+        >
+          <b-icon icon="journal-text" /> Revisions
+        </b-button>
+      </b-button-group>
     </template>
   </BaseCommandBar>
 </template>

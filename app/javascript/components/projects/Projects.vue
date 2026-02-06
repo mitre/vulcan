@@ -64,7 +64,7 @@ export default {
   },
   computed: {
     breadcrumbs() {
-      return [{ text: 'Projects', active: true }];
+      return [{ text: "Projects", active: true }];
     },
   },
   methods: {

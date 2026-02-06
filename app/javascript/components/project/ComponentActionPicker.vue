@@ -1,10 +1,5 @@
 <template>
-  <b-modal
-    :visible="visible"
-    title="Add Component"
-    centered
-    @hidden="onHidden"
-  >
+  <b-modal :visible="visible" title="Add Component" centered @hidden="onHidden">
     <!-- Option Selection -->
     <div>
       <p class="mb-3">Choose how you want to add a component to this project:</p>
@@ -54,11 +49,7 @@
 
     <!-- Footer -->
     <template #modal-footer>
-      <b-button
-        variant="outline-secondary"
-        data-testid="cancel-btn"
-        @click="onCancel"
-      >
+      <b-button variant="outline-secondary" data-testid="cancel-btn" @click="onCancel">
         Cancel
       </b-button>
       <b-button

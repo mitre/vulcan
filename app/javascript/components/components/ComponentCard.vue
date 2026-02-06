@@ -71,11 +71,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <!-- Primary Action Button -->
-            <b-button
-              :href="`/components/${component.id}`"
-              variant="primary"
-              size="sm"
-            >
+            <b-button :href="`/components/${component.id}`" variant="primary" size="sm">
               <b-icon icon="box-arrow-up-right" class="mr-1" />
               Open Component
             </b-button>

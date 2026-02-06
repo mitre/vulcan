@@ -3,17 +3,17 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap">
       <!-- Left: Page-specific actions -->
       <div class="d-flex align-items-center">
-        <slot name="left"></slot>
+        <slot name="left" />
       </div>
 
       <!-- Right: Panel toggles and secondary actions -->
       <div class="d-flex align-items-center">
-        <slot name="right"></slot>
+        <slot name="right" />
       </div>
     </div>
 
     <!-- Below: Content that appears on next line (e.g., Rule Context Bar) -->
-    <slot name="below"></slot>
+    <slot name="below" />
   </div>
 </template>
 

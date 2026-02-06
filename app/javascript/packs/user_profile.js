@@ -7,7 +7,7 @@ Vue.use(TurbolinksAdapter);
 Vue.use(BootstrapVue);
 Vue.use(IconsPlugin);
 
-Vue.component("userprofile", UserProfile);
+Vue.component("Userprofile", UserProfile);
 
 document.addEventListener("turbolinks:load", () => {
   new Vue({

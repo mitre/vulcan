@@ -8,10 +8,18 @@
       <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'satisfies')">
         <b-icon icon="diagram-3" /> Satisfies
       </b-button>
-      <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'rule-history')">
+      <b-button
+        variant="outline-secondary"
+        size="sm"
+        @click="$emit('toggle-panel', 'rule-history')"
+      >
         <b-icon icon="clock-history" /> History
       </b-button>
-      <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'rule-reviews')">
+      <b-button
+        variant="outline-secondary"
+        size="sm"
+        @click="$emit('toggle-panel', 'rule-reviews')"
+      >
         <b-icon icon="chat-left-text" /> Reviews
       </b-button>
 
@@ -106,11 +114,6 @@ export default {
   components: {
     CommentModal,
   },
-  data() {
-    return {
-      msg: MESSAGE_LABELS,
-    };
-  },
   props: {
     rule: {
       type: Object,
@@ -124,6 +127,11 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  data() {
+    return {
+      msg: MESSAGE_LABELS,
+    };
   },
   computed: {
     isReadOnly() {

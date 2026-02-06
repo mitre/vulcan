@@ -23,9 +23,7 @@
     <!-- Confirmation State -->
     <div v-else>
       <p class="mb-2">{{ displayConfirmMessage }}</p>
-      <p v-if="itemName" class="mb-0 font-weight-bold">
-        "{{ itemName }}"
-      </p>
+      <p v-if="itemName" class="mb-0 font-weight-bold">"{{ itemName }}"</p>
       <p v-if="warningMessage" class="text-muted mt-3 mb-0">
         <small><b-icon icon="info-circle" class="mr-1" />{{ warningMessage }}</small>
       </p>
@@ -48,7 +46,7 @@
         @click="onConfirm"
       >
         <b-spinner v-if="isDeleting" small class="mr-1" />
-        {{ isDeleting ? 'Removing...' : confirmButtonText }}
+        {{ isDeleting ? "Removing..." : confirmButtonText }}
       </b-button>
     </template>
   </b-modal>

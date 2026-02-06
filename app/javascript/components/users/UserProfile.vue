@@ -5,14 +5,9 @@
     <!-- Command Bar -->
     <BaseCommandBar>
       <template #left>
-        <b-button
-          variant="primary"
-          size="sm"
-          :disabled="saving"
-          @click="saveProfile"
-        >
+        <b-button variant="primary" size="sm" :disabled="saving" @click="saveProfile">
           <b-spinner v-if="saving" small class="mr-1" />
-          <b-icon v-else icon="check" /> {{ saving ? 'Saving...' : 'Save Profile' }}
+          <b-icon v-else icon="check" /> {{ saving ? "Saving..." : "Save Profile" }}
         </b-button>
       </template>
       <template #right>
@@ -24,11 +19,7 @@
             <b-icon icon="clock-history" /> My Activity
           </b-button>
         </b-button-group>
-        <b-button
-          variant="outline-danger"
-          size="sm"
-          @click="openDeleteAccount"
-        >
+        <b-button variant="outline-danger" size="sm" @click="openDeleteAccount">
           <b-icon icon="trash" /> Delete Account
         </b-button>
       </template>
@@ -36,11 +27,14 @@
 
     <b-alert show :variant="isProviderManaged ? 'info' : 'success'" class="mb-3">
       <b-icon icon="shield-check" /> Authenticated via <strong>{{ authProvider }}</strong>
-      <span v-if="isProviderManaged"> - Some settings are managed externally and cannot be changed here.</span>
+      <span v-if="isProviderManaged">
+        - Some settings are managed externally and cannot be changed here.</span
+      >
     </b-alert>
 
     <b-alert v-if="isPendingConfirmation" show variant="warning" class="mb-3">
-      <b-icon icon="exclamation-triangle" /> Your email address is pending confirmation. Check your email for the confirmation link.
+      <b-icon icon="exclamation-triangle" /> Your email address is pending confirmation. Check your
+      email for the confirmation link.
     </b-alert>
 
     <b-row>
@@ -102,10 +96,7 @@
                 />
               </b-form-group>
 
-              <b-form-group
-                label="Confirm New Password"
-                label-for="user-password-confirmation"
-              >
+              <b-form-group label="Confirm New Password" label-for="user-password-confirmation">
                 <b-form-input
                   id="user-password-confirmation"
                   v-model="form.password_confirmation"
@@ -145,7 +136,8 @@
     >
       <div class="px-3 py-2">
         <p v-if="userHistories.length === 0" class="text-muted">
-          No activity yet. Your actions (creating projects, editing components, etc.) will appear here.
+          No activity yet. Your actions (creating projects, editing components, etc.) will appear
+          here.
         </p>
         <History v-else :histories="userHistories" :revertable="false" />
       </div>
@@ -178,10 +170,6 @@ export default {
   name: "UserProfile",
   components: { BaseCommandBar, ConfirmDeleteModal, History },
   mixins: [FormMixinVue, AlertMixinVue],
-  setup() {
-    const { activePanel, togglePanel, closePanel } = useSidebar();
-    return { activePanel, togglePanel, closePanel };
-  },
   props: {
     user: {
       type: Object,
@@ -192,15 +180,19 @@ export default {
       default: () => [],
     },
   },
+  setup() {
+    const { activePanel, togglePanel, closePanel } = useSidebar();
+    return { activePanel, togglePanel, closePanel };
+  },
   data() {
     return {
       form: {
-        name: this.user.name || '',
-        email: this.user.email || '',
-        slack_user_id: this.user.slack_user_id || '',
-        password: '',
-        password_confirmation: '',
-        current_password: '',
+        name: this.user.name || "",
+        email: this.user.email || "",
+        slack_user_id: this.user.slack_user_id || "",
+        password: "",
+        password_confirmation: "",
+        current_password: "",
       },
       saving: false,
       showDeleteModal: false,
@@ -210,15 +202,15 @@ export default {
   computed: {
     breadcrumbs() {
       return [
-        { text: 'Users', href: '/users' },
-        { text: 'Profile', active: true }
+        { text: "Users", href: "/users" },
+        { text: "Profile", active: true },
       ];
     },
     isProviderManaged() {
       return !!this.user.provider;
     },
     authProvider() {
-      if (!this.user.provider) return 'Local';
+      if (!this.user.provider) return "Local";
       // Capitalize first letter
       return this.user.provider.charAt(0).toUpperCase() + this.user.provider.slice(1);
     },
@@ -230,7 +222,7 @@ export default {
     },
     userHistories() {
       // Filter histories to only show actions by this user
-      return this.histories.filter(h => h.user_id === this.user.id);
+      return this.histories.filter((h) => h.user_id === this.user.id);
     },
   },
   methods: {
@@ -240,20 +232,20 @@ export default {
       this.saving = true;
       try {
         const response = await axios.put(`/users`, {
-          user: this.form
+          user: this.form,
         });
         this.alertOrNotifyResponse(response);
         // Clear password fields after successful save
-        this.form.password = '';
-        this.form.password_confirmation = '';
-        this.form.current_password = '';
+        this.form.password = "";
+        this.form.password_confirmation = "";
+        this.form.current_password = "";
       } catch (error) {
         this.alertOrNotifyResponse(error);
         // Auto-focus the current password field if that's the error
         const errorMsg = error.response?.data?.toast?.message;
-        if (errorMsg && errorMsg.some(msg => msg.includes("Current password"))) {
+        if (errorMsg && errorMsg.some((msg) => msg.includes("Current password"))) {
           this.$nextTick(() => {
-            const input = document.getElementById('user-current-password');
+            const input = document.getElementById("user-current-password");
             if (input) input.focus();
           });
         }
@@ -267,9 +259,9 @@ export default {
     async confirmDeleteAccount() {
       this.isDeleting = true;
       try {
-        await axios.delete('/users');
+        await axios.delete("/users");
         // Redirect to home after account deletion
-        window.location.href = '/';
+        window.location.href = "/";
       } catch (error) {
         this.alertOrNotifyResponse(error);
         this.isDeleting = false;

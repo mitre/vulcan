@@ -47,10 +47,6 @@ import { useSidebar } from "../../composables";
 export default {
   name: "Users",
   components: { UsersTable, History, BaseCommandBar },
-  setup() {
-    const { activePanel, togglePanel, closePanel } = useSidebar();
-    return { activePanel, togglePanel, closePanel };
-  },
   props: {
     users: {
       type: Array,
@@ -61,9 +57,13 @@ export default {
       required: true,
     },
   },
+  setup() {
+    const { activePanel, togglePanel, closePanel } = useSidebar();
+    return { activePanel, togglePanel, closePanel };
+  },
   computed: {
     breadcrumbs() {
-      return [{ text: 'Users', active: true }];
+      return [{ text: "Users", active: true }];
     },
     isPanelActive() {
       return (panel) => this.activePanel === panel;

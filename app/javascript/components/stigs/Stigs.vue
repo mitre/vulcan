@@ -46,7 +46,7 @@ export default {
   components: {
     BaseCommandBar,
     SecurityRequirementsGuidesTable,
-    SecurityRequirementsGuidesUpload
+    SecurityRequirementsGuidesUpload,
   },
   mixins: [AlertMixinVue],
   props: {
@@ -67,7 +67,7 @@ export default {
   },
   computed: {
     breadcrumbs() {
-      return [{ text: 'STIGs', active: true }];
+      return [{ text: "STIGs", active: true }];
     },
   },
   mounted: function () {

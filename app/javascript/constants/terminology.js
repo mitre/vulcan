@@ -10,29 +10,29 @@
 
 // Primary entity terms
 export const RULE_TERM = {
-  singular: 'Rule',
-  plural: 'Rules',
-  label: 'Rule', // For button/panel labels like "Rule History"
+  singular: "Rule",
+  plural: "Rules",
+  label: "Rule", // For button/panel labels like "Rule History"
 };
 
 export const COMPONENT_TERM = {
-  singular: 'Component',
-  plural: 'Components',
-  label: 'Comp', // Abbreviated for button labels
-  labelFull: 'Component', // Full form for sidebar titles
+  singular: "Component",
+  plural: "Components",
+  label: "Comp", // Abbreviated for button labels
+  labelFull: "Component", // Full form for sidebar titles
 };
 
 // Panel button labels (used in ControlsCommandBar)
 export const PANEL_LABELS = {
   // Component panels (always available)
-  details: 'Details',
-  metadata: 'Metadata',
-  questions: 'Questions',
+  details: "Details",
+  metadata: "Metadata",
+  questions: "Questions",
   compHistory: `${COMPONENT_TERM.label} Activity`,
   compReviews: `${COMPONENT_TERM.label} Reviews`,
 
   // Rule panels (require selected rule)
-  satisfies: 'Satisfies',
+  satisfies: "Satisfies",
   ruleHistory: `${RULE_TERM.label} History`,
   ruleReviews: `${RULE_TERM.label} Reviews`,
 };
@@ -41,10 +41,10 @@ export const PANEL_LABELS = {
 export const SIDEBAR_TITLES = {
   details: `${COMPONENT_TERM.labelFull} Details`,
   metadata: `${COMPONENT_TERM.labelFull} Metadata`,
-  questions: 'Additional Questions',
+  questions: "Additional Questions",
   compHistory: `${COMPONENT_TERM.labelFull} Activity`,
   compReviews: `${COMPONENT_TERM.labelFull} Reviews`,
-  satisfies: 'Also Satisfies',
+  satisfies: "Also Satisfies",
   ruleHistory: `${RULE_TERM.singular} History`,
   ruleReviews: `${RULE_TERM.singular} Reviews`,
 };
@@ -56,9 +56,9 @@ export const ACTION_LABELS = {
   delete: `Delete ${RULE_TERM.singular}`,
   lock: `Lock ${RULE_TERM.singular}`,
   unlock: `Unlock ${RULE_TERM.singular}`,
-  comment: 'Comment',
-  review: 'Review',
-  related: 'Related',
+  comment: "Comment",
+  review: "Review",
+  related: "Related",
 };
 
 // Navigator labels (used in RuleNavigator sidebar)
@@ -114,27 +114,27 @@ export const ROLE_DESCRIPTIONS = [
 // Review action labels (used in RuleEditorHeader review workflow)
 export const REVIEW_ACTION_LABELS = {
   requestReview: {
-    name: 'Request Review',
+    name: "Request Review",
     description: `${RULE_TERM.singular.toLowerCase()} will not be editable during the review process`,
     alreadyUnderReview: `${RULE_TERM.singular} is already under review`,
     isLocked: `${RULE_TERM.singular} is currently locked`,
   },
   revokeReview: {
-    name: 'Revoke Review Request',
+    name: "Revoke Review Request",
     description: `revoke your request for review - ${RULE_TERM.singular.toLowerCase()} will be editable again`,
-    notAllowed: 'Only an admin or the review requestor can revoke the current review request',
+    notAllowed: "Only an admin or the review requestor can revoke the current review request",
     notUnderReview: `${RULE_TERM.singular} is not currently under review`,
   },
   requestChanges: {
-    name: 'Request Changes',
+    name: "Request Changes",
     description: `request changes on the ${RULE_TERM.singular.toLowerCase()} - ${RULE_TERM.singular.toLowerCase()} will be editable again`,
-    notAllowed: 'Only an admin or reviewer can request changes',
+    notAllowed: "Only an admin or reviewer can request changes",
     notUnderReview: `${RULE_TERM.singular} is not currently under review`,
   },
   approve: {
-    name: 'Approve',
+    name: "Approve",
     description: `approve the ${RULE_TERM.singular.toLowerCase()} - ${RULE_TERM.singular.toLowerCase()} will become locked`,
-    notAllowed: 'Only an admin or reviewer can approve',
+    notAllowed: "Only an admin or reviewer can approve",
     notUnderReview: `${RULE_TERM.singular} is not currently under review`,
   },
   lock: {
