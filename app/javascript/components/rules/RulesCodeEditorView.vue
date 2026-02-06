@@ -216,10 +216,6 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import Multiselect from "vue-multiselect";
-import History from "../shared/History.vue";
-import UpdateComponentDetailsModal from "../components/UpdateComponentDetailsModal.vue";
-import UpdateMetadataModal from "../components/UpdateMetadataModal.vue";
-import AddQuestionsModal from "../components/AddQuestionsModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
@@ -229,9 +225,6 @@ export default {
   components: {
     RuleNavigator,
     RuleEditor,
-    RuleHistories,
-    RuleReviews,
-    RuleSatisfactions,
     RelatedRulesModal,
     RuleReviewModal,
     RuleFilterBar,
@@ -240,10 +233,6 @@ export default {
     ControlsPageLayout,
     NewRuleModalForm,
     Multiselect,
-    History,
-    UpdateComponentDetailsModal,
-    UpdateMetadataModal,
-    AddQuestionsModal,
     ControlsSidepanels,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin],
@@ -547,7 +536,7 @@ export default {
         .then((response) => {
           this.alertOrNotifyResponse(response);
           // Update local component state for reactivity
-          this.component.advanced_fields = advancedFields;
+          this.$set(this.component, "advanced_fields", advancedFields);
         })
         .catch(this.alertOrNotifyResponse);
     },
@@ -599,18 +588,13 @@ export default {
       this.selectedSatisfiesRuleIds = [];
     },
     refreshComponent() {
-      console.log("refreshComponent called, fetching:", `/components/${this.component.id}.json`);
       axios
         .get(`/components/${this.component.id}.json`)
         .then((response) => {
-          console.log("refreshComponent response:", response.data);
           // Update component properties in-place for Vue reactivity
           Object.assign(this.component, response.data);
-          console.log("Component after update:", this.component.name);
         })
-        .catch((error) => {
-          console.error("Failed to refresh component:", error);
-        });
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };

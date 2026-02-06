@@ -226,7 +226,7 @@ export default {
         // srg_rules: keep full objects for rule_id display
         this.srgRules = response.data.srg_rules || [];
       } catch (error) {
-        console.error("Search failed:", error);
+        // Search failed silently — clear results to avoid stale data
         this.projects = [];
         this.components = [];
         this.rules = [];

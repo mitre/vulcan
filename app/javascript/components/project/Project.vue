@@ -150,15 +150,10 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { useSidebar } from "../../composables";
-import History from "../shared/History.vue";
-import MembershipsTable from "../memberships/MembershipsTable.vue";
-import UpdateMetadataModal from "./UpdateMetadataModal.vue";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 import DiffViewer from "./DiffViewer.vue";
-import RevisionHistory from "./RevisionHistory.vue";
-import UpdateProjectDetailsModal from "../projects/UpdateProjectDetailsModal.vue";
 import ProjectCommandBar from "./ProjectCommandBar.vue";
 import ProjectSidepanels from "./ProjectSidepanels.vue";
 import ExportModal from "../shared/ExportModal.vue";
@@ -168,15 +163,10 @@ import ComponentActionPicker from "./ComponentActionPicker.vue";
 export default {
   name: "Project",
   components: {
-    History,
-    MembershipsTable,
-    UpdateMetadataModal,
     ComponentCard,
     AddComponentModal,
     NewComponentModal,
     DiffViewer,
-    RevisionHistory,
-    UpdateProjectDetailsModal,
     ProjectCommandBar,
     ProjectSidepanels,
     ExportModal,

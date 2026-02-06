@@ -125,16 +125,9 @@ import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import RuleFilterBar from "../rules/RuleFilterBar.vue";
 import RuleNavigator from "../rules/RuleNavigator.vue";
 import RuleEditor from "../rules/RuleEditor.vue";
-import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
-import RuleReviews from "../rules/RuleReviews.vue";
-import RuleHistories from "../rules/RuleHistories.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
-import History from "../shared/History.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import MembersModal from "./MembersModal.vue";
-import UpdateComponentDetailsModal from "./UpdateComponentDetailsModal.vue";
-import UpdateMetadataModal from "./UpdateMetadataModal.vue";
-import AddQuestionsModal from "./AddQuestionsModal.vue";
 
 export default {
   name: "ProjectComponent",
@@ -144,16 +137,9 @@ export default {
     RuleFilterBar,
     RuleNavigator,
     RuleEditor,
-    RuleSatisfactions,
-    RuleReviews,
-    RuleHistories,
     RelatedRulesModal,
-    History,
     ControlsSidepanels,
     MembersModal,
-    UpdateComponentDetailsModal,
-    UpdateMetadataModal,
-    AddQuestionsModal,
   },
   mixins: [
     DateFormatMixinVue,
@@ -306,7 +292,7 @@ export default {
           Object.assign(this.component, response.data);
         })
         .catch((error) => {
-          console.error("Failed to refresh component:", error);
+          this.alertOrNotifyResponse(error);
         });
     },
     toggleAdvancedFields(advanced_fields) {
