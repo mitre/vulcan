@@ -9,6 +9,8 @@ import {
   MESSAGE_LABELS,
   REVIEW_ACTION_LABELS,
   ROLE_DESCRIPTIONS,
+  SEVERITY_LABELS,
+  SEVERITY_OPTIONS,
   ruleCountLabel,
   selectedCountLabel
 } from '@/constants/terminology'
@@ -271,6 +273,57 @@ describe('terminology constants', () => {
 
     it('returns plural for count greater than 1', () => {
       expect(selectedCountLabel(5)).toBe(`5 ${RULE_TERM.plural.toLowerCase()} selected`)
+    })
+  })
+
+  // REGRESSION: Session 169 — SEVERITIES array contained "unknown" and "info"
+  // from InSpec integration (2021). These are NOT valid DISA STIG severities.
+  // Only CAT I (high), CAT II (medium), CAT III (low) are valid.
+  describe('SEVERITY_LABELS', () => {
+    it('maps only valid DISA severity values', () => {
+      expect(Object.keys(SEVERITY_LABELS)).toEqual(['high', 'medium', 'low'])
+    })
+
+    it('uses DISA CAT category labels', () => {
+      expect(SEVERITY_LABELS.high).toBe('CAT I')
+      expect(SEVERITY_LABELS.medium).toBe('CAT II')
+      expect(SEVERITY_LABELS.low).toBe('CAT III')
+    })
+
+    it('does NOT contain "unknown" or "info" (regression: InSpec values)', () => {
+      expect(SEVERITY_LABELS).not.toHaveProperty('unknown')
+      expect(SEVERITY_LABELS).not.toHaveProperty('info')
+    })
+  })
+
+  describe('SEVERITY_OPTIONS (dropdown)', () => {
+    it('has exactly 3 options for b-form-select', () => {
+      expect(SEVERITY_OPTIONS).toHaveLength(3)
+    })
+
+    it('each option has value and text properties', () => {
+      SEVERITY_OPTIONS.forEach(opt => {
+        expect(opt).toHaveProperty('value')
+        expect(opt).toHaveProperty('text')
+      })
+    })
+
+    it('maps internal values to CAT display labels', () => {
+      const values = SEVERITY_OPTIONS.map(o => o.value)
+      const texts = SEVERITY_OPTIONS.map(o => o.text)
+
+      expect(values).toContain('high')
+      expect(values).toContain('medium')
+      expect(values).toContain('low')
+      expect(texts).toContain('CAT I')
+      expect(texts).toContain('CAT II')
+      expect(texts).toContain('CAT III')
+    })
+
+    it('does NOT contain "unknown" or "info" options (regression)', () => {
+      const values = SEVERITY_OPTIONS.map(o => o.value)
+      expect(values).not.toContain('unknown')
+      expect(values).not.toContain('info')
     })
   })
 

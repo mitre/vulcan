@@ -23,8 +23,6 @@ module RuleConstants
   }.freeze
 
   SEVERITIES = %w[
-    unknown
-    info
     low
     medium
     high

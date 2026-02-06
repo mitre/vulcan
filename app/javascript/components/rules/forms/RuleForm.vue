@@ -56,16 +56,10 @@
             :id="`ruleEditor-rule_severity-top-${mod}`"
             :value="rule.rule_severity"
             :input-class="inputClass('rule_severity')"
-            :options="severities"
+            :options="severityOptions"
             :disabled="disabled || fields.disabled.includes('rule_severity')"
             @input="$root.$emit('update:rule', { ...rule, rule_severity: $event })"
-          >
-            <template v-if="!Array.isArray(severities) && !severities[rule.rule_severity]" #first>
-              <b-form-select-option :value="rule.rule_severity" disabled>{{
-                rule.rule_severity
-              }}</b-form-select-option>
-            </template>
-          </b-form-select>
+          />
           <b-form-valid-feedback v-if="hasValidFeedback('rule_severity')">
             {{ validFeedback["rule_severity"] }}
           </b-form-valid-feedback>
@@ -468,6 +462,7 @@ import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
 import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
+import { SEVERITY_OPTIONS } from "../../../constants/terminology";
 
 export default {
   name: "RuleForm",
@@ -534,6 +529,9 @@ export default {
     };
   },
   computed: {
+    severityOptions: function () {
+      return SEVERITY_OPTIONS;
+    },
     status_text: function () {
       return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
     },
@@ -549,7 +547,7 @@ export default {
         title: "Describe the vulnerability for this control",
         version: null,
         rule_severity:
-          "Unknown: severity not defined, Info: rule is informational only, CAT III (Low): not a serious problem, CAT II (Medium): fairly serious problem, CAT I (High): a grave or critical problem",
+          "CAT I (High): a grave or critical problem, CAT II (Medium): a fairly serious problem, CAT III (Low): a relatively minor problem",
         rule_weight: null,
         artifact_description:
           this.rule.status === "Not Applicable"

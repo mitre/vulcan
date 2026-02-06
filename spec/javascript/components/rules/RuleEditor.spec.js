@@ -226,6 +226,26 @@ describe('RuleEditor', () => {
       expect(helperText.text().toLowerCase()).toContain('most users')
     })
 
+    // REGRESSION: Session 169 — @hidden on b-modal fires AFTER @ok,
+    // calling cancelEnableAdvanced and resetting localAdvancedFields to false.
+    // Fix: use @close instead of @hidden. This test catches that regression.
+    it('keeps toggle ON after confirmation is accepted (regression: @hidden bug)', async () => {
+      wrapper = createWrapper({ advanced_fields: false })
+
+      // User clicks the toggle ON
+      wrapper.vm.localAdvancedFields = true
+      wrapper.vm.onAdvancedFieldsToggle(true)
+      await wrapper.vm.$nextTick()
+
+      // User clicks OK in the confirmation modal
+      wrapper.vm.confirmEnableAdvanced()
+      await wrapper.vm.$nextTick()
+
+      // Toggle MUST still be ON — the @hidden bug would reset it to false here
+      expect(wrapper.vm.localAdvancedFields).toBe(true)
+      expect(wrapper.emitted('toggle-advanced-fields')[0]).toEqual([true])
+    })
+
     it('syncs local state when prop changes (e.g., after API update)', async () => {
       wrapper = createWrapper({ advanced_fields: false })
       expect(wrapper.vm.localAdvancedFields).toBe(false)

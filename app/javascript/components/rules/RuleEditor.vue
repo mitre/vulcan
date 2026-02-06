@@ -41,7 +41,7 @@
           data-testid="advanced-fields-confirm-modal"
           @ok="confirmEnableAdvanced"
           @cancel="cancelEnableAdvanced"
-          @hidden="cancelEnableAdvanced"
+          @close="cancelEnableAdvanced"
         >
           <p>
             Advanced fields provide additional control over rule metadata. Most users do not need to

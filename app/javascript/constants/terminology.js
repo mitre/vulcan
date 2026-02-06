@@ -20,6 +20,20 @@ export const BENCHMARK_TERM = {
   plural: "Benchmarks",
 };
 
+// Severity labels — single source of truth for DISA CAT mapping
+// Internal values (low/medium/high) map to DISA CAT categories.
+// Use SEVERITY_OPTIONS for dropdowns, SEVERITY_LABELS for display.
+export const SEVERITY_LABELS = {
+  high: "CAT I",
+  medium: "CAT II",
+  low: "CAT III",
+};
+
+// Dropdown options for b-form-select (value → display label)
+export const SEVERITY_OPTIONS = Object.entries(SEVERITY_LABELS).map(
+  ([value, text]) => ({ value, text })
+);
+
 // Export file format labels (separate from document type nouns)
 export const EXPORT_FORMATS = {
   xccdf: "XCCDF-Benchmark",
