@@ -175,5 +175,81 @@ RSpec.describe Component, type: :model do
       @p1_c1.create_rule_satisfactions
       expect(@p1_c1.rules.last.satisfied_by.size).to eq(1)
     end
+
+    # Postel's Law: Be liberal in what you accept
+    # All reasonable variations of "Satisfied By" and "Satisfies" should work
+
+    it 'parses lowercase "satisfied by:"' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "satisfied by: #{pref}-#{rule_id_one}."
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(sb.reload.satisfied_by.size).to eq(1)
+    end
+
+    it 'parses uppercase "SATISFIED BY:"' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "SATISFIED BY: #{pref}-#{rule_id_one}."
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(sb.reload.satisfied_by.size).to eq(1)
+    end
+
+    it 'parses mixed case "Satisfied by:"' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "Satisfied by: #{pref}-#{rule_id_one}."
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(sb.reload.satisfied_by.size).to eq(1)
+    end
+
+    it 'parses "Satisfies:" as the reverse direction' do
+      pref = @p1_c1.prefix
+      parent = @p1_c1.rules.first
+      child = @p1_c1.rules.last
+      child.vendor_comments = "Satisfies: #{pref}-#{parent.rule_id}."
+      child.save!
+      @p1_c1.create_rule_satisfactions
+      # child satisfies parent → child.satisfies includes parent
+      expect(child.reload.satisfies.size).to eq(1)
+      expect(child.satisfies.first.id).to eq(parent.id)
+    end
+
+    it 'parses lowercase "satisfies:"' do
+      pref = @p1_c1.prefix
+      parent = @p1_c1.rules.first
+      child = @p1_c1.rules.last
+      child.vendor_comments = "satisfies: #{pref}-#{parent.rule_id}"
+      child.save!
+      @p1_c1.create_rule_satisfactions
+      expect(child.reload.satisfies.size).to eq(1)
+    end
+
+    it 'parses semicolon-separated lists' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      rule_id_two = @p1_c1.rules.second.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}; #{pref}-#{rule_id_two}."
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(sb.reload.satisfied_by.size).to eq(2)
+    end
+
+    it 'handles vendor_comments with other text before the satisfaction keyword' do
+      pref = @p1_c1.prefix
+      rule_id_one = @p1_c1.rules.first.rule_id
+      sb = @p1_c1.rules.last
+      sb.vendor_comments = "Some other comment. Satisfied By: #{pref}-#{rule_id_one}."
+      sb.save!
+      @p1_c1.create_rule_satisfactions
+      expect(sb.reload.satisfied_by.size).to eq(1)
+    end
   end
 end

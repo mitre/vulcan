@@ -352,17 +352,33 @@ class Component < ApplicationRecord
   end
 
   def create_rule_satisfactions
-    rules.where('vendor_comments LIKE ?', '%Satisfied By: %').find_each do |rule|
-      # Extract satisfied by list, removing "Satisfied By: " prefix and optional trailing period
-      vc = rule.vendor_comments.gsub('Satisfied By: ', '').sub(/\.\s*\z/, '').strip.split(/[,\s]+/).uniq
-      vc.each do |sb|
-        sb_rule_id = sb.strip.split('-').last
-        sb_rule = rules.find_by(rule_id: sb_rule_id)
-        next if sb_rule.nil?
+    # Postel's Law: Be liberal in what we accept.
+    # Match both "Satisfied By:" and "Satisfies:" in any case.
+    satisfaction_pattern = /\b(satisfi(?:ed\s+by|es))\s*:\s*/i
 
-        rule.satisfied_by << sb_rule
+    rules.where('vendor_comments ILIKE ? OR vendor_comments ILIKE ?',
+                '%satisfied by:%', '%satisfies:%').find_each do |rule|
+      match = rule.vendor_comments.match(satisfaction_pattern)
+      next unless match
+
+      direction = match[1].strip.downcase # "satisfied by" or "satisfies"
+
+      # Extract the list after the keyword, remove optional trailing period
+      list_text = rule.vendor_comments[match.end(0)..].sub(/\.\s*\z/, '').strip
+      identifiers = list_text.split(/[,;\s]+/).map(&:strip).reject(&:empty?).uniq
+
+      identifiers.each do |identifier|
+        target_rule_id = identifier.split('-').last
+        target_rule = rules.find_by(rule_id: target_rule_id)
+        next if target_rule.nil?
+
+        if direction == 'satisfied by'
+          rule.satisfied_by << target_rule
+        else
+          rule.satisfies << target_rule
+        end
         # Save the rule to trigger callbacks (update inspec)
-        sb_rule.save
+        target_rule.save
       end
     end
   end
