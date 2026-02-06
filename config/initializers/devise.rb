@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require Rails.root.join('app/lib/timeout_parser')
+
 # Use this hook to configure devise mailer, warden hooks and so forth.
 # Many of these configuration options can be set straight in your model.
 Devise.setup do |config|
@@ -157,8 +159,10 @@ Devise.setup do |config|
 
   # ==> Configuration for :timeoutable
   # The time you want to timeout the user session without activity. After this
-  # time the user will be asked for credentials again. Default is 30 minutes.
-  config.timeout_in = Settings.local_login.session_timeout.minutes
+  # time the user will be asked for credentials again.
+  # Accepts: plain seconds (900), or with suffix: 30s, 15m, 1h
+  # Default: 3600 (1 hour). DoD standard is typically 900 (15 min).
+  config.timeout_in = TimeoutParser.parse(Settings.local_login.session_timeout).seconds
 
   # ==> Configuration for :lockable
   # Defines which strategy will be used to lock an account.

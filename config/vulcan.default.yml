@@ -26,7 +26,9 @@ defaults: &defaults
   local_login:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCAL_LOGIN']) != false %>
     email_confirmation: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION']) || false %>
-    session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
+    # Accepts: plain seconds (900), or with suffix: 30s, 15m, 1h
+    # Default: 3600 (1 hour). DoD standard is typically 900 (15 min).
+    session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 3600 %>
   user_registration:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
   admin_bootstrap:
