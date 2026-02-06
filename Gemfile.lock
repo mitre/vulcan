@@ -424,7 +424,7 @@ GEM
       nio4r (~> 2.0)
     pyu-ruby-sasl (0.0.3.3)
     racc (1.8.1)
-    rack (2.2.17)
+    rack (2.2.21)
     rack-oauth2 (1.21.3)
       activesupport
       attr_required
@@ -489,7 +489,7 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    rexml (3.4.1)
+    rexml (3.4.4)
     rspec (3.13.1)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
