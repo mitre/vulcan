@@ -15,6 +15,17 @@ export const RULE_TERM = {
   label: "Rule", // For button/panel labels like "Rule History"
 };
 
+export const BENCHMARK_TERM = {
+  singular: "Benchmark",
+  plural: "Benchmarks",
+};
+
+// Export file format labels (separate from document type nouns)
+export const EXPORT_FORMATS = {
+  xccdf: "XCCDF-Benchmark",
+  csv: "CSV",
+};
+
 export const COMPONENT_TERM = {
   singular: "Component",
   plural: "Components",
