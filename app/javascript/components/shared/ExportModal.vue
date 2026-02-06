@@ -20,6 +20,10 @@
           <span class="font-weight-medium">XCCDF</span>
           <small class="text-muted d-block">SCAP XML format</small>
         </b-form-radio>
+        <b-form-radio v-if="showFormat('csv')" value="csv" class="mb-2">
+          <span class="font-weight-medium">CSV</span>
+          <small class="text-muted d-block">Comma-separated values</small>
+        </b-form-radio>
       </b-form-radio-group>
     </div>
 
@@ -60,6 +64,31 @@
       </div>
     </div>
 
+    <!-- Column Picker (CSV only, when columnDefinitions provided) -->
+    <template v-if="showColumnPicker">
+      <hr />
+      <div>
+        <label class="font-weight-bold d-block mb-2">Columns</label>
+        <div v-for="col in columnDefinitions" :key="col.key" class="mb-1">
+          <b-form-checkbox
+            :checked="selectedColumns.includes(col.key)"
+            @change="toggleColumn(col.key, $event)"
+          >
+            <span class="font-weight-medium">{{ col.header }}</span>
+            <small class="text-muted ml-1">{{ col.example }}</small>
+          </b-form-checkbox>
+        </div>
+        <div class="mt-2">
+          <b-button size="sm" variant="outline-secondary" class="mr-1" @click="selectAllColumns">
+            Select All
+          </b-button>
+          <b-button size="sm" variant="outline-secondary" @click="resetColumnsToDefaults">
+            Defaults
+          </b-button>
+        </div>
+      </div>
+    </template>
+
     <!-- Footer -->
     <template #modal-footer>
       <b-button variant="outline-secondary" data-testid="cancel-btn" @click="onCancel">
@@ -74,12 +103,13 @@
 
 <script>
 /**
- * ExportModal - Unified export modal with format and component selection
+ * ExportModal - Unified export modal with format, component, and column selection
  *
  * Usage:
  *   <ExportModal
  *     v-model="showExportModal"
  *     :components="components"
+ *     :column-definitions="STIG_CSV_COLUMNS"
  *     @export="handleExport"
  *     @cancel="handleCancel"
  *   />
@@ -90,9 +120,10 @@
  *   - title: Optional custom title (default: "Export Project")
  *   - formats: Optional array of format values to show (default: all)
  *   - hideComponentSelection: Boolean to hide the component selection section
+ *   - columnDefinitions: Optional array of { key, header, example, default } for CSV column picker
  *
  * Emits:
- *   - export: { type: string, componentIds: number[] }
+ *   - export: { type: string, componentIds: number[], columns?: string[] }
  *   - cancel: User cancelled
  *   - update:visible: For v-model support
  */
@@ -123,11 +154,16 @@ export default {
       type: Boolean,
       default: false,
     },
+    columnDefinitions: {
+      type: Array,
+      default: null,
+    },
   },
   data() {
     return {
       selectedFormat: null,
       selectedComponentIds: [],
+      selectedColumns: [],
     };
   },
   computed: {
@@ -161,6 +197,13 @@ export default {
     showComponentSelection() {
       return !this.hideComponentSelection;
     },
+    showColumnPicker() {
+      return (
+        this.columnDefinitions &&
+        this.columnDefinitions.length > 0 &&
+        this.selectedFormat === "csv"
+      );
+    },
     canExport() {
       // Must have format selected AND at least one component
       return this.selectedFormat !== null && this.selectedComponentIds.length > 0;
@@ -183,6 +226,8 @@ export default {
           } else {
             this.selectedComponentIds = [];
           }
+          // Reset columns to defaults
+          this.resetColumnsToDefaults();
         }
       },
     },
@@ -198,15 +243,43 @@ export default {
         this.selectedComponentIds = [];
       }
     },
+    toggleColumn(key, checked) {
+      if (checked) {
+        if (!this.selectedColumns.includes(key)) {
+          this.selectedColumns.push(key);
+        }
+      } else {
+        this.selectedColumns = this.selectedColumns.filter((k) => k !== key);
+      }
+    },
+    selectAllColumns() {
+      if (this.columnDefinitions) {
+        this.selectedColumns = this.columnDefinitions.map((c) => c.key);
+      }
+    },
+    resetColumnsToDefaults() {
+      if (this.columnDefinitions) {
+        this.selectedColumns = this.columnDefinitions
+          .filter((c) => c.default)
+          .map((c) => c.key);
+      } else {
+        this.selectedColumns = [];
+      }
+    },
     onCancel() {
       this.$emit("cancel");
       this.$emit("update:visible", false);
     },
     onExport() {
-      this.$emit("export", {
+      const payload = {
         type: this.selectedFormat,
         componentIds: [...this.selectedComponentIds],
-      });
+      };
+      // Include columns only for CSV format
+      if (this.selectedFormat === "csv" && this.selectedColumns.length > 0) {
+        payload.columns = [...this.selectedColumns];
+      }
+      this.$emit("export", payload);
       this.$emit("update:visible", false);
     },
     onHidden() {

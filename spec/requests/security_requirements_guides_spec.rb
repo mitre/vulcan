@@ -35,11 +35,41 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
     it 'returns error for unsupported export types' do
       sign_in user
 
-      get "/srgs/#{srg.id}/export/csv", headers: { 'Accept' => 'application/json' }
+      get "/srgs/#{srg.id}/export/inspec", headers: { 'Accept' => 'application/json' }
 
       expect(response).to have_http_status(:bad_request)
       json = response.parsed_body
       expect(json['toast']['message']).to include('Unsupported')
+    end
+
+    it 'exports CSV for logged-in user' do
+      sign_in user
+      create(:srg_rule, security_requirements_guide: srg)
+
+      get "/srgs/#{srg.id}/export/csv"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.headers['Content-Type']).to include('text/csv')
+      expect(response.headers['Content-Disposition']).to include('.csv')
+    end
+
+    it 'includes srg title in CSV filename' do
+      sign_in user
+
+      get "/srgs/#{srg.id}/export/csv"
+
+      filename = response.headers['Content-Disposition']
+      expect(filename).to include(srg.title.tr(' ', '-'))
+    end
+
+    it 'respects column selection for CSV export' do
+      sign_in user
+      create(:srg_rule, security_requirements_guide: srg)
+
+      get "/srgs/#{srg.id}/export/csv", params: { columns: 'rule_id,version' }
+
+      csv = CSV.parse(response.body, headers: true)
+      expect(csv.headers).to eq(['Rule ID', 'SRG ID'])
     end
 
     it 'requires authentication' do

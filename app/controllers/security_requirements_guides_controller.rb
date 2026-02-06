@@ -46,11 +46,11 @@ class SecurityRequirementsGuidesController < ApplicationController
   def export
     export_type = params[:type]&.to_sym
 
-    unless %i[xccdf].include?(export_type)
+    unless %i[xccdf csv].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
-          message: "Unsupported export type: #{export_type}. SRGs can only be exported as XCCDF.",
+          message: "Unsupported export type: #{export_type}. SRGs can be exported as XCCDF or CSV.",
           variant: 'danger'
         }
       }, status: :bad_request
@@ -59,8 +59,15 @@ class SecurityRequirementsGuidesController < ApplicationController
 
     respond_to do |format|
       format.html do
-        filename = "#{@srg.title.tr(' ', '-')}-#{@srg.version}-xccdf.xml"
-        send_data @srg.xml, filename: filename, type: 'application/xml'
+        case export_type
+        when :xccdf
+          filename = "#{@srg.title.tr(' ', '-')}-#{@srg.version}-xccdf.xml"
+          send_data @srg.xml, filename: filename, type: 'application/xml'
+        when :csv
+          columns = parse_csv_columns(params[:columns])
+          filename = "#{@srg.title.tr(' ', '-')}-#{@srg.version}.csv"
+          send_data @srg.csv_export(columns: columns), filename: filename, type: 'text/csv'
+        end
       end
       format.json { render json: { status: :ok } }
     end
@@ -100,5 +107,13 @@ class SecurityRequirementsGuidesController < ApplicationController
 
   def security_requirements_guide
     @srg = SecurityRequirementsGuide.find(params[:id])
+  end
+
+  def parse_csv_columns(columns_param)
+    return nil if columns_param.blank?
+
+    keys = columns_param.split(',').map(&:strip).map(&:to_sym)
+    valid_keys = ExportConstants::BENCHMARK_CSV_COLUMNS.keys
+    keys.select { |k| valid_keys.include?(k) }.presence
   end
 end

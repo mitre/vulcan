@@ -85,6 +85,32 @@ class BaseRule < ApplicationRecord
     ia_controls.uniq.join(', ')
   end
 
+  # Returns the value for a given CSV column key
+  # Used by Stig#csv_export and SecurityRequirementsGuide#csv_export
+  def csv_value_for(column_key)
+    case column_key
+    when :rule_id then rule_id.to_s
+    when :version then version.to_s
+    when :srg_id then (respond_to?(:srg_id) ? srg_id : read_attribute(:srg_id)).to_s
+    when :vuln_id then (respond_to?(:vuln_id) ? vuln_id : read_attribute(:vuln_id)).to_s
+    when :rule_severity then rule_severity.to_s
+    when :rule_weight then rule_weight.to_s
+    when :title then title.to_s
+    when :fixtext then fixtext.to_s
+    when :ident then ident.to_s
+    when :legacy_ids then legacy_ids.to_s
+    when :status then status.to_s
+    when :nist_control_family then nist_control_family
+    when :vuln_discussion then disa_rule_descriptions.first&.vuln_discussion.to_s
+    when :check_content then checks.first&.content.to_s
+    when :mitigations then disa_rule_descriptions.first&.mitigations.to_s
+    when :severity_override_guidance then disa_rule_descriptions.first&.severity_override_guidance.to_s
+    when :false_positives then disa_rule_descriptions.first&.false_positives.to_s
+    when :false_negatives then disa_rule_descriptions.first&.false_negatives.to_s
+    else ''
+    end
+  end
+
   private
 
   def ensure_disa_description_exists

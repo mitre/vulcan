@@ -89,10 +89,10 @@ describe('ExportModal', () => {
   // FORMAT SELECTION
   // ==========================================
   describe('format selection', () => {
-    it('renders all 4 export format options', () => {
+    it('renders all 5 export format options', () => {
       wrapper = createWrapper()
       const radios = wrapper.findAll('input[type="radio"]')
-      expect(radios.length).toBe(4)
+      expect(radios.length).toBe(5)
     })
 
     it('shows DISA Excel option with description', () => {
@@ -339,7 +339,7 @@ describe('ExportModal', () => {
     it('shows all formats when formats prop is null (default)', () => {
       wrapper = createWrapper()
       const radios = wrapper.findAll('input[type="radio"]')
-      expect(radios.length).toBe(4)
+      expect(radios.length).toBe(5)
     })
 
     it('shows only specified formats when formats prop provided', () => {
@@ -354,8 +354,9 @@ describe('ExportModal', () => {
     it('shows multiple specified formats', () => {
       wrapper = createWrapper({ formats: ['xccdf', 'csv'] })
       const radios = wrapper.findAll('input[type="radio"]')
-      expect(radios.length).toBe(1) // csv is not a valid radio option, only xccdf matches
+      expect(radios.length).toBe(2)
       expect(wrapper.text()).toContain('XCCDF')
+      expect(wrapper.text()).toContain('CSV')
     })
 
     it('auto-selects format when only one format available', async () => {
@@ -418,6 +419,152 @@ describe('ExportModal', () => {
       wrapper = createWrapper({ components: singleComponent, visible: false })
       await wrapper.setProps({ visible: true })
       expect(wrapper.vm.selectedComponentIds).toEqual([1])
+    })
+  })
+
+  // ==========================================
+  // COLUMN PICKER (CSV Export)
+  // ==========================================
+  describe('column picker', () => {
+    // REQUIREMENTS:
+    // 1. Column picker section appears ONLY when CSV format is selected
+    // 2. Column picker is NOT shown for XCCDF or other formats
+    // 3. Each column has a checkbox, label, and example value
+    // 4. Default columns are pre-checked on open
+    // 5. Optional columns are unchecked by default
+    // 6. "Select All" checks all columns
+    // 7. "Defaults" resets to default column selection
+    // 8. Export event includes selectedColumns array
+    // 9. columnDefinitions prop controls which columns are available
+
+    const stigColumns = [
+      { key: 'rule_id', header: 'Rule ID', example: 'SV-203591r557031_rule', default: true },
+      { key: 'version', header: 'STIG ID', example: 'RHEL-09-000001', default: true },
+      { key: 'srg_id', header: 'SRG ID', example: 'SRG-OS-000001-GPOS-00001', default: true },
+      { key: 'vuln_id', header: 'Vuln ID', example: 'V-203591', default: true },
+      { key: 'rule_severity', header: 'Severity', example: 'medium', default: true },
+      { key: 'title', header: 'Title', example: 'The operating system must…', default: true },
+      { key: 'status', header: 'Status', example: 'Applicable - Configurable', default: false },
+      { key: 'rule_weight', header: 'Weight', example: '10.0', default: false }
+    ]
+
+    it('does not show column picker when no format selected', () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns })
+      expect(wrapper.text()).not.toContain('Columns')
+    })
+
+    it('does not show column picker when XCCDF selected', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns })
+      wrapper.vm.selectedFormat = 'xccdf'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).not.toContain('Columns')
+    })
+
+    it('shows column picker when CSV selected', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).toContain('Columns')
+    })
+
+    it('shows all column labels', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).toContain('Rule ID')
+      expect(wrapper.text()).toContain('STIG ID')
+      expect(wrapper.text()).toContain('Status')
+      expect(wrapper.text()).toContain('Weight')
+    })
+
+    it('shows example values for columns', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).toContain('SV-203591r557031_rule')
+      expect(wrapper.text()).toContain('RHEL-09-000001')
+    })
+
+    it('pre-checks default columns', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns, visible: false })
+      await wrapper.setProps({ visible: true })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      // Default columns should be selected
+      expect(wrapper.vm.selectedColumns).toContain('rule_id')
+      expect(wrapper.vm.selectedColumns).toContain('version')
+      expect(wrapper.vm.selectedColumns).toContain('rule_severity')
+    })
+
+    it('does not pre-check optional columns', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns, visible: false })
+      await wrapper.setProps({ visible: true })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.selectedColumns).not.toContain('status')
+      expect(wrapper.vm.selectedColumns).not.toContain('rule_weight')
+    })
+
+    it('selectAllColumns selects all columns', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      wrapper.vm.selectAllColumns()
+      expect(wrapper.vm.selectedColumns.length).toBe(stigColumns.length)
+    })
+
+    it('resetColumnsToDefaults restores default selection', async () => {
+      wrapper = createWrapper({ columnDefinitions: stigColumns })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      // Select all first
+      wrapper.vm.selectAllColumns()
+      expect(wrapper.vm.selectedColumns.length).toBe(stigColumns.length)
+      // Reset to defaults
+      wrapper.vm.resetColumnsToDefaults()
+      const defaultKeys = stigColumns.filter(c => c.default).map(c => c.key)
+      expect(wrapper.vm.selectedColumns).toEqual(defaultKeys)
+    })
+
+    it('includes selectedColumns in export event for CSV', async () => {
+      wrapper = createWrapper({
+        columnDefinitions: stigColumns,
+        components: singleComponent,
+        visible: true
+      })
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]')
+      await exportBtn.trigger('click')
+
+      const emitted = wrapper.emitted('export')
+      expect(emitted).toBeTruthy()
+      expect(emitted[0][0].columns).toBeDefined()
+      expect(emitted[0][0].columns).toContain('rule_id')
+    })
+
+    it('does not include columns in export event for XCCDF', async () => {
+      wrapper = createWrapper({
+        formats: ['xccdf'],
+        components: singleComponent,
+        visible: true
+      })
+      // immediate watcher auto-selects format and component
+      await wrapper.vm.$nextTick()
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]')
+      await exportBtn.trigger('click')
+
+      const emitted = wrapper.emitted('export')
+      expect(emitted[0][0].columns).toBeUndefined()
+    })
+
+    it('does not show column picker when columnDefinitions not provided', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.selectedFormat = 'csv'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).not.toContain('Columns')
     })
   })
 })

@@ -30,6 +30,22 @@ class Stig < ApplicationRecord
     Xccdf::Benchmark.parse(xml)
   end
 
+  # Generate CSV export with configurable columns
+  # columns: array of column keys (symbols), defaults to BENCHMARK_CSV_DEFAULT_COLUMNS
+  def csv_export(columns: nil)
+    columns ||= ExportConstants::BENCHMARK_CSV_DEFAULT_COLUMNS
+    headers = columns.map { |key| ExportConstants::BENCHMARK_CSV_COLUMNS[key][:header] }
+
+    ::CSV.generate(headers: true) do |csv|
+      csv << headers
+      stig_rules.eager_load(:disa_rule_descriptions, :checks)
+                .order(:version, :rule_id)
+                .each do |rule|
+        csv << columns.map { |key| rule.csv_value_for(key) }
+      end
+    end
+  end
+
   private
 
   def import_stig_rules

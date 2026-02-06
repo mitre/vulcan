@@ -37,11 +37,41 @@ RSpec.describe 'Stigs', type: :request do
     it 'returns error for unsupported export types' do
       sign_in user
 
-      get "/stigs/#{stig.id}/export/csv", headers: { 'Accept' => 'application/json' }
+      get "/stigs/#{stig.id}/export/inspec", headers: { 'Accept' => 'application/json' }
 
       expect(response).to have_http_status(:bad_request)
       json = response.parsed_body
       expect(json['toast']['message']).to include('Unsupported')
+    end
+
+    it 'exports CSV for logged-in user' do
+      sign_in user
+      create(:stig_rule, stig: stig)
+
+      get "/stigs/#{stig.id}/export/csv"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.headers['Content-Type']).to include('text/csv')
+      expect(response.headers['Content-Disposition']).to include('.csv')
+    end
+
+    it 'includes stig title in CSV filename' do
+      sign_in user
+
+      get "/stigs/#{stig.id}/export/csv"
+
+      filename = response.headers['Content-Disposition']
+      expect(filename).to include(stig.title.tr(' ', '-'))
+    end
+
+    it 'respects column selection for CSV export' do
+      sign_in user
+      create(:stig_rule, stig: stig)
+
+      get "/stigs/#{stig.id}/export/csv", params: { columns: 'rule_id,version,rule_severity' }
+
+      csv = CSV.parse(response.body, headers: true)
+      expect(csv.headers).to eq(['Rule ID', 'STIG ID', 'Severity'])
     end
 
     it 'requires authentication' do

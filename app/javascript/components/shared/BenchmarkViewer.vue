@@ -45,7 +45,8 @@
       v-if="showExportModal"
       v-model="showExportModal"
       :components="[benchmark]"
-      :formats="['xccdf']"
+      :formats="['xccdf', 'csv']"
+      :column-definitions="csvColumns"
       :hide-component-selection="true"
       :title="exportTitle"
       @export="handleExport"
@@ -63,6 +64,7 @@ import RuleDetails from "../benchmarks/RuleDetails.vue";
 import RuleOverview from "../benchmarks/RuleOverview.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useBenchmarkViewer } from "../../composables";
+import { STIG_CSV_COLUMNS, SRG_CSV_COLUMNS } from "../../constants/csvColumns";
 
 export default {
   name: "BenchmarkViewer",
@@ -143,17 +145,24 @@ export default {
     exportTitle() {
       return `Export ${this.typeLabel}`;
     },
+    csvColumns() {
+      return this.type === "srg" ? SRG_CSV_COLUMNS : STIG_CSV_COLUMNS;
+    },
   },
   methods: {
     openExportModal() {
       this.showExportModal = true;
     },
-    handleExport({ type, componentIds }) {
+    handleExport({ type, componentIds, columns }) {
       const benchmarkType = this.type === "srg" ? "srgs" : "stigs";
+      let url = `/${benchmarkType}/${this.benchmark.id}/export/${type}`;
+      if (columns && columns.length > 0) {
+        url += `?columns=${columns.join(",")}`;
+      }
       axios
-        .get(`/${benchmarkType}/${this.benchmark.id}/export/${type}`)
+        .get(url)
         .then(() => {
-          window.open(`/${benchmarkType}/${this.benchmark.id}/export/${type}`);
+          window.open(url);
         })
         .catch(this.alertOrNotifyResponse);
     },
