@@ -17,7 +17,7 @@
           <small class="text-muted d-block">Chef InSpec profile</small>
         </b-form-radio>
         <b-form-radio v-if="showFormat('xccdf')" value="xccdf" class="mb-2">
-          <span class="font-weight-medium">XCCDF</span>
+          <span class="font-weight-medium">{{ xccdfLabel }}</span>
           <small class="text-muted d-block">SCAP XML format</small>
         </b-form-radio>
         <b-form-radio v-if="showFormat('csv')" value="csv" class="mb-2">
@@ -102,6 +102,8 @@
 </template>
 
 <script>
+import { EXPORT_FORMATS } from "../../constants/terminology";
+
 /**
  * ExportModal - Unified export modal with format, component, and column selection
  *
@@ -196,6 +198,9 @@ export default {
     },
     showComponentSelection() {
       return !this.hideComponentSelection;
+    },
+    xccdfLabel() {
+      return EXPORT_FORMATS.xccdf;
     },
     showColumnPicker() {
       return (

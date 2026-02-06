@@ -138,9 +138,8 @@ describe('BenchmarkViewer', () => {
   })
 
   describe('export integration', () => {
-    it('passes xccdf-only formats to ExportModal', () => {
+    it('sets export title to "Export STIG" for STIG type', () => {
       wrapper = createWrapper()
-      // ExportModal is stubbed, but we can verify the component config
       expect(wrapper.vm.exportTitle).toBe('Export STIG')
     })
 

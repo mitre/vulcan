@@ -116,10 +116,10 @@ describe('ExportModal', () => {
       expect(text).toContain('Chef InSpec profile')
     })
 
-    it('shows XCCDF option with description', () => {
+    it('shows XCCDF-Benchmark option with description', () => {
       wrapper = createWrapper()
       const text = wrapper.text()
-      expect(text).toContain('XCCDF')
+      expect(text).toContain('XCCDF-Benchmark')
       expect(text).toContain('SCAP XML format')
     })
 
