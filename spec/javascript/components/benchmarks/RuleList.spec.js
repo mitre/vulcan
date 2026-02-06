@@ -12,43 +12,86 @@ localVue.use(BootstrapVue)
  *
  * REQUIREMENTS:
  *
- * 1. GENERIC (works for STIG and SRG):
- *    - Accepts type prop ('stig' | 'srg')
- *    - Uses RULE_TERM constants for labels
+ * 1. DROPDOWN OPTIONS (no "Title"):
+ *    - STIG: [Rule ID, STIG ID, SRG ID]
+ *    - SRG:  [SRG ID, Rule ID]
+ *    - Default selected: first option in list
  *
- * 2. SEARCH:
- *    - Search by rule ID or title
- *    - Uses RULE_TERM in placeholder
+ * 2. DISPLAY FIELD:
+ *    - "Rule ID" option → shows truncated rule_id (SV-203591)
+ *    - "STIG ID" option → shows version column
+ *    - "SRG ID" option → shows version (SRG) or srg_id (STIG)
  *
- * 3. FILTER BY SEVERITY:
- *    - High, Medium, Low, All buttons
- *    - Shows count for each
+ * 3. SORT:
+ *    - Sorts by the data field underlying the selected option
  *
- * 4. RULE LIST:
- *    - Sorted by selected field (rule_id, title, severity)
- *    - Click rule to select
- *    - Highlight selected rule
+ * 4. SEARCH PLACEHOLDER:
+ *    - STIG: "Search by STIG ID, Rule ID, or title"
+ *    - SRG:  "Search by SRG ID, Rule ID, or title"
  *
- * 5. TERMINOLOGY:
- *    - "Requirements" → RULE_TERM.plural
- *    - "Rule" → RULE_TERM.singular
- *    - "Search Rule" → `Search ${RULE_TERM.singular}`
+ * 5. SEARCH FUNCTIONALITY:
+ *    - Searches across rule_id, version, and title
  */
 describe('RuleList', () => {
   let wrapper
 
-  const sampleRules = [
-    { id: 1, rule_id: 'SV-001', title: 'Rule One', rule_severity: 'high' },
-    { id: 2, rule_id: 'SV-002', title: 'Rule Two', rule_severity: 'medium' },
-    { id: 3, rule_id: 'SV-003', title: 'Rule Three', rule_severity: 'low' }
+  const stigRules = [
+    {
+      id: 1,
+      rule_id: 'SV-203591r557031_rule',
+      version: 'RHEL-08-010190',
+      srg_id: 'SRG-OS-000480',
+      title: 'First STIG Rule',
+      rule_severity: 'high'
+    },
+    {
+      id: 2,
+      rule_id: 'SV-203592r557032_rule',
+      version: 'RHEL-08-010200',
+      srg_id: 'SRG-OS-000001',
+      title: 'Second STIG Rule',
+      rule_severity: 'medium'
+    },
+    {
+      id: 3,
+      rule_id: 'SV-203593r557033_rule',
+      version: 'RHEL-08-010210',
+      srg_id: 'SRG-OS-000120',
+      title: 'Third STIG Rule',
+      rule_severity: 'low'
+    }
+  ]
+
+  const srgRules = [
+    {
+      id: 1,
+      rule_id: 'SV-203591r557031_rule',
+      version: 'SRG-OS-000001-GPOS-00001',
+      title: 'First SRG Rule',
+      rule_severity: 'high'
+    },
+    {
+      id: 2,
+      rule_id: 'SV-203592r557032_rule',
+      version: 'SRG-OS-000002-GPOS-00002',
+      title: 'Second SRG Rule',
+      rule_severity: 'medium'
+    },
+    {
+      id: 3,
+      rule_id: 'SV-203593r557033_rule',
+      version: 'SRG-OS-000120-GPOS-00120',
+      title: 'Third SRG Rule',
+      rule_severity: 'low'
+    }
   ]
 
   const createWrapper = (props = {}) => {
     return shallowMount(RuleList, {
       localVue,
       propsData: {
-        rules: sampleRules,
-        initialSelectedRule: sampleRules[0],
+        rules: stigRules,
+        initialSelectedRule: stigRules[0],
         type: 'stig',
         ...props
       }
@@ -69,26 +112,6 @@ describe('RuleList', () => {
       wrapper = createWrapper()
       expect(wrapper.text()).toContain(RULE_TERM.plural)
     })
-
-    it('uses RULE_TERM.singular in search placeholder', () => {
-      wrapper = createWrapper()
-      const placeholder = wrapper.find('input[type="text"]').attributes('placeholder')
-      expect(placeholder).toContain(RULE_TERM.singular)
-    })
-
-    it('does not have hardcoded "Requirements" string', () => {
-      wrapper = createWrapper()
-      // Should use RULE_TERM.plural instead
-      const html = wrapper.html()
-      expect(html).not.toMatch(/(?<!RULE_TERM\.)Requirements/)
-    })
-
-    it('does not have hardcoded "Rule" string (uses RULE_TERM)', () => {
-      wrapper = createWrapper()
-      const html = wrapper.html()
-      // Should use RULE_TERM.singular, not hardcoded
-      expect(html).not.toMatch(/(?<!RULE_TERM\.)Rule(?!s)/) // "Rule" but not "Rules"
-    })
   })
 
   // ==========================================
@@ -106,33 +129,183 @@ describe('RuleList', () => {
     })
 
     it('type prop is required', () => {
-      expect(wrapper.vm.$options.props.type.required).toBe(true)
+      expect(RuleList.props.type.required).toBe(true)
     })
   })
 
   // ==========================================
-  // SEARCH
+  // DROPDOWN OPTIONS
+  // ==========================================
+  describe('dropdown options', () => {
+    it('STIG mode has Rule ID, STIG ID, SRG ID options', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      const options = wrapper.vm.fieldOptions
+      expect(options).toHaveLength(3)
+      expect(options[0]).toEqual({ value: 'rule_id', text: 'Rule ID' })
+      expect(options[1]).toEqual({ value: 'stig_id', text: 'STIG ID' })
+      expect(options[2]).toEqual({ value: 'srg_id', text: 'SRG ID' })
+    })
+
+    it('SRG mode has SRG ID, Rule ID options', () => {
+      wrapper = createWrapper({ type: 'srg', rules: srgRules, initialSelectedRule: srgRules[0] })
+      const options = wrapper.vm.fieldOptions
+      expect(options).toHaveLength(2)
+      expect(options[0]).toEqual({ value: 'srg_id', text: 'SRG ID' })
+      expect(options[1]).toEqual({ value: 'rule_id', text: 'Rule ID' })
+    })
+
+    it('does not have a "Title" option in STIG mode', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      const options = wrapper.vm.fieldOptions
+      const titleOption = options.find(o => o.text === 'Title')
+      expect(titleOption).toBeUndefined()
+    })
+
+    it('does not have a "Title" option in SRG mode', () => {
+      wrapper = createWrapper({ type: 'srg', rules: srgRules, initialSelectedRule: srgRules[0] })
+      const options = wrapper.vm.fieldOptions
+      const titleOption = options.find(o => o.text === 'Title')
+      expect(titleOption).toBeUndefined()
+    })
+
+    it('default field for STIG is rule_id', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      expect(wrapper.vm.field).toBe('rule_id')
+    })
+
+    it('default field for SRG is srg_id', () => {
+      wrapper = createWrapper({ type: 'srg', rules: srgRules, initialSelectedRule: srgRules[0] })
+      expect(wrapper.vm.field).toBe('srg_id')
+    })
+  })
+
+  // ==========================================
+  // DISPLAY FIELD
+  // ==========================================
+  describe('displayField', () => {
+    it('Rule ID option shows truncated rule_id', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      wrapper.setData({ field: 'rule_id' })
+      const display = wrapper.vm.displayField(stigRules[0])
+      expect(display).toBe('SV-203591')
+      // Should NOT contain the release suffix
+      expect(display).not.toContain('r557031')
+    })
+
+    it('STIG ID option shows version column', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      wrapper.setData({ field: 'stig_id' })
+      const display = wrapper.vm.displayField(stigRules[0])
+      expect(display).toBe('RHEL-08-010190')
+    })
+
+    it('SRG ID option on STIG shows srg_id column', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      wrapper.setData({ field: 'srg_id' })
+      const display = wrapper.vm.displayField(stigRules[0])
+      expect(display).toBe('SRG-OS-000480')
+    })
+
+    it('SRG ID option on SRG shows version column', () => {
+      wrapper = createWrapper({ type: 'srg', rules: srgRules, initialSelectedRule: srgRules[0] })
+      wrapper.setData({ field: 'srg_id' })
+      const display = wrapper.vm.displayField(srgRules[0])
+      expect(display).toBe('SRG-OS-000001-GPOS-00001')
+    })
+
+    it('Rule ID option on SRG shows truncated rule_id', () => {
+      wrapper = createWrapper({ type: 'srg', rules: srgRules, initialSelectedRule: srgRules[0] })
+      wrapper.setData({ field: 'rule_id' })
+      const display = wrapper.vm.displayField(srgRules[0])
+      expect(display).toBe('SV-203591')
+    })
+  })
+
+  // ==========================================
+  // SORT
+  // ==========================================
+  describe('sorting', () => {
+    it('sorts by rule_id ascending', async () => {
+      wrapper = createWrapper({ type: 'stig' })
+      await wrapper.setData({ field: 'rule_id', sortOrder: 'asc' })
+      const sorted = wrapper.vm.sortedRules
+      expect(sorted[0].rule_id).toBe('SV-203591r557031_rule')
+      expect(sorted[2].rule_id).toBe('SV-203593r557033_rule')
+    })
+
+    it('sorts by STIG ID (version) ascending', async () => {
+      wrapper = createWrapper({ type: 'stig' })
+      await wrapper.setData({ field: 'stig_id', sortOrder: 'asc' })
+      const sorted = wrapper.vm.sortedRules
+      expect(sorted[0].version).toBe('RHEL-08-010190')
+      expect(sorted[2].version).toBe('RHEL-08-010210')
+    })
+
+    it('sorts by SRG ID ascending on STIG view', async () => {
+      wrapper = createWrapper({ type: 'stig' })
+      await wrapper.setData({ field: 'srg_id', sortOrder: 'asc' })
+      const sorted = wrapper.vm.sortedRules
+      expect(sorted[0].srg_id).toBe('SRG-OS-000001')
+      expect(sorted[2].srg_id).toBe('SRG-OS-000480')
+    })
+
+    it('sorts descending when sortOrder is desc', async () => {
+      wrapper = createWrapper({ type: 'stig' })
+      await wrapper.setData({ field: 'stig_id', sortOrder: 'desc' })
+      const sorted = wrapper.vm.sortedRules
+      expect(sorted[0].version).toBe('RHEL-08-010210')
+      expect(sorted[2].version).toBe('RHEL-08-010190')
+    })
+  })
+
+  // ==========================================
+  // SEARCH PLACEHOLDER
+  // ==========================================
+  describe('search placeholder', () => {
+    it('STIG placeholder mentions STIG ID, Rule ID, and title', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      const placeholder = wrapper.find('input[type="text"]').attributes('placeholder')
+      expect(placeholder).toBe('Search by STIG ID, Rule ID, or title')
+    })
+
+    it('SRG placeholder mentions SRG ID, Rule ID, and title', () => {
+      wrapper = createWrapper({ type: 'srg', rules: srgRules, initialSelectedRule: srgRules[0] })
+      const placeholder = wrapper.find('input[type="text"]').attributes('placeholder')
+      expect(placeholder).toBe('Search by SRG ID, Rule ID, or title')
+    })
+  })
+
+  // ==========================================
+  // SEARCH FUNCTIONALITY
   // ==========================================
   describe('search functionality', () => {
     it('filters by rule_id', async () => {
       wrapper = createWrapper()
-      await wrapper.setData({ searchText: 'SV-001' })
+      await wrapper.setData({ searchText: 'SV-203591' })
       const filtered = wrapper.vm.filteredRules
       expect(filtered.length).toBe(1)
-      expect(filtered[0].rule_id).toBe('SV-001')
+      expect(filtered[0].id).toBe(1)
+    })
+
+    it('filters by version (STIG ID)', async () => {
+      wrapper = createWrapper()
+      await wrapper.setData({ searchText: 'RHEL-08-010200' })
+      const filtered = wrapper.vm.filteredRules
+      expect(filtered.length).toBe(1)
+      expect(filtered[0].id).toBe(2)
     })
 
     it('filters by title', async () => {
       wrapper = createWrapper()
-      await wrapper.setData({ searchText: 'Rule Two' })
+      await wrapper.setData({ searchText: 'Third' })
       const filtered = wrapper.vm.filteredRules
       expect(filtered.length).toBe(1)
-      expect(filtered[0].title).toBe('Rule Two')
+      expect(filtered[0].id).toBe(3)
     })
 
     it('search is case-insensitive', async () => {
       wrapper = createWrapper()
-      await wrapper.setData({ searchText: 'rule one' })
+      await wrapper.setData({ searchText: 'rhel-08-010190' })
       const filtered = wrapper.vm.filteredRules
       expect(filtered.length).toBe(1)
     })
@@ -144,7 +317,7 @@ describe('RuleList', () => {
   describe('severity filtering', () => {
     it('filters by high severity', async () => {
       wrapper = createWrapper()
-      await wrapper.setData({ severity: 'high' })
+      await wrapper.setData({ selectedSeverity: 'high' })
       const filtered = wrapper.vm.filteredRules
       expect(filtered.length).toBe(1)
       expect(filtered[0].rule_severity).toBe('high')
@@ -152,7 +325,7 @@ describe('RuleList', () => {
 
     it('shows all when severity is empty', async () => {
       wrapper = createWrapper()
-      await wrapper.setData({ severity: '' })
+      await wrapper.setData({ selectedSeverity: '' })
       const filtered = wrapper.vm.filteredRules
       expect(filtered.length).toBe(3)
     })
@@ -177,17 +350,16 @@ describe('RuleList', () => {
   // RULE SELECTION
   // ==========================================
   describe('rule selection', () => {
-    it('emits rule-selected when rule clicked', async () => {
+    it('emits rule-selected when rule clicked', () => {
       wrapper = createWrapper()
-      wrapper.vm.selectRule(sampleRules[1])
+      wrapper.vm.selectRule(stigRules[1])
       expect(wrapper.emitted('rule-selected')).toBeTruthy()
-      expect(wrapper.emitted('rule-selected')[0]).toEqual([sampleRules[1]])
+      expect(wrapper.emitted('rule-selected')[0]).toEqual([stigRules[1]])
     })
 
     it('highlights selected rule', () => {
-      wrapper = createWrapper({ initialSelectedRule: sampleRules[1] })
-      // Selected rule should have active class or styling
-      expect(wrapper.vm.selectedRule).toEqual(sampleRules[1])
+      wrapper = createWrapper({ initialSelectedRule: stigRules[1] })
+      expect(wrapper.vm.selectedRule).toEqual(stigRules[1])
     })
   })
 })
