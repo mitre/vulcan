@@ -269,7 +269,7 @@ export default {
           disabled: [],
         };
       } else if (this.rule.status == "Applicable - Does Not Meet") {
-        return { displayed: ["mitigation_control"], disabled: [] };
+        return { displayed: ["mitigation_control", "severity_override_guidance"], disabled: [] };
       } else if (this.rule.status == "Not Yet Determined") {
         return { displayed: ["vuln_discussion"], disabled: [] };
       } else {

@@ -268,7 +268,7 @@
       :id="`ruleEditor-disa_rule_description-severity_override_guidance-group-${mod}`"
     >
       <label :for="`ruleEditor-disa_rule_description-severity_override_guidance-${mod}`">
-        Security Override Guidance
+        Severity Override Guidance
         <b-icon
           v-if="tooltips['severity_override_guidance']"
           v-b-tooltip.hover.html="tooltips['severity_override_guidance']"
