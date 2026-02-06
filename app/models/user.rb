@@ -3,13 +3,18 @@
 # This is our main user model, local, LDAP, and omniauth users are all stored here.
 # We store provider and UID from the Omniauth provider that is logging a user in.
 class User < ApplicationRecord
-  devise :timeoutable
+  # All non-omniauthable Devise modules MUST be in a single call so Devise can
+  # properly coordinate their interactions. In particular, :timeoutable must be
+  # in the same call as :rememberable so Devise checks remember-me tokens before
+  # timing out a session. :omniauthable stays separate because it requires inline
+  # provider configuration.
+  devise :database_authenticatable, :registerable, :rememberable,
+         :recoverable, :confirmable, :trackable, :validatable,
+         :timeoutable
 
   audited only: %i[admin name email], max_audits: 1000
 
   include ProjectMemberConstants
-
-  devise :database_authenticatable, :registerable, :rememberable, :recoverable, :confirmable, :trackable, :validatable
 
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
 
