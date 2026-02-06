@@ -2,8 +2,8 @@
 
 # Controller for SecurityRequirementsGuides
 class SecurityRequirementsGuidesController < ApplicationController
-  before_action :authorize_admin, except: %i[index show]
-  before_action :security_requirements_guide, only: %i[show destroy]
+  before_action :authorize_admin, except: %i[index show export]
+  before_action :security_requirements_guide, only: %i[show destroy export]
 
   def index
     @srgs = SecurityRequirementsGuide.order(:srg_id, :version).select(:id, :srg_id, :title, :version, :release_date)
@@ -40,6 +40,29 @@ class SecurityRequirementsGuidesController < ApplicationController
                },
                status: :unprocessable_entity
              })
+    end
+  end
+
+  def export
+    export_type = params[:type]&.to_sym
+
+    unless %i[xccdf].include?(export_type)
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: "Unsupported export type: #{export_type}. SRGs can only be exported as XCCDF.",
+          variant: 'danger'
+        }
+      }, status: :bad_request
+      return
+    end
+
+    respond_to do |format|
+      format.html do
+        filename = "#{@srg.title.tr(' ', '-')}-#{@srg.version}-xccdf.xml"
+        send_data @srg.xml, filename: filename, type: 'application/xml'
+      end
+      format.json { render json: { status: :ok } }
     end
   end
 

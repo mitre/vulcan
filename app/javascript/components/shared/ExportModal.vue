@@ -4,29 +4,29 @@
     <div class="mb-3">
       <label class="font-weight-bold d-block mb-2">Format</label>
       <b-form-radio-group v-model="selectedFormat" stacked>
-        <b-form-radio value="disa_excel" class="mb-2">
+        <b-form-radio v-if="showFormat('disa_excel')" value="disa_excel" class="mb-2">
           <span class="font-weight-medium">DISA Excel</span>
           <small class="text-muted d-block">DoD/DISA format</small>
         </b-form-radio>
-        <b-form-radio value="excel" class="mb-2">
+        <b-form-radio v-if="showFormat('excel')" value="excel" class="mb-2">
           <span class="font-weight-medium">Excel</span>
           <small class="text-muted d-block">Standard spreadsheet</small>
         </b-form-radio>
-        <b-form-radio value="inspec" class="mb-2">
+        <b-form-radio v-if="showFormat('inspec')" value="inspec" class="mb-2">
           <span class="font-weight-medium">InSpec</span>
           <small class="text-muted d-block">Chef InSpec profile</small>
         </b-form-radio>
-        <b-form-radio value="xccdf" class="mb-2">
+        <b-form-radio v-if="showFormat('xccdf')" value="xccdf" class="mb-2">
           <span class="font-weight-medium">XCCDF</span>
           <small class="text-muted d-block">SCAP XML format</small>
         </b-form-radio>
       </b-form-radio-group>
     </div>
 
-    <hr />
+    <hr v-if="showComponentSelection" />
 
-    <!-- Component Selection -->
-    <div>
+    <!-- Component Selection (hidden when single benchmark export) -->
+    <div v-if="showComponentSelection">
       <label class="font-weight-bold d-block mb-2">Components</label>
 
       <!-- Single Component: Simplified View -->
@@ -88,6 +88,8 @@
  *   - components: Array of { id, name, version?, release? }
  *   - visible: Boolean (use v-model)
  *   - title: Optional custom title (default: "Export Project")
+ *   - formats: Optional array of format values to show (default: all)
+ *   - hideComponentSelection: Boolean to hide the component selection section
  *
  * Emits:
  *   - export: { type: string, componentIds: number[] }
@@ -112,6 +114,14 @@ export default {
     title: {
       type: String,
       default: null,
+    },
+    formats: {
+      type: Array,
+      default: null,
+    },
+    hideComponentSelection: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -148,26 +158,39 @@ export default {
     someSelected() {
       return this.selectedComponentIds.length > 0;
     },
+    showComponentSelection() {
+      return !this.hideComponentSelection;
+    },
     canExport() {
       // Must have format selected AND at least one component
       return this.selectedFormat !== null && this.selectedComponentIds.length > 0;
     },
   },
   watch: {
-    visible(newVal) {
-      if (newVal) {
-        // Reset selections when modal opens
-        this.selectedFormat = null;
-        if (this.isSingleComponent) {
-          // Auto-select single component
-          this.selectedComponentIds = [this.components[0].id];
-        } else {
-          this.selectedComponentIds = [];
+    visible: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          // Auto-select format when only one is available
+          if (this.formats && this.formats.length === 1) {
+            this.selectedFormat = this.formats[0];
+          } else {
+            this.selectedFormat = null;
+          }
+          if (this.isSingleComponent) {
+            // Auto-select single component
+            this.selectedComponentIds = [this.components[0].id];
+          } else {
+            this.selectedComponentIds = [];
+          }
         }
-      }
+      },
     },
   },
   methods: {
+    showFormat(format) {
+      return this.formats === null || this.formats.includes(format);
+    },
     toggleSelectAll(checked) {
       if (checked) {
         this.selectedComponentIds = this.components.map((c) => c.id);

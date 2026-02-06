@@ -20,11 +20,11 @@ RSpec.describe 'Format Handling Across Controllers', type: :request do
         expect(response).to redirect_to(project_path(created_project))
       end
 
-      it 'redirects to new action on failure' do
+      it 'redirects to index on failure' do
         post '/projects', params: { project: { name: '' } } # Invalid
 
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(new_project_path)
+        expect(response).to redirect_to(projects_path)
       end
     end
 

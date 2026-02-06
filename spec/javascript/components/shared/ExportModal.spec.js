@@ -197,8 +197,7 @@ describe('ExportModal', () => {
   describe('component selection (single)', () => {
     it('auto-selects single component', () => {
       wrapper = createWrapper({ components: singleComponent, visible: true })
-      // Need to trigger the watch by simulating modal open
-      wrapper.vm.$options.watch.visible.call(wrapper.vm, true)
+      // immediate: true watcher auto-selects on creation
       expect(wrapper.vm.selectedComponentIds).toEqual([1])
     })
 
@@ -278,7 +277,7 @@ describe('ExportModal', () => {
 
     it('works with single component auto-selection', async () => {
       wrapper = createWrapper({ components: singleComponent, visible: true })
-      wrapper.vm.$options.watch.visible.call(wrapper.vm, true)
+      // immediate: true watcher auto-selects component on creation
       wrapper.vm.selectedFormat = 'inspec'
       await wrapper.vm.$nextTick()
 
@@ -330,6 +329,70 @@ describe('ExportModal', () => {
     it('uses custom title when provided', () => {
       wrapper = createWrapper({ title: 'Download Components' })
       expect(wrapper.find('.modal-title').text()).toBe('Download Components')
+    })
+  })
+
+  // ==========================================
+  // FORMAT FILTERING (formats prop)
+  // ==========================================
+  describe('format filtering', () => {
+    it('shows all formats when formats prop is null (default)', () => {
+      wrapper = createWrapper()
+      const radios = wrapper.findAll('input[type="radio"]')
+      expect(radios.length).toBe(4)
+    })
+
+    it('shows only specified formats when formats prop provided', () => {
+      wrapper = createWrapper({ formats: ['xccdf'] })
+      const radios = wrapper.findAll('input[type="radio"]')
+      expect(radios.length).toBe(1)
+      expect(wrapper.text()).toContain('XCCDF')
+      expect(wrapper.text()).not.toContain('DISA Excel')
+      expect(wrapper.text()).not.toContain('InSpec')
+    })
+
+    it('shows multiple specified formats', () => {
+      wrapper = createWrapper({ formats: ['xccdf', 'csv'] })
+      const radios = wrapper.findAll('input[type="radio"]')
+      expect(radios.length).toBe(1) // csv is not a valid radio option, only xccdf matches
+      expect(wrapper.text()).toContain('XCCDF')
+    })
+
+    it('auto-selects format when only one format available', async () => {
+      wrapper = createWrapper({ formats: ['xccdf'], visible: false })
+      await wrapper.setProps({ visible: true })
+      expect(wrapper.vm.selectedFormat).toBe('xccdf')
+    })
+
+    it('does not auto-select when multiple formats available', async () => {
+      wrapper = createWrapper({ formats: ['xccdf', 'inspec'], visible: false })
+      await wrapper.setProps({ visible: true })
+      expect(wrapper.vm.selectedFormat).toBe(null)
+    })
+  })
+
+  // ==========================================
+  // HIDE COMPONENT SELECTION
+  // ==========================================
+  describe('hideComponentSelection', () => {
+    it('shows component section by default', () => {
+      wrapper = createWrapper()
+      expect(wrapper.text()).toContain('Components')
+    })
+
+    it('hides component section when hideComponentSelection is true', () => {
+      wrapper = createWrapper({ hideComponentSelection: true, components: singleComponent })
+      expect(wrapper.text()).not.toContain('Components')
+    })
+
+    it('still auto-selects single component when hidden', async () => {
+      wrapper = createWrapper({
+        hideComponentSelection: true,
+        components: singleComponent,
+        visible: false
+      })
+      await wrapper.setProps({ visible: true })
+      expect(wrapper.vm.selectedComponentIds).toEqual([1])
     })
   })
 

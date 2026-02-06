@@ -45,6 +45,9 @@
       v-if="showExportModal"
       v-model="showExportModal"
       :components="[benchmark]"
+      :formats="['xccdf']"
+      :hide-component-selection="true"
+      :title="exportTitle"
       @export="handleExport"
       @cancel="showExportModal = false"
     />
@@ -136,6 +139,9 @@ export default {
         cis: "/stigs", // CIS shown in STIGs list
       };
       return paths[this.type] || "/";
+    },
+    exportTitle() {
+      return `Export ${this.typeLabel}`;
     },
   },
   methods: {

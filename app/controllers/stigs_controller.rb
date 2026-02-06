@@ -3,7 +3,7 @@
 # Controller for Stigs
 class StigsController < ApplicationController
   before_action :authorize_admin, only: %i[create destroy]
-  before_action :set_stig, only: %i[show destroy]
+  before_action :set_stig, only: %i[show destroy export]
 
   def index
     @stigs = Stig.order(:stig_id, :version).select(:id, :stig_id, :title, :version, :benchmark_date)
@@ -38,6 +38,29 @@ class StigsController < ApplicationController
                },
                status: :unprocessable_entity
              })
+    end
+  end
+
+  def export
+    export_type = params[:type]&.to_sym
+
+    unless %i[xccdf].include?(export_type)
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: "Unsupported export type: #{export_type}. STIGs can only be exported as XCCDF.",
+          variant: 'danger'
+        }
+      }, status: :bad_request
+      return
+    end
+
+    respond_to do |format|
+      format.html do
+        filename = "#{@stig.title.tr(' ', '-')}-#{@stig.version}-xccdf.xml"
+        send_data @stig.xml, filename: filename, type: 'application/xml'
+      end
+      format.json { render json: { status: :ok } }
     end
   end
 

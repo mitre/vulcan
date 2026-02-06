@@ -82,7 +82,7 @@ class ProjectsController < ApplicationController
       respond_to do |format|
         format.html do
           flash.alert = "Unable to create project. #{project.errors.full_messages}"
-          redirect_to action: 'new'
+          redirect_to action: 'index'
         end
         format.json do
           render json: {

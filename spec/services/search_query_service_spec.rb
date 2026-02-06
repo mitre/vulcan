@@ -3,6 +3,11 @@
 require 'rails_helper'
 
 RSpec.describe SearchQueryService do
+  before do
+    # Clear abbreviation cache to prevent cross-test contamination
+    SearchAbbreviationService.clear_cache!
+  end
+
   describe '.transform' do
     context 'with short queries' do
       it 'returns empty result for single character' do

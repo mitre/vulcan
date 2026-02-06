@@ -45,6 +45,10 @@ Rails.application.routes.draw do
   post '/components/history', to: 'components#history'
   # Export component
   get '/components/:id/export/:type', to: 'components#export'
+  # Export STIG
+  get '/stigs/:id/export/:type', to: 'stigs#export'
+  # Export SRG
+  get '/srgs/:id/export/:type', to: 'security_requirements_guides#export'
   # Components based on same srg
   get '/components/:id/search/based_on_same_srg', to: 'components#based_on_same_srg'
   # Compare components

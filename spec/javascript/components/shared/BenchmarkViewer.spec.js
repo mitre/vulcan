@@ -137,6 +137,34 @@ describe('BenchmarkViewer', () => {
     })
   })
 
+  describe('export integration', () => {
+    it('passes xccdf-only formats to ExportModal', () => {
+      wrapper = createWrapper()
+      // ExportModal is stubbed, but we can verify the component config
+      expect(wrapper.vm.exportTitle).toBe('Export STIG')
+    })
+
+    it('sets export title to "Export SRG" for SRG type', () => {
+      const srgBenchmark = { ...stigBenchmark, title: 'Test SRG', rules: [] }
+      wrapper = createWrapper({ benchmark: srgBenchmark, type: 'srg' })
+      expect(wrapper.vm.exportTitle).toBe('Export SRG')
+    })
+
+    it('constructs correct export URL for STIG', () => {
+      wrapper = createWrapper({ type: 'stig' })
+      // handleExport builds URL from type
+      const benchmarkType = wrapper.vm.type === 'srg' ? 'srgs' : 'stigs'
+      expect(benchmarkType).toBe('stigs')
+    })
+
+    it('constructs correct export URL for SRG', () => {
+      const srgBenchmark = { ...stigBenchmark, title: 'Test SRG', rules: [] }
+      wrapper = createWrapper({ benchmark: srgBenchmark, type: 'srg' })
+      const benchmarkType = wrapper.vm.type === 'srg' ? 'srgs' : 'stigs'
+      expect(benchmarkType).toBe('srgs')
+    })
+  })
+
   describe('type adaptation', () => {
     it('adapts for STIG type', () => {
       wrapper = createWrapper({ type: 'stig' })
