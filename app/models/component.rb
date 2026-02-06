@@ -353,7 +353,8 @@ class Component < ApplicationRecord
 
   def create_rule_satisfactions
     rules.where('vendor_comments LIKE ?', '%Satisfied By: %').find_each do |rule|
-      vc = rule.vendor_comments.gsub('Satisfied By: ', '').delete('.').strip.split(/[,\s]+/).uniq
+      # Extract satisfied by list, removing "Satisfied By: " prefix and optional trailing period
+      vc = rule.vendor_comments.gsub('Satisfied By: ', '').sub(/\.\s*\z/, '').strip.split(/[,\s]+/).uniq
       vc.each do |sb|
         sb_rule_id = sb.strip.split('-').last
         sb_rule = rules.find_by(rule_id: sb_rule_id)
