@@ -10,7 +10,7 @@ For organizations requiring immediate compliance, apply these essential settings
 
 ```bash
 # Core Security Settings
-export VULCAN_SESSION_TIMEOUT=10               # Set to 10 minutes (STIG requirement - default is 60)
+export VULCAN_SESSION_TIMEOUT=10m              # 10 minutes (STIG requirement - default is 1h)
 export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. By accessing this system, you agree to comply with all organizational security policies. All activities are monitored and logged."
 export RAILS_FORCE_SSL=true                    # Force HTTPS
 export RAILS_ENV=production                    # Production mode
@@ -86,10 +86,11 @@ graph TD
 
 **Configuration:**
 ```bash
-# STIG Requirements (value is in minutes)
-VULCAN_SESSION_TIMEOUT=10      # Required: 10 min for admin, 15 min for users
-                               # Default: 60 minutes if not set
+# STIG Requirements — accepts suffixes (10m, 900s) or plain numbers
+VULCAN_SESSION_TIMEOUT=10m     # Required: 10 min for admin, 15 min for users
+                               # Default: 1h (1 hour) if not set
                                # Note: Single timeout for all user types
+                               # Formats: 30s, 15m, 1h, or plain (900 = seconds)
 ```
 
 ⚠️ **Known Gaps:**
@@ -546,7 +547,7 @@ Based on source code analysis, the following clarifications apply:
 
 | Configuration | Documentation States | Actual Implementation | Action Required |
 |--------------|---------------------|----------------------|-----------------|
-| **Session Timeout** | 10 minutes required | Defaults to 60 minutes | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` |
+| **Session Timeout** | 10 minutes required | Defaults to 1 hour | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` (or `600`) |
 | **Admin Timeout** | Separate timeout | Uses same timeout | ℹ️ No separate admin timeout available |
 | **CSRF Protection** | Enabled | Rails default (enabled) | ✅ No action needed |
 | **Strong Parameters** | Required | Rails default (enabled) | ✅ No action needed |

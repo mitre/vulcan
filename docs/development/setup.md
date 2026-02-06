@@ -176,7 +176,7 @@ VULCAN_CONTACT_EMAIL=dev@localhost  # Also used as default SMTP username when SM
 # Authentication (optional)
 VULCAN_ENABLE_USER_REGISTRATION=true
 VULCAN_ENABLE_LOCAL_LOGIN=true
-VULCAN_SESSION_TIMEOUT=60
+VULCAN_SESSION_TIMEOUT=1h    # Accepts: 30s, 15m, 1h, or plain numbers
 
 # Development features
 RAILS_LOG_LEVEL=debug

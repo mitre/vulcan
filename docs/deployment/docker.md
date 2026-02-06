@@ -86,6 +86,7 @@ Key variables for Docker:
 - `SECRET_KEY_BASE` - Rails secret key
 - `RAILS_ENV` - Set to `production`
 - `RAILS_LOG_TO_STDOUT` - Set to `true` for container logs
+- `VULCAN_SESSION_TIMEOUT` - Session inactivity timeout (e.g., `15m`, `900`, `1h`). DoD standard: `15m`
 
 ### Volumes
 

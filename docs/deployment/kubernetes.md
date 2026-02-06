@@ -204,7 +204,7 @@ spec:
         - name: VULCAN_APP_URL
           value: "https://vulcan.example.com"
         - name: VULCAN_SESSION_TIMEOUT
-          value: "10"
+          value: "15m"    # DoD: 15m for users, 10m for admin
         
         # LDAP Configuration (if using)
         - name: VULCAN_ENABLE_LDAP
