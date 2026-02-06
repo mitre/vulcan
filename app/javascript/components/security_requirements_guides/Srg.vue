@@ -1,23 +1,23 @@
 <template>
-  <BenchmarkViewer :benchmark="normalizedBenchmark" type="stig" />
+  <BenchmarkViewer :benchmark="normalizedBenchmark" type="srg" />
 </template>
 
 <script>
 import BenchmarkViewer from "../shared/BenchmarkViewer.vue";
-import { stigToBenchmark } from "../../adapters/benchmark";
+import { srgToBenchmark } from "../../adapters/benchmark";
 
 export default {
-  name: "Stigs",
+  name: "Srg",
   components: { BenchmarkViewer },
   props: {
-    stig: {
+    srg: {
       type: Object,
       required: true,
     },
   },
   computed: {
     normalizedBenchmark() {
-      return stigToBenchmark(this.stig);
+      return srgToBenchmark(this.srg);
     },
   },
 };

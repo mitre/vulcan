@@ -29,28 +29,33 @@ import { useBenchmarkViewer } from '@/composables/useBenchmarkViewer'
  * 5. REUSABLE:
  *    - Works for STIG, SRG, CIS without code changes
  *    - Configuration-driven adaptation
+ *
+ * NOTE: Composable expects ADAPTED data (after stigToBenchmark/srgToBenchmark).
+ * Test data uses "rules" property, NOT "rules" or "requirements".
  */
 describe('useBenchmarkViewer', () => {
   let composable
 
+  // ADAPTED STIG data (after stigToBenchmark adapter)
   const stigBenchmark = {
     id: 1,
     title: 'Test STIG',
     version: 'V1R1',
-    stig_rules: [
+    rules: [
       { id: 1, rule_id: 'SV-001', title: 'Rule One', severity: 'high' },
       { id: 2, rule_id: 'SV-002', title: 'Rule Two', severity: 'medium' },
       { id: 3, rule_id: 'SV-003', title: 'Another Rule', severity: 'low' }
     ]
   }
 
+  // ADAPTED SRG data (after srgToBenchmark adapter)
   const srgBenchmark = {
     id: 1,
     title: 'Test SRG',
     version: 'V2R1',
-    requirements: [
-      { id: 1, req_id: 'SRG-001', title: 'Requirement One' },
-      { id: 2, req_id: 'SRG-002', title: 'Requirement Two' }
+    rules: [
+      { id: 1, rule_id: 'SRG-001', title: 'Requirement One' },
+      { id: 2, rule_id: 'SRG-002', title: 'Requirement Two' }
     ]
   }
 
@@ -68,11 +73,11 @@ describe('useBenchmarkViewer', () => {
 
     it('extracts items from benchmark based on type config', () => {
       expect(composable.items.value.length).toBe(3)
-      expect(composable.items.value).toEqual(stigBenchmark.stig_rules)
+      expect(composable.items.value).toEqual(stigBenchmark.rules)
     })
 
     it('selects first item by default', () => {
-      expect(composable.selectedItem.value).toEqual(stigBenchmark.stig_rules[0])
+      expect(composable.selectedItem.value).toEqual(stigBenchmark.rules[0])
     })
 
     it('searchTerm starts empty', () => {
@@ -89,7 +94,7 @@ describe('useBenchmarkViewer', () => {
   // ==========================================
   describe('item selection', () => {
     it('selectItem sets the selected item', () => {
-      const secondItem = stigBenchmark.stig_rules[1]
+      const secondItem = stigBenchmark.rules[1]
       composable.selectItem(secondItem)
       expect(composable.selectedItem.value).toEqual(secondItem)
     })
@@ -101,19 +106,19 @@ describe('useBenchmarkViewer', () => {
     })
 
     it('selectNext wraps to first item at end', () => {
-      composable.selectItem(stigBenchmark.stig_rules[2]) // Last item
+      composable.selectItem(stigBenchmark.rules[2]) // Last item
       composable.selectNext()
       expect(composable.selectedItem.value.id).toBe(1) // Wraps to first
     })
 
     it('selectPrevious moves to previous item', () => {
-      composable.selectItem(stigBenchmark.stig_rules[1]) // Second item
+      composable.selectItem(stigBenchmark.rules[1]) // Second item
       composable.selectPrevious()
       expect(composable.selectedItem.value.id).toBe(1) // First item
     })
 
     it('selectPrevious wraps to last item at start', () => {
-      composable.selectItem(stigBenchmark.stig_rules[0]) // First item
+      composable.selectItem(stigBenchmark.rules[0]) // First item
       composable.selectPrevious()
       expect(composable.selectedItem.value.id).toBe(3) // Wraps to last
     })
@@ -159,12 +164,12 @@ describe('useBenchmarkViewer', () => {
   describe('type-specific configuration', () => {
     it('works with STIG type', () => {
       composable = useBenchmarkViewer(stigBenchmark, 'stig')
-      expect(composable.items.value).toEqual(stigBenchmark.stig_rules)
+      expect(composable.items.value).toEqual(stigBenchmark.rules)
     })
 
     it('works with SRG type', () => {
       composable = useBenchmarkViewer(srgBenchmark, 'srg')
-      expect(composable.items.value).toEqual(srgBenchmark.requirements)
+      expect(composable.items.value).toEqual(srgBenchmark.rules)
     })
 
     it('provides type info', () => {

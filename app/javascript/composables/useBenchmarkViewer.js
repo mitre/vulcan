@@ -7,22 +7,22 @@ import { ref, computed } from "vue";
  */
 const BENCHMARK_CONFIG = {
   stig: {
-    itemTypeName: 'rule',
-    itemsKey: 'stig_rules',
-    searchFields: ['rule_id', 'title', 'severity'],
-    idField: 'rule_id',
+    itemTypeName: "rule",
+    itemsKey: "rules", // After stigToBenchmark adapter
+    searchFields: ["rule_id", "title", "severity"],
+    idField: "rule_id",
   },
   srg: {
-    itemTypeName: 'requirement',
-    itemsKey: 'requirements',
-    searchFields: ['req_id', 'title'],
-    idField: 'req_id',
+    itemTypeName: "requirement",
+    itemsKey: "rules", // After srgToBenchmark adapter
+    searchFields: ["rule_id", "title"],
+    idField: "rule_id",
   },
   cis: {
-    itemTypeName: 'control',
-    itemsKey: 'stig_rules', // CIS stored as STIG in DB
-    searchFields: ['rule_id', 'title', 'level'],
-    idField: 'rule_id',
+    itemTypeName: "control",
+    itemsKey: "rules", // After adapter (CIS uses stigToBenchmark)
+    searchFields: ["rule_id", "title", "level"],
+    idField: "rule_id",
   },
 };
 
@@ -63,7 +63,7 @@ export function useBenchmarkViewer(benchmarkData, type) {
   // State
   const benchmark = ref(benchmarkData);
   const benchmarkType = ref(type);
-  const searchTerm = ref('');
+  const searchTerm = ref("");
 
   // Extract items from benchmark using config
   const items = computed(() => {
@@ -78,9 +78,9 @@ export function useBenchmarkViewer(benchmarkData, type) {
     if (!searchTerm.value) return items.value;
 
     const search = searchTerm.value.toLowerCase();
-    return items.value.filter(item => {
+    return items.value.filter((item) => {
       // Search across configured fields
-      return config.searchFields.some(field => {
+      return config.searchFields.some((field) => {
         const value = item[field];
         return value && String(value).toLowerCase().includes(search);
       });
@@ -102,7 +102,7 @@ export function useBenchmarkViewer(benchmarkData, type) {
    */
   function selectNext() {
     const currentIndex = filteredItems.value.findIndex(
-      item => item.id === selectedItem.value?.id
+      (item) => item.id === selectedItem.value?.id,
     );
     const nextIndex = (currentIndex + 1) % filteredItems.value.length;
     selectedItem.value = filteredItems.value[nextIndex];
@@ -113,11 +113,9 @@ export function useBenchmarkViewer(benchmarkData, type) {
    */
   function selectPrevious() {
     const currentIndex = filteredItems.value.findIndex(
-      item => item.id === selectedItem.value?.id
+      (item) => item.id === selectedItem.value?.id,
     );
-    const prevIndex = currentIndex <= 0
-      ? filteredItems.value.length - 1
-      : currentIndex - 1;
+    const prevIndex = currentIndex <= 0 ? filteredItems.value.length - 1 : currentIndex - 1;
     selectedItem.value = filteredItems.value[prevIndex];
   }
 
@@ -127,8 +125,10 @@ export function useBenchmarkViewer(benchmarkData, type) {
   function setSearch(term) {
     searchTerm.value = term;
     // If current selected item is filtered out, select first filtered item
-    if (filteredItems.value.length > 0 &&
-        !filteredItems.value.find(item => item.id === selectedItem.value?.id)) {
+    if (
+      filteredItems.value.length > 0 &&
+      !filteredItems.value.find((item) => item.id === selectedItem.value?.id)
+    ) {
       selectedItem.value = filteredItems.value[0];
     }
   }

@@ -15,6 +15,7 @@ const entryPoints = {
   project_component: "app/javascript/packs/project_component.js",
   rules: "app/javascript/packs/rules.js",
   security_requirements_guides: "app/javascript/packs/security_requirements_guides.js",
+  srg: "app/javascript/packs/srg.js",
   stig: "app/javascript/packs/stig.js",
   stigs: "app/javascript/packs/stigs.js",
   users: "app/javascript/packs/users.js",

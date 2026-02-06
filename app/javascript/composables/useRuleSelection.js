@@ -172,7 +172,7 @@ export function useRuleSelection(rules, componentId, options = {}) {
           }
         }
       },
-      { immediate: true }
+      { immediate: true },
     );
   }
 

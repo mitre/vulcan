@@ -37,11 +37,12 @@ localVue.use(IconsPlugin)
 describe('BenchmarkViewer', () => {
   let wrapper
 
+  // ADAPTED STIG data (after stigToBenchmark adapter)
   const stigBenchmark = {
     id: 1,
     title: 'Test STIG',
     version: 'V1R1',
-    stig_rules: [
+    rules: [
       { id: 1, rule_id: 'SV-001', title: 'Rule One', severity: 'high' },
       { id: 2, rule_id: 'SV-002', title: 'Rule Two', severity: 'medium' }
     ]
@@ -58,9 +59,9 @@ describe('BenchmarkViewer', () => {
       stubs: {
         BBreadcrumb: true,
         BaseCommandBar: true,
-        StigRuleList: true,
-        StigRuleDetails: true,
-        StigRuleOverview: true
+        RuleList: true,
+        RuleDetails: true,
+        RuleOverview: true
       }
     })
   }
@@ -85,7 +86,7 @@ describe('BenchmarkViewer', () => {
     })
 
     it('breadcrumb shows type and title for SRG', () => {
-      const srgBenchmark = { ...stigBenchmark, title: 'Test SRG', requirements: [] }
+      const srgBenchmark = { ...stigBenchmark, title: 'Test SRG', rules: [] }
       wrapper = createWrapper({ benchmark: srgBenchmark, type: 'srg' })
       const crumbs = wrapper.vm.breadcrumbs
       expect(crumbs.some(c => c.text === 'SRGs')).toBe(true)
@@ -106,19 +107,19 @@ describe('BenchmarkViewer', () => {
   })
 
   describe('three-column layout', () => {
-    it('renders StigRuleList component for list column', () => {
+    it('renders RuleList component for list column', () => {
       wrapper = createWrapper({ type: 'stig' })
-      expect(wrapper.findComponent({ name: 'StigRuleList' }).exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'RuleList' }).exists()).toBe(true)
     })
 
-    it('renders StigRuleDetails component for details column', () => {
+    it('renders RuleDetails component for details column', () => {
       wrapper = createWrapper({ type: 'stig' })
-      expect(wrapper.findComponent({ name: 'StigRuleDetails' }).exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'RuleDetails' }).exists()).toBe(true)
     })
 
-    it('renders StigRuleOverview component for overview column', () => {
+    it('renders RuleOverview component for overview column', () => {
       wrapper = createWrapper({ type: 'stig' })
-      expect(wrapper.findComponent({ name: 'StigRuleOverview' }).exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'RuleOverview' }).exists()).toBe(true)
     })
   })
 
@@ -144,7 +145,7 @@ describe('BenchmarkViewer', () => {
     })
 
     it('adapts for SRG type', () => {
-      const srgBenchmark = { ...stigBenchmark, requirements: [] }
+      const srgBenchmark = { ...stigBenchmark, rules: [] }
       wrapper = createWrapper({ benchmark: srgBenchmark, type: 'srg' })
       expect(wrapper.vm.benchmarkType).toBe('srg')
       expect(wrapper.vm.itemTypeName).toBe('requirement')

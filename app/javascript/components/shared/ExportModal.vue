@@ -1,11 +1,5 @@
 <template>
-  <b-modal
-    :visible="visible"
-    :title="modalTitle"
-    centered
-    @hidden="onHidden"
-    @hide="onHide"
-  >
+  <b-modal :visible="visible" :title="modalTitle" centered @hidden="onHidden" @hide="onHide">
     <!-- Format Selection (Radio Buttons) -->
     <div class="mb-3">
       <label class="font-weight-bold d-block mb-2">Format</label>
@@ -50,8 +44,8 @@
           data-testid="select-all"
           :checked="allSelected"
           :indeterminate="someSelected && !allSelected"
-          @change="toggleSelectAll"
           class="mb-2"
+          @change="toggleSelectAll"
         >
           All {{ components.length }} components
         </b-form-checkbox>
@@ -68,19 +62,10 @@
 
     <!-- Footer -->
     <template #modal-footer>
-      <b-button
-        variant="outline-secondary"
-        data-testid="cancel-btn"
-        @click="onCancel"
-      >
+      <b-button variant="outline-secondary" data-testid="cancel-btn" @click="onCancel">
         Cancel
       </b-button>
-      <b-button
-        variant="primary"
-        data-testid="export-btn"
-        :disabled="!canExport"
-        @click="onExport"
-      >
+      <b-button variant="primary" data-testid="export-btn" :disabled="!canExport" @click="onExport">
         Export
       </b-button>
     </template>

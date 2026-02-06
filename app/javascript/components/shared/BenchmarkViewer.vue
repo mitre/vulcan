@@ -5,19 +5,10 @@
     <!-- Command Bar -->
     <BaseCommandBar>
       <template #left>
-        <b-button
-          variant="outline-secondary"
-          size="sm"
-          :href="listPath"
-        >
+        <b-button variant="outline-secondary" size="sm" :href="listPath">
           <b-icon icon="arrow-left" /> Back to {{ typeLabel }}s
         </b-button>
-        <b-button
-          variant="outline-secondary"
-          size="sm"
-          class="ml-2"
-          @click="openExportModal"
-        >
+        <b-button variant="outline-secondary" size="sm" class="ml-2" @click="openExportModal">
           <b-icon icon="download" /> Download
         </b-button>
       </template>
@@ -30,21 +21,22 @@
     <b-row>
       <!-- Left: Item List -->
       <b-col md="3">
-        <StigRuleList
+        <RuleList
           :rules="filteredItems"
           :initial-selected-rule="selectedItem"
+          :type="type"
           @rule-selected="selectItem"
         />
       </b-col>
 
       <!-- Middle: Item Details -->
       <b-col md="6">
-        <StigRuleDetails :selected-rule="selectedItem" />
+        <RuleDetails :selected-rule="selectedItem" :type="type" />
       </b-col>
 
       <!-- Right: Item Overview -->
       <b-col md="3">
-        <StigRuleOverview :selected-rule="selectedItem" />
+        <RuleOverview :selected-rule="selectedItem" :type="type" />
       </b-col>
     </b-row>
 
@@ -63,9 +55,9 @@
 import axios from "axios";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import ExportModal from "./ExportModal.vue";
-import StigRuleList from "../stigs/StigRuleList.vue";
-import StigRuleDetails from "../stigs/StigRuleDetails.vue";
-import StigRuleOverview from "../stigs/StigRuleOverview.vue";
+import RuleList from "../benchmarks/RuleList.vue";
+import RuleDetails from "../benchmarks/RuleDetails.vue";
+import RuleOverview from "../benchmarks/RuleOverview.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useBenchmarkViewer } from "../../composables";
 
@@ -74,9 +66,9 @@ export default {
   components: {
     BaseCommandBar,
     ExportModal,
-    StigRuleList,
-    StigRuleDetails,
-    StigRuleOverview,
+    RuleList,
+    RuleDetails,
+    RuleOverview,
   },
   mixins: [AlertMixinVue],
   props: {
@@ -87,7 +79,7 @@ export default {
     type: {
       type: String,
       required: true,
-      validator: (value) => ['stig', 'srg', 'cis'].includes(value),
+      validator: (value) => ["stig", "srg", "cis"].includes(value),
     },
   },
   setup(props) {
@@ -125,25 +117,25 @@ export default {
   computed: {
     breadcrumbs() {
       return [
-        { text: this.typeLabel + 's', href: this.listPath },
-        { text: `${this.benchmark.title} ${this.benchmark.version || ''}`, active: true },
+        { text: this.typeLabel + "s", href: this.listPath },
+        { text: `${this.benchmark.title} ${this.benchmark.version || ""}`, active: true },
       ];
     },
     typeLabel() {
       const labels = {
-        stig: 'STIG',
-        srg: 'SRG',
-        cis: 'CIS Benchmark',
+        stig: "STIG",
+        srg: "SRG",
+        cis: "CIS Benchmark",
       };
-      return labels[this.type] || 'Benchmark';
+      return labels[this.type] || "Benchmark";
     },
     listPath() {
       const paths = {
-        stig: '/stigs',
-        srg: '/srgs',
-        cis: '/stigs', // CIS shown in STIGs list
+        stig: "/stigs",
+        srg: "/srgs",
+        cis: "/stigs", // CIS shown in STIGs list
       };
-      return paths[this.type] || '/';
+      return paths[this.type] || "/";
     },
   },
   methods: {
@@ -151,7 +143,7 @@ export default {
       this.showExportModal = true;
     },
     handleExport({ type, componentIds }) {
-      const benchmarkType = this.type === 'srg' ? 'srgs' : 'stigs';
+      const benchmarkType = this.type === "srg" ? "srgs" : "stigs";
       axios
         .get(`/${benchmarkType}/${this.benchmark.id}/export/${type}`)
         .then(() => {
