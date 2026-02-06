@@ -122,6 +122,162 @@ RSpec.describe Component, type: :model do
     end
   end
 
+  context 'spreadsheet import header aliases (Postel\'s Law)' do
+    # Requirement: Users should be able to export a STIG/SRG CSV from Vulcan's benchmark viewer
+    # and import it as a Component spreadsheet without manually renaming headers.
+    # The import should accept both standard DISA headers AND benchmark export headers.
+
+    let(:srg_rules) { @srg.srg_rules.order(:version) }
+    let(:first_srg_rule) { srg_rules.first }
+    let(:second_srg_rule) { srg_rules.second }
+
+    # Helper: create a CSV tempfile with given headers and rows
+    def create_csv_file(headers, rows)
+      file = Tempfile.new(['import_test', '.csv'])
+      CSV.open(file.path, 'w') do |csv|
+        csv << headers
+        rows.each { |row| csv << row }
+      end
+      file.path
+    end
+
+    # Build row data that works for all SRG rules in the fixture.
+    # Uses real SRG IDs from the GPOS SRG fixture.
+    def build_all_srg_rows_disa(srg_rules_list, prefix)
+      srg_rules_list.map.with_index(1) do |srg_rule, idx|
+        stig_id = "#{prefix}-#{format('%06d', idx)}"
+        [
+          srg_rule.version,           # SRGID
+          stig_id,                    # STIGID
+          'CAT II',                   # Severity
+          'Test requirement title',   # Requirement
+          'Test vuln discussion',     # VulDiscussion
+          'Not Yet Determined',       # Status
+          'Test check content',       # Check
+          'Test fix text',            # Fix
+          '',                         # Status Justification
+          ''                          # Artifact Description
+        ]
+      end
+    end
+
+    def build_all_srg_rows_benchmark(srg_rules_list, prefix)
+      srg_rules_list.map.with_index(1) do |srg_rule, idx|
+        stig_id = "#{prefix}-#{format('%06d', idx)}"
+        [
+          srg_rule.version,           # SRG ID
+          stig_id,                    # STIG ID
+          'CAT II',                   # Severity
+          'Test requirement title',   # Title
+          'Test vuln discussion',     # Description
+          'Not Yet Determined',       # Status
+          'Test check content',       # Check Content
+          'Test fix text',            # Fix Text
+          '',                         # Status Justification
+          '',                         # Artifact Description
+          ''                          # Mitigations
+        ]
+      end
+    end
+
+    it 'imports successfully with standard DISA headers (backwards compatibility)' do
+      disa_headers = %w[SRGID STIGID Severity Requirement VulDiscussion Status Check Fix] +
+                     ['Status Justification', 'Artifact Description']
+      rows = build_all_srg_rows_disa(srg_rules, 'TEST-01')
+
+      csv_path = create_csv_file(disa_headers, rows)
+      component = Component.new(project: @p1, based_on: @srg)
+      component.from_spreadsheet(csv_path)
+
+      expect(component.errors.full_messages).to be_empty
+      expect(component.rules.size).to eq(srg_rules.size)
+      expect(component.rules.first.title).to eq('Test requirement title')
+    end
+
+    it 'imports successfully with benchmark export headers (Title, Description, STIG ID, etc.)' do
+      # These are the headers produced by BENCHMARK_CSV_COLUMNS export
+      benchmark_headers = ['SRG ID', 'STIG ID', 'Severity', 'Title', 'Description',
+                           'Status', 'Check Content', 'Fix Text',
+                           'Status Justification', 'Artifact Description', 'Mitigations']
+      rows = build_all_srg_rows_benchmark(srg_rules, 'TEST-01')
+
+      csv_path = create_csv_file(benchmark_headers, rows)
+      component = Component.new(project: @p1, based_on: @srg)
+      component.from_spreadsheet(csv_path)
+
+      expect(component.errors.full_messages).to be_empty
+      expect(component.rules.size).to eq(srg_rules.size)
+      # Verify field mapping worked correctly
+      expect(component.rules.first.title).to eq('Test requirement title')
+    end
+
+    it 'maps "Description" header to vuln_discussion field' do
+      benchmark_headers = ['SRG ID', 'STIG ID', 'Severity', 'Title', 'Description',
+                           'Status', 'Check Content', 'Fix Text',
+                           'Status Justification', 'Artifact Description', 'Mitigations']
+      rows = build_all_srg_rows_benchmark(srg_rules, 'TEST-01')
+
+      csv_path = create_csv_file(benchmark_headers, rows)
+      component = Component.new(project: @p1, based_on: @srg)
+      component.from_spreadsheet(csv_path)
+
+      expect(component.errors.full_messages).to be_empty
+      first_rule = component.rules.first
+      expect(first_rule.disa_rule_descriptions.first.vuln_discussion).to eq('Test vuln discussion')
+    end
+
+    it 'maps "Check Content" header to check field' do
+      benchmark_headers = ['SRG ID', 'STIG ID', 'Severity', 'Title', 'Description',
+                           'Status', 'Check Content', 'Fix Text',
+                           'Status Justification', 'Artifact Description', 'Mitigations']
+      rows = build_all_srg_rows_benchmark(srg_rules, 'TEST-01')
+
+      csv_path = create_csv_file(benchmark_headers, rows)
+      component = Component.new(project: @p1, based_on: @srg)
+      component.from_spreadsheet(csv_path)
+
+      expect(component.errors.full_messages).to be_empty
+      first_rule = component.rules.first
+      expect(first_rule.checks.first.content).to eq('Test check content')
+    end
+
+    it 'maps "Mitigations" header to mitigation field' do
+      benchmark_headers = ['SRG ID', 'STIG ID', 'Severity', 'Title', 'Description',
+                           'Status', 'Check Content', 'Fix Text',
+                           'Status Justification', 'Artifact Description', 'Mitigations']
+      rows = srg_rules.map.with_index(1) do |srg_rule, idx|
+        stig_id = "TEST-01-#{format('%06d', idx)}"
+        [
+          srg_rule.version, stig_id, 'CAT II', 'title', 'discussion',
+          'Not Yet Determined', 'check', 'fix', '', '', 'Test mitigation text'
+        ]
+      end
+
+      csv_path = create_csv_file(benchmark_headers, rows)
+      component = Component.new(project: @p1, based_on: @srg)
+      component.from_spreadsheet(csv_path)
+
+      expect(component.errors.full_messages).to be_empty
+      first_rule = component.rules.first
+      expect(first_rule.disa_rule_descriptions.first.mitigations).to eq('Test mitigation text')
+    end
+
+    it 'maps "Fix Text" header to fixtext field' do
+      benchmark_headers = ['SRG ID', 'STIG ID', 'Severity', 'Title', 'Description',
+                           'Status', 'Check Content', 'Fix Text',
+                           'Status Justification', 'Artifact Description', 'Mitigations']
+      rows = build_all_srg_rows_benchmark(srg_rules, 'TEST-01')
+
+      csv_path = create_csv_file(benchmark_headers, rows)
+      component = Component.new(project: @p1, based_on: @srg)
+      component.from_spreadsheet(csv_path)
+
+      expect(component.errors.full_messages).to be_empty
+      first_rule = component.rules.first
+      expect(first_rule.fixtext).to eq('Test fix text')
+    end
+  end
+
   context 'create rule satisfaction' do
     it 'correctly establishes rule satisfactions relation when a rule is satisfied by more than one other rules' do
       pref = @p1_c1.prefix

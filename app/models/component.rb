@@ -87,6 +87,7 @@ class Component < ApplicationRecord
     # Parse the spreadsheet and extract data from the first sheet. Include headers so data is of the form
     # {VulDiscussion: 'Value', SRG ID: 'Value', etc...}
     parsed = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
+    parsed = normalize_import_headers(parsed)
     file_headers = parsed.first.keys
     # Since the component isn't saved yet, calling `based_on` here returns the wrong information
     srg_rules = SecurityRequirementsGuide.find(security_requirements_guide_id).srg_rules
@@ -476,6 +477,26 @@ class Component < ApplicationRecord
   end
 
   private
+
+  # Normalize spreadsheet headers using HEADER_ALIASES so that benchmark CSV
+  # export headers (e.g., "STIG ID", "Title") are mapped to the standard DISA
+  # import headers (e.g., "STIGID", "Requirement") before processing.
+  def normalize_import_headers(parsed)
+    return parsed if parsed.empty?
+
+    # Build a rename map for only the aliases that appear in this file's headers
+    file_headers = parsed.first.keys
+    rename_map = {}
+    HEADER_ALIASES.each do |export_header, import_header|
+      rename_map[export_header] = import_header if file_headers.include?(export_header)
+    end
+
+    return parsed if rename_map.empty?
+
+    parsed.map do |row|
+      row.transform_keys { |key| rename_map[key] || key }
+    end
+  end
 
   def import_srg_rules
     # We assume that we will automatically add the SRG rules within the transaction of the inital creation
