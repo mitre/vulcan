@@ -66,7 +66,7 @@
             v-for="srg in srgs"
             :key="srg[0]"
             class="text-truncate"
-            :href="`/security_requirements_guides/${srg[0]}`"
+            :href="`/srgs/${srg[0]}`"
             >{{ srg[1] }}</b-list-group-item
           >
         </b-list-group>
@@ -104,7 +104,7 @@
             v-for="rule in srgRules"
             :key="rule.id"
             class="text-truncate"
-            :href="`/security_requirements_guides/${rule.srg_id}?rule_id=${rule.rule_id}`"
+            :href="`/srgs/${rule.srg_id}?rule_id=${rule.rule_id}`"
           >
             <span class="font-weight-bold">{{ rule.rule_id }}</span>
             <small class="text-muted ml-1">{{ rule.title }}</small>
