@@ -209,6 +209,77 @@ FROM ruby:3.3.9-slim
 - **Docker Compose** - Local development
 - **AWS/Azure/GCP** - Cloud platforms
 
+## Data Import & Export
+
+### Import Pipeline
+
+**SRG/STIG XML Upload:**
+1. Controller receives XML file via `POST /srgs` or `POST /stigs`
+2. Parsed by `Xccdf::Benchmark.parse(xml)` (library in `app/lib/xccdf/`)
+3. `SecurityRequirementsGuide.from_mapping()` or `Stig.from_mapping()` creates the record
+4. `after_create` callback imports all rules from the parsed benchmark
+5. Raw XML stored in database for re-export
+
+**Component Creation from SRG:**
+1. `Component#after_create :import_srg_rules` clones SRG requirements
+2. `Component#from_mapping(srg)` maps each SRG rule to a component rule
+3. Sequential rule IDs generated (000001, 000002, ...)
+
+**Spreadsheet Import (XLSX/CSV):**
+1. `Component#from_spreadsheet` parses XLSX or CSV via the `Roo` gem
+2. Validates required headers against `ImportConstants::REQUIRED_MAPPING_CONSTANTS`
+3. Maps columns to rule attributes, converts severity (`CAT I/II/III` → `high/medium/low`)
+
+### Export Pipeline
+
+**Formats by entity:**
+
+| Entity | XCCDF | CSV | InSpec | Excel | DISA Excel |
+|--------|-------|-----|--------|-------|------------|
+| Component | Yes | Yes | Yes | — | — |
+| Project | Yes (ZIP) | — | Yes (ZIP) | Yes | Yes |
+| STIG | Yes | Yes | — | — | — |
+| SRG | Yes | Yes | — | — | — |
+
+**Key files:**
+- `app/helpers/export_helper.rb` — XCCDF, InSpec, and Excel export logic
+- `app/constants/export_constants.rb` — column definitions, headers, defaults
+- `app/javascript/constants/csvColumns.js` — frontend column picker definitions
+- `app/javascript/components/shared/ExportModal.vue` — reusable export UI
+
+**CSV architecture:**
+- `BaseRule#csv_value_for(column_key)` maps 18 column keys to rule attribute values
+- `ExportConstants::BENCHMARK_CSV_COLUMNS` defines available columns with defaults
+- SRG exports override the `version` header from "STIG ID" to "SRG ID"
+- Frontend `ExportModal` renders a column picker when `columnDefinitions` prop is provided
+
+### Satisfaction Parsing (Postel's Law)
+
+Rule satisfaction relationships (`Satisfied By` / `Satisfies`) are parsed from `vendor_comments` during component import. The implementation follows [Postel's Law](https://en.wikipedia.org/wiki/Robustness_principle): *be liberal in what you accept, conservative in what you produce.*
+
+**Ingest (liberal):**
+- Case-insensitive keyword matching (`Satisfied By:`, `satisfied by:`, `SATISFIED BY:`)
+- Both directions: `Satisfied By:` and `Satisfies:`
+- Comma or semicolon separators: `PREFIX-ID1, PREFIX-ID2` or `PREFIX-ID1; PREFIX-ID2`
+- Optional trailing period
+- Extra whitespace tolerated
+- Other text may precede the keyword
+
+**Export (canonical):**
+```
+Satisfied By: PREFIX-RULEID, PREFIX-RULEID.
+```
+
+**Implementation** (`app/models/component.rb#create_rule_satisfactions`):
+
+```ruby
+satisfaction_pattern = /\b(satisfi(?:ed\s+by|es))\s*:\s*/i
+```
+
+The method uses PostgreSQL `ILIKE` to find candidate rules, then applies the regex to extract the direction and identifier list. Each identifier is resolved to a rule within the same component.
+
+**Database schema:** Rules use a self-referential many-to-many join table (`rules_satisfied_by`) with `rule_id` and `satisfied_by_rule_id` columns.
+
 ## Future Architecture Plans
 
 ### Vue 3 Migration

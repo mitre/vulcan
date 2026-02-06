@@ -31,7 +31,14 @@ export default defineConfig({
     nav: [
       { text: "Home", link: "/" },
       { text: "Getting Started", link: "/getting-started/quick-start" },
-      { text: "User Guide", link: "https://mitre.github.io/saf-training/courses/guidance/" },
+      {
+        text: "User Guide",
+        items: [
+          { text: "Overview", link: "/user-guide/overview" },
+          { text: "Import & Export", link: "/user-guide/import-export" },
+          { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
+        ],
+      },
       {
         text: "Deployment",
         items: [
@@ -110,6 +117,15 @@ export default defineConfig({
             { text: "Installation", link: "/getting-started/installation" },
             { text: "Configuration", link: "/getting-started/configuration" },
             { text: "Environment Variables", link: "/getting-started/environment-variables" },
+          ],
+        },
+      ],
+      "/user-guide/": [
+        {
+          text: "User Guide",
+          items: [
+            { text: "Overview", link: "/user-guide/overview" },
+            { text: "Import & Export", link: "/user-guide/import-export" },
           ],
         },
       ],
