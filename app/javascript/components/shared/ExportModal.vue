@@ -204,9 +204,7 @@ export default {
     },
     showColumnPicker() {
       return (
-        this.columnDefinitions &&
-        this.columnDefinitions.length > 0 &&
-        this.selectedFormat === "csv"
+        this.columnDefinitions && this.columnDefinitions.length > 0 && this.selectedFormat === "csv"
       );
     },
     canExport() {
@@ -264,9 +262,7 @@ export default {
     },
     resetColumnsToDefaults() {
       if (this.columnDefinitions) {
-        this.selectedColumns = this.columnDefinitions
-          .filter((c) => c.default)
-          .map((c) => c.key);
+        this.selectedColumns = this.columnDefinitions.filter((c) => c.default).map((c) => c.key);
       } else {
         this.selectedColumns = [];
       }
