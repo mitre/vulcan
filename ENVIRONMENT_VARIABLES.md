@@ -14,12 +14,23 @@ This document lists all environment variables that can be used to configure Vulc
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `DATABASE_URL` | PostgreSQL connection string (12-factor, takes precedence) | - | `postgres://user:pass@localhost:5432/vulcan_production` |
+| `DB_SUFFIX` | Database name suffix for worktree isolation (development only) | - | `_v2`, `_v3` |
 | `POSTGRES_USER` | PostgreSQL username | `postgres` | `vulcan_user` |
 | `POSTGRES_PASSWORD` | PostgreSQL password | `postgres` | `secure_password` |
 | `POSTGRES_DB` | PostgreSQL database name | `vulcan_postgres_production` | `vulcan_prod` |
 | `DATABASE_PORT` | PostgreSQL port | `5432` | `5432` |
 
 **Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
+
+**Worktree Isolation**: When developing with multiple git worktrees (e.g., v2.x and v3.x), set `DB_SUFFIX` in each worktree's `.env` to give each branch its own database. This prevents migration conflicts when branches have diverging schemas. Not needed in production — each deployment has its own database.
+
+```bash
+# v2.x worktree .env
+DB_SUFFIX=_v2    # → vulcan_vue_development_v2, vulcan_vue_test_v2
+
+# v3.x worktree .env
+DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
+```
 
 **Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` is deprecated. Use `POSTGRES_PASSWORD` instead.
 

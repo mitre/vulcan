@@ -23,7 +23,7 @@ default: &default
 
 development:
   <<: *default
-  database: vulcan_vue_development
+  database: vulcan_vue_development<%= ENV['DB_SUFFIX'] %>
   host: 127.0.0.1
   port: 5432
   username: postgres
@@ -43,7 +43,7 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: vulcan_vue_test
+  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
   host: 127.0.0.1
   port: 5432
   username: postgres
