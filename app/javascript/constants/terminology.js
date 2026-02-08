@@ -30,9 +30,10 @@ export const SEVERITY_LABELS = {
 };
 
 // Dropdown options for b-form-select (value → display label)
-export const SEVERITY_OPTIONS = Object.entries(SEVERITY_LABELS).map(
-  ([value, text]) => ({ value, text })
-);
+export const SEVERITY_OPTIONS = Object.entries(SEVERITY_LABELS).map(([value, text]) => ({
+  value,
+  text,
+}));
 
 // Export file format labels (separate from document type nouns)
 export const EXPORT_FORMATS = {

@@ -69,6 +69,38 @@
         </b-form-group>
       </div>
 
+      <!-- severity_override_guidance (between severity and title for logical flow) -->
+      <b-form-group
+        v-if="fields.displayed.includes('severity_override_guidance')"
+        :id="`ruleEditor-severity_override_guidance-group-${mod}`"
+      >
+        <label :for="`ruleEditor-severity_override_guidance-${mod}`">
+          Severity Override Guidance
+          <b-icon
+            v-b-tooltip.hover.html="'Explain why the severity was changed from the SRG default'"
+            icon="info-circle"
+            aria-hidden="true"
+          />
+        </label>
+        <MarkdownTextarea
+          :id="`ruleEditor-severity_override_guidance-${mod}`"
+          :value="rule.disa_rule_descriptions_attributes[0] && rule.disa_rule_descriptions_attributes[0].severity_override_guidance"
+          :input-class="inputClass('severity_override_guidance')"
+          placeholder=""
+          :disabled="disabled || fields.disabled.includes('severity_override_guidance')"
+          rows="1"
+          max-rows="99"
+          @input="
+            $root.$emit(
+              'update:disaDescription',
+              rule,
+              { ...rule.disa_rule_descriptions_attributes[0], severity_override_guidance: $event },
+              0,
+            )
+          "
+        />
+      </b-form-group>
+
       <!-- status_justification -->
       <template v-if="fields.displayed.includes('status_justification')">
         <b-form-group :id="`ruleEditor-status_justification-group-${mod}`">
@@ -133,6 +165,52 @@
           </b-form-invalid-feedback>
         </b-form-group>
       </template>
+
+      <!-- IA Control and CCI (always visible, read-only) -->
+      <div
+        v-if="rule.nist_control_family || rule.ident"
+        class="row"
+        data-testid="ia-control-cci"
+      >
+        <b-form-group
+          :id="`ruleEditor-ia_control-group-${mod}`"
+          class="col-md-6"
+        >
+          <label :for="`ruleEditor-ia_control-${mod}`">
+            IA Control
+            <b-icon
+              v-b-tooltip.hover.html="'The NIST control family (e.g. AC-2) mapped to this requirement'"
+              icon="info-circle"
+              aria-hidden="true"
+            />
+          </label>
+          <b-form-input
+            :id="`ruleEditor-ia_control-${mod}`"
+            :value="rule.nist_control_family || '—'"
+            readonly
+            class="bg-light"
+          />
+        </b-form-group>
+        <b-form-group
+          :id="`ruleEditor-cci-group-${mod}`"
+          class="col-md-6"
+        >
+          <label :for="`ruleEditor-cci-${mod}`">
+            CCI
+            <b-icon
+              v-b-tooltip.hover.html="'The Common Control Indicator (CCI) mapped to this requirement'"
+              icon="info-circle"
+              aria-hidden="true"
+            />
+          </label>
+          <b-form-input
+            :id="`ruleEditor-cci-${mod}`"
+            :value="rule.ident || '—'"
+            readonly
+            class="bg-light"
+          />
+        </b-form-group>
+      </div>
 
       <template v-if="disa_fields">
         <!-- disa_rule_description -->
@@ -209,12 +287,9 @@
       </b-form-group>
 
       <template v-if="check_fields">
-        <!-- checks -->
+        <!-- checks: visibility controlled by check_fields config from composable -->
         <CheckForm
-          v-if="
-            (rule.satisfied_by.length > 0 || rule.status == 'Applicable - Configurable') &&
-            rule.checks_attributes.length >= 1
-          "
+          v-if="rule.checks_attributes.length >= 1"
           :rule="rule"
           :index="0"
           :disabled="disabled"
@@ -339,7 +414,7 @@
             :value="rule.rule_weight"
             :input-class="inputClass('rule_weight')"
             placeholder=""
-            :disabled="disabled || fields.disabled.includes('rule_weight').disabled"
+            :disabled="disabled || fields.disabled.includes('rule_weight')"
             @input="$root.$emit('update:rule', { ...rule, rule_weight: $event })"
           />
           <b-form-valid-feedback v-if="hasValidFeedback('rule_weight')">
