@@ -14,14 +14,14 @@
             placeholder="Search Rule by STIG ID or SRG ID"
           /><br />
           <strong>Filter by Severity</strong><br />
-          <button class="btn btn-danger mb-2" @click="setSeverity('high')">
-            High <span class="badge badge-light">{{ high_count }}</span>
+          <button class="btn btn-danger text-white mb-2" @click="setSeverity('high')">
+            CAT I <span class="badge badge-light">{{ high_count }}</span>
           </button>
-          <button class="btn btn-warning mb-2" @click="setSeverity('medium')">
-            Medium <span class="badge badge-light">{{ medium_count }}</span>
+          <button class="btn btn-warning text-dark mb-2" @click="setSeverity('medium')">
+            CAT II <span class="badge badge-light">{{ medium_count }}</span>
           </button>
-          <button class="btn btn-success mb-2" @click="setSeverity('low')">
-            Low <span class="badge badge-light">{{ low_count }}</span>
+          <button class="btn btn-success text-white mb-2" @click="setSeverity('low')">
+            CAT III <span class="badge badge-light">{{ low_count }}</span>
           </button>
           <button class="btn btn-info mb-2" @click="setSeverity('')">
             All <span class="badge badge-light">{{ rules.length }}</span>

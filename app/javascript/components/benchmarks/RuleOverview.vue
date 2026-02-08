@@ -68,7 +68,7 @@
         <li class="list-group-item">
           <strong>Severity</strong>:
           <span class="badge" :class="severityBgColor">
-            {{ selectedRule.rule_severity }}
+            {{ SEVERITY_LABELS[selectedRule.rule_severity] || selectedRule.rule_severity }}
           </span>
         </li>
 
@@ -117,7 +117,7 @@
 </template>
 
 <script>
-import { RULE_TERM } from "../../constants/terminology";
+import { RULE_TERM, SEVERITY_LABELS } from "../../constants/terminology";
 import { parseMitreAttack, parseCisControls } from "../../utils/identParser";
 import { truncateRuleId } from "../../utils/ruleIdFormatter";
 
@@ -137,6 +137,7 @@ export default {
   data() {
     return {
       RULE_TERM,
+      SEVERITY_LABELS,
       showFullRuleId: false,
       showLegacyIds: false,
     };
@@ -155,11 +156,11 @@ export default {
     severityBgColor() {
       const severity = this.selectedRule.rule_severity;
       if (severity === "high") {
-        return "bg-danger";
+        return "bg-danger text-white";
       } else if (severity === "medium") {
         return "bg-warning text-dark";
       } else {
-        return "bg-success";
+        return "bg-success text-white";
       }
     },
     mitreTechniques() {

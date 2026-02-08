@@ -337,10 +337,10 @@ describe('RuleOverview', () => {
   // COMMON FIELDS (both types)
   // ==========================================
   describe('common fields', () => {
-    it('displays Severity with badge', () => {
+    it('displays Severity with CAT label badge', () => {
       wrapper = createWrapper()
       expect(wrapper.text()).toContain('Severity')
-      expect(wrapper.text()).toContain('high')
+      expect(wrapper.text()).toContain('CAT I')
     })
 
     it('displays CCI', () => {
@@ -360,19 +360,19 @@ describe('RuleOverview', () => {
   // SEVERITY BADGE
   // ==========================================
   describe('severity badge', () => {
-    it('applies bg-danger class for high severity', () => {
+    it('applies bg-danger text-white class for high severity', () => {
       wrapper = createWrapper({ selectedRule: { ...stigRule, rule_severity: 'high' } })
-      expect(wrapper.vm.severityBgColor).toBe('bg-danger')
+      expect(wrapper.vm.severityBgColor).toBe('bg-danger text-white')
     })
 
-    it('applies bg-warning class for medium severity', () => {
+    it('applies bg-warning text-dark class for medium severity', () => {
       wrapper = createWrapper({ selectedRule: { ...stigRule, rule_severity: 'medium' } })
       expect(wrapper.vm.severityBgColor).toBe('bg-warning text-dark')
     })
 
-    it('applies bg-success class for low severity', () => {
+    it('applies bg-success text-white class for low severity', () => {
       wrapper = createWrapper({ selectedRule: { ...stigRule, rule_severity: 'low' } })
-      expect(wrapper.vm.severityBgColor).toBe('bg-success')
+      expect(wrapper.vm.severityBgColor).toBe('bg-success text-white')
     })
   })
 

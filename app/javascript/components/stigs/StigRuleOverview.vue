@@ -12,8 +12,8 @@
         <li class="list-group-item"><strong>SRG ID</strong>: {{ selectedRule.srg_id }}</li>
         <li class="list-group-item">
           <strong>Severity</strong>:
-          <span :class="severityBgColor">
-            {{ selectedRule.rule_severity }}
+          <span class="badge" :class="severityBgColor">
+            {{ SEVERITY_LABELS[selectedRule.rule_severity] || selectedRule.rule_severity }}
           </span>
         </li>
         <li class="list-group-item"><strong>Legacy IDs</strong>: {{ selectedRule.legacy_ids }}</li>
@@ -27,6 +27,8 @@
 </template>
 
 <script>
+import { SEVERITY_LABELS } from "../../constants/terminology";
+
 export default {
   name: "StigRuleOverview",
   props: {
@@ -35,15 +37,20 @@ export default {
       required: true,
     },
   },
+  data() {
+    return {
+      SEVERITY_LABELS,
+    };
+  },
   computed: {
     severityBgColor() {
       const severity = this.selectedRule.rule_severity;
       if (severity === "high") {
-        return "bg-danger";
+        return "bg-danger text-white";
       } else if (severity === "medium") {
-        return "bg-warning";
+        return "bg-warning text-dark";
       } else {
-        return "bg-success";
+        return "bg-success text-white";
       }
     },
   },
