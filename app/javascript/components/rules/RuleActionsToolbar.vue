@@ -1,79 +1,83 @@
 <template>
   <div class="rule-actions-toolbar mb-3">
-    <b-button-group size="sm">
-      <!-- INFO/REFERENCE GROUP (read-only panels - always available) -->
-      <b-button variant="outline-secondary" size="sm" @click="$emit('open-related-modal')">
-        <b-icon icon="link-45deg" /> Related
-      </b-button>
-      <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'satisfies')">
-        <b-icon icon="diagram-3" /> Satisfies
-      </b-button>
-      <b-button
-        variant="outline-secondary"
-        size="sm"
-        @click="$emit('toggle-panel', 'rule-history')"
-      >
-        <b-icon icon="clock-history" /> History
-      </b-button>
-      <b-button
-        variant="outline-secondary"
-        size="sm"
-        @click="$emit('toggle-panel', 'rule-reviews')"
-      >
-        <b-icon icon="chat-left-text" /> Reviews
-      </b-button>
+    <!-- Row 1: Info/Reference (read-only panels and viewing) -->
+    <div class="toolbar-row">
+      <span class="toolbar-label">Info</span>
+      <b-button-group size="sm">
+        <b-button variant="outline-secondary" size="sm" @click="$emit('open-related-modal')">
+          <b-icon icon="link-45deg" /> Related
+        </b-button>
+        <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'satisfies')">
+          <b-icon icon="diagram-3" /> Satisfies
+        </b-button>
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          @click="$emit('toggle-panel', 'rule-history')"
+        >
+          <b-icon icon="clock-history" /> History
+        </b-button>
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          @click="$emit('toggle-panel', 'rule-reviews')"
+        >
+          <b-icon icon="chat-left-text" /> Reviews
+        </b-button>
+        <CommentModal
+          title="Comment"
+          :message="msg.commentMessage"
+          :require-non-empty="true"
+          button-text="Comment"
+          button-icon="chat-left-text"
+          button-variant="outline-secondary"
+          button-size="sm"
+          :button-disabled="false"
+          wrapper-class="d-inline-block"
+          @comment="$emit('comment', $event)"
+        />
+      </b-button-group>
+    </div>
 
-      <!-- COLLABORATION GROUP -->
-      <!-- Comment (collaboration - always available) -->
-      <CommentModal
-        title="Comment"
-        :message="msg.commentMessage"
-        :require-non-empty="true"
-        button-text="Comment"
-        button-icon="chat-left-text"
-        button-variant="outline-secondary"
-        button-size="sm"
-        :button-disabled="false"
-        wrapper-class="d-inline-block"
-        @comment="$emit('comment', $event)"
-      />
-      <!-- Review (collaboration - edit mode) -->
-      <b-button
-        variant="outline-primary"
-        size="sm"
-        :disabled="readOnly"
-        @click="$emit('open-review-modal')"
-      >
-        <b-icon icon="clipboard-check" /> Review
-      </b-button>
-      <!-- Save (primary edit action) -->
-      <CommentModal
-        :title="msg.saveTitle"
-        :message="msg.saveMessage"
-        :require-non-empty="true"
-        button-text="Save"
-        button-icon="save"
-        button-variant="outline-success"
-        button-size="sm"
-        :button-disabled="isReadOnly"
-        wrapper-class="d-inline-block"
-        @comment="$emit('save', $event)"
-      />
-      <!-- Clone (creation action) -->
-      <b-button variant="outline-info" :disabled="readOnly" @click="$emit('clone')">
-        <b-icon icon="files" /> Clone
-      </b-button>
-      <!-- Delete (destructive - admin only) -->
-      <b-button
-        v-if="effectivePermissions === 'admin'"
-        variant="outline-danger"
-        :disabled="isReadOnly"
-        @click="$emit('delete')"
-      >
-        <b-icon icon="trash" /> Delete
-      </b-button>
-      <!-- Lock/Unlock (admin only - protects from accidents) -->
-      <template v-if="effectivePermissions === 'admin'">
+    <hr class="toolbar-divider" />
+
+    <!-- Row 2: Actions/Maintenance (state-changing operations) -->
+    <div class="toolbar-row">
+      <span class="toolbar-label">Actions</span>
+      <b-button-group size="sm">
+        <b-button
+          variant="outline-primary"
+          size="sm"
+          :disabled="readOnly"
+          @click="$emit('open-review-modal')"
+        >
+          <b-icon icon="clipboard-check" /> Review
+        </b-button>
+        <CommentModal
+          :title="msg.saveTitle"
+          :message="msg.saveMessage"
+          :require-non-empty="true"
+          button-text="Save"
+          button-icon="save"
+          button-variant="outline-success"
+          button-size="sm"
+          :button-disabled="isReadOnly"
+          wrapper-class="d-inline-block"
+          @comment="$emit('save', $event)"
+        />
+        <b-button variant="outline-info" :disabled="readOnly" @click="$emit('clone')">
+          <b-icon icon="files" /> Clone
+        </b-button>
+      </b-button-group>
+      <!-- Destructive/admin actions separated with gap -->
+      <b-button-group v-if="effectivePermissions === 'admin'" size="sm" class="ml-3">
+        <b-button
+          variant="outline-danger"
+          :disabled="isReadOnly"
+          @click="$emit('delete')"
+        >
+          <b-icon icon="trash" /> Delete
+        </b-button>
         <CommentModal
           v-if="rule.locked"
           :title="msg.unlockTitle"
@@ -100,8 +104,8 @@
           wrapper-class="d-inline-block"
           @comment="$emit('lock', $event)"
         />
-      </template>
-    </b-button-group>
+      </b-button-group>
+    </div>
   </div>
 </template>
 
@@ -147,29 +151,34 @@ export default {
 
 <style scoped>
 .rule-actions-toolbar {
-  padding: 0.5rem;
+  padding: 0.375rem 0.5rem;
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
 }
 
-/* Button group: flex layout with equal-width buttons */
-.rule-actions-toolbar >>> .btn-group {
+/* Each row: flex with label + button groups */
+.toolbar-row {
   display: flex;
-  flex-wrap: wrap;
-  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* Equal-width buttons */
-.rule-actions-toolbar >>> .btn-group > .btn,
-.rule-actions-toolbar >>> .btn-group > .d-inline-block {
-  flex: 1 1 auto;
-  min-width: 0;
+/* Row labels */
+.toolbar-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6c757d;
+  min-width: 2.75rem;
+  flex-shrink: 0;
 }
 
-/* CommentModal wrapper buttons also need flex */
-.rule-actions-toolbar >>> .btn-group > .d-inline-block > .btn {
-  width: 100%;
+/* Divider between rows */
+.toolbar-divider {
+  margin: 0.25rem 0;
+  border: 0;
+  border-top: 1px solid #dee2e6;
 }
 
 /* Disabled buttons should be clearly grayed out */
