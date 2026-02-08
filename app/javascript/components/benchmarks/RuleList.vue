@@ -4,30 +4,40 @@
     <!-- Filter Section -->
     <div class="mb-3">
       <h5 class="card-title">Filter & Search</h5>
-      <div class="input-group">
-        <p class="card-text">
-          <strong>Search</strong><br />
-          <input
-            v-model="searchText"
-            type="text"
-            class="form-control"
-            :placeholder="searchPlaceholder"
-          /><br />
-          <strong>Filter by Severity</strong><br />
-          <button class="btn btn-danger text-white mb-2" @click="setSeverity('high')">
-            CAT I <span class="badge badge-light">{{ high_count }}</span>
-          </button>
-          <button class="btn btn-warning text-dark mb-2" @click="setSeverity('medium')">
-            CAT II <span class="badge badge-light">{{ medium_count }}</span>
-          </button>
-          <button class="btn btn-success text-white mb-2" @click="setSeverity('low')">
-            CAT III <span class="badge badge-light">{{ low_count }}</span>
-          </button>
-          <button class="btn btn-info mb-2" @click="setSeverity('')">
-            All <span class="badge badge-light">{{ rules.length }}</span>
-          </button>
-        </p>
-      </div>
+      <input
+        v-model="searchText"
+        type="text"
+        class="form-control form-control-sm mb-2"
+        :placeholder="searchPlaceholder"
+      />
+      <label class="small text-muted mb-1 d-block">Severity</label>
+      <b-button-group size="sm" class="d-flex">
+        <b-button
+          :variant="selectedSeverity === '' ? 'secondary' : 'outline-secondary'"
+          @click="setSeverity('')"
+        >
+          All <b-badge variant="light">{{ rules.length }}</b-badge>
+        </b-button>
+        <b-button
+          :variant="selectedSeverity === 'high' ? 'danger' : 'outline-danger'"
+          @click="setSeverity('high')"
+        >
+          CAT I <b-badge variant="light">{{ high_count }}</b-badge>
+        </b-button>
+        <b-button
+          :variant="selectedSeverity === 'medium' ? 'warning' : 'outline-warning'"
+          :class="selectedSeverity === 'medium' ? 'text-dark' : ''"
+          @click="setSeverity('medium')"
+        >
+          CAT II <b-badge variant="light">{{ medium_count }}</b-badge>
+        </b-button>
+        <b-button
+          :variant="selectedSeverity === 'low' ? 'success' : 'outline-success'"
+          @click="setSeverity('low')"
+        >
+          CAT III <b-badge variant="light">{{ low_count }}</b-badge>
+        </b-button>
+      </b-button-group>
     </div>
 
     <!-- Table of Rules -->
