@@ -137,7 +137,7 @@ describe('BenchmarkViewer Integration', () => {
       const srgAdapted = srgToBenchmark(rawSrgData)
 
       // Both must have same keys after adaptation
-      expect(Object.keys(stigAdapted).sort()).toEqual(Object.keys(srgAdapted).sort())
+      expect(Object.keys(stigAdapted).sort((a, b) => a.localeCompare(b))).toEqual(Object.keys(srgAdapted).sort((a, b) => a.localeCompare(b)))
 
       // Both must have "rules" array
       expect(stigAdapted.rules).toBeDefined()

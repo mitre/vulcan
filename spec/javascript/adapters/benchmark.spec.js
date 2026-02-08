@@ -181,7 +181,7 @@ describe('Benchmark Adapters', () => {
       const srgResult = srgToBenchmark(srg)
 
       // Both should have same structure
-      expect(Object.keys(stigResult).sort()).toEqual(Object.keys(srgResult).sort())
+      expect(Object.keys(stigResult).sort((a, b) => a.localeCompare(b))).toEqual(Object.keys(srgResult).sort((a, b) => a.localeCompare(b)))
       expect(stigResult.benchmark_id).toBe(srgResult.benchmark_id)
       expect(stigResult.date).toBe(srgResult.date)
       expect(Array.isArray(stigResult.rules)).toBe(true)

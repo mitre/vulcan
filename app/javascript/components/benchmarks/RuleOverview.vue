@@ -25,9 +25,12 @@
           <span
             data-testid="rule-id-toggle"
             role="button"
+            tabindex="0"
             class="text-primary"
             style="cursor: pointer"
             @click="showFullRuleId = !showFullRuleId"
+            @keydown.enter="showFullRuleId = !showFullRuleId"
+            @keydown.space.prevent="showFullRuleId = !showFullRuleId"
           >
             {{ showFullRuleId ? selectedRule.rule_id : truncatedRuleId }}
           </span>
@@ -48,9 +51,12 @@
           <span
             data-testid="legacy-toggle"
             role="button"
+            tabindex="0"
             class="text-muted small"
             style="cursor: pointer"
             @click="showLegacyIds = !showLegacyIds"
+            @keydown.enter="showLegacyIds = !showLegacyIds"
+            @keydown.space.prevent="showLegacyIds = !showLegacyIds"
           >
             {{ showLegacyIds ? "▾" : "▸" }} Legacy IDs
           </span>

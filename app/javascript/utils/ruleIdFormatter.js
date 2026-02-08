@@ -15,5 +15,6 @@
  */
 export function truncateRuleId(ruleId) {
   if (!ruleId) return "";
-  return ruleId.replace(/r\d+.*$/, "");
+  const idx = ruleId.search(/r\d/);
+  return idx === -1 ? ruleId : ruleId.substring(0, idx);
 }
