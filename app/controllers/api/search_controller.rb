@@ -227,6 +227,7 @@ module Api
       values = []
 
       @search_terms.each do |term|
+        sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
         # Rule fields
         rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
         # Check content
@@ -235,9 +236,9 @@ module Api
         conditions << "(#{rule_conditions} OR #{check_conditions})"
 
         # Add values for rule columns
-        columns.size.times { values << "%#{term}%" }
+        columns.size.times { values << "%#{sanitized_term}%" }
         # Add values for check columns
-        check_columns.size.times { values << "%#{term}%" }
+        check_columns.size.times { values << "%#{sanitized_term}%" }
       end
 
       [conditions.join(' OR ')] + values
@@ -256,6 +257,7 @@ module Api
       values = []
 
       @search_terms.each do |term|
+        sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
         # Rule fields
         rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
         # Check content
@@ -264,9 +266,9 @@ module Api
         conditions << "(#{rule_conditions} OR #{check_conditions})"
 
         # Add values for rule columns
-        columns.size.times { values << "%#{term}%" }
+        columns.size.times { values << "%#{sanitized_term}%" }
         # Add values for check columns
-        check_columns.size.times { values << "%#{term}%" }
+        check_columns.size.times { values << "%#{sanitized_term}%" }
       end
 
       [conditions.join(' OR ')] + values
@@ -281,10 +283,11 @@ module Api
       values = []
 
       @search_terms.each do |term|
+        sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
         column_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
         conditions << "(#{column_conditions})"
-        # Add the term value for each column
-        columns.size.times { values << "%#{term}%" }
+        # Add the sanitized term value for each column
+        columns.size.times { values << "%#{sanitized_term}%" }
       end
 
       [conditions.join(' OR ')] + values
