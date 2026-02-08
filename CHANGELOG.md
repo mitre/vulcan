@@ -7,30 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.2.2] - 2026-02-08
+
+### Upgraded
+- Ruby 3.4.7 (from 3.3.9) with nkf gem for compatibility
+- Added parallel_tests for faster CI execution
+
 ### Added
-- VitePress documentation system replacing MkDocs for better Vue ecosystem alignment
-- Mermaid diagram support in documentation with custom Vue component
-- Comprehensive documentation guide at `/development/documentation`
-- Production and staging deployment links in documentation
-- Separate package.json for docs to isolate dependencies (temporary until Vue 3 migration)
+- Global search infrastructure with pg_search gem and query transformation
+- Unified multi-stage Dockerfile with CLI and improved .dockerignore
+- Admin bootstrap with first-user-admin and env var support
+- Health check endpoints for Kubernetes and Docker deployments
+- DB_SUFFIX environment variable for worktree database isolation
+- Command bars for view and edit pages
+- Redesigned MembersModal with tabbed interface
+- UnifiedRuleForm replacing Basic and Advanced forms
+- CSV export with configurable column picker
+- Severity filter buttons as connected button group with CAT I/II/III labels
+- Postel's Law applied to satisfaction parsing and session timeout config
+- Vitest testing infrastructure for Vue 2 components
+- Centralized terminology constants (BENCHMARK_TERM, EXPORT_FORMATS)
+- VitePress documentation system replacing MkDocs
+- Mermaid diagram support in documentation
 - Custom Vulcan branding with SVG logos and Media Kit page
-- Automatic SVG optimization using vite-plugin-image-optimizer
-- Media Kit & Branding page at `/about/media-kit` with logos, colors, and usage guidelines
+- Comprehensive import/export and deployment documentation
 
 ### Changed
-- Documentation navigation reorganized with top-level Deployment, Authentication, and Security sections
-- Improved compliance documentation with source code verification and cross-references
-- Documentation dependencies isolated from main application to avoid Vue 2/3 conflicts
-- LICENSE file renamed to LICENSE.md for consistency with other project documentation
-- Simplified CI/CD workflow by removing symlink preprocessing script (no longer needed)
-- All project documentation files now use consistent .md extensions
+- Documentation navigation reorganized with Deployment, Authentication, and Security sections
+- Documentation dependencies isolated from main application
+- CI workflow uses parallel_rspec instead of serial rspec
 
 ### Fixed
+- Nested attributes not saving in rules controller (#692)
+- Also Satisfies resetting parent rule status
+- Vue reactivity for satisfied_by relationship field visibility
+- SRG search result links to use /srgs/ route
+- Database config with DATABASE_URL support
+- Consolidate Devise modules into single call in User model
+- All ESLint errors and warnings resolved (20 errors, 6 warnings to 0)
 - Documentation build issues with dead links and localhost URLs
-- ESLint configuration to properly handle VitePress files
-- Trailing whitespace issues in configuration files
-- VitePress symlink handling with proper configuration
-- Circular reference in README.md documentation link removed
+
+### Security
+- Updated rexml and rack gems (CVE-2025-58767, GHSA-625h)
+- Configurable SSL for Docker deployments (#700, #702)
+- Enhanced deployment security configurations
 
 ## [v2.2.1] - 2025-08-16
 
@@ -216,6 +236,8 @@ For releases prior to v2.1.6, please see the [GitHub releases page](https://gith
 
 ---
 
+[v2.2.2]: https://github.com/mitre/vulcan/compare/v2.2.1...v2.2.2
+[v2.2.1]: https://github.com/mitre/vulcan/compare/v2.2.0...v2.2.1
 [v2.2.0]: https://github.com/mitre/vulcan/compare/v2.1.9...v2.2.0
 [v2.1.9]: https://github.com/mitre/vulcan/compare/v2.1.8...v2.1.9
 [v2.1.8]: https://github.com/mitre/vulcan/compare/v2.1.7...v2.1.8
