@@ -5,8 +5,15 @@
 
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import { createRouter, createWebHistory } from 'vue-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EmailConfirmationForm from '../EmailConfirmationForm.vue'
+
+// Provide a router so <router-link> renders as <a>
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [{ path: '/users/sign_in', component: { template: '<div />' } }],
+})
 
 // Mock the useAuth composable
 const mockResendConfirmation = vi.fn()
@@ -33,31 +40,31 @@ describe('emailConfirmationForm', () => {
 
   describe('rendering', () => {
     it('renders email input', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
       expect(wrapper.find('input[type="email"]').exists()).toBe(true)
     })
 
     it('renders submit button', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
       const submitButton = wrapper.find('button[type="submit"]')
       expect(submitButton.exists()).toBe(true)
       expect(submitButton.text()).toContain('Resend Confirmation')
     })
 
     it('renders back to sign in link', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
       const link = wrapper.find('a[href="/users/sign_in"]')
       expect(link.exists()).toBe(true)
       expect(link.text()).toContain('Back to sign in')
     })
 
     it('displays helper text', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
       expect(wrapper.text()).toContain('We\'ll send confirmation instructions to this email address')
     })
 
     it('has autocomplete enabled', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
       const emailInput = wrapper.find('input[type="email"]')
       expect(emailInput.attributes('autocomplete')).toBe('email')
     })
@@ -65,7 +72,7 @@ describe('emailConfirmationForm', () => {
 
   describe('form validation', () => {
     it('requires email field', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
       const emailInput = wrapper.find('input[type="email"]')
       expect(emailInput.attributes('required')).toBeDefined()
     })
@@ -75,7 +82,7 @@ describe('emailConfirmationForm', () => {
     it('calls resendConfirmation with email on submit', async () => {
       mockResendConfirmation.mockResolvedValue(undefined)
 
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       await emailInput.setValue('test@example.com')
@@ -87,7 +94,7 @@ describe('emailConfirmationForm', () => {
     it('clears email field after submission', async () => {
       mockResendConfirmation.mockResolvedValue(undefined)
 
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       await emailInput.setValue('test@example.com')
@@ -101,7 +108,7 @@ describe('emailConfirmationForm', () => {
     it('shows loading state during submission', async () => {
       mockLoading.mockReturnValue(true)
 
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
 
       const submitButton = wrapper.find('button[type="submit"]')
 
@@ -112,7 +119,7 @@ describe('emailConfirmationForm', () => {
 
   describe('accessibility', () => {
     it('has label for email input', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
 
       const emailLabel = wrapper.find('label[for="email"]')
       expect(emailLabel.exists()).toBe(true)
@@ -120,7 +127,7 @@ describe('emailConfirmationForm', () => {
     })
 
     it('has placeholder text', () => {
-      wrapper = mount(EmailConfirmationForm)
+      wrapper = mount(EmailConfirmationForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       expect(emailInput.attributes('placeholder')).toBe('Enter your email')

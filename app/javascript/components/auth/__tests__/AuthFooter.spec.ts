@@ -1,6 +1,10 @@
 /**
  * AuthFooter Component Tests
- * Tests for authentication page footer with classification banner
+ *
+ * Requirements:
+ * - AuthFooter is a thin wrapper around AppFooter (DRY pattern)
+ * - It renders the shared AppFooter which includes AppBanner + FooterCopyright
+ * - Used on standalone auth pages for layout consistency
  */
 
 import type { VueWrapper } from '@vue/test-utils'
@@ -8,11 +12,11 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import AuthFooter from '../AuthFooter.vue'
 
-// Mock ClassificationBanner component
-vi.mock('@/components/shared/ClassificationBanner.vue', () => ({
+// Mock AppFooter (AuthFooter's only dependency)
+vi.mock('@/components/shared/AppFooter.vue', () => ({
   default: {
-    name: 'ClassificationBanner',
-    template: '<div class="classification-banner-mock">UNCLASSIFIED</div>',
+    name: 'AppFooter',
+    template: '<footer class="app-footer-mock">Footer Content</footer>',
   },
 }))
 
@@ -24,25 +28,22 @@ describe('authFooter', () => {
   })
 
   describe('rendering', () => {
-    it('renders classification banner', () => {
+    it('renders AppFooter component', () => {
       wrapper = mount(AuthFooter)
-      expect(wrapper.find('.classification-banner-mock').exists()).toBe(true)
+      expect(wrapper.find('.app-footer-mock').exists()).toBe(true)
     })
 
-    it('only renders classification banner component', () => {
+    it('delegates all rendering to AppFooter', () => {
       wrapper = mount(AuthFooter)
-      // Should just be the classification banner, no additional wrapper
-      expect(wrapper.html()).toContain('classification-banner-mock')
+      // AuthFooter is just a wrapper — all content comes from AppFooter
+      expect(wrapper.text()).toContain('Footer Content')
     })
   })
 
-  describe('content', () => {
-    it('contains classification banner component', () => {
+  describe('structure', () => {
+    it('renders a footer element', () => {
       wrapper = mount(AuthFooter)
-
-      // Should contain the mocked classification banner
-      expect(wrapper.html()).toContain('classification-banner-mock')
-      expect(wrapper.html()).toContain('UNCLASSIFIED')
+      expect(wrapper.find('footer').exists()).toBe(true)
     })
   })
 })

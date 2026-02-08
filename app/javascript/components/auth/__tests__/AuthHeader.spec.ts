@@ -21,11 +21,11 @@ vi.mock('@/composables', () => ({
   }),
 }))
 
-// Mock ClassificationBanner component
-vi.mock('@/components/shared/ClassificationBanner.vue', () => ({
+// Mock AppBanner component (configurable banner system)
+vi.mock('@/components/shared/AppBanner.vue', () => ({
   default: {
-    name: 'ClassificationBanner',
-    template: '<div class="classification-banner-mock">UNCLASSIFIED</div>',
+    name: 'AppBanner',
+    template: '<div class="app-banner-mock"></div>',
   },
 }))
 
@@ -43,9 +43,9 @@ describe('authHeader', () => {
   })
 
   describe('rendering', () => {
-    it('renders classification banner', () => {
+    it('renders app banner', () => {
       wrapper = mount(AuthHeader)
-      expect(wrapper.find('.classification-banner-mock').exists()).toBe(true)
+      expect(wrapper.find('.app-banner-mock').exists()).toBe(true)
     })
 
     it('renders Vulcan logo and name', () => {

@@ -6,9 +6,19 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { createRouter, createWebHistory } from 'vue-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores'
 import LoginForm from '../LoginForm.vue'
+
+// Provide a router so <router-link> renders as <a>
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    { path: '/auth/confirmation', component: { template: '<div />' } },
+    { path: '/auth/unlock', component: { template: '<div />' } },
+  ],
+})
 
 // Mock the toast composable
 vi.mock('@/composables/useToast', () => ({
@@ -35,31 +45,31 @@ describe('loginForm', () => {
 
   describe('rendering', () => {
     it('renders email input', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
       expect(wrapper.find('input[type="email"]').exists()).toBe(true)
     })
 
     it('renders password input', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
       expect(wrapper.find('input[type="password"]').exists()).toBe(true)
     })
 
     it('renders submit button', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
       const submitButton = wrapper.find('button[type="submit"]')
       expect(submitButton.exists()).toBe(true)
       expect(submitButton.text()).toContain('Sign in')
     })
 
     it('renders forgot password link', () => {
-      wrapper = mount(LoginForm)
-      const link = wrapper.find('a[href="/users/password/new"]')
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
+      const link = wrapper.find('a[href="/auth/forgot-password"]')
       expect(link.exists()).toBe(true)
       expect(link.text()).toContain('Forgot password?')
     })
 
     it('has autocomplete enabled', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
       const emailInput = wrapper.find('input[type="email"]')
       const passwordInput = wrapper.find('input[type="password"]')
 
@@ -70,13 +80,13 @@ describe('loginForm', () => {
 
   describe('form validation', () => {
     it('requires email field', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
       const emailInput = wrapper.find('input[type="email"]')
       expect(emailInput.attributes('required')).toBeDefined()
     })
 
     it('requires password field', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
       const passwordInput = wrapper.find('input[type="password"]')
       expect(passwordInput.attributes('required')).toBeDefined()
     })
@@ -89,7 +99,7 @@ describe('loginForm', () => {
         status: 200,
       })
 
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       const passwordInput = wrapper.find('input[type="password"]')
@@ -107,7 +117,7 @@ describe('loginForm', () => {
     it('shows loading state during submission', async () => {
       vi.spyOn(authStore, 'login').mockImplementation(() => new Promise(() => {}))
 
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       const passwordInput = wrapper.find('input[type="password"]')
@@ -133,7 +143,7 @@ describe('loginForm', () => {
       delete (window as { location?: { href: string } }).location
       window.location = { href: '' } as Location
 
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       const passwordInput = wrapper.find('input[type="password"]')
@@ -154,7 +164,7 @@ describe('loginForm', () => {
         response: { data: { error: 'Invalid credentials' } },
       })
 
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       const passwordInput = wrapper.find('input[type="password"]')
@@ -174,7 +184,7 @@ describe('loginForm', () => {
 
   describe('accessibility', () => {
     it('has labels for inputs', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
 
       const emailLabel = wrapper.find('label[for="email"]')
       const passwordLabel = wrapper.find('label[for="password"]')
@@ -184,7 +194,7 @@ describe('loginForm', () => {
     })
 
     it('has placeholder text', () => {
-      wrapper = mount(LoginForm)
+      wrapper = mount(LoginForm, { global: { plugins: [router] } })
 
       const emailInput = wrapper.find('input[type="email"]')
       const passwordInput = wrapper.find('input[type="password"]')
