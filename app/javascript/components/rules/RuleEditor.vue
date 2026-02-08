@@ -62,21 +62,12 @@
           </template>
         </b-modal>
 
-        <AdvancedRuleForm
-          v-if="advanced_fields"
+        <UnifiedRuleForm
           :rule="rule"
           :statuses="statuses"
           :severities="severities"
           :read-only="readOnly"
-          :additional_questions="additional_questions"
-        />
-
-        <BasicRuleForm
-          v-else
-          :rule="rule"
-          :statuses="statuses"
-          :severities_map="severities_map"
-          :read-only="readOnly"
+          :advanced-mode="advanced_fields"
           :additional_questions="additional_questions"
         />
       </b-tab>
@@ -91,14 +82,13 @@
 </template>
 
 <script>
-import BasicRuleForm from "./forms/BasicRuleForm.vue";
-import AdvancedRuleForm from "./forms/AdvancedRuleForm.vue";
+import UnifiedRuleForm from "./forms/UnifiedRuleForm.vue";
 import InspecControlEditor from "./InspecControlEditor.vue";
 import RuleActionsToolbar from "./RuleActionsToolbar.vue";
 
 export default {
   name: "RuleEditor",
-  components: { BasicRuleForm, AdvancedRuleForm, InspecControlEditor, RuleActionsToolbar },
+  components: { UnifiedRuleForm, InspecControlEditor, RuleActionsToolbar },
   props: {
     rule: {
       type: Object,

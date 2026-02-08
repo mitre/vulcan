@@ -62,7 +62,7 @@
             :severities_map="severities_map"
             :read-only="true"
             :effective-permissions="effective_permissions"
-            :advanced_fields="component.advanced_fields"
+            :advanced_fields="localAdvancedFields"
             :additional_questions="component.additional_questions"
             @open-related-modal="$bvModal.show('related-rules-modal')"
             @toggle-panel="togglePanel"
@@ -230,6 +230,7 @@ export default {
   data() {
     return {
       component: this.initialComponentState,
+      localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
       actionDescriptions: {
         comment: "Commented",
@@ -306,8 +307,8 @@ export default {
         .patch(`/components/${this.component.id}`, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          // Update local component state for reactivity
-          this.component.advanced_fields = advanced_fields;
+          // Update local data property (not prop) for proper reactivity through slots
+          this.localAdvancedFields = advanced_fields;
         })
         .catch(this.alertOrNotifyResponse);
     },

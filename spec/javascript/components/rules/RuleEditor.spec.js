@@ -45,8 +45,7 @@ describe('RuleEditor', () => {
         ...props
       },
       stubs: {
-        BasicRuleForm: true,
-        AdvancedRuleForm: true,
+        UnifiedRuleForm: true,
         InspecControlEditor: true,
         CommentModal: {
           template: '<button class="comment-modal-stub" @click="$emit(\'comment\', \'test\')">{{ buttonText }}</button>',
@@ -124,7 +123,7 @@ describe('RuleEditor', () => {
      * 3. When enabling, show confirmation dialog with warning
      * 4. When confirmed, emit toggle-advanced-fields event
      * 5. When canceled, do not emit event
-     * 6. Shows AdvancedRuleForm when advanced_fields is true
+     * 6. Passes advancedMode to UnifiedRuleForm based on advanced_fields prop
      * 7. Helper text explains most users don't need this
      */
 
@@ -209,14 +208,18 @@ describe('RuleEditor', () => {
       expect(wrapper.emitted('toggle-advanced-fields')[0]).toEqual([false])
     })
 
-    it('shows AdvancedRuleForm when advanced_fields is true', () => {
+    it('passes advancedMode=true to UnifiedRuleForm when advanced_fields is true', () => {
       wrapper = createWrapper({ advanced_fields: true })
-      expect(wrapper.findComponent({ name: 'AdvancedRuleForm' }).exists()).toBe(true)
+      const form = wrapper.findComponent({ name: 'UnifiedRuleForm' })
+      expect(form.exists()).toBe(true)
+      expect(form.props('advancedMode')).toBe(true)
     })
 
-    it('hides AdvancedRuleForm when advanced_fields is false', () => {
+    it('passes advancedMode=false to UnifiedRuleForm when advanced_fields is false', () => {
       wrapper = createWrapper({ advanced_fields: false })
-      expect(wrapper.findComponent({ name: 'AdvancedRuleForm' }).exists()).toBe(false)
+      const form = wrapper.findComponent({ name: 'UnifiedRuleForm' })
+      expect(form.exists()).toBe(true)
+      expect(form.props('advancedMode')).toBe(false)
     })
 
     it('shows helper text explaining advanced fields are not needed by most users', () => {

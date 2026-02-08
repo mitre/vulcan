@@ -10,7 +10,8 @@ localVue.use(BootstrapVue)
 vi.mock('axios', () => ({
   default: {
     put: vi.fn(() => Promise.resolve({ data: {} })),
-    post: vi.fn(() => Promise.resolve({ data: {} }))
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} }))
   }
 }))
 
@@ -320,6 +321,72 @@ describe('RulesCodeEditorView', () => {
     it('isViewerOnly returns false for admin permissions', () => {
       wrapper = createWrapper({ effectivePermissions: 'admin' })
       expect(wrapper.vm.isViewerOnly).toBe(false)
+    })
+  })
+
+  describe('toggleAdvancedFields (slot reactivity fix)', () => {
+    // REQUIREMENT: Toggling advanced fields must update the form LIVE,
+    // not just after page reload. This tests the local data property
+    // pattern that fixes Vue 2 slot reactivity issues.
+
+    it('initializes localAdvancedFields from component prop', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+    })
+
+    it('initializes localAdvancedFields as true when component has advanced_fields', () => {
+      wrapper = createWrapper({
+        component: { ...defaultProps.component, advanced_fields: true }
+      })
+      expect(wrapper.vm.localAdvancedFields).toBe(true)
+    })
+
+    it('updates localAdvancedFields after successful PATCH', async () => {
+      const axios = (await import('axios')).default
+      axios.patch.mockResolvedValueOnce({ data: {} })
+
+      wrapper = createWrapper()
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+
+      wrapper.vm.toggleAdvancedFields(true)
+      await vi.waitFor(() => {
+        expect(wrapper.vm.localAdvancedFields).toBe(true)
+      })
+    })
+
+    it('does not update localAdvancedFields on PATCH failure', async () => {
+      const axios = (await import('axios')).default
+      axios.patch.mockRejectedValueOnce(new Error('Network error'))
+
+      wrapper = createWrapper()
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+
+      wrapper.vm.toggleAdvancedFields(true)
+      // Wait for the promise to settle
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+    })
+
+    it('passes localAdvancedFields to RuleEditor, not component.advanced_fields', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.selectRule(1)
+      await wrapper.vm.$nextTick()
+
+      const ruleEditor = wrapper.findComponent({ name: 'RuleEditor' })
+      expect(ruleEditor.exists()).toBe(true)
+      // The template binds :advanced_fields="localAdvancedFields"
+      expect(ruleEditor.props('advanced_fields')).toBe(false)
+
+      // Simulate successful toggle
+      const axios = (await import('axios')).default
+      axios.patch.mockResolvedValueOnce({ data: {} })
+      wrapper.vm.toggleAdvancedFields(true)
+      await vi.waitFor(() => {
+        expect(wrapper.vm.localAdvancedFields).toBe(true)
+      })
+      await wrapper.vm.$nextTick()
+      expect(ruleEditor.props('advanced_fields')).toBe(true)
     })
   })
 })

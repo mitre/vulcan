@@ -161,7 +161,7 @@
           :severities_map="severities_map"
           :read-only="isViewerOnly"
           :effective-permissions="effectivePermissions"
-          :advanced_fields="component.advanced_fields"
+          :advanced_fields="localAdvancedFields"
           :additional_questions="component.additional_questions"
           @clone="$bvModal.show('duplicate-rule-modal')"
           @delete="$bvModal.show('delete-rule-modal')"
@@ -384,6 +384,7 @@ export default {
   },
   data() {
     return {
+      localAdvancedFields: this.component.advanced_fields,
       term: RULE_TERM,
       msg: MESSAGE_LABELS,
       filteredSelectRules: [],
@@ -535,8 +536,8 @@ export default {
         .patch(`/components/${this.component.id}`, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          // Update local component state for reactivity
-          this.$set(this.component, "advanced_fields", advancedFields);
+          // Update local data property (not prop) for proper reactivity through slots
+          this.localAdvancedFields = advancedFields;
         })
         .catch(this.alertOrNotifyResponse);
     },
