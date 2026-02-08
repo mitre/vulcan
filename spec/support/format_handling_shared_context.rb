@@ -2,7 +2,6 @@
 
 # Shared context for format handling tests
 # Provides common test data and authentication setup
-# rubocop:disable RSpec/MultipleMemoizedHelpers
 RSpec.shared_context 'format handling test setup' do
   # Shared contexts are designed to have multiple helpers - this is their purpose
   let(:admin_user) { create(:user, admin: true) }
@@ -17,4 +16,3 @@ RSpec.shared_context 'format handling test setup' do
     sign_in admin_user
   end
 end
-# rubocop:enable RSpec/MultipleMemoizedHelpers

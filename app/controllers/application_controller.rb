@@ -90,10 +90,10 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
-  def send_slack_notification(notification_type, object, *args)
+  def send_slack_notification(notification_type, object, *)
     channels = find_slack_channel(object, notification_type)
     channels.each do |channel|
-      send_notification(channel, slack_notification_params(notification_type, object, *args))
+      send_notification(channel, slack_notification_params(notification_type, object, *))
     end
   end
 

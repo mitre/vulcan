@@ -18,7 +18,7 @@ require 'rspec/rails'
 
 # Check that JavaScript assets are built before running tests
 # This prevents confusing failures where views can't find JS files
-assets_dir = Rails.root.join("app/assets/builds")
+assets_dir = Rails.root.join('app/assets/builds')
 unless assets_dir.exist? && assets_dir.glob('*.js').any?
   abort <<~ERROR
     \e[31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -73,7 +73,7 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
-  config.fixture_paths = [Rails.root.join("spec/fixtures/fixtures").to_s]
+  config.fixture_paths = [Rails.root.join('spec/fixtures/fixtures').to_s]
 
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false

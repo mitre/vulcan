@@ -73,7 +73,7 @@ class SearchAbbreviationService
     # Load core abbreviations from config file
     #
     def core_abbreviations
-      config_path = Rails.root.join("config/search_abbreviations.yml")
+      config_path = Rails.root.join('config/search_abbreviations.yml')
       return {} unless File.exist?(config_path)
 
       config = YAML.load_file(config_path)

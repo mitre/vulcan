@@ -125,7 +125,7 @@ RSpec.describe User, type: :model do
       end
 
       context 'and admin users already exist' do # rubocop:disable RSpec/NestedGroups
-        let!(:existing_admin) { create(:user, admin: true) } # rubocop:disable RSpec/LetSetup -- side effect: prevents first-user-admin promotion
+        let!(:existing_admin) { create(:user, admin: true) } # -- side effect: prevents first-user-admin promotion
 
         it 'does not promote new users to admin' do
           auth = mock_omniauth_response(new_user)

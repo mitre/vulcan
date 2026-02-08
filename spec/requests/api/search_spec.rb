@@ -12,7 +12,7 @@ RSpec.describe 'Api::Search' do
   # - Respects limit parameter (default 5, max 20)
   # - Returns empty for queries < 2 chars
 
-  before do
+  before do # rubocop:disable RSpec/ScatteredSetup
     Rails.application.reload_routes!
   end
 
@@ -32,7 +32,7 @@ RSpec.describe 'Api::Search' do
   let!(:component2) { create(:component, project: project2, name: 'Database Component', prefix: 'DBAS-01', based_on: srg) }
 
   # Give user access to project1 only (not project2)
-  before do
+  before do # rubocop:disable RSpec/ScatteredSetup
     Membership.create!(membership: project1, user: user, role: 'viewer')
   end
 

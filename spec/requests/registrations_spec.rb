@@ -287,7 +287,7 @@ RSpec.describe 'User Registrations', type: :request do
     end
 
     context 'when VULCAN_FIRST_USER_ADMIN is true but admins already exist' do
-      let!(:existing_admin) { create(:user, admin: true) } # rubocop:disable RSpec/LetSetup -- side effect: prevents first-user-admin promotion
+      let!(:existing_admin) { create(:user, admin: true) } # -- side effect: prevents first-user-admin promotion
 
       before do
         stub_local_login_setting(enabled: true)

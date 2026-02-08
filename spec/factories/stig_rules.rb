@@ -3,8 +3,8 @@
 FactoryBot.define do
   factory :stig_rule do
     stig
-    sequence(:rule_id) { |n| "RHEL-09-#{654000 + n}" }
-    sequence(:vuln_id) { |n| "V-#{258000 + n}" }
+    sequence(:rule_id) { |n| "RHEL-09-#{654_000 + n}" }
+    sequence(:vuln_id) { |n| "V-#{258_000 + n}" }
     title { 'Audit configuration changes' }
     status { 'Applicable - Configurable' }
     rule_severity { 'medium' }

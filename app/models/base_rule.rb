@@ -91,8 +91,8 @@ class BaseRule < ApplicationRecord
     case column_key
     when :rule_id then rule_id.to_s
     when :version then version.to_s
-    when :srg_id then (respond_to?(:srg_id) ? srg_id : read_attribute(:srg_id)).to_s
-    when :vuln_id then (respond_to?(:vuln_id) ? vuln_id : read_attribute(:vuln_id)).to_s
+    when :srg_id then (respond_to?(:srg_id) ? srg_id : self[:srg_id]).to_s
+    when :vuln_id then (respond_to?(:vuln_id) ? vuln_id : self[:vuln_id]).to_s
     when :rule_severity then rule_severity.to_s
     when :rule_weight then rule_weight.to_s
     when :title then title.to_s

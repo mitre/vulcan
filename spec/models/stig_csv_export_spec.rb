@@ -77,8 +77,8 @@ RSpec.describe Stig, '#csv_export' do
 
     it 'orders rules by version then rule_id' do
       csv = CSV.parse(stig.csv_export, headers: true)
-      rule_ids = csv.map { |row| row['Rule ID'] }
-      expect(rule_ids).to eq(['SV-001r100_rule', 'SV-002r200_rule'])
+      rule_ids = csv.map { |row| row['Rule ID'] } # rubocop:disable Rails/Pluck
+      expect(rule_ids).to eq(%w[SV-001r100_rule SV-002r200_rule])
     end
   end
 

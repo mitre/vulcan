@@ -13,14 +13,14 @@ RSpec.describe 'SSL Configuration', type: :request do
 
     it 'assume_ssl should be false (do not blindly assume SSL)' do
       # assume_ssl=true causes issues when accessing app directly without proxy
-      production_rb = Rails.root.join("config/environments/production.rb").read
+      production_rb = Rails.root.join('config/environments/production.rb').read
 
       expect(production_rb).to include('config.assume_ssl = false'),
                                'assume_ssl should be false - do not blindly assume SSL termination'
     end
 
     it 'force_ssl should be ENV-configurable with secure default' do
-      production_rb = Rails.root.join("config/environments/production.rb").read
+      production_rb = Rails.root.join('config/environments/production.rb').read
 
       # Should use ENV.fetch pattern for configurability
       expect(production_rb).to include('RAILS_FORCE_SSL'),
@@ -32,7 +32,7 @@ RSpec.describe 'SSL Configuration', type: :request do
     end
 
     it 'force_ssl can be disabled by setting RAILS_FORCE_SSL=false' do
-      production_rb = Rails.root.join("config/environments/production.rb").read
+      production_rb = Rails.root.join('config/environments/production.rb').read
 
       # Should check for "false" string to disable
       expect(production_rb).to match(/downcase.*!=.*['"]false['"]/),

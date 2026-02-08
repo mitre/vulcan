@@ -6,7 +6,7 @@ RSpec.describe 'ProjectAccessRequests', type: :request do
   # Create admin first to prevent first-user-admin callback from promoting test users
   # NOTE: let! must be defined BEFORE the before block so its implicit before hook
   # runs first, ensuring existing_admin is created before user
-  let!(:existing_admin) { create(:user, admin: true) } # rubocop:disable RSpec/LetSetup -- side effect: prevents first-user-admin promotion
+  let!(:existing_admin) { create(:user, admin: true) } # -- side effect: prevents first-user-admin promotion
   let(:project) { create(:project) }
   let(:user) { create(:user) }
 

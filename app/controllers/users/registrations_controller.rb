@@ -6,14 +6,6 @@ module Users
   class RegistrationsController < Devise::RegistrationsController
     before_action :configure_permitted_parameters
 
-    def create
-      if Settings.local_login.enabled
-        super
-      else
-        redirect_back(fallback_location: new_user_session_path, alert: I18n.t('devise.registrations.disabled'))
-      end
-    end
-
     def edit
       # Load user's audit history for the activity panel
       @histories = Audited.audit_class.includes(:user)
@@ -24,9 +16,17 @@ module Users
       super
     end
 
+    def create
+      if Settings.local_login.enabled
+        super
+      else
+        redirect_back(fallback_location: new_user_session_path, alert: I18n.t('devise.registrations.disabled'))
+      end
+    end
+
     def update
       self.resource = resource_class.to_adapter.get!(send(:"current_#{resource_name}").to_key)
-      prev_unconfirmed_email = resource.unconfirmed_email if resource.respond_to?(:unconfirmed_email)
+      resource.unconfirmed_email if resource.respond_to?(:unconfirmed_email)
 
       resource_updated = update_resource(resource, account_update_params)
 

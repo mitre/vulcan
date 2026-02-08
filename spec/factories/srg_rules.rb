@@ -3,7 +3,7 @@
 FactoryBot.define do
   factory :srg_rule do
     security_requirements_guide
-    sequence(:rule_id) { |n| "SV-#{200000 + n}r#{800000 + n}_rule" }
+    sequence(:rule_id) { |n| "SV-#{200_000 + n}r#{800_000 + n}_rule" }
     title { 'The application must enforce approved authorizations' }
     status { 'Applicable - Configurable' }
     rule_severity { 'medium' }
