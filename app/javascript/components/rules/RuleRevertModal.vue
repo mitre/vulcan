@@ -94,7 +94,6 @@
             <RuleForm
               :rule="currentState"
               :statuses="statuses"
-              :severities="severities"
               :disabled="true"
               :invalid-feedback="formFeedback"
             />
@@ -150,7 +149,6 @@
             v-else-if="history.auditable_type == 'Rule'"
             :rule="afterState"
             :statuses="statuses"
-            :severities="severities"
             :disabled="true"
             :valid-feedback="formFeedback"
           />

@@ -87,7 +87,6 @@ describe('RuleForm', () => {
       propsData: {
         rule: makeRule(),
         statuses: defaultStatuses,
-        severities: [],
         disabled: false,
         fields: {
           displayed: ['status', 'rule_severity', 'title', 'fixtext', 'vendor_comments'],

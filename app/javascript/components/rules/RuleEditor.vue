@@ -65,7 +65,6 @@
         <UnifiedRuleForm
           :rule="rule"
           :statuses="statuses"
-          :severities="severities"
           :read-only="readOnly"
           :advanced-mode="advanced_fields"
           :additional_questions="additional_questions"

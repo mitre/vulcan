@@ -552,10 +552,6 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: [Array, Object],
-      required: true,
-    },
     disabled: {
       type: Boolean,
       required: true,

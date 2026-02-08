@@ -4,7 +4,6 @@
       <RuleForm
         :rule="rule"
         :statuses="statuses"
-        :severities="severities"
         :disabled="isFormDisabled"
         :fields="ruleFormFields"
         :disa_fields="(!advancedMode || !showCollapsibleSections) && showDisaSection ? disaDescriptionFields : undefined"
@@ -116,10 +115,6 @@ export default {
     statuses: {
       type: Array,
       required: true,
-    },
-    severities: {
-      type: [Array, Object],
-      default: () => [],
     },
     readOnly: {
       type: Boolean,
