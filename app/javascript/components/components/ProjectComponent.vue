@@ -58,7 +58,6 @@
           <RuleEditor
             :rule="selectedRule"
             :statuses="statuses"
-            :severities="severities"
             :read-only="true"
             :effective-permissions="effective_permissions"
             :advanced_fields="localAdvancedFields"
@@ -98,7 +97,6 @@
           :effective-permissions="effective_permissions"
           :current-user-id="current_user_id"
           :statuses="statuses"
-          :severities="severities"
           :read-only="true"
           @close-panel="closePanel"
           @component-updated="refreshComponent"
@@ -169,10 +167,6 @@ export default {
       type: Number,
     },
     statuses: {
-      type: Array,
-      required: true,
-    },
-    severities: {
       type: Array,
       required: true,
     },

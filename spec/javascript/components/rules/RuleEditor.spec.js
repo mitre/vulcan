@@ -36,7 +36,6 @@ describe('RuleEditor', () => {
       propsData: {
         rule: defaultRule,
         statuses: ['Not Yet Determined', 'Applicable - Configurable'],
-        severities: ['low', 'medium', 'high'],
         effectivePermissions: 'admin',
         readOnly: false,
         advanced_fields: false,

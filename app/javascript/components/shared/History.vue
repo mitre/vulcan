@@ -36,7 +36,6 @@
                 :component="component"
                 :history="history"
                 :statuses="statuses"
-                :severities="severities"
               />
             </template>
             <template v-else>
@@ -97,10 +96,6 @@ export default {
       required: false,
     },
     statuses: {
-      type: Array,
-      required: false,
-    },
-    severities: {
       type: Array,
       required: false,
     },

@@ -12,7 +12,6 @@
       :component="component"
       :rule="rule"
       :statuses="statuses"
-      :severities="severities"
     />
 
     <p v-if="!rule.histories || rule.histories.length === 0" class="text-muted small">
@@ -37,10 +36,6 @@ export default {
       required: true,
     },
     statuses: {
-      type: Array,
-      required: true,
-    },
-    severities: {
       type: Array,
       required: true,
     },

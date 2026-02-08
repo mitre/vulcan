@@ -35,7 +35,6 @@ describe('Rules', () => {
         component: { id: 100, name: 'Test Component', version: '1', release: '1' },
         rules: rules,
         statuses: ['Not Yet Determined', 'Applicable - Configurable'],
-        severities: ['low', 'medium', 'high'],
       }
     })
   }

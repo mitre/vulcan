@@ -189,10 +189,6 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: Array,
-      required: true,
-    },
     available_roles: {
       type: Array,
       required: true,

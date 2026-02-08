@@ -157,7 +157,6 @@
         <RuleEditor
           :rule="selectedRule"
           :statuses="statuses"
-          :severities="severities"
           :read-only="isViewerOnly"
           :effective-permissions="effectivePermissions"
           :advanced_fields="localAdvancedFields"
@@ -186,7 +185,6 @@
         :effective-permissions="effectivePermissions"
         :current-user-id="currentUserId"
         :statuses="statuses"
-        :severities="severities"
         @close-panel="closePanel"
         @component-updated="refreshComponent"
         @rule-selected="handleRuleSelected"
@@ -257,10 +255,6 @@ export default {
       required: true,
     },
     statuses: {
-      type: Array,
-      required: true,
-    },
-    severities: {
       type: Array,
       required: true,
     },

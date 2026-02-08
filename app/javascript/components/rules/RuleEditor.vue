@@ -97,10 +97,6 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: Array,
-      required: true,
-    },
     readOnly: {
       type: Boolean,
       default: false,

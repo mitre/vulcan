@@ -238,10 +238,6 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: Array,
-      required: true,
-    },
     component: {
       type: Object,
       required: true,

@@ -72,7 +72,6 @@ describe('RulesCodeEditorView', () => {
       'Applicable - Does Not Meet',
       'Not Applicable'
     ],
-    severities: ['low', 'medium', 'high'],
   }
 
   const createWrapper = (props = {}) => {

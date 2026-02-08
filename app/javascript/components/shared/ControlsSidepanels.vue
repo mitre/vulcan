@@ -219,7 +219,6 @@
           :rule="selectedRule"
           :component="component"
           :statuses="statuses"
-          :severities="severities"
         />
       </div>
     </b-sidebar>
@@ -276,10 +275,6 @@ export default {
       default: null,
     },
     statuses: {
-      type: Array,
-      default: () => [],
-    },
-    severities: {
       type: Array,
       default: () => [],
     },

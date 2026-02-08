@@ -78,7 +78,6 @@ describe('ProjectComponent', () => {
       'Applicable - Does Not Meet',
       'Not Applicable'
     ],
-    severities: ['low', 'medium', 'high'],
     available_roles: ['admin', 'author', 'viewer']
   }
 

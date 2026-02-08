@@ -74,7 +74,6 @@ describe('Project', () => {
     },
     current_user_id: 1,
     statuses: ['Not Yet Determined', 'Applicable - Configurable'],
-    severities: ['low', 'medium', 'high'],
     available_roles: ['admin', 'author', 'viewer']
   }
 

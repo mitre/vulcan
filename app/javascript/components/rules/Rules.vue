@@ -7,7 +7,6 @@
       :component="component"
       :rules="reactiveRules"
       :statuses="statuses"
-      :severities="severities"
       :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
       :available-roles="available_roles"
@@ -49,10 +48,6 @@ export default {
       required: true,
     },
     statuses: {
-      type: Array,
-      required: true,
-    },
-    severities: {
       type: Array,
       required: true,
     },
