@@ -10,3 +10,4 @@ export { useRuleActions } from "./useRuleActions";
 export { useSearch } from "./useSearch";
 export { useDeleteConfirmation } from "./useDeleteConfirmation";
 export { useBenchmarkViewer } from "./useBenchmarkViewer";
+export { useRuleFormFields } from "./useRuleFormFields";
