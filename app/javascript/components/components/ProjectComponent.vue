@@ -59,7 +59,6 @@
             :rule="selectedRule"
             :statuses="statuses"
             :severities="severities"
-            :severities_map="severities_map"
             :read-only="true"
             :effective-permissions="effective_permissions"
             :advanced_fields="localAdvancedFields"
@@ -175,10 +174,6 @@ export default {
     },
     severities: {
       type: Array,
-      required: true,
-    },
-    severities_map: {
-      type: Object,
       required: true,
     },
     available_roles: {

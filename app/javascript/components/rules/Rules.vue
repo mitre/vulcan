@@ -8,7 +8,6 @@
       :rules="reactiveRules"
       :statuses="statuses"
       :severities="severities"
-      :severities_map="severities_map"
       :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
       :available-roles="available_roles"
@@ -55,10 +54,6 @@ export default {
     },
     severities: {
       type: Array,
-      required: true,
-    },
-    severities_map: {
-      type: Object,
       required: true,
     },
     available_roles: {

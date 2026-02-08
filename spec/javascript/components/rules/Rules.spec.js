@@ -36,7 +36,6 @@ describe('Rules', () => {
         rules: rules,
         statuses: ['Not Yet Determined', 'Applicable - Configurable'],
         severities: ['low', 'medium', 'high'],
-        severities_map: {}
       }
     })
   }

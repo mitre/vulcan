@@ -101,10 +101,6 @@ export default {
       type: Array,
       required: true,
     },
-    severities_map: {
-      type: Object,
-      required: true,
-    },
     readOnly: {
       type: Boolean,
       default: false,

@@ -37,7 +37,6 @@ describe('RuleEditor', () => {
         rule: defaultRule,
         statuses: ['Not Yet Determined', 'Applicable - Configurable'],
         severities: ['low', 'medium', 'high'],
-        severities_map: { low: 'CAT III', medium: 'CAT II', high: 'CAT I' },
         effectivePermissions: 'admin',
         readOnly: false,
         advanced_fields: false,

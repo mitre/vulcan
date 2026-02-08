@@ -73,7 +73,6 @@ describe('RulesCodeEditorView', () => {
       'Not Applicable'
     ],
     severities: ['low', 'medium', 'high'],
-    severities_map: { low: 'CAT III', medium: 'CAT II', high: 'CAT I' }
   }
 
   const createWrapper = (props = {}) => {
