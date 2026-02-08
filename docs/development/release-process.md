@@ -18,7 +18,7 @@ No manual release creation needed!
 The `VERSION` file in the project root is the only place you edit the version:
 
 ```
-2.3.0
+3.0.0
 ```
 
 Everything else is derived automatically:
@@ -32,9 +32,9 @@ Everything else is derived automatically:
 
 ```ruby
 # Ruby code
-Rails.application.version.to_s  # => "2.3.0"
-Rails.application.version.major # => 2
-Rails.application.version.minor # => 3
+Rails.application.version.to_s  # => "3.0.0"
+Rails.application.version.major # => 3
+Rails.application.version.minor # => 0
 Rails.application.version.patch # => 0
 
 # In controllers/views
@@ -56,7 +56,7 @@ bundle exec rubocop
 bundle exec brakeman
 
 # 3. Update VERSION file
-echo "2.3.0" > VERSION
+echo "3.0.0" > VERSION
 
 # 4. Sync package.json (if needed)
 VERSION=$(cat VERSION | tr -d '\n')
@@ -78,15 +78,15 @@ git push origin master
 
 ```bash
 # Create annotated tag
-git tag -a v2.3.0 -m "Release v2.3.0
+git tag -a v3.0.0 -m "Release v3.0.0
 
-- ARM64/Apple Silicon support
-- Configurable SSL enforcement
-- Health check endpoints
-- Email validation improvements"
+- Vue 3 SPA migration
+- Bootstrap 5 upgrade
+- Command palette with global search
+- Turbolinks removal"
 
 # Push tag (triggers automation)
-git push origin v2.3.0
+git push origin v3.0.0
 ```
 
 ### Step 3: GitHub Actions Takes Over
@@ -97,7 +97,7 @@ Once the tag is pushed, `.github/workflows/release.yml` automatically:
 2. ✅ **Tests** - Runs RSpec, RuboCop, Brakeman
 3. ✅ **Creates Release** - GitHub release with generated notes
 4. ✅ **Builds Docker** - Multi-platform images (amd64 + arm64)
-5. ✅ **Pushes to Docker Hub** - Tags: `v2.3.0` and `latest`
+5. ✅ **Pushes to Docker Hub** - Tags: `v3.0.0` and `latest`
 
 **Monitor progress:** https://github.com/mitre/vulcan/actions
 
@@ -105,19 +105,19 @@ Once the tag is pushed, `.github/workflows/release.yml` automatically:
 
 Follow [SemVer 2.0.0](https://semver.org/):
 
-### Patch Release (2.3.0 → 2.3.1)
+### Patch Release (3.0.0 → 3.0.1)
 - Bug fixes
 - Security patches
 - Documentation updates
 - No new features
 
-### Minor Release (2.3.0 → 2.4.0)
+### Minor Release (3.0.0 → 3.1.0)
 - New features (backwards-compatible)
 - New endpoints
 - New configuration options
 - Deprecations with warnings
 
-### Major Release (2.3.0 → 3.0.0)
+### Major Release (3.0.0 → 4.0.0)
 - Breaking changes
 - Removed deprecated features
 - Database schema breaking changes
@@ -128,28 +128,22 @@ Follow [SemVer 2.0.0](https://semver.org/):
 Follow [Keep a Changelog](https://keepachangelog.com/):
 
 ```markdown
-## [2.3.0] - 2025-10-21
+## [3.0.0] - 2026-02-08
 
 ### Added
-- ARM64/Apple Silicon Docker image support
-- FORCE_SSL environment variable for flexible SSL configuration
-- Health check endpoints: /up, /health_check/database, /status
-- Production email validation (blocks @example.com domains)
-- User email validation (blocks disposable email providers)
-- rails_app_version gem for centralized version management
+- Vue 3 SPA migration with Composition API and Pinia
+- Bootstrap 5 upgrade with Bootstrap-Vue-Next
+- Command palette with global search (Cmd+K)
+- Vue Router for SPA navigation (Turbolinks removed)
 
 ### Changed
-- PostgreSQL upgraded to 16-alpine in docker-compose
-- Bundler upgraded to 2.7.2
-- Health check gem added for Kubernetes readiness probes
+- Frontend fully migrated from Vue 2 to Vue 3
+- State management migrated from Vuex to Pinia
+- UI framework migrated from Bootstrap 4 to Bootstrap 5
 
 ### Fixed
-- Email configuration validation prevents spam filter issues
-- SMTP settings properly validated in production
-
-### Security
-- Enhanced email validation
-- Disposable email blocking for user registration
+- Frontend performance improvements from SPA architecture
+- Consistent navigation behavior across all pages
 ```
 
 ## Pre-Release Checklist
@@ -173,7 +167,7 @@ For urgent production fixes:
 
 ```bash
 # 1. Branch from release tag
-git checkout -b hotfix/2.3.1 v2.3.0
+git checkout -b hotfix/3.0.1 v3.0.0
 
 # 2. Fix the issue
 # ... make changes ...
@@ -182,7 +176,7 @@ git checkout -b hotfix/2.3.1 v2.3.0
 bundle exec rspec
 
 # 4. Update version (patch bump)
-echo "2.3.1" > VERSION
+echo "3.0.1" > VERSION
 
 # 5. Commit
 git add .
@@ -191,13 +185,13 @@ git commit -m "fix: critical security issue
 Authored by: Aaron Lippold<lippold@gmail.com>"
 
 # 6. Tag and push
-git tag -a v2.3.1 -m "Hotfix v2.3.1"
-git push origin hotfix/2.3.1
-git push origin v2.3.1
+git tag -a v3.0.1 -m "Hotfix v3.0.1"
+git push origin hotfix/3.0.1
+git push origin v3.0.1
 
 # 7. Merge back to master
 git checkout master
-git merge hotfix/2.3.1
+git merge hotfix/3.0.1
 git push origin master
 ```
 
@@ -207,20 +201,20 @@ If a release has critical issues:
 
 ```bash
 # 1. Delete tag
-git tag -d v2.3.0
-git push origin :refs/tags/v2.3.0
+git tag -d v3.0.0
+git push origin :refs/tags/v3.0.0
 
 # 2. Delete GitHub release (web UI or CLI)
-gh release delete v2.3.0 --yes
+gh release delete v3.0.0 --yes
 
 # 3. Delete Docker images (contact Docker Hub admin)
 # Or just push a new patch release
 
 # 4. Create fixed version
-echo "2.3.1" > VERSION
+echo "3.0.1" > VERSION
 # ... fix issues ...
-git tag -a v2.3.1 -m "Release v2.3.1 (fixes v2.3.0)"
-git push origin v2.3.1
+git tag -a v3.0.1 -m "Release v3.0.1 (fixes v3.0.0)"
+git push origin v3.0.1
 ```
 
 ## Verification
@@ -230,20 +224,20 @@ After release automation completes:
 ### 1. Check GitHub Release
 ```bash
 # Via web
-https://github.com/mitre/vulcan/releases/tag/v2.3.0
+https://github.com/mitre/vulcan/releases/tag/v3.0.0
 
 # Via CLI
-gh release view v2.3.0
+gh release view v3.0.0
 ```
 
 ### 2. Check Docker Hub
 ```bash
 # Verify images exist
-docker pull mitre/vulcan:v2.3.0
+docker pull mitre/vulcan:v3.0.0
 docker pull mitre/vulcan:latest
 
 # Check platforms
-docker manifest inspect mitre/vulcan:v2.3.0 | jq '.manifests[].platform'
+docker manifest inspect mitre/vulcan:v3.0.0 | jq '.manifests[].platform'
 # Should show: linux/amd64 and linux/arm64
 ```
 
@@ -253,18 +247,18 @@ docker manifest inspect mitre/vulcan:v2.3.0 | jq '.manifests[].platform'
 docker run --rm -p 3000:3000 \
   -e DATABASE_URL=postgresql://user:pass@host/db \
   -e SECRET_KEY_BASE=test \
-  mitre/vulcan:v2.3.0
+  mitre/vulcan:v3.0.0
 
 # Check version endpoint
 curl http://localhost:3000/status | jq '.application.version'
-# Should return: "2.3.0"
+# Should return: "3.0.0"
 ```
 
 ## Troubleshooting
 
 ### "Version mismatch" error in workflow
 - Ensure VERSION file is committed
-- Check VERSION contains only the number (e.g., `2.3.0`, not `v2.3.0`)
+- Check VERSION contains only the number (e.g., `3.0.0`, not `v3.0.0`)
 - Verify package.json is synced
 
 ### Tests fail in CI
@@ -278,8 +272,8 @@ curl http://localhost:3000/status | jq '.application.version'
 - Review build logs in Actions
 
 ### Release doesn't trigger
-- Verify tag format: `v*.*.*` (e.g., `v2.3.0`)
-- Check tag was pushed: `git push origin v2.3.0`
+- Verify tag format: `v*.*.*` (e.g., `v3.0.0`)
+- Check tag was pushed: `git push origin v3.0.0`
 - Verify GitHub Actions are enabled
 
 ## CI/CD Configuration

@@ -558,12 +558,12 @@ The following improvements are tracked as GitHub issues:
 
 | Priority | Issue | Description | Target |
 |----------|-------|-------------|--------|
-| **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | v2.3.0 |
-| **High** | [#635](https://github.com/mitre/vulcan/issues/635) | Add logout confirmation message | v2.3.0 |
-| **Medium** | [#634](https://github.com/mitre/vulcan/issues/634) | Implement per-user session limits | v2.3.0 |
-| **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v2.3.0 |
+| **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | v3.0.0 |
+| **High** | [#635](https://github.com/mitre/vulcan/issues/635) | Add logout confirmation message | v3.0.0 |
+| **Medium** | [#634](https://github.com/mitre/vulcan/issues/634) | Implement per-user session limits | v3.0.0 |
+| **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v3.0.0 |
 
-These security improvements are being addressed in v2.3.0 alongside the completed Vue 3 migration.
+These security improvements are being addressed in v3.0.0 alongside the completed Vue 3 migration.
 
 ## Resources & Support
 
@@ -587,7 +587,7 @@ Available in `/docs/compliance/`:
 
 ---
 
-**Document Version:** 2.3.0  
+**Document Version:** 3.0.0
 **Last Updated:** December 2024  
 **Classification:** UNCLASSIFIED  
 **Distribution:** Public Release

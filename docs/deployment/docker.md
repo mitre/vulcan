@@ -218,7 +218,7 @@ vulcan build --info
 vulcan build --push
 
 # Custom registry and version
-vulcan build --registry ghcr.io/myorg --version v2.3.0
+vulcan build --registry ghcr.io/myorg --version v3.0.0
 ```
 
 ### Using Docker Buildx Bake

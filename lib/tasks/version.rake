@@ -43,7 +43,7 @@ namespace :version do
     end
   end
 
-  desc 'Bump patch version (2.3.0 -> 2.3.1)'
+  desc 'Bump patch version (e.g., 1.2.3 -> 1.2.4)'
   task bump_patch: :environment do
     current = File.read('VERSION').strip
     parts = current.split('.')
@@ -63,7 +63,7 @@ namespace :version do
     puts "  5. git push origin v#{new_version}"
   end
 
-  desc 'Bump minor version (2.3.0 -> 2.4.0)'
+  desc 'Bump minor version (e.g., 1.2.3 -> 1.3.0)'
   task bump_minor: :environment do
     current = File.read('VERSION').strip
     parts = current.split('.')
@@ -84,7 +84,7 @@ namespace :version do
     puts "  5. git push origin v#{new_version}"
   end
 
-  desc 'Bump major version (2.3.0 -> 3.0.0)'
+  desc 'Bump major version (e.g., 1.2.3 -> 2.0.0)'
   task bump_major: :environment do
     current = File.read('VERSION').strip
     parts = current.split('.')

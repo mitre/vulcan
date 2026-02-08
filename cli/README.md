@@ -60,7 +60,7 @@ vulcan logs
 | `vulcan build --push` | Build and push to registry |
 | `vulcan build -p linux/amd64,linux/arm64 --push` | Multi-arch build |
 | `vulcan build --registry ghcr.io/myorg` | Use custom registry |
-| `vulcan build --version v2.3.0` | Build with specific version tag |
+| `vulcan build --version v1.0.0` | Build with specific version tag |
 
 The build command reads versions from `.ruby-version` and `.nvmrc` files for single source of truth.
 

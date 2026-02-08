@@ -191,7 +191,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("build.bundler_version", "2.6.5")
 	v.SetDefault("build.registry", "mitre")
 	v.SetDefault("build.image", "vulcan")
-	v.SetDefault("build.version", "latest")
+	v.SetDefault("build.version", readVersionFile("VERSION", "latest"))
 
 	// Port defaults
 	v.SetDefault("ports.web", 3000)

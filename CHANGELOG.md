@@ -151,7 +151,7 @@ This release represents a major modernization of the Vulcan platform, bringing i
 
 5. **Update test environment** if you have custom settings in `config/environments/test.rb`
 
-### 🔮 Coming in v2.3.0
+### 🔮 Coming in v3.0.0
 
 - ✅ Vue 3.5 migration with Composition API and Pinia (completed)
 - ✅ Bootstrap 5 upgrade with Bootstrap-Vue-Next (completed)

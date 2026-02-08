@@ -3,7 +3,7 @@ name: Release Vulcan
 on:
   push:
     tags:
-      - 'v*.*.*'  # Triggers on version tags like v2.3.0
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0
 
 jobs:
   validate:
@@ -18,7 +18,7 @@ jobs:
           TAG="${{ github.ref_name }}"
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "❌ Invalid tag format: $TAG"
-            echo "Expected format: v2.3.0"
+            echo "Expected format: v1.0.0"
             exit 1
           fi
           echo "✅ Valid tag: $TAG"

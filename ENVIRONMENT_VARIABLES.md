@@ -53,10 +53,21 @@ These are automatically derived from the primitives above. Only override when ne
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | - | `postgres://user:pass@localhost:5432/vulcan_production` |
+| `DB_SUFFIX` | Database name suffix for worktree isolation (development only) | - | `_v3`, `_v2` |
 | `DATABASE_PORT` | PostgreSQL port (for docker-compose) | `5432` | `5433` |
 | `POSTGRES_USER` | PostgreSQL username (Docker) | `postgres` | `vulcan` |
 | `POSTGRES_PASSWORD` | PostgreSQL password (Docker) | - | `secure_password` |
 | `POSTGRES_DB` | PostgreSQL database name (Docker) | `vulcan_postgres_production` | `vulcan_db` |
+
+**Worktree Isolation**: When developing with multiple git worktrees (e.g., v2.x and v3.x), set `DB_SUFFIX` in each worktree's `.env` to give each branch its own database. This prevents migration conflicts when branches have diverging schemas. Not needed in production — each deployment has its own database.
+
+```bash
+# v2.x worktree .env
+DB_SUFFIX=_v2    # → vulcan_vue_development_v2, vulcan_vue_test_v2
+
+# v3.x worktree .env
+DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
+```
 
 ## General Application Settings
 
@@ -240,7 +251,7 @@ These variables are used by `docker buildx bake` (via `docker-bake.hcl`). They u
 | `VULCAN_RUBY_VERSION` | Ruby version for Docker builds | `3.4.7` | `3.4.7` |
 | `VULCAN_NODE_VERSION` | Node.js version for Docker builds | `24.11.1` | `24.11.1` |
 | `VULCAN_IMAGE` | Docker image name | `mitre/vulcan` | `ghcr.io/mitre/vulcan` |
-| `VULCAN_VERSION` | Docker image version | `latest` | `2.3.0` |
+| `VULCAN_VERSION` | Docker image version | `latest` | `3.0.0` |
 
 **Note**: We use `VULCAN_RUBY_VERSION` instead of `RUBY_VERSION` because RVM exports `RUBY_VERSION` with an interpreter prefix (e.g., `ruby-3.4.7`) which breaks Docker image tags.
 

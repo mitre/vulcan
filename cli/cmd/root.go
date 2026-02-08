@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
@@ -76,6 +78,13 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(InitConfig)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
+
+	// Set CLI version (enables `vulcan --version`)
+	projectRoot := GetProjectRoot()
+	cliVersion := getCLIVersion(projectRoot)
+	appVersion := getProjectVersion(projectRoot)
+	rootCmd.Version = fmt.Sprintf("%s (Vulcan %s)", cliVersion, appVersion)
+
 	AddConfigFlags(rootCmd)
 }
 
@@ -94,6 +103,38 @@ func printInfo(msg string) {
 
 func printTitle(msg string) {
 	fmt.Println(titleStyle.Render(msg))
+}
+
+// getCLIVersion reads the CLI's own VERSION file from cli/VERSION.
+// Falls back to "dev" if the file is missing or unreadable.
+func getCLIVersion(projectRoot string) string {
+	// When running from project root, cli/VERSION exists
+	// When running from cli/ subdirectory, VERSION is in current dir
+	paths := []string{
+		filepath.Join(projectRoot, "cli", "VERSION"),
+		"VERSION",
+	}
+	for _, p := range paths {
+		if data, err := os.ReadFile(p); err == nil {
+			if v := strings.TrimSpace(string(data)); v != "" {
+				return v
+			}
+		}
+	}
+	return "dev"
+}
+
+// getProjectVersion reads the app VERSION file from the project root.
+// Falls back to "dev" if the file is missing or unreadable.
+func getProjectVersion(projectRoot string) string {
+	data, err := os.ReadFile(filepath.Join(projectRoot, "VERSION"))
+	if err != nil {
+		return "dev"
+	}
+	if v := strings.TrimSpace(string(data)); v != "" {
+		return v
+	}
+	return "dev"
 }
 
 // GetProjectRoot returns the Vulcan project root directory

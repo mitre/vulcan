@@ -7,10 +7,10 @@ import { getLatestRelease, githubApi } from '../github.api'
 
 describe('gitHub API', () => {
   const mockRelease = {
-    tag_name: 'v2.3.0',
-    name: 'Version 2.3.0',
+    tag_name: 'v99.0.0',
+    name: 'Version 99.0.0',
     published_at: '2024-01-15T00:00:00Z',
-    html_url: 'https://github.com/mitre/vulcan/releases/tag/v2.3.0',
+    html_url: 'https://github.com/mitre/vulcan/releases/tag/v99.0.0',
     body: 'Release notes content',
   }
 

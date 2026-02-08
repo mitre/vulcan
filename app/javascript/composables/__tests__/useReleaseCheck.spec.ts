@@ -16,7 +16,7 @@ vi.mock('@/apis/github.api', () => ({
 
 // Mock package.json version
 vi.mock('../../../../package.json', () => ({
-  version: '2.2.0',
+  version: '1.0.0',
 }))
 
 describe('useReleaseCheck', () => {
@@ -47,30 +47,30 @@ describe('useReleaseCheck', () => {
 
     it('exposes currentVersion from package.json', () => {
       const { currentVersion } = useReleaseCheck()
-      expect(currentVersion).toBe('2.2.0')
+      expect(currentVersion).toBe('1.0.0')
     })
   })
 
   describe('fetchLatestRelease', () => {
     it('sets latestRelease on success', async () => {
       vi.mocked(githubApi.getLatestRelease).mockResolvedValue({
-        tag_name: 'v2.3.0',
-        name: 'v2.3.0',
+        tag_name: 'v99.0.0',
+        name: 'v99.0.0',
         published_at: '2024-01-01T00:00:00Z',
-        html_url: 'https://github.com/mitre/vulcan/releases/tag/v2.3.0',
+        html_url: 'https://github.com/mitre/vulcan/releases/tag/v99.0.0',
         body: 'Release notes',
       })
 
       const { fetchLatestRelease, latestRelease } = useReleaseCheck()
       await fetchLatestRelease()
 
-      expect(latestRelease.value).toBe('2.3.0')
+      expect(latestRelease.value).toBe('99.0.0')
     })
 
     it('sets updateAvailable when newer version exists', async () => {
       vi.mocked(githubApi.getLatestRelease).mockResolvedValue({
-        tag_name: 'v2.3.0',
-        name: 'v2.3.0',
+        tag_name: 'v99.0.0',
+        name: 'v99.0.0',
         published_at: '2024-01-01T00:00:00Z',
         html_url: '',
         body: '',
@@ -84,8 +84,8 @@ describe('useReleaseCheck', () => {
 
     it('keeps updateAvailable false when current version is newer', async () => {
       vi.mocked(githubApi.getLatestRelease).mockResolvedValue({
-        tag_name: 'v2.1.0',
-        name: 'v2.1.0',
+        tag_name: 'v0.9.0',
+        name: 'v0.9.0',
         published_at: '2024-01-01T00:00:00Z',
         html_url: '',
         body: '',
@@ -99,8 +99,8 @@ describe('useReleaseCheck', () => {
 
     it('keeps updateAvailable false when versions are equal', async () => {
       vi.mocked(githubApi.getLatestRelease).mockResolvedValue({
-        tag_name: 'v2.2.0',
-        name: 'v2.2.0',
+        tag_name: 'v1.0.0',
+        name: 'v1.0.0',
         published_at: '2024-01-01T00:00:00Z',
         html_url: '',
         body: '',
@@ -124,8 +124,8 @@ describe('useReleaseCheck', () => {
       expect(loading.value).toBe(true)
 
       resolvePromise!({
-        tag_name: 'v2.3.0',
-        name: 'v2.3.0',
+        tag_name: 'v99.0.0',
+        name: 'v99.0.0',
         published_at: '',
         html_url: '',
         body: '',
@@ -150,8 +150,8 @@ describe('useReleaseCheck', () => {
   describe('dismissUpdate', () => {
     it('sets updateAvailable to false', async () => {
       vi.mocked(githubApi.getLatestRelease).mockResolvedValue({
-        tag_name: 'v2.3.0',
-        name: 'v2.3.0',
+        tag_name: 'v99.0.0',
+        name: 'v99.0.0',
         published_at: '',
         html_url: '',
         body: '',

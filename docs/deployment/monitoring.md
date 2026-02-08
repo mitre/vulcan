@@ -1,6 +1,6 @@
 # Health Monitoring
 
-Vulcan v2.3.0+ includes comprehensive health check endpoints for Kubernetes probes, load balancers, and monitoring dashboards.
+Vulcan v3.0.0+ includes comprehensive health check endpoints for Kubernetes probes, load balancers, and monitoring dashboards.
 
 ## Health Check Endpoints
 
@@ -99,7 +99,7 @@ curl http://localhost:3000/status | jq
 {
   "application": {
     "name": "Vulcan",
-    "version": "2.3.0",
+    "version": "3.0.0",
     "rails_version": "8.0.2.1",
     "environment": "production"
   },
@@ -140,7 +140,7 @@ curl http://localhost:3000/status | jq
 ```yaml
 containers:
 - name: vulcan
-  image: mitre/vulcan:v2.3.0
+  image: mitre/vulcan:v3.0.0
   ports:
   - containerPort: 3000
   # Liveness: Is the app running?
@@ -272,7 +272,7 @@ If LDAP/OIDC checks fail:
 
 ## Prometheus Metrics
 
-Vulcan v2.3.0+ includes Prometheus metrics exporter for comprehensive application and infrastructure monitoring.
+Vulcan v3.0.0+ includes Prometheus metrics exporter for comprehensive application and infrastructure monitoring.
 
 ### Metrics Endpoint
 

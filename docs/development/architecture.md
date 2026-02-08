@@ -212,7 +212,7 @@ FROM ruby:3.4.7-slim
 
 ## Future Architecture Plans
 
-### Completed (v2.3.0)
+### Completed (v3.0.0)
 - ✅ Vue 3.5 with Composition API and TypeScript
 - ✅ Bootstrap 5 with Bootstrap-Vue-Next
 - ✅ Pinia for state management

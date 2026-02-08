@@ -34,7 +34,7 @@ Examples:
   vulcan build --push             # Build and push to registry
   vulcan build -p linux/amd64,linux/arm64 --push  # Multi-arch build
   vulcan build --ruby-version 3.4.7 --node-version 24
-  vulcan build --registry ghcr.io/mitre --version v2.3.0`,
+  vulcan build --registry ghcr.io/mitre --version v1.0.0`,
 	Run: runBuild,
 }
 

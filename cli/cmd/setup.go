@@ -101,7 +101,7 @@ func runSetup(cmd *cobra.Command, args []string) {
   ╚╝ └─┘┴─┘└─┘┴ ┴┘└┘`)
 
 	fmt.Println(banner)
-	fmt.Println(subtitleStyle.Render("  Setup Wizard v2.3.0\n"))
+	fmt.Println(subtitleStyle.Render("  Setup Wizard v" + getProjectVersion(projectRoot) + "\n"))
 
 	config := &SetupConfig{}
 

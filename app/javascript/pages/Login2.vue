@@ -202,7 +202,7 @@ async function handleLogin() {
     <!-- System info footer -->
     <div class="system-info">
       <div class="info-item">
-        SYS.VERSION: 2.3.0
+        SYS.VERSION: 3.0.0
       </div>
       <div class="info-divider">
         •

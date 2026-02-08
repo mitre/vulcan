@@ -33,7 +33,7 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 
 ## 🚀 Quick Start
 
-### Latest Release: [v2.3.0](https://github.com/mitre/vulcan/releases/tag/v2.3.0)
+### Latest Release: [v3.0.0](https://github.com/mitre/vulcan/releases/tag/v3.0.0)
 
 #### Using the Vulcan CLI (Recommended)
 
@@ -189,7 +189,7 @@ foreman start -f Procfile.dev
 **Note:** The `docker-compose.dev.yml` starts PostgreSQL 16 on port 5432 with:
 - User: `postgres`
 - Password: `postgres`
-- Database: `vulcan_vue_development`
+- Database: `vulcan_vue_development` (or `vulcan_vue_development_v3` with `DB_SUFFIX=_v3`)
 
 ### Running Tests
 
@@ -438,7 +438,7 @@ We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTIN
 
 ## 📈 Roadmap
 
-### Completed in v2.3.0
+### Completed in v3.0.0
 
 - ✅ **Vue 3 Migration**: Full SPA with Composition API and Pinia
 - ✅ **Bootstrap 5 Upgrade**: Modern UI with Bootstrap-Vue-Next
