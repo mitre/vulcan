@@ -131,30 +131,34 @@ createuser -d vulcan_dev
 
 #### Database Configuration File
 
-Create `config/database.yml`:
+The project's `config/database.yml` supports `DB_SUFFIX` for worktree isolation:
 
 ```yaml
-default: &default
-  adapter: postgresql
-  encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  timeout: 5000
-
 development:
-  <<: *default
-  database: vulcan_development
-  username: vulcan_dev
-  password: <%= ENV['DATABASE_PASSWORD'] %>
-  host: localhost
-  port: 5432
+  database: vulcan_vue_development<%= ENV['DB_SUFFIX'] %>
 
 test:
-  <<: *default
-  database: vulcan_test
-  username: vulcan_dev
-  password: <%= ENV['DATABASE_PASSWORD'] %>
-  host: localhost
-  port: 5432
+  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
+```
+
+#### Worktree Database Isolation
+
+When working with multiple git worktrees (e.g., v2.x and v3.x branches), set `DB_SUFFIX` in each worktree's `.env` to prevent migration conflicts:
+
+```bash
+# v2.x worktree
+DB_SUFFIX=_v2    # → vulcan_vue_development_v2
+
+# v3.x worktree
+DB_SUFFIX=_v3    # → vulcan_vue_development_v3
+```
+
+To set up a new worktree database, clone from the existing one:
+
+```bash
+# Clone the development database for a new worktree
+docker exec <postgres-container> psql -U postgres -c \
+  "CREATE DATABASE vulcan_vue_development_v3 WITH TEMPLATE vulcan_vue_development OWNER postgres;"
 ```
 
 ### Environment Variables

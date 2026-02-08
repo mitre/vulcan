@@ -28,7 +28,7 @@ docker-compose -f docker-compose.dev.yml ps
 # Should show db service as "Up" and healthy
 ```
 
-**Note:** The test suite uses a separate `vulcan_vue_test` database on the same PostgreSQL server as development. Tests will fail if PostgreSQL is not running.
+**Note:** The test suite uses a separate `vulcan_vue_test` database (or `vulcan_vue_test_v3` if `DB_SUFFIX=_v3` is set) on the same PostgreSQL server as development. Tests will fail if PostgreSQL is not running. See [Environment Variables](../getting-started/environment-variables.md#database-configuration) for worktree isolation with `DB_SUFFIX`.
 
 ## Running Tests
 
