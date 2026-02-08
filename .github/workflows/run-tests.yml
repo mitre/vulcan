@@ -40,7 +40,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3.9'
+          ruby-version: '3.4.7'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -90,8 +90,8 @@ jobs:
         run: |
           bundle exec rails db:create
           bundle exec rails db:schema:load
-          # Run full test suite including OIDC discovery and startup validation
-          bundle exec rails spec
+          # Run backend tests in parallel for faster CI
+          bundle exec parallel_rspec spec/
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         if: always()

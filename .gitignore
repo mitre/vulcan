@@ -73,3 +73,4 @@ vulcan-wiki-local/
 !/certs/.gitkeep
 /app/assets/builds/*
 !/app/assets/builds/.keep
+.beads/recovery-context.md
