@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.3.9'
+ruby '3.4.7'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
@@ -76,6 +76,9 @@ gem 'fast_excel'
 # For writing excel files
 gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
+# NKF/kconv - removed from default gems in Ruby 3.4+, needed by gitlab_omniauth-ldap
+gem 'nkf'
+
 # REXML - required explicitly in Ruby 3.0+
 gem 'rexml'
 
@@ -120,6 +123,7 @@ group :development, :test do
   gem 'brakeman'
   gem 'byebug'
   gem 'factory_bot_rails', '~> 6.5.0'
+  gem 'parallel_tests'
   gem 'rspec-mocks'
   gem 'rspec-rails', '~> 6.0'
   # Load environment variables from .env files in development and test
