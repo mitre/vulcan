@@ -71,11 +71,7 @@
       </b-button-group>
       <!-- Destructive/admin actions separated with gap -->
       <b-button-group v-if="effectivePermissions === 'admin'" size="sm" class="ml-3">
-        <b-button
-          variant="outline-danger"
-          :disabled="isReadOnly"
-          @click="$emit('delete')"
-        >
+        <b-button variant="outline-danger" :disabled="isReadOnly" @click="$emit('delete')">
           <b-icon icon="trash" /> Delete
         </b-button>
         <CommentModal

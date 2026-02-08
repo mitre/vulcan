@@ -84,7 +84,10 @@
         </label>
         <MarkdownTextarea
           :id="`ruleEditor-severity_override_guidance-${mod}`"
-          :value="rule.disa_rule_descriptions_attributes[0] && rule.disa_rule_descriptions_attributes[0].severity_override_guidance"
+          :value="
+            rule.disa_rule_descriptions_attributes[0] &&
+            rule.disa_rule_descriptions_attributes[0].severity_override_guidance
+          "
           :input-class="inputClass('severity_override_guidance')"
           placeholder=""
           :disabled="disabled || fields.disabled.includes('severity_override_guidance')"
@@ -167,19 +170,14 @@
       </template>
 
       <!-- IA Control and CCI (always visible, read-only) -->
-      <div
-        v-if="rule.nist_control_family || rule.ident"
-        class="row"
-        data-testid="ia-control-cci"
-      >
-        <b-form-group
-          :id="`ruleEditor-ia_control-group-${mod}`"
-          class="col-md-6"
-        >
+      <div v-if="rule.nist_control_family || rule.ident" class="row" data-testid="ia-control-cci">
+        <b-form-group :id="`ruleEditor-ia_control-group-${mod}`" class="col-md-6">
           <label :for="`ruleEditor-ia_control-${mod}`">
             IA Control
             <b-icon
-              v-b-tooltip.hover.html="'The NIST control family (e.g. AC-2) mapped to this requirement'"
+              v-b-tooltip.hover.html="
+                'The NIST control family (e.g. AC-2) mapped to this requirement'
+              "
               icon="info-circle"
               aria-hidden="true"
             />
@@ -191,14 +189,13 @@
             class="bg-light"
           />
         </b-form-group>
-        <b-form-group
-          :id="`ruleEditor-cci-group-${mod}`"
-          class="col-md-6"
-        >
+        <b-form-group :id="`ruleEditor-cci-group-${mod}`" class="col-md-6">
           <label :for="`ruleEditor-cci-${mod}`">
             CCI
             <b-icon
-              v-b-tooltip.hover.html="'The Common Control Indicator (CCI) mapped to this requirement'"
+              v-b-tooltip.hover.html="
+                'The Common Control Indicator (CCI) mapped to this requirement'
+              "
               icon="info-circle"
               aria-hidden="true"
             />

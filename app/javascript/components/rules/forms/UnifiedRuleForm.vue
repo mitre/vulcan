@@ -6,8 +6,16 @@
         :statuses="statuses"
         :disabled="isFormDisabled"
         :fields="ruleFormFields"
-        :disa_fields="(!advancedMode || !showCollapsibleSections) && showDisaSection ? disaDescriptionFields : undefined"
-        :check_fields="(!advancedMode || !showCollapsibleSections) && showChecksSection ? checkFormFields : undefined"
+        :disa_fields="
+          (!advancedMode || !showCollapsibleSections) && showDisaSection
+            ? disaDescriptionFields
+            : undefined
+        "
+        :check_fields="
+          (!advancedMode || !showCollapsibleSections) && showChecksSection
+            ? checkFormFields
+            : undefined
+        "
         :force_enable_additional_questions="forceEnableAdditionalQuestions"
         :additional_questions="additional_questions"
       />

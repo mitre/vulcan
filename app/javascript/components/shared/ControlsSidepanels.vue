@@ -215,11 +215,7 @@
       @hidden="$emit('close-panel')"
     >
       <div v-if="selectedRule" class="px-3 py-2">
-        <RuleHistories
-          :rule="selectedRule"
-          :component="component"
-          :statuses="statuses"
-        />
+        <RuleHistories :rule="selectedRule" :component="component" :statuses="statuses" />
       </div>
     </b-sidebar>
   </div>

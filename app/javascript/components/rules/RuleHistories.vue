@@ -7,12 +7,7 @@
       }}</b-badge>
     </div>
 
-    <History
-      :histories="rule.histories"
-      :component="component"
-      :rule="rule"
-      :statuses="statuses"
-    />
+    <History :histories="rule.histories" :component="component" :rule="rule" :statuses="statuses" />
 
     <p v-if="!rule.histories || rule.histories.length === 0" class="text-muted small">
       No revision history yet.

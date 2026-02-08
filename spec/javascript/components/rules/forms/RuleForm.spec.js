@@ -51,7 +51,7 @@ function makeRule(overrides = {}) {
     fix_id: 'F-1234',
     fixtext_fixref: 'SV-1234',
     ident: 'CCI-000015',
-    ident_system: 'http://iase.disa.mil/cci',
+    ident_system: 'https://iase.disa.mil/cci',
     nist_control_family: 'AC-2 (1)',
     disa_rule_descriptions_attributes: [{
       _destroy: false,
