@@ -103,12 +103,12 @@ RSpec.describe 'Authorization coverage', type: :request do
     end
 
     expect(uncovered).to be_empty,
-                          "The following routed actions have NO authorize_* before_action.\n" \
-                          "Every action must have explicit authorization.\n\n" \
-                          "To fix:\n" \
-                          "  1. Add an appropriate authorize_* before_action to the controller, OR\n" \
-                          "  2. Add to AUTHENTICATE_ONLY_ACTIONS with a documented reason\n\n" \
-                          "Uncovered actions:\n#{uncovered.map { |a| "  - #{a}" }.join("\n")}"
+                         "The following routed actions have NO authorize_* before_action.\n" \
+                         "Every action must have explicit authorization.\n\n" \
+                         "To fix:\n  " \
+                         "1. Add an appropriate authorize_* before_action to the controller, OR\n  " \
+                         "2. Add to AUTHENTICATE_ONLY_ACTIONS with a documented reason\n\n" \
+                         "Uncovered actions:\n#{uncovered.map { |a| "  - #{a}" }.join("\n")}"
   end
 
   private

@@ -82,7 +82,7 @@ Project.find_each { |p| Project.reset_counters(p.id, :memberships_count) }
 puts 'Creating SRGs...'
 srg_dir = Rails.root.join('db/seeds/srgs')
 srg_records = {}
-Dir.glob(srg_dir.join('*.xml')).sort.each do |filepath|
+Dir.glob(srg_dir.join('*.xml')).each do |filepath|
   record = seed_xccdf(filepath)
   next unless record
 
@@ -102,7 +102,7 @@ puts "Created #{SecurityRequirementsGuide.count} SRGs"
 # --------------- #
 puts 'Creating STIGs...'
 stig_dir = Rails.root.join('db/seeds/stigs')
-Dir.glob(stig_dir.join('*.xml')).sort.each do |filepath|
+Dir.glob(stig_dir.join('*.xml')).each do |filepath|
   seed_xccdf(filepath)
 end
 puts "Created #{Stig.count} STIGs"

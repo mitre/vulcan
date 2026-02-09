@@ -11,15 +11,15 @@
 # See: https://github.com/heroku/heroku-buildpack-ruby/issues/792
 # Pattern used by: Mastodon, Forem, and recommended by Heroku maintainers.
 
-if Rake::Task.task_defined?("assets:clean")
-  Rake::Task["assets:clean"].enhance do
-    next unless ENV["RAILS_ENV"] == "production"
+if Rake::Task.task_defined?('assets:clean')
+  Rake::Task['assets:clean'].enhance do
+    next unless ENV['RAILS_ENV'] == 'production'
 
-    node_modules = Rails.root.join("node_modules")
+    node_modules = Rails.root.join('node_modules')
     if node_modules.exist?
       Rails.logger.info "Heroku cleanup: removing node_modules (#{`du -sh #{node_modules}`.strip})"
       FileUtils.remove_dir(node_modules, true)
-      Rails.logger.info "Heroku cleanup: node_modules removed"
+      Rails.logger.info 'Heroku cleanup: node_modules removed'
     end
   end
 end
