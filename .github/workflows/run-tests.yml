@@ -65,6 +65,8 @@ jobs:
         run: bundle exec rubocop
       - name: Run eslint
         run: yarn lint:ci
+      - name: Run frontend tests
+        run: yarn test:unit
       - name: Setup database and run tests
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test

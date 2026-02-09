@@ -6,8 +6,9 @@ rm -f /rails/tmp/pids/server.pid
 # If running the rails server then create or migrate existing database
 # db:prepare is idempotent: creates DB if missing, runs pending migrations if exists
 # This also triggers admin:bootstrap (hooked into db:prepare)
+# DISABLE_DATABASE_ENVIRONMENT_CHECK=1 allows db:prepare in production (Heroku, Docker)
 if [[ "$@" == *"server"* ]]; then
-  ./bin/rails db:prepare
+  DISABLE_DATABASE_ENVIRONMENT_CHECK=1 ./bin/rails db:prepare
 fi
 
 exec "${@}"
