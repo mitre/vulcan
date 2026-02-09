@@ -59,7 +59,7 @@
 <script>
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import { REVIEW_ACTION_LABELS } from "../../constants/terminology";
+import { buildReviewActions } from "../../utils/reviewActionHelpers";
 
 export default {
   name: "RuleReviewDropdown",
@@ -84,90 +84,18 @@ export default {
   },
   data() {
     return {
-      reviewLabels: REVIEW_ACTION_LABELS,
       selectedReviewAction: null,
       reviewComment: "",
     };
   },
   computed: {
     reviewActions() {
-      const isAdmin = !this.readOnly && this.effectivePermissions === "admin";
-      const isReviewer = !this.readOnly && this.effectivePermissions === "reviewer";
-      const isRequestor = !this.readOnly && this.currentUserId === this.rule.review_requestor_id;
-      const isUnderReview = this.rule.review_requestor_id != null;
-      const labels = this.reviewLabels;
-
-      return [
-        {
-          value: "request_review",
-          name: labels.requestReview.name,
-          description: labels.requestReview.description,
-          disabledTooltip: isUnderReview
-            ? labels.requestReview.alreadyUnderReview
-            : this.rule.locked
-              ? labels.requestReview.isLocked
-              : null,
-        },
-        {
-          value: "revoke_review_request",
-          name: labels.revokeReview.name,
-          description: labels.revokeReview.description,
-          disabledTooltip: !(isAdmin || isRequestor)
-            ? labels.revokeReview.notAllowed
-            : !isUnderReview
-              ? labels.revokeReview.notUnderReview
-              : null,
-        },
-        {
-          value: "request_changes",
-          name: labels.requestChanges.name,
-          description: labels.requestChanges.description,
-          disabledTooltip: !(isAdmin || isReviewer)
-            ? labels.requestChanges.notAllowed
-            : !isUnderReview
-              ? labels.requestChanges.notUnderReview
-              : null,
-        },
-        {
-          value: "approve",
-          name: labels.approve.name,
-          description: labels.approve.description,
-          disabledTooltip: !(isAdmin || isReviewer)
-            ? labels.approve.notAllowed
-            : !isUnderReview
-              ? labels.approve.notUnderReview
-              : null,
-        },
-        {
-          value: "lock_control",
-          name: labels.lock.name,
-          description: labels.lock.description,
-          disabledTooltip: !isAdmin
-            ? labels.lock.notAllowed
-            : isUnderReview
-              ? labels.lock.underReview
-              : this.rule.locked
-                ? labels.lock.alreadyLocked
-                : this.rule.status === "Applicable - Does Not Meet" &&
-                    this.rule.disa_rule_descriptions_attributes?.[0]?.mitigations?.length === 0
-                  ? labels.lock.mitigationRequired
-                  : this.rule.status === "Applicable - Inherently Meets" &&
-                      (!this.rule.artifact_description ||
-                        this.rule.artifact_description.length === 0)
-                    ? labels.lock.artifactRequired
-                    : null,
-        },
-        {
-          value: "unlock_control",
-          name: labels.unlock.name,
-          description: labels.unlock.description,
-          disabledTooltip: !isAdmin
-            ? labels.unlock.notAllowed
-            : !this.rule.locked
-              ? labels.unlock.notLocked
-              : null,
-        },
-      ];
+      return buildReviewActions(
+        this.rule,
+        this.readOnly,
+        this.effectivePermissions,
+        this.currentUserId,
+      );
     },
   },
   methods: {
