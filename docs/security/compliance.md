@@ -289,7 +289,7 @@ server {
 
 ```dockerfile
 # Secure Dockerfile Example
-FROM ruby:3.4.7-slim AS production
+FROM ruby:3.4.8-slim AS production
 
 # Security: Run as non-root user
 RUN groupadd -r app && useradd -r -g app app

@@ -423,7 +423,7 @@ GEM
       date
       stringio
     public_suffix (6.0.2)
-    puma (5.6.9)
+    puma (7.2.0)
       nio4r (~> 2.0)
     pyu-ruby-sasl (0.0.3.3)
     racc (1.8.1)
@@ -711,7 +711,7 @@ DEPENDENCIES
   pg (>= 0.18, < 2.0)
   pg_search
   propshaft
-  puma (~> 5.6)
+  puma (~> 7.0)
   rails (~> 8.0.0)
   rest-client
   rexml
@@ -734,7 +734,7 @@ DEPENDENCIES
   with_advisory_lock (~> 5.1)
 
 RUBY VERSION
-   ruby 3.4.7p58
+   ruby 3.4.8p72
 
 BUNDLED WITH
    2.3.27

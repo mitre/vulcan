@@ -2,14 +2,14 @@
 
 source 'https://rubygems.org'
 
-ruby '3.4.7'
+ruby '3.4.8'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
-gem 'puma', '~> 5.6'
+gem 'puma', '~> 7.0'
 # Asset pipeline for JavaScript bundling
 gem 'jsbundling-rails'
 # Asset pipeline for Rails
