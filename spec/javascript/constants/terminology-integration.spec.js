@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { mount, shallowMount, createLocalVue } from '@vue/test-utils'
+import { shallowMount, createLocalVue } from '@vue/test-utils'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import {
   RULE_TERM,
-  COMPONENT_TERM,
-  MESSAGE_LABELS,
-  ruleCountLabel
+  MESSAGE_LABELS
 } from '@/constants/terminology'
 
 const localVue = createLocalVue()

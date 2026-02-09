@@ -9,7 +9,7 @@
  * R5: IA Control/CCI always visible (handled in component, not composable)
  */
 import { describe, it, expect } from 'vitest'
-import { ref, nextTick } from 'vue'
+import { ref } from 'vue'
 import { useRuleFormFields } from '@/composables/useRuleFormFields'
 
 // Helper to create a rule object with sensible defaults

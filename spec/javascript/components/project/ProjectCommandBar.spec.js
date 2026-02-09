@@ -2,7 +2,6 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount, createLocalVue } from '@vue/test-utils'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import ProjectCommandBar from '@/components/project/ProjectCommandBar.vue'
-import { PANEL_LABELS } from '@/constants/terminology'
 
 const localVue = createLocalVue()
 localVue.use(BootstrapVue)

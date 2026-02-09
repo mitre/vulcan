@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { nextTick } from "vue";
 import axios from "axios";
 import { useSearch } from "@/composables/useSearch";
 

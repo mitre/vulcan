@@ -71,7 +71,6 @@ describe('NewComponentModal', () => {
     it('does NOT render opener button by default (showOpener defaults to false)', () => {
       wrapper = createWrapper()
       // With showOpener=false, the opener span should not render
-      const openerSpan = wrapper.find('span[v-if="showOpener"]')
       // Since we're using shallowMount, check the prop value
       expect(wrapper.props('showOpener')).toBe(false)
     })

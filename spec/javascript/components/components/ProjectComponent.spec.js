@@ -345,10 +345,10 @@ describe('ProjectComponent', () => {
       axios.get.mockResolvedValueOnce({ data: { id: 41, name: 'Test' } })
 
       // Mock location.reload to track if it's called
-      const originalReload = window.location.reload
+      const originalReload = globalThis.location.reload
       const mockReload = vi.fn()
-      delete window.location
-      window.location = { reload: mockReload }
+      delete globalThis.location
+      globalThis.location = { reload: mockReload }
 
       wrapper = createWrapper()
       await wrapper.vm.refreshComponent()
@@ -358,7 +358,7 @@ describe('ProjectComponent', () => {
       expect(mockReload).not.toHaveBeenCalled()
 
       // Restore
-      window.location.reload = originalReload
+      globalThis.location.reload = originalReload
     })
   })
 })

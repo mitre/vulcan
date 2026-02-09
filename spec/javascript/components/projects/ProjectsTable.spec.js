@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount, createLocalVue } from '@vue/test-utils'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import ProjectsTable from '@/components/projects/ProjectsTable.vue'

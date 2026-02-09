@@ -207,18 +207,18 @@ describe('RuleActionsToolbar', () => {
 
       it('is disabled when rule is locked', () => {
         wrapper = createWrapper({ rule: { ...defaultRule, locked: true } })
-        const saveStubs = wrapper.findAll('.comment-modal-stub').wrappers.filter(b =>
+        const saveStub = wrapper.findAll('.comment-modal-stub').wrappers.find(b =>
           b.text().includes('Save')
         )
-        expect(saveStubs[0].attributes('disabled')).toBe('disabled')
+        expect(saveStub.attributes('disabled')).toBe('disabled')
       })
 
       it('is disabled when rule is under review', () => {
         wrapper = createWrapper({ rule: { ...defaultRule, review_requestor_id: 123 } })
-        const saveStubs = wrapper.findAll('.comment-modal-stub').wrappers.filter(b =>
+        const saveStub = wrapper.findAll('.comment-modal-stub').wrappers.find(b =>
           b.text().includes('Save')
         )
-        expect(saveStubs[0].attributes('disabled')).toBe('disabled')
+        expect(saveStub.attributes('disabled')).toBe('disabled')
       })
     })
 
@@ -296,10 +296,10 @@ describe('RuleActionsToolbar', () => {
 
       it('Lock is disabled when rule is under review', () => {
         wrapper = createWrapper({ rule: { ...defaultRule, review_requestor_id: 123 } })
-        const lockStubs = wrapper.findAll('.comment-modal-stub').wrappers.filter(b =>
+        const lockStub = wrapper.findAll('.comment-modal-stub').wrappers.find(b =>
           b.text().includes('Lock')
         )
-        expect(lockStubs[0].attributes('disabled')).toBe('disabled')
+        expect(lockStub.attributes('disabled')).toBe('disabled')
       })
     })
   })
