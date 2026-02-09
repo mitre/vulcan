@@ -548,6 +548,22 @@ jobs:
 4. **Clean state** between tests
 5. **Meaningful test data** that reflects real usage
 
+### XCCDF Seed Data
+
+DISA STIG and SRG XCCDF XML files live in `db/seeds/` — this is the single source of truth used by both seeds and test factories:
+
+```
+db/seeds/
+├── srgs/          # Security Requirements Guides (GPOS, Web Server, Container, Database)
+└── stigs/         # STIGs (RHEL 9, Windows Server 2025, PostgreSQL, ASD)
+```
+
+- **Seeds** (`db/seeds.rb`) load all files from these directories to populate demo/review app databases
+- **Factories** (`spec/factories/`) reference specific files for the `xml` column on Stig and SRG records
+- **Model specs** that need to parse real XCCDF also reference these files directly
+
+To update seed data, download new XCCDF ZIP files from [DISA STIG Library](https://public.cyber.mil/stigs/downloads/), extract the `*-xccdf.xml` file, and replace the corresponding file in `db/seeds/srgs/` or `db/seeds/stigs/`. Then update any hardcoded assertions in specs (e.g., rule counts) if the data changed.
+
 ### Test Performance
 
 1. **Avoid hitting the database** when possible

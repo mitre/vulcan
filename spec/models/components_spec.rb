@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Component, type: :model do
   before do
-    srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
+    srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
     @srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
     @srg.xml = srg_xml
@@ -118,7 +118,7 @@ RSpec.describe Component, type: :model do
     it 'can create a new component from a base SRG' do
       # The creation of p1_c1 in the setup should alread have these rules created
       @p1_c1.reload
-      expect(@p1_c1.rules.size).to eq(191)
+      expect(@p1_c1.rules.size).to eq(@srg.srg_rules.size)
     end
   end
 

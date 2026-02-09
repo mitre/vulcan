@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-XML_FILE_STIG = File.read('./spec/fixtures/files/U_A10_Networks_ADC_ALG_STIG_V2R1_Manual-xccdf.xml')
+XML_FILE_STIG = File.read(Rails.root.join('db/seeds/stigs/U_RHEL_9_STIG_V2R7_Manual-xccdf.xml'))
 
 FactoryBot.define do
   factory :stig do

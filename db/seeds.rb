@@ -7,6 +7,30 @@ raise 'This task is only for use in a development environment' unless Rails.env.
 
 puts "Populating database for demo use:\n\n"
 
+# Helper to load an XCCDF XML file and create the corresponding model record.
+# Works for both SecurityRequirementsGuide and Stig — the after_create callback
+# on each model automatically imports the child rules.
+def seed_xccdf(filepath)
+  xml = File.read(filepath)
+  parsed = Xccdf::Benchmark.parse(xml)
+  title = parsed.try(:title)&.first&.downcase
+
+  if title&.include?('implementation guide') || title&.include?('stig')
+    record = Stig.from_mapping(parsed)
+    record.xml = Nokogiri::XML(xml)
+  elsif title&.include?('requirements guide')
+    record = SecurityRequirementsGuide.from_mapping(parsed)
+    record.xml = xml
+  else
+    puts "  Skipping #{File.basename(filepath)} (unrecognized benchmark type)"
+    return nil
+  end
+
+  record.save!
+  puts "  Loaded #{record.name} (#{record.class.name})"
+  record
+end
+
 # --------------- #
 # Seeds for Users #
 # --------------- #
@@ -31,6 +55,7 @@ puts 'Creating Projects...'
 photon3 = Project.create!(name: 'Photon 3')
 photon4 = Project.create!(name: 'Photon 4')
 vsphere = Project.create!(name: 'vSphere 7.0')
+container_platform = Project.create!(name: 'Container Platform')
 dummy_project = Project.create!(name: 'Nothing to See Here')
 puts 'Created Projects'
 
@@ -43,6 +68,7 @@ User.find_each do |user|
   project_members << Membership.new(user: user, membership_id: photon3.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: photon4.id, membership_type: 'Project')
   project_members << Membership.new(user: user, membership_id: vsphere.id, membership_type: 'Project')
+  project_members << Membership.new(user: user, membership_id: container_platform.id, membership_type: 'Project')
 end
 Membership.import(project_members)
 puts 'Project Members added'
@@ -54,18 +80,32 @@ Project.find_each { |p| Project.reset_counters(p.id, :memberships_count) }
 # Seeds for SRGs #
 # -------------- #
 puts 'Creating SRGs...'
-srg_xml = File.read('./spec/fixtures/files/U_Web_Server_V2R3_Manual-xccdf.xml')
-parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
-web_srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
-web_srg.xml = srg_xml
-web_srg.save!
+srg_dir = Rails.root.join('db/seeds/srgs')
+srg_records = {}
+Dir.glob(srg_dir.join('*.xml')).sort.each do |filepath|
+  record = seed_xccdf(filepath)
+  next unless record
 
-srg_xml = File.read('./spec/fixtures/files/U_GPOS_SRG_V2R1_Manual-xccdf.xml')
-parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
-gpos_srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
-gpos_srg.xml = srg_xml
-gpos_srg.save!
-puts 'Created SRGs'
+  # Track by short name for component creation below
+  basename = File.basename(filepath)
+  srg_records[:gpos] = record if basename.include?('GPOS')
+  srg_records[:web_server] = record if basename.include?('Web_Server')
+  srg_records[:container] = record if basename.include?('Container')
+  srg_records[:database] = record if basename.include?('Database')
+end
+gpos_srg = srg_records[:gpos]
+web_srg = srg_records[:web_server]
+puts "Created #{SecurityRequirementsGuide.count} SRGs"
+
+# --------------- #
+# Seeds for STIGs #
+# --------------- #
+puts 'Creating STIGs...'
+stig_dir = Rails.root.join('db/seeds/stigs')
+Dir.glob(stig_dir.join('*.xml')).sort.each do |filepath|
+  seed_xccdf(filepath)
+end
+puts "Created #{Stig.count} STIGs"
 
 # ---------------------------- #
 # Seeds for Project Components #
@@ -139,6 +179,20 @@ vcenter_vami_v1r1 = Component.create!(
   based_on: web_srg
 )
 vcenter_vami_v1r1.rules.update(locked: false)
+
+# Container Platform project (uses Container Platform SRG)
+container_srg = srg_records[:container]
+if container_srg
+  container_v1r1 = Component.create!(
+    project: container_platform,
+    name: 'Container Platform',
+    version: 1,
+    release: 1,
+    prefix: 'CNTR-01',
+    based_on: container_srg
+  )
+  container_v1r1.rules.update(locked: false)
+end
 
 # Make a bunch of dummy released components
 20.times do |n|

@@ -6,7 +6,7 @@ RSpec.describe Review, type: :model do
   let(:status_applicable) { 'Applicable - Configurable' }
 
   before do
-    srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
+    srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
     srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
     srg.xml = srg_xml
@@ -317,7 +317,8 @@ RSpec.describe Review, type: :model do
       # Use the existing @p1r1 which has a valid srg_rule
       json = @p1r1.as_json
       expect(json[:srg_info][:version]).not_to be_nil
-      expect(json[:srg_info][:version]).to eq('V2R1')
+      srg = @p1r1.srg_rule.security_requirements_guide
+      expect(json[:srg_info][:version]).to eq(srg.version)
     end
   end
 end
