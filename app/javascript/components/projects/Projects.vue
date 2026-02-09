@@ -5,9 +5,9 @@
     <!-- Command Bar -->
     <BaseCommandBar>
       <template #left>
-        <!-- New Project Button (admin only) -->
+        <!-- New Project Button (admin or create_permission_enabled) -->
         <b-button
-          v-if="is_vulcan_admin"
+          v-if="can_create_project"
           variant="primary"
           size="sm"
           data-testid="new-project-btn"
@@ -29,7 +29,7 @@
 
     <!-- New Project Modal -->
     <NewProjectModal
-      v-if="is_vulcan_admin"
+      v-if="can_create_project"
       v-model="showNewProjectModal"
       @project-created="onProjectCreated"
     />
@@ -53,6 +53,11 @@ export default {
     is_vulcan_admin: {
       type: Boolean,
       required: true,
+      default: false,
+    },
+    can_create_project: {
+      type: Boolean,
+      required: false,
       default: false,
     },
   },

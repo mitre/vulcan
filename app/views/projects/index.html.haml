@@ -3,7 +3,8 @@
   -# = stylesheet_link_tag 'projects'
 
 #Projects
-  %Projects{                                                                 |
-    'v-bind:projects': @projects.to_json,                                    |
-    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" )      |
+  %Projects{                                                                                                                    |
+    'v-bind:projects': @projects.to_json,                                                                                       |
+    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" ),                                                        |
+    'v-bind:can_create_project': ((current_user&.admin || Settings.project.create_permission_enabled) ? "true" : "false" )       |
   }
