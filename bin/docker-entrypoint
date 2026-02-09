@@ -6,9 +6,13 @@ rm -f /rails/tmp/pids/server.pid
 # If running the rails server then create or migrate existing database
 # db:prepare is idempotent: creates DB if missing, runs pending migrations if exists
 # This also triggers admin:bootstrap (hooked into db:prepare)
-# DISABLE_DATABASE_ENVIRONMENT_CHECK=1 allows db:prepare in production (Heroku, Docker)
+#
+# IMPORTANT: db:prepare does NOT need DISABLE_DATABASE_ENVIRONMENT_CHECK=1
+# Unlike db:schema:load (rake task), db:prepare calls load_schema() directly
+# as a Ruby method, bypassing the protected environment check entirely.
+# This is by design — see Rails source: DatabaseTasks#initialize_database
 if [[ "$@" == *"server"* ]]; then
-  DISABLE_DATABASE_ENVIRONMENT_CHECK=1 ./bin/rails db:prepare
+  ./bin/rails db:prepare
 fi
 
 exec "${@}"

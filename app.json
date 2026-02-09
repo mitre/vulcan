@@ -49,8 +49,13 @@
   "environments": {
     "review": {
       "addons": ["heroku-postgresql:essential-0"],
+      "env": {
+        "VULCAN_FIRST_USER_ADMIN": {
+          "value": "true"
+        }
+      },
       "scripts": {
-        "postdeploy": "bundle exec rails db:schema:load"
+        "postdeploy": "DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bundle exec rails db:schema:load db:seed admin:bootstrap"
       }
     }
   }
