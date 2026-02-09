@@ -9,38 +9,162 @@ Vulcan uses a deny-by-default authorization model enforced by an automated test.
 
 Both layers are required. Authentication alone is never sufficient for a controller action.
 
-## Permission Hierarchy
+## Role Hierarchy
 
 ```
-admin > author > reviewer > viewer
+Site Admin (global)
+    └── can do everything on every project and component
+
+Project/Component Roles (scoped):
+    admin > reviewer > author > viewer
 ```
 
-Each level includes all permissions of lower levels. Permissions are scoped to either a Project or a Component.
+Each level includes all permissions of lower levels. A project **admin** can do everything a reviewer, author, and viewer can do. Roles are assigned per-project or per-component via `Membership` records.
 
-### Global Roles
+**Available roles**: `viewer`, `author`, `reviewer`, `admin`
+
+### Site Admin vs Project/Component Admin
+
+- **Site admin** (`User#admin == true`): Full access to everything — all projects, all components, user management, SRG/STIG uploads. Set via database or admin bootstrap.
+- **Project admin**: Full access to one project — can update/delete the project, manage members, create/delete components. Automatically assigned when a user creates a project.
+- **Component admin**: Full access to one component — can delete the component, lock/unlock controls, manage component members. Can be assigned by project admin.
+
+### Effective Permissions (Components)
+
+Components have **dual membership** — a user's effective permission on a component is the **higher** of:
+
+1. Their project-level membership role (inherited)
+2. Their component-level membership role (direct)
+
+Example: A user with `viewer` role on a project but `admin` role on a specific component within that project has **admin** permissions on that component.
+
+This is computed by `User#effective_permissions(component)` and passed to Vue as the `effective_permissions` prop.
+
+## User-Facing Permissions Summary
+
+### Projects
+
+| Action | Who |
+|--------|-----|
+| Browse project list | Any logged-in user |
+| Create a project | Site admin, or any user when `create_permission_enabled` is on |
+| View project details | Project member (viewer+) or site admin |
+| Export project | Project member (viewer+) or site admin |
+| Update project name/description | Project admin or site admin |
+| Delete a project | Project admin or site admin |
+| Manage project members | Project admin or site admin |
+
+When a user creates a project, they are automatically assigned the **admin** role on that project. This means project creators can update, delete, and manage members on their own projects without being a site admin.
+
+### Components
+
+| Action | Who |
+|--------|-----|
+| View (unreleased) | Project member (viewer+) or site admin |
+| View (released) | Any logged-in user |
+| Create | Project admin or site admin |
+| Edit rules | Component author+ (not if released) |
+| Edit advanced fields (status, severity) | Component admin or site admin |
+| Delete | Component admin or site admin |
+| Lock/unlock controls | Component admin or site admin |
+| Compare components | Viewer on both components (or released) |
+
+**Released components** are read-only — even authors and reviewers cannot edit rules on a released component. Only site admins bypass this restriction.
+
+### Rules
+
+| Action | Who |
+|--------|-----|
+| View rules | Component viewer+ |
+| Create/update/revert | Component author+ |
+| Delete | Component admin or site admin |
+| Submit review | Component reviewer+ or project author+ |
+
+### Memberships
+
+| Action | Who |
+|--------|-----|
+| Add members to project | Project admin or site admin |
+| Add members to component | Component admin or site admin |
+| Update member role | Admin of the target project/component |
+| Remove a member | Admin of the target project/component |
+
+### Access Requests
+
+| Action | Who |
+|--------|-----|
+| Request access to a discoverable project | Any logged-in user |
+| Cancel own access request | The requesting user |
+| Approve/deny access requests | Project admin or site admin |
+
+### SRGs and STIGs
+
+| Action | Who |
+|--------|-----|
+| View and export | Any logged-in user |
+| Upload new | Site admin only |
+| Delete | Site admin only |
+
+### Users
+
+| Action | Who |
+|--------|-----|
+| View user list | Site admin only |
+| Update user (promote to admin, etc.) | Site admin only |
+| Delete user | Site admin only |
+
+### Search
+
+| Action | Who |
+|--------|-----|
+| Global search | Any logged-in user (results scoped to user's accessible projects) |
+
+## Project Visibility
+
+Projects have a `visibility` setting:
+
+- **Discoverable**: Appears in project list for all users. Non-members can see the project name/description and request access.
+- **Hidden**: Only visible to project members and site admins.
+
+Visibility does NOT grant access to project contents — only membership does.
+
+## Authorization Methods Reference
+
+### Global
 
 | Method | Requirement |
 |--------|-------------|
 | `authorize_logged_in` | Any authenticated user |
-| `authorize_admin` | `current_user.admin == true` |
+| `authorize_admin` | `current_user.admin == true` (site admin) |
+| `authorize_admin_or_create_permission_enabled` | Site admin OR `Settings.project.create_permission_enabled` |
 
-### Project-scoped Roles
-
-| Method | Checks |
-|--------|--------|
-| `authorize_viewer_project` | `can_view_project?(@project)` |
-| `authorize_author_project` | `can_author_project?(@project)` |
-| `authorize_review_project` | `can_review_project?(@project)` |
-| `authorize_admin_project` | `can_admin_project?(@project)` |
-
-### Component-scoped Roles
+### Project-scoped
 
 | Method | Checks |
 |--------|--------|
-| `authorize_viewer_component` | `can_view_component?(@component)` |
-| `authorize_author_component` | `can_author_component?(@component)` |
-| `authorize_review_component` | `can_review_component?(@component)` |
-| `authorize_admin_component` | `can_admin_component?(@component)` |
+| `authorize_viewer_project` | `can_view_project?(@project)` — site admin OR membership with any role |
+| `authorize_author_project` | `can_author_project?(@project)` — site admin OR membership with author+ |
+| `authorize_review_project` | `can_review_project?(@project)` — site admin OR membership with reviewer+ |
+| `authorize_admin_project` | `can_admin_project?(@project)` — site admin OR membership with admin |
+
+### Component-scoped
+
+| Method | Checks |
+|--------|--------|
+| `authorize_viewer_component` | `can_view_component?(@component)` — site admin OR effective_permissions is any role |
+| `authorize_author_component` | `can_author_component?(@component)` — site admin OR effective_permissions author+ (blocked if released) |
+| `authorize_review_component` | `can_review_component?(@component)` — site admin OR effective_permissions reviewer+ |
+| `authorize_admin_component` | `can_admin_component?(@component)` — site admin OR effective_permissions admin |
+
+### Special
+
+| Method | Checks |
+|--------|--------|
+| `authorize_component_access` | Viewer if unreleased, logged_in if released |
+| `authorize_compare_access` | Viewer on both components being compared |
+| `check_admin_for_advanced_fields` | Admin required only when updating status/severity fields |
+| `authorize_membership_create` | Admin on the target project or component |
+| `set_and_authorize_access_request` | Request owner or project admin |
 
 ## Controller Authorization Map
 
