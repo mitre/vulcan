@@ -7,7 +7,8 @@ class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls]
   before_action :set_project
-  before_action :authorize_author_project
+  before_action :authorize_author_project, only: %i[create]
+  before_action :authorize_admin_component, only: %i[lock_controls]
 
   def create
     review_params_without_component_id = review_params.except('component_id')

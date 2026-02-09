@@ -6,22 +6,9 @@
 class MembershipsController < ApplicationController
   before_action :set_membership, only: %i[update destroy]
   before_action :authorize_admin_membership, only: %i[update destroy]
+  before_action :authorize_membership_create, only: %i[create]
 
   def create
-    # Ensure the current_user has permissions on the Project or component
-    project_or_component = if membership_create_params[:membership_type] == 'Project'
-                             Project.find_by(id: membership_create_params[:membership_id])
-                           else
-                             Component.find_by(id: membership_create_params[:membership_id])
-                           end
-
-    unless current_user.admin || current_user.effective_permissions(project_or_component) == 'admin'
-      raise(
-        NotAuthorizedError,
-        "You are not authorized to manage permissions on this #{membership_create_params[:membership_type]}"
-      )
-    end
-
     filtered_params = membership_create_params.except(:access_request_id)
     membership = Membership.new(filtered_params)
     if membership.save
@@ -129,6 +116,21 @@ class MembershipsController < ApplicationController
     raise(
       NotAuthorizedError,
       "You are not authorized to manage permissions on this #{@membership.membership_type}"
+    )
+  end
+
+  def authorize_membership_create
+    project_or_component = if membership_create_params[:membership_type] == 'Project'
+                             Project.find_by(id: membership_create_params[:membership_id])
+                           else
+                             Component.find_by(id: membership_create_params[:membership_id])
+                           end
+
+    return if current_user.admin || current_user.effective_permissions(project_or_component) == 'admin'
+
+    raise(
+      NotAuthorizedError,
+      "You are not authorized to manage permissions on this #{membership_create_params[:membership_type]}"
     )
   end
 

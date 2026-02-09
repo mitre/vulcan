@@ -7,22 +7,19 @@ class ComponentsController < ApplicationController
   include ExportHelper
 
   before_action :set_component, only: %i[show update destroy export]
-  before_action :set_project, only: %i[show create]
+  before_action :set_component_basic, only: %i[find based_on_same_srg]
+  before_action :set_project, only: %i[show create history]
   before_action :set_component_permissions, only: %i[show]
   before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
-  before_action :authorize_admin_component, only: %i[update], if: lambda {
-    # Check if advanced_fields param exists (not if it's truthy)
-    # Both true and false are attempts to modify an admin-only field
-    !params.dig(:component, :advanced_fields).nil?
-  }
-
-  before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }
-  before_action :authorize_logged_in, only: %i[search]
-  before_action :authorize_logged_in, only: %i[show], if: -> { @component.released }
+  before_action :check_admin_for_advanced_fields, only: %i[update]
+  before_action :authorize_component_access, only: %i[show export find]
+  before_action :authorize_logged_in, only: %i[search index based_on_same_srg]
+  before_action :authorize_compare_access, only: %i[compare]
+  before_action :authorize_viewer_project, only: %i[history]
 
   def index
     @components_json = Component.eager_load(:based_on).where(released: true).to_json
@@ -350,6 +347,57 @@ class ComponentsController < ApplicationController
 
   def set_project
     @project = Project.find(params[:project_id] || @component.project_id)
+  end
+
+  # Lightweight component loader for actions that don't need eager-loaded rules
+  def set_component_basic
+    @component = Component.find_by(id: params[:id])
+    return if @component.present?
+
+    message = 'The requested component could not be found.'
+    respond_to do |format|
+      format.html do
+        flash.alert = message
+        redirect_back(fallback_location: root_path)
+      end
+      format.json do
+        render json: {
+          toast: { title: 'Control not found', message: message, variant: 'danger' }
+        }, status: :not_found
+      end
+    end
+  end
+
+  # Authorize access to component based on released status:
+  # - Released components: any authenticated user
+  # - Unreleased components: must be project/component member
+  def authorize_component_access
+    if @component&.released
+      authorize_logged_in
+    else
+      authorize_viewer_component
+    end
+  end
+
+  # Authorize admin for advanced_fields changes on update
+  def check_admin_for_advanced_fields
+    return if params.dig(:component, :advanced_fields).nil?
+
+    authorize_admin_component
+  end
+
+  # Authorize access to both components in a compare operation
+  def authorize_compare_access
+    base = Component.find_by(id: params[:id])
+    diff = Component.find_by(id: params[:diff_id])
+
+    [base, diff].each do |component|
+      next if component.nil?
+      next if component.released
+
+      @component = component
+      authorize_viewer_component
+    end
   end
 
   def check_permission_to_update_slackchannel

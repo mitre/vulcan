@@ -3,6 +3,7 @@
 # Controller for Stigs
 class StigsController < ApplicationController
   before_action :authorize_admin, only: %i[create destroy]
+  before_action :authorize_logged_in, only: %i[index show export]
   before_action :set_stig, only: %i[show destroy export]
 
   def index

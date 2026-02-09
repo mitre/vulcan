@@ -162,13 +162,21 @@ POST   /api/v1/projects/:project_id/components
 ## Security Architecture
 
 ### Defense in Depth
-1. **Authentication** - Multiple provider support
-2. **Authorization** - Role-based access control
-3. **Input Validation** - Strong parameters, XSS prevention
-4. **Audit Logging** - All changes tracked via `audited` gem
-5. **Secure Headers** - CSP, HSTS, X-Frame-Options
-6. **SQL Injection Prevention** - Parameterized queries
-7. **CSRF Protection** - Rails built-in tokens
+1. **Authentication** — Devise with multiple providers (local, GitHub, LDAP, OIDC)
+2. **Authorization** — Deny-by-default RBAC enforced by automated test. See [Authorization Architecture](authorization.md) for the complete controller authorization map and safety net spec.
+3. **Input Validation** — Strong parameters, XSS prevention
+4. **Audit Logging** — All changes tracked via `audited` gem
+5. **Secure Headers** — CSP, HSTS, X-Frame-Options
+6. **SQL Injection Prevention** — Parameterized queries throughout
+7. **CSRF Protection** — Rails built-in tokens
+
+### Authorization Model
+
+Every routed controller action requires an explicit `authorize_*` before_action callback. An automated spec (`spec/requests/authorization_coverage_spec.rb`) introspects the route table and fails if any action is uncovered. This prevents authorization gaps from being introduced by new code.
+
+Permission hierarchy: `admin > author > reviewer > viewer`, scoped to Project or Component.
+
+See [Authorization Architecture](authorization.md) for details.
 
 ### Data Protection
 - Passwords hashed with bcrypt

@@ -2,7 +2,8 @@
 
 # Controller for SecurityRequirementsGuides
 class SecurityRequirementsGuidesController < ApplicationController
-  before_action :authorize_admin, except: %i[index show export]
+  before_action :authorize_admin, only: %i[create destroy]
+  before_action :authorize_logged_in, only: %i[index show export]
   before_action :security_requirements_guide, only: %i[show destroy export]
 
   def index

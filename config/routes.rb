@@ -19,7 +19,7 @@ Rails.application.routes.draw do
   resources :stigs, only: %i[index show create destroy]
 
   resources :memberships, only: %i[create update destroy]
-  resources :projects, except: [:new] do
+  resources :projects, except: %i[new edit] do
     resources :components, only: %i[show create update destroy], shallow: true do
       post 'lock', to: 'reviews#lock_controls'
       resources :rules, only: %i[index show create update destroy], shallow: true do
