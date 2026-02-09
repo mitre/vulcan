@@ -17,6 +17,30 @@ import {
   LOCKABLE_SECTIONS,
 } from "./ruleFieldConfig";
 
+// ─── Helper: build field set from config ──────────────────
+function buildFieldSet(config, isAdvanced) {
+  if (!config) {
+    return { displayed: [], disabled: [] };
+  }
+
+  const displayed = [...config.displayed];
+  const disabled = [...(config.disabled || [])];
+
+  if (isAdvanced && config.advancedDisplayed) {
+    displayed.push(...config.advancedDisplayed);
+  }
+  if (isAdvanced && config.advancedDisabled) {
+    disabled.push(...config.advancedDisabled);
+  }
+
+  return { displayed, disabled };
+}
+
+// ─── Status config lookup ───────────────────────────────────
+function getStatusConfig(status) {
+  return STATUS_FIELD_CONFIG[status] || { rule: null, disa: null, check: null };
+}
+
 export function useRuleFormFields(rule, advancedMode, options = {}) {
   const readOnly = options.readOnly || { value: false };
 
@@ -44,7 +68,7 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   const severityChanged = computed(() => {
     const r = rule.value;
     const srg = r.srg_rule_attributes;
-    if (!srg || srg.rule_severity == null) return false;
+    if (srg?.rule_severity == null) return false;
     return r.rule_severity !== srg.rule_severity;
   });
 
@@ -55,30 +79,6 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   const showSeverityOverride = computed(() => {
     return severityChanged.value && SEVERITY_OVERRIDE_STATUSES.includes(effectiveStatus.value);
   });
-
-  // ─── Helper: build field set from config ──────────────────
-  function buildFieldSet(config, isAdvanced) {
-    if (!config) {
-      return { displayed: [], disabled: [] };
-    }
-
-    const displayed = [...config.displayed];
-    const disabled = [...(config.disabled || [])];
-
-    if (isAdvanced && config.advancedDisplayed) {
-      displayed.push(...config.advancedDisplayed);
-    }
-    if (isAdvanced && config.advancedDisabled) {
-      disabled.push(...config.advancedDisabled);
-    }
-
-    return { displayed, disabled };
-  }
-
-  // ─── Status config lookup ───────────────────────────────────
-  function getStatusConfig(status) {
-    return STATUS_FIELD_CONFIG[status] || { rule: null, disa: null, check: null };
-  }
 
   // ─── Rule form fields ─────────────────────────────────────
   const ruleFormFields = computed(() => {
@@ -120,10 +120,8 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   // beyond basic. Statuses with no advanced additions keep fields inline.
   const showCollapsibleSections = computed(() => {
     const config = getStatusConfig(effectiveStatus.value);
-    const hasAdvancedDisa =
-      config.disa && config.disa.advancedDisplayed && config.disa.advancedDisplayed.length > 0;
-    const hasAdvancedRule =
-      config.rule && config.rule.advancedDisplayed && config.rule.advancedDisplayed.length > 0;
+    const hasAdvancedDisa = config.disa?.advancedDisplayed?.length > 0;
+    const hasAdvancedRule = config.rule?.advancedDisplayed?.length > 0;
     return hasAdvancedDisa || hasAdvancedRule;
   });
 

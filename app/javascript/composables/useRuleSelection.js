@@ -74,6 +74,8 @@ export function useRuleSelection(rules, componentId, options = {}) {
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : defaultValue;
     } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(`Failed to read localStorage key "${key}":`, e);
       localStorage.removeItem(key);
       return defaultValue;
     }
@@ -109,7 +111,7 @@ export function useRuleSelection(rules, componentId, options = {}) {
   // Computed: Last editor name from selected rule's histories
   const lastEditor = computed(() => {
     const rule = selectedRule.value;
-    if (!rule || !rule.histories || rule.histories.length === 0) {
+    if (!rule?.histories?.length) {
       return "Unknown User";
     }
     return rule.histories[rule.histories.length - 1].name;
@@ -135,7 +137,7 @@ export function useRuleSelection(rules, componentId, options = {}) {
   }
 
   function removeOpenRule(ruleId) {
-    const index = openRuleIds.value.findIndex((id) => id === ruleId);
+    const index = openRuleIds.value.indexOf(ruleId);
     if (index === -1) {
       return;
     }

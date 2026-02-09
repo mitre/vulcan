@@ -20,7 +20,7 @@ export function useRuleActions(componentId) {
     if (!rule) {
       throw new Error("Rule is required");
     }
-    if (!comment || !comment.trim()) {
+    if (!comment?.trim()) {
       throw new Error("Comment is required");
     }
 

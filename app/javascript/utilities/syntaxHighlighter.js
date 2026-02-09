@@ -127,7 +127,7 @@ function escapeHtml(text) {
     '"': "&quot;",
     "'": "&#39;",
   };
-  return text.replace(/[&<>"']/g, (char) => htmlEscapes[char]);
+  return text.replaceAll(/[&<>"']/g, (char) => htmlEscapes[char]);
 }
 
 /**

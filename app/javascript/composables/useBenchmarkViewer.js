@@ -127,7 +127,7 @@ export function useBenchmarkViewer(benchmarkData, type) {
     // If current selected item is filtered out, select first filtered item
     if (
       filteredItems.value.length > 0 &&
-      !filteredItems.value.find((item) => item.id === selectedItem.value?.id)
+      !filteredItems.value.some((item) => item.id === selectedItem.value?.id)
     ) {
       selectedItem.value = filteredItems.value[0];
     }

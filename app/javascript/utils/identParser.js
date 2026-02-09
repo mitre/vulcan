@@ -50,7 +50,7 @@ export function parseCisControls(ident) {
   // CIS controls are typically: 1-18 (v7) or with decimals like 5.2
   // Exclude things that look like years (2024), long numbers, etc.
   return matches.filter((match) => {
-    const num = parseFloat(match);
+    const num = Number.parseFloat(match);
     // CIS v7 has controls 1-18, v8 has 1-18 as well
     // Accept single/double digit numbers and decimals in that range
     return num >= 1 && num <= 99 && match.length <= 6;

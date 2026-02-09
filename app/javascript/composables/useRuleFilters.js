@@ -88,8 +88,8 @@ export function useRuleFilters(rules, componentId) {
         if (!filters.value.lckFilterChecked) return false;
       } else if (rule.review_requestor_id) {
         if (!filters.value.urFilterChecked) return false;
-      } else {
-        if (!filters.value.nurFilterChecked) return false;
+      } else if (!filters.value.nurFilterChecked) {
+        return false;
       }
 
       // Search filter
