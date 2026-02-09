@@ -1,0 +1,49 @@
+# Heroku .slugignore — files removed BEFORE buildpack runs
+# See: https://devcenter.heroku.com/articles/slug-compiler
+#
+# NOTE: node_modules/ is NOT listed here because .slugignore runs before
+# the buildpack, and yarn install recreates it during the build.
+# Use lib/tasks/heroku_cleanup.rake to remove node_modules after asset
+# precompilation instead.
+
+# Test suite
+/spec
+
+# Documentation (VitePress site, not served by Rails)
+/docs
+
+# Archive (old backups, migration artifacts)
+/archive
+
+# Compiled macOS binary (arm64, useless on Heroku Linux dynos)
+bin/vulcan
+
+# CI/CD workflows
+.github/
+
+# Linter and code quality configs (not used at runtime)
+.eslintrc.js
+.overcommit.yml
+.prettierrc
+.rspec
+.rubocop.yml
+.sonarcloud.properties
+
+# Dev-only version manager configs (Heroku uses buildpacks)
+.node-version
+.nvmrc
+.tool-versions
+
+# Dev-only files
+Procfile.dev
+vitest.config.js
+docker-compose.dev.yml
+setup-docker-secrets.sh
+
+# Documentation files not needed at runtime
+BENCHMARK-VIEWER-DESIGN.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+ENVIRONMENT_VARIABLES.md
+ROADMAP.md
+SECURITY.md
