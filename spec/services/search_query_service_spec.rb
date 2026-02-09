@@ -3,6 +3,11 @@
 require 'rails_helper'
 
 RSpec.describe SearchQueryService do
+  let(:red_hat) { 'Red Hat' }
+  let(:rhel_nine) { 'RHEL 9' }
+  let(:file_xyz) { 'file.xyz' }
+  let(:some_text) { 'some text' }
+
   before do
     # Clear abbreviation cache to prevent cross-test contamination
     SearchAbbreviationService.clear_cache!
@@ -29,21 +34,21 @@ RSpec.describe SearchQueryService do
       it 'splits PascalCase into words' do
         result = described_class.transform('RedHat')
 
-        expect(result[:normalized]).to eq('Red Hat')
-        expect(result[:ilike_terms]).to include('Red Hat')
+        expect(result[:normalized]).to eq(red_hat)
+        expect(result[:ilike_terms]).to include(red_hat)
       end
 
       it 'splits letter-number boundaries' do
         result = described_class.transform('RHEL9')
 
-        expect(result[:normalized]).to eq('RHEL 9')
-        expect(result[:ilike_terms]).to include('RHEL 9')
+        expect(result[:normalized]).to eq(rhel_nine)
+        expect(result[:ilike_terms]).to include(rhel_nine)
       end
 
       it 'normalizes dashes to spaces' do
         result = described_class.transform('RHEL-9')
 
-        expect(result[:normalized]).to eq('RHEL 9')
+        expect(result[:normalized]).to eq(rhel_nine)
       end
 
       it 'normalizes underscores to spaces' do
@@ -55,7 +60,7 @@ RSpec.describe SearchQueryService do
       it 'collapses multiple spaces' do
         result = described_class.transform('Red   Hat')
 
-        expect(result[:normalized]).to eq('Red Hat')
+        expect(result[:normalized]).to eq(red_hat)
       end
     end
 
@@ -99,17 +104,17 @@ RSpec.describe SearchQueryService do
       end
 
       it 'does not expand unknown extensions' do
-        result = described_class.transform('file.xyz')
+        result = described_class.transform(file_xyz)
 
-        expect(result[:ilike_terms]).to eq(['file.xyz'])
-        expect(result[:pg_search_term]).to eq('file.xyz')
+        expect(result[:ilike_terms]).to eq([file_xyz])
+        expect(result[:pg_search_term]).to eq(file_xyz)
       end
 
       it 'does not expand non-filename patterns' do
-        result = described_class.transform('some text')
+        result = described_class.transform(some_text)
 
-        expect(result[:ilike_terms]).to include('some text')
-        expect(result[:pg_search_term]).to eq('some text')
+        expect(result[:ilike_terms]).to include(some_text)
+        expect(result[:pg_search_term]).to eq(some_text)
       end
     end
 

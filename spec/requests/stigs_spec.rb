@@ -3,15 +3,17 @@
 require 'rails_helper'
 
 RSpec.describe 'Stigs', type: :request do
-  before do
-    Rails.application.reload_routes!
-  end
-
+  let(:content_disposition_header) { 'Content-Disposition' }
+  let(:application_json) { 'application/json' }
   let(:stig) { create(:stig) }
   # Use let! to ensure admin user is created first (before user2)
   # This prevents user2 from being promoted to admin by first-user-admin callback
   let!(:user) { create(:user, admin: true) }
   let(:user2) { create(:user) }
+
+  before do
+    Rails.application.reload_routes!
+  end
 
   describe 'GET /stigs/:id/export/:type' do
     it 'exports XCCDF XML for logged-in user' do
@@ -21,7 +23,7 @@ RSpec.describe 'Stigs', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.headers['Content-Type']).to include('application/xml')
-      expect(response.headers['Content-Disposition']).to include('.xml')
+      expect(response.headers[content_disposition_header]).to include('.xml')
       expect(response.body).to eq(stig.xml)
     end
 
@@ -30,14 +32,14 @@ RSpec.describe 'Stigs', type: :request do
 
       get "/stigs/#{stig.id}/export/xccdf"
 
-      filename = response.headers['Content-Disposition']
+      filename = response.headers[content_disposition_header]
       expect(filename).to include(stig.title.tr(' ', '-'))
     end
 
     it 'returns error for unsupported export types' do
       sign_in user
 
-      get "/stigs/#{stig.id}/export/inspec", headers: { 'Accept' => 'application/json' }
+      get "/stigs/#{stig.id}/export/inspec", headers: { 'Accept' => application_json }
 
       expect(response).to have_http_status(:bad_request)
       json = response.parsed_body
@@ -52,7 +54,7 @@ RSpec.describe 'Stigs', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.headers['Content-Type']).to include('text/csv')
-      expect(response.headers['Content-Disposition']).to include('.csv')
+      expect(response.headers[content_disposition_header]).to include('.csv')
     end
 
     it 'includes stig title in CSV filename' do
@@ -60,7 +62,7 @@ RSpec.describe 'Stigs', type: :request do
 
       get "/stigs/#{stig.id}/export/csv"
 
-      filename = response.headers['Content-Disposition']
+      filename = response.headers[content_disposition_header]
       expect(filename).to include(stig.title.tr(' ', '-'))
     end
 
@@ -91,7 +93,7 @@ RSpec.describe 'Stigs', type: :request do
     it 'validates ahead of time with JSON format' do
       sign_in user
 
-      get "/stigs/#{stig.id}/export/xccdf", headers: { 'Accept' => 'application/json' }
+      get "/stigs/#{stig.id}/export/xccdf", headers: { 'Accept' => application_json }
 
       expect(response).to have_http_status(:ok)
       json = response.parsed_body
@@ -162,7 +164,7 @@ RSpec.describe 'Stigs', type: :request do
     end
 
     context 'with JSON format' do
-      let(:json_headers) { { 'Accept' => 'application/json' } }
+      let(:json_headers) { { 'Accept' => application_json } }
 
       it 'returns JSON response on success' do
         sign_in user
@@ -172,7 +174,7 @@ RSpec.describe 'Stigs', type: :request do
         end.to change(Stig, :count).by(-1)
 
         expect(response).to have_http_status(:ok)
-        expect(response.content_type).to include('application/json')
+        expect(response.content_type).to include(application_json)
         json = response.parsed_body
         expect(json['toast']).to include('Successfully removed')
       end
@@ -185,7 +187,7 @@ RSpec.describe 'Stigs', type: :request do
         delete "/stigs/#{stig2.id}", headers: json_headers
 
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to include('application/json')
+        expect(response.content_type).to include(application_json)
         json = response.parsed_body
         expect(json['toast']['title']).to include('Could not remove')
       end

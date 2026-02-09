@@ -4,6 +4,9 @@ require 'rails_helper'
 require 'csv'
 
 RSpec.describe Stig, '#csv_export' do
+  let(:header_rule_id) { 'Rule ID' }
+  let(:header_stig_id) { 'STIG ID' }
+  let(:rule1_id) { 'SV-001r100_rule' }
   let(:stig) do
     # Create without triggering after_create (which imports rules from XML)
     Stig.insert!({ stig_id: 'test_stig', title: 'RHEL 9 STIG', name: 'RHEL 9 STIG',
@@ -14,7 +17,7 @@ RSpec.describe Stig, '#csv_export' do
   let!(:rule1) do
     create(:stig_rule,
            stig: stig,
-           rule_id: 'SV-001r100_rule',
+           rule_id: rule1_id,
            version: 'RHEL-09-000001',
            srg_id: 'SRG-OS-000001',
            vuln_id: 'V-001',
@@ -57,7 +60,7 @@ RSpec.describe Stig, '#csv_export' do
 
     it 'includes all default column headers' do
       csv = CSV.parse(stig.csv_export, headers: true)
-      expect(csv.headers).to include('Rule ID', 'STIG ID', 'SRG ID', 'Vuln ID',
+      expect(csv.headers).to include(header_rule_id, header_stig_id, 'SRG ID', 'Vuln ID',
                                      'Severity', 'Title', 'Description', 'Check',
                                      'Fix', 'CCI', '800-53 Controls', 'Legacy IDs')
     end
@@ -70,22 +73,22 @@ RSpec.describe Stig, '#csv_export' do
     it 'contains correct rule data' do
       csv = CSV.parse(stig.csv_export, headers: true)
       first_row = csv.first
-      expect(first_row['Rule ID']).to eq('SV-001r100_rule')
-      expect(first_row['STIG ID']).to eq('RHEL-09-000001')
+      expect(first_row[header_rule_id]).to eq(rule1_id)
+      expect(first_row[header_stig_id]).to eq('RHEL-09-000001')
       expect(first_row['Severity']).to eq('high')
     end
 
     it 'orders rules by version then rule_id' do
       csv = CSV.parse(stig.csv_export, headers: true)
-      rule_ids = csv.map { |row| row['Rule ID'] } # rubocop:disable Rails/Pluck
-      expect(rule_ids).to eq(%w[SV-001r100_rule SV-002r200_rule])
+      rule_ids = csv.map { |row| row[header_rule_id] } # rubocop:disable Rails/Pluck
+      expect(rule_ids).to eq([rule1_id, 'SV-002r200_rule'])
     end
   end
 
   describe 'with column selection' do
     it 'includes only selected columns' do
       csv = CSV.parse(stig.csv_export(columns: %i[rule_id version rule_severity]), headers: true)
-      expect(csv.headers).to eq(['Rule ID', 'STIG ID', 'Severity'])
+      expect(csv.headers).to eq([header_rule_id, header_stig_id, 'Severity'])
     end
 
     it 'can include optional columns' do
@@ -95,7 +98,7 @@ RSpec.describe Stig, '#csv_export' do
 
     it 'preserves column order from selection' do
       csv = CSV.parse(stig.csv_export(columns: %i[title rule_id rule_severity]), headers: true)
-      expect(csv.headers).to eq(['Title', 'Rule ID', 'Severity'])
+      expect(csv.headers).to eq(['Title', header_rule_id, 'Severity'])
     end
   end
 end

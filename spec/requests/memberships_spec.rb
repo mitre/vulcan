@@ -3,16 +3,17 @@
 require 'rails_helper'
 
 RSpec.describe 'Memberships', type: :request do
-  before do
-    Rails.application.reload_routes!
-  end
-
+  let(:application_json) { 'application/json' }
   # Use let! to ensure admin_user is created first
   let!(:admin_user) { create(:user, admin: true) }
   let(:regular_user) { create(:user, admin: false) }
   let(:project) { create(:project) }
   let!(:admin_membership) { create(:membership, user: admin_user, membership: project, role: 'admin') }
   let!(:target_membership) { create(:membership, user: regular_user, membership: project, role: 'viewer') }
+
+  before do
+    Rails.application.reload_routes!
+  end
 
   describe 'DELETE /memberships/:id HTML format' do
     before { sign_in admin_user }
@@ -31,7 +32,7 @@ RSpec.describe 'Memberships', type: :request do
   describe 'DELETE /memberships/:id JSON format' do
     before { sign_in admin_user }
 
-    let(:json_headers) { { 'Accept' => 'application/json' } }
+    let(:json_headers) { { 'Accept' => application_json } }
 
     it 'destroys the membership and returns success JSON' do
       expect do
@@ -39,7 +40,7 @@ RSpec.describe 'Memberships', type: :request do
       end.to change(Membership, :count).by(-1)
 
       expect(response).to have_http_status(:ok)
-      expect(response.content_type).to include('application/json')
+      expect(response.content_type).to include(application_json)
       json = response.parsed_body
       expect(json['toast']).to eq('Successfully removed membership.')
     end
@@ -51,7 +52,7 @@ RSpec.describe 'Memberships', type: :request do
       delete "/memberships/#{target_membership.id}", headers: json_headers
 
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.content_type).to include('application/json')
+      expect(response.content_type).to include(application_json)
       json = response.parsed_body
       expect(json['toast']['title']).to include('Could not remove')
     end

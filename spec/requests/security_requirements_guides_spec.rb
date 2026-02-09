@@ -3,13 +3,14 @@
 require 'rails_helper'
 
 RSpec.describe 'SecurityRequirementsGuides', type: :request do
-  before do
-    Rails.application.reload_routes!
-  end
-
+  let(:content_disposition_header) { 'Content-Disposition' }
   let!(:user) { create(:user, admin: true) }
   let(:user2) { create(:user) }
   let(:srg) { create(:security_requirements_guide) }
+
+  before do
+    Rails.application.reload_routes!
+  end
 
   describe 'GET /srgs/:id/export/:type' do
     it 'exports XCCDF XML for logged-in user' do
@@ -19,7 +20,7 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.headers['Content-Type']).to include('application/xml')
-      expect(response.headers['Content-Disposition']).to include('.xml')
+      expect(response.headers[content_disposition_header]).to include('.xml')
       expect(response.body).to eq(srg.xml)
     end
 
@@ -28,7 +29,7 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
 
       get "/srgs/#{srg.id}/export/xccdf"
 
-      filename = response.headers['Content-Disposition']
+      filename = response.headers[content_disposition_header]
       expect(filename).to include(srg.title.tr(' ', '-'))
     end
 
@@ -50,7 +51,7 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.headers['Content-Type']).to include('text/csv')
-      expect(response.headers['Content-Disposition']).to include('.csv')
+      expect(response.headers[content_disposition_header]).to include('.csv')
     end
 
     it 'includes srg title in CSV filename' do
@@ -58,7 +59,7 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
 
       get "/srgs/#{srg.id}/export/csv"
 
-      filename = response.headers['Content-Disposition']
+      filename = response.headers[content_disposition_header]
       expect(filename).to include(srg.title.tr(' ', '-'))
     end
 

@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe Review, type: :model do
+  let(:status_applicable) { 'Applicable - Configurable' }
+
   before do
     srg_xml = file_fixture('U_GPOS_SRG_V2R1_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
@@ -33,7 +35,7 @@ RSpec.describe Review, type: :model do
     @p1r1 = Rule.create(
       component: @p1_c1,
       rule_id: 'P1-R1',
-      status: 'Applicable - Configurable',
+      status: status_applicable,
       rule_severity: 'medium',
       srg_rule: srg.srg_rules.first
     )
@@ -280,7 +282,7 @@ RSpec.describe Review, type: :model do
       rule_without_srg = Rule.create(
         component: @p1_c1,
         rule_id: 'NO-SRG-001',
-        status: 'Applicable - Configurable',
+        status: status_applicable,
         rule_severity: 'medium',
         srg_rule: nil
       )
@@ -301,7 +303,7 @@ RSpec.describe Review, type: :model do
       rule_with_orphan_srg = Rule.create(
         component: @p1_c1,
         rule_id: 'ORPHAN-SRG-001',
-        status: 'Applicable - Configurable',
+        status: status_applicable,
         rule_severity: 'medium',
         srg_rule: orphan_srg_rule
       )

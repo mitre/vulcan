@@ -12,24 +12,24 @@ RSpec.describe 'Api::Search' do
   # - Respects limit parameter (default 5, max 20)
   # - Returns empty for queries < 2 chars
 
-  before do # rubocop:disable RSpec/ScatteredSetup
-    Rails.application.reload_routes!
-  end
-
+  let(:search_path) { '/api/search/global' }
   # Create admin_user FIRST to prevent first-user-admin promotion
   let!(:admin_user) { create(:user, admin: true) }
   let(:user) { create(:user) }
-
   # Create test data
   # Note: Set visibility to 'hidden' for project2 so it only appears via membership
   # (default visibility is 'discoverable' which would show in search)
   let!(:project1) { create(:project, name: 'Security Baseline Project') }
   let!(:project2) { create(:project, name: 'Another Secret Project', visibility: :hidden) }
-
   # Components automatically get rules from the SRG via based_on
+  let(:web_component_name) { 'Web Server Component' }
   let!(:srg) { create(:security_requirements_guide) }
-  let!(:component1) { create(:component, project: project1, name: 'Web Server Component', prefix: 'WEBS-01', based_on: srg) }
+  let!(:component1) { create(:component, project: project1, name: web_component_name, prefix: 'WEBS-01', based_on: srg) }
   let!(:component2) { create(:component, project: project2, name: 'Database Component', prefix: 'DBAS-01', based_on: srg) }
+
+  before do # rubocop:disable RSpec/ScatteredSetup
+    Rails.application.reload_routes!
+  end
 
   # Give user access to project1 only (not project2)
   before do # rubocop:disable RSpec/ScatteredSetup
@@ -39,7 +39,7 @@ RSpec.describe 'Api::Search' do
   describe 'GET /api/search/global' do
     context 'when not authenticated' do
       it 'returns 401 Unauthorized' do
-        get '/api/search/global', params: { q: 'Security' }
+        get search_path, params: { q: 'Security' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -49,7 +49,7 @@ RSpec.describe 'Api::Search' do
       before { sign_in user }
 
       it 'returns empty results for short queries' do
-        get '/api/search/global', params: { q: 'a' }
+        get search_path, params: { q: 'a' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -63,7 +63,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches projects by name' do
-        get '/api/search/global', params: { q: 'Security' }
+        get search_path, params: { q: 'Security' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -72,7 +72,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'only returns projects user has access to' do
-        get '/api/search/global', params: { q: 'Another' }
+        get search_path, params: { q: 'Another' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -81,25 +81,25 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches components by name' do
-        get '/api/search/global', params: { q: 'Web Server' }
+        get search_path, params: { q: 'Web Server' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
         expect(json['components'].length).to eq(1)
-        expect(json['components'][0]['name']).to eq('Web Server Component')
+        expect(json['components'][0]['name']).to eq(web_component_name)
       end
 
       it 'searches components by prefix' do
-        get '/api/search/global', params: { q: 'WEBS' }
+        get search_path, params: { q: 'WEBS' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
         expect(json['components'].length).to eq(1)
-        expect(json['components'][0]['name']).to eq('Web Server Component')
+        expect(json['components'][0]['name']).to eq(web_component_name)
       end
 
       it 'only returns components from accessible projects' do
-        get '/api/search/global', params: { q: 'Database' }
+        get search_path, params: { q: 'Database' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -114,7 +114,7 @@ RSpec.describe 'Api::Search' do
           Membership.create!(membership: proj, user: user, role: 'viewer')
         end
 
-        get '/api/search/global', params: { q: 'Test', limit: 3 }
+        get search_path, params: { q: 'Test', limit: 3 }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -122,7 +122,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'returns project metadata' do
-        get '/api/search/global', params: { q: 'Security' }
+        get search_path, params: { q: 'Security' }
 
         json = response.parsed_body
         project = json['projects'][0]
@@ -133,7 +133,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'returns component metadata' do
-        get '/api/search/global', params: { q: 'Web' }
+        get search_path, params: { q: 'Web' }
 
         json = response.parsed_body
         component = json['components'][0]
@@ -159,7 +159,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches rules by title' do
-        get '/api/search/global', params: { q: 'Xylophone' }
+        get search_path, params: { q: 'Xylophone' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -172,7 +172,7 @@ RSpec.describe 'Api::Search' do
         rule2 = component2.rules.first
         rule2.update!(title: 'Platypus Secret Configuration')
 
-        get '/api/search/global', params: { q: 'Platypus' }
+        get search_path, params: { q: 'Platypus' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -206,7 +206,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches SRGs by title' do
-        get '/api/search/global', params: { q: 'Red Hat' }
+        get search_path, params: { q: 'Red Hat' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -215,7 +215,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches SRGs by name' do
-        get '/api/search/global', params: { q: 'RHEL' }
+        get search_path, params: { q: 'RHEL' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -224,7 +224,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches SRGs by srg_id' do
-        get '/api/search/global', params: { q: 'WIN_SERVER' }
+        get search_path, params: { q: 'WIN_SERVER' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -233,7 +233,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'returns SRG metadata' do
-        get '/api/search/global', params: { q: 'RHEL' }
+        get search_path, params: { q: 'RHEL' }
 
         json = response.parsed_body
         srg_result = json['srgs'][0]
@@ -249,7 +249,7 @@ RSpec.describe 'Api::Search' do
         new_user = create(:user)
         sign_in new_user
 
-        get '/api/search/global', params: { q: 'RHEL' }
+        get search_path, params: { q: 'RHEL' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -285,7 +285,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches STIGs by title' do
-        get '/api/search/global', params: { q: 'Apache' }
+        get search_path, params: { q: 'Apache' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -294,7 +294,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches STIGs by name' do
-        get '/api/search/global', params: { q: 'NGINX' }
+        get search_path, params: { q: 'NGINX' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -303,7 +303,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches STIGs by stig_id' do
-        get '/api/search/global', params: { q: 'Apache_Server_2_4' }
+        get search_path, params: { q: 'Apache_Server_2_4' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -312,7 +312,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches STIGs by description' do
-        get '/api/search/global', params: { q: 'HTTP Server' }
+        get search_path, params: { q: 'HTTP Server' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -321,7 +321,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'returns STIG metadata' do
-        get '/api/search/global', params: { q: 'Apache' }
+        get search_path, params: { q: 'Apache' }
 
         json = response.parsed_body
         stig_result = json['stigs'][0]
@@ -338,7 +338,7 @@ RSpec.describe 'Api::Search' do
         new_user = create(:user)
         sign_in new_user
 
-        get '/api/search/global', params: { q: 'Apache' }
+        get search_path, params: { q: 'Apache' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -347,15 +347,17 @@ RSpec.describe 'Api::Search' do
       end
     end
 
-    context 'STIG rules search' do
+    context 'STIG rules search' do # rubocop:disable RSpec/MultipleMemoizedHelpers
       # Requirements:
       # - STIG rules are public resources - any authenticated user can search them
       # - Search by rule_id, vuln_id, title, fixtext, or check content
       # - Example: searching '/etc/sudoers' should find rules with that in check content
       # - Return useful metadata: id, rule_id, vuln_id, title, stig name
 
-      before { sign_in user }
-
+      let(:sudoers_vuln_id) { 'V-258217' }
+      let(:sshd_rule_id) { 'RHEL-09-252010' }
+      let(:sudoers_path) { '/etc/sudoers' }
+      let(:status_applicable) { 'Applicable - Configurable' }
       # Create a simple STIG without importing rules from XML
       let!(:rhel_stig) do
         # Skip after_create callback to avoid XML import
@@ -376,25 +378,25 @@ RSpec.describe 'Api::Search' do
         rule = StigRule.create!(
           stig: rhel_stig,
           rule_id: 'RHEL-09-654215',
-          vuln_id: 'V-258217',
+          vuln_id: sudoers_vuln_id,
           title: 'RHEL 9 must generate audit records for privileged activities',
-          status: 'Applicable - Configurable',
+          status: status_applicable,
           rule_severity: 'medium',
           rule_weight: '10.0',
           version: 'SV-258217r926638_rule',
-          fixtext: 'Configure /etc/sudoers to generate audit records.'
+          fixtext: "Configure #{sudoers_path} to generate audit records."
         )
-        Check.create!(base_rule: rule, content: 'Verify /etc/sudoers file permissions and audit configuration.')
+        Check.create!(base_rule: rule, content: "Verify #{sudoers_path} file permissions and audit configuration.")
         rule
       end
 
       let!(:sshd_rule) do
         rule = StigRule.create!(
           stig: rhel_stig,
-          rule_id: 'RHEL-09-252010',
+          rule_id: sshd_rule_id,
           vuln_id: 'V-257843',
           title: 'RHEL 9 must configure sshd to use approved encryption',
-          status: 'Applicable - Configurable',
+          status: status_applicable,
           rule_severity: 'high',
           rule_weight: '10.0',
           version: 'SV-257843r925885_rule',
@@ -405,8 +407,10 @@ RSpec.describe 'Api::Search' do
         rule
       end
 
+      before { sign_in user }
+
       it 'searches STIG rules by check content' do
-        get '/api/search/global', params: { q: '/etc/sudoers' }
+        get search_path, params: { q: sudoers_path }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -415,26 +419,26 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches STIG rules by rule_id' do
-        get '/api/search/global', params: { q: 'RHEL-09-252010' }
+        get search_path, params: { q: sshd_rule_id }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
         expect(json['stig_rules'].length).to eq(1)
-        expect(json['stig_rules'][0]['rule_id']).to eq('RHEL-09-252010')
+        expect(json['stig_rules'][0]['rule_id']).to eq(sshd_rule_id)
       end
 
       it 'searches STIG rules by vuln_id' do
-        get '/api/search/global', params: { q: 'V-258217' }
+        get search_path, params: { q: sudoers_vuln_id }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
         expect(json['stig_rules'].length).to eq(1)
-        expect(json['stig_rules'][0]['vuln_id']).to eq('V-258217')
+        expect(json['stig_rules'][0]['vuln_id']).to eq(sudoers_vuln_id)
       end
 
       it 'searches STIG rules by title' do
         # Title: "RHEL 9 must configure sshd to use approved encryption"
-        get '/api/search/global', params: { q: 'configure sshd' }
+        get search_path, params: { q: 'configure sshd' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -444,7 +448,7 @@ RSpec.describe 'Api::Search' do
 
       it 'searches STIG rules by fixtext' do
         # Fixtext: "Configure sshd_config with approved ciphers."
-        get '/api/search/global', params: { q: 'sshd_config' }
+        get search_path, params: { q: 'sshd_config' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -453,7 +457,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'returns STIG rule metadata' do
-        get '/api/search/global', params: { q: '/etc/sudoers' }
+        get search_path, params: { q: sudoers_path }
 
         json = response.parsed_body
         stig_rule = json['stig_rules'][0]
@@ -466,7 +470,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches STIG rules by CCI identifier' do
-        get '/api/search/global', params: { q: 'CCI-000130' }
+        get search_path, params: { q: 'CCI-000130' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -478,7 +482,7 @@ RSpec.describe 'Api::Search' do
         new_user = create(:user)
         sign_in new_user
 
-        get '/api/search/global', params: { q: '/etc/sudoers' }
+        get search_path, params: { q: sudoers_path }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -486,17 +490,16 @@ RSpec.describe 'Api::Search' do
       end
     end
 
-    context 'SRG rules search' do
+    context 'SRG rules search' do # rubocop:disable RSpec/MultipleMemoizedHelpers
       # Requirements:
       # - SRG rules are public resources - any authenticated user can search them
       # - Search by rule_id, title, fixtext, ident (CCIs), check content
       # - Return useful metadata: id, rule_id, title, srg name
 
-      before { sign_in user }
-
+      let(:firewall_query) { 'firewall rules' }
+      let(:cci_identifier) { 'CCI-002385' }
       # Use an existing SRG from the test setup (created for component factory)
       # Note: The SRG created by the component factory already has srg_rules
-
       let!(:custom_srg) do
         # Skip after_create callback to avoid XML import
         SecurityRequirementsGuide.skip_callback(:create, :after, :import_srg_rules)
@@ -515,18 +518,20 @@ RSpec.describe 'Api::Search' do
         SrgRule.create!(
           security_requirements_guide: custom_srg,
           rule_id: 'SRG-OS-000480-GPOS-00232',
-          title: 'The operating system must configure firewall rules',
+          title: "The operating system must configure #{firewall_query}",
           status: 'Applicable - Configurable',
           rule_severity: 'medium',
           rule_weight: '10.0',
           version: 'RHEL-09-OS-00232',
           fixtext: 'Configure firewalld with appropriate zone settings.',
-          ident: 'CCI-000366, CCI-002385'
+          ident: "CCI-000366, #{cci_identifier}"
         )
       end
 
+      before { sign_in user }
+
       it 'searches SRG rules by rule_id' do
-        get '/api/search/global', params: { q: 'SRG-OS-000480' }
+        get search_path, params: { q: 'SRG-OS-000480' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -535,7 +540,7 @@ RSpec.describe 'Api::Search' do
       end
 
       it 'searches SRG rules by title' do
-        get '/api/search/global', params: { q: 'firewall rules' }
+        get search_path, params: { q: firewall_query }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
@@ -545,18 +550,18 @@ RSpec.describe 'Api::Search' do
 
       it 'searches SRG rules by CCI identifier' do
         # Use full CCI to be more specific and avoid matches from factory-created SRG rules
-        get '/api/search/global', params: { q: 'CCI-002385' }
+        get search_path, params: { q: cci_identifier }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
         # Find our specific rule in results
-        matching_rules = json['srg_rules'].select { |r| r['ident']&.include?('CCI-002385') }
+        matching_rules = json['srg_rules'].select { |r| r['ident']&.include?(cci_identifier) }
         expect(matching_rules.length).to be >= 1
-        expect(matching_rules.first['ident']).to include('CCI-002385')
+        expect(matching_rules.first['ident']).to include(cci_identifier)
       end
 
       it 'returns SRG rule metadata' do
-        get '/api/search/global', params: { q: 'firewall rules' }
+        get search_path, params: { q: firewall_query }
 
         json = response.parsed_body
         srg_rule = json['srg_rules'][0]
@@ -571,7 +576,7 @@ RSpec.describe 'Api::Search' do
         new_user = create(:user)
         sign_in new_user
 
-        get '/api/search/global', params: { q: 'firewall rules' }
+        get search_path, params: { q: firewall_query }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body

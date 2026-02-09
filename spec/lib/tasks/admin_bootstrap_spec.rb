@@ -4,6 +4,10 @@ require 'rails_helper'
 require 'rake'
 
 RSpec.describe 'admin:bootstrap rake task' do
+  let(:bootstrap_task) { 'admin:bootstrap' }
+  let(:bootstrap_email) { 'bootstrap-admin@example.com' }
+  let(:bootstrap_password) { 'SecurePassword123!' }
+
   before(:all) do
     Rails.application.load_tasks
   end
@@ -27,55 +31,55 @@ RSpec.describe 'admin:bootstrap rake task' do
   describe 'admin:bootstrap' do
     context 'when VULCAN_ADMIN_EMAIL and VULCAN_ADMIN_PASSWORD are set' do
       before do
-        ENV['VULCAN_ADMIN_EMAIL'] = 'bootstrap-admin@example.com'
-        ENV['VULCAN_ADMIN_PASSWORD'] = 'SecurePassword123!'
+        ENV['VULCAN_ADMIN_EMAIL'] = bootstrap_email
+        ENV['VULCAN_ADMIN_PASSWORD'] = bootstrap_password
       end
 
       it 'creates an admin user with those credentials' do
-        expect { Rake::Task['admin:bootstrap'].invoke }.to change(User.where(admin: true), :count).by(1)
+        expect { Rake::Task[bootstrap_task].invoke }.to change(User.where(admin: true), :count).by(1)
 
-        admin = User.find_by(email: 'bootstrap-admin@example.com')
+        admin = User.find_by(email: bootstrap_email)
         expect(admin).to be_present
         expect(admin.admin).to be true
-        expect(admin.valid_password?('SecurePassword123!')).to be true
+        expect(admin.valid_password?(bootstrap_password)).to be true
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
 
       it 'skips creation if admin already exists' do
         # Create an admin first
         create(:user, admin: true)
 
-        expect { Rake::Task['admin:bootstrap'].invoke }.not_to change(User, :count)
+        expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
 
         expect(Rails.logger).to have_received(:info).with(/Admin user already exists/)
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
 
       it 'promotes existing non-admin user with matching email to admin' do
         # Create a non-admin user with the same email
-        existing_user = create(:user, email: 'bootstrap-admin@example.com', admin: false)
+        existing_user = create(:user, email: bootstrap_email, admin: false)
 
         # Should not create new user, but should promote existing one
-        expect { Rake::Task['admin:bootstrap'].invoke }.not_to change(User, :count)
+        expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
 
         # The existing user should be promoted to admin
         existing_user.reload
         expect(existing_user.admin).to be true
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
 
       it 'is idempotent - safe to run multiple times' do
         # First run creates admin
-        Rake::Task['admin:bootstrap'].invoke
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].invoke
+        Rake::Task[bootstrap_task].reenable
 
         # Second run should not fail or create duplicate
-        expect { Rake::Task['admin:bootstrap'].invoke }.not_to change(User, :count)
+        expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
     end
 
@@ -86,7 +90,7 @@ RSpec.describe 'admin:bootstrap rake task' do
       end
 
       it 'creates admin with a generated password and logs it' do
-        expect { Rake::Task['admin:bootstrap'].invoke }.to change(User.where(admin: true), :count).by(1)
+        expect { Rake::Task[bootstrap_task].invoke }.to change(User.where(admin: true), :count).by(1)
 
         admin = User.find_by(email: 'no-password-admin@example.com')
         expect(admin).to be_present
@@ -95,7 +99,7 @@ RSpec.describe 'admin:bootstrap rake task' do
         # Password should be generated (we can't know what it is, but user should exist)
         expect(Rails.logger).to have_received(:warn).with(/Generated temporary password/)
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
     end
 
@@ -106,32 +110,32 @@ RSpec.describe 'admin:bootstrap rake task' do
       end
 
       it 'does not create any admin user' do
-        expect { Rake::Task['admin:bootstrap'].invoke }.not_to change(User, :count)
+        expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
 
       it 'logs that no admin was bootstrapped' do
-        Rake::Task['admin:bootstrap'].invoke
+        Rake::Task[bootstrap_task].invoke
 
         expect(Rails.logger).to have_received(:info).with(/No VULCAN_ADMIN_EMAIL set/)
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
     end
 
     context 'with invalid email format' do
       before do
         ENV['VULCAN_ADMIN_EMAIL'] = 'not-a-valid-email'
-        ENV['VULCAN_ADMIN_PASSWORD'] = 'SecurePassword123!'
+        ENV['VULCAN_ADMIN_PASSWORD'] = bootstrap_password
       end
 
       it 'logs an error and does not create user' do
-        expect { Rake::Task['admin:bootstrap'].invoke }.not_to change(User, :count)
+        expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
 
         expect(Rails.logger).to have_received(:error).with(/Failed to create admin/)
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
     end
 
@@ -142,11 +146,11 @@ RSpec.describe 'admin:bootstrap rake task' do
       end
 
       it 'logs an error and does not create user' do
-        expect { Rake::Task['admin:bootstrap'].invoke }.not_to change(User, :count)
+        expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
 
         expect(Rails.logger).to have_received(:error).with(/Failed to create admin/)
       ensure
-        Rake::Task['admin:bootstrap'].reenable
+        Rake::Task[bootstrap_task].reenable
       end
     end
   end

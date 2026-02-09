@@ -4,6 +4,9 @@ require 'rails_helper'
 require 'csv'
 
 RSpec.describe SecurityRequirementsGuide, '#csv_export' do
+  let(:header_rule_id) { 'Rule ID' }
+  let(:header_srg_id) { 'SRG ID' }
+
   let(:srg) do
     # Create without triggering after_create (which imports rules from XML)
     SecurityRequirementsGuide.insert!({ srg_id: 'test_srg', title: 'Web Server SRG',
@@ -52,7 +55,7 @@ RSpec.describe SecurityRequirementsGuide, '#csv_export' do
     it 'includes SRG default column headers' do
       csv = CSV.parse(srg.csv_export, headers: true)
       # version column shows "SRG ID" (not "STIG ID") in SRG context
-      expect(csv.headers).to include('Rule ID', 'SRG ID', 'Severity', 'Title',
+      expect(csv.headers).to include(header_rule_id, header_srg_id, 'Severity', 'Title',
                                      'Description', 'Check', 'Fix', 'CCI',
                                      '800-53 Controls', 'Legacy IDs')
     end
@@ -67,9 +70,9 @@ RSpec.describe SecurityRequirementsGuide, '#csv_export' do
     it 'contains correct rule data' do
       csv = CSV.parse(srg.csv_export, headers: true)
       first_row = csv.first
-      expect(first_row['Rule ID']).to eq('SV-100001r900001_rule')
+      expect(first_row[header_rule_id]).to eq('SV-100001r900001_rule')
       # version column shows as "SRG ID" in SRG context
-      expect(first_row['SRG ID']).to eq('SRG-APP-000001-GPOS-00001')
+      expect(first_row[header_srg_id]).to eq('SRG-APP-000001-GPOS-00001')
     end
   end
 
@@ -77,7 +80,7 @@ RSpec.describe SecurityRequirementsGuide, '#csv_export' do
     it 'includes only selected columns' do
       csv = CSV.parse(srg.csv_export(columns: %i[rule_id version]), headers: true)
       # version → "SRG ID" in SRG context
-      expect(csv.headers).to eq(['Rule ID', 'SRG ID'])
+      expect(csv.headers).to eq([header_rule_id, header_srg_id])
     end
   end
 end

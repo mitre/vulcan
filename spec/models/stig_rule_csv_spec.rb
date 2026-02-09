@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe StigRule, '#csv_value_for' do
+  let(:none_identified) { 'None identified.' }
   let(:stig) { create(:stig) }
   let(:stig_rule) do
     create(:stig_rule,
@@ -25,8 +26,8 @@ RSpec.describe StigRule, '#csv_value_for' do
     stig_rule.disa_rule_descriptions.first.update!(
       vuln_discussion: 'Without verification of the security functions.',
       mitigations: 'Use compensating controls.',
-      false_positives: 'None identified.',
-      false_negatives: 'None identified.',
+      false_positives: none_identified,
+      false_negatives: none_identified,
       severity_override_guidance: 'Override if compensating controls exist.'
     )
     stig_rule.checks.first.update!(
@@ -107,11 +108,11 @@ RSpec.describe StigRule, '#csv_value_for' do
     end
 
     it 'returns false_positives' do
-      expect(stig_rule.csv_value_for(:false_positives)).to eq('None identified.')
+      expect(stig_rule.csv_value_for(:false_positives)).to eq(none_identified)
     end
 
     it 'returns false_negatives' do
-      expect(stig_rule.csv_value_for(:false_negatives)).to eq('None identified.')
+      expect(stig_rule.csv_value_for(:false_negatives)).to eq(none_identified)
     end
   end
 

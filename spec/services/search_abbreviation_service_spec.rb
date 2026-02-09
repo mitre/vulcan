@@ -3,6 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe SearchAbbreviationService do
+  let(:rhel_expansion) { 'Red Hat Enterprise Linux' }
+  let(:acme_expansion) { 'ACME Corporation' }
+
   before do
     # Clear cache before each test
     described_class.clear_cache!
@@ -12,7 +15,7 @@ RSpec.describe SearchAbbreviationService do
     it 'loads abbreviations from config file' do
       core = described_class.send(:core_abbreviations)
       expect(core).to be_a(Hash)
-      expect(core['RHEL']).to eq('Red Hat Enterprise Linux')
+      expect(core['RHEL']).to eq(rhel_expansion)
       expect(core['K8s']).to eq('Kubernetes')
     end
 
@@ -30,9 +33,9 @@ RSpec.describe SearchAbbreviationService do
     end
 
     it 'loads active user abbreviations from database' do
-      create(:search_abbreviation, abbreviation: 'ACME', expansion: 'ACME Corporation')
+      create(:search_abbreviation, abbreviation: 'ACME', expansion: acme_expansion)
       user = described_class.send(:user_abbreviations)
-      expect(user['ACME']).to eq('ACME Corporation')
+      expect(user['ACME']).to eq(acme_expansion)
     end
 
     it 'excludes inactive abbreviations' do
@@ -45,15 +48,15 @@ RSpec.describe SearchAbbreviationService do
   describe '.all' do
     it 'returns core abbreviations' do
       all = described_class.all
-      expect(all['RHEL']).to eq('Red Hat Enterprise Linux')
+      expect(all['RHEL']).to eq(rhel_expansion)
     end
 
     it 'includes user abbreviations' do
-      create(:search_abbreviation, abbreviation: 'ACME', expansion: 'ACME Corporation')
+      create(:search_abbreviation, abbreviation: 'ACME', expansion: acme_expansion)
       described_class.clear_cache!
 
       all = described_class.all
-      expect(all['ACME']).to eq('ACME Corporation')
+      expect(all['ACME']).to eq(acme_expansion)
     end
 
     it 'user abbreviations override core' do
@@ -94,17 +97,17 @@ RSpec.describe SearchAbbreviationService do
 
     it 'expands known abbreviation' do
       result = described_class.expand_query('RHEL')
-      expect(result).to include('Red Hat Enterprise Linux')
+      expect(result).to include(rhel_expansion)
     end
 
     it 'handles case-insensitive matching' do
       result = described_class.expand_query('rhel')
-      expect(result).to include('Red Hat Enterprise Linux')
+      expect(result).to include(rhel_expansion)
     end
 
     it 'expands multiple abbreviations in query' do
       result = described_class.expand_query('RHEL K8s')
-      expect(result).to include('Red Hat Enterprise Linux')
+      expect(result).to include(rhel_expansion)
       expect(result).to include('Kubernetes')
     end
 
@@ -116,16 +119,16 @@ RSpec.describe SearchAbbreviationService do
     it 'handles mixed known and unknown terms' do
       result = described_class.expand_query('RHEL UNKNOWN')
       expect(result).to include('RHEL UNKNOWN')
-      expect(result).to include('Red Hat Enterprise Linux')
+      expect(result).to include(rhel_expansion)
       expect(result.length).to eq(2)
     end
 
     it 'uses user abbreviations' do
-      create(:search_abbreviation, abbreviation: 'ACME', expansion: 'ACME Corporation')
+      create(:search_abbreviation, abbreviation: 'ACME', expansion: acme_expansion)
       described_class.clear_cache!
 
       result = described_class.expand_query('ACME')
-      expect(result).to include('ACME Corporation')
+      expect(result).to include(acme_expansion)
     end
 
     it 'user abbreviations override core in expansion' do
@@ -134,7 +137,7 @@ RSpec.describe SearchAbbreviationService do
 
       result = described_class.expand_query('RHEL')
       expect(result).to include('Our Custom RHEL')
-      expect(result).not_to include('Red Hat Enterprise Linux')
+      expect(result).not_to include(rhel_expansion)
     end
   end
 
