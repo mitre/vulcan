@@ -90,6 +90,8 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
+  # NOTE: Anonymous rest args (*) is valid Ruby 3.2+ syntax for argument forwarding.
+  # RuboCop Style/ArgumentsForwarding enforces this form. Not a syntax error.
   def send_slack_notification(notification_type, object, *)
     channels = find_slack_channel(object, notification_type)
     channels.each do |channel|

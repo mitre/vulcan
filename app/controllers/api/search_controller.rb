@@ -218,8 +218,10 @@ module Api
     # Build ILIKE conditions for STIG rule search across multiple fields
     # Including check content via join
     #
+    # Security: Column names are hardcoded literals below, user input is parameterized via ?.
+    # See build_ilike_conditions for detailed security explanation.
+    #
     def build_stig_rule_conditions
-      # Search across rule_id, vuln_id, title, fixtext, ident (CCIs)
       columns = %w[base_rules.rule_id base_rules.vuln_id base_rules.title base_rules.fixtext base_rules.ident]
       check_columns = %w[checks.content]
 
@@ -228,16 +230,11 @@ module Api
 
       @search_terms.each do |term|
         sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
-        # Rule fields
         rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        # Check content
         check_conditions = check_columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        # Combine
         conditions << "(#{rule_conditions} OR #{check_conditions})"
 
-        # Add values for rule columns
         columns.size.times { values << "%#{sanitized_term}%" }
-        # Add values for check columns
         check_columns.size.times { values << "%#{sanitized_term}%" }
       end
 
@@ -248,8 +245,10 @@ module Api
     # Build ILIKE conditions for SRG rule search across multiple fields
     # Including check content via join
     #
+    # Security: Column names are hardcoded literals below, user input is parameterized via ?.
+    # See build_ilike_conditions for detailed security explanation.
+    #
     def build_srg_rule_conditions
-      # Search across rule_id, title, fixtext, ident (CCIs)
       columns = %w[base_rules.rule_id base_rules.title base_rules.fixtext base_rules.ident]
       check_columns = %w[checks.content]
 
@@ -258,16 +257,11 @@ module Api
 
       @search_terms.each do |term|
         sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
-        # Rule fields
         rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        # Check content
         check_conditions = check_columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        # Combine
         conditions << "(#{rule_conditions} OR #{check_conditions})"
 
-        # Add values for rule columns
         columns.size.times { values << "%#{sanitized_term}%" }
-        # Add values for check columns
         check_columns.size.times { values << "%#{sanitized_term}%" }
       end
 
@@ -277,6 +271,11 @@ module Api
     ##
     # Build ILIKE conditions for multiple search terms across multiple columns
     # Returns array suitable for .where(*result)
+    #
+    # Security: This is NOT vulnerable to SQL injection despite CodeQL alerts.
+    # - Column names are hardcoded string literals, never from user input
+    # - User input goes through sanitize_sql_like() then into ? placeholders
+    # - The generated SQL uses parameterized queries: "name ILIKE ?" with bind values
     #
     def build_ilike_conditions(columns)
       conditions = []
