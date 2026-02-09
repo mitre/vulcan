@@ -65,7 +65,7 @@ module Api
       return [] unless current_user
 
       # Get components from user's available projects
-      project_ids = current_user.available_projects.pluck(:id)
+      project_ids = current_user.available_projects.ids
 
       Component.where(project_id: project_ids)
                .where(*build_ilike_conditions(%w[name prefix]))
@@ -87,8 +87,8 @@ module Api
       return [] unless current_user
 
       # Get components from user's available projects
-      project_ids = current_user.available_projects.pluck(:id)
-      component_ids = Component.where(project_id: project_ids).pluck(:id)
+      project_ids = current_user.available_projects.ids
+      component_ids = Component.where(project_id: project_ids).ids
 
       # Use phrase search (websearch_to_tsquery) for quoted phrases
       # Otherwise use pg_search with word matching
@@ -308,19 +308,17 @@ module Api
       # Find which field contains the match
       query_words = query.downcase.split(/\s+/)
 
-      searchable_fields.each do |field_info|
+      match = searchable_fields.find do |field_info|
         content = field_info[:content].to_s
         next if content.blank?
 
-        # Check if this field contains the query
         content_lower = content.downcase
-        if query_words.all? { |word| content_lower.include?(word) }
-          # Found match - extract snippet around first occurrence
-          return extract_snippet(content, query_words.first, field_info[:field])
-        end
+        query_words.all? { |word| content_lower.include?(word) }
       end
 
-      nil
+      return nil unless match
+
+      extract_snippet(match[:content].to_s, query_words.first, match[:field])
     end
 
     ##

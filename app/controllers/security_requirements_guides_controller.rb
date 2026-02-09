@@ -67,6 +67,9 @@ class SecurityRequirementsGuidesController < ApplicationController
           columns = parse_csv_columns(params[:columns])
           filename = "#{@srg.title.tr(' ', '-')}-#{@srg.version}.csv"
           send_data @srg.csv_export(columns: columns), filename: filename, type: 'text/csv'
+        else
+          # Guard validated above; this branch should never be reached
+          head :not_acceptable
         end
       end
       format.json { render json: { status: :ok } }

@@ -52,7 +52,7 @@ CIPHER_SALT=$(openssl rand -hex 32)
 
 # Process template line by line, replacing secret placeholders with generated values.
 # This avoids sed entirely - no OS-specific behavior (macOS vs GNU sed).
-while IFS= read -r line || [ -n "$line" ]; do
+while IFS= read -r line || [[ -n "$line" ]]; do
     case "$line" in
         POSTGRES_PASSWORD=*) echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" ;;
         SECRET_KEY_BASE=*)   echo "SECRET_KEY_BASE=$SECRET_KEY_BASE" ;;
