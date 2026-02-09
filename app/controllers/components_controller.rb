@@ -17,7 +17,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_admin_component, only: %i[update], if: lambda {
     # Check if advanced_fields param exists (not if it's truthy)
     # Both true and false are attempts to modify an admin-only field
-    params.dig(:component, :advanced_fields) != nil
+    !params.dig(:component, :advanced_fields).nil?
   }
 
   before_action :authorize_viewer_component, only: %i[show], if: -> { @component.released == false }

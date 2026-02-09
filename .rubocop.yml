@@ -160,12 +160,9 @@ RSpec/MultipleMemoizedHelpers:
 RSpec/LetSetup:
   Enabled: false
 
-# receive_message_chain is pragmatic for error stubbing in request specs
+# receive_message_chain is necessary for Settings stubbing and complex Rails chains
 RSpec/MessageChain:
-  Exclude:
-    - spec/requests/memberships_spec.rb
-    - spec/requests/stigs_spec.rb
-    - spec/requests/users_spec.rb
+  Enabled: false
 
 # Repeated examples flagged in components_spec are intentional parametric tests
 RSpec/RepeatedExample:
