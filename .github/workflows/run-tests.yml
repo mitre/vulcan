@@ -90,8 +90,7 @@ jobs:
         run: |
           bundle exec rails db:create
           bundle exec rails db:schema:load
-          # Run backend tests in parallel for faster CI
-          bundle exec parallel_rspec spec/
+          bundle exec rspec spec/
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         if: always()
