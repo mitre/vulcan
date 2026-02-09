@@ -102,7 +102,7 @@
 
       <template #cell(actions)="data">
         <UpdateProjectDetailsModal
-          v-if="is_vulcan_admin || data.item.admin"
+          v-if="canAdminProject(data.item)"
           :project="data.item"
           :is_project_table="true"
           class="floatright"
@@ -131,7 +131,7 @@
             Cancel Access Request
           </b-button>
         </span>
-        <span v-if="is_vulcan_admin">
+        <span v-if="canAdminProject(data.item)">
           <b-button
             class="px-2 m-2"
             variant="danger"
@@ -299,6 +299,11 @@ export default {
     });
   },
   methods: {
+    // Whether the current user can admin a project (site admin OR project admin).
+    // Matches backend authorize_admin_project (User#can_admin_project?).
+    canAdminProject(project) {
+      return this.is_vulcan_admin || project.admin;
+    },
     // Path to POST/DELETE to when updating/deleting a project
     formAction: function (project) {
       return `/projects/${project.id}`;

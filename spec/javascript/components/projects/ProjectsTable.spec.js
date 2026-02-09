@@ -16,9 +16,10 @@ vi.mock("axios", () => ({
  *
  * REQUIREMENTS:
  *
- * 1. DELETE BUTTON (admin only):
- *    - Shows "Remove" button for vulcan admins
- *    - Hidden for non-admins
+ * 1. DELETE BUTTON (site admin OR project admin):
+ *    - Shows "Remove" button for vulcan site admins (on all projects)
+ *    - Shows "Remove" button for project admins (on their projects)
+ *    - Hidden for non-admin project members
  *
  * 2. DELETE CONFIRMATION MODAL:
  *    - Clicking Remove opens confirmation modal (NOT browser confirm)
@@ -87,16 +88,37 @@ describe("ProjectsTable", () => {
 
   // ==========================================
   // DELETE BUTTON VISIBILITY
+  // Requirement: visible when site admin OR project admin
+  // Backend: authorize_admin_project checks User#can_admin_project?
+  //          which allows admin || project.memberships.admin_role
   // ==========================================
   describe("delete button visibility", () => {
-    it("shows Remove button for vulcan admin", () => {
+    it("shows Remove button for vulcan site admin (on all projects)", () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
-      expect(removeBtn.exists()).toBe(true);
+      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      // Site admin sees Remove on ALL projects
+      expect(removeBtns.length).toBe(sampleProjects.length);
     });
 
-    it("hides Remove button for non-admin", () => {
+    it("shows Remove button for project admin (non-site-admin)", () => {
+      // sampleProjects[0] has admin: true, sampleProjects[1] has admin: false
       wrapper = createWrapper({ is_vulcan_admin: false });
+      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      // Only project[0] where user is project admin
+      expect(removeBtns.length).toBe(1);
+    });
+
+    it("hides Remove button for non-admin project members", () => {
+      // Both projects have admin: false — user is member but not admin
+      const nonAdminProjects = [
+        { ...sampleProjects[0], admin: false },
+        { ...sampleProjects[1], admin: false },
+      ];
+      wrapper = mount(ProjectsTable, {
+        localVue,
+        propsData: { projects: nonAdminProjects, is_vulcan_admin: false },
+        stubs: { UpdateProjectDetailsModal: true },
+      });
       const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
       expect(removeBtn.exists()).toBe(false);
     });
