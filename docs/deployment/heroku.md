@@ -45,22 +45,22 @@ heroku config:set VULCAN_APP_URL=https://your-vulcan-app.herokuapp.com
 git push heroku main
 ```
 
-5. **Run database migrations**:
-```bash
-heroku run rails db:migrate
-```
+Migrations run automatically via the Procfile release phase (`bundle exec rails db:migrate`). No manual migration step is needed.
 
-6. **Create admin user** (optional):
-```bash
-heroku run rails c
-# In Rails console:
-User.create!(
-  email: 'admin@example.com',
-  password: 'secure_password_here',
-  admin: true,
-  confirmed_at: Time.now
-)
-```
+5. **Create admin user** (choose one):
+
+   **Option A** — First-user-admin (simplest):
+   ```bash
+   heroku config:set VULCAN_FIRST_USER_ADMIN=true
+   ```
+   Then register via the web UI — the first user becomes admin.
+
+   **Option B** — Environment variable bootstrap:
+   ```bash
+   heroku config:set VULCAN_ADMIN_EMAIL=admin@example.com
+   heroku config:set VULCAN_ADMIN_PASSWORD=SecurePassword123!
+   ```
+   Admin is created on the next deploy (hooked into `db:prepare` via Docker, or run manually with `heroku run rails admin:bootstrap`).
 
 ## Configuration
 
@@ -180,17 +180,18 @@ heroku addons:upgrade heroku-postgresql:standard-0
 
 ### Updates and Migrations
 
-```bash
-# Enable maintenance mode
-heroku maintenance:on
+Migrations run automatically during the Procfile release phase on every deploy. Manual migration is rarely needed.
 
-# Deploy updates
+```bash
+# Deploy updates (migrations run automatically)
 git push heroku main
 
-# Run migrations
+# Manual migration (only if needed)
 heroku run rails db:migrate
 
-# Disable maintenance mode
+# For large migrations, enable maintenance mode first
+heroku maintenance:on
+git push heroku main
 heroku maintenance:off
 ```
 
@@ -225,44 +226,38 @@ heroku logs -n 1500 > production.log
 
 ## Review Apps
 
-Enable Review Apps for pull request previews:
+Review Apps create a temporary Heroku app for each pull request, with its own fresh database.
 
-1. Create `app.json` in repository root:
-```json
-{
-  "name": "Vulcan",
-  "scripts": {
-    "postdeploy": "bundle exec rails db:schema:load"
-  },
-  "env": {
-    "RAILS_ENV": {
-      "value": "production"
-    },
-    "SECRET_KEY_BASE": {
-      "generator": "secret"
-    }
-  },
-  "formation": {
-    "web": {
-      "quantity": 1,
-      "size": "standard-1x"
-    }
-  },
-  "addons": [
-    "heroku-postgresql:mini"
-  ],
-  "buildpacks": [
-    {
-      "url": "heroku/nodejs"
-    },
-    {
-      "url": "heroku/ruby"
-    }
-  ]
-}
-```
+### How It Works
 
-2. Enable Review Apps in Heroku Pipeline settings
+The `app.json` in the repository root configures review apps:
+
+| Phase | Command | When | Purpose |
+|-------|---------|------|---------|
+| **Release** | `db:migrate` (Procfile) | Every deploy | Runs pending migrations (no-op on first deploy) |
+| **Postdeploy** | `db:schema:load db:seed admin:bootstrap` | First deploy only | Loads schema, seeds data, creates admin |
+
+The postdeploy uses `DISABLE_DATABASE_ENVIRONMENT_CHECK=1` because review apps run with `RAILS_ENV=production` and `db:schema:load` (the rake task) checks for protected environments. This flag is safe here — review apps always have fresh, empty databases.
+
+> **Important**: `DISABLE_DATABASE_ENVIRONMENT_CHECK` must NEVER be set for production or staging. It only appears in the review app postdeploy script. See `spec/config/database_safety_spec.rb` for regression tests enforcing this.
+
+### Database Strategy
+
+| Environment | DB Command | Safety |
+|-------------|-----------|--------|
+| **Production** | `db:migrate` (Procfile release) | Only runs pending migrations, never destructive |
+| **Staging** | `db:migrate` (Procfile release) | Same as production |
+| **Review Apps** | `db:schema:load` (postdeploy, once) | Fresh DB only, flag scoped to one-time script |
+| **Docker** | `db:prepare` (entrypoint) | Creates if missing, migrates if exists, no flag needed |
+
+### Setup
+
+1. The `app.json` is already configured in the repository root
+2. Enable Review Apps in your Heroku Pipeline settings
+3. Each PR will automatically get a review app with:
+   - Fresh PostgreSQL database (Essential-0 plan)
+   - Schema loaded from `db/schema.rb`
+   - First-user-admin enabled (`VULCAN_FIRST_USER_ADMIN=true`)
 
 ## Troubleshooting
 

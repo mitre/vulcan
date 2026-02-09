@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v2.2.2] - 2026-02-08
 
 ### Upgraded
-- Ruby 3.4.7 (from 3.3.9) with nkf gem for compatibility
+- Ruby 3.4.8 (from 3.3.9) with nkf gem for compatibility
+- Puma 7.2.0 (from 5.6.9) for Heroku Router 2.0 compatibility
 - Added parallel_tests for faster CI execution
 
 ### Added
@@ -46,11 +47,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Consolidate Devise modules into single call in User model
 - All ESLint errors and warnings resolved (20 errors, 6 warnings to 0)
 - Documentation build issues with dead links and localhost URLs
+- Remove dangerous DISABLE_DATABASE_ENVIRONMENT_CHECK from Docker entrypoint
+- Fix Heroku review app postdeploy to use DISABLE_DATABASE_ENVIRONMENT_CHECK with db:schema:load
+- Add db:seed and admin:bootstrap to review app postdeploy for usable review apps
+- Resolve 10 Copilot-identified bugs (modulo-by-zero, YAML.safe_load, CSS vars, prop types)
 
 ### Security
 - Updated rexml and rack gems (CVE-2025-58767, GHSA-625h)
 - Configurable SSL for Docker deployments (#700, #702)
 - Enhanced deployment security configurations
+- YAML.safe_load replaces YAML.load_file in SearchAbbreviationService
+- Database deployment safety regression tests (13 tests) prevent future misconfigurations
 
 ## [v2.2.1] - 2025-08-16
 

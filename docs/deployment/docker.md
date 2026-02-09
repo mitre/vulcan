@@ -152,12 +152,17 @@ server {
 
 ### 4. Database Initialization
 
-The Docker entrypoint automatically runs `db:prepare` on first startup, which creates the database and runs migrations. No manual database initialization is needed.
+The Docker entrypoint automatically runs `db:prepare` on every container start:
 
-To run migrations manually:
+- **First startup**: Creates the database, loads `db/schema.rb`, runs seeds, bootstraps admin
+- **Subsequent startups**: Runs pending migrations only (existing data is preserved)
+
+No manual database initialization is needed. To run migrations manually:
 ```bash
 docker compose run --rm web bundle exec rails db:migrate
 ```
+
+> **Why `db:prepare` and not `db:migrate`?** `db:prepare` handles both fresh and existing databases. It is the Rails 8 standard pattern for Docker entrypoints. Unlike `db:schema:load`, `db:prepare` does NOT need `DISABLE_DATABASE_ENVIRONMENT_CHECK` — it calls `load_schema()` as a Ruby method, bypassing the protected environment check by design. See [Rails source: DatabaseTasks#initialize_database](https://github.com/rails/rails/blob/main/activerecord/lib/active_record/tasks/database_tasks.rb) for details.
 
 ## Monitoring
 
