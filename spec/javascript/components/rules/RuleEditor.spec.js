@@ -257,5 +257,65 @@ describe('RuleEditor', () => {
       // Local state should sync with prop
       expect(wrapper.vm.localAdvancedFields).toBe(true)
     })
+
+    /**
+     * BUG 9-10: Checkbox bound to localAdvancedFields, form bound to advanced_fields
+     * This causes a temporary mismatch when toggling.
+     *
+     * REQUIREMENT: When user clicks checkbox to disable advanced fields,
+     * both the checkbox state AND the UnifiedRuleForm's advancedMode prop
+     * must be synchronized IMMEDIATELY (no mismatch).
+     */
+    it('checkbox and form advancedMode stay in sync when toggling off (Bug 9-10)', async () => {
+      // Start with advanced fields enabled
+      wrapper = createWrapper({ advanced_fields: true })
+
+      // Verify initial state: both checkbox and form should be true
+      expect(wrapper.vm.localAdvancedFields).toBe(true)
+      expect(wrapper.vm.advanced_fields).toBe(true)
+      const form = wrapper.findComponent({ name: 'UnifiedRuleForm' })
+      expect(form.props('advancedMode')).toBe(true)
+
+      // User clicks checkbox to toggle OFF
+      const checkbox = wrapper.find('[data-testid="advanced-fields-toggle"] input[type="checkbox"]')
+      await checkbox.setChecked(false)
+      await wrapper.vm.$nextTick()
+
+      // REQUIREMENT: Both checkbox AND form should reflect the change immediately
+      // There should be NO temporary mismatch
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+
+      // The form's advancedMode should ALSO be false immediately
+      // Bug: Line 69 passes advanced_fields prop, not localAdvancedFields
+      // This causes form to still show advanced_fields=true until parent updates
+      expect(form.props('advancedMode')).toBe(false)
+    })
+
+    it('checkbox and form advancedMode stay in sync when toggling on (Bug 9-10)', async () => {
+      // Start with advanced fields disabled
+      wrapper = createWrapper({ advanced_fields: false })
+
+      // Verify initial state
+      expect(wrapper.vm.localAdvancedFields).toBe(false)
+      expect(wrapper.vm.advanced_fields).toBe(false)
+      const form = wrapper.findComponent({ name: 'UnifiedRuleForm' })
+      expect(form.props('advancedMode')).toBe(false)
+
+      // User clicks checkbox to enable (which shows confirmation dialog)
+      wrapper.vm.localAdvancedFields = true
+      wrapper.vm.onAdvancedFieldsToggle(true)
+      await wrapper.vm.$nextTick()
+
+      // User confirms in dialog
+      wrapper.vm.confirmEnableAdvanced()
+      await wrapper.vm.$nextTick()
+
+      // After confirmation, localAdvancedFields should be true
+      expect(wrapper.vm.localAdvancedFields).toBe(true)
+
+      // The form's advancedMode should ALSO reflect this immediately
+      // Bug: Form still bound to advanced_fields prop, not localAdvancedFields
+      expect(form.props('advancedMode')).toBe(true)
+    })
   })
 })

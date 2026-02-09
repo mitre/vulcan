@@ -1,7 +1,15 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest'
 import { shallowMount, createLocalVue } from '@vue/test-utils'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import BenchmarkViewer from '@/components/shared/BenchmarkViewer.vue'
+import axios from 'axios'
+
+// Mock axios module
+vi.mock('axios', () => ({
+  default: {
+    get: vi.fn()
+  }
+}))
 
 const localVue = createLocalVue()
 localVue.use(BootstrapVue)
@@ -161,6 +169,39 @@ describe('BenchmarkViewer', () => {
       wrapper = createWrapper({ benchmark: srgBenchmark, type: 'srg' })
       const benchmarkType = wrapper.vm.type === 'srg' ? 'srgs' : 'stigs'
       expect(benchmarkType).toBe('srgs')
+    })
+  })
+
+  // ==========================================
+  // EXPORT OPTIMIZATION - Bug 7
+  // ==========================================
+  describe('export optimization', () => {
+    beforeEach(() => {
+      // Clear axios mock before each test
+      vi.clearAllMocks()
+      // Mock axios.get to return resolved promise
+      axios.get.mockResolvedValue({})
+    })
+
+    it('does not make axios request when exporting (only uses window.open)', () => {
+      // Mock window.open
+      const mockWindowOpen = vi.fn()
+      const originalWindowOpen = window.open
+      window.open = mockWindowOpen
+
+      wrapper = createWrapper({ type: 'stig' })
+
+      // Call handleExport
+      wrapper.vm.handleExport({ type: 'xccdf', componentIds: [1], columns: [] })
+
+      // Restore window.open
+      window.open = originalWindowOpen
+
+      // Should NOT call axios.get (redundant request - browser makes it via window.open)
+      expect(axios.get).not.toHaveBeenCalled()
+
+      // Should ONLY call window.open (browser handles download)
+      expect(mockWindowOpen).toHaveBeenCalledWith('/stigs/1/export/xccdf')
     })
   })
 

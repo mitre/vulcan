@@ -196,4 +196,54 @@ describe('ConfirmDeleteModal', () => {
       expect(wrapper.find('.modal').classes()).toContain('d-none')
     })
   })
+
+  // ==========================================
+  // STYLING (Bootstrap 4 Compatibility)
+  // ==========================================
+  describe('Bootstrap 4 compatible styling', () => {
+    /**
+     * REQUIREMENT: Modal must use Bootstrap 4 compatible styling
+     * Bootstrap 4 does NOT support CSS variables like var(--warning)
+     * Must use hex color #ffc107 or Bootstrap 4 utility classes
+     *
+     * Bug 8: Line 168 uses var(--warning) which doesn't exist in Bootstrap 4
+     */
+    it('modal border does not use CSS variables (Bootstrap 4 incompatible)', () => {
+      // Mount component to verify CSS doesn't use var(--warning)
+      wrapper = mount(ConfirmDeleteModal, {
+        localVue,
+        propsData: {
+          visible: true,
+          itemName: 'Test Item',
+          itemType: 'project'
+        }
+      })
+
+      // Get the component's options which includes styles
+      const componentStyles = ConfirmDeleteModal.options?.__file || ''
+      const componentSource = ConfirmDeleteModal.toString()
+
+      // Read the actual SFC source - the style block contains var(--warning)
+      // We're testing that the component SHOULD NOT use var(--warning)
+      // This test should FAIL before the fix is applied
+
+      // Check if component has modal-class prop that adds confirm-delete-modal class
+      const modal = wrapper.findComponent({ name: 'BModal' })
+      expect(modal.exists()).toBe(true)
+      expect(modal.props('modalClass')).toBe('confirm-delete-modal')
+
+      // The CSS rule: .confirm-delete-modal .modal-content uses var(--warning)
+      // Bootstrap 4 doesn't support CSS variables, so this should use #ffc107 instead
+      // We'll verify this by checking that the component doesn't rely on CSS vars
+      // by ensuring it would work in a Bootstrap 4 environment
+
+      // Direct test: The component source should not contain 'var(--warning)'
+      // This will fail until we fix line 168
+      const vueFile = require('fs').readFileSync(
+        require('path').resolve(__dirname, '../../../../app/javascript/components/shared/ConfirmDeleteModal.vue'),
+        'utf-8'
+      )
+      expect(vueFile).not.toContain('var(--warning)')
+    })
+  })
 })

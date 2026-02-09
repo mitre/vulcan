@@ -90,14 +90,14 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
-  def send_slack_notification(notification_type, object, *)
+  def send_slack_notification(notification_type, object, *args)
     channels = find_slack_channel(object, notification_type)
     channels.each do |channel|
-      send_notification(channel, slack_notification_params(notification_type, object, *))
+      send_notification(channel, slack_notification_params(notification_type, object, *args))
     end
   end
 
-  def slack_notification_params(notification_type, object, *)
+  def slack_notification_params(notification_type, object, *args)
     pattern = /^(
       approve|
       revoke|
@@ -114,7 +114,7 @@ class ApplicationController < ActionController::Base
 
     notification_type_prefix = notification_type.to_s.match(pattern)[1]
     icon, header = get_slack_headers_icons(notification_type, notification_type_prefix)
-    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *)
+    fields = get_slack_notification_fields(object, notification_type, notification_type_prefix, *args)
     {
       icon: icon,
       header: header,
@@ -122,10 +122,10 @@ class ApplicationController < ActionController::Base
     }
   end
 
-  def send_smtp_notification(mailer, action, *)
-    mailer.membership_action(action, *).deliver_now if membership_action?(action)
-    mailer.review_action(action, *).deliver_now if review_action?(action)
-    mailer.project_access_action(action, *).deliver_now if access_request_action?(action)
+  def send_smtp_notification(mailer, action, *args)
+    mailer.membership_action(action, *args).deliver_now if membership_action?(action)
+    mailer.review_action(action, *args).deliver_now if review_action?(action)
+    mailer.project_access_action(action, *args).deliver_now if access_request_action?(action)
   end
 
   private

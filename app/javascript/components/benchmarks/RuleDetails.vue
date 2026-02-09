@@ -93,7 +93,8 @@ export default {
     },
     selectedRule: {
       type: Object,
-      required: true,
+      required: false,
+      default: () => null,
     },
   },
   computed: {

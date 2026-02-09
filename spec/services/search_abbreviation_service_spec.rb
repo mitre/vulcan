@@ -24,6 +24,51 @@ RSpec.describe SearchAbbreviationService do
       core = described_class.send(:core_abbreviations)
       expect(core).to eq({})
     end
+
+    it 'safely rejects malicious YAML (uses safe_load, not load_file)' do
+      # Security fix: YAML.safe_load prevents arbitrary object deserialization
+      malicious_yaml = Rails.root.join('tmp/malicious_abbrev_test.yml')
+      malicious_content = <<~YAML
+        abbreviations:
+          TEST: !ruby/object:Gem::Requirement
+            requirements:
+              !ruby/object:Gem::Package::TarReader
+              io: !ruby/object:Net::BufferedIO
+      YAML
+
+      File.write(malicious_yaml, malicious_content)
+
+      allow(Rails.root).to receive(:join).with('config/search_abbreviations.yml')
+                                         .and_return(malicious_yaml)
+
+      # safe_load rejects malicious objects, returns {} via rescue block
+      result = described_class.send(:core_abbreviations)
+      expect(result).to eq({})
+
+      FileUtils.rm_f(malicious_yaml)
+    end
+
+    it 'safely loads valid YAML with Symbol keys' do
+      valid_yaml = Rails.root.join('tmp/valid_abbrev_test.yml')
+      valid_content = <<~YAML
+        abbreviations:
+          TEST: Test Expansion
+          RHEL: #{rhel_expansion}
+      YAML
+
+      File.write(valid_yaml, valid_content)
+
+      allow(Rails.root).to receive(:join).with('config/search_abbreviations.yml')
+                                         .and_return(valid_yaml)
+
+      result = described_class.send(:core_abbreviations)
+      expect(result).to eq({
+        'TEST' => 'Test Expansion',
+        'RHEL' => rhel_expansion
+      })
+
+      FileUtils.rm_f(valid_yaml)
+    end
   end
 
   describe '.user_abbreviations' do

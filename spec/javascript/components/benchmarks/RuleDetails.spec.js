@@ -174,4 +174,43 @@ describe('RuleDetails', () => {
       expect(srgWrapper.text()).toContain('Fix')
     })
   })
+
+  // ==========================================
+  // NULL/UNDEFINED RULE HANDLING
+  // ==========================================
+  describe('null/undefined rule handling', () => {
+    it('accepts null selectedRule without Vue warnings', () => {
+      // Capture console errors
+      const errors = []
+      const originalError = console.error
+      console.error = (...args) => errors.push(args.join(' '))
+
+      wrapper = shallowMount(RuleDetails, {
+        localVue,
+        propsData: {
+          selectedRule: null,
+          type: 'stig'
+        }
+      })
+
+      // Restore console.error
+      console.error = originalError
+
+      // Should not emit Vue prop validation errors
+      const propErrors = errors.filter(e => e.includes('Invalid prop') || e.includes('type check failed'))
+      expect(propErrors.length).toBe(0)
+    })
+
+    it('shows placeholder message when selectedRule is null', () => {
+      wrapper = shallowMount(RuleDetails, {
+        localVue,
+        propsData: {
+          selectedRule: null,
+          type: 'stig'
+        }
+      })
+
+      expect(wrapper.text()).toContain('Select a rule from the list to view details')
+    })
+  })
 })

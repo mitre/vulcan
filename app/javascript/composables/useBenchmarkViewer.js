@@ -101,6 +101,7 @@ export function useBenchmarkViewer(benchmarkData, type) {
    * Navigate to next item in filtered list
    */
   function selectNext() {
+    if (filteredItems.value.length === 0) return;
     const currentIndex = filteredItems.value.findIndex(
       (item) => item.id === selectedItem.value?.id,
     );
@@ -112,6 +113,7 @@ export function useBenchmarkViewer(benchmarkData, type) {
    * Navigate to previous item in filtered list
    */
   function selectPrevious() {
+    if (filteredItems.value.length === 0) return;
     const currentIndex = filteredItems.value.findIndex(
       (item) => item.id === selectedItem.value?.id,
     );

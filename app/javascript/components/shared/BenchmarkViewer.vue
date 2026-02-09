@@ -159,12 +159,8 @@ export default {
       if (columns && columns.length > 0) {
         url += `?columns=${columns.join(",")}`;
       }
-      axios
-        .get(url)
-        .then(() => {
-          window.open(url);
-        })
-        .catch(this.alertOrNotifyResponse);
+      // Open in new window - browser will handle the download request
+      window.open(url);
     },
   },
 };

@@ -185,4 +185,35 @@ describe('useBenchmarkViewer', () => {
       expect(composable.itemTypeName.value).toBe('requirement')
     })
   })
+
+  // ==========================================
+  // EDGE CASES - Empty filtered items
+  // ==========================================
+  describe('navigation with empty filtered items', () => {
+    it('selectNext does not crash when filteredItems is empty', () => {
+      // Search for something that doesn't exist
+      composable.setSearch('NONEXISTENT')
+      expect(composable.filteredItems.value.length).toBe(0)
+
+      // Should not crash or set selectedItem to undefined/NaN
+      const originalSelection = composable.selectedItem.value
+      expect(() => composable.selectNext()).not.toThrow()
+
+      // selectedItem should remain unchanged when no items to navigate
+      expect(composable.selectedItem.value).toEqual(originalSelection)
+    })
+
+    it('selectPrevious does not crash when filteredItems is empty', () => {
+      // Search for something that doesn't exist
+      composable.setSearch('NONEXISTENT')
+      expect(composable.filteredItems.value.length).toBe(0)
+
+      // Should not crash or set selectedItem to undefined/NaN
+      const originalSelection = composable.selectedItem.value
+      expect(() => composable.selectPrevious()).not.toThrow()
+
+      // selectedItem should remain unchanged when no items to navigate
+      expect(composable.selectedItem.value).toEqual(originalSelection)
+    })
+  })
 })

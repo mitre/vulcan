@@ -66,7 +66,7 @@
           :rule="rule"
           :statuses="statuses"
           :read-only="readOnly"
-          :advanced-mode="advanced_fields"
+          :advanced-mode="localAdvancedFields"
           :additional_questions="additional_questions"
         />
       </b-tab>
