@@ -398,7 +398,7 @@ By using this IS (which includes any device attached to this IS), you consent to
 
 Use the following verbiage for operating systems that have severe limitations on the number of characters that can be displayed in the banner:
 
-"I've read &amp; consent to terms in IS user agreem't."</fixtext><fix id="F-3790r755179_fix" /><check system="C-3790r755178_chk"><check-content-ref href="General_Purpose_Operating_System_SRG.xml" name="M" /><check-content>Verify any publically accessible connection to the operating system displays the Standard Mandatory DoD Notice and Consent Banner before granting access to the system.
+"I've read &amp; consent to terms in IS user agreem't."</fixtext><fix id="F-3790r755179_fix" /><check system="C-3790r755178_chk"><check-content-ref href="General_Purpose_Operating_System_SRG.xml" name="M" /><check-content>Verify any publically accessible connection to the operating system displays the Standard Mandatory DoD Notice and Consent Banner before granting access to the system. 
 
 The banner must be formatted in accordance with applicable DoD policy. Use the following verbiage for operating systems that can accommodate banners of 1300 characters:
 

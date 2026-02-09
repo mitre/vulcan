@@ -1,10 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { shallowMount, createLocalVue } from '@vue/test-utils'
-import BootstrapVue from 'bootstrap-vue'
-import FilterBar from '@/components/shared/FilterBar.vue'
-
-const localVue = createLocalVue()
-localVue.use(BootstrapVue)
+import { describe, it, expect, afterEach } from "vitest";
+import { shallowMount } from "@vue/test-utils";
+import { localVue } from "@test/testHelper";
+import FilterBar from "@/components/shared/FilterBar.vue";
 
 /**
  * FilterBar Component Requirements:
@@ -15,8 +12,8 @@ localVue.use(BootstrapVue)
  * 4. Emits 'update:filters' when any filter changes
  * 5. Handles reset for individual groups and all groups
  */
-describe('FilterBar', () => {
-  let wrapper
+describe("FilterBar", () => {
+  let wrapper;
 
   const defaultFilters = {
     // Status filters
@@ -32,8 +29,8 @@ describe('FilterBar', () => {
     // Display filters
     nestSatisfiedRulesChecked: true,
     showSRGIdChecked: false,
-    sortBySRGIdChecked: true
-  }
+    sortBySRGIdChecked: true,
+  };
 
   const defaultCounts = {
     ac: 264,
@@ -43,8 +40,8 @@ describe('FilterBar', () => {
     nyd: 0,
     nur: 264,
     ur: 0,
-    lck: 0
-  }
+    lck: 0,
+  };
 
   const createWrapper = (props = {}) => {
     return shallowMount(FilterBar, {
@@ -55,149 +52,147 @@ describe('FilterBar', () => {
         showStatus: true,
         showReview: true,
         showDisplay: true,
-        ...props
+        ...props,
       },
       stubs: {
-        FilterGroup: true
-      }
-    })
-  }
+        FilterGroup: true,
+      },
+    });
+  };
 
   afterEach(() => {
     if (wrapper) {
-      wrapper.destroy()
+      wrapper.destroy();
     }
-  })
+  });
 
-  describe('rendering', () => {
-    it('renders the filter bar container', () => {
-      wrapper = createWrapper()
-      expect(wrapper.find('.filter-bar').exists()).toBe(true)
-    })
+  describe("rendering", () => {
+    it("renders the filter bar container", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find(".filter-bar").exists()).toBe(true);
+    });
 
-    it('renders all three FilterGroups by default', () => {
-      wrapper = createWrapper()
-      const groups = wrapper.findAllComponents({ name: 'FilterGroup' })
-      expect(groups.length).toBe(3)
-    })
+    it("renders all three FilterGroups by default", () => {
+      wrapper = createWrapper();
+      const groups = wrapper.findAllComponents({ name: "FilterGroup" });
+      expect(groups.length).toBe(3);
+    });
 
-    it('renders only Status group when others are hidden', () => {
+    it("renders only Status group when others are hidden", () => {
       wrapper = createWrapper({
         showStatus: true,
         showReview: false,
-        showDisplay: false
-      })
-      const groups = wrapper.findAllComponents({ name: 'FilterGroup' })
-      expect(groups.length).toBe(1)
-      expect(groups.at(0).props('title')).toBe('Status')
-    })
+        showDisplay: false,
+      });
+      const groups = wrapper.findAllComponents({ name: "FilterGroup" });
+      expect(groups.length).toBe(1);
+      expect(groups.at(0).props("title")).toBe("Status");
+    });
 
-    it('renders only Display group when others are hidden', () => {
+    it("renders only Display group when others are hidden", () => {
       wrapper = createWrapper({
         showStatus: false,
         showReview: false,
-        showDisplay: true
-      })
-      const groups = wrapper.findAllComponents({ name: 'FilterGroup' })
-      expect(groups.length).toBe(1)
-      expect(groups.at(0).props('title')).toBe('Display')
-    })
+        showDisplay: true,
+      });
+      const groups = wrapper.findAllComponents({ name: "FilterGroup" });
+      expect(groups.length).toBe(1);
+      expect(groups.at(0).props("title")).toBe("Display");
+    });
 
-    it('renders no groups when all are hidden', () => {
+    it("renders no groups when all are hidden", () => {
       wrapper = createWrapper({
         showStatus: false,
         showReview: false,
-        showDisplay: false
-      })
-      const groups = wrapper.findAllComponents({ name: 'FilterGroup' })
-      expect(groups.length).toBe(0)
-    })
-  })
+        showDisplay: false,
+      });
+      const groups = wrapper.findAllComponents({ name: "FilterGroup" });
+      expect(groups.length).toBe(0);
+    });
+  });
 
-  describe('group order', () => {
+  describe("group order", () => {
     // REQUIREMENT: Groups render in order Status, Display, Review
     // Review is last because it can be toggled on/off (disabled in view mode)
-    it('renders groups in order: Status, Display, Review', () => {
-      wrapper = createWrapper()
-      const groups = wrapper.findAllComponents({ name: 'FilterGroup' })
-      expect(groups.at(0).props('title')).toBe('Status')
-      expect(groups.at(1).props('title')).toBe('Display')
-      expect(groups.at(2).props('title')).toBe('Review')
-    })
-  })
+    it("renders groups in order: Status, Display, Review", () => {
+      wrapper = createWrapper();
+      const groups = wrapper.findAllComponents({ name: "FilterGroup" });
+      expect(groups.at(0).props("title")).toBe("Status");
+      expect(groups.at(1).props("title")).toBe("Display");
+      expect(groups.at(2).props("title")).toBe("Review");
+    });
+  });
 
-  describe('filter state', () => {
-    it('passes status items to Status group', () => {
-      wrapper = createWrapper()
-      const statusGroup = wrapper.findAllComponents({ name: 'FilterGroup' }).at(0)
-      const items = statusGroup.props('items')
-      expect(items.length).toBe(5)
-      expect(items[0].key).toBe('acFilterChecked')
-      expect(items[0].checked).toBe(true)
-      expect(items[0].count).toBe(264)
-    })
+  describe("filter state", () => {
+    it("passes status items to Status group", () => {
+      wrapper = createWrapper();
+      const statusGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(0);
+      const items = statusGroup.props("items");
+      expect(items.length).toBe(5);
+      expect(items[0].key).toBe("acFilterChecked");
+      expect(items[0].checked).toBe(true);
+      expect(items[0].count).toBe(264);
+    });
 
-    it('passes display items to Display group', () => {
-      wrapper = createWrapper()
+    it("passes display items to Display group", () => {
+      wrapper = createWrapper();
       // Display is now index 1 (after Status)
-      const displayGroup = wrapper.findAllComponents({ name: 'FilterGroup' }).at(1)
-      const items = displayGroup.props('items')
-      expect(items.length).toBe(3)
-      expect(items[0].key).toBe('nestSatisfiedRulesChecked')
+      const displayGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(1);
+      const items = displayGroup.props("items");
+      expect(items.length).toBe(3);
+      expect(items[0].key).toBe("nestSatisfiedRulesChecked");
       // Display items should not have counts
-      expect(items[0].count).toBeUndefined()
-    })
+      expect(items[0].count).toBeUndefined();
+    });
 
-    it('passes review items to Review group', () => {
-      wrapper = createWrapper()
+    it("passes review items to Review group", () => {
+      wrapper = createWrapper();
       // Review is now index 2 (last)
-      const reviewGroup = wrapper.findAllComponents({ name: 'FilterGroup' }).at(2)
-      const items = reviewGroup.props('items')
-      expect(items.length).toBe(3)
-      expect(items[0].key).toBe('nurFilterChecked')
-    })
-  })
+      const reviewGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(2);
+      const items = reviewGroup.props("items");
+      expect(items.length).toBe(3);
+      expect(items[0].key).toBe("nurFilterChecked");
+    });
+  });
 
-  describe('events', () => {
-    it('emits update:filters when a FilterGroup updates', async () => {
-      wrapper = createWrapper()
-      const statusGroup = wrapper.findComponent({ name: 'FilterGroup' })
+  describe("events", () => {
+    it("emits update:filters when a FilterGroup updates", async () => {
+      wrapper = createWrapper();
+      const statusGroup = wrapper.findComponent({ name: "FilterGroup" });
 
       // Simulate FilterGroup emitting update:items
-      const updatedItems = [
-        { key: 'acFilterChecked', checked: false }
-      ]
-      await statusGroup.vm.$emit('update:items', updatedItems)
+      const updatedItems = [{ key: "acFilterChecked", checked: false }];
+      await statusGroup.vm.$emit("update:items", updatedItems);
 
-      expect(wrapper.emitted('update:filters')).toBeTruthy()
-      const emittedFilters = wrapper.emitted('update:filters')[0][0]
-      expect(emittedFilters.acFilterChecked).toBe(false)
-    })
+      expect(wrapper.emitted("update:filters")).toBeTruthy();
+      const emittedFilters = wrapper.emitted("update:filters")[0][0];
+      expect(emittedFilters.acFilterChecked).toBe(false);
+    });
 
-    it('emits update:filters with all filters reset when group reset is triggered', async () => {
+    it("emits update:filters with all filters reset when group reset is triggered", async () => {
       wrapper = createWrapper({
         filters: {
           ...defaultFilters,
           acFilterChecked: false,
-          aimFilterChecked: false
-        }
-      })
-      const statusGroup = wrapper.findComponent({ name: 'FilterGroup' })
-      await statusGroup.vm.$emit('reset')
+          aimFilterChecked: false,
+        },
+      });
+      const statusGroup = wrapper.findComponent({ name: "FilterGroup" });
+      await statusGroup.vm.$emit("reset");
 
-      expect(wrapper.emitted('update:filters')).toBeTruthy()
-      const emittedFilters = wrapper.emitted('update:filters')[0][0]
+      expect(wrapper.emitted("update:filters")).toBeTruthy();
+      const emittedFilters = wrapper.emitted("update:filters")[0][0];
       // Status filters should be reset to true
-      expect(emittedFilters.acFilterChecked).toBe(true)
-      expect(emittedFilters.aimFilterChecked).toBe(true)
-    })
-  })
+      expect(emittedFilters.acFilterChecked).toBe(true);
+      expect(emittedFilters.aimFilterChecked).toBe(true);
+    });
+  });
 
-  describe('layout', () => {
-    it('uses flexbox for horizontal layout', () => {
-      wrapper = createWrapper()
-      const container = wrapper.find('.filter-bar')
-      expect(container.classes()).toContain('d-flex')
-    })
-  })
-})
+  describe("layout", () => {
+    it("uses flexbox for horizontal layout", () => {
+      wrapper = createWrapper();
+      const container = wrapper.find(".filter-bar");
+      expect(container.classes()).toContain("d-flex");
+    });
+  });
+});

@@ -1499,7 +1499,7 @@ Encrypting a partition in an already installed system is more difficult, because
 
 To encrypt an entire partition, dedicate a partition for encryption in the partition layout.</fixtext><fix id="F-61544r925623_fix" /><check system="C-61620r1045453_chk"><check-content-ref href="Red_Hat_Enterprise_Linux_9_STIG.xml" name="M" /><check-content>Note: If there is a documented and approved reason for not having data-at-rest encryption at the operating system level, such as encryption provided by a hypervisor or a disk storage array in a virtualized environment, this requirement is Not Applicable.
 
-Verify RHEL 9 prevents unauthorized disclosure or modification of all information requiring at-rest protection by using disk encryption.
+Verify RHEL 9 prevents unauthorized disclosure or modification of all information requiring at-rest protection by using disk encryption. 
 
 Note: If there is a documented and approved reason for not having data-at-rest encryption, this requirement is Not Applicable.
 
@@ -1535,7 +1535,7 @@ $ sudo cryptsetup status luks-b74f6910-2547-4399-86b2-8b0252d926d7
   size:    995986063 sectors
   mode:    read/write
 
-If there are persistent filesystems (other than /boot or /boot/efi) whose block device trees do not have a crypt block device of type LUKS, ask the administrator to indicate how persistent filesystems are encrypted.
+If there are persistent filesystems (other than /boot or /boot/efi) whose block device trees do not have a crypt block device of type LUKS, ask the administrator to indicate how persistent filesystems are encrypted. 
 
 If there is no evidence that persistent filesystems are encrypted, this is a finding.</check-content></check></Rule></Group><Group id="V-257880"><title>SRG-OS-000095-GPOS-00049</title><description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description><Rule id="SV-257880r1044951_rule" weight="10.0" severity="low"><version>RHEL-09-231195</version><title>RHEL 9 must disable mounting of cramfs.</title><description>&lt;VulnDiscussion&gt;It is detrimental for operating systems to provide, or install by default, functionality exceeding requirements or mission objectives. These unnecessary capabilities or services are often overlooked and therefore may remain unsecured. They increase the risk to the platform by providing additional attack vectors.
 

@@ -1,67 +1,64 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { shallowMount, createLocalVue } from '@vue/test-utils'
-import BootstrapVue from 'bootstrap-vue'
-import ProjectComponent from '@/components/components/ProjectComponent.vue'
-
-const localVue = createLocalVue()
-localVue.use(BootstrapVue)
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { shallowMount } from "@vue/test-utils";
+import { localVue } from "@test/testHelper";
+import ProjectComponent from "@/components/components/ProjectComponent.vue";
 
 // Mock axios
-vi.mock('axios', () => ({
+vi.mock("axios", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
-    patch: vi.fn(() => Promise.resolve({ data: {} }))
-  }
-}))
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+  },
+}));
 
-describe('ProjectComponent', () => {
-  let wrapper
+describe("ProjectComponent", () => {
+  let wrapper;
 
   const mockRules = [
     {
       id: 1,
-      rule_id: '001',
-      status: 'Not Yet Determined',
+      rule_id: "001",
+      status: "Not Yet Determined",
       locked: false,
       review_requestor_id: null,
       satisfies: [],
       satisfied_by: [],
-      histories: [{ name: 'Test User' }],
+      histories: [{ name: "Test User" }],
       reviews: [],
-      version: 'SV-001'
+      version: "SV-001",
     },
     {
       id: 2,
-      rule_id: '002',
-      status: 'Applicable - Configurable',
+      rule_id: "002",
+      status: "Applicable - Configurable",
       locked: false,
       review_requestor_id: null,
       satisfies: [],
       satisfied_by: [],
       histories: [],
       reviews: [],
-      version: 'SV-002'
-    }
-  ]
+      version: "SV-002",
+    },
+  ];
 
   const defaultProps = {
-    effective_permissions: 'admin',
+    effective_permissions: "admin",
     current_user_id: 1,
-    project: { id: 1, name: 'Test Project' },
+    project: { id: 1, name: "Test Project" },
     initialComponentState: {
       id: 41,
-      name: 'Test Component',
-      prefix: 'TEST',
-      title: 'Test Title',
-      description: 'Test Description',
-      version: '1.0',
-      release: 'R1',
+      name: "Test Component",
+      prefix: "TEST",
+      title: "Test Title",
+      description: "Test Description",
+      version: "1.0",
+      release: "R1",
       released: false,
       releasable: true,
       advanced_fields: false,
       additional_questions: [],
-      admin_name: 'Admin',
-      admin_email: 'admin@test.com',
+      admin_name: "Admin",
+      admin_email: "admin@test.com",
       metadata: {},
       rules: mockRules,
       memberships: [],
@@ -69,24 +66,24 @@ describe('ProjectComponent', () => {
       inherited_memberships: [],
       available_members: [],
       histories: [],
-      reviews: []
+      reviews: [],
     },
     statuses: [
-      'Not Yet Determined',
-      'Applicable - Configurable',
-      'Applicable - Inherently Meets',
-      'Applicable - Does Not Meet',
-      'Not Applicable'
+      "Not Yet Determined",
+      "Applicable - Configurable",
+      "Applicable - Inherently Meets",
+      "Applicable - Does Not Meet",
+      "Not Applicable",
     ],
-    available_roles: ['admin', 'author', 'viewer']
-  }
+    available_roles: ["admin", "author", "viewer"],
+  };
 
   const createWrapper = (props = {}) => {
     return shallowMount(ProjectComponent, {
       localVue,
       propsData: {
         ...defaultProps,
-        ...props
+        ...props,
       },
       stubs: {
         ControlsPageLayout: true,
@@ -101,264 +98,264 @@ describe('ProjectComponent', () => {
         MembersModal: true,
         BSidebar: true,
         BModal: true,
-        BIcon: true
-      }
-    })
-  }
+        BIcon: true,
+      },
+    });
+  };
 
   beforeEach(() => {
-    localStorage.clear()
-  })
+    localStorage.clear();
+  });
 
   afterEach(() => {
     if (wrapper) {
-      wrapper.destroy()
+      wrapper.destroy();
     }
-  })
+  });
 
-  describe('basic rendering', () => {
-    it('renders the component', () => {
-      wrapper = createWrapper()
-      expect(wrapper.exists()).toBe(true)
-    })
+  describe("basic rendering", () => {
+    it("renders the component", () => {
+      wrapper = createWrapper();
+      expect(wrapper.exists()).toBe(true);
+    });
 
-    it('renders ControlsPageLayout', () => {
-      wrapper = createWrapper()
-      expect(wrapper.findComponent({ name: 'ControlsPageLayout' }).exists()).toBe(true)
-    })
+    it("renders ControlsPageLayout", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "ControlsPageLayout" }).exists()).toBe(true);
+    });
 
-    it('renders ControlsCommandBar', () => {
-      wrapper = createWrapper()
-      expect(wrapper.findComponent({ name: 'ControlsCommandBar' }).exists()).toBe(true)
-    })
+    it("renders ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "ControlsCommandBar" }).exists()).toBe(true);
+    });
 
-    it('renders RuleNavigator', () => {
-      wrapper = createWrapper()
-      expect(wrapper.findComponent({ name: 'RuleNavigator' }).exists()).toBe(true)
-    })
+    it("renders RuleNavigator", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
+    });
 
-    it('renders MembersModal', () => {
-      wrapper = createWrapper()
-      expect(wrapper.findComponent({ name: 'MembersModal' }).exists()).toBe(true)
-    })
-  })
+    it("renders MembersModal", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "MembersModal" }).exists()).toBe(true);
+    });
+  });
 
-  describe('useRuleSelection composable integration', () => {
-    it('has selectedRuleId in component state', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.selectedRuleId).toBeDefined()
-    })
+  describe("useRuleSelection composable integration", () => {
+    it("has selectedRuleId in component state", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.selectedRuleId).toBeDefined();
+    });
 
-    it('has openRuleIds in component state', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.openRuleIds).toBeDefined()
-    })
+    it("has openRuleIds in component state", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.openRuleIds).toBeDefined();
+    });
 
-    it('has selectedRule computed property', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.selectedRule).toBeDefined()
-    })
+    it("has selectedRule computed property", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.selectedRule).toBeDefined();
+    });
 
-    it('selectRule method updates selectedRuleId', () => {
-      wrapper = createWrapper()
-      wrapper.vm.selectRule(1)
-      expect(wrapper.vm.selectedRuleId).toBe(1)
-    })
+    it("selectRule method updates selectedRuleId", () => {
+      wrapper = createWrapper();
+      wrapper.vm.selectRule(1);
+      expect(wrapper.vm.selectedRuleId).toBe(1);
+    });
 
-    it('persists selectedRuleId to localStorage', () => {
-      wrapper = createWrapper()
-      wrapper.vm.selectRule(1)
-      expect(localStorage.getItem('selectedRuleId-41')).toBe('1')
-    })
-  })
+    it("persists selectedRuleId to localStorage", () => {
+      wrapper = createWrapper();
+      wrapper.vm.selectRule(1);
+      expect(localStorage.getItem("selectedRuleId-41")).toBe("1");
+    });
+  });
 
-  describe('useSidebar composable integration', () => {
-    it('has activePanel in component state', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.activePanel).toBeDefined()
-    })
+  describe("useSidebar composable integration", () => {
+    it("has activePanel in component state", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.activePanel).toBeDefined();
+    });
 
-    it('togglePanel opens a panel', () => {
-      wrapper = createWrapper()
-      wrapper.vm.togglePanel('details')
-      expect(wrapper.vm.activePanel).toBe('details')
-    })
+    it("togglePanel opens a panel", () => {
+      wrapper = createWrapper();
+      wrapper.vm.togglePanel("details");
+      expect(wrapper.vm.activePanel).toBe("details");
+    });
 
-    it('togglePanel closes panel when toggled again', () => {
-      wrapper = createWrapper()
-      wrapper.vm.togglePanel('details')
-      wrapper.vm.togglePanel('details')
-      expect(wrapper.vm.activePanel).toBeNull()
-    })
-  })
+    it("togglePanel closes panel when toggled again", () => {
+      wrapper = createWrapper();
+      wrapper.vm.togglePanel("details");
+      wrapper.vm.togglePanel("details");
+      expect(wrapper.vm.activePanel).toBeNull();
+    });
+  });
 
-  describe('component panels', () => {
-    it('has details slideover', () => {
-      wrapper = createWrapper()
+  describe("component panels", () => {
+    it("has details slideover", () => {
+      wrapper = createWrapper();
       // Component should have slideover for details
-      expect(wrapper.vm.componentPanels).toContain('details')
-    })
+      expect(wrapper.vm.componentPanels).toContain("details");
+    });
 
-    it('has metadata slideover', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.componentPanels).toContain('metadata')
-    })
+    it("has metadata slideover", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.componentPanels).toContain("metadata");
+    });
 
-    it('has questions slideover', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.componentPanels).toContain('questions')
-    })
+    it("has questions slideover", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.componentPanels).toContain("questions");
+    });
 
-    it('has comp-history slideover', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.componentPanels).toContain('comp-history')
-    })
+    it("has comp-history slideover", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.componentPanels).toContain("comp-history");
+    });
 
-    it('has comp-reviews slideover', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.componentPanels).toContain('comp-reviews')
-    })
-  })
+    it("has comp-reviews slideover", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.componentPanels).toContain("comp-reviews");
+    });
+  });
 
-  describe('rule panels (enabled when rule selected)', () => {
+  describe("rule panels (enabled when rule selected)", () => {
     // REQUIREMENT: Rule panels use namespaced IDs to avoid collision with component panels
     // 'rule-reviews' instead of 'reviews', 'rule-history' instead of 'history'
-    it('has satisfies slideover', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.rulePanels).toContain('satisfies')
-    })
+    it("has satisfies slideover", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.rulePanels).toContain("satisfies");
+    });
 
-    it('has rule-reviews slideover', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.rulePanels).toContain('rule-reviews')
-    })
+    it("has rule-reviews slideover", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.rulePanels).toContain("rule-reviews");
+    });
 
-    it('has rule-history slideover', () => {
-      wrapper = createWrapper()
-      expect(wrapper.vm.rulePanels).toContain('rule-history')
-    })
-  })
+    it("has rule-history slideover", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.rulePanels).toContain("rule-history");
+    });
+  });
 
-  describe('no tabs or right sidebar', () => {
-    it('does not have tabs', () => {
-      wrapper = createWrapper()
-      expect(wrapper.findComponent({ name: 'BTabs' }).exists()).toBe(false)
-    })
+  describe("no tabs or right sidebar", () => {
+    it("does not have tabs", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "BTabs" }).exists()).toBe(false);
+    });
 
-    it('uses ControlsSidepanels for slideovers', () => {
-      wrapper = createWrapper()
+    it("uses ControlsSidepanels for slideovers", () => {
+      wrapper = createWrapper();
       // Sidebars are now in the shared ControlsSidepanels component
-      const controlsSidepanels = wrapper.findComponent({ name: 'ControlsSidepanels' })
-      expect(controlsSidepanels.exists()).toBe(true)
-    })
-  })
+      const controlsSidepanels = wrapper.findComponent({ name: "ControlsSidepanels" });
+      expect(controlsSidepanels.exists()).toBe(true);
+    });
+  });
 
-  describe('RuleEditor event forwarding', () => {
+  describe("RuleEditor event forwarding", () => {
     // CRITICAL: RuleEditor must forward toggle-panel events so panel buttons work.
     // This was a regression where buttons did nothing because events weren't wired up.
 
-    it('forwards toggle-panel events from RuleEditor to togglePanel', async () => {
-      wrapper = createWrapper()
+    it("forwards toggle-panel events from RuleEditor to togglePanel", async () => {
+      wrapper = createWrapper();
       // Select a rule first so RuleEditor renders
-      wrapper.vm.selectRule(1)
-      await wrapper.vm.$nextTick()
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
 
       // Find RuleEditor and emit toggle-panel
-      const ruleEditor = wrapper.findComponent({ name: 'RuleEditor' })
-      expect(ruleEditor.exists()).toBe(true)
+      const ruleEditor = wrapper.findComponent({ name: "RuleEditor" });
+      expect(ruleEditor.exists()).toBe(true);
 
       // Emit toggle-panel from RuleEditor
-      ruleEditor.vm.$emit('toggle-panel', 'satisfies')
-      await wrapper.vm.$nextTick()
+      ruleEditor.vm.$emit("toggle-panel", "satisfies");
+      await wrapper.vm.$nextTick();
 
       // Verify the panel was toggled
-      expect(wrapper.vm.activePanel).toBe('satisfies')
-    })
+      expect(wrapper.vm.activePanel).toBe("satisfies");
+    });
 
-    it('opens rule-history panel when RuleEditor emits toggle-panel', async () => {
-      wrapper = createWrapper()
-      wrapper.vm.selectRule(1)
-      await wrapper.vm.$nextTick()
+    it("opens rule-history panel when RuleEditor emits toggle-panel", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
 
-      const ruleEditor = wrapper.findComponent({ name: 'RuleEditor' })
-      ruleEditor.vm.$emit('toggle-panel', 'rule-history')
-      await wrapper.vm.$nextTick()
+      const ruleEditor = wrapper.findComponent({ name: "RuleEditor" });
+      ruleEditor.vm.$emit("toggle-panel", "rule-history");
+      await wrapper.vm.$nextTick();
 
-      expect(wrapper.vm.activePanel).toBe('rule-history')
-    })
+      expect(wrapper.vm.activePanel).toBe("rule-history");
+    });
 
-    it('opens rule-reviews panel when RuleEditor emits toggle-panel', async () => {
-      wrapper = createWrapper()
-      wrapper.vm.selectRule(1)
-      await wrapper.vm.$nextTick()
+    it("opens rule-reviews panel when RuleEditor emits toggle-panel", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
 
-      const ruleEditor = wrapper.findComponent({ name: 'RuleEditor' })
-      ruleEditor.vm.$emit('toggle-panel', 'rule-reviews')
-      await wrapper.vm.$nextTick()
+      const ruleEditor = wrapper.findComponent({ name: "RuleEditor" });
+      ruleEditor.vm.$emit("toggle-panel", "rule-reviews");
+      await wrapper.vm.$nextTick();
 
-      expect(wrapper.vm.activePanel).toBe('rule-reviews')
-    })
-  })
+      expect(wrapper.vm.activePanel).toBe("rule-reviews");
+    });
+  });
 
-  describe('refreshComponent', () => {
+  describe("refreshComponent", () => {
     // REQUIREMENT: When component details are updated via modal, the sidepanel
     // should reactively display the new data WITHOUT a full page reload.
     // The refreshComponent method should fetch updated data and update
     // the component properties in-place for Vue reactivity.
 
-    it('fetches component data as JSON', async () => {
-      const axios = (await import('axios')).default
-      wrapper = createWrapper()
+    it("fetches component data as JSON", async () => {
+      const axios = (await import("axios")).default;
+      wrapper = createWrapper();
 
       // Call refreshComponent
-      wrapper.vm.refreshComponent()
+      wrapper.vm.refreshComponent();
 
       // Verify axios.get was called with .json extension
-      expect(axios.get).toHaveBeenCalledWith('/components/41.json')
-    })
+      expect(axios.get).toHaveBeenCalledWith("/components/41.json");
+    });
 
-    it('updates component properties in-place on successful fetch', async () => {
-      const axios = (await import('axios')).default
+    it("updates component properties in-place on successful fetch", async () => {
+      const axios = (await import("axios")).default;
       const updatedData = {
         id: 41,
-        name: 'Updated Component Name',
-        title: 'Updated Title',
-        description: 'Updated Description'
-      }
-      axios.get.mockResolvedValueOnce({ data: updatedData })
+        name: "Updated Component Name",
+        title: "Updated Title",
+        description: "Updated Description",
+      };
+      axios.get.mockResolvedValueOnce({ data: updatedData });
 
-      wrapper = createWrapper()
+      wrapper = createWrapper();
 
       // Call refreshComponent and wait for promise
-      await wrapper.vm.refreshComponent()
+      await wrapper.vm.refreshComponent();
 
       // Wait for Vue to process updates
-      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick();
 
       // Component properties should be updated in-place
-      expect(wrapper.vm.component.name).toBe('Updated Component Name')
-      expect(wrapper.vm.component.title).toBe('Updated Title')
-    })
+      expect(wrapper.vm.component.name).toBe("Updated Component Name");
+      expect(wrapper.vm.component.title).toBe("Updated Title");
+    });
 
-    it('does NOT reload the page', async () => {
-      const axios = (await import('axios')).default
-      axios.get.mockResolvedValueOnce({ data: { id: 41, name: 'Test' } })
+    it("does NOT reload the page", async () => {
+      const axios = (await import("axios")).default;
+      axios.get.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
 
       // Mock location.reload to track if it's called
-      const originalReload = globalThis.location.reload
-      const mockReload = vi.fn()
-      delete globalThis.location
-      globalThis.location = { reload: mockReload }
+      const originalReload = globalThis.location.reload;
+      const mockReload = vi.fn();
+      delete globalThis.location;
+      globalThis.location = { reload: mockReload };
 
-      wrapper = createWrapper()
-      await wrapper.vm.refreshComponent()
-      await wrapper.vm.$nextTick()
+      wrapper = createWrapper();
+      await wrapper.vm.refreshComponent();
+      await wrapper.vm.$nextTick();
 
       // CRITICAL: Should NOT call location.reload
-      expect(mockReload).not.toHaveBeenCalled()
+      expect(mockReload).not.toHaveBeenCalled();
 
       // Restore
-      globalThis.location.reload = originalReload
-    })
-  })
-})
+      globalThis.location.reload = originalReload;
+    });
+  });
+});

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
-import BootstrapVue from "bootstrap-vue";
+import { shallowMount } from "@vue/test-utils";
+import { localVue } from "@test/testHelper";
 import RuleEditorHeader from "@/components/rules/RuleEditorHeader.vue";
 
 // Mock axios with defaults structure for FormMixin
@@ -15,9 +15,6 @@ vi.mock("axios", () => ({
     },
   },
 }));
-
-const localVue = createLocalVue();
-localVue.use(BootstrapVue);
 
 describe("RuleEditorHeader", () => {
   let wrapper;

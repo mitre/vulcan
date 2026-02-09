@@ -1,19 +1,15 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
-import { mount, createLocalVue } from '@vue/test-utils'
-import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
-import ProjectsTable from '@/components/projects/ProjectsTable.vue'
-
-const localVue = createLocalVue()
-localVue.use(BootstrapVue)
-localVue.use(IconsPlugin)
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { mount } from "@vue/test-utils";
+import { localVue } from "@test/testHelper";
+import ProjectsTable from "@/components/projects/ProjectsTable.vue";
 
 // Mock axios
-vi.mock('axios', () => ({
+vi.mock("axios", () => ({
   default: {
     delete: vi.fn(() => Promise.resolve({ data: {} })),
-    defaults: { headers: { common: {} } }
-  }
-}))
+    defaults: { headers: { common: {} } },
+  },
+}));
 
 /**
  * ProjectsTable Delete Functionality Tests
@@ -42,31 +38,31 @@ vi.mock('axios', () => ({
  *    - Shows error message on failure
  *    - Allows retry
  */
-describe('ProjectsTable', () => {
-  let wrapper
+describe("ProjectsTable", () => {
+  let wrapper;
 
   const sampleProjects = [
     {
       id: 1,
-      name: 'Test Project',
-      description: 'A test project',
-      visibility: 'discoverable',
+      name: "Test Project",
+      description: "A test project",
+      visibility: "discoverable",
       is_member: true,
       admin: true,
       memberships_count: 5,
-      updated_at: '2024-01-15T10:00:00Z'
+      updated_at: "2024-01-15T10:00:00Z",
     },
     {
       id: 2,
-      name: 'Another Project',
-      description: 'Another description',
-      visibility: 'hidden',
+      name: "Another Project",
+      description: "Another description",
+      visibility: "hidden",
       is_member: true,
       admin: false,
       memberships_count: 3,
-      updated_at: '2024-01-14T10:00:00Z'
-    }
-  ]
+      updated_at: "2024-01-14T10:00:00Z",
+    },
+  ];
 
   const createWrapper = (props = {}) => {
     return mount(ProjectsTable, {
@@ -74,169 +70,169 @@ describe('ProjectsTable', () => {
       propsData: {
         projects: sampleProjects,
         is_vulcan_admin: true,
-        ...props
+        ...props,
       },
       stubs: {
-        UpdateProjectDetailsModal: true
-      }
-    })
-  }
+        UpdateProjectDetailsModal: true,
+      },
+    });
+  };
 
   afterEach(() => {
     if (wrapper) {
-      wrapper.destroy()
+      wrapper.destroy();
     }
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   // ==========================================
   // DELETE BUTTON VISIBILITY
   // ==========================================
-  describe('delete button visibility', () => {
-    it('shows Remove button for vulcan admin', () => {
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]')
-      expect(removeBtn.exists()).toBe(true)
-    })
+  describe("delete button visibility", () => {
+    it("shows Remove button for vulcan admin", () => {
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      expect(removeBtn.exists()).toBe(true);
+    });
 
-    it('hides Remove button for non-admin', () => {
-      wrapper = createWrapper({ is_vulcan_admin: false })
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]')
-      expect(removeBtn.exists()).toBe(false)
-    })
-  })
+    it("hides Remove button for non-admin", () => {
+      wrapper = createWrapper({ is_vulcan_admin: false });
+      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      expect(removeBtn.exists()).toBe(false);
+    });
+  });
 
   // ==========================================
   // DELETE CONFIRMATION MODAL
   // ==========================================
-  describe('delete confirmation modal', () => {
-    it('opens modal when Remove clicked', async () => {
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      expect(wrapper.vm.showDeleteModal).toBe(false)
+  describe("delete confirmation modal", () => {
+    it("opens modal when Remove clicked", async () => {
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      expect(wrapper.vm.showDeleteModal).toBe(false);
 
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]')
-      await removeBtn.trigger('click')
+      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      await removeBtn.trigger("click");
 
-      expect(wrapper.vm.showDeleteModal).toBe(true)
-    })
+      expect(wrapper.vm.showDeleteModal).toBe(true);
+    });
 
-    it('stores project to delete when modal opens', async () => {
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]')
-      await removeBtn.trigger('click')
+    it("stores project to delete when modal opens", async () => {
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      await removeBtn.trigger("click");
 
-      expect(wrapper.vm.projectToDelete).toEqual(sampleProjects[0])
-    })
+      expect(wrapper.vm.projectToDelete).toEqual(sampleProjects[0]);
+    });
 
-    it('shows project name in modal', async () => {
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]')
-      await removeBtn.trigger('click')
-      await wrapper.vm.$nextTick()
+    it("shows project name in modal", async () => {
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      await removeBtn.trigger("click");
+      await wrapper.vm.$nextTick();
 
-      expect(wrapper.text()).toContain('Test Project')
-    })
+      expect(wrapper.text()).toContain("Test Project");
+    });
 
-    it('Cancel closes modal without deleting', async () => {
-      wrapper = createWrapper({ is_vulcan_admin: true })
+    it("Cancel closes modal without deleting", async () => {
+      wrapper = createWrapper({ is_vulcan_admin: true });
       // Open modal
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]')
-      await removeBtn.trigger('click')
-      expect(wrapper.vm.showDeleteModal).toBe(true)
+      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      await removeBtn.trigger("click");
+      expect(wrapper.vm.showDeleteModal).toBe(true);
 
       // Click cancel
-      wrapper.vm.cancelDelete()
-      await wrapper.vm.$nextTick()
+      wrapper.vm.cancelDelete();
+      await wrapper.vm.$nextTick();
 
-      expect(wrapper.vm.showDeleteModal).toBe(false)
-      expect(wrapper.vm.projectToDelete).toBe(null)
-    })
-  })
+      expect(wrapper.vm.showDeleteModal).toBe(false);
+      expect(wrapper.vm.projectToDelete).toBe(null);
+    });
+  });
 
   // ==========================================
   // DELETE LOADING STATE
   // ==========================================
-  describe('delete loading state', () => {
-    it('shows spinner when delete is processing', async () => {
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      wrapper.vm.isDeleting = true
-      await wrapper.vm.$nextTick()
+  describe("delete loading state", () => {
+    it("shows spinner when delete is processing", async () => {
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      wrapper.vm.isDeleting = true;
+      await wrapper.vm.$nextTick();
 
-      expect(wrapper.vm.isDeleting).toBe(true)
-    })
+      expect(wrapper.vm.isDeleting).toBe(true);
+    });
 
-    it('isDeleting starts as false', () => {
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      expect(wrapper.vm.isDeleting).toBe(false)
-    })
-  })
+    it("isDeleting starts as false", () => {
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      expect(wrapper.vm.isDeleting).toBe(false);
+    });
+  });
 
   // ==========================================
   // DELETE EXECUTION
   // ==========================================
-  describe('delete execution', () => {
-    it('confirmDelete calls axios.delete with correct URL (JSON format)', async () => {
-      const axios = (await import('axios')).default
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      wrapper.vm.projectToDelete = sampleProjects[0]
-      wrapper.vm.showDeleteModal = true
+  describe("delete execution", () => {
+    it("confirmDelete calls axios.delete with correct URL (JSON format)", async () => {
+      const axios = (await import("axios")).default;
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      wrapper.vm.projectToDelete = sampleProjects[0];
+      wrapper.vm.showDeleteModal = true;
 
-      await wrapper.vm.confirmDelete()
+      await wrapper.vm.confirmDelete();
 
-      expect(axios.delete).toHaveBeenCalledWith('/projects/1.json')
-    })
+      expect(axios.delete).toHaveBeenCalledWith("/projects/1.json");
+    });
 
-    it('confirmDelete sets isDeleting to true during request', async () => {
-      const axios = (await import('axios')).default
-      axios.delete.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+    it("confirmDelete sets isDeleting to true during request", async () => {
+      const axios = (await import("axios")).default;
+      axios.delete.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      wrapper.vm.projectToDelete = sampleProjects[0]
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      wrapper.vm.projectToDelete = sampleProjects[0];
 
-      const deletePromise = wrapper.vm.confirmDelete()
-      expect(wrapper.vm.isDeleting).toBe(true)
+      const deletePromise = wrapper.vm.confirmDelete();
+      expect(wrapper.vm.isDeleting).toBe(true);
 
-      await deletePromise
-    })
+      await deletePromise;
+    });
 
-    it('emits projectUpdated on success', async () => {
-      const axios = (await import('axios')).default
-      axios.delete.mockResolvedValue({ data: {} })
+    it("emits projectUpdated on success", async () => {
+      const axios = (await import("axios")).default;
+      axios.delete.mockResolvedValue({ data: {} });
 
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      wrapper.vm.projectToDelete = sampleProjects[0]
-      wrapper.vm.showDeleteModal = true
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      wrapper.vm.projectToDelete = sampleProjects[0];
+      wrapper.vm.showDeleteModal = true;
 
-      await wrapper.vm.confirmDelete()
+      await wrapper.vm.confirmDelete();
 
-      expect(wrapper.emitted('projectUpdated')).toBeTruthy()
-    })
+      expect(wrapper.emitted("projectUpdated")).toBeTruthy();
+    });
 
-    it('closes modal on success', async () => {
-      const axios = (await import('axios')).default
-      axios.delete.mockResolvedValue({ data: {} })
+    it("closes modal on success", async () => {
+      const axios = (await import("axios")).default;
+      axios.delete.mockResolvedValue({ data: {} });
 
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      wrapper.vm.projectToDelete = sampleProjects[0]
-      wrapper.vm.showDeleteModal = true
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      wrapper.vm.projectToDelete = sampleProjects[0];
+      wrapper.vm.showDeleteModal = true;
 
-      await wrapper.vm.confirmDelete()
+      await wrapper.vm.confirmDelete();
 
-      expect(wrapper.vm.showDeleteModal).toBe(false)
-      expect(wrapper.vm.isDeleting).toBe(false)
-    })
+      expect(wrapper.vm.showDeleteModal).toBe(false);
+      expect(wrapper.vm.isDeleting).toBe(false);
+    });
 
-    it('resets state on success', async () => {
-      const axios = (await import('axios')).default
-      axios.delete.mockResolvedValue({ data: {} })
+    it("resets state on success", async () => {
+      const axios = (await import("axios")).default;
+      axios.delete.mockResolvedValue({ data: {} });
 
-      wrapper = createWrapper({ is_vulcan_admin: true })
-      wrapper.vm.projectToDelete = sampleProjects[0]
-      wrapper.vm.showDeleteModal = true
+      wrapper = createWrapper({ is_vulcan_admin: true });
+      wrapper.vm.projectToDelete = sampleProjects[0];
+      wrapper.vm.showDeleteModal = true;
 
-      await wrapper.vm.confirmDelete()
+      await wrapper.vm.confirmDelete();
 
-      expect(wrapper.vm.projectToDelete).toBe(null)
-    })
-  })
-})
+      expect(wrapper.vm.projectToDelete).toBe(null);
+    });
+  });
+});
