@@ -194,13 +194,10 @@
 </template>
 
 <script>
-import { ref, computed, toRef, watch } from "vue";
+import { toRef } from "vue";
 import axios from "axios";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
-import RuleHistories from "./RuleHistories.vue";
-import RuleReviews from "./RuleReviews.vue";
-import RuleSatisfactions from "./RuleSatisfactions.vue";
 import RelatedRulesModal from "./RelatedRulesModal.vue";
 import RuleReviewModal from "./RuleReviewModal.vue";
 import RuleFilterBar from "./RuleFilterBar.vue";
@@ -331,7 +328,9 @@ export default {
             }
           });
         } catch (e) {
-          // Use defaults
+          // Use defaults — saved filter data is corrupt or invalid JSON
+          // eslint-disable-next-line no-console
+          console.error("Failed to load saved filters from localStorage:", e);
         }
       }
     };

@@ -48,7 +48,7 @@
                 v-model="form.name"
                 :disabled="isProviderManaged"
                 required
-                autocomplete="name"
+                autocomplete="username"
               />
             </b-form-group>
 
@@ -261,7 +261,7 @@ export default {
       try {
         await axios.delete("/users");
         // Redirect to home after account deletion
-        window.location.href = "/";
+        globalThis.location.href = "/";
       } catch (error) {
         this.alertOrNotifyResponse(error);
         this.isDeleting = false;

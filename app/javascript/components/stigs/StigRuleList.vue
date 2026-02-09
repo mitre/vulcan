@@ -13,7 +13,9 @@
             class="form-control"
             placeholder="Search Rule by STIG ID or SRG ID"
           /><br />
-          <label class="small text-muted mb-1 d-block">Severity</label>
+          <label id="stig-severity-filter-label" class="small text-muted mb-1 d-block"
+            >Severity</label
+          >
           <b-button-group size="sm" class="d-flex">
             <b-button
               :variant="selectedSeverity === '' ? 'secondary' : 'outline-secondary'"

@@ -226,7 +226,9 @@ export default {
         // srg_rules: keep full objects for rule_id display
         this.srgRules = response.data.srg_rules || [];
       } catch (error) {
-        // Search failed silently — clear results to avoid stale data
+        // Search failed — clear results to avoid stale data
+        // eslint-disable-next-line no-console
+        console.error("Global search failed:", error);
         this.projects = [];
         this.components = [];
         this.rules = [];

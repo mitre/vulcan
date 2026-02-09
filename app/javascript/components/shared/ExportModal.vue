@@ -2,7 +2,7 @@
   <b-modal :visible="visible" :title="modalTitle" centered @hidden="onHidden" @hide="onHide">
     <!-- Format Selection (Radio Buttons) -->
     <div class="mb-3">
-      <label class="font-weight-bold d-block mb-2">Format</label>
+      <label id="export-format-label" class="font-weight-bold d-block mb-2">Format</label>
       <b-form-radio-group v-model="selectedFormat" stacked>
         <b-form-radio v-if="showFormat('disa_excel')" value="disa_excel" class="mb-2">
           <span class="font-weight-medium">DISA Excel</span>
@@ -31,7 +31,7 @@
 
     <!-- Component Selection (hidden when single benchmark export) -->
     <div v-if="showComponentSelection">
-      <label class="font-weight-bold d-block mb-2">Components</label>
+      <label id="export-components-label" class="font-weight-bold d-block mb-2">Components</label>
 
       <!-- Single Component: Simplified View -->
       <div v-if="isSingleComponent" data-testid="single-mode">
@@ -68,7 +68,7 @@
     <template v-if="showColumnPicker">
       <hr />
       <div>
-        <label class="font-weight-bold d-block mb-2">Columns</label>
+        <label id="export-columns-label" class="font-weight-bold d-block mb-2">Columns</label>
         <div v-for="col in columnDefinitions" :key="col.key" class="mb-1">
           <b-form-checkbox
             :checked="selectedColumns.includes(col.key)"

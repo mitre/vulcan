@@ -175,7 +175,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 

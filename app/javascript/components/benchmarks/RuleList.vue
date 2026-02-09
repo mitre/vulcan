@@ -10,7 +10,7 @@
         class="form-control form-control-sm mb-2"
         :placeholder="searchPlaceholder"
       />
-      <label class="small text-muted mb-1 d-block">Severity</label>
+      <label id="severity-filter-label" class="small text-muted mb-1 d-block">Severity</label>
       <b-button-group size="sm" class="d-flex">
         <b-button
           :variant="selectedSeverity === '' ? 'secondary' : 'outline-secondary'"
@@ -194,5 +194,3 @@ export default {
   },
 };
 </script>
-
-<style scoped></style>

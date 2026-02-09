@@ -83,7 +83,7 @@ export default {
     },
     previewStyle() {
       return {
-        minHeight: `${(parseInt(this.rows) || 1) * 1.5 + 1.5}rem`,
+        minHeight: `${(Number.parseInt(this.rows) || 1) * 1.5 + 1.5}rem`,
         height: "auto",
         overflow: "auto",
       };
@@ -91,7 +91,7 @@ export default {
     minHeight() {
       // Calculate min height based on rows prop
       const rowHeight = 24; // approximate line height in pixels
-      return `${(parseInt(this.rows) || 3) * rowHeight}px`;
+      return `${(Number.parseInt(this.rows) || 3) * rowHeight}px`;
     },
   },
   watch: {
@@ -103,12 +103,12 @@ export default {
     },
     disabled(newDisabled) {
       // Reinitialize when switching between disabled/enabled
-      if (!newDisabled) {
+      if (newDisabled) {
+        this.destroyEasyMDE();
+      } else {
         this.$nextTick(() => {
           this.initEasyMDE();
         });
-      } else {
-        this.destroyEasyMDE();
       }
     },
   },
@@ -129,8 +129,6 @@ export default {
       // Wait for DOM to be ready
       this.$nextTick(() => {
         if (!this.$refs.textarea) return;
-
-        const self = this;
 
         this.easyMDE = new EasyMDE({
           element: this.$refs.textarea,
@@ -181,7 +179,7 @@ export default {
         this.easyMDE.codemirror.on("change", () => {
           const newValue = this.easyMDE.value();
           if (newValue !== this.value) {
-            self.$emit("input", newValue);
+            this.$emit("input", newValue);
           }
         });
       });

@@ -22,18 +22,17 @@
         <!-- Rule ID (both modes, with truncation + expand) -->
         <li class="list-group-item" data-testid="rule-id">
           <strong>Rule ID</strong>:
-          <span
+          <button
+            type="button"
             data-testid="rule-id-toggle"
-            role="button"
             tabindex="0"
-            class="text-primary"
-            style="cursor: pointer"
+            class="btn btn-link p-0 border-0 text-primary align-baseline"
             @click="showFullRuleId = !showFullRuleId"
             @keydown.enter="showFullRuleId = !showFullRuleId"
             @keydown.space.prevent="showFullRuleId = !showFullRuleId"
           >
             {{ showFullRuleId ? selectedRule.rule_id : truncatedRuleId }}
-          </span>
+          </button>
         </li>
 
         <!-- STIG mode: STIG ID (from version column) -->
@@ -48,18 +47,17 @@
 
         <!-- Legacy toggle (collapsed by default) -->
         <li v-if="hasLegacyFields" class="list-group-item">
-          <span
+          <button
+            type="button"
             data-testid="legacy-toggle"
-            role="button"
             tabindex="0"
-            class="text-muted small"
-            style="cursor: pointer"
+            class="btn btn-link p-0 border-0 text-muted small align-baseline"
             @click="showLegacyIds = !showLegacyIds"
             @keydown.enter="showLegacyIds = !showLegacyIds"
             @keydown.space.prevent="showLegacyIds = !showLegacyIds"
           >
             {{ showLegacyIds ? "▾" : "▸" }} Legacy IDs
-          </span>
+          </button>
           <div v-if="showLegacyIds" class="mt-1 ml-3">
             <div v-if="type === 'stig' && selectedRule.vuln_id">
               <strong>Vuln ID</strong>: {{ selectedRule.vuln_id }}
@@ -184,5 +182,3 @@ export default {
   },
 };
 </script>
-
-<style scoped></style>
