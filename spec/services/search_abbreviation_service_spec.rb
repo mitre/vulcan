@@ -63,9 +63,9 @@ RSpec.describe SearchAbbreviationService do
 
       result = described_class.send(:core_abbreviations)
       expect(result).to eq({
-        'TEST' => 'Test Expansion',
-        'RHEL' => rhel_expansion
-      })
+                             'TEST' => 'Test Expansion',
+                             'RHEL' => rhel_expansion
+                           })
 
       FileUtils.rm_f(valid_yaml)
     end

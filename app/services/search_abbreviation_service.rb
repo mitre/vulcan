@@ -76,7 +76,7 @@ class SearchAbbreviationService
       config_path = Rails.root.join('config/search_abbreviations.yml')
       return {} unless File.exist?(config_path)
 
-      config = YAML.safe_load(File.read(config_path), permitted_classes: [Symbol])
+      config = YAML.safe_load_file(config_path, permitted_classes: [Symbol])
       config['abbreviations'] || {}
     rescue StandardError => e
       Rails.logger.error("Failed to load core abbreviations: #{e.message}")
