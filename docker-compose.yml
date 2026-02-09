@@ -23,7 +23,7 @@ services:
       - vulcan_dbdata:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}  #ggignore
       POSTGRES_DB: ${POSTGRES_DB:-vulcan_postgres_production}
     expose:
       - "5432"
@@ -40,7 +40,7 @@ services:
       target: production
     environment:
       # Database connection - uses defaults from Dockerfile if not set
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db/${POSTGRES_DB:-vulcan_postgres_production}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db/${POSTGRES_DB:-vulcan_postgres_production}  #ggignore
       RAILS_SERVE_STATIC_FILES: "true"
       RAILS_ENV: production
       NODE_ENV: production
