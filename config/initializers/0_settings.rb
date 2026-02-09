@@ -13,13 +13,13 @@ Settings.oidc['enabled'] = false if Settings.oidc['enabled'].nil?
 Settings.oidc['discovery'] = true if Settings.oidc['discovery'].nil?
 
 Settings['local_login'] ||= Settingslogic.new({})
-Settings.local_login['enabled'] = false if Settings.local_login['enabled'].nil?
+Settings.local_login['enabled'] = true if Settings.local_login['enabled'].nil?
 
 Settings['user_registration'] ||= Settingslogic.new({})
-Settings.user_registration['enabled'] = false if Settings.user_registration['enabled'].nil?
+Settings.user_registration['enabled'] = true if Settings.user_registration['enabled'].nil?
 
 Settings['project'] ||= Settingslogic.new({})
-Settings.project['create_permission_enabled'] = false if Settings.project['create_permission_enabled'].nil?
+Settings.project['create_permission_enabled'] = true if Settings.project['create_permission_enabled'].nil?
 
 Settings['smtp'] ||= Settingslogic.new({})
 Settings.smtp['enabled'] = false if Settings.smtp['enabled'].nil?

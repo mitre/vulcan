@@ -15,6 +15,54 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure OIDC:](#configure-oidc)
 - [Configure Slack:](#configure-slack)
 
+## Configuration Precedence
+
+Settings are resolved in this order (first match wins):
+
+1. **Environment variables** — `VULCAN_*` env vars set in `.env`, Dockerfile, app.json, or shell
+2. **`config/vulcan.yml`** — Optional per-instance override (copy from `vulcan.default.yml`)
+3. **`config/vulcan.default.yml`** — ERB template that reads env vars with fallback defaults
+4. **`config/initializers/0_settings.rb`** — Ensures all keys exist with sensible defaults
+
+`vulcan.default.yml` is the single source of truth. All other config sources either feed env vars into it or ensure keys exist when no YAML value is present.
+
+## Default Configuration by Deployment Type
+
+Each deployment type ships sensible defaults. Dev-friendly deployments enable local login, registration, and open project creation. Production deployments lock down authentication to external providers.
+
+### Settings Matrix
+
+| Setting | Dev / Docker / Review | Production | Env Var |
+|---------|:---------------------:|:----------:|---------|
+| Local login | **true** | false | `VULCAN_ENABLE_LOCAL_LOGIN` |
+| User registration | **true** | false | `VULCAN_ENABLE_USER_REGISTRATION` |
+| Project create (any user) | **true** | **true** | `VULCAN_PROJECT_CREATE_PERMISSION_ENABLED` |
+| First user becomes admin | **true** | false | `VULCAN_FIRST_USER_ADMIN` |
+| OIDC | false | **true** | `VULCAN_ENABLE_OIDC` |
+| LDAP | false | false | `VULCAN_ENABLE_LDAP` |
+| SMTP | false | **true** | `VULCAN_ENABLE_SMTP` |
+| Slack | false | false | `VULCAN_ENABLE_SLACK_COMMS` |
+
+**Bold** = enabled for that deployment type.
+
+### Where Defaults Are Set
+
+| Deployment Type | Config Source | Notes |
+|-----------------|-------------|-------|
+| Local dev (`foreman start`) | `.env` (copy from `.env.example`) | Open defaults for easy onboarding |
+| Docker quickstart (`docker compose up`) | `Dockerfile` ENV + `vulcan.default.yml` | Matches dev defaults |
+| Heroku review app | `app.json` env overrides | Matches dev defaults |
+| Heroku production | Manual config via Heroku dashboard | Use `.env.production.example` as reference |
+| Bare metal production | `.env` (copy from `.env.production.example`) | Hardened: OIDC enabled, local login disabled |
+| No env vars at all | `vulcan.default.yml` + `0_settings.rb` | Defaults to dev-friendly (local login enabled) |
+
+### Design Principles
+
+- **Opt-in services** (LDAP, OIDC, SMTP, Slack) default to `false` — they require external infrastructure
+- **Core functionality** (local login, registration, project creation) defaults to `true` — a fresh install should work immediately
+- **Production hardening** is explicit — operators configure OIDC/LDAP and disable local login deliberately
+- **No surprises** — every deployment type documents its defaults; the "no env vars" path produces a working system
+
 ## Configure Welcome Text and Contact Email:
 
 - **welcome_text:** Welcome text is the text shown on the homepage below the "What is Vulcan" blurb on the homepage. It can be configured by the administrator to provide users with any information that may be relevant to their access and usage of the Vulcan application. `(ENV: VULCAN_WELCOME_TEXT)(default: nil)`

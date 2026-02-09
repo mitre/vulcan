@@ -52,6 +52,9 @@
       "env": {
         "VULCAN_FIRST_USER_ADMIN": {
           "value": "true"
+        },
+        "VULCAN_PROJECT_CREATE_PERMISSION_ENABLED": {
+          "value": "true"
         }
       },
       "scripts": {
