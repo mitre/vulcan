@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_01_000002) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_09_232046) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -95,12 +95,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000002) do
     t.string "srg_id"
     t.string "vuln_id"
     t.string "legacy_ids"
+    t.index ["component_id", "deleted_at", "rule_severity"], name: "index_base_rules_on_component_deleted_severity"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
+    t.index ["security_requirements_guide_id", "type", "rule_severity"], name: "index_base_rules_on_srg_type_severity"
     t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
     t.index ["srg_rule_id"], name: "index_base_rules_on_srg_rule_id"
+    t.index ["stig_id", "type", "rule_severity"], name: "index_base_rules_on_stig_type_severity"
     t.index ["stig_id"], name: "index_base_rules_on_stig_id"
     t.index ["stig_rule_id"], name: "index_base_rules_on_stig_rule_id"
   end
