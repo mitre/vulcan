@@ -30,7 +30,9 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
       get "/srgs/#{srg.id}/export/xccdf"
 
       filename = response.headers[content_disposition_header]
-      expect(filename).to include(srg.title.tr(' ', '-'))
+      # Rails URL-encodes special characters in Content-Disposition header
+      expected_title = ERB::Util.url_encode(srg.title.tr(' ', '-'))
+      expect(filename).to include(expected_title)
     end
 
     it 'returns error for unsupported export types' do
@@ -60,7 +62,9 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
       get "/srgs/#{srg.id}/export/csv"
 
       filename = response.headers[content_disposition_header]
-      expect(filename).to include(srg.title.tr(' ', '-'))
+      # Rails URL-encodes special characters in Content-Disposition header
+      expected_title = ERB::Util.url_encode(srg.title.tr(' ', '-'))
+      expect(filename).to include(expected_title)
     end
 
     it 'respects column selection for CSV export' do
@@ -105,5 +109,21 @@ RSpec.describe 'SecurityRequirementsGuides', type: :request do
       # ApplicationController rescues StandardError (including RecordNotFound)
       expect(response).not_to have_http_status(:ok)
     end
+  end
+
+  # ==========================================================================
+  # REQUIREMENT: SRGs index should return optimized JSON (Jbuilder)
+  # ==========================================================================
+  describe 'GET /srgs (Jbuilder optimization)' do
+    let!(:test_srg) { srg } # Ensure SRG exists in database
+
+    before { sign_in user }
+
+    it_behaves_like 'jbuilder index', {
+      path: '/srgs',
+      factory: :security_requirements_guide,
+      required_fields: %w[id srg_id title version release_date],
+      excluded_fields: %w[xml description srg_rules]
+    }
   end
 end

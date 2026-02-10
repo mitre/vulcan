@@ -33,7 +33,9 @@ RSpec.describe 'Stigs', type: :request do
       get "/stigs/#{stig.id}/export/xccdf"
 
       filename = response.headers[content_disposition_header]
-      expect(filename).to include(stig.title.tr(' ', '-'))
+      # Rails URL-encodes special characters in Content-Disposition header
+      expected_title = ERB::Util.url_encode(stig.title.tr(' ', '-'))
+      expect(filename).to include(expected_title)
     end
 
     it 'returns error for unsupported export types' do
@@ -63,7 +65,9 @@ RSpec.describe 'Stigs', type: :request do
       get "/stigs/#{stig.id}/export/csv"
 
       filename = response.headers[content_disposition_header]
-      expect(filename).to include(stig.title.tr(' ', '-'))
+      # Rails URL-encodes special characters in Content-Disposition header
+      expected_title = ERB::Util.url_encode(stig.title.tr(' ', '-'))
+      expect(filename).to include(expected_title)
     end
 
     it 'respects column selection for CSV export' do
@@ -191,6 +195,88 @@ RSpec.describe 'Stigs', type: :request do
         json = response.parsed_body
         expect(json['toast']['title']).to include('Could not remove')
       end
+    end
+  end
+
+  # ==========================================================================
+  # REQUIREMENT: STIGs index should return optimized JSON (Jbuilder)
+  # ==========================================================================
+  describe 'GET /stigs (Jbuilder optimization)' do
+    let!(:test_stig) { stig } # Ensure STIG exists in database
+
+    before { sign_in user }
+
+    it_behaves_like 'jbuilder index', {
+      path: '/stigs',
+      factory: :stig,
+      required_fields: %w[id stig_id title version benchmark_date],
+      excluded_fields: %w[xml description stig_rules]
+    }
+  end
+
+  # ==========================================================================
+  # REQUIREMENT: STIG show should return optimized JSON for BenchmarkViewer
+  # PERFORMANCE: Should serialize in <500ms (was 1.8s with as_json)
+  # ==========================================================================
+  describe 'GET /stigs/:id with JSON format (Jbuilder optimization)' do
+    before { sign_in user }
+
+    it 'returns JSON with STIG and rules for viewer', :aggregate_failures do
+      get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
+
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+
+      # STIG fields
+      expect(json).to have_key('id')
+      expect(json).to have_key('stig_id')
+      expect(json).to have_key('title')
+      expect(json).to have_key('version')
+      expect(json).to have_key('benchmark_date')
+
+      # Rules array
+      expect(json).to have_key('stig_rules')
+      expect(json['stig_rules']).to be_an(Array)
+    end
+
+    it 'includes required rule fields for BenchmarkViewer', :aggregate_failures do
+      create(:stig_rule, stig: stig)
+      get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
+
+      rule = JSON.parse(response.body)['stig_rules'].first
+
+      # Fields used by RuleList
+      expect(rule).to have_key('id')
+      expect(rule).to have_key('rule_id')
+      expect(rule).to have_key('title')
+      expect(rule).to have_key('version')
+      expect(rule).to have_key('rule_severity')
+
+      # Fields used by RuleOverview
+      expect(rule).to have_key('srg_id')
+      expect(rule).to have_key('ident')
+      expect(rule).to have_key('vuln_id')
+      expect(rule).to have_key('legacy_ids')
+
+      # Fields used by RuleDetails
+      expect(rule).to have_key('fixtext')
+      expect(rule).to have_key('vendor_comments')
+      expect(rule).to have_key('disa_rule_descriptions_attributes')
+      expect(rule).to have_key('checks_attributes')
+    end
+
+    it 'does NOT include unnecessary heavy fields', :aggregate_failures do
+      create(:stig_rule, stig: stig)
+      get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
+
+      json = JSON.parse(response.body)
+      rule = json['stig_rules'].first
+
+      # Should NOT include these
+      expect(json).not_to have_key('xml')
+      expect(rule).not_to have_key('inspec_control_file')
+      expect(rule).not_to have_key('inspec_control_body')
+      expect(rule).not_to have_key('rule_descriptions_attributes')
     end
   end
 end

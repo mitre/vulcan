@@ -7,18 +7,17 @@ class StigsController < ApplicationController
   before_action :set_stig, only: %i[show destroy export]
 
   def index
-    @stigs = Stig.order(:stig_id, :version).select(:id, :stig_id, :title, :version, :benchmark_date)
-    respond_to do |format|
-      format.html
-      format.json { render json: @stigs }
-    end
+    @stigs = Stig.with_severity_counts.order(:stig_id, :version)
+    # Rails automatically renders index.html.haml for HTML, index.json.jbuilder for JSON
   end
 
   def show
-    @stig_json = @stig.to_json(methods: %i[stig_rules])
+    # Eager load associations for performance (set_stig loads basic STIG)
+    @stig = Stig.includes(stig_rules: [:disa_rule_descriptions, :checks]).find_by(id: params[:id])
+
     respond_to do |format|
-      format.html
-      format.json { render json: @stig_json }
+      format.html { @stig_json = @stig.to_json(methods: %i[stig_rules]) }
+      format.json # Uses show.json.jbuilder (faster than to_json)
     end
   end
 

@@ -7,18 +7,17 @@ class SecurityRequirementsGuidesController < ApplicationController
   before_action :security_requirements_guide, only: %i[show destroy export]
 
   def index
-    @srgs = SecurityRequirementsGuide.order(:srg_id, :version).select(:id, :srg_id, :title, :version, :release_date)
-    respond_to do |format|
-      format.html
-      format.json { render json: @srgs }
-    end
+    @srgs = SecurityRequirementsGuide.with_severity_counts.order(:srg_id, :version)
+    # Rails automatically renders index.html.haml for HTML, index.json.jbuilder for JSON
   end
 
   def show
-    @srg_json = @srg.to_json(methods: %i[srg_rules])
+    # Eager load associations for performance
+    @srg = SecurityRequirementsGuide.includes(srg_rules: [:disa_rule_descriptions, :checks]).find(params[:id])
+
     respond_to do |format|
-      format.html
-      format.json { render json: @srg_json }
+      format.html { @srg_json = @srg.to_json(methods: %i[srg_rules]) }
+      format.json # Uses show.json.jbuilder (faster than to_json)
     end
   end
 

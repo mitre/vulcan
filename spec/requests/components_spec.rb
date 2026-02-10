@@ -77,4 +77,34 @@ RSpec.describe 'Components', type: :request do
       end
     end
   end
+
+  # ==========================================================================
+  # REQUIREMENT: Components index should return optimized JSON with only
+  # needed fields for table display. Should NOT include heavy fields.
+  # ==========================================================================
+  describe 'GET /components (Jbuilder optimization)' do
+    let!(:released_component) do
+      comp = create(:component, project: project, released: true)
+      comp.reload
+      comp
+    end
+    let!(:unreleased_component) { create(:component, project: project, released: false) }
+
+    it_behaves_like 'jbuilder index', {
+      path: '/components',
+      factory: :component,
+      required_fields: %w[id name version release prefix updated_at based_on_title based_on_version],
+      excluded_fields: %w[rules reviews memberships histories metadata]
+    }
+
+    it 'only returns released components' do
+      get '/components', headers: { 'Accept' => 'application/json' }
+
+      json = JSON.parse(response.body)
+      ids = json.map { |c| c['id'] }
+
+      expect(ids).to include(released_component.id)
+      expect(ids).not_to include(unreleased_component.id)
+    end
+  end
 end

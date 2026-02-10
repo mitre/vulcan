@@ -22,7 +22,14 @@ class ComponentsController < ApplicationController
   before_action :authorize_viewer_project, only: %i[history]
 
   def index
-    @components_json = Component.eager_load(:based_on).where(released: true).to_json
+    components = Component.with_severity_counts
+                          .eager_load(:based_on)
+                          .where(released: true)
+
+    respond_to do |format|
+      format.html { @components_json = components.to_json }
+      format.json { @components_json = components } # Jbuilder uses the relation
+    end
   end
 
   def search
@@ -45,18 +52,19 @@ class ComponentsController < ApplicationController
   end
 
   def show
-    @component_json = if @effective_permissions
-                        @component.to_json(
-                          methods: %i[histories memberships metadata inherited_memberships available_members rules
-                                      reviews admins all_users]
-                        )
-                      else
-                        @component.to_json(methods: %i[rules reviews])
-                      end
-    @project_json = @component.project.to_json
     respond_to do |format|
-      format.html
-      format.json { render json: @component_json }
+      format.html do
+        @component_json = if @effective_permissions
+                            @component.to_json(
+                              methods: %i[histories memberships metadata inherited_memberships available_members rules
+                                          reviews admins all_users]
+                            )
+                          else
+                            @component.to_json(methods: %i[rules reviews])
+                          end
+        @project_json = @component.project.to_json
+      end
+      format.json # Uses show.json.jbuilder (faster than to_json)
     end
   end
 
