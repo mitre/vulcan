@@ -16,10 +16,10 @@ import ProjectComponents from "@/components/components/ProjectComponents.vue";
  *    - LEFT: Download button (export released components)
  *    - RIGHT: Empty for now
  *
- * 3. COMPONENT GRID:
- *    - Shows ComponentCards (read-only, no actions)
- *    - Search functionality
- *    - Sorted alphabetically
+ * 3. COMPONENT TABLE:
+ *    - Uses SecurityRequirementsGuidesTable with type="Component"
+ *    - Passes components as data
+ *    - Search/sort/pagination handled by table component
  *
  * 4. EXPORT/DOWNLOAD:
  *    - Download button uses ExportModal
@@ -29,9 +29,9 @@ describe("ProjectComponents", () => {
   let wrapper;
 
   const sampleComponents = [
-    { id: 1, name: "Component A", version: "1", release: "1" },
-    { id: 2, name: "Component B", version: "2", release: "1" },
-    { id: 3, name: "Component C", version: "1", release: "2" },
+    { id: 1, name: "Component A", version: "1", release: "1", based_on_title: "GPOS SRG", updated_at: "2025-01-01" },
+    { id: 2, name: "Component B", version: "2", release: "1", based_on_title: "Web SRG", updated_at: "2025-01-02" },
+    { id: 3, name: "Component C", version: "1", release: "2", based_on_title: "DB SRG", updated_at: "2025-01-03" },
   ];
 
   const createWrapper = (props = {}) => {
@@ -44,7 +44,7 @@ describe("ProjectComponents", () => {
       stubs: {
         BBreadcrumb: true,
         BaseCommandBar: true,
-        ComponentCard: true,
+        SecurityRequirementsGuidesTable: true,
         ExportModal: true,
       },
     });
@@ -120,60 +120,36 @@ describe("ProjectComponents", () => {
   });
 
   // ==========================================
-  // SEARCH AND FILTERING
+  // COMPONENT TABLE
   // ==========================================
-  describe("search functionality", () => {
-    it("filters components by search term", async () => {
+  describe("component table", () => {
+    it("renders SecurityRequirementsGuidesTable", () => {
       wrapper = createWrapper();
-      await wrapper.setData({ search: "Component A" });
-      const filtered = wrapper.vm.sortedFilteredComponents();
-      expect(filtered.length).toBe(1);
-      expect(filtered[0].name).toBe("Component A");
+      const table = wrapper.findComponent({ name: "SecurityRequirementsGuidesTable" });
+      expect(table.exists()).toBe(true);
     });
 
-    it("search is case insensitive", async () => {
+    it("passes components to table", () => {
       wrapper = createWrapper();
-      await wrapper.setData({ search: "component a" });
-      const filtered = wrapper.vm.sortedFilteredComponents();
-      expect(filtered.length).toBe(1);
+      const table = wrapper.findComponent({ name: "SecurityRequirementsGuidesTable" });
+      expect(table.props("srgs")).toEqual(sampleComponents);
     });
 
-    it("returns all components when search is empty", () => {
+    it("sets type to Component", () => {
       wrapper = createWrapper();
-      const filtered = wrapper.vm.sortedFilteredComponents();
-      expect(filtered.length).toBe(3);
+      const table = wrapper.findComponent({ name: "SecurityRequirementsGuidesTable" });
+      expect(table.props("type")).toBe("Component");
     });
 
-    it("sorts components alphabetically", () => {
-      const unsorted = [
-        { id: 1, name: "Zebra", version: "1", release: "1" },
-        { id: 2, name: "Apple", version: "1", release: "1" },
-        { id: 3, name: "Mango", version: "1", release: "1" },
-      ];
-      wrapper = createWrapper({ components: unsorted });
-      const sorted = wrapper.vm.sortedFilteredComponents();
-      expect(sorted[0].name).toBe("Apple");
-      expect(sorted[1].name).toBe("Mango");
-      expect(sorted[2].name).toBe("Zebra");
-    });
-  });
-
-  // ==========================================
-  // COMPONENT CARDS
-  // ==========================================
-  describe("component cards", () => {
-    it("renders ComponentCard for each component", () => {
+    it("disables admin actions on table", () => {
       wrapper = createWrapper();
-      const cards = wrapper.findAllComponents({ name: "ComponentCard" });
-      expect(cards.length).toBe(3);
+      const table = wrapper.findComponent({ name: "SecurityRequirementsGuidesTable" });
+      expect(table.props("is_vulcan_admin")).toBe(false);
     });
 
-    it("passes actionable=false to ComponentCards (read-only)", () => {
+    it("shows component count", () => {
       wrapper = createWrapper();
-      const cards = wrapper.findAllComponents({ name: "ComponentCard" });
-      cards.wrappers.forEach((card) => {
-        expect(card.props("actionable")).toBe(false);
-      });
+      expect(wrapper.text()).toContain("3");
     });
   });
 });

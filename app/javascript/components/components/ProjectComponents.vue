@@ -23,33 +23,11 @@
       <b>Component Count:</b> <span>{{ components.length }}</span>
     </p>
 
-    <!-- Component search -->
-    <div class="row">
-      <div class="col-6">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text">
-              <b-icon icon="search" aria-hidden="true" />
-            </div>
-          </div>
-          <input
-            id="componentSearch"
-            v-model="search"
-            type="text"
-            class="form-control"
-            placeholder="Search components..."
-          />
-        </div>
-      </div>
-    </div>
-
-    <br />
-
-    <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
-      <b-col v-for="component in sortedFilteredComponents()" :key="component.id">
-        <ComponentCard :component="component" :actionable="false" />
-      </b-col>
-    </b-row>
+    <SecurityRequirementsGuidesTable
+      :srgs="components"
+      :is_vulcan_admin="false"
+      type="Component"
+    />
 
     <!-- Export Modal -->
     <ExportModal
@@ -63,7 +41,7 @@
 
 <script>
 import axios from "axios";
-import ComponentCard from "./ComponentCard.vue";
+import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable.vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ExportModal from "../shared/ExportModal.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -71,7 +49,7 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 export default {
   name: "Projectcomponent",
   components: {
-    ComponentCard,
+    SecurityRequirementsGuidesTable,
     BaseCommandBar,
     ExportModal,
   },
@@ -84,7 +62,6 @@ export default {
   },
   data: function () {
     return {
-      search: "",
       showExportModal: false,
     };
   },
@@ -109,16 +86,6 @@ export default {
           window.open(`/components/export/${type}?component_ids=${idsParam}`);
         })
         .catch(this.alertOrNotifyResponse);
-    },
-    sortedFilteredComponents() {
-      let downcaseSearch = this.search.toLowerCase();
-      let filteredComponents = this.components.filter((component) =>
-        component.name.toLowerCase().includes(downcaseSearch),
-      );
-
-      return filteredComponents.sort((c_1, c_2) => {
-        return c_1.name.toLowerCase().localeCompare(c_2.name.toLowerCase());
-      });
     },
   },
 };
