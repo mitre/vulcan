@@ -96,7 +96,7 @@ export default {
     type: {
       type: String,
       required: true,
-      validator: (value) => ["stig", "srg"].includes(value),
+      validator: (value) => ["stig", "srg", "component"].includes(value),
     },
   },
   data() {

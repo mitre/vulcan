@@ -24,6 +24,12 @@ const BENCHMARK_CONFIG = {
     searchFields: ["rule_id", "title", "level"],
     idField: "rule_id",
   },
+  component: {
+    itemTypeName: "rule",
+    itemsKey: "rules", // After componentToBenchmark adapter
+    searchFields: ["rule_id", "title", "rule_severity"],
+    idField: "rule_id",
+  },
 };
 
 /**
@@ -57,7 +63,7 @@ export function useBenchmarkViewer(benchmarkData, type) {
   // Get configuration for this benchmark type
   const config = BENCHMARK_CONFIG[type];
   if (!config) {
-    throw new Error(`Unknown benchmark type: ${type}. Must be 'stig', 'srg', or 'cis'.`);
+    throw new Error(`Unknown benchmark type: ${type}. Must be 'stig', 'srg', 'cis', or 'component'.`);
   }
 
   // State

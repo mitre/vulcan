@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { stigToBenchmark, srgToBenchmark } from '@/adapters/benchmark'
+import { stigToBenchmark, srgToBenchmark, componentToBenchmark } from '@/adapters/benchmark'
 
 /**
  * Benchmark Adapter Tests
@@ -155,10 +155,86 @@ describe('Benchmark Adapters', () => {
   })
 
   // ==========================================
+  // COMPONENT TO BENCHMARK
+  // ==========================================
+  describe('componentToBenchmark', () => {
+    const sampleComponent = {
+      id: 3,
+      name: 'RHEL 9 STIG',
+      prefix: 'RHEL-09',
+      based_on_title: 'General Purpose Operating System SRG',
+      based_on_version: 'V3R3',
+      version: 1,
+      release: 2,
+      updated_at: '2025-06-15T10:30:00Z',
+      rules: [
+        { id: 100, rule_id: 'SV-257777r925318_rule', title: 'RHEL 9 must use a separate filesystem' },
+        { id: 101, rule_id: 'SV-257778r925321_rule', title: 'RHEL 9 must implement DOD-approved encryption' }
+      ]
+    }
+
+    it('preserves id', () => {
+      const result = componentToBenchmark(sampleComponent)
+      expect(result.id).toBe(3)
+    })
+
+    it('uses prefix as benchmark_id when available', () => {
+      const result = componentToBenchmark(sampleComponent)
+      expect(result.benchmark_id).toBe('RHEL-09')
+    })
+
+    it('falls back to name when prefix is missing', () => {
+      const noPrefix = { ...sampleComponent, prefix: undefined }
+      const result = componentToBenchmark(noPrefix)
+      expect(result.benchmark_id).toBe('RHEL 9 STIG')
+    })
+
+    it('builds title from name and SRG info', () => {
+      const result = componentToBenchmark(sampleComponent)
+      expect(result.title).toBe('RHEL 9 STIG (General Purpose Operating System SRG V3R3)')
+    })
+
+    it('builds version from version and release', () => {
+      const result = componentToBenchmark(sampleComponent)
+      expect(result.version).toBe('V1R2')
+    })
+
+    it('normalizes updated_at to date', () => {
+      const result = componentToBenchmark(sampleComponent)
+      expect(result.date).toBe('2025-06-15T10:30:00Z')
+    })
+
+    it('preserves rules array', () => {
+      const result = componentToBenchmark(sampleComponent)
+      expect(result.rules).toHaveLength(2)
+      expect(result.rules[0].rule_id).toBe('SV-257777r925318_rule')
+      expect(result.rules[1].rule_id).toBe('SV-257778r925321_rule')
+    })
+
+    it('handles missing rules gracefully', () => {
+      const noRules = { ...sampleComponent, rules: undefined }
+      const result = componentToBenchmark(noRules)
+      expect(result.rules).toEqual([])
+    })
+
+    it('handles null rules gracefully', () => {
+      const nullRules = { ...sampleComponent, rules: null }
+      const result = componentToBenchmark(nullRules)
+      expect(result.rules).toEqual([])
+    })
+
+    it('handles empty rules array', () => {
+      const emptyRules = { ...sampleComponent, rules: [] }
+      const result = componentToBenchmark(emptyRules)
+      expect(result.rules).toEqual([])
+    })
+  })
+
+  // ==========================================
   // UNIFIED STRUCTURE VALIDATION
   // ==========================================
   describe('unified structure', () => {
-    it('STIG and SRG adapters produce identical structure', () => {
+    it('all adapters produce identical structure keys', () => {
       const stig = {
         id: 1,
         stig_id: 'TEST',
@@ -177,15 +253,30 @@ describe('Benchmark Adapters', () => {
         srg_rules: []
       }
 
+      const component = {
+        id: 1,
+        name: 'Test',
+        prefix: 'TEST',
+        based_on_title: 'Test SRG',
+        based_on_version: 'V1R1',
+        version: 1,
+        release: 1,
+        updated_at: '2024-01-01',
+        rules: []
+      }
+
       const stigResult = stigToBenchmark(stig)
       const srgResult = srgToBenchmark(srg)
+      const componentResult = componentToBenchmark(component)
 
-      // Both should have same structure
-      expect(Object.keys(stigResult).sort((a, b) => a.localeCompare(b))).toEqual(Object.keys(srgResult).sort((a, b) => a.localeCompare(b)))
-      expect(stigResult.benchmark_id).toBe(srgResult.benchmark_id)
-      expect(stigResult.date).toBe(srgResult.date)
+      const sortKeys = (obj) => Object.keys(obj).sort((a, b) => a.localeCompare(b))
+
+      // All should have same structure keys
+      expect(sortKeys(stigResult)).toEqual(sortKeys(srgResult))
+      expect(sortKeys(stigResult)).toEqual(sortKeys(componentResult))
       expect(Array.isArray(stigResult.rules)).toBe(true)
       expect(Array.isArray(srgResult.rules)).toBe(true)
+      expect(Array.isArray(componentResult.rules)).toBe(true)
     })
   })
 })

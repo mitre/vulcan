@@ -42,3 +42,23 @@ export function srgToBenchmark(srg) {
     rules: srg.srg_rules || [],
   };
 }
+
+/**
+ * Normalize Component data to unified benchmark structure
+ *
+ * Components are "STIGs in progress" — released components are read-only
+ * and can be viewed using the same BenchmarkViewer as STIGs/SRGs.
+ *
+ * @param {Object} component - Component object from Rails API (with rules method)
+ * @returns {Object} Normalized benchmark object
+ */
+export function componentToBenchmark(component) {
+  return {
+    id: component.id,
+    benchmark_id: component.prefix || component.name,
+    title: `${component.name} (${component.based_on_title} ${component.based_on_version})`,
+    version: `V${component.version}R${component.release}`,
+    date: component.updated_at,
+    rules: component.rules || [],
+  };
+}

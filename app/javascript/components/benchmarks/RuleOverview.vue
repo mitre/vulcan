@@ -35,13 +35,13 @@
           </button>
         </li>
 
-        <!-- STIG mode: STIG ID (from version column) -->
-        <li v-if="type === 'stig'" class="list-group-item">
+        <!-- STIG/Component mode: STIG ID (from version column) -->
+        <li v-if="type === 'stig' || type === 'component'" class="list-group-item">
           <strong>STIG ID</strong>: {{ selectedRule.version }}
         </li>
 
-        <!-- STIG mode: → SRG ID (from srg_id column) -->
-        <li v-if="type === 'stig' && selectedRule.srg_id" class="list-group-item">
+        <!-- STIG/Component mode: → SRG ID (from srg_id column) -->
+        <li v-if="(type === 'stig' || type === 'component') && selectedRule.srg_id" class="list-group-item">
           <strong>&rarr; SRG ID</strong>: {{ selectedRule.srg_id }}
         </li>
 
@@ -59,7 +59,7 @@
             {{ showLegacyIds ? "▾" : "▸" }} Legacy IDs
           </button>
           <div v-if="showLegacyIds" class="mt-1 ml-3">
-            <div v-if="type === 'stig' && selectedRule.vuln_id">
+            <div v-if="(type === 'stig' || type === 'component') && selectedRule.vuln_id">
               <strong>Vuln ID</strong>: {{ selectedRule.vuln_id }}
             </div>
             <div v-if="selectedRule.legacy_ids">
@@ -71,8 +71,10 @@
         <!-- Severity (both types) -->
         <li class="list-group-item">
           <strong>Severity</strong>:
-          <span class="badge" :class="severityBgColor">
-            {{ SEVERITY_LABELS[selectedRule.rule_severity] || selectedRule.rule_severity }}
+          <span class="border px-2 py-1 rounded" :class="severityBorderColor">
+            <span :class="severityTextColor" class="font-weight-bold">
+              {{ SEVERITY_LABELS[selectedRule.rule_severity] || selectedRule.rule_severity }}
+            </span>
           </span>
         </li>
 
@@ -131,7 +133,7 @@ export default {
     type: {
       type: String,
       required: true,
-      validator: (value) => ["stig", "srg"].includes(value),
+      validator: (value) => ["stig", "srg", "component"].includes(value),
     },
     selectedRule: {
       type: Object,
@@ -152,19 +154,29 @@ export default {
     },
     hasLegacyFields() {
       if (!this.selectedRule) return false;
-      if (this.type === "stig") {
+      if (this.type === "stig" || this.type === "component") {
         return !!(this.selectedRule.vuln_id || this.selectedRule.legacy_ids);
       }
       return !!this.selectedRule.legacy_ids;
     },
-    severityBgColor() {
+    severityBorderColor() {
       const severity = this.selectedRule.rule_severity;
       if (severity === "high") {
-        return "bg-danger text-white";
+        return "border-danger";
       } else if (severity === "medium") {
-        return "bg-warning text-dark";
+        return "border-warning";
       } else {
-        return "bg-success text-white";
+        return "border-success";
+      }
+    },
+    severityTextColor() {
+      const severity = this.selectedRule.rule_severity;
+      if (severity === "high") {
+        return "text-danger";
+      } else if (severity === "medium") {
+        return "text-warning";
+      } else {
+        return "text-success";
       }
     },
     mitreTechniques() {

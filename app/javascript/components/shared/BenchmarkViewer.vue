@@ -84,7 +84,7 @@ export default {
     type: {
       type: String,
       required: true,
-      validator: (value) => ["stig", "srg", "cis"].includes(value),
+      validator: (value) => ["stig", "srg", "cis", "component"].includes(value),
     },
   },
   setup(props) {
@@ -131,6 +131,7 @@ export default {
         stig: "STIG",
         srg: "SRG",
         cis: "CIS Benchmark",
+        component: "Component",
       };
       return labels[this.type] || "Benchmark";
     },
@@ -139,6 +140,7 @@ export default {
         stig: "/stigs",
         srg: "/srgs",
         cis: "/stigs", // CIS shown in STIGs list
+        component: "/components",
       };
       return paths[this.type] || "/";
     },
@@ -146,7 +148,8 @@ export default {
       return `Export ${this.typeLabel}`;
     },
     csvColumns() {
-      return this.type === "srg" ? SRG_CSV_COLUMNS : STIG_CSV_COLUMNS;
+      if (this.type === "srg") return SRG_CSV_COLUMNS;
+      return STIG_CSV_COLUMNS;
     },
   },
   methods: {
@@ -154,8 +157,13 @@ export default {
       this.showExportModal = true;
     },
     handleExport({ type, componentIds, columns }) {
-      const benchmarkType = this.type === "srg" ? "srgs" : "stigs";
-      let url = `/${benchmarkType}/${this.benchmark.id}/export/${type}`;
+      let url;
+      if (this.type === "component") {
+        url = `/components/${this.benchmark.id}/export/${type}`;
+      } else {
+        const benchmarkType = this.type === "srg" ? "srgs" : "stigs";
+        url = `/${benchmarkType}/${this.benchmark.id}/export/${type}`;
+      }
       if (columns && columns.length > 0) {
         url += `?columns=${columns.join(",")}`;
       }

@@ -13,6 +13,7 @@ const entryPoints = {
   project: "app/javascript/packs/project.js",
   project_components: "app/javascript/packs/project_components.js",
   project_component: "app/javascript/packs/project_component.js",
+  released_component: "app/javascript/packs/released_component.js",
   rules: "app/javascript/packs/rules.js",
   security_requirements_guides: "app/javascript/packs/security_requirements_guides.js",
   srg: "app/javascript/packs/srg.js",
