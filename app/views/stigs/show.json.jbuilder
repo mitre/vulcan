@@ -5,7 +5,7 @@
 
 json.extract! @stig, :id, :stig_id, :title, :version, :benchmark_date
 
-json.stig_rules @stig.stig_rules do |rule|
+json.stig_rules @stig.stig_rules, cached: true do |rule|
   # Core fields for RuleList and navigation
   json.extract! rule, :id, :rule_id, :title, :version, :rule_severity, :srg_id, :vuln_id, :legacy_ids, :ident, :nist_control_family
 

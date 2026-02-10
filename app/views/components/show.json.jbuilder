@@ -32,7 +32,7 @@ else
   json.based_on_version @component.based_on.version
 
   # Lightweight rules for viewer (same pattern as STIG/SRG)
-  json.rules @component.rules do |rule|
+  json.rules @component.rules, cached: true do |rule|
     json.extract! rule, :id, :rule_id, :title, :version, :rule_severity, :srg_id, :vuln_id, :legacy_ids, :ident, :nist_control_family, :fixtext, :vendor_comments
 
     json.disa_rule_descriptions_attributes rule.disa_rule_descriptions do |desc|

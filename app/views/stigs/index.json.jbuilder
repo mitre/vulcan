@@ -3,7 +3,7 @@
 # Optimized JSON for STIGs index (table view)
 # Only includes fields needed for table display, excludes heavy associations
 
-json.array! @stigs do |stig|
+json.array! @stigs, cached: true do |stig|
   json.id stig.id
   json.stig_id stig.stig_id
   json.title stig.title

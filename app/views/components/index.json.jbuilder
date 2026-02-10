@@ -3,7 +3,7 @@
 # Optimized JSON for Components index (table view)
 # Only includes fields needed for table display, excludes heavy associations
 
-json.array! @components_json do |component|
+json.array! @components_json, cached: true do |component|
   json.id component.id
   json.name component.name
   json.prefix component.prefix

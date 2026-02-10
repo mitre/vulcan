@@ -5,7 +5,7 @@
 
 json.extract! @srg, :id, :srg_id, :title, :version, :release_date
 
-json.srg_rules @srg.srg_rules do |rule|
+json.srg_rules @srg.srg_rules, cached: true do |rule|
   # Core fields for RuleList and navigation
   json.extract! rule, :id, :rule_id, :title, :version, :rule_severity, :ident, :nist_control_family
 

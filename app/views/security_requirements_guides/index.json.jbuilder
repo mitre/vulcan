@@ -3,7 +3,7 @@
 # Optimized JSON for SRGs index (table view)
 # Only includes fields needed for table display, excludes heavy associations
 
-json.array! @srgs do |srg|
+json.array! @srgs, cached: true do |srg|
   json.id srg.id
   json.srg_id srg.srg_id
   json.title srg.title
