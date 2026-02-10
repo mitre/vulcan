@@ -103,7 +103,7 @@ export default {
     },
     handleExport({ type, componentIds, columns }) {
       // For now, export each selected SRG individually (bulk export not yet implemented)
-      componentIds.forEach(id => {
+      componentIds.forEach((id) => {
         let url = `/srgs/${id}/export/${type}`;
         if (columns && columns.length > 0) {
           url += `?columns=${columns.join(",")}`;

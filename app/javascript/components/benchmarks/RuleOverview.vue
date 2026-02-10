@@ -41,7 +41,10 @@
         </li>
 
         <!-- STIG/Component mode: → SRG ID (from srg_id column) -->
-        <li v-if="(type === 'stig' || type === 'component') && selectedRule.srg_id" class="list-group-item">
+        <li
+          v-if="(type === 'stig' || type === 'component') && selectedRule.srg_id"
+          class="list-group-item"
+        >
           <strong>&rarr; SRG ID</strong>: {{ selectedRule.srg_id }}
         </li>
 

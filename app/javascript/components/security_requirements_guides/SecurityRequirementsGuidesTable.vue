@@ -48,16 +48,25 @@
         {{ formatVersion(data.item) }}
       </template>
       <template #cell(severity_counts)="data">
-        <div v-if="data.item.severity_counts" class="d-flex" style="gap: 0.25rem;">
-          <div v-if="data.item.severity_counts.high > 0" class="border border-danger px-2 py-1 rounded">
+        <div v-if="data.item.severity_counts" class="d-flex" style="gap: 0.25rem">
+          <div
+            v-if="data.item.severity_counts.high > 0"
+            class="border border-danger px-2 py-1 rounded"
+          >
             <span class="text-danger font-weight-bold">CAT I</span>
             <b-badge variant="light" class="ml-1">{{ data.item.severity_counts.high }}</b-badge>
           </div>
-          <div v-if="data.item.severity_counts.medium > 0" class="border border-warning px-2 py-1 rounded">
+          <div
+            v-if="data.item.severity_counts.medium > 0"
+            class="border border-warning px-2 py-1 rounded"
+          >
             <span class="text-warning font-weight-bold">CAT II</span>
             <b-badge variant="light" class="ml-1">{{ data.item.severity_counts.medium }}</b-badge>
           </div>
-          <div v-if="data.item.severity_counts.low > 0" class="border border-success px-2 py-1 rounded">
+          <div
+            v-if="data.item.severity_counts.low > 0"
+            class="border border-success px-2 py-1 rounded"
+          >
             <span class="text-success font-weight-bold">CAT III</span>
             <b-badge variant="light" class="ml-1">{{ data.item.severity_counts.low }}</b-badge>
           </div>
@@ -170,8 +179,18 @@ export default {
         { key: "version", label: "Version", sortable: true },
         { key: "severity_counts", label: "Severity" },
         this.type === "SRG"
-          ? { key: "release_date", label: "Release Date", sortable: true, formatter: this.formatDate }
-          : { key: "benchmark_date", label: "Benchmark Date", sortable: true, formatter: this.formatDate },
+          ? {
+              key: "release_date",
+              label: "Release Date",
+              sortable: true,
+              formatter: this.formatDate,
+            }
+          : {
+              key: "benchmark_date",
+              label: "Benchmark Date",
+              sortable: true,
+              formatter: this.formatDate,
+            },
       ];
       if (this.is_vulcan_admin) {
         fields.push({

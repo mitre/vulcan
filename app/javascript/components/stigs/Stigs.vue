@@ -107,7 +107,7 @@ export default {
     },
     handleExport({ type, componentIds, columns }) {
       // For now, export each selected STIG individually (bulk export not yet implemented)
-      componentIds.forEach(id => {
+      componentIds.forEach((id) => {
         let url = `/stigs/${id}/export/${type}`;
         if (columns && columns.length > 0) {
           url += `?columns=${columns.join(",")}`;

@@ -23,11 +23,7 @@
       <b>Component Count:</b> <span>{{ components.length }}</span>
     </p>
 
-    <SecurityRequirementsGuidesTable
-      :srgs="components"
-      :is_vulcan_admin="false"
-      type="Component"
-    />
+    <SecurityRequirementsGuidesTable :srgs="components" :is_vulcan_admin="false" type="Component" />
 
     <!-- Export Modal -->
     <ExportModal

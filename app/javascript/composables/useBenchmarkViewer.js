@@ -63,7 +63,9 @@ export function useBenchmarkViewer(benchmarkData, type) {
   // Get configuration for this benchmark type
   const config = BENCHMARK_CONFIG[type];
   if (!config) {
-    throw new Error(`Unknown benchmark type: ${type}. Must be 'stig', 'srg', 'cis', or 'component'.`);
+    throw new Error(
+      `Unknown benchmark type: ${type}. Must be 'stig', 'srg', 'cis', or 'component'.`,
+    );
   }
 
   // State
