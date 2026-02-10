@@ -63,6 +63,8 @@ CLAUDE.md
 *-backup/
 benchmark-tmp/
 vulcan-wiki-local/
+.playwright-mcp/
+AGENT-STATUS/
 
 # Ruby version management
 .ruby-gemset
