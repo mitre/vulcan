@@ -3,6 +3,10 @@
 # SecurityRequirementsGuides (abbreviated SRGs) are XCCDF documents that contain a
 # benchmark that describes how to evaluate generic IT systems.
 class SecurityRequirementsGuide < ApplicationRecord
+  include SeverityCounts
+  include XccdfParseable
+  include BenchmarkCsvExport
+
   has_many :components, dependent: :restrict_with_error
   has_many :srg_rules, dependent: :destroy
 
@@ -68,27 +72,22 @@ class SecurityRequirementsGuide < ApplicationRecord
     "#{title} #{version}"
   end
 
-  def parsed_benchmark
-    @parsed_benchmark ||= Xccdf::Benchmark.parse(xml)
+  ##
+  # Override for SeverityCounts and BenchmarkCsvExport - specify rules association
+  def rules_association
+    srg_rules
   end
 
-  attr_writer :parsed_benchmark
+  ##
+  # Override for BenchmarkCsvExport - provide default columns
+  def default_columns
+    ExportConstants::SRG_CSV_DEFAULT_COLUMNS
+  end
 
-  # Generate CSV export with configurable columns
-  # columns: array of column keys (symbols), defaults to SRG_CSV_DEFAULT_COLUMNS
-  def csv_export(columns: nil)
-    columns ||= ExportConstants::SRG_CSV_DEFAULT_COLUMNS
-    overrides = ExportConstants::SRG_CSV_HEADER_OVERRIDES
-    headers = columns.map { |key| overrides[key] || ExportConstants::BENCHMARK_CSV_COLUMNS[key][:header] }
-
-    ::CSV.generate(headers: true) do |csv|
-      csv << headers
-      srg_rules.eager_load(:disa_rule_descriptions, :checks)
-               .order(:version, :rule_id)
-               .each do |rule|
-        csv << columns.map { |key| rule.csv_value_for(key) }
-      end
-    end
+  ##
+  # Override for BenchmarkCsvExport - provide header overrides
+  def header_overrides
+    ExportConstants::SRG_CSV_HEADER_OVERRIDES
   end
 
   private

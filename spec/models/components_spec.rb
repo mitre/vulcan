@@ -423,4 +423,114 @@ RSpec.describe Component, type: :model do
       expect(sb.reload.satisfied_by.size).to eq(1)
     end
   end
+
+  context 'severity_counts' do
+    it 'returns aggregated severity counts' do
+      # Component has rules from SRG setup (reload to load imported rules)
+      @p1_c1.reload
+      counts = @p1_c1.severity_counts
+      expect(counts).to be_a(Hash)
+      expect(counts.keys).to contain_exactly(:high, :medium, :low)
+      expect(counts[:high]).to be >= 0
+      expect(counts[:medium]).to be >= 0
+      expect(counts[:low]).to be >= 0
+      expect(counts[:high] + counts[:medium] + counts[:low]).to eq(@p1_c1.rules_count)
+    end
+
+    it 'includes severity_counts in as_json when requested' do
+      json = @p1_c1.as_json(methods: [:severity_counts])
+      expect(json['severity_counts']).to be_a(Hash)
+      expect(json['severity_counts']['high']).to be >= 0
+    end
+
+    it 'counts high severity rules correctly' do
+      # Add a high severity rule
+      @p1_c1.rules.first.update(rule_severity: 'high')
+      counts = @p1_c1.severity_counts
+      expect(counts[:high]).to be >= 1
+    end
+
+    it 'counts medium severity rules correctly' do
+      # Add a medium severity rule
+      @p1_c1.rules.first.update(rule_severity: 'medium')
+      counts = @p1_c1.severity_counts
+      expect(counts[:medium]).to be >= 1
+    end
+
+    it 'counts low severity rules correctly' do
+      # Add a low severity rule
+      @p1_c1.rules.first.update(rule_severity: 'low')
+      counts = @p1_c1.severity_counts
+      expect(counts[:low]).to be >= 1
+    end
+
+    it 'returns zero counts for components with no rules' do
+      empty_component = Component.create!(project: @p1, version: 'Empty V1R1', prefix: 'EMPT-00', based_on: @srg)
+      empty_component.rules.destroy_all
+      empty_component.reload
+      counts = empty_component.severity_counts
+      expect(counts[:high]).to eq(0)
+      expect(counts[:medium]).to eq(0)
+      expect(counts[:low]).to eq(0)
+    end
+  end
+
+  context 'with_severity_counts scope' do
+    it 'adds severity count virtual columns' do
+      @p1_c1.reload
+
+      component = Component.with_severity_counts.find(@p1_c1.id)
+      expect(component).to respond_to(:severity_high_count)
+      expect(component).to respond_to(:severity_medium_count)
+      expect(component).to respond_to(:severity_low_count)
+    end
+
+    it 'returns correct severity counts as virtual columns', :aggregate_failures do
+      @p1_c1.reload
+
+      component = Component.with_severity_counts.find(@p1_c1.id)
+
+      # Verify counts are integers
+      expect(component.severity_high_count).to be_a(Integer)
+      expect(component.severity_medium_count).to be_a(Integer)
+      expect(component.severity_low_count).to be_a(Integer)
+
+      # Verify counts sum to total rules
+      total = component.severity_high_count + component.severity_medium_count + component.severity_low_count
+      expect(total).to eq(@p1_c1.rules_count)
+
+      # Verify counts are non-negative
+      expect(component.severity_high_count).to be >= 0
+      expect(component.severity_medium_count).to be >= 0
+      expect(component.severity_low_count).to be >= 0
+    end
+
+    it 'handles components with no rules' do
+      empty = Component.create!(project: @p1, version: 'Empty V1R1', prefix: 'EMPT-01', based_on: @srg)
+      empty.rules.destroy_all
+      empty.reload
+
+      component = Component.with_severity_counts.find(empty.id)
+      expect(component.severity_high_count).to eq(0)
+      expect(component.severity_medium_count).to eq(0)
+      expect(component.severity_low_count).to eq(0)
+    end
+
+    it 'counts match direct rule queries (no off-by-one)', :aggregate_failures do
+      @p1_c1.reload
+
+      # Get counts from scope
+      component = Component.with_severity_counts.find(@p1_c1.id)
+
+      # Get counts from direct queries
+      expected_high = @p1_c1.rules.where(rule_severity: 'high').count
+      expected_medium = @p1_c1.rules.where(rule_severity: 'medium').count
+      expected_low = @p1_c1.rules.where(rule_severity: 'low').count
+
+      # Scope counts should exactly match direct queries
+      expect(component.severity_high_count).to eq(expected_high)
+      expect(component.severity_medium_count).to eq(expected_medium)
+      expect(component.severity_low_count).to eq(expected_low)
+    end
+  end
 end

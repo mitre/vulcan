@@ -141,6 +141,7 @@ class Rule < BaseRule
       result = result.merge(
         {
           reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
+          srg_id: srg_rule&.version,
           srg_rule_attributes: srg_rule&.as_json&.except('id', 'locked', 'created_at', 'updated_at', 'status',
                                                          'status_justification', 'artifact_description',
                                                          'vendor_comments', 'review_requestor_id',

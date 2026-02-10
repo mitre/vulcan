@@ -6,6 +6,8 @@ class Component < ApplicationRecord
   include ImportConstants
   include ExportConstants
   include ActionView::Helpers::TextHelper
+  include SeverityCounts
+  include XccdfParseable
 
   attr_accessor :skip_import_srg_rules
 
@@ -73,6 +75,7 @@ class Component < ApplicationRecord
 
   def as_json(options = {})
     methods = (options[:methods] || []) + %i[releasable additional_questions]
+    # SeverityCounts concern already adds severity_counts via its as_json
     super(options.merge(methods: methods)).merge(
       {
         based_on_title: based_on.title,

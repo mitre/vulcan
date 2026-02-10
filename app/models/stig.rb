@@ -2,6 +2,10 @@
 
 # Stig Model
 class Stig < ApplicationRecord
+  include SeverityCounts
+  include XccdfParseable
+  include BenchmarkCsvExport
+
   has_many :stig_rules, dependent: :destroy
 
   validates :stig_id, :title, :name, :version, :xml, presence: true
@@ -26,24 +30,10 @@ class Stig < ApplicationRecord
              benchmark_date: benchmark_date)
   end
 
-  def parsed_benchmark
-    Xccdf::Benchmark.parse(xml)
-  end
-
-  # Generate CSV export with configurable columns
-  # columns: array of column keys (symbols), defaults to BENCHMARK_CSV_DEFAULT_COLUMNS
-  def csv_export(columns: nil)
-    columns ||= ExportConstants::BENCHMARK_CSV_DEFAULT_COLUMNS
-    headers = columns.map { |key| ExportConstants::BENCHMARK_CSV_COLUMNS[key][:header] }
-
-    ::CSV.generate(headers: true) do |csv|
-      csv << headers
-      stig_rules.eager_load(:disa_rule_descriptions, :checks)
-                .order(:version, :rule_id)
-                .each do |rule|
-        csv << columns.map { |key| rule.csv_value_for(key) }
-      end
-    end
+  ##
+  # Override for SeverityCounts and BenchmarkCsvExport - specify rules association
+  def rules_association
+    stig_rules
   end
 
   private
