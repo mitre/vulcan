@@ -6,9 +6,18 @@
     <BaseCommandBar>
       <template #left>
         <b-button
+          variant="outline-secondary"
+          size="sm"
+          data-testid="download-btn"
+          @click="openExportModal"
+        >
+          <b-icon icon="download" /> Download
+        </b-button>
+        <b-button
           v-if="is_vulcan_admin"
           variant="primary"
           size="sm"
+          class="ml-2"
           data-testid="upload-stig-btn"
           @click="openUploadModal"
         >
@@ -31,6 +40,17 @@
       post_path="/stigs"
       @uploaded="loadStigs"
     />
+
+    <!-- Export Modal -->
+    <ExportModal
+      v-model="showExportModal"
+      :components="stigs"
+      :formats="['xccdf', 'csv']"
+      :column-definitions="csvColumns"
+      title="Export STIGs"
+      @export="handleExport"
+      @cancel="showExportModal = false"
+    />
   </div>
 </template>
 
@@ -40,6 +60,8 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable";
 import SecurityRequirementsGuidesUpload from "../security_requirements_guides/SecurityRequirementsGuidesUpload";
+import ExportModal from "../shared/ExportModal.vue";
+import { STIG_CSV_COLUMNS } from "../../constants/csvColumns";
 
 export default {
   name: "Stigs",
@@ -47,6 +69,7 @@ export default {
     BaseCommandBar,
     SecurityRequirementsGuidesTable,
     SecurityRequirementsGuidesUpload,
+    ExportModal,
   },
   mixins: [AlertMixinVue],
   props: {
@@ -62,7 +85,9 @@ export default {
   data: function () {
     return {
       showUploadComponent: false,
+      showExportModal: false,
       stigs: [],
+      csvColumns: STIG_CSV_COLUMNS,
     };
   },
   computed: {
@@ -76,6 +101,19 @@ export default {
   methods: {
     openUploadModal() {
       this.showUploadComponent = true;
+    },
+    openExportModal() {
+      this.showExportModal = true;
+    },
+    handleExport({ type, componentIds, columns }) {
+      // For now, export each selected STIG individually (bulk export not yet implemented)
+      componentIds.forEach(id => {
+        let url = `/stigs/${id}/export/${type}`;
+        if (columns && columns.length > 0) {
+          url += `?columns=${columns.join(",")}`;
+        }
+        window.open(url);
+      });
     },
     loadStigs: function () {
       axios

@@ -59,3 +59,18 @@ html {
     font-size: 1rem;
   }
 }
+
+// Breadcrumbs as section headers
+.breadcrumb {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+
+  .breadcrumb-item {
+    font-size: 1.5rem;
+
+    &.active {
+      font-weight: 700;
+    }
+  }
+}

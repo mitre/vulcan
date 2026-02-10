@@ -354,22 +354,25 @@ describe("RuleOverview", () => {
   });
 
   // ==========================================
-  // SEVERITY BADGE
+  // SEVERITY CARD STYLE (consistent with table)
   // ==========================================
-  describe("severity badge", () => {
-    it("applies bg-danger text-white class for high severity", () => {
+  describe("severity card style", () => {
+    it("applies border-danger and text-danger for high severity", () => {
       wrapper = createWrapper({ selectedRule: { ...stigRule, rule_severity: "high" } });
-      expect(wrapper.vm.severityBgColor).toBe("bg-danger text-white");
+      expect(wrapper.vm.severityBorderColor).toBe("border-danger");
+      expect(wrapper.vm.severityTextColor).toBe("text-danger");
     });
 
-    it("applies bg-warning text-dark class for medium severity", () => {
+    it("applies border-warning and text-warning for medium severity", () => {
       wrapper = createWrapper({ selectedRule: { ...stigRule, rule_severity: "medium" } });
-      expect(wrapper.vm.severityBgColor).toBe("bg-warning text-dark");
+      expect(wrapper.vm.severityBorderColor).toBe("border-warning");
+      expect(wrapper.vm.severityTextColor).toBe("text-warning");
     });
 
-    it("applies bg-success text-white class for low severity", () => {
+    it("applies border-success and text-success for low severity", () => {
       wrapper = createWrapper({ selectedRule: { ...stigRule, rule_severity: "low" } });
-      expect(wrapper.vm.severityBgColor).toBe("bg-success text-white");
+      expect(wrapper.vm.severityBorderColor).toBe("border-success");
+      expect(wrapper.vm.severityTextColor).toBe("text-success");
     });
   });
 
