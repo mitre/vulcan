@@ -29,8 +29,13 @@
         :class="ruleRowClass(satisfies)"
         class="d-flex justify-content-between align-items-center"
       >
-        <span class="clickable" @click="ruleSelected(satisfies)">
-          {{ projectPrefix }}-{{ satisfies.rule_id }}
+        <span
+          v-b-tooltip.hover
+          :title="satisfies.srg_rule && satisfies.srg_rule.version"
+          class="clickable"
+          @click="ruleSelected(satisfies)"
+        >
+          {{ truncateSrgId(satisfies.srg_rule && satisfies.srg_rule.version) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfies-modal
@@ -56,7 +61,7 @@
       >
         <p>
           Are you sure this control no longer satisfies
-          <strong>{{ projectPrefix }}-{{ satisfies_rule && satisfies_rule.rule_id }}</strong
+          <strong>{{ satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version }}</strong
           >?
         </p>
         <template #modal-footer="{ cancel, ok }">
@@ -82,8 +87,13 @@
         :class="ruleRowClass(satisfied_by)"
         class="d-flex justify-content-between align-items-center"
       >
-        <span class="clickable" @click="ruleSelected(satisfied_by)">
-          {{ projectPrefix }}-{{ satisfied_by.rule_id }}
+        <span
+          v-b-tooltip.hover
+          :title="satisfied_by.srg_rule && satisfied_by.srg_rule.version"
+          class="clickable"
+          @click="ruleSelected(satisfied_by)"
+        >
+          {{ truncateSrgId(satisfied_by.srg_rule && satisfied_by.srg_rule.version) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfied-by-modal
@@ -105,7 +115,7 @@
       >
         <p>
           Are you sure this control is no longer satisfied by
-          <strong>{{ projectPrefix }}-{{ satisfied_by_rule && satisfied_by_rule.rule_id }}</strong
+          <strong>{{ satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version }}</strong
           >?
         </p>
         <template #modal-footer="{ cancel, ok }">
@@ -118,6 +128,8 @@
 </template>
 
 <script>
+import { truncateSrgId } from "../../utils/srgIdFormatter";
+
 //
 // Expect component to emit `ruleSelected` event when
 // a rule is selected from the list. This event means that
@@ -154,6 +166,7 @@ export default {
     return {
       satisfies_rule: null,
       satisfied_by_rule: null,
+      truncateSrgId, // Expose utility for template
     };
   },
   methods: {

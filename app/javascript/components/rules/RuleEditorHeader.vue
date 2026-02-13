@@ -190,10 +190,13 @@
               :close-on-select="false"
               :clear-on-select="false"
               :preserve-search="true"
+              :taggable="true"
+              tag-placeholder="Press enter to add"
               :placeholder="msg.satisfiesPlaceholder"
               label="text"
               track-by="value"
               :preselect-first="false"
+              @tag="addCustomSatisfaction"
             >
               <template slot="selection" slot-scope="{ values, isOpen }">
                 <span v-if="values.length && !isOpen" class="multiselect__single">
@@ -496,6 +499,29 @@ export default {
       if (this.rule.satisfied_by.length > 0) {
         this.rule.satisfied_by.forEach((r) => {
           this.$root.$emit("refresh:rule", r.id, "all");
+        });
+      }
+    },
+    addCustomSatisfaction: function (searchText) {
+      // Handle pasted or typed satisfaction (SRG ID or rule ID)
+      // User can paste "SRG-OS-000480" or full "SRG-OS-000480-GPOS-00227"
+      const trimmed = searchText.trim();
+      if (!trimmed) return;
+
+      // Try to find matching rule by SRG ID or rule ID
+      const matchingRule = this.rules.find((r) => {
+        return (
+          r.srg_rule && r.srg_rule.version === trimmed ||
+          r.rule_id === trimmed ||
+          `${this.component.prefix}-${r.rule_id}` === trimmed
+        );
+      });
+
+      if (matchingRule) {
+        // Add to selection
+        this.selectedSatisfiesRuleIds.push({
+          value: matchingRule.id,
+          text: `${this.component.prefix}-${matchingRule.rule_id}`
         });
       }
     },
