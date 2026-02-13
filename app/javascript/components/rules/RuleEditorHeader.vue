@@ -239,6 +239,7 @@ import {
   REVIEW_ACTION_LABELS,
   selectedCountLabel,
 } from "../../constants/terminology";
+import { truncateId } from "../../utils/idFormatter";
 
 export default {
   name: "RuleEditorHeader",
@@ -275,6 +276,7 @@ export default {
       term: RULE_TERM,
       msg: MESSAGE_LABELS,
       reviewLabels: REVIEW_ACTION_LABELS,
+      truncateId, // Expose utility for methods
       showSRGIdChecked: localStorage.getItem(`showSRGIdChecked-${this.rules[0].component_id}`),
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [], // Array for multi-select
@@ -432,7 +434,7 @@ export default {
         .map((r) => {
           return {
             value: r.id,
-            text: JSON.parse(this.showSRGIdChecked) ? r.version : this.formatRuleId(r.rule_id),
+            text: JSON.parse(this.showSRGIdChecked) ? this.truncateId(r.version) : this.formatRuleId(r.rule_id),
           };
         });
     },
@@ -511,7 +513,7 @@ export default {
       // Try to find matching rule by SRG ID or rule ID
       const matchingRule = this.rules.find((r) => {
         return (
-          r.srg_rule && r.srg_rule.version === trimmed ||
+          (r.srg_rule && r.srg_rule.version === trimmed) ||
           r.rule_id === trimmed ||
           `${this.component.prefix}-${r.rule_id}` === trimmed
         );
@@ -521,7 +523,7 @@ export default {
         // Add to selection
         this.selectedSatisfiesRuleIds.push({
           value: matchingRule.id,
-          text: `${this.component.prefix}-${matchingRule.rule_id}`
+          text: `${this.component.prefix}-${matchingRule.rule_id}`,
         });
       }
     },

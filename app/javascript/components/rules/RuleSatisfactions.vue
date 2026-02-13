@@ -35,7 +35,7 @@
           class="clickable"
           @click="ruleSelected(satisfies)"
         >
-          {{ truncateSrgId(satisfies.srg_rule && satisfies.srg_rule.version) }}
+          {{ truncateId(satisfies.srg_rule && satisfies.srg_rule.version) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfies-modal
@@ -61,7 +61,12 @@
       >
         <p>
           Are you sure this control no longer satisfies
-          <strong>{{ satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version }}</strong
+          <strong
+            v-b-tooltip.hover
+            :title="satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version"
+          >
+            {{ truncateId(satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version) }}
+          </strong
           >?
         </p>
         <template #modal-footer="{ cancel, ok }">
@@ -93,7 +98,7 @@
           class="clickable"
           @click="ruleSelected(satisfied_by)"
         >
-          {{ truncateSrgId(satisfied_by.srg_rule && satisfied_by.srg_rule.version) }}
+          {{ truncateId(satisfied_by.srg_rule && satisfied_by.srg_rule.version) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfied-by-modal
@@ -115,7 +120,12 @@
       >
         <p>
           Are you sure this control is no longer satisfied by
-          <strong>{{ satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version }}</strong
+          <strong
+            v-b-tooltip.hover
+            :title="satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version"
+          >
+            {{ truncateId(satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version) }}
+          </strong
           >?
         </p>
         <template #modal-footer="{ cancel, ok }">
@@ -128,7 +138,7 @@
 </template>
 
 <script>
-import { truncateSrgId } from "../../utils/srgIdFormatter";
+import { truncateId } from "../../utils/idFormatter";
 
 //
 // Expect component to emit `ruleSelected` event when
@@ -166,7 +176,7 @@ export default {
     return {
       satisfies_rule: null,
       satisfied_by_rule: null,
-      truncateSrgId, // Expose utility for template
+      truncateId, // Expose utility for template
     };
   },
   methods: {

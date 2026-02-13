@@ -203,8 +203,8 @@
           >
             <span>
               <b-icon icon="chevron-right" />
-              <span v-if="filters.showSRGIdChecked">
-                {{ satisfies.version }}
+              <span v-if="filters.showSRGIdChecked" v-b-tooltip.hover :title="satisfies.version">
+                {{ truncateId(satisfies.version) }}
               </span>
               <span v-else>
                 {{ formatRuleId(satisfies.rule_id) }}
@@ -255,6 +255,7 @@ import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { getDefaultFilters } from "../../composables/useRuleFilters";
 import { NAVIGATOR_LABELS } from "../../constants/terminology";
+import { truncateId } from "../../utils/idFormatter";
 export default {
   name: "RuleNavigator",
   components: { FindAndReplace, NewRuleModalForm },
@@ -299,6 +300,7 @@ export default {
       sidebarOffset: 0,
       expandedParents: new Set(), // Track which parent rules are expanded
       localFilters: getDefaultFilters(),
+      truncateId, // Expose utility for template
     };
   },
   computed: {
