@@ -141,14 +141,18 @@ class Rule < BaseRule
       result = result.merge(
         {
           reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-          srg_id: srg_rule&.version,
+          'srg_id' => srg_rule&.version,
           srg_rule_attributes: srg_rule&.as_json&.except('id', 'locked', 'created_at', 'updated_at', 'status',
                                                          'status_justification', 'artifact_description',
                                                          'vendor_comments', 'review_requestor_id',
                                                          'component_id', 'changes_requested', 'srg_rule_id',
                                                          'security_requirements_guide_id'),
-          satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
-          satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
+          satisfies: satisfies.map { |s|
+            { id: s.id, rule_id: s.rule_id, srg_id: s.srg_rule&.version }
+          },
+          satisfied_by: satisfied_by.map { |s|
+            { id: s.id, rule_id: s.rule_id, fixtext: s.fixtext, srg_id: s.srg_rule&.version }
+          },
           additional_answers_attributes: additional_answers.as_json.map do |c|
             c.except('rule_id', 'created_at', 'updated_at')
           end,
@@ -244,7 +248,8 @@ class Rule < BaseRule
       disa_rule_descriptions.first&.mitigations,
       artifact_description,
       status_justification,
-      vendor_comments_with_satisfactions
+      vendor_comments,
+      satisfaction_text(format: :stig, direction: :satisfies)
     ]
   end
 
@@ -268,7 +273,7 @@ class Rule < BaseRule
     control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
     control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
     control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version).sort)) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).map { |r| r.srg_rule&.version }.compact.uniq.sort)) if satisfies.present?
     control.add_tag(Inspec::Object::Tag.new('gid', "V-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('rid', "SV-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
@@ -293,6 +298,39 @@ class Rule < BaseRule
       check: export_checktext,
       fix: export_fixtext
     }
+  end
+
+  # DRY satisfaction text generation — ONE method for all consumers.
+  # format: :srg (full SRG IDs for XCCDF/InSpec) or :stig (prefix-rule_id for CSV)
+  # direction: :satisfies or :satisfied_by
+  # Strip satisfaction keywords and their data, preserving the user's original text.
+  # Does NOT consume preceding punctuation — the user's sentence ending stays intact.
+  SATISFACTION_STRIP_PATTERN = /\s*\b(Satisfi(?:ed\s+By|es))\s*:.*$/im
+
+  def satisfaction_text(format: :srg, direction: :satisfies)
+    relations = direction == :satisfies ? self.satisfies : satisfied_by
+    return nil unless relations.present?
+
+    label = direction == :satisfies ? 'Satisfies' : 'Satisfied By'
+    ids = case format
+          when :srg
+            relations.map { |r| r.srg_rule&.version }.compact
+          when :stig
+            relations.map { |r| "#{component.prefix}-#{r.rule_id}" }
+          end
+
+    "#{label}: #{ids.uniq.sort.join(', ')}"
+  end
+
+  # Clean vendor comments for export — strips stale satisfaction text,
+  # appends fresh generated text from the rule_satisfactions table.
+  def export_vendor_comments
+    parts = []
+    clean = vendor_comments&.sub(SATISFACTION_STRIP_PATTERN, '')&.strip
+    parts << clean if clean.present?
+    parts << satisfaction_text(format: :stig, direction: :satisfied_by)
+    parts << satisfaction_text(format: :stig, direction: :satisfies)
+    parts.compact.join('. ')
   end
 
   private
@@ -323,17 +361,6 @@ class Rule < BaseRule
 
   def export_checktext
     satisfied_by.size.positive? ? satisfied_by.first.checks.first&.content : checks.first&.content
-  end
-
-  def vendor_comments_with_satisfactions
-    comments = []
-    comments << vendor_comments if vendor_comments.present?
-
-    comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}." if satisfied_by.present?
-
-    comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}." if satisfies.present?
-
-    comments.join('. ')
   end
 
   def cannot_be_locked_and_under_review

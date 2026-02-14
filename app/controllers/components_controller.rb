@@ -285,9 +285,10 @@ class ComponentsController < ApplicationController
     # descriptions, checks and additional answers where ID is equal to params id.
     @component = Component.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-              :additional_answers, :satisfies, :satisfied_by, {
-                srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
-              }]
+              :additional_answers,
+              { satisfies: :srg_rule },
+              { satisfied_by: :srg_rule },
+              { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }]
     ).find_by(id: params[:id])
 
     # Returns out of the method If the Component instance variable does exist.

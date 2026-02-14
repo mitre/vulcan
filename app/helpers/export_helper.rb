@@ -251,13 +251,13 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
       desc_str = []
       vuln_discussion = drd[:vuln_discussion]
-      vuln_discussion << "\n\nSatisfies: #{rule.satisfies.map(&:version).join(', ')}" if rule.satisfies.present?
+      vuln_discussion << "\n\n#{rule.satisfaction_text(format: :srg)}" if rule.satisfies.present?
       desc_str << ox_el_helper_ascii_str('VulnDiscussion', vuln_discussion)
       desc_str << ox_el_helper_ascii_str('FalsePositives', drd[:false_positives])
       desc_str << ox_el_helper_ascii_str('FalseNegatives', drd[:false_negatives])
       desc_str << ox_el_helper_ascii_str('Documentable', drd[:documentable])
       desc_str << ox_el_helper_ascii_str('Mitigations', drd[:mitigations])
-      desc_str << ox_el_helper_ascii_str('SecurityOverrideGuidance', drd[:severity_override_guidance])
+      desc_str << ox_el_helper_ascii_str('SeverityOverrideGuidance', drd[:severity_override_guidance])
       desc_str << ox_el_helper_ascii_str('PotentialImpacts', drd[:potential_impacts])
       desc_str << ox_el_helper_ascii_str('ThirdPartyTools', drd[:third_party_tools])
       desc_str << ox_el_helper_ascii_str('MitigationControl', drd[:mitigation_control])

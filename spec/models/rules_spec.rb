@@ -276,6 +276,197 @@ RSpec.describe Review, type: :model do
     end
   end
 
+  context 'as_json satisfaction serialization' do
+    # REQUIREMENT: Satisfaction relationships must include srg_id so the frontend
+    # can display SRG requirement IDs (e.g., "SRG-OS-000480") for satisfied rules.
+    # The srg_id field must be consistent with the parent rule's srg_id field.
+
+    before do
+      # Get a different SRG rule from the same SRG
+      srg = SecurityRequirementsGuide.find(@p1_c1.security_requirements_guide_id)
+      second_srg_rule = srg.srg_rules.where.not(id: @p1r1.srg_rule_id).first
+
+      # Create a second rule with a different SRG rule
+      @p1r2 = Rule.create!(
+        component: @p1_c1,
+        rule_id: 'P1-R2',
+        status: status_applicable,
+        rule_severity: 'high',
+        srg_rule: second_srg_rule
+      )
+      # Create satisfaction: @p1r1 satisfies @p1r2
+      @p1r1.satisfies << @p1r2
+    end
+
+    it 'includes srg_id in the satisfies array' do
+      json = @p1r1.as_json
+      satisfies_list = json[:satisfies]
+      expect(satisfies_list).to be_an(Array)
+      expect(satisfies_list.size).to eq(1)
+
+      satisfied = satisfies_list.first
+      expect(satisfied[:id]).to eq(@p1r2.id)
+      expect(satisfied[:rule_id]).to eq('P1-R2')
+      expect(satisfied[:srg_id]).to eq(@p1r2.srg_rule.version)
+    end
+
+    it 'includes srg_id in the satisfied_by array' do
+      @p1r2.reload
+      json = @p1r2.as_json
+      satisfied_by_list = json[:satisfied_by]
+      expect(satisfied_by_list).to be_an(Array)
+      expect(satisfied_by_list.size).to eq(1)
+
+      satisfier = satisfied_by_list.first
+      expect(satisfier[:id]).to eq(@p1r1.id)
+      expect(satisfier[:rule_id]).to eq('P1-R1')
+      expect(satisfier[:srg_id]).to eq(@p1r1.srg_rule.version)
+    end
+
+    it 'overrides the DB srg_id column with srg_rule.version using string key' do
+      json = @p1r1.as_json
+      # Must be a string key to properly override super's string key from ActiveRecord
+      expect(json).to have_key('srg_id')
+      expect(json['srg_id']).to eq(@p1r1.srg_rule.version)
+      # Symbol key should NOT also exist (would cause dual-key bug)
+      expect(json).not_to have_key(:srg_id)
+    end
+
+    it 'handles satisfaction with nil srg_rule gracefully' do
+      # belongs_to :srg_rule is required, so build (not create) to test edge case
+      rule_no_srg = Rule.new(
+        component: @p1_c1,
+        rule_id: 'NO-SRG-002',
+        status: status_applicable,
+        rule_severity: 'medium',
+        srg_rule: nil
+      )
+      # Verify as_json handles nil srg_rule in map without error
+      json = rule_no_srg.as_json
+      expect(json['srg_id']).to be_nil
+      expect(json[:satisfies]).to eq([])
+    end
+  end
+
+  context 'satisfaction_text (DRY satisfaction text generation)' do
+    # REQUIREMENT: ONE method generates satisfaction text for all consumers.
+    # Format: full SRG IDs, sorted, deduplicated.
+    # Used by: XCCDF export (VulnDiscussion), CSV export (separate column), InSpec (tag).
+
+    before do
+      srg = SecurityRequirementsGuide.find(@p1_c1.security_requirements_guide_id)
+      second_srg_rule = srg.srg_rules.where.not(id: @p1r1.srg_rule_id).first
+      third_srg_rule = srg.srg_rules.where.not(id: [@p1r1.srg_rule_id, second_srg_rule.id]).first
+
+      @p1r2 = Rule.create!(
+        component: @p1_c1, rule_id: 'P1-R2',
+        status: status_applicable, rule_severity: 'high',
+        srg_rule: second_srg_rule
+      )
+      @p1r3 = Rule.create!(
+        component: @p1_c1, rule_id: 'P1-R3',
+        status: status_applicable, rule_severity: 'medium',
+        srg_rule: third_srg_rule
+      )
+      # @p1r1 satisfies both @p1r2 and @p1r3
+      @p1r1.satisfies << @p1r2
+      @p1r1.satisfies << @p1r3
+    end
+
+    it 'generates SRG-format satisfaction text with full sorted IDs' do
+      text = @p1r1.satisfaction_text(format: :srg, direction: :satisfies)
+      expect(text).to start_with('Satisfies: ')
+      ids = text.sub('Satisfies: ', '').split(', ')
+      expect(ids.size).to eq(2)
+      # Full SRG IDs (e.g., "SRG-OS-000004-GPOS-00004")
+      expect(ids).to all(match(/^SRG-/))
+      # Sorted alphabetically
+      expect(ids).to eq(ids.sort)
+    end
+
+    it 'generates STIG-format satisfaction text with component prefix' do
+      text = @p1r1.satisfaction_text(format: :stig, direction: :satisfies)
+      expect(text).to start_with('Satisfies: ')
+      ids = text.sub('Satisfies: ', '').split(', ')
+      expect(ids.size).to eq(2)
+      expect(ids).to all(start_with('PHOS-03-'))
+      expect(ids).to eq(ids.sort)
+    end
+
+    it 'generates Satisfied By text for the inverse direction' do
+      @p1r2.reload
+      text = @p1r2.satisfaction_text(format: :srg, direction: :satisfied_by)
+      expect(text).to start_with('Satisfied By: ')
+      expect(text).to include(@p1r1.srg_rule.version)
+    end
+
+    it 'returns nil when no relationships exist' do
+      # @p1r3 has no satisfies of its own (only satisfied_by)
+      rule_no_rels = Rule.create!(
+        component: @p1_c1, rule_id: 'P1-LONE',
+        status: status_applicable, rule_severity: 'low',
+        srg_rule: @p1r1.srg_rule
+      )
+      expect(rule_no_rels.satisfaction_text(format: :srg, direction: :satisfies)).to be_nil
+    end
+
+    it 'deduplicates IDs' do
+      # Adding same rule twice should not create duplicate text
+      # HABTM has unique index so this tests the text output
+      text = @p1r1.satisfaction_text(format: :srg, direction: :satisfies)
+      ids = text.sub('Satisfies: ', '').split(', ')
+      expect(ids).to eq(ids.uniq)
+    end
+  end
+
+  context 'export_vendor_comments (clean vendor comments for export)' do
+    # REQUIREMENT: Vendor comments in exports contain ONLY user-authored text
+    # plus dynamically generated satisfaction text. Never duplicates.
+
+    before do
+      srg = SecurityRequirementsGuide.find(@p1_c1.security_requirements_guide_id)
+      second_srg_rule = srg.srg_rules.where.not(id: @p1r1.srg_rule_id).first
+
+      @p1r2 = Rule.create!(
+        component: @p1_c1, rule_id: 'P1-R2',
+        status: status_applicable, rule_severity: 'high',
+        srg_rule: second_srg_rule
+      )
+      @p1r1.satisfies << @p1r2
+    end
+
+    it 'includes user-authored vendor comments' do
+      @p1r1.update!(vendor_comments: 'User wrote this comment.')
+      text = @p1r1.export_vendor_comments
+      expect(text).to include('User wrote this comment.')
+    end
+
+    it 'strips stale satisfaction text from raw vendor_comments' do
+      @p1r1.update!(vendor_comments: 'User comment. Satisfies: CNTR-00-001234, CNTR-00-001235.')
+      text = @p1r1.export_vendor_comments
+      # Should NOT contain the old stale satisfaction text
+      expect(text).not_to include('CNTR-00-001234')
+      # Should contain the fresh dynamically generated satisfaction
+      expect(text).to include('Satisfies: ')
+      expect(text).to include('User comment')
+    end
+
+    it 'generates exactly one Satisfies line' do
+      @p1r1.update!(vendor_comments: 'Some comment. Satisfies: OLD-001. Satisfied By: OLD-002.')
+      text = @p1r1.export_vendor_comments
+      expect(text.scan(/Satisfies:/).count).to eq(1)
+    end
+
+    it 'returns empty string when no comments and no relationships' do
+      rule_clean = Rule.create!(
+        component: @p1_c1, rule_id: 'CLEAN-R1',
+        status: status_applicable, rule_severity: 'low',
+        srg_rule: @p1r1.srg_rule
+      )
+      expect(rule_clean.export_vendor_comments).to eq('')
+    end
+  end
+
   context 'as_json with missing SRG data' do
     it 'handles rule with nil srg_rule gracefully' do
       # Create a rule without an srg_rule
