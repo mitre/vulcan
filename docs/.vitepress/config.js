@@ -107,9 +107,9 @@ export default defineConfig({
         ],
       },
       {
-        text: "v2.3.0",
+        text: "v2.3.1",
         items: [
-          { text: "Release Notes", link: "/release-notes/v2.3.0" },
+          { text: "Release Notes", link: "/release-notes/v2.3.1" },
           { text: "v2.2.1", link: "/release-notes/v2.2.1" },
           { text: "v2.2.0", link: "/release-notes/v2.2.0" },
           { text: "All Releases", link: "/release-notes/" },
