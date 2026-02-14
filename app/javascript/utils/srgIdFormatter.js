@@ -15,12 +15,12 @@
  * truncateSrgId('SRG-APP-000123-GPOS-00456') // => 'SRG-APP-000123'
  */
 export function truncateSrgId(srgId) {
-  if (!srgId) return '';
+  if (!srgId) return "";
 
   // SRG IDs follow pattern: SRG-{DOMAIN}-{NUMBER}-GPOS-{NUMBER}
   // We want to show: SRG-{DOMAIN}-{NUMBER}
   // Remove the -GPOS-##### suffix
-  const truncated = srgId.replace(/-GPOS-\d+$/, '');
+  const truncated = srgId.replace(/-GPOS-\d+$/, "");
 
   return truncated;
 }

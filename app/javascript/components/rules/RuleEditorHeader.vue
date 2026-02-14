@@ -434,7 +434,9 @@ export default {
         .map((r) => {
           return {
             value: r.id,
-            text: JSON.parse(this.showSRGIdChecked) ? this.truncateId(r.version) : this.formatRuleId(r.rule_id),
+            text: JSON.parse(this.showSRGIdChecked)
+              ? this.truncateId(r.version)
+              : this.formatRuleId(r.rule_id),
           };
         });
     },

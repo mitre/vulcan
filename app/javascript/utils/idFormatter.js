@@ -22,17 +22,17 @@
  * truncateId('CNTR-00-000020')           // => 'CNTR-00-000020'
  */
 export function truncateId(id) {
-  if (!id) return '';
+  if (!id) return "";
 
   let truncated = id;
 
   // Remove SRG GPOS suffix: -GPOS-#####
-  truncated = truncated.replace(/-GPOS-\d+$/, '');
+  truncated = truncated.replace(/-GPOS-\d+$/, "");
 
   // Remove STIG revision suffix: r##### (with or without _rule)
-  truncated = truncated.replace(/r\d+(_rule)?$/, '');
+  truncated = truncated.replace(/r\d+(_rule)?$/, "");
   // Remove standalone _rule suffix
-  truncated = truncated.replace(/_rule$/, '');
+  truncated = truncated.replace(/_rule$/, "");
 
   return truncated;
 }

@@ -65,8 +65,11 @@
             v-b-tooltip.hover
             :title="satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version"
           >
-            {{ truncateId(satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version) }}
-          </strong
+            {{
+              truncateId(
+                satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version,
+              )
+            }} </strong
           >?
         </p>
         <template #modal-footer="{ cancel, ok }">
@@ -122,10 +125,17 @@
           Are you sure this control is no longer satisfied by
           <strong
             v-b-tooltip.hover
-            :title="satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version"
+            :title="
+              satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version
+            "
           >
-            {{ truncateId(satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version) }}
-          </strong
+            {{
+              truncateId(
+                satisfied_by_rule &&
+                  satisfied_by_rule.srg_rule &&
+                  satisfied_by_rule.srg_rule.version,
+              )
+            }} </strong
           >?
         </p>
         <template #modal-footer="{ cancel, ok }">
