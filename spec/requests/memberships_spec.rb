@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Memberships', type: :request do
+RSpec.describe 'Memberships' do
   let(:application_json) { 'application/json' }
   # Use let! to ensure admin_user is created first
   let!(:admin_user) { create(:user, admin: true) }

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Format Handling Across Controllers', type: :request do
+RSpec.describe 'Format Handling Across Controllers' do
   # Regression tests to ensure all controllers properly handle HTML vs JSON format requests
   # This prevents the FormMixin JSON header vs redirect_to mismatch issues
 

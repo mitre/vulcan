@@ -12,7 +12,7 @@ require 'rails_helper'
 # Bug: Prior to this fix, :timeoutable was in a separate devise call (line 6)
 # from :rememberable (line 12), which broke Devise's ability to check
 # remember-me tokens before timing out a session.
-RSpec.describe User, type: :model do
+RSpec.describe User do
   describe 'devise module configuration' do
     it 'includes the timeoutable module' do
       expect(User.devise_modules).to include(:timeoutable)

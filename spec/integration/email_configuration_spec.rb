@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Email Configuration Integration - Core Validation', type: :request do
+RSpec.describe 'Email Configuration Integration - Core Validation' do
   # Simple integration tests that validate our email configuration fixes work
   # Focus on configuration validation rather than complex email rendering
 

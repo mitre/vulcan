@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Review, type: :model do
+RSpec.describe Review do
   let(:status_applicable) { 'Applicable - Configurable' }
 
   before do

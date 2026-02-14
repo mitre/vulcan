@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Health Check Endpoints', type: :request do
+RSpec.describe 'Health Check Endpoints' do
   before do
     Rails.application.reload_routes!
   end

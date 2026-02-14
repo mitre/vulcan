@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'User Registrations', type: :request do
+RSpec.describe 'User Registrations' do
   include LoginHelpers
   include ActiveJob::TestHelper
 

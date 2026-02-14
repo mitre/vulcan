@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'SecurityRequirementsGuides', type: :request do
+RSpec.describe 'SecurityRequirementsGuides' do
   let(:content_disposition_header) { 'Content-Disposition' }
   let!(:user) { create(:user, admin: true) }
   let(:user2) { create(:user) }

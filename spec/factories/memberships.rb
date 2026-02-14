@@ -3,7 +3,7 @@
 FactoryBot.define do
   factory :membership do
     user
-    association :membership, factory: :project
+    membership factory: :project
     role { 'viewer' }
 
     trait :admin do
@@ -19,7 +19,7 @@ FactoryBot.define do
     end
 
     trait :for_component do
-      association :membership, factory: :component
+      membership factory: :component
     end
   end
 end

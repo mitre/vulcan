@@ -10,7 +10,7 @@ require 'rails_helper'
 # - Verify cache invalidates when records update
 # - Protect against regressions where caching is accidentally removed
 #
-RSpec.describe 'Jbuilder Caching', type: :request do
+RSpec.describe 'Jbuilder Caching' do
   let(:user) { create(:user) }
 
   before do

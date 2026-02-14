@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Rules', type: :request do
+RSpec.describe 'Rules' do
   let(:user) { create(:user) }
   let(:project) { create(:project) }
   let(:component) { create(:component, project: project) }

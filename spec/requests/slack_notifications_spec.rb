@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Slack Notifications', type: :request do
+RSpec.describe 'Slack Notifications' do
   before do
     Rails.application.reload_routes!
   end

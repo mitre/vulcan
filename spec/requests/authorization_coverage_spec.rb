@@ -58,7 +58,7 @@ AUTHENTICATE_ONLY_ACTIONS = {
   'api/search#global' => 'Data-scoped auth via current_user.available_projects'
 }.freeze
 
-RSpec.describe 'Authorization coverage', type: :request do
+RSpec.describe 'Authorization coverage' do
   before do
     Rails.application.reload_routes!
   end

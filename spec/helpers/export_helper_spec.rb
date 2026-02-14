@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ExportHelper, type: :helper do
+RSpec.describe ExportHelper do
   include ExportHelper
 
   before(:all) do

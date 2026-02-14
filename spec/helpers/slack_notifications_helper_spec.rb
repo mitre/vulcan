@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe SlackNotificationsHelper, type: :helper do
+RSpec.describe SlackNotificationsHelper do
   include SlackNotificationsHelper
 
   describe '#send_notification' do

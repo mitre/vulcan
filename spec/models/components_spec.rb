@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Component, type: :model do
+RSpec.describe Component do
   before do
     srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Review, type: :model do
+RSpec.describe Review do
   before do
     srg_xml = Rails.root.join('db/seeds/srgs/U_Web_Server_SRG_V4R4_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)

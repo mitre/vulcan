@@ -12,7 +12,7 @@ require 'rails_helper'
 # - as_json automatically includes severity_counts
 # - as_json allows models to extend with additional fields
 #
-RSpec.describe SeverityCounts, type: :model do
+RSpec.describe SeverityCounts do
   # Don't use anonymous test class - use real Component model
   # (The concern is designed to work with real models that have proper associations)
 

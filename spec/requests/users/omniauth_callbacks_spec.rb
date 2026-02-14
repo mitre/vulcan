@@ -11,7 +11,7 @@ require 'rails_helper'
 # 2. LDAP login: Same behavior as local login
 # 3. Without Remember Me: Session expires after timeout_in period (60 minutes)
 #
-RSpec.describe 'Remember Me Functionality', type: :request do
+RSpec.describe 'Remember Me Functionality' do
   before do
     Rails.application.reload_routes!
   end

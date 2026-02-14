@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe SecurityRequirementsGuide, type: :model do
+RSpec.describe SecurityRequirementsGuide do
   let(:srg) { create(:security_requirements_guide) }
 
   context 'severity_counts' do
