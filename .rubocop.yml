@@ -2,9 +2,13 @@ plugins:
   - rubocop-rails
   - rubocop-performance
   - rubocop-rspec
+  - rubocop-rspec_rails
+  - rubocop-capybara
+  - rubocop-factory_bot
 
 AllCops:
   NewCops: enable
+  SuggestExtensions: false
   Exclude:
     - bin/*
     - db/schema.rb
@@ -85,6 +89,11 @@ Style/OpenStructUse:
 Rails/SkipsModelValidations:
   Exclude:
     - spec/**/*
+# FactoryBot/FactoryAssociationWithStrategy changes build vs create behavior —
+# fixing requires verifying all tests still pass with implicit associations.
+# TODO: Fix factories to use implicit associations in dedicated session.
+FactoryBot/FactoryAssociationWithStrategy:
+  Enabled: false
 
 # ============================================================================
 # PRE-EXISTING OFFENSES FROM RUBOCOP 1.25.1 → 1.79.2 UPGRADE
