@@ -13,6 +13,7 @@ AllCops:
     - node_modules/**/*
     - docs/node_modules/**/*
     - "vendor/**/*"
+    - tmp/**/*
 # DISABLED: Following Standard Ruby - line length auto-correction is destructive
 # It can corrupt code when combined with other cops (e.g., Rails/FilePath path duplication)
 # See: https://github.com/standardrb/standard

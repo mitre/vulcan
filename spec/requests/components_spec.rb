@@ -100,8 +100,8 @@ RSpec.describe 'Components', type: :request do
     it 'only returns released components' do
       get '/components', headers: { 'Accept' => 'application/json' }
 
-      json = JSON.parse(response.body)
-      ids = json.map { |c| c['id'] }
+      json = response.parsed_body
+      ids = json.pluck('id')
 
       expect(ids).to include(released_component.id)
       expect(ids).not_to include(unreleased_component.id)

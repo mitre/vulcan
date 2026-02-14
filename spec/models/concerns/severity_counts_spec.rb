@@ -94,7 +94,7 @@ RSpec.describe SeverityCounts, type: :model do
       end
 
       it 'respects options passed to super' do
-        json = instance.as_json(only: [:id, :title])
+        json = instance.as_json(only: %i[id title])
 
         expect(json).to include('id', 'title')
         expect(json).to have_key(:severity_counts)
@@ -102,7 +102,7 @@ RSpec.describe SeverityCounts, type: :model do
       end
     end
 
-    # Note: include_severity_counts: false requires models to respect it in their as_json override
+    # NOTE: include_severity_counts: false requires models to respect it in their as_json override
     # This concern provides the default behavior, but models can choose to always include it
   end
 

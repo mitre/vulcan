@@ -454,7 +454,7 @@ RSpec.describe Review, type: :model do
     it 'generates exactly one Satisfies line' do
       @p1r1.update!(vendor_comments: 'Some comment. Satisfies: OLD-001. Satisfied By: OLD-002.')
       text = @p1r1.export_vendor_comments
-      expect(text.scan(/Satisfies:/).count).to eq(1)
+      expect(text.scan('Satisfies:').count).to eq(1)
     end
 
     it 'returns empty string when no comments and no relationships' do

@@ -36,7 +36,7 @@ module SeverityCounts
     # Detects model type and creates appropriate SQL subqueries
     scope :with_severity_counts, lambda {
       table = table_name
-      rule_type = name.gsub('SecurityRequirementsGuide', 'Srg') + 'Rule' # Component->ComponentRule, Stig->StigRule, SRG->SrgRule
+      rule_type = "#{name.gsub('SecurityRequirementsGuide', 'Srg')}Rule" # Component->ComponentRule, Stig->StigRule, SRG->SrgRule
       rule_type = 'Rule' if name == 'Component' # Component uses 'Rule', not 'ComponentRule'
 
       # Determine foreign key condition based on model

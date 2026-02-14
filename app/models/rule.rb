@@ -147,12 +147,12 @@ class Rule < BaseRule
                                                          'vendor_comments', 'review_requestor_id',
                                                          'component_id', 'changes_requested', 'srg_rule_id',
                                                          'security_requirements_guide_id'),
-          satisfies: satisfies.map { |s|
+          satisfies: satisfies.map do |s|
             { id: s.id, rule_id: s.rule_id, srg_id: s.srg_rule&.version }
-          },
-          satisfied_by: satisfied_by.map { |s|
+          end,
+          satisfied_by: satisfied_by.map do |s|
             { id: s.id, rule_id: s.rule_id, fixtext: s.fixtext, srg_id: s.srg_rule&.version }
-          },
+          end,
           additional_answers_attributes: additional_answers.as_json.map do |c|
             c.except('rule_id', 'created_at', 'updated_at')
           end,
@@ -273,7 +273,7 @@ class Rule < BaseRule
     control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
     control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
     control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).map { |r| r.srg_rule&.version }.compact.uniq.sort)) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).filter_map { |r| r.srg_rule&.version }.uniq.sort)) if satisfies.present?
     control.add_tag(Inspec::Object::Tag.new('gid', "V-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('rid', "SV-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
@@ -308,13 +308,13 @@ class Rule < BaseRule
   SATISFACTION_STRIP_PATTERN = /\s*\b(Satisfi(?:ed\s+By|es))\s*:.*$/im
 
   def satisfaction_text(format: :srg, direction: :satisfies)
-    relations = direction == :satisfies ? self.satisfies : satisfied_by
-    return nil unless relations.present?
+    relations = direction == :satisfies ? satisfies : satisfied_by
+    return nil if relations.blank?
 
     label = direction == :satisfies ? 'Satisfies' : 'Satisfied By'
     ids = case format
           when :srg
-            relations.map { |r| r.srg_rule&.version }.compact
+            relations.filter_map { |r| r.srg_rule&.version }
           when :stig
             relations.map { |r| "#{component.prefix}-#{r.rule_id}" }
           end

@@ -225,7 +225,7 @@ RSpec.describe 'Stigs', type: :request do
       get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
 
       expect(response).to have_http_status(:success)
-      json = JSON.parse(response.body)
+      json = response.parsed_body
 
       # STIG fields
       expect(json).to have_key('id')
@@ -243,7 +243,7 @@ RSpec.describe 'Stigs', type: :request do
       create(:stig_rule, stig: stig)
       get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
 
-      rule = JSON.parse(response.body)['stig_rules'].first
+      rule = response.parsed_body['stig_rules'].first
 
       # Fields used by RuleList
       expect(rule).to have_key('id')
@@ -269,7 +269,7 @@ RSpec.describe 'Stigs', type: :request do
       create(:stig_rule, stig: stig)
       get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
 
-      json = JSON.parse(response.body)
+      json = response.parsed_body
       rule = json['stig_rules'].first
 
       # Should NOT include these
