@@ -145,7 +145,7 @@ spec:
       automountServiceAccountToken: false  # Security best practice
       containers:
       - name: vulcan-web
-        image: mitre/vulcan:v2.2.2
+        image: mitre/vulcan:v2.3.0
         imagePullPolicy: Always
         ports:
         - containerPort: 3000

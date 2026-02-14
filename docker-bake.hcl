@@ -26,7 +26,7 @@ variable "IMAGE_NAME" {
 }
 
 variable "VERSION" {
-  default = "2.2.2"
+  default = "2.3.0"
 }
 
 // Use VULCAN_RUBY_VERSION to avoid conflict with RVM's RUBY_VERSION

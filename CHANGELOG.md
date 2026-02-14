@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v2.2.2] - 2026-02-08
+## [v2.3.0] - 2026-02-14
 
 ### Upgraded
 - Ruby 3.4.8 (from 3.3.9) with nkf gem for compatibility
@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Postel's Law applied to satisfaction parsing and session timeout config
 - Vitest testing infrastructure for Vue 2 components
 - Centralized terminology constants (BENCHMARK_TERM, EXPORT_FORMATS)
+- Configurable Remember Me via `VULCAN_ENABLE_REMEMBER_ME` and `VULCAN_REMEMBER_ME_DURATION` env vars
+- DISA Process documentation (Overview, Field Requirements, Export Requirements, Intent Form)
 - VitePress documentation system replacing MkDocs
 - Mermaid diagram support in documentation
 - Custom Vulcan branding with SVG logos and Media Kit page
@@ -45,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SRG search result links to use /srgs/ route
 - Database config with DATABASE_URL support
 - Consolidate Devise modules into single call in User model
+- Remember Me duration reduced from 2 weeks to 8 hours (configurable)
+- XCCDF export: `SecurityOverrideGuidance` typo fixed to `SeverityOverrideGuidance`
 - All ESLint errors and warnings resolved (20 errors, 6 warnings to 0)
 - Documentation build issues with dead links and localhost URLs
 - Remove dangerous DISABLE_DATABASE_ENVIRONMENT_CHECK from Docker entrypoint
@@ -243,7 +247,7 @@ For releases prior to v2.1.6, please see the [GitHub releases page](https://gith
 
 ---
 
-[v2.2.2]: https://github.com/mitre/vulcan/compare/v2.2.1...v2.2.2
+[v2.3.0]: https://github.com/mitre/vulcan/compare/v2.2.1...v2.3.0
 [v2.2.1]: https://github.com/mitre/vulcan/compare/v2.2.0...v2.2.1
 [v2.2.0]: https://github.com/mitre/vulcan/compare/v2.1.9...v2.2.0
 [v2.1.9]: https://github.com/mitre/vulcan/compare/v2.1.8...v2.1.9

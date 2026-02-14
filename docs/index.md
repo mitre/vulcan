@@ -66,10 +66,10 @@ docker compose up
 ## Latest Release
 
 ::: info Current Version
-**v2.2.2** - Released January 2026
+**v2.3.0** - Released February 2026
 
-Docker deployment improvements, admin bootstrap, and security updates.
-[View Release Notes →](/release-notes/v2.2.2)
+DISA process documentation, SRG ID display, export improvements, and DRY refactors.
+[View Release Notes →](/release-notes/v2.3.0)
 :::
 
 ## Why Vulcan?

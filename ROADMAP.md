@@ -182,17 +182,17 @@ This document outlines the complete modernization strategy for the Vulcan applic
 - **STATE**: Assess centralized vs. component-local state management needs
 - **VALIDATION**: Decide on client-side validation approach
 
-## Phase 3.5: Enterprise Configuration Management
+## Phase 3.5: Runtime Configuration Management
 
 ### Objectives
 - Implement dynamic runtime configuration management comparable to Heimdall2
 - Enable zero-restart administrative operations
 - Provide web-based administration interface
 - Support bulk operations for users and STIG/SRG management
-- Enhance enterprise deployment and scaling capabilities
+- Enhance deployment and scaling capabilities
 
 ### Context
-Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrative ease, this phase addresses the gap in runtime configuration management. The implementation leverages proven Rails gems to deliver enterprise-grade administration capabilities rapidly.
+Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrative ease, this phase addresses the gap in runtime configuration management. The implementation leverages proven Rails gems to deliver robust administration capabilities rapidly.
 
 ### Tasks
 **Phase 3.5.1: Foundation (4-6 hours)**
@@ -257,7 +257,7 @@ Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrati
 
 ### Decision Points
 - **SECURITY**: Validate separation between security-critical and administrative settings
-- **PERFORMANCE**: Ensure caching strategy meets enterprise scale requirements
+- **PERFORMANCE**: Ensure caching strategy meets production scale requirements
 - **AUTHORIZATION**: Determine granular permission levels for admin interface
 - **INTEGRATION**: Assess integration with existing authentication systems
 
