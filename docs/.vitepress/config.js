@@ -57,6 +57,15 @@ export default defineConfig({
         ],
       },
       {
+        text: "DISA Process",
+        items: [
+          { text: "Overview", link: "/disa-process/overview" },
+          { text: "Field Requirements", link: "/disa-process/field-requirements" },
+          { text: "Export Requirements", link: "/disa-process/export-requirements" },
+          { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
+        ],
+      },
+      {
         text: "Development",
         items: [
           { text: "Setup", link: "/development/setup" },
@@ -98,9 +107,9 @@ export default defineConfig({
         ],
       },
       {
-        text: "v2.2.2",
+        text: "v2.3.0",
         items: [
-          { text: "Release Notes", link: "/release-notes/v2.2.2" },
+          { text: "Release Notes", link: "/release-notes/v2.3.0" },
           { text: "v2.2.1", link: "/release-notes/v2.2.1" },
           { text: "v2.2.0", link: "/release-notes/v2.2.0" },
           { text: "All Releases", link: "/release-notes/" },
@@ -146,6 +155,17 @@ export default defineConfig({
             { text: "OIDC/OKTA", link: "/deployment/auth/oidc-okta" },
             { text: "LDAP", link: "/deployment/auth/ldap" },
             { text: "GitHub OAuth", link: "/deployment/auth/github" },
+          ],
+        },
+      ],
+      "/disa-process/": [
+        {
+          text: "DISA STIG Process",
+          items: [
+            { text: "Overview", link: "/disa-process/overview" },
+            { text: "Field Requirements by Status", link: "/disa-process/field-requirements" },
+            { text: "Export Requirements", link: "/disa-process/export-requirements" },
+            { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
           ],
         },
       ],
