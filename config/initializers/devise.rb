@@ -138,11 +138,11 @@ Devise.setup do |config|
   # The time the user will be remembered without asking for credentials again.
   # Configured via VULCAN_ENABLE_REMEMBER_ME and VULCAN_REMEMBER_ME_DURATION env vars.
   # Default: 8 hours. When disabled, remember_for = 0 hides the checkbox via Devise.
-  if Settings.local_login.remember_me_enabled
-    config.remember_for = TimeoutParser.parse(Settings.local_login.remember_me_duration).seconds
-  else
-    config.remember_for = 0
-  end
+  config.remember_for = if Settings.local_login.remember_me_enabled
+                          TimeoutParser.parse(Settings.local_login.remember_me_duration).seconds
+                        else
+                          0
+                        end
 
   # Invalidates all the remember me tokens when the user signs out.
   config.expire_all_remember_me_on_sign_out = true
