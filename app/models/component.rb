@@ -143,6 +143,12 @@ class Component < ApplicationRecord
       r.artifact_description = row[IMPORT_MAPPING[:artifact_description]]
       r.status_justification = row[IMPORT_MAPPING[:status_justification]]
       r.vendor_comments = row[IMPORT_MAPPING[:vendor_comments]]
+      # Append satisfaction column data so create_rule_satisfactions can parse and create records.
+      # The text will be stripped after parsing — vendor_comments stays clean.
+      if row[IMPORT_MAPPING[:satisfies]].present?
+        satisfaction_line = "Satisfies: #{row[IMPORT_MAPPING[:satisfies]]}"
+        r.vendor_comments = [r.vendor_comments, satisfaction_line].compact_blank.join('. ')
+      end
       # Get status with the case ignored. If none is found then fall back to the default status
       status_index = STATUSES.find_index { |item| item.casecmp(row[IMPORT_MAPPING[:status]])&.zero? }
       r.status = status_index ? STATUSES[status_index] : STATUSES[0]
@@ -356,33 +362,50 @@ class Component < ApplicationRecord
   end
 
   def create_rule_satisfactions
-    # Postel's Law: Be liberal in what we accept.
-    # Match both "Satisfied By:" and "Satisfies:" in any case.
-    satisfaction_pattern = /\b(satisfi(?:ed\s+by|es))\s*:\s*/i
+    # Build lookup maps for identifier resolution
+    # SRG IDs (SRG-OS-000480-GPOS-00227) → rule via srg_rule.version
+    srg_version_map = rules.includes(:srg_rule).each_with_object({}) do |rule, map|
+      map[rule.srg_rule.version] = rule if rule.srg_rule&.version.present?
+    end
+    # STIG IDs (PREFIX-000123) → rule via rule_id
+    rule_id_map = rules.index_by(&:rule_id)
 
-    rules.where('vendor_comments ILIKE ? OR vendor_comments ILIKE ?',
-                '%satisfied by:%', '%satisfies:%').find_each do |rule|
-      match = rule.vendor_comments.match(satisfaction_pattern)
-      next unless match
+    rules.includes(:disa_rule_descriptions, :srg_rule).find_each do |rule|
+      # Check both sources for satisfaction text (vendor_comments and vuln_discussion)
+      sources = []
+      sources << { text: rule.vendor_comments, origin: :vendor_comments } if rule.vendor_comments.present?
+      rule.disa_rule_descriptions.each do |desc|
+        sources << { text: desc.vuln_discussion, origin: :vuln_discussion, record: desc } if desc.vuln_discussion.present?
+      end
 
-      direction = match[1].strip.downcase # "satisfied by" or "satisfies"
+      sources.each do |source|
+        parsed = parse_satisfaction_text(source[:text])
+        next unless parsed
 
-      # Extract the list after the keyword, remove optional trailing period
-      list_text = rule.vendor_comments[match.end(0)..].sub(/\.\s*\z/, '').strip
-      identifiers = list_text.split(/[,;\s]+/).map(&:strip).reject(&:empty?).uniq
+        parsed[:identifiers].each do |identifier|
+          target_rule = resolve_satisfaction_identifier(identifier, rule_id_map, srg_version_map)
+          next if target_rule.nil? || target_rule.id == rule.id
 
-      identifiers.each do |identifier|
-        target_rule_id = identifier.split('-').last
-        target_rule = rules.find_by(rule_id: target_rule_id)
-        next if target_rule.nil?
-
-        if direction == 'satisfied by'
-          rule.satisfied_by << target_rule
-        else
-          rule.satisfies << target_rule
+          begin
+            if parsed[:direction] == 'satisfied by'
+              rule.satisfied_by << target_rule unless rule.satisfied_by.include?(target_rule)
+            else
+              rule.satisfies << target_rule unless rule.satisfies.include?(target_rule)
+            end
+            target_rule.save
+          rescue ActiveRecord::RecordNotUnique
+            # Relationship already exists — skip
+          end
         end
-        # Save the rule to trigger callbacks (update inspec)
-        target_rule.save
+
+        # Strip satisfaction text from source — structured data is the source of truth
+        clean = source[:text].sub(Rule::SATISFACTION_STRIP_PATTERN, '').strip
+        case source[:origin]
+        when :vendor_comments
+          rule.update_column(:vendor_comments, clean.presence) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
+        when :vuln_discussion
+          source[:record].update_column(:vuln_discussion, clean.presence) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
+        end
       end
     end
   end
@@ -480,6 +503,34 @@ class Component < ApplicationRecord
   end
 
   private
+
+  # Parse satisfaction text from any source string.
+  # Returns { direction: "satisfies"|"satisfied by", identifiers: [...] } or nil.
+  def parse_satisfaction_text(text)
+    return nil if text.blank?
+
+    # Postel's Law: Be liberal in what we accept.
+    satisfaction_pattern = /\b(satisfi(?:ed\s+by|es))\s*:\s*/i
+    match = text.match(satisfaction_pattern)
+    return nil unless match
+
+    direction = match[1].strip.downcase
+    list_text = text[match.end(0)..].sub(/\.\s*\z/, '').strip
+    identifiers = list_text.split(/[,;\s]+/).map(&:strip).reject(&:empty?).uniq
+
+    { direction: direction, identifiers: identifiers }
+  end
+
+  # Resolve a satisfaction identifier to a rule.
+  # Supports both STIG IDs (PREFIX-000123) and SRG IDs (SRG-OS-000480-GPOS-00227).
+  def resolve_satisfaction_identifier(identifier, rule_id_map, srg_version_map)
+    # Try SRG ID first (exact match on srg_rule.version)
+    return srg_version_map[identifier] if srg_version_map.key?(identifier)
+
+    # Fall back to STIG ID (extract numeric part after last hyphen)
+    target_rule_id = identifier.split('-').last
+    rule_id_map[target_rule_id]
+  end
 
   # Normalize spreadsheet headers using HEADER_ALIASES so that benchmark CSV
   # export headers (e.g., "STIG ID", "Title") are mapped to the standard DISA

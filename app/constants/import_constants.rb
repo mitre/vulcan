@@ -18,7 +18,8 @@ module ImportConstants
     vendor_comments: 'Vendor Comments',
     mitigation: 'Mitigation',
     inspec_control_body: 'InSpec Control Body',
-    ident: 'CCI'
+    ident: 'CCI',
+    satisfies: 'Satisfies'
   }.freeze
 
   IMPORT_MAPPING = REQUIRED_MAPPING_CONSTANTS.merge(OPTIONAL_MAPPING_CONSTANTS)
