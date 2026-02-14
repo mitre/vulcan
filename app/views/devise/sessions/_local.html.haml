@@ -9,7 +9,7 @@
     = f.password_field :password, class: "form-control", title: "This field is required.", autocomplete: "current-password", required: "true"
     = hidden_field_tag :active_tab, 'local'
   .form-group.d-flex.justify-content-between.align-items-center
-    - if devise_mapping.rememberable?
+    - if devise_mapping.rememberable? && Settings.local_login.remember_me_enabled
       .remember-me.form-check
         = f.check_box :remember_me, class: "form-check-input"
         = f.label :remember_me, class: "form-check-label"

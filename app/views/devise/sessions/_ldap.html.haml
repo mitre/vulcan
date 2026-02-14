@@ -5,7 +5,7 @@
   .form-group
     = label_tag :password
     = password_field_tag :password, nil, { class: "form-control bottom", title: "This field is required.", required: true }
-  - if devise_mapping.rememberable?
+  - if devise_mapping.rememberable? && Settings.local_login.remember_me_enabled
     .form-group
       .remember-me.form-check
         = check_box_tag :remember_me, '1', false, id: 'remember_me', class: 'form-check-input'

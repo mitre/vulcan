@@ -29,6 +29,10 @@ defaults: &defaults
     # Accepts: plain seconds (900), or with suffix: 30s, 15m, 1h
     # Default: 3600 (1 hour). DoD standard is typically 900 (15 min).
     session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 3600 %>
+    remember_me_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_REMEMBER_ME']) != false %>
+    # Accepts: plain seconds (28800), or with suffix: 8h, 480m
+    # Default: 28800 (8 hours). Set to 0 to disable remember me entirely.
+    remember_me_duration: <%= ENV['VULCAN_REMEMBER_ME_DURATION'] || 28800 %>
   user_registration:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
   admin_bootstrap:
