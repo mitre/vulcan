@@ -10,17 +10,23 @@ puts "Populating database for demo use:\n\n"
 # Helper to load an XCCDF XML file and create the corresponding model record.
 # Works for both SecurityRequirementsGuide and Stig — the after_create callback
 # on each model automatically imports the child rules.
+#
+# Classification uses the title first (keywords like "Requirements Guide" or
+# "Implementation Guide"), then falls back to the seed directory path.
 def seed_xccdf(filepath)
   xml = File.read(filepath)
   parsed = Xccdf::Benchmark.parse(xml)
-  title = parsed.try(:title)&.first&.downcase
+  title = parsed.try(:title)&.first&.downcase || ''
 
-  if title&.include?('implementation guide') || title&.include?('stig')
-    record = Stig.from_mapping(parsed)
-    record.xml = Nokogiri::XML(xml)
-  elsif title&.include?('requirements guide')
+  is_srg = title.include?('requirements guide') || filepath.to_s.include?('/srgs/')
+  is_stig = title.include?('implementation guide') || title.include?('stig') || filepath.to_s.include?('/stigs/')
+
+  if is_srg
     record = SecurityRequirementsGuide.from_mapping(parsed)
     record.xml = xml
+  elsif is_stig
+    record = Stig.from_mapping(parsed)
+    record.xml = Nokogiri::XML(xml)
   else
     puts "  Skipping #{File.basename(filepath)} (unrecognized benchmark type)"
     return nil
