@@ -133,7 +133,7 @@ export default {
               rule.satisfied_by.push({
                 id: satisfiedByRule.id,
                 rule_id: satisfiedByRule.rule_id,
-                version: satisfiedByRule.version,
+                srg_id: satisfiedByRule.srg_id,
                 fixtext: satisfiedByRule.fixtext,
               });
             }
@@ -143,7 +143,7 @@ export default {
               satisfiedByRule.satisfies.push({
                 id: rule.id,
                 rule_id: rule.rule_id,
-                version: rule.version,
+                srg_id: rule.srg_id,
               });
             }
           }

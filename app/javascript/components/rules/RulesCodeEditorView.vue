@@ -213,6 +213,7 @@ import Multiselect from "vue-multiselect";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
+import { truncateId } from "../../utils/idFormatter";
 
 export default {
   name: "RulesCodeEditorView",
@@ -309,9 +310,8 @@ export default {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          // Only restore status and review filters, NOT display options
-          // This ensures new display defaults take effect
-          const statusReviewKeys = [
+          // Restore all user-set filter preferences
+          const restorableKeys = [
             "search",
             "acFilterChecked",
             "aimFilterChecked",
@@ -321,8 +321,11 @@ export default {
             "nurFilterChecked",
             "urFilterChecked",
             "lckFilterChecked",
+            "showSRGIdChecked",
+            "sortBySRGIdChecked",
+            "nestSatisfiedRulesChecked",
           ];
-          statusReviewKeys.forEach((key) => {
+          restorableKeys.forEach((key) => {
             if (key in parsed && key in filters.value) {
               filters.value[key] = parsed[key];
             }
@@ -449,9 +452,8 @@ export default {
         .map((r) => {
           return {
             value: r.id,
-            text: JSON.parse(this.showSRGIdChecked)
-              ? r.version
-              : `${this.component.prefix}-${r.rule_id}`,
+            // Satisfaction relationships ALWAYS show SRG requirements (semantic requirement)
+            text: truncateId(r.srg_id) || `${this.component.prefix}-${r.rule_id}`,
           };
         });
     },

@@ -31,11 +31,11 @@
       >
         <span
           v-b-tooltip.hover
-          :title="satisfies.srg_rule && satisfies.srg_rule.version"
+          :title="satisfies.srg_id"
           class="clickable"
           @click="ruleSelected(satisfies)"
         >
-          {{ truncateId(satisfies.srg_rule && satisfies.srg_rule.version) }}
+          {{ truncateId(satisfies.srg_id) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfies-modal
@@ -63,11 +63,11 @@
           Are you sure this control no longer satisfies
           <strong
             v-b-tooltip.hover
-            :title="satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version"
+            :title="satisfies_rule && satisfies_rule.srg_id"
           >
             {{
               truncateId(
-                satisfies_rule && satisfies_rule.srg_rule && satisfies_rule.srg_rule.version,
+                satisfies_rule && satisfies_rule.srg_id,
               )
             }} </strong
           >?
@@ -97,11 +97,11 @@
       >
         <span
           v-b-tooltip.hover
-          :title="satisfied_by.srg_rule && satisfied_by.srg_rule.version"
+          :title="satisfied_by.srg_id"
           class="clickable"
           @click="ruleSelected(satisfied_by)"
         >
-          {{ truncateId(satisfied_by.srg_rule && satisfied_by.srg_rule.version) }}
+          {{ truncateId(satisfied_by.srg_id) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfied-by-modal
@@ -125,15 +125,11 @@
           Are you sure this control is no longer satisfied by
           <strong
             v-b-tooltip.hover
-            :title="
-              satisfied_by_rule && satisfied_by_rule.srg_rule && satisfied_by_rule.srg_rule.version
-            "
+            :title="satisfied_by_rule && satisfied_by_rule.srg_id"
           >
             {{
               truncateId(
-                satisfied_by_rule &&
-                  satisfied_by_rule.srg_rule &&
-                  satisfied_by_rule.srg_rule.version,
+                satisfied_by_rule && satisfied_by_rule.srg_id,
               )
             }} </strong
           >?

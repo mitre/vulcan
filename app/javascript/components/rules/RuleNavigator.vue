@@ -51,7 +51,9 @@
         >
           <span>
             <b-icon icon="x" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
-            <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
+            <span v-if="filters.showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
+              {{ truncateId(rule.srg_id) }}
+            </span>
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </span>
           <span>
@@ -134,8 +136,8 @@
             <template v-else-if="filters.nestSatisfiedRulesChecked">
               <span class="tree-toggle-spacer" />
             </template>
-            <span v-if="filters.showSRGIdChecked">
-              {{ rule.version }}
+            <span v-if="filters.showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
+              {{ truncateId(rule.srg_id) }}
             </span>
             <span v-else>
               {{ formatRuleId(rule.rule_id) }}
@@ -203,11 +205,10 @@
           >
             <span>
               <b-icon icon="chevron-right" />
-              <span v-if="filters.showSRGIdChecked" v-b-tooltip.hover :title="satisfies.version">
-                {{ truncateId(satisfies.version) }}
-              </span>
-              <span v-else>
-                {{ formatRuleId(satisfies.rule_id) }}
+              <!-- Nested satisfaction children ALWAYS show SRG IDs (no toggle) -->
+              <!-- WHY: These represent SRG requirements, semantically SRG data not STIG rules -->
+              <span v-b-tooltip.hover :title="satisfies.srg_id">
+                {{ truncateId(satisfies.srg_id) }}
               </span>
             </span>
             <span>
@@ -403,8 +404,8 @@ export default {
     if (localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`)) {
       try {
         const saved = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
-        // Only restore status and review filters, NOT display options
-        const statusReviewKeys = [
+        // Restore all user-set filter preferences
+        const restorableKeys = [
           "search",
           "acFilterChecked",
           "aimFilterChecked",
@@ -414,8 +415,11 @@ export default {
           "nurFilterChecked",
           "urFilterChecked",
           "lckFilterChecked",
+          "showSRGIdChecked",
+          "sortBySRGIdChecked",
+          "nestSatisfiedRulesChecked",
         ];
-        statusReviewKeys.forEach((key) => {
+        restorableKeys.forEach((key) => {
           if (key in saved) {
             this.filters[key] = saved[key];
           }

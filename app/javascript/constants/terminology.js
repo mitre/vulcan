@@ -122,8 +122,8 @@ export const MESSAGE_LABELS = {
   cannotDeleteLocked: `Cannot delete a ${RULE_TERM.singular.toLowerCase()} that is locked or under review`,
   cannotSaveLocked: `Cannot save a ${RULE_TERM.singular.toLowerCase()} that is locked or under review.`,
   // Also Satisfies modal
-  satisfiesPrompt: `Select ${RULE_TERM.plural.toLowerCase()} that this one satisfies:`,
-  satisfiesPlaceholder: `Search and select ${RULE_TERM.plural.toLowerCase()}...`,
+  satisfiesPrompt: `Select SRG requirements that this rule satisfies:`,
+  satisfiesPlaceholder: `Search and select SRG requirements...`,
   // Revert history modal
   revertHistoryTitle: `Revert ${RULE_TERM.singular} History`,
 };
