@@ -174,51 +174,6 @@
             <b-button variant="danger" @click="ok()">{{ msg.deleteConfirmButton }}</b-button>
           </template>
         </b-modal>
-        <b-modal
-          id="also-satisfies-modal"
-          title="Also Satisfies"
-          centered
-          size="lg"
-          @ok="addMultipleSatisfiedRules"
-          @hidden="clearSelectedRules"
-        >
-          <b-form-group :label="msg.satisfiesPrompt">
-            <multiselect
-              v-model="selectedSatisfiesRuleIds"
-              :options="filteredSelectRules"
-              :multiple="true"
-              :close-on-select="false"
-              :clear-on-select="false"
-              :preserve-search="true"
-              :taggable="true"
-              tag-placeholder="Press enter to add"
-              :placeholder="msg.satisfiesPlaceholder"
-              label="text"
-              track-by="value"
-              :preselect-first="false"
-              @tag="addCustomSatisfaction"
-            >
-              <template slot="selection" slot-scope="{ values, isOpen }">
-                <span v-if="values.length && !isOpen" class="multiselect__single">
-                  {{ selectedCountLabel(values.length) }}
-                </span>
-              </template>
-            </multiselect>
-          </b-form-group>
-          <div class="mt-2 text-muted">
-            <small>{{ selectedCountLabel(selectedSatisfiesRuleIds.length) }}</small>
-          </div>
-          <template #modal-footer="{ cancel, ok }">
-            <b-button @click="cancel()"> Cancel </b-button>
-            <b-button
-              variant="info"
-              :disabled="selectedSatisfiesRuleIds.length === 0"
-              @click="ok()"
-            >
-              Add {{ selectedSatisfiesRuleIds.length }} {{ term.plural }}
-            </b-button>
-          </template>
-        </b-modal>
       </div>
     </div>
   </div>
@@ -231,19 +186,15 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-import Multiselect from "vue-multiselect";
-import "vue-multiselect/dist/vue-multiselect.min.css";
 import {
   RULE_TERM,
   MESSAGE_LABELS,
   REVIEW_ACTION_LABELS,
-  selectedCountLabel,
 } from "../../constants/terminology";
-import { truncateId } from "../../utils/idFormatter";
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal, NewRuleModalForm, Multiselect },
+  components: { CommentModal, NewRuleModalForm },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
@@ -276,11 +227,6 @@ export default {
       term: RULE_TERM,
       msg: MESSAGE_LABELS,
       reviewLabels: REVIEW_ACTION_LABELS,
-      truncateId, // Expose utility for methods
-      showSRGIdChecked: localStorage.getItem(`showSRGIdChecked-${this.rules[0].component_id}`),
-      filteredSelectRules: [],
-      selectedSatisfiesRuleIds: [], // Array for multi-select
-      satisfiesSearchText: "", // Search filter text
       selectedReviewAction: null,
       showReviewPane: false,
       reviewComment: "",
@@ -399,47 +345,7 @@ export default {
       ];
     },
   },
-  watch: {
-    rule: function (_) {
-      this.filterRules();
-    },
-  },
-  mounted: function () {
-    this.updateShowSRGIdChecked();
-  },
-  beforeUnmount: function () {
-    clearInterval(this.showSRGIdCheckedInterval);
-  },
   methods: {
-    selectedCountLabel,
-    updateShowSRGIdChecked: function () {
-      const componentId = this.rules[0].component_id;
-      this.showSRGIdCheckedInterval = setInterval(() => {
-        const newValue = localStorage.getItem(`showSRGIdChecked-${componentId}`);
-        if (newValue !== this.showSRGIdChecked) {
-          this.showSRGIdChecked = newValue;
-          this.filterRules();
-        }
-      }, 1000);
-    },
-    filterRules: function () {
-      this.filteredSelectRules = this.rules
-        .filter((r) => {
-          return (
-            r.id !== this.rule.id &&
-            r.satisfies.length === 0 &&
-            !this.rule.satisfies.some((s) => s.id === r.id)
-          );
-        })
-        .map((r) => {
-          return {
-            value: r.id,
-            text: JSON.parse(this.showSRGIdChecked)
-              ? this.truncateId(r.version)
-              : this.formatRuleId(r.rule_id),
-          };
-        });
-    },
     saveRule(comment) {
       const payload = {
         rule: {
@@ -505,42 +411,6 @@ export default {
           this.$root.$emit("refresh:rule", r.id, "all");
         });
       }
-    },
-    addCustomSatisfaction: function (searchText) {
-      // Handle pasted or typed satisfaction (SRG ID or rule ID)
-      // User can paste "SRG-OS-000480" or full "SRG-OS-000480-GPOS-00227"
-      const trimmed = searchText.trim();
-      if (!trimmed) return;
-
-      // Try to find matching rule by SRG ID or rule ID
-      const matchingRule = this.rules.find((r) => {
-        return (
-          (r.srg_rule && r.srg_rule.version === trimmed) ||
-          r.rule_id === trimmed ||
-          `${this.component.prefix}-${r.rule_id}` === trimmed
-        );
-      });
-
-      if (matchingRule) {
-        // Add to selection
-        this.selectedSatisfiesRuleIds.push({
-          value: matchingRule.id,
-          text: `${this.component.prefix}-${matchingRule.rule_id}`,
-        });
-      }
-    },
-    addMultipleSatisfiedRules: function () {
-      // Add all selected rules as satisfied by this rule
-      // selectedSatisfiesRuleIds contains objects with {value, text} from multiselect
-      this.selectedSatisfiesRuleIds.forEach((item) => {
-        const ruleId = typeof item === "object" ? item.value : item;
-        this.$root.$emit("addSatisfied:rule", ruleId, this.rule.id);
-      });
-    },
-    clearSelectedRules: function () {
-      // Clear selections when modal is hidden
-      this.selectedSatisfiesRuleIds = [];
-      this.satisfiesSearchText = "";
     },
   },
 };
