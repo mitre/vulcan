@@ -403,6 +403,99 @@ describe("RuleOverview", () => {
   });
 
   // ==========================================
+  // SATISFACTION DISPLAY (parsed from VulnDiscussion)
+  // ==========================================
+  describe("satisfaction display", () => {
+    const ruleWithSatisfaction = {
+      ...stigRule,
+      disa_rule_descriptions_attributes: [
+        {
+          vuln_discussion:
+            "This is some discussion text. Satisfies: SRG-OS-000023-GPOS-00006, SRG-OS-000228-GPOS-00088.",
+        },
+      ],
+    };
+
+    const ruleWithSatisfiedBy = {
+      ...stigRule,
+      disa_rule_descriptions_attributes: [
+        {
+          vuln_discussion:
+            "Some context here. Satisfied By: SRG-OS-000100-GPOS-00050.",
+        },
+      ],
+    };
+
+    const ruleWithNoSatisfaction = {
+      ...stigRule,
+      disa_rule_descriptions_attributes: [
+        {
+          vuln_discussion: "This rule does not satisfy any other requirements.",
+        },
+      ],
+    };
+
+    const ruleWithNoDisa = {
+      ...stigRule,
+      disa_rule_descriptions_attributes: undefined,
+    };
+
+    it("parses SRG IDs from VulnDiscussion Satisfies text", () => {
+      wrapper = createWrapper({ selectedRule: ruleWithSatisfaction });
+      const ids = wrapper.vm.satisfactionIds;
+      expect(ids).toContain("SRG-OS-000023-GPOS-00006");
+      expect(ids).toContain("SRG-OS-000228-GPOS-00088");
+      expect(ids).toHaveLength(2);
+    });
+
+    it("parses SRG IDs from Satisfied By text", () => {
+      wrapper = createWrapper({ selectedRule: ruleWithSatisfiedBy });
+      const ids = wrapper.vm.satisfactionIds;
+      expect(ids).toContain("SRG-OS-000100-GPOS-00050");
+      expect(ids).toHaveLength(1);
+    });
+
+    it("returns empty array when no satisfaction text present", () => {
+      wrapper = createWrapper({ selectedRule: ruleWithNoSatisfaction });
+      expect(wrapper.vm.satisfactionIds).toEqual([]);
+    });
+
+    it("returns empty array when disa_rule_descriptions_attributes is missing", () => {
+      wrapper = createWrapper({ selectedRule: ruleWithNoDisa });
+      expect(wrapper.vm.satisfactionIds).toEqual([]);
+    });
+
+    it("displays truncated SRG ID badges when satisfaction data exists", () => {
+      wrapper = createWrapper({ selectedRule: ruleWithSatisfaction });
+      const badges = wrapper.findAll(".badge-info");
+      expect(badges.length).toBe(2);
+      // Truncated form
+      expect(badges.at(0).text()).toContain("SRG-OS-000023");
+      expect(badges.at(1).text()).toContain("SRG-OS-000228");
+    });
+
+    it("shows full SRG ID in tooltip on badges", () => {
+      wrapper = createWrapper({ selectedRule: ruleWithSatisfaction });
+      const badges = wrapper.findAll(".badge-info");
+      expect(badges.at(0).attributes("title")).toBe("SRG-OS-000023-GPOS-00006");
+    });
+
+    it('shows "None" when no satisfaction data', () => {
+      wrapper = createWrapper({ selectedRule: ruleWithNoSatisfaction });
+      expect(wrapper.text()).toContain("Satisfies");
+      expect(wrapper.text()).toContain("None");
+    });
+
+    it("returns sorted SRG IDs", () => {
+      wrapper = createWrapper({ selectedRule: ruleWithSatisfaction });
+      const ids = wrapper.vm.satisfactionIds;
+      // SRG-OS-000023 should come before SRG-OS-000228
+      expect(ids[0]).toBe("SRG-OS-000023-GPOS-00006");
+      expect(ids[1]).toBe("SRG-OS-000228-GPOS-00088");
+    });
+  });
+
+  // ==========================================
   // EMPTY STATE
   // ==========================================
   describe("empty state", () => {

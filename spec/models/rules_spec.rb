@@ -332,6 +332,30 @@ RSpec.describe Review do
       expect(json).not_to have_key(:srg_id)
     end
 
+    it 'does NOT include version in satisfaction objects (frontend uses srg_id)' do
+      json = @p1r1.as_json
+      satisfies_list = json[:satisfies]
+      satisfied = satisfies_list.first
+
+      # CRITICAL CONTRACT: Frontend RuleNavigator uses srg_id for display.
+      # If version were included, it would mask the bug where template
+      # references satisfies.version instead of satisfies.srg_id.
+      expect(satisfied).to have_key(:srg_id)
+      expect(satisfied).not_to have_key(:version)
+      expect(satisfied.keys).to match_array(%i[id rule_id srg_id])
+    end
+
+    it 'does NOT include version in satisfied_by objects (frontend uses srg_id)' do
+      @p1r2.reload
+      json = @p1r2.as_json
+      satisfied_by_list = json[:satisfied_by]
+      satisfier = satisfied_by_list.first
+
+      expect(satisfier).to have_key(:srg_id)
+      expect(satisfier).not_to have_key(:version)
+      expect(satisfier.keys).to match_array(%i[id rule_id fixtext srg_id])
+    end
+
     it 'handles satisfaction with nil srg_rule gracefully' do
       # belongs_to :srg_rule is required, so build (not create) to test edge case
       rule_no_srg = Rule.new(

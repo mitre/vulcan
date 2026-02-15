@@ -45,24 +45,6 @@ describe("RuleEditorHeader", () => {
       satisfies: [],
       satisfied_by: [],
     },
-    {
-      id: 3,
-      rule_id: "003",
-      version: "SV-003r1",
-      component_id: 10,
-      status: "Not Yet Determined",
-      satisfies: [],
-      satisfied_by: [],
-    },
-    {
-      id: 4,
-      rule_id: "004",
-      version: "SV-004r1",
-      component_id: 10,
-      status: "Not Yet Determined",
-      satisfies: [{ id: 5 }], // This one already satisfies something, should be excluded
-      satisfied_by: [],
-    },
   ];
 
   const createWrapper = (props = {}) => {
@@ -80,103 +62,107 @@ describe("RuleEditorHeader", () => {
       stubs: {
         CommentModal: true,
         NewRuleModalForm: true,
-        Multiselect: true,
       },
     });
   };
 
-  let rootEmitSpy;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-    localStorage.clear();
-    localStorage.setItem("showSRGIdChecked-10", "false");
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     if (wrapper) {
       wrapper.destroy();
     }
-    if (rootEmitSpy) {
-      rootEmitSpy.mockRestore();
-    }
   });
 
-  describe("multi-select satisfies modal", () => {
-    it("has selectedSatisfiesRuleIds initialized as empty array", () => {
+  describe("header display", () => {
+    it("displays project prefix and rule ID in header link", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.selectedSatisfiesRuleIds).toEqual([]);
+      const link = wrapper.find("a.headerLink");
+      expect(link.text()).toContain("TEST-001");
+      expect(link.text()).toContain("SV-001r1");
     });
 
-    it("has satisfiesSearchText initialized as empty string", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.satisfiesSearchText).toBe("");
-    });
-
-    it("filters out rules that already satisfy something", () => {
-      wrapper = createWrapper();
-      wrapper.vm.filterRules();
-
-      // Rule 4 satisfies something, should be excluded
-      // Rule 1 is current rule, should be excluded
-      // Rules 2 and 3 should be included
-      const ruleIds = wrapper.vm.filteredSelectRules.map((r) => r.value);
-      expect(ruleIds).toContain(2);
-      expect(ruleIds).toContain(3);
-      expect(ruleIds).not.toContain(1); // current rule
-      expect(ruleIds).not.toContain(4); // already satisfies something
-    });
-
-    it("addMultipleSatisfiedRules emits events for each selected rule", async () => {
-      wrapper = createWrapper();
-      rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
-      // vue-multiselect passes full objects when track-by is used
-      await wrapper.setData({
-        selectedSatisfiesRuleIds: [
-          { value: 2, text: "TEST-002" },
-          { value: 3, text: "TEST-003" },
-        ],
+    it("shows lock icon when rule is locked", () => {
+      wrapper = createWrapper({
+        rule: { ...mockRules[0], locked: true },
       });
-
-      wrapper.vm.addMultipleSatisfiedRules();
-      await wrapper.vm.$nextTick();
-
-      expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 2, 1);
-      expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 3, 1);
+      expect(wrapper.find("[icon='lock']").exists()).toBe(true);
     });
 
-    it("addMultipleSatisfiedRules handles plain IDs for backwards compatibility", async () => {
-      wrapper = createWrapper();
-      rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
-      // Also test with plain IDs for backwards compatibility
-      await wrapper.setData({ selectedSatisfiesRuleIds: [2, 3] });
-
-      wrapper.vm.addMultipleSatisfiedRules();
-      await wrapper.vm.$nextTick();
-
-      expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 2, 1);
-      expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 3, 1);
+    it("shows review icon when rule is under review", () => {
+      wrapper = createWrapper({
+        rule: { ...mockRules[0], review_requestor_id: 42 },
+      });
+      expect(wrapper.find("[icon='file-earmark-search']").exists()).toBe(true);
     });
 
-    it("clearSelectedRules resets selection and search text", () => {
+    it("shows created date when no histories exist", () => {
       wrapper = createWrapper();
-      wrapper.vm.selectedSatisfiesRuleIds = [2, 3];
-      wrapper.vm.satisfiesSearchText = "test search";
+      expect(wrapper.text()).toContain("Created on");
+    });
+  });
 
-      wrapper.vm.clearSelectedRules();
-
-      expect(wrapper.vm.selectedSatisfiesRuleIds).toEqual([]);
-      expect(wrapper.vm.satisfiesSearchText).toBe("");
+  describe("locked/under review state", () => {
+    it("disables save and delete buttons when rule is locked", () => {
+      wrapper = createWrapper({
+        rule: { ...mockRules[0], locked: true },
+      });
+      const disabledButtons = wrapper.findAll("b-button-stub[disabled]");
+      expect(disabledButtons.length).toBeGreaterThanOrEqual(2);
     });
 
-    it("shows correct count of selected rules", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.selectedSatisfiesRuleIds.length).toBe(0);
+    it("shows locked warning message", () => {
+      wrapper = createWrapper({
+        rule: { ...mockRules[0], locked: true },
+      });
+      expect(wrapper.text()).toContain("locked and must first be unlocked");
+    });
 
-      wrapper.vm.selectedSatisfiesRuleIds = [2, 3];
-      expect(wrapper.vm.selectedSatisfiesRuleIds.length).toBe(2);
+    it("shows under review warning message", () => {
+      wrapper = createWrapper({
+        rule: { ...mockRules[0], review_requestor_id: 42 },
+      });
+      expect(wrapper.text()).toContain("under review and cannot be edited");
+    });
+  });
+
+  describe("review actions", () => {
+    it("provides all six review action options", () => {
+      wrapper = createWrapper();
+      const actions = wrapper.vm.reviewActions;
+      expect(actions).toHaveLength(6);
+      expect(actions.map((a) => a.value)).toEqual([
+        "request_review",
+        "revoke_review_request",
+        "request_changes",
+        "approve",
+        "lock_control",
+        "unlock_control",
+      ]);
+    });
+
+    it("disables lock when rule is already locked", () => {
+      wrapper = createWrapper({
+        rule: { ...mockRules[0], locked: true },
+      });
+      const lockAction = wrapper.vm.reviewActions.find((a) => a.value === "lock_control");
+      expect(lockAction.disabledTooltip).toBeTruthy();
+    });
+
+    it("disables unlock when rule is not locked", () => {
+      wrapper = createWrapper();
+      const unlockAction = wrapper.vm.reviewActions.find((a) => a.value === "unlock_control");
+      expect(unlockAction.disabledTooltip).toBeTruthy();
+    });
+  });
+
+  describe("readOnly mode", () => {
+    it("hides action buttons when readOnly is true", () => {
+      wrapper = createWrapper({ readOnly: true });
+      // The entire action section is v-if="!readOnly"
+      expect(wrapper.find("b-button-stub[variant='info']").exists()).toBe(false);
     });
   });
 });

@@ -172,9 +172,10 @@ describe('terminology constants', () => {
       expect(MESSAGE_LABELS.deleteConfirmButton).toContain(RULE_TERM.singular)
     })
 
-    it('satisfies labels use RULE_TERM', () => {
-      expect(MESSAGE_LABELS.satisfiesPrompt.toLowerCase()).toContain(RULE_TERM.plural.toLowerCase())
-      expect(MESSAGE_LABELS.satisfiesPlaceholder.toLowerCase()).toContain(RULE_TERM.plural.toLowerCase())
+    it('satisfies labels use SRG requirements terminology', () => {
+      // Satisfaction relationships are semantically about SRG requirements, not rules
+      expect(MESSAGE_LABELS.satisfiesPrompt.toLowerCase()).toContain('srg requirements')
+      expect(MESSAGE_LABELS.satisfiesPlaceholder.toLowerCase()).toContain('srg requirements')
     })
 
     it('message labels use RULE_TERM', () => {

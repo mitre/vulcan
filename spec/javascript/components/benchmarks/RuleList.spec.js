@@ -359,4 +359,99 @@ describe("RuleList", () => {
       expect(wrapper.vm.selectedRule).toEqual(stigRules[1]);
     });
   });
+
+  // ==========================================
+  // KEYBOARD NAVIGATION
+  // ==========================================
+  describe("keyboard navigation", () => {
+    it("initializes focusedIndex as -1", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.focusedIndex).toBe(-1);
+    });
+
+    it("ArrowDown moves focus to next row", () => {
+      wrapper = createWrapper();
+      wrapper.vm.handleKeydown({ key: "ArrowDown", preventDefault: () => {} });
+      expect(wrapper.vm.focusedIndex).toBe(0);
+      wrapper.vm.handleKeydown({ key: "ArrowDown", preventDefault: () => {} });
+      expect(wrapper.vm.focusedIndex).toBe(1);
+    });
+
+    it("ArrowUp moves focus to previous row", () => {
+      wrapper = createWrapper();
+      wrapper.vm.focusedIndex = 2;
+      wrapper.vm.handleKeydown({ key: "ArrowUp", preventDefault: () => {} });
+      expect(wrapper.vm.focusedIndex).toBe(1);
+    });
+
+    it("ArrowDown wraps from last to first", () => {
+      wrapper = createWrapper();
+      wrapper.vm.focusedIndex = stigRules.length - 1;
+      wrapper.vm.handleKeydown({ key: "ArrowDown", preventDefault: () => {} });
+      expect(wrapper.vm.focusedIndex).toBe(0);
+    });
+
+    it("ArrowUp wraps from first to last", () => {
+      wrapper = createWrapper();
+      wrapper.vm.focusedIndex = 0;
+      wrapper.vm.handleKeydown({ key: "ArrowUp", preventDefault: () => {} });
+      expect(wrapper.vm.focusedIndex).toBe(stigRules.length - 1);
+    });
+
+    it("Enter selects the focused rule", () => {
+      wrapper = createWrapper();
+      wrapper.vm.focusedIndex = 1;
+      wrapper.vm.handleKeydown({ key: "Enter", preventDefault: () => {} });
+      expect(wrapper.emitted("rule-selected")).toBeTruthy();
+    });
+
+    it("Space selects the focused rule", () => {
+      wrapper = createWrapper();
+      wrapper.vm.focusedIndex = 0;
+      wrapper.vm.handleKeydown({ key: " ", preventDefault: () => {} });
+      expect(wrapper.emitted("rule-selected")).toBeTruthy();
+    });
+  });
+
+  // ==========================================
+  // ROW STYLING
+  // ==========================================
+  describe("row styling", () => {
+    it("selected rule gets bg-secondary text-white", () => {
+      wrapper = createWrapper();
+      wrapper.vm.selectedRule = stigRules[0];
+      expect(wrapper.vm.rowClass(stigRules[0], 0)).toBe("bg-secondary text-white");
+    });
+
+    it("focused but unselected row gets bg-light", () => {
+      wrapper = createWrapper();
+      wrapper.vm.focusedIndex = 1;
+      expect(wrapper.vm.rowClass(stigRules[1], 1)).toBe("bg-light");
+    });
+
+    it("unfocused unselected row gets empty string", () => {
+      wrapper = createWrapper();
+      wrapper.vm.focusedIndex = -1;
+      expect(wrapper.vm.rowClass(stigRules[1], 1)).toBe("");
+    });
+  });
+
+  // ==========================================
+  // ACCESSIBILITY
+  // ==========================================
+  describe("accessibility", () => {
+    it("table has listbox role", () => {
+      wrapper = createWrapper();
+      const table = wrapper.find("table");
+      expect(table.attributes("role")).toBe("listbox");
+    });
+
+    it("rows have option role", () => {
+      wrapper = createWrapper();
+      const rows = wrapper.findAll("tbody tr");
+      rows.wrappers.forEach((row) => {
+        expect(row.attributes("role")).toBe("option");
+      });
+    });
+  });
 });
