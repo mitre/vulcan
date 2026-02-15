@@ -28,7 +28,10 @@
         </b-button>
         <b-button
           :variant="selectedSeverity === 'medium' ? 'warning' : 'outline-warning'"
-          :class="['d-flex justify-content-between align-items-center', selectedSeverity === 'medium' ? 'text-dark' : '']"
+          :class="[
+            'd-flex justify-content-between align-items-center',
+            selectedSeverity === 'medium' ? 'text-dark' : '',
+          ]"
           @click="setSeverity('medium')"
         >
           <span>CAT II</span> <b-badge variant="light">{{ medium_count }}</b-badge>
@@ -44,7 +47,7 @@
     </div>
 
     <!-- Table of Rules -->
-    <div class="mt-3" style="max-height: 700px; overflow-y: auto" ref="ruleListContainer">
+    <div ref="ruleListContainer" class="mt-3" style="max-height: 700px; overflow-y: auto">
       <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
       <table class="table table-hover" role="listbox" :aria-label="RULE_TERM.plural">
         <thead>

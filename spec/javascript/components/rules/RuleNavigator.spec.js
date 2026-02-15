@@ -27,7 +27,9 @@ describe("RuleNavigator", () => {
     id,
     rule_id: ruleId,
     version: `SV-${id}`,
-    srg_id: overrides.srg_id || `SRG-OS-${String(id).padStart(6, "0")}-GPOS-${String(id).padStart(5, "0")}`,
+    srg_id:
+      overrides.srg_id ||
+      `SRG-OS-${String(id).padStart(6, "0")}-GPOS-${String(id).padStart(5, "0")}`,
     status: "Applicable - Configurable",
     satisfies: [],
     satisfied_by: [],

@@ -420,8 +420,7 @@ describe("RuleOverview", () => {
       ...stigRule,
       disa_rule_descriptions_attributes: [
         {
-          vuln_discussion:
-            "Some context here. Satisfied By: SRG-OS-000100-GPOS-00050.",
+          vuln_discussion: "Some context here. Satisfied By: SRG-OS-000100-GPOS-00050.",
         },
       ],
     };

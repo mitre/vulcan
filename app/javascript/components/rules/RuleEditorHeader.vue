@@ -186,11 +186,7 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-import {
-  RULE_TERM,
-  MESSAGE_LABELS,
-  REVIEW_ACTION_LABELS,
-} from "../../constants/terminology";
+import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants/terminology";
 
 export default {
   name: "RuleEditorHeader",

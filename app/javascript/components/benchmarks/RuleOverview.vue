@@ -55,9 +55,9 @@
             <b-badge
               v-for="srgId in satisfactionIds"
               :key="srgId"
+              v-b-tooltip.hover
               variant="info"
               class="mr-1"
-              v-b-tooltip.hover
               :title="srgId"
             >
               {{ truncateId(srgId) }}
@@ -213,9 +213,7 @@ export default {
       const descs = this.selectedRule.disa_rule_descriptions_attributes;
       if (!descs || !descs[0]) return [];
       const vuln = descs[0].vuln_discussion || "";
-      const match = vuln.match(
-        /\b(?:Satisfi(?:ed\s+By|es))\s*:\s*(.+?)\.?\s*$/i
-      );
+      const match = vuln.match(/\b(?:Satisfi(?:ed\s+By|es))\s*:\s*(.+?)\.?\s*$/i);
       if (!match) return [];
       return match[1]
         .split(/[,;\s]+/)
@@ -224,14 +222,14 @@ export default {
         .sort();
     },
   },
-  methods: {
-    truncateId,
-  },
   watch: {
     selectedRule() {
       this.showFullRuleId = false;
       this.showLegacyIds = false;
     },
+  },
+  methods: {
+    truncateId,
   },
 };
 </script>
