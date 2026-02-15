@@ -79,6 +79,67 @@ RSpec.describe 'Components' do
   end
 
   # ==========================================================================
+  # REQUIREMENT: Component show JSON must include srg_id (from srg_rule
+  # association, NOT from nil DB column) and satisfaction relationships
+  # for BOTH member and non-member views.
+  # ==========================================================================
+  describe 'GET /components/:id.json (srg_id and satisfaction data)' do
+    let!(:component_with_rules) { create(:component, project: project) }
+
+    context 'as project member' do
+      it 'includes srg_id derived from srg_rule.version on each rule' do
+        get "/components/#{component_with_rules.id}.json"
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule = json['rules'].first
+        expect(rule).to have_key('srg_id')
+        expect(rule['srg_id']).to be_present
+        expect(rule['srg_id']).to start_with('SRG-')
+      end
+
+      it 'includes satisfies and satisfied_by arrays on each rule' do
+        get "/components/#{component_with_rules.id}.json"
+        json = response.parsed_body
+        rule = json['rules'].first
+        expect(rule).to have_key('satisfies')
+        expect(rule).to have_key('satisfied_by')
+        expect(rule['satisfies']).to be_an(Array)
+        expect(rule['satisfied_by']).to be_an(Array)
+      end
+    end
+
+    context 'as non-member viewing released component' do
+      let(:non_member) { create(:user) }
+      let!(:released_component) { create(:component, project: project, released: true) }
+
+      before do
+        sign_out user
+        sign_in non_member
+      end
+
+      it 'includes srg_id derived from srg_rule.version (not nil DB column)' do
+        get "/components/#{released_component.id}.json"
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule = json['rules'].first
+        expect(rule).to have_key('srg_id')
+        expect(rule['srg_id']).to be_present
+        expect(rule['srg_id']).to start_with('SRG-')
+      end
+
+      it 'includes satisfies and satisfied_by arrays' do
+        get "/components/#{released_component.id}.json"
+        json = response.parsed_body
+        rule = json['rules'].first
+        expect(rule).to have_key('satisfies')
+        expect(rule).to have_key('satisfied_by')
+        expect(rule['satisfies']).to be_an(Array)
+        expect(rule['satisfied_by']).to be_an(Array)
+      end
+    end
+  end
+
+  # ==========================================================================
   # REQUIREMENT: Components index should return optimized JSON with only
   # needed fields for table display. Should NOT include heavy fields.
   # ==========================================================================
