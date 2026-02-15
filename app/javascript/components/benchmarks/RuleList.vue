@@ -11,39 +11,42 @@
         :placeholder="searchPlaceholder"
       />
       <label id="severity-filter-label" class="small text-muted mb-1 d-block">Severity</label>
-      <b-button-group size="sm" class="d-flex">
+      <b-button-group size="sm" vertical class="w-100">
         <b-button
           :variant="selectedSeverity === '' ? 'secondary' : 'outline-secondary'"
+          class="d-flex justify-content-between align-items-center"
           @click="setSeverity('')"
         >
-          All <b-badge variant="light">{{ rules.length }}</b-badge>
+          <span>All</span> <b-badge variant="light">{{ rules.length }}</b-badge>
         </b-button>
         <b-button
           :variant="selectedSeverity === 'high' ? 'danger' : 'outline-danger'"
+          class="d-flex justify-content-between align-items-center"
           @click="setSeverity('high')"
         >
-          CAT I <b-badge variant="light">{{ high_count }}</b-badge>
+          <span>CAT I</span> <b-badge variant="light">{{ high_count }}</b-badge>
         </b-button>
         <b-button
           :variant="selectedSeverity === 'medium' ? 'warning' : 'outline-warning'"
-          :class="selectedSeverity === 'medium' ? 'text-dark' : ''"
+          :class="['d-flex justify-content-between align-items-center', selectedSeverity === 'medium' ? 'text-dark' : '']"
           @click="setSeverity('medium')"
         >
-          CAT II <b-badge variant="light">{{ medium_count }}</b-badge>
+          <span>CAT II</span> <b-badge variant="light">{{ medium_count }}</b-badge>
         </b-button>
         <b-button
           :variant="selectedSeverity === 'low' ? 'success' : 'outline-success'"
+          class="d-flex justify-content-between align-items-center"
           @click="setSeverity('low')"
         >
-          CAT III <b-badge variant="light">{{ low_count }}</b-badge>
+          <span>CAT III</span> <b-badge variant="light">{{ low_count }}</b-badge>
         </b-button>
       </b-button-group>
     </div>
 
     <!-- Table of Rules -->
-    <div class="mt-3" style="max-height: 700px; overflow-y: auto">
+    <div class="mt-3" style="max-height: 700px; overflow-y: auto" ref="ruleListContainer">
       <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
-      <table class="table table-hover">
+      <table class="table table-hover" role="listbox" :aria-label="RULE_TERM.plural">
         <thead>
           <tr>
             <th class="d-flex">
@@ -63,11 +66,14 @@
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody @keydown="handleKeydown">
           <tr
-            v-for="rule in sortedRules"
+            v-for="(rule, index) in sortedRules"
             :key="rule.id"
-            :class="selectedRule && selectedRule.id === rule.id ? 'bg-secondary text-white' : ''"
+            :class="rowClass(rule, index)"
+            :tabindex="index === focusedIndex || (focusedIndex === -1 && index === 0) ? 0 : -1"
+            role="option"
+            :aria-selected="selectedRule && selectedRule.id === rule.id"
             @click="selectRule(rule)"
           >
             <td>{{ displayField(rule) }}</td>
@@ -110,6 +116,7 @@ export default {
       field: this.type === "srg" ? "srg_id" : "rule_id",
       sortOrder: "asc",
       selectedRule: this.initialSelectedRule,
+      focusedIndex: -1,
     };
   },
   computed: {
@@ -177,6 +184,45 @@ export default {
           return this.type === "srg" ? rule.version : rule.srg_id;
         default:
           return rule.rule_id;
+      }
+    },
+    rowClass(rule, index) {
+      if (this.selectedRule && this.selectedRule.id === rule.id) {
+        return "bg-secondary text-white";
+      }
+      if (index === this.focusedIndex) {
+        return "bg-light";
+      }
+      return "";
+    },
+    handleKeydown(event) {
+      const len = this.sortedRules.length;
+      if (!len) return;
+
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const start = this.focusedIndex >= 0 ? this.focusedIndex : -1;
+        if (event.key === "ArrowDown") {
+          this.focusedIndex = start < len - 1 ? start + 1 : 0;
+        } else {
+          this.focusedIndex = start > 0 ? start - 1 : len - 1;
+        }
+        this.$nextTick(() => {
+          const container = this.$refs.ruleListContainer;
+          if (!container) return;
+          const rows = container.querySelectorAll("tr[role='option']");
+          if (rows[this.focusedIndex]) {
+            rows[this.focusedIndex].focus();
+            if (rows[this.focusedIndex].scrollIntoView) {
+              rows[this.focusedIndex].scrollIntoView({ block: "nearest" });
+            }
+          }
+        });
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (this.focusedIndex >= 0 && this.focusedIndex < len) {
+          this.selectRule(this.sortedRules[this.focusedIndex]);
+        }
       }
     },
     displayField(rule) {

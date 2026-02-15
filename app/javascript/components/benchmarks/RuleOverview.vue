@@ -48,6 +48,24 @@
           <strong>&rarr; SRG ID</strong>: {{ selectedRule.srg_id }}
         </li>
 
+        <!-- Satisfies (parsed from VulnDiscussion — always visible) -->
+        <li class="list-group-item">
+          <strong>Satisfies</strong>:
+          <template v-if="satisfactionIds.length > 0">
+            <b-badge
+              v-for="srgId in satisfactionIds"
+              :key="srgId"
+              variant="info"
+              class="mr-1"
+              v-b-tooltip.hover
+              :title="srgId"
+            >
+              {{ truncateId(srgId) }}
+            </b-badge>
+          </template>
+          <span v-else class="text-muted font-italic">None</span>
+        </li>
+
         <!-- Legacy toggle (collapsed by default) -->
         <li v-if="hasLegacyFields" class="list-group-item">
           <button
@@ -129,6 +147,7 @@
 import { RULE_TERM, SEVERITY_LABELS } from "../../constants/terminology";
 import { parseMitreAttack, parseCisControls } from "../../utils/identParser";
 import { truncateRuleId } from "../../utils/ruleIdFormatter";
+import { truncateId } from "../../utils/idFormatter";
 
 export default {
   name: "RuleOverview",
@@ -188,6 +207,25 @@ export default {
     cisControls() {
       return parseCisControls(this.selectedRule.ident);
     },
+    satisfactionIds() {
+      // Explicit property access (no optional chaining) so Vue 2 tracks dependencies
+      if (!this.selectedRule) return [];
+      const descs = this.selectedRule.disa_rule_descriptions_attributes;
+      if (!descs || !descs[0]) return [];
+      const vuln = descs[0].vuln_discussion || "";
+      const match = vuln.match(
+        /\b(?:Satisfi(?:ed\s+By|es))\s*:\s*(.+?)\.?\s*$/i
+      );
+      if (!match) return [];
+      return match[1]
+        .split(/[,;\s]+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .sort();
+    },
+  },
+  methods: {
+    truncateId,
   },
   watch: {
     selectedRule() {
