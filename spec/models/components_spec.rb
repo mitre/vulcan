@@ -302,7 +302,7 @@ RSpec.describe Component do
       sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}, #{pref}-#{rule_id_two}"
       sb.save!
       @p1_c1.create_rule_satisfactions
-      expect(@p1_c1.rules.last.satisfied_by.size).to eq(2)
+      expect(sb.reload.satisfied_by.size).to eq(2)
     end
 
     it 'correctly establishes rule satisfactions relation when a rule is satisfied by another rule' do
@@ -312,7 +312,7 @@ RSpec.describe Component do
       sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}"
       sb.save!
       @p1_c1.create_rule_satisfactions
-      expect(@p1_c1.rules.last.satisfied_by.size).to eq(1)
+      expect(sb.reload.satisfied_by.size).to eq(1)
     end
 
     it 'parses satisfied by list with trailing period' do
@@ -323,7 +323,7 @@ RSpec.describe Component do
       sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}, #{pref}-#{rule_id_two}."
       sb.save!
       @p1_c1.create_rule_satisfactions
-      expect(@p1_c1.rules.last.satisfied_by.size).to eq(2)
+      expect(sb.reload.satisfied_by.size).to eq(2)
     end
 
     it 'parses satisfied by list without trailing period' do
@@ -334,7 +334,7 @@ RSpec.describe Component do
       sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}, #{pref}-#{rule_id_two}"
       sb.save!
       @p1_c1.create_rule_satisfactions
-      expect(@p1_c1.rules.last.satisfied_by.size).to eq(2)
+      expect(sb.reload.satisfied_by.size).to eq(2)
     end
 
     it 'parses satisfied by list with extra whitespace' do
@@ -344,7 +344,7 @@ RSpec.describe Component do
       sb.vendor_comments = "Satisfied By: #{pref}-#{rule_id_one}   ."
       sb.save!
       @p1_c1.create_rule_satisfactions
-      expect(@p1_c1.rules.last.satisfied_by.size).to eq(1)
+      expect(sb.reload.satisfied_by.size).to eq(1)
     end
 
     # Postel's Law: Be liberal in what you accept
