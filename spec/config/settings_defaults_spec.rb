@@ -43,30 +43,22 @@ RSpec.describe 'Settings defaults' do
     # Initializer backup: sets false if value is nil
 
     it 'ldap is disabled by default' do
-      if ENV['VULCAN_ENABLE_LDAP'].present?
-        skip 'VULCAN_ENABLE_LDAP is set in environment'
-      end
+      skip 'VULCAN_ENABLE_LDAP is set in environment' if ENV['VULCAN_ENABLE_LDAP'].present?
       expect(Settings.ldap['enabled']).to be false
     end
 
     it 'oidc is disabled by default' do
-      if ENV['VULCAN_ENABLE_OIDC'].present?
-        skip 'VULCAN_ENABLE_OIDC is set in environment'
-      end
+      skip 'VULCAN_ENABLE_OIDC is set in environment' if ENV['VULCAN_ENABLE_OIDC'].present?
       expect(Settings.oidc['enabled']).to be false
     end
 
     it 'smtp is disabled by default' do
-      if ENV['VULCAN_ENABLE_SMTP'].present?
-        skip 'VULCAN_ENABLE_SMTP is set in environment'
-      end
+      skip 'VULCAN_ENABLE_SMTP is set in environment' if ENV['VULCAN_ENABLE_SMTP'].present?
       expect(Settings.smtp['enabled']).to be false
     end
 
     it 'slack is disabled by default' do
-      if ENV['VULCAN_ENABLE_SLACK_COMMS'].present?
-        skip 'VULCAN_ENABLE_SLACK_COMMS is set in environment'
-      end
+      skip 'VULCAN_ENABLE_SLACK_COMMS is set in environment' if ENV['VULCAN_ENABLE_SLACK_COMMS'].present?
       expect(Settings.slack['enabled']).to be false
     end
   end
