@@ -33,6 +33,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@vitejs/plugin-vue2": "^2.3.4",
+    "@vitest/coverage-v8": "^4.0.18",
     "@vue/test-utils": "1",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.1.2",
