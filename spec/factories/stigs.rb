@@ -4,11 +4,11 @@ XML_FILE_STIG = Rails.root.join('db/seeds/stigs/U_RHEL_9_STIG_V2R7_Manual-xccdf.
 
 FactoryBot.define do
   factory :stig do
-    stig_id { FFaker::Name.name.underscore }
-    name { FFaker::Name.name }
-    title { FFaker::Name.name }
+    sequence(:stig_id) { |n| "STIG-TEST-#{n.to_s.rjust(6, '0')}" }
+    sequence(:name) { |n| "Test STIG #{n}" }
+    sequence(:title) { |n| "Test Security Technical Implementation Guide #{n}" }
     description { 'MyText' }
-    version { "V#{rand(0..9)}R#{rand(0..9)}" }
+    sequence(:version) { |n| "V#{(n / 10) + 1}R#{(n % 10) + 1}" }
     xml { XML_FILE_STIG }
     benchmark_date { '2023-07-20' }
   end
