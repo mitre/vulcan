@@ -385,4 +385,175 @@ describe("RulesCodeEditorView", () => {
       expect(ruleEditor.props("advanced_fields")).toBe(true);
     });
   });
+
+  describe("filterRulesForSatisfies (Also Satisfies modal)", () => {
+    // REQUIREMENT: The Also Satisfies modal shows eligible rules as options.
+    // A rule is eligible if:
+    //   1. It is NOT the currently selected rule
+    //   2. It does NOT already satisfy another rule (satisfies.length === 0)
+    //   3. It is NOT already in the selected rule's satisfies list
+    // Display: truncated SRG ID (or prefix-rule_id fallback)
+
+    const rulesWithSrgIds = [
+      {
+        id: 1,
+        rule_id: "001",
+        srg_id: "SRG-OS-000001-GPOS-00001",
+        status: "Applicable - Configurable",
+        locked: false,
+        review_requestor_id: null,
+        satisfies: [],
+        satisfied_by: [],
+        histories: [],
+        version: "SV-001",
+      },
+      {
+        id: 2,
+        rule_id: "002",
+        srg_id: "SRG-OS-000002-GPOS-00002",
+        status: "Not Yet Determined",
+        locked: false,
+        review_requestor_id: null,
+        satisfies: [],
+        satisfied_by: [],
+        histories: [],
+        version: "SV-002",
+      },
+      {
+        id: 3,
+        rule_id: "003",
+        srg_id: "SRG-OS-000003-GPOS-00003",
+        status: "Applicable - Configurable",
+        locked: false,
+        review_requestor_id: null,
+        satisfies: [{ id: 99, rule_id: "099", srg_id: "SRG-OS-000099-GPOS-00099" }],
+        satisfied_by: [],
+        histories: [],
+        version: "SV-003",
+      },
+      {
+        id: 4,
+        rule_id: "004",
+        srg_id: null,
+        status: "Not Applicable",
+        locked: false,
+        review_requestor_id: null,
+        satisfies: [],
+        satisfied_by: [],
+        histories: [],
+        version: "SV-004",
+      },
+    ];
+
+    it("excludes the currently selected rule from options", () => {
+      wrapper = createWrapper({ rules: rulesWithSrgIds });
+      wrapper.vm.selectRule(1);
+      wrapper.vm.filterRulesForSatisfies();
+      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
+      expect(ids).not.toContain(1);
+    });
+
+    it("excludes rules that already satisfy other rules", () => {
+      wrapper = createWrapper({ rules: rulesWithSrgIds });
+      wrapper.vm.selectRule(1);
+      wrapper.vm.filterRulesForSatisfies();
+      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
+      // Rule 3 has satisfies.length > 0 — should be excluded
+      expect(ids).not.toContain(3);
+    });
+
+    it("excludes rules already in the selected rule's satisfies list", () => {
+      const rulesWithExistingSatisfaction = rulesWithSrgIds.map((r) => {
+        if (r.id === 1) {
+          return {
+            ...r,
+            satisfies: [{ id: 2, rule_id: "002", srg_id: "SRG-OS-000002-GPOS-00002" }],
+          };
+        }
+        return r;
+      });
+      wrapper = createWrapper({ rules: rulesWithExistingSatisfaction });
+      wrapper.vm.selectRule(1);
+      wrapper.vm.filterRulesForSatisfies();
+      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
+      expect(ids).not.toContain(2);
+    });
+
+    it("includes eligible rules", () => {
+      wrapper = createWrapper({ rules: rulesWithSrgIds });
+      wrapper.vm.selectRule(1);
+      wrapper.vm.filterRulesForSatisfies();
+      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
+      // Rule 2 and 4 are eligible (not selected, no existing satisfies, not in satisfies list)
+      expect(ids).toContain(2);
+      expect(ids).toContain(4);
+    });
+
+    it("displays truncated SRG ID as option text", () => {
+      wrapper = createWrapper({ rules: rulesWithSrgIds });
+      wrapper.vm.selectRule(1);
+      wrapper.vm.filterRulesForSatisfies();
+      const rule2Option = wrapper.vm.filteredSelectRules.find((r) => r.value === 2);
+      expect(rule2Option.text).toBe("SRG-OS-000002");
+    });
+
+    it("falls back to prefix-rule_id when srg_id is null", () => {
+      wrapper = createWrapper({ rules: rulesWithSrgIds });
+      wrapper.vm.selectRule(1);
+      wrapper.vm.filterRulesForSatisfies();
+      const rule4Option = wrapper.vm.filteredSelectRules.find((r) => r.value === 4);
+      expect(rule4Option.text).toBe("TEST-004");
+    });
+
+    it("returns empty when no rule is selected", () => {
+      wrapper = createWrapper({ rules: rulesWithSrgIds });
+      // Deselect all rules — autoSelectFirst selects rule 1 on mount
+      wrapper.vm.deselectRule(wrapper.vm.selectedRuleId);
+      wrapper.vm.filterRulesForSatisfies();
+      expect(wrapper.vm.filteredSelectRules).toEqual([]);
+    });
+  });
+
+  describe("addMultipleSatisfiedRules", () => {
+    it("emits addSatisfied:rule for each selected rule", () => {
+      wrapper = createWrapper();
+      const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
+      wrapper.vm.selectRule(1);
+      wrapper.vm.selectedSatisfiesRuleIds = [
+        { value: 2, text: "SRG-OS-000002" },
+        { value: 3, text: "SRG-OS-000003" },
+      ];
+      wrapper.vm.addMultipleSatisfiedRules();
+      expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 2, 1);
+      expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 3, 1);
+      rootEmitSpy.mockRestore();
+    });
+
+    it("does nothing when no rule is selected", () => {
+      wrapper = createWrapper();
+      const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
+      // Don't select any rule — deselect to ensure selectedRule is null
+      wrapper.vm.deselectRule(wrapper.vm.selectedRuleId);
+      rootEmitSpy.mockClear();
+      wrapper.vm.selectedSatisfiesRuleIds = [{ value: 2, text: "SRG-OS-000002" }];
+      wrapper.vm.addMultipleSatisfiedRules();
+      expect(rootEmitSpy).not.toHaveBeenCalledWith(
+        "addSatisfied:rule",
+        expect.anything(),
+        expect.anything(),
+      );
+      rootEmitSpy.mockRestore();
+    });
+  });
+
+  describe("clearSelectedRules", () => {
+    it("resets selectedSatisfiesRuleIds to empty array", () => {
+      wrapper = createWrapper();
+      wrapper.vm.selectedSatisfiesRuleIds = [
+        { value: 1, text: "SRG-OS-000001" },
+      ];
+      wrapper.vm.clearSelectedRules();
+      expect(wrapper.vm.selectedSatisfiesRuleIds).toEqual([]);
+    });
+  });
 });
