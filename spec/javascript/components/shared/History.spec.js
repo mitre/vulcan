@@ -50,9 +50,7 @@ describe("History", () => {
     audited_name: "title",
     auditable_type: "BaseRule",
     auditable_id: 42,
-    audited_changes: [
-      { field: "title", prev_value: "Old Title", new_value: "New Title" },
-    ],
+    audited_changes: [{ field: "title", prev_value: "Old Title", new_value: "New Title" }],
     ...overrides,
   });
 
@@ -278,9 +276,7 @@ describe("History", () => {
         histories: [
           makeHistory({
             action: "update",
-            audited_changes: [
-              { field: "title", prev_value: "Old", new_value: "New" },
-            ],
+            audited_changes: [{ field: "title", prev_value: "Old", new_value: "New" }],
           }),
         ],
       });
@@ -294,9 +290,7 @@ describe("History", () => {
         histories: [
           makeHistory({
             action: "update",
-            audited_changes: [
-              { field: "title", prev_value: "Old Value", new_value: "New Value" },
-            ],
+            audited_changes: [{ field: "title", prev_value: "Old Value", new_value: "New Value" }],
           }),
         ],
       });
@@ -309,9 +303,7 @@ describe("History", () => {
         histories: [
           makeHistory({
             action: "update",
-            audited_changes: [
-              { field: "admin", prev_value: false, new_value: true },
-            ],
+            audited_changes: [{ field: "admin", prev_value: false, new_value: true }],
           }),
         ],
       });
@@ -324,9 +316,7 @@ describe("History", () => {
         histories: [
           makeHistory({
             action: "update",
-            audited_changes: [
-              { field: "admin", prev_value: true, new_value: false },
-            ],
+            audited_changes: [{ field: "admin", prev_value: true, new_value: false }],
           }),
         ],
       });
@@ -403,9 +393,7 @@ describe("History", () => {
           makeHistory({
             action: "update",
             audited_name: "Review",
-            audited_changes: [
-              { field: "deleted_at", prev_value: null, new_value: "2024-01-01" },
-            ],
+            audited_changes: [{ field: "deleted_at", prev_value: null, new_value: "2024-01-01" }],
           }),
         ],
       });
@@ -421,9 +409,7 @@ describe("History", () => {
           makeHistory({
             action: "update",
             audited_name: "Review",
-            audited_changes: [
-              { field: "status", prev_value: "open", new_value: "closed" },
-            ],
+            audited_changes: [{ field: "status", prev_value: "open", new_value: "closed" }],
           }),
         ],
       });
@@ -443,9 +429,7 @@ describe("History", () => {
         rule: { id: 1 },
         component: { id: 1 },
         statuses: ["Applicable - Configurable"],
-        histories: [
-          makeHistory({ action: "update" }),
-        ],
+        histories: [makeHistory({ action: "update" })],
       });
       expect(wrapper.find(".rule-revert-stub").exists()).toBe(true);
     });
@@ -456,9 +440,7 @@ describe("History", () => {
         rule: { id: 1 },
         component: { id: 1 },
         statuses: ["Applicable - Configurable"],
-        histories: [
-          makeHistory({ action: "destroy" }),
-        ],
+        histories: [makeHistory({ action: "destroy" })],
       });
       expect(wrapper.find(".rule-revert-stub").exists()).toBe(true);
     });
@@ -466,9 +448,7 @@ describe("History", () => {
     it("does not render RuleRevertModal when revertable is false", () => {
       wrapper = createWrapper({
         revertable: false,
-        histories: [
-          makeHistory({ action: "update" }),
-        ],
+        histories: [makeHistory({ action: "update" })],
       });
       expect(wrapper.find(".rule-revert-stub").exists()).toBe(false);
     });

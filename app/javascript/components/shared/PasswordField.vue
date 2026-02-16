@@ -1,10 +1,10 @@
 <template>
   <div class="input-group">
     <input
+      :id="id"
       v-model="localValue"
       :type="visible ? 'text' : 'password'"
       :name="name"
-      :id="id"
       :autocomplete="autocomplete"
       :required="required || undefined"
       :title="title"
@@ -44,11 +44,6 @@ export default {
       localValue: this.value || "",
     };
   },
-  watch: {
-    value(newVal) {
-      this.localValue = newVal;
-    },
-  },
   computed: {
     inputClasses() {
       const classes = ["form-control"];
@@ -56,6 +51,11 @@ export default {
         classes.push(this.inputClass);
       }
       return classes;
+    },
+  },
+  watch: {
+    value(newVal) {
+      this.localValue = newVal;
     },
   },
 };

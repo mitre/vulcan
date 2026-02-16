@@ -277,9 +277,7 @@ describe("FilterBar", () => {
       wrapper = createWrapper();
       const statusGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(0);
 
-      await statusGroup.vm.$emit("update:items", [
-        { key: "acFilterChecked", checked: false },
-      ]);
+      await statusGroup.vm.$emit("update:items", [{ key: "acFilterChecked", checked: false }]);
 
       expect(wrapper.emitted("update:filters")).toBeTruthy();
       const emitted = wrapper.emitted("update:filters")[0][0];
@@ -292,9 +290,7 @@ describe("FilterBar", () => {
       wrapper = createWrapper();
       const displayGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(1);
 
-      await displayGroup.vm.$emit("update:items", [
-        { key: "showSRGIdChecked", checked: true },
-      ]);
+      await displayGroup.vm.$emit("update:items", [{ key: "showSRGIdChecked", checked: true }]);
 
       expect(wrapper.emitted("update:filters")).toBeTruthy();
       const emitted = wrapper.emitted("update:filters")[0][0];
@@ -305,9 +301,7 @@ describe("FilterBar", () => {
       wrapper = createWrapper();
       const reviewGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(2);
 
-      await reviewGroup.vm.$emit("update:items", [
-        { key: "lckFilterChecked", checked: false },
-      ]);
+      await reviewGroup.vm.$emit("update:items", [{ key: "lckFilterChecked", checked: false }]);
 
       expect(wrapper.emitted("update:filters")).toBeTruthy();
       const emitted = wrapper.emitted("update:filters")[0][0];

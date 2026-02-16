@@ -227,8 +227,8 @@ export default {
       let downcaseSearch = this.search.toLowerCase();
       return this.memberships.filter(
         (pm) =>
-          (pm.email || '').toLowerCase().includes(downcaseSearch) ||
-          (pm.name || '').toLowerCase().includes(downcaseSearch),
+          (pm.email || "").toLowerCase().includes(downcaseSearch) ||
+          (pm.name || "").toLowerCase().includes(downcaseSearch),
       );
     },
     // Users with pending access request

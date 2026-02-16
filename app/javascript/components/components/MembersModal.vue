@@ -224,7 +224,9 @@ export default {
       }
       const search = this.componentSearch.toLowerCase();
       return this.component.memberships.filter(
-        (m) => (m.name || '').toLowerCase().includes(search) || (m.email || '').toLowerCase().includes(search),
+        (m) =>
+          (m.name || "").toLowerCase().includes(search) ||
+          (m.email || "").toLowerCase().includes(search),
       );
     },
     filteredInheritedMembers() {
@@ -234,7 +236,9 @@ export default {
       }
       const search = this.inheritedSearch.toLowerCase();
       return inherited.filter(
-        (m) => (m.name || '').toLowerCase().includes(search) || (m.email || '').toLowerCase().includes(search),
+        (m) =>
+          (m.name || "").toLowerCase().includes(search) ||
+          (m.email || "").toLowerCase().includes(search),
       );
     },
     availableMemberOptions() {

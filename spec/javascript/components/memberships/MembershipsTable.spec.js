@@ -96,9 +96,7 @@ describe("MembershipsTable", () => {
       wrapper = createWrapper({ header_text: "Project Members" });
       // Find the h2 that contains the member count (not access requests h2)
       const headers = wrapper.findAll("h2");
-      const memberHeader = headers.filter((h) =>
-        h.text().includes("Project Members"),
-      );
+      const memberHeader = headers.filter((h) => h.text().includes("Project Members"));
       expect(memberHeader.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -215,9 +213,7 @@ describe("MembershipsTable", () => {
       });
       // Find the h2 containing "Pending Access Requests"
       const headers = wrapper.findAll("h2");
-      const arHeader = headers.filter((h) =>
-        h.text().includes("Pending Access Requests"),
-      );
+      const arHeader = headers.filter((h) => h.text().includes("Pending Access Requests"));
       expect(arHeader.at(0).text()).toContain("1");
     });
 
