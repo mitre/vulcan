@@ -35,6 +35,8 @@ class Review < ApplicationRecord
   end
 
   def validate_project_permissions
+    return unless user && rule
+
     errors.add(:base, 'You have no permissions on this project') if project_permissions.blank?
   end
 

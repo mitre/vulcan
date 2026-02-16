@@ -72,8 +72,9 @@ class Membership < ApplicationRecord
   # This is because permissions are inherited from the project, and having
   # equal or lesser permissions will have no effect.
   def cannot_have_equal_or_lesser_component_permissions
-    # Break early if this is a project permission
+    # Break early if this is a project permission or if association is missing
     return if membership_type == 'Project'
+    return unless membership
 
     # See if the user has permissions on the project
     project_membership_role = Membership.find_by(

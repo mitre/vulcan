@@ -67,7 +67,7 @@ class Component < ApplicationRecord
 
   validates_with PrefixValidator
 
-  validates :prefix, presence: true
+  validates :name, :prefix, :title, presence: true
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,

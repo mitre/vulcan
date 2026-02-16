@@ -14,6 +14,6 @@ class AdditionalAnswer < ApplicationRecord
                      if: :present_and_type_is_url?
 
   def present_and_type_is_url?
-    additional_question.question_type == 'url' && !answer.empty?
+    additional_question&.question_type == 'url' && answer.present?
   end
 end
