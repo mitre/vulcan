@@ -6,7 +6,7 @@
   .form-group
     = f.label :password
     %br/
-    = f.password_field :password, class: "form-control", title: "This field is required.", autocomplete: "current-password", required: "true"
+    %password-field{name: "user[password]", id: "user_password", autocomplete: "current-password", ":required" => "true", title: "This field is required."}
     = hidden_field_tag :active_tab, 'local'
   .form-group.d-flex.justify-content-between.align-items-center
     - if devise_mapping.rememberable? && Settings.local_login.remember_me_enabled

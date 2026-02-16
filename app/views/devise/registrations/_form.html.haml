@@ -20,11 +20,11 @@
       %em
         (#{@minimum_password_length} characters minimum)
     %br/
-    = f.password_field :password, class: "form-control", title: "This field is required.", autocomplete: "new-password", required: "true"
+    %password-field{name: "user[password]", id: "user_password", autocomplete: "new-password", ":required" => "true", title: "This field is required."}
   .form-group
     = f.label :password_confirmation
     %br/
-    = f.password_field :password_confirmation, class: "form-control", title: "This field is required.", autocomplete: "new-password", required: "true"
+    %password-field{name: "user[password_confirmation]", id: "user_password_confirmation", autocomplete: "new-password", ":required" => "true", title: "This field is required."}
     = hidden_field_tag :active_tab, 'registration'
   .actions
     = f.submit "Sign Up", class: 'btn btn-success btn-block'
