@@ -234,7 +234,7 @@ export default {
         projects = this.projects.filter((project) => project.is_member);
       }
       let downcaseSearch = this.search.toLowerCase();
-      return projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
+      return projects.filter((project) => (project.name || '').toLowerCase().includes(downcaseSearch));
     },
     // Used by b-pagination to know how many total rows there are
     rows: function () {

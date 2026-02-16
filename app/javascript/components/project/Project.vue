@@ -264,7 +264,7 @@ export default {
     sortedComponents: function () {
       return _.orderBy(
         this.project.components,
-        [(component) => component.name.toLowerCase(), "version", "release"],
+        [(component) => (component.name || '').toLowerCase(), "version", "release"],
         ["asc"],
       );
     },

@@ -120,8 +120,8 @@ export default {
       let downcaseSearch = this.search.toLowerCase();
       return this.users.filter(
         (user) =>
-          user.email.toLowerCase().includes(downcaseSearch) ||
-          user.name.toLowerCase().includes(downcaseSearch),
+          (user.email || '').toLowerCase().includes(downcaseSearch) ||
+          (user.name || '').toLowerCase().includes(downcaseSearch),
       );
     },
     // Used by b-pagination to know how many total rows there are

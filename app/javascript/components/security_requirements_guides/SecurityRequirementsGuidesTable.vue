@@ -141,9 +141,9 @@ export default {
     searchedCollection: function () {
       let downcaseSearch = this.search.toLowerCase();
       if (this.type === "Component") {
-        return this.srgs.filter((item) => item.name.toLowerCase().includes(downcaseSearch));
+        return this.srgs.filter((item) => (item.name || '').toLowerCase().includes(downcaseSearch));
       }
-      return this.srgs.filter((srg) => srg.title.toLowerCase().includes(downcaseSearch));
+      return this.srgs.filter((srg) => (srg.title || '').toLowerCase().includes(downcaseSearch));
     },
     // Used by b-pagination to know how many total rows there are
     rows: function () {
