@@ -14,7 +14,7 @@ RSpec.describe 'StripSatisfactionTextFromVendorComments migration', type: :model
     @srg.save!
 
     project = Project.create!(name: 'Migration Test')
-    @component = Component.create!(project: project, version: 'Test V1R1', prefix: 'TSTT-01', based_on: @srg)
+    @component = Component.create!(project: project, name: 'Migration Test Component', title: 'Migration Test STIG', version: 'Test V1R1', prefix: 'TSTT-01', based_on: @srg)
   end
 
   describe 'SATISFACTION_STRIP_PATTERN' do

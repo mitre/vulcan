@@ -11,7 +11,7 @@ RSpec.describe Component do
     @srg.save!
 
     @p1 = Project.create!(name: 'Photon OS 3')
-    @p1_c1 = Component.create!(project: @p1, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: @srg)
+    @p1_c1 = Component.create!(project: @p1, name: 'Photon OS 3', title: 'Photon OS 3 STIG', version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: @srg)
   end
 
   context 'component release' do
@@ -23,7 +23,7 @@ RSpec.describe Component do
     end
 
     it 'onlies allow depending on a released component' do
-      p1_c2 = Component.new(project: @p1, version: 'Photon OS 3 V1R2', prefix: 'PHOS-03', based_on: @srg,
+      p1_c2 = Component.new(project: @p1, name: 'Photon OS 3 V2', title: 'Photon OS 3 STIG V2', version: 'Photon OS 3 V1R2', prefix: 'PHOS-03', based_on: @srg,
                             component_id: @p1_c1.id)
       expect(p1_c2.valid?).to be(false)
       expect(p1_c2.errors[:base]).to include('Cannot overlay a component that has not been released')
@@ -641,7 +641,7 @@ RSpec.describe Component do
     end
 
     it 'returns zero counts for components with no rules' do
-      empty_component = Component.create!(project: @p1, version: 'Empty V1R1', prefix: 'EMPT-00', based_on: @srg)
+      empty_component = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG', version: 'Empty V1R1', prefix: 'EMPT-00', based_on: @srg)
       empty_component.rules.destroy_all
       empty_component.reload
       counts = empty_component.severity_counts
@@ -682,7 +682,7 @@ RSpec.describe Component do
     end
 
     it 'handles components with no rules' do
-      empty = Component.create!(project: @p1, version: 'Empty V1R1', prefix: 'EMPT-01', based_on: @srg)
+      empty = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG', version: 'Empty V1R1', prefix: 'EMPT-01', based_on: @srg)
       empty.rules.destroy_all
       empty.reload
 

@@ -16,7 +16,7 @@ RSpec.describe Review do
     @p2 = Project.create(name: 'Photon OS 3.1')
 
     # Create components
-    @p1_c1 = Component.create(project: @p1, version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: srg)
+    @p1_c1 = Component.create(project: @p1, name: 'Photon OS 3', title: 'Photon OS 3 STIG', version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: srg)
     @p1_c1.reload
 
     # Create Users
