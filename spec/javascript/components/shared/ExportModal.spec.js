@@ -567,4 +567,331 @@ describe("ExportModal", () => {
       expect(wrapper.text()).not.toContain("Columns");
     });
   });
+
+  // ==========================================
+  // MODE SELECTION (Phase 4: mode-first flow)
+  // ==========================================
+  //
+  // REQUIREMENTS:
+  // 1. When availableModes prop is provided, a "Purpose" radio group appears
+  // 2. Format section is hidden until a mode is selected (progressive disclosure)
+  // 3. All 4 standard formats are shown when mode is selected; incompatible ones disabled
+  // 4. Single-format modes auto-select the format
+  // 5. Changing mode clears incompatible format selection
+  // 6. Export payload includes mode when mode-aware
+  // 7. Disabled formats show hint text about which mode enables them
+  // 8. Inline summary shows mode + format + component count
+  // 9. Without availableModes, legacy behavior is unchanged
+
+  const allModes = ["working_copy", "vendor_submission", "published_stig", "backup"];
+
+  describe("mode selection", () => {
+    it("does not show mode section when availableModes is null", () => {
+      wrapper = createWrapper();
+      expect(wrapper.text()).not.toContain("Purpose");
+      expect(wrapper.find('[data-testid="mode-group"]').exists()).toBe(false);
+    });
+
+    it("shows mode section when availableModes provided", () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      expect(wrapper.text()).toContain("Purpose");
+      expect(wrapper.find('[data-testid="mode-group"]').exists()).toBe(true);
+    });
+
+    it("renders all 4 mode options with labels and descriptions", () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      expect(wrapper.text()).toContain("Working Copy");
+      expect(wrapper.text()).toContain("Internal review and editing");
+      expect(wrapper.text()).toContain("DISA Vendor Submission");
+      expect(wrapper.text()).toContain("Submit to DISA for review");
+      expect(wrapper.text()).toContain("Published STIG");
+      expect(wrapper.text()).toContain("AC rules ready for publication");
+      expect(wrapper.text()).toContain("Backup");
+      expect(wrapper.text()).toContain("Full-fidelity archive of all rules");
+    });
+
+    it("has no mode selected by default", () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      expect(wrapper.vm.selectedMode).toBe(null);
+    });
+
+    it("hides format section until mode is selected (progressive disclosure)", () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      // Format section should NOT be visible before mode selection
+      expect(wrapper.find('[data-testid="format-group"]').exists()).toBe(false);
+    });
+
+    it("shows format section after mode is selected", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find('[data-testid="format-group"]').exists()).toBe(true);
+    });
+
+    it("shows all 4 standard formats in mode-aware view", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      const radios = wrapper.findAll('[data-testid="format-group"] input[type="radio"]');
+      expect(radios.length).toBe(4);
+      expect(wrapper.text()).toContain("CSV");
+      expect(wrapper.text()).toContain("Excel");
+      expect(wrapper.text()).toContain("XCCDF");
+      expect(wrapper.text()).toContain("InSpec");
+    });
+
+    it("does NOT show disa_excel in mode-aware view", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.text()).not.toContain("DISA Excel");
+    });
+  });
+
+  // ==========================================
+  // FORMAT ENABLE/DISABLE BY MODE
+  // ==========================================
+  describe("format compatibility by mode", () => {
+    it("enables csv and excel for working_copy mode", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.isFormatEnabled("csv")).toBe(true);
+      expect(wrapper.vm.isFormatEnabled("excel")).toBe(true);
+      expect(wrapper.vm.isFormatEnabled("xccdf")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("inspec")).toBe(false);
+    });
+
+    it("enables only excel for vendor_submission mode", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "vendor_submission";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.isFormatEnabled("csv")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("excel")).toBe(true);
+      expect(wrapper.vm.isFormatEnabled("xccdf")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("inspec")).toBe(false);
+    });
+
+    it("enables xccdf and inspec for published_stig mode", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.isFormatEnabled("csv")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("excel")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("xccdf")).toBe(true);
+      expect(wrapper.vm.isFormatEnabled("inspec")).toBe(true);
+    });
+
+    it("enables only xccdf for backup mode", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.isFormatEnabled("csv")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("excel")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("xccdf")).toBe(true);
+      expect(wrapper.vm.isFormatEnabled("inspec")).toBe(false);
+    });
+
+    it("shows hint text for disabled formats", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      // XCCDF should show hint about which modes support it
+      expect(wrapper.text()).toContain("Available in");
+      expect(wrapper.text()).toContain("Published STIG");
+    });
+
+    it("shows mode-specific description override for vendor_submission + excel", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "vendor_submission";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.text()).toContain("DISA 17-column strict template");
+    });
+
+    it("shows mode-specific description override for backup + xccdf", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.text()).toContain("All rules included (no filtering)");
+    });
+  });
+
+  // ==========================================
+  // AUTO-SELECT AND MODE SWITCHING
+  // ==========================================
+  describe("auto-select and mode switching", () => {
+    it("auto-selects format when mode has only one valid format (vendor_submission)", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "vendor_submission";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.selectedFormat).toBe("excel");
+    });
+
+    it("auto-selects format when mode has only one valid format (backup)", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.selectedFormat).toBe("xccdf");
+    });
+
+    it("does not auto-select when mode has multiple formats (working_copy)", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.selectedFormat).toBe(null);
+    });
+
+    it("clears format when switching to mode that does not support it", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      wrapper.vm.selectedFormat = "csv";
+      await wrapper.vm.$nextTick();
+      // Switch to published_stig — csv is not valid
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.selectedFormat).toBe(null);
+    });
+
+    it("keeps format when switching to mode that supports it", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+      wrapper.vm.selectedFormat = "xccdf";
+      await wrapper.vm.$nextTick();
+      // Switch to backup — xccdf is still valid
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.selectedFormat).toBe("xccdf");
+    });
+
+    it("resets mode when modal reopens", async () => {
+      wrapper = createWrapper({ availableModes: allModes, visible: true });
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+      // Close and reopen
+      await wrapper.setProps({ visible: false });
+      await wrapper.setProps({ visible: true });
+      expect(wrapper.vm.selectedMode).toBe(null);
+    });
+  });
+
+  // ==========================================
+  // EXPORT PAYLOAD WITH MODE
+  // ==========================================
+  describe("export payload with mode", () => {
+    it("includes mode in export event when mode-aware", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "vendor_submission";
+      await wrapper.vm.$nextTick();
+      // vendor_submission auto-selects excel
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]');
+      await exportBtn.trigger("click");
+
+      expect(wrapper.emitted("export")).toBeTruthy();
+      expect(wrapper.emitted("export")[0]).toEqual([
+        {
+          type: "excel",
+          mode: "vendor_submission",
+          componentIds: [1],
+        },
+      ]);
+    });
+
+    it("does not include mode when not mode-aware (legacy)", async () => {
+      wrapper = createWrapper({
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedFormat = "xccdf";
+      await wrapper.vm.$nextTick();
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]');
+      await exportBtn.trigger("click");
+
+      const payload = wrapper.emitted("export")[0][0];
+      expect(payload.mode).toBeUndefined();
+      expect(payload.type).toBe("xccdf");
+    });
+
+    it("includes mode + columns for csv in working_copy mode", async () => {
+      const cols = [
+        { key: "rule_id", header: "Rule ID", example: "SV-123", default: true },
+        { key: "title", header: "Title", example: "Title...", default: true },
+      ];
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        columnDefinitions: cols,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      wrapper.vm.selectedFormat = "csv";
+      await wrapper.vm.$nextTick();
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]');
+      await exportBtn.trigger("click");
+
+      const payload = wrapper.emitted("export")[0][0];
+      expect(payload.mode).toBe("working_copy");
+      expect(payload.type).toBe("csv");
+      expect(payload.columns).toContain("rule_id");
+    });
+  });
+
+  // ==========================================
+  // INLINE SUMMARY
+  // ==========================================
+  describe("inline summary", () => {
+    it("does not show summary without mode selection", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find('[data-testid="export-summary"]').exists()).toBe(false);
+    });
+
+    it("does not show summary when mode but no format selected", async () => {
+      wrapper = createWrapper({ availableModes: allModes });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      // working_copy has 2 formats, no auto-select
+      expect(wrapper.find('[data-testid="export-summary"]').exists()).toBe(false);
+    });
+
+    it("shows summary when mode and format selected", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "vendor_submission";
+      await wrapper.vm.$nextTick();
+      // auto-selects excel, single component auto-selected
+
+      const summary = wrapper.find('[data-testid="export-summary"]');
+      expect(summary.exists()).toBe(true);
+      expect(summary.text()).toContain("DISA Vendor Submission");
+      expect(summary.text()).toContain("Excel");
+      expect(summary.text()).toContain("1 component");
+    });
+
+    it("summary shows correct component count for multi-select", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: multipleComponents,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+      wrapper.vm.selectedComponentIds = [1, 2, 3];
+      await wrapper.vm.$nextTick();
+
+      const summary = wrapper.find('[data-testid="export-summary"]');
+      expect(summary.text()).toContain("3 components");
+    });
+  });
 });

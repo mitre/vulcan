@@ -1,28 +1,47 @@
 <template>
   <b-modal :visible="visible" :title="modalTitle" centered @hidden="onHidden" @hide="onHide">
-    <!-- Format Selection (Radio Buttons) -->
-    <div class="mb-3">
+    <!-- Mode/Purpose Selection (only when availableModes provided) -->
+    <div v-if="hasModes" class="mb-3">
+      <label id="export-mode-label" class="font-weight-bold d-block mb-2">Purpose</label>
+      <b-form-radio-group
+        v-model="selectedMode"
+        stacked
+        aria-labelledby="export-mode-label"
+        data-testid="mode-group"
+      >
+        <b-form-radio
+          v-for="mode in availableModes"
+          :key="mode"
+          :value="mode"
+          class="mb-2"
+          :data-testid="`mode-${mode}`"
+        >
+          <span class="font-weight-medium">{{ getModeLabel(mode) }}</span>
+          <small class="text-muted d-block">{{ getModeDescription(mode) }}</small>
+        </b-form-radio>
+      </b-form-radio-group>
+    </div>
+
+    <hr v-if="hasModes && selectedMode" />
+
+    <!-- Format Selection -->
+    <div v-if="showFormatSection" class="mb-3">
       <label id="export-format-label" class="font-weight-bold d-block mb-2">Format</label>
-      <b-form-radio-group v-model="selectedFormat" stacked>
-        <b-form-radio v-if="showFormat('disa_excel')" value="disa_excel" class="mb-2">
-          <span class="font-weight-medium">DISA Excel</span>
-          <small class="text-muted d-block">DoD/DISA format</small>
-        </b-form-radio>
-        <b-form-radio v-if="showFormat('excel')" value="excel" class="mb-2">
-          <span class="font-weight-medium">Excel</span>
-          <small class="text-muted d-block">Standard spreadsheet</small>
-        </b-form-radio>
-        <b-form-radio v-if="showFormat('inspec')" value="inspec" class="mb-2">
-          <span class="font-weight-medium">InSpec</span>
-          <small class="text-muted d-block">Chef InSpec profile</small>
-        </b-form-radio>
-        <b-form-radio v-if="showFormat('xccdf')" value="xccdf" class="mb-2">
-          <span class="font-weight-medium">{{ xccdfLabel }}</span>
-          <small class="text-muted d-block">SCAP XML format</small>
-        </b-form-radio>
-        <b-form-radio v-if="showFormat('csv')" value="csv" class="mb-2">
-          <span class="font-weight-medium">CSV</span>
-          <small class="text-muted d-block">Comma-separated values</small>
+      <b-form-radio-group
+        v-model="selectedFormat"
+        stacked
+        aria-labelledby="export-format-label"
+        data-testid="format-group"
+      >
+        <b-form-radio
+          v-for="fmt in displayFormats"
+          :key="fmt"
+          :value="fmt"
+          :disabled="!isFormatEnabled(fmt)"
+          class="mb-2"
+        >
+          <span class="font-weight-medium">{{ getFormatLabel(fmt) }}</span>
+          <small class="text-muted d-block">{{ getFormatDescription(fmt) }}</small>
         </b-form-radio>
       </b-form-radio-group>
     </div>
@@ -89,6 +108,16 @@
       </div>
     </template>
 
+    <!-- Inline Summary (mode-aware only) -->
+    <div
+      v-if="summaryText"
+      class="mt-3 p-2 bg-light rounded"
+      aria-live="polite"
+      data-testid="export-summary"
+    >
+      <small class="text-muted">{{ summaryText }}</small>
+    </div>
+
     <!-- Footer -->
     <template #modal-footer>
       <b-button variant="outline-secondary" data-testid="cancel-btn" @click="onCancel">
@@ -103,29 +132,37 @@
 
 <script>
 import { EXPORT_FORMATS } from "../../constants/terminology";
+import {
+  EXPORT_MODES,
+  MODE_FORMAT_MATRIX,
+  FORMAT_LABELS,
+  MODE_FORMAT_OVERRIDES,
+  ALL_FORMATS,
+} from "../../constants/exportConfig";
 
 /**
- * ExportModal - Unified export modal with format, component, and column selection
+ * ExportModal - Unified export modal with optional mode, format, component,
+ * and column selection.
  *
- * Usage:
+ * Usage (mode-aware — projects):
  *   <ExportModal
  *     v-model="showExportModal"
- *     :components="components"
- *     :column-definitions="STIG_CSV_COLUMNS"
+ *     :components="project.components"
+ *     :available-modes="['working_copy', 'vendor_submission', 'published_stig', 'backup']"
  *     @export="handleExport"
- *     @cancel="handleCancel"
  *   />
  *
- * Props:
- *   - components: Array of { id, name, version?, release? }
- *   - visible: Boolean (use v-model)
- *   - title: Optional custom title (default: "Export Project")
- *   - formats: Optional array of format values to show (default: all)
- *   - hideComponentSelection: Boolean to hide the component selection section
- *   - columnDefinitions: Optional array of { key, header, example, default } for CSV column picker
+ * Usage (legacy — stigs/srgs/benchmarks):
+ *   <ExportModal
+ *     v-model="showExportModal"
+ *     :components="[benchmark]"
+ *     :formats="['xccdf', 'csv']"
+ *     :hide-component-selection="true"
+ *     @export="handleExport"
+ *   />
  *
  * Emits:
- *   - export: { type: string, componentIds: number[], columns?: string[] }
+ *   - export: { type: string, componentIds: number[], mode?: string, columns?: string[] }
  *   - cancel: User cancelled
  *   - update:visible: For v-model support
  */
@@ -160,15 +197,40 @@ export default {
       type: Array,
       default: null,
     },
+    availableModes: {
+      type: Array,
+      default: null,
+    },
   },
   data() {
     return {
+      selectedMode: null,
       selectedFormat: null,
       selectedComponentIds: [],
       selectedColumns: [],
     };
   },
   computed: {
+    hasModes() {
+      return this.availableModes && this.availableModes.length > 0;
+    },
+    showFormatSection() {
+      // Legacy: always show format section
+      // Mode-aware: show after mode is selected (progressive disclosure)
+      return !this.hasModes || this.selectedMode !== null;
+    },
+    displayFormats() {
+      if (this.hasModes) {
+        // Show all standard formats; disabled state handled by isFormatEnabled
+        return ALL_FORMATS;
+      }
+      // Legacy: filter by formats prop using v-if logic
+      if (this.formats) {
+        return this.formats;
+      }
+      // Default: all formats including legacy disa_excel
+      return ["disa_excel", "excel", "inspec", "xccdf", "csv"];
+    },
     isSingleComponent() {
       return this.components.length === 1;
     },
@@ -199,32 +261,51 @@ export default {
     showComponentSelection() {
       return !this.hideComponentSelection;
     },
-    xccdfLabel() {
-      return EXPORT_FORMATS.xccdf;
-    },
     showColumnPicker() {
       return (
         this.columnDefinitions && this.columnDefinitions.length > 0 && this.selectedFormat === "csv"
       );
     },
     canExport() {
-      // Must have format selected AND at least one component
       return this.selectedFormat !== null && this.selectedComponentIds.length > 0;
+    },
+    summaryText() {
+      if (!this.hasModes || !this.selectedMode || !this.selectedFormat) return null;
+      const modeLabel = EXPORT_MODES[this.selectedMode]?.label || this.selectedMode;
+      const formatLabel = FORMAT_LABELS[this.selectedFormat]?.label || this.selectedFormat;
+      const count = this.selectedComponentIds.length;
+      if (count === 0) return `${modeLabel} as ${formatLabel}`;
+      const noun = count === 1 ? "component" : "components";
+      return `${modeLabel} as ${formatLabel} \u2014 ${count} ${noun}`;
     },
   },
   watch: {
+    selectedMode(newMode) {
+      if (!newMode) return;
+      const validFormats = MODE_FORMAT_MATRIX[newMode] || [];
+      // Clear format if not valid for new mode
+      if (this.selectedFormat && !validFormats.includes(this.selectedFormat)) {
+        this.selectedFormat = null;
+      }
+      // Auto-select when only one format available
+      if (validFormats.length === 1) {
+        this.selectedFormat = validFormats[0];
+      }
+    },
     visible: {
       immediate: true,
       handler(newVal) {
         if (newVal) {
-          // Auto-select format when only one is available
-          if (this.formats && this.formats.length === 1) {
+          // Reset mode
+          this.selectedMode = null;
+          // Reset format
+          if (!this.hasModes && this.formats && this.formats.length === 1) {
             this.selectedFormat = this.formats[0];
           } else {
             this.selectedFormat = null;
           }
+          // Auto-select components
           if (this.isSingleComponent) {
-            // Auto-select single component
             this.selectedComponentIds = [this.components[0].id];
           } else {
             this.selectedComponentIds = [];
@@ -236,8 +317,53 @@ export default {
     },
   },
   methods: {
-    showFormat(format) {
-      return this.formats === null || this.formats.includes(format);
+    getModeLabel(mode) {
+      return EXPORT_MODES[mode]?.label || mode;
+    },
+    getModeDescription(mode) {
+      return EXPORT_MODES[mode]?.description || "";
+    },
+    getFormatLabel(fmt) {
+      if (this.hasModes) {
+        return FORMAT_LABELS[fmt]?.label || fmt;
+      }
+      // Legacy labels
+      if (fmt === "disa_excel") return "DISA Excel";
+      if (fmt === "xccdf") return EXPORT_FORMATS.xccdf;
+      return FORMAT_LABELS[fmt]?.label || fmt.toUpperCase();
+    },
+    getFormatDescription(fmt) {
+      // Mode-aware: check for overrides and disabled hints
+      if (this.hasModes && this.selectedMode) {
+        const override = MODE_FORMAT_OVERRIDES[this.selectedMode]?.[fmt];
+        if (override) return override.description;
+        const validFormats = MODE_FORMAT_MATRIX[this.selectedMode] || [];
+        if (!validFormats.includes(fmt)) {
+          const enabledBy = Object.entries(MODE_FORMAT_MATRIX)
+            .filter(([, fmts]) => fmts.includes(fmt))
+            .map(([mode]) => EXPORT_MODES[mode]?.label)
+            .join(" or ");
+          return `Available in ${enabledBy} mode`;
+        }
+      }
+      // Standard descriptions
+      if (this.hasModes) {
+        return FORMAT_LABELS[fmt]?.description || "";
+      }
+      // Legacy descriptions
+      const legacyDescriptions = {
+        disa_excel: "DoD/DISA format",
+        excel: "Standard spreadsheet",
+        inspec: "Chef InSpec profile",
+        xccdf: "SCAP XML format",
+        csv: "Comma-separated values",
+      };
+      return legacyDescriptions[fmt] || "";
+    },
+    isFormatEnabled(fmt) {
+      if (!this.hasModes || !this.selectedMode) return true;
+      const validFormats = MODE_FORMAT_MATRIX[this.selectedMode] || [];
+      return validFormats.includes(fmt);
     },
     toggleSelectAll(checked) {
       if (checked) {
@@ -276,6 +402,10 @@ export default {
         type: this.selectedFormat,
         componentIds: [...this.selectedComponentIds],
       };
+      // Include mode when mode-aware
+      if (this.hasModes && this.selectedMode) {
+        payload.mode = this.selectedMode;
+      }
       // Include columns only for CSV format
       if (this.selectedFormat === "csv" && this.selectedColumns.length > 0) {
         payload.columns = [...this.selectedColumns];
@@ -284,12 +414,10 @@ export default {
       this.$emit("update:visible", false);
     },
     onHidden() {
-      // Emitted when modal is hidden (backdrop click, escape, etc.)
       this.$emit("cancel");
       this.$emit("update:visible", false);
     },
     onHide(event) {
-      // Prevent double-emit when Cancel/Export buttons are clicked
       if (event.trigger === "ok" || event.trigger === "cancel") {
         event.preventDefault();
       }
