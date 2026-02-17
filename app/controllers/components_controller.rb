@@ -370,7 +370,7 @@ class ComponentsController < ApplicationController
                   :admin_name,
                   :admin_email,
                   :advanced_fields,
-                  { additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
+                  { additional_questions_attributes: [[:id, :name, :question_type, :_destroy, { options: [] }]],
                     component_metadata_attributes: { data: {} } }]
     )
   end
