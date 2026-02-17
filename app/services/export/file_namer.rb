@@ -19,6 +19,21 @@ module Export
         component_filename(component, extension)
       end
 
+      # XCCDF filename: U_Title_V1R2-xccdf.xml
+      def xccdf_filename(component)
+        version = component.version ? "V#{component.version}" : ''
+        release = component.release ? "R#{component.release}" : ''
+        title = component.title || "#{component.name} STIG Readiness Guide"
+        "U_#{title.tr(' ', '_')}_#{version}#{release}-xccdf.xml"
+      end
+
+      # InSpec directory name for multi-component zip entries.
+      def inspec_dir_name(component)
+        version = component.version ? "V#{component.version}" : ''
+        release = component.release ? "R#{component.release}" : ''
+        "#{component.name.tr(' ', '-')}-#{version}#{release}-stig-baseline/"
+      end
+
       # Excel worksheet names are limited to 31 characters.
       # Matches the existing ExportHelper pattern exactly.
       def worksheet_name(component)

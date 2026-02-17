@@ -29,7 +29,11 @@ module Export
     def call
       components = resolve_components
 
-      if @formatter.multi_sheet?
+      if @formatter.batch_generate?
+        export_batch(components)
+      elsif @formatter.component_based?
+        export_component_based(components)
+      elsif @formatter.multi_sheet?
         export_as_workbook(components)
       else
         results = components.map { |component| export_component(component) }
@@ -62,6 +66,37 @@ module Export
       else
         'export.zip'
       end
+    end
+
+    # Batch path: all components passed at once to the formatter (InSpec).
+    # Produces a single archive with subdirectories per component.
+    def export_batch(components)
+      pairs = components.sort_by(&:id).map do |component|
+        rules = load_rules(component)
+        scoped = @mode.rule_scope(rules)
+        { component: component, rules: scoped }
+      end
+
+      data = @formatter.generate_batch(component_rule_pairs: pairs)
+      filename = @zip_filename || default_zip_filename
+
+      Result.new(data: data, filename: filename, content_type: @formatter.content_type)
+    end
+
+    # Component-based path: each component is processed individually (XCCDF).
+    # Packager zips multiple results, passes through a single one.
+    def export_component_based(components)
+      results = components.sort_by(&:id).map do |component|
+        rules = load_rules(component)
+        scoped = @mode.rule_scope(rules)
+        data = @formatter.generate_from_component(component: component, rules: scoped)
+        filename = FileNamer.component_filename(component, @formatter.file_extension)
+
+        Result.new(data: data, filename: filename, content_type: @formatter.content_type)
+      end
+
+      zip_name = @zip_filename || default_zip_filename
+      Packager.package(results, zip_filename: zip_name)
     end
 
     # Multi-sheet path: aggregates all components into a single workbook.
