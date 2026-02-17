@@ -7,9 +7,9 @@ class ProjectsController < ApplicationController
   include Exportable
   include ProjectMemberConstants
 
-  before_action :set_project, only: %i[show update destroy export]
+  before_action :set_project, only: %i[show update destroy export import_backup]
   before_action :set_project_permissions, only: %i[show]
-  before_action :authorize_admin_project, only: %i[update destroy]
+  before_action :authorize_admin_project, only: %i[update destroy import_backup]
   before_action :authorize_viewer_project, only: %i[show export]
   before_action :authorize_logged_in, only: %i[index search]
   before_action :authorize_admin_or_create_permission_enabled, only: %i[create]
@@ -167,7 +167,7 @@ class ProjectsController < ApplicationController
       export_mode = :vendor_submission
     end
 
-    unless %i[csv excel xccdf inspec].include?(export_type)
+    unless %i[csv excel xccdf inspec json_archive].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -215,11 +215,54 @@ class ProjectsController < ApplicationController
             component_ids: resolve_component_ids,
             zip_filename: "#{@project.name}_inspec.zip"
           )
+        when :json_archive
+          perform_export(
+            exportable: @project, mode: :backup, format: :json_archive,
+            component_ids: resolve_component_ids,
+            zip_filename: "vulcan-backup-#{@project.name}-#{Date.current}.zip"
+          )
         end
       end
       # JSON responses are just used to validate ahead of time that this
       # component can actually be exported
       format.json { render json: { status: :ok } }
+    end
+  end
+
+  def import_backup
+    file = params[:file]
+    unless file
+      render json: {
+        toast: { title: 'Import error', message: 'No file provided', variant: 'danger' }
+      }, status: :bad_request
+      return
+    end
+
+    dry_run = params[:dry_run] == 'true'
+    include_reviews = params[:include_reviews] != 'false'
+
+    result = Import::JsonArchiveImporter.new(
+      zip_file: file,
+      project: @project,
+      dry_run: dry_run,
+      include_reviews: include_reviews
+    ).call
+
+    if result.success?
+      render json: {
+        toast: dry_run ? 'Dry run complete. No records were created.' : 'Backup restored successfully.',
+        summary: result.summary,
+        warnings: result.warnings
+      }
+    else
+      render json: {
+        toast: {
+          title: 'Import failed',
+          message: result.errors.join('; '),
+          variant: 'danger'
+        },
+        warnings: result.warnings
+      }, status: :unprocessable_entity
     end
   end
 

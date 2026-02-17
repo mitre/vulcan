@@ -61,6 +61,8 @@ Rails.application.routes.draw do
   post '/components/:id/find', to: 'components#find'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
+  # Import backup archive into project
+  post '/projects/:id/import_backup', to: 'projects#import_backup'
   # SRG ID Search (legacy routes)
   get '/search/projects', to: 'projects#search'
   get '/search/components', to: 'components#search'
