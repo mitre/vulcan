@@ -4,7 +4,6 @@
 # Controller for application projects.
 #
 class ProjectsController < ApplicationController
-  include ExportHelper
   include Exportable
   include ProjectMemberConstants
 
@@ -203,11 +202,17 @@ class ProjectsController < ApplicationController
             filename: "#{@project.name}.xlsx"
           )
         when :xccdf
-          send_data export_xccdf_project(@project, component_ids: resolve_component_ids).string,
-                    filename: "#{@project.name}.zip"
+          perform_export(
+            exportable: @project, mode: :published_stig, format: :xccdf,
+            component_ids: resolve_component_ids,
+            zip_filename: "#{@project.name}.zip"
+          )
         when :inspec
-          send_data export_inspec_project(@project, component_ids: resolve_component_ids).string,
-                    filename: "#{@project.name}_inspec.zip"
+          perform_export(
+            exportable: @project, mode: :published_stig, format: :inspec,
+            component_ids: resolve_component_ids,
+            zip_filename: "#{@project.name}_inspec.zip"
+          )
         end
       end
       # JSON responses are just used to validate ahead of time that this

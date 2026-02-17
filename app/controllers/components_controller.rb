@@ -4,7 +4,6 @@
 # Components for project relationships.
 #
 class ComponentsController < ApplicationController
-  include ExportHelper
   include Exportable
 
   before_action :set_component, only: %i[show update destroy export]
@@ -158,11 +157,15 @@ class ComponentsController < ApplicationController
             filename: "#{@component.project.name}-#{@component.prefix}.csv"
           )
         when :inspec
-          filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
-          send_data export_inspec_component(@component).string, filename: filename
+          perform_export(
+            exportable: @component, mode: :published_stig, format: :inspec,
+            filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
+          )
         when :xccdf
-          filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml"
-          send_data export_xccdf_component(@component), filename: filename
+          perform_export(
+            exportable: @component, mode: :published_stig, format: :xccdf,
+            filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml"
+          )
         end
       end
       # JSON responses are just used to validate ahead of time that this
@@ -208,27 +211,15 @@ class ComponentsController < ApplicationController
             zip_filename: 'components_export.zip'
           )
         when :xccdf
-          zip_data = Zip::OutputStream.write_buffer do |zio|
-            components.eager_load(rules: %i[disa_rule_descriptions checks
-                                            satisfies satisfied_by]).find_each do |component|
-              version = component[:version] ? "V#{component[:version]}" : ''
-              release = component[:release] ? "R#{component[:release]}" : ''
-              zio.put_next_entry("#{component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml")
-              zio.write export_xccdf_component(component)
-            end
-          end
-          send_data zip_data.string, filename: 'components_export.zip'
+          perform_export(
+            exportable: components.to_a, mode: :published_stig, format: :xccdf,
+            zip_filename: 'components_export.zip'
+          )
         when :inspec
-          zip_data = Zip::OutputStream.write_buffer do |zio|
-            components.eager_load(rules: %i[disa_rule_descriptions checks
-                                            satisfies satisfied_by]).find_each do |component|
-              version = component[:version] ? "V#{component[:version]}" : ''
-              release = component[:release] ? "R#{component[:release]}" : ''
-              dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline/"
-              inspec_helper(zio, component, dir)
-            end
-          end
-          send_data zip_data.string, filename: 'components_inspec.zip'
+          perform_export(
+            exportable: components.to_a, mode: :published_stig, format: :inspec,
+            zip_filename: 'components_inspec.zip'
+          )
         end
       end
       format.json { render json: { status: :ok } }
