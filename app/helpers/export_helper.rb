@@ -98,10 +98,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     DISA_STATUS_TEXTS[status]
   end
 
-  def export_xccdf_project(project)
+  def export_xccdf_project(project, component_ids: nil)
+    scope = component_ids ? project.components.where(id: component_ids) : project.components
     Zip::OutputStream.write_buffer do |zio|
-      project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).find_each do |component|
+      scope.eager_load(rules: %i[disa_rule_descriptions checks
+                                 satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
         title = component[:title] || "#{component[:name]} STIG Readiness Guide"
@@ -116,10 +117,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     end
   end
 
-  def export_inspec_project(project)
+  def export_inspec_project(project, component_ids: nil)
+    scope = component_ids ? project.components.where(id: component_ids) : project.components
     Zip::OutputStream.write_buffer do |zio|
-      project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).find_each do |component|
+      scope.eager_load(rules: %i[disa_rule_descriptions checks
+                                 satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
         dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline/"
