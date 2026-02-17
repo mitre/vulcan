@@ -2,6 +2,8 @@ import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue2";
 import path from "node:path";
 
+const isCI = !!process.env.CI;
+
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -20,7 +22,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    include: ["spec/javascript/**/*.spec.js"],
+    dir: "spec/javascript",
+    include: ["**/*.spec.js"],
     setupFiles: ["./spec/javascript/setup.js"],
+    // Worker threads are ~15-20% faster than forks for pure jsdom tests
+    pool: "threads",
+    // Minimal output in CI, standard locally
+    reporters: isCI ? ["dot"] : "default",
   },
 });
