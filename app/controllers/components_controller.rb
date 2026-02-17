@@ -134,7 +134,7 @@ class ComponentsController < ApplicationController
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[csv inspec xccdf].include?(export_type)
+    unless %i[csv inspec xccdf json_archive].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -165,6 +165,11 @@ class ComponentsController < ApplicationController
           perform_export(
             exportable: @component, mode: :published_stig, format: :xccdf,
             filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml"
+          )
+        when :json_archive
+          perform_export(
+            exportable: @component, mode: :backup, format: :json_archive,
+            filename: "vulcan-backup-#{@component[:name].tr(' ', '-')}-#{version}#{release}.zip"
           )
         end
       end

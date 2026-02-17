@@ -1,112 +1,128 @@
 <template>
-  <b-modal :visible="visible" :title="modalTitle" centered @hidden="onHidden" @hide="onHide">
-    <!-- Mode/Purpose Selection (only when availableModes provided) -->
-    <div v-if="hasModes" class="mb-3">
-      <label id="export-mode-label" class="font-weight-bold d-block mb-2">Purpose</label>
-      <b-form-radio-group
-        v-model="selectedMode"
-        stacked
-        aria-labelledby="export-mode-label"
-        data-testid="mode-group"
-      >
-        <b-form-radio
-          v-for="mode in availableModes"
-          :key="mode"
-          :value="mode"
-          class="mb-2"
-          :data-testid="`mode-${mode}`"
-        >
-          <span class="font-weight-medium">{{ getModeLabel(mode) }}</span>
-          <small class="text-muted d-block">{{ getModeDescription(mode) }}</small>
-        </b-form-radio>
-      </b-form-radio-group>
-    </div>
-
-    <hr v-if="hasModes && selectedMode" />
-
-    <!-- Format Selection -->
-    <div v-if="showFormatSection" class="mb-3">
-      <label id="export-format-label" class="font-weight-bold d-block mb-2">Format</label>
-      <b-form-radio-group
-        v-model="selectedFormat"
-        stacked
-        aria-labelledby="export-format-label"
-        data-testid="format-group"
-      >
-        <b-form-radio
-          v-for="fmt in displayFormats"
-          :key="fmt"
-          :value="fmt"
-          :disabled="!isFormatEnabled(fmt)"
-          class="mb-2"
-        >
-          <span class="font-weight-medium">{{ getFormatLabel(fmt) }}</span>
-          <small class="text-muted d-block">{{ getFormatDescription(fmt) }}</small>
-        </b-form-radio>
-      </b-form-radio-group>
-    </div>
-
-    <hr v-if="showComponentSelection" />
-
-    <!-- Component Selection (hidden when single benchmark export) -->
-    <div v-if="showComponentSelection">
-      <label id="export-components-label" class="font-weight-bold d-block mb-2">Components</label>
-
-      <!-- Single Component: Simplified View -->
-      <div v-if="isSingleComponent" data-testid="single-mode">
-        <p class="mb-0">
-          <b-icon-check-circle-fill variant="success" class="mr-1" />
-          {{ singleComponentLabel }}
-        </p>
-      </div>
-
-      <!-- Multiple Components: Checkbox Selection -->
-      <div v-else data-testid="multi-mode">
-        <!-- Select All -->
-        <b-form-checkbox
-          data-testid="select-all"
-          :checked="allSelected"
-          :indeterminate="someSelected && !allSelected"
-          class="mb-2"
-          @change="toggleSelectAll"
-        >
-          All {{ components.length }} components
-        </b-form-checkbox>
-
-        <!-- Individual Component Checkboxes -->
-        <b-form-checkbox-group
-          v-model="selectedComponentIds"
-          :options="componentOptions"
-          stacked
-          class="ml-4"
-        />
-      </div>
-    </div>
-
-    <!-- Column Picker (CSV only, when columnDefinitions provided) -->
-    <template v-if="showColumnPicker">
-      <hr />
-      <div>
-        <label id="export-columns-label" class="font-weight-bold d-block mb-2">Columns</label>
-        <div v-for="col in columnDefinitions" :key="col.key" class="mb-1">
-          <b-form-checkbox
-            :checked="selectedColumns.includes(col.key)"
-            @change="toggleColumn(col.key, $event)"
+  <b-modal
+    :visible="visible"
+    :title="modalTitle"
+    :size="modalSize"
+    centered
+    @hidden="onHidden"
+    @hide="onHide"
+  >
+    <div :class="{ row: showComponentSelection }">
+      <!-- Left Panel: Purpose + Format + Column Picker -->
+      <div :class="{ 'col-5': showComponentSelection }" data-testid="config-panel">
+        <!-- Mode/Purpose Selection (only when availableModes provided) -->
+        <div v-if="hasModes" class="mb-3">
+          <label id="export-mode-label" class="font-weight-bold d-block mb-2">Purpose</label>
+          <b-form-radio-group
+            v-model="selectedMode"
+            stacked
+            aria-labelledby="export-mode-label"
+            data-testid="mode-group"
           >
-            <span class="font-weight-medium">{{ col.header }}</span>
-            <small class="text-muted ml-1">{{ col.example }}</small>
-          </b-form-checkbox>
+            <b-form-radio
+              v-for="mode in availableModes"
+              :key="mode"
+              :value="mode"
+              class="mb-2"
+              :data-testid="`mode-${mode}`"
+            >
+              <span class="font-weight-medium">{{ getModeLabel(mode) }}</span>
+              <small class="text-muted d-block">{{ getModeDescription(mode) }}</small>
+            </b-form-radio>
+          </b-form-radio-group>
         </div>
-        <div class="mt-2">
-          <b-button size="sm" variant="outline-secondary" class="mr-1" @click="selectAllColumns">
-            Select All
-          </b-button>
-          <b-button size="sm" variant="outline-secondary" @click="resetColumnsToDefaults">
-            Defaults
-          </b-button>
+
+        <hr v-if="hasModes && selectedMode" />
+
+        <!-- Format Selection -->
+        <div v-if="showFormatSection" class="mb-3">
+          <label id="export-format-label" class="font-weight-bold d-block mb-2">Format</label>
+          <b-form-radio-group
+            v-model="selectedFormat"
+            stacked
+            aria-labelledby="export-format-label"
+            data-testid="format-group"
+          >
+            <b-form-radio
+              v-for="fmt in displayFormats"
+              :key="fmt"
+              :value="fmt"
+              :disabled="!isFormatEnabled(fmt)"
+              class="mb-2"
+            >
+              <span class="font-weight-medium">{{ getFormatLabel(fmt) }}</span>
+              <small class="text-muted d-block">{{ getFormatDescription(fmt) }}</small>
+            </b-form-radio>
+          </b-form-radio-group>
+        </div>
+
+        <!-- Column Picker (CSV only, when columnDefinitions provided) -->
+        <template v-if="showColumnPicker">
+          <hr />
+          <div>
+            <label id="export-columns-label" class="font-weight-bold d-block mb-2">Columns</label>
+            <div v-for="col in columnDefinitions" :key="col.key" class="mb-1">
+              <b-form-checkbox
+                :checked="selectedColumns.includes(col.key)"
+                @change="toggleColumn(col.key, $event)"
+              >
+                <span class="font-weight-medium">{{ col.header }}</span>
+                <small class="text-muted ml-1">{{ col.example }}</small>
+              </b-form-checkbox>
+            </div>
+            <div class="mt-2">
+              <b-button
+                size="sm"
+                variant="outline-secondary"
+                class="mr-1"
+                @click="selectAllColumns"
+              >
+                Select All
+              </b-button>
+              <b-button size="sm" variant="outline-secondary" @click="resetColumnsToDefaults">
+                Defaults
+              </b-button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Right Panel: Components (only when visible) -->
+      <div v-if="showComponentSelection" class="col-7 border-left" data-testid="component-panel">
+        <label id="export-components-label" class="font-weight-bold d-block mb-2">Components</label>
+
+        <!-- Single Component: Simplified View -->
+        <div v-if="isSingleComponent" data-testid="single-mode">
+          <p class="mb-0">
+            <b-icon-check-circle-fill variant="success" class="mr-1" />
+            {{ singleComponentLabel }}
+          </p>
+        </div>
+
+        <!-- Multiple Components: Checkbox Selection -->
+        <div v-else data-testid="multi-mode">
+          <!-- Select All -->
+          <b-form-checkbox
+            data-testid="select-all"
+            :checked="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            class="mb-2"
+            @change="toggleSelectAll"
+          >
+            All {{ components.length }} components
+          </b-form-checkbox>
+
+          <!-- Individual Component Checkboxes (two-column grid) -->
+          <div class="row ml-2 component-scroll" data-testid="component-list">
+            <div v-for="opt in componentOptions" :key="opt.value" class="col-6">
+              <b-form-checkbox v-model="selectedComponentIds" :value="opt.value">
+                {{ opt.text }}
+              </b-form-checkbox>
+            </div>
+          </div>
         </div>
       </div>
-    </template>
+    </div>
 
     <!-- Inline Summary (mode-aware only) -->
     <div
@@ -242,6 +258,9 @@ export default {
     },
     modalTitle() {
       return this.title || "Export Project";
+    },
+    modalSize() {
+      return this.showComponentSelection ? "xl" : null;
     },
     componentOptions() {
       return this.components.map((c) => {
@@ -425,3 +444,10 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.component-scroll {
+  max-height: 400px;
+  overflow-y: auto;
+}
+</style>

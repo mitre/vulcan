@@ -14,8 +14,8 @@ export const EXPORT_MODES = {
     description: "Submit to DISA for review",
   },
   published_stig: {
-    label: "Published STIG",
-    description: "AC rules ready for publication",
+    label: "STIG-Ready Publish Draft",
+    description: "Draft STIG-Ready content for DISA review",
   },
   backup: {
     label: "Backup",
@@ -28,7 +28,7 @@ export const MODE_FORMAT_MATRIX = {
   working_copy: ["csv", "excel"],
   vendor_submission: ["excel"],
   published_stig: ["xccdf", "inspec"],
-  backup: ["xccdf"],
+  backup: ["json_archive"],
 };
 
 // Format display metadata
@@ -37,6 +37,7 @@ export const FORMAT_LABELS = {
   excel: { label: "Excel", description: "Standard spreadsheet" },
   xccdf: { label: "XCCDF", description: "SCAP XML format" },
   inspec: { label: "InSpec", description: "Chef InSpec profile" },
+  json_archive: { label: "JSON Archive", description: "Full-fidelity backup (ZIP)" },
 };
 
 // Mode-specific overrides for format descriptions
@@ -45,9 +46,9 @@ export const MODE_FORMAT_OVERRIDES = {
     excel: { description: "DISA 17-column strict template" },
   },
   backup: {
-    xccdf: { description: "All rules included (no filtering)" },
+    json_archive: { description: "Full-fidelity archive preserving all data" },
   },
 };
 
 // Canonical format order for mode-aware display
-export const ALL_FORMATS = ["csv", "excel", "xccdf", "inspec"];
+export const ALL_FORMATS = ["csv", "excel", "xccdf", "inspec", "json_archive"];

@@ -64,7 +64,7 @@ describe("ExportModal", () => {
               <slot name="modal-footer"></slot>
             </div>
           `,
-          props: ["visible", "title", "centered"],
+          props: ["visible", "title", "centered", "size"],
           methods: {
             hide() {
               this.$emit("hidden");
@@ -184,6 +184,57 @@ describe("ExportModal", () => {
       wrapper.vm.selectedComponentIds = [1, 2, 3];
       await wrapper.vm.$nextTick();
       expect(wrapper.vm.allSelected).toBe(true);
+    });
+  });
+
+  // ==========================================
+  // TWO-PANEL LAYOUT (Option B)
+  // ==========================================
+  //
+  // REQUIREMENTS:
+  // 1. When components are visible, modal uses two-panel side-by-side layout
+  //    - Left panel: Purpose + Format + Column Picker (config-panel)
+  //    - Right panel: Components with two-column checkbox grid (component-panel)
+  // 2. Modal uses xl size when two-panel layout is active
+  // 3. Component checkboxes render in a two-column grid (col-6) inside right panel
+  // 4. When hideComponentSelection is true, single-column layout (no right panel)
+  // 5. Single component still shows simplified view in right panel (no checkbox grid)
+  //
+  describe("two-panel layout", () => {
+    it("shows config-panel and component-panel when components are visible", () => {
+      wrapper = createWrapper({ components: multipleComponents });
+      expect(wrapper.find('[data-testid="config-panel"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="component-panel"]').exists()).toBe(true);
+    });
+
+    it("renders component checkboxes in a two-column grid", () => {
+      wrapper = createWrapper({ components: multipleComponents });
+      const grid = wrapper.find('[data-testid="component-list"]');
+      expect(grid.exists()).toBe(true);
+      const cols = grid.findAll(".col-6");
+      expect(cols.length).toBe(multipleComponents.length);
+    });
+
+    it("does not show component-panel when hideComponentSelection is true", () => {
+      wrapper = createWrapper({ hideComponentSelection: true, components: singleComponent });
+      expect(wrapper.find('[data-testid="component-panel"]').exists()).toBe(false);
+    });
+
+    it("shows single component in component-panel without checkbox grid", () => {
+      wrapper = createWrapper({ components: singleComponent });
+      expect(wrapper.find('[data-testid="component-panel"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="component-list"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="single-mode"]').exists()).toBe(true);
+    });
+
+    it("uses xl modal size when two-panel layout active", () => {
+      wrapper = createWrapper({ components: multipleComponents });
+      expect(wrapper.vm.modalSize).toBe("xl");
+    });
+
+    it("uses default modal size when components hidden", () => {
+      wrapper = createWrapper({ hideComponentSelection: true, components: singleComponent });
+      expect(wrapper.vm.modalSize).toBeNull();
     });
   });
 
@@ -604,8 +655,8 @@ describe("ExportModal", () => {
       expect(wrapper.text()).toContain("Internal review and editing");
       expect(wrapper.text()).toContain("DISA Vendor Submission");
       expect(wrapper.text()).toContain("Submit to DISA for review");
-      expect(wrapper.text()).toContain("Published STIG");
-      expect(wrapper.text()).toContain("AC rules ready for publication");
+      expect(wrapper.text()).toContain("STIG-Ready Publish Draft");
+      expect(wrapper.text()).toContain("Draft STIG-Ready content for DISA review");
       expect(wrapper.text()).toContain("Backup");
       expect(wrapper.text()).toContain("Full-fidelity archive of all rules");
     });
@@ -628,16 +679,17 @@ describe("ExportModal", () => {
       expect(wrapper.find('[data-testid="format-group"]').exists()).toBe(true);
     });
 
-    it("shows all 4 standard formats in mode-aware view", async () => {
+    it("shows all 5 standard formats in mode-aware view", async () => {
       wrapper = createWrapper({ availableModes: allModes });
       wrapper.vm.selectedMode = "working_copy";
       await wrapper.vm.$nextTick();
       const radios = wrapper.findAll('[data-testid="format-group"] input[type="radio"]');
-      expect(radios.length).toBe(4);
+      expect(radios.length).toBe(5);
       expect(wrapper.text()).toContain("CSV");
       expect(wrapper.text()).toContain("Excel");
       expect(wrapper.text()).toContain("XCCDF");
       expect(wrapper.text()).toContain("InSpec");
+      expect(wrapper.text()).toContain("JSON Archive");
     });
 
     it("does NOT show disa_excel in mode-aware view", async () => {
@@ -682,14 +734,15 @@ describe("ExportModal", () => {
       expect(wrapper.vm.isFormatEnabled("inspec")).toBe(true);
     });
 
-    it("enables only xccdf for backup mode", async () => {
+    it("enables only json_archive for backup mode", async () => {
       wrapper = createWrapper({ availableModes: allModes });
       wrapper.vm.selectedMode = "backup";
       await wrapper.vm.$nextTick();
       expect(wrapper.vm.isFormatEnabled("csv")).toBe(false);
       expect(wrapper.vm.isFormatEnabled("excel")).toBe(false);
-      expect(wrapper.vm.isFormatEnabled("xccdf")).toBe(true);
+      expect(wrapper.vm.isFormatEnabled("xccdf")).toBe(false);
       expect(wrapper.vm.isFormatEnabled("inspec")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("json_archive")).toBe(true);
     });
 
     it("shows hint text for disabled formats", async () => {
@@ -698,7 +751,7 @@ describe("ExportModal", () => {
       await wrapper.vm.$nextTick();
       // XCCDF should show hint about which modes support it
       expect(wrapper.text()).toContain("Available in");
-      expect(wrapper.text()).toContain("Published STIG");
+      expect(wrapper.text()).toContain("STIG-Ready Publish Draft");
     });
 
     it("shows mode-specific description override for vendor_submission + excel", async () => {
@@ -708,11 +761,11 @@ describe("ExportModal", () => {
       expect(wrapper.text()).toContain("DISA 17-column strict template");
     });
 
-    it("shows mode-specific description override for backup + xccdf", async () => {
+    it("shows mode-specific description override for backup + json_archive", async () => {
       wrapper = createWrapper({ availableModes: allModes });
       wrapper.vm.selectedMode = "backup";
       await wrapper.vm.$nextTick();
-      expect(wrapper.text()).toContain("All rules included (no filtering)");
+      expect(wrapper.text()).toContain("Full-fidelity archive preserving all data");
     });
   });
 
@@ -731,7 +784,7 @@ describe("ExportModal", () => {
       wrapper = createWrapper({ availableModes: allModes });
       wrapper.vm.selectedMode = "backup";
       await wrapper.vm.$nextTick();
-      expect(wrapper.vm.selectedFormat).toBe("xccdf");
+      expect(wrapper.vm.selectedFormat).toBe("json_archive");
     });
 
     it("does not auto-select when mode has multiple formats (working_copy)", async () => {
@@ -753,16 +806,17 @@ describe("ExportModal", () => {
       expect(wrapper.vm.selectedFormat).toBe(null);
     });
 
-    it("keeps format when switching to mode that supports it", async () => {
+    it("clears format when switching to mode that no longer supports it", async () => {
       wrapper = createWrapper({ availableModes: allModes });
       wrapper.vm.selectedMode = "published_stig";
       await wrapper.vm.$nextTick();
       wrapper.vm.selectedFormat = "xccdf";
       await wrapper.vm.$nextTick();
-      // Switch to backup — xccdf is still valid
+      // Switch to backup — xccdf is NOT valid in backup (only json_archive)
+      // Backup has exactly 1 format, so it auto-selects json_archive
       wrapper.vm.selectedMode = "backup";
       await wrapper.vm.$nextTick();
-      expect(wrapper.vm.selectedFormat).toBe("xccdf");
+      expect(wrapper.vm.selectedFormat).toBe("json_archive");
     });
 
     it("resets mode when modal reopens", async () => {

@@ -395,9 +395,17 @@ describe("Project", () => {
       wrapper = createWrapper();
       wrapper.vm.downloadExport = vi.fn();
 
-      wrapper.vm.executeExport({ type: "excel", mode: "vendor_submission", componentIds: [1, 2, 3] });
+      wrapper.vm.executeExport({
+        type: "excel",
+        mode: "vendor_submission",
+        componentIds: [1, 2, 3],
+      });
 
-      expect(wrapper.vm.downloadExport).toHaveBeenCalledWith("excel", [1, 2, 3], "vendor_submission");
+      expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(
+        "excel",
+        [1, 2, 3],
+        "vendor_submission",
+      );
     });
 
     it("executeExport works for all export types with modes", () => {
