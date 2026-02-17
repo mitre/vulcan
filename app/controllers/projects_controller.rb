@@ -5,6 +5,7 @@
 #
 class ProjectsController < ApplicationController
   include ExportHelper
+  include Exportable
   include ProjectMemberConstants
 
   before_action :set_project, only: %i[show update destroy export]
@@ -155,13 +156,13 @@ class ProjectsController < ApplicationController
     # causing to lose the :component_ids param.
 
     # rubocop:disable Style/ClassVars
-    @@components_to_export = params[:component_ids] || @@components_to_export
+    @@components_to_export = params[:component_ids] if params[:component_ids].present?
     # rubocop:enable Style/ClassVars
 
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[disa_excel excel xccdf inspec].include?(export_type)
+    unless %i[csv disa_excel excel xccdf inspec].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -175,18 +176,38 @@ class ProjectsController < ApplicationController
     respond_to do |format|
       format.html do
         case export_type
+        when :csv
+          component_ids = resolve_component_ids
+          components = component_ids ? @project.components.where(id: component_ids) : @project.components
+          if components.size == 1
+            perform_export(
+              exportable: components.first, mode: :working_copy, format: :csv,
+              filename: "#{@project.name}-#{components.first.prefix}.csv"
+            )
+          else
+            perform_export(
+              exportable: components.to_a, mode: :working_copy, format: :csv,
+              zip_filename: "#{@project.name}.zip"
+            )
+          end
         when :disa_excel
-          is_disa_export = true
-          workbook = export_excel(@project, @@components_to_export, is_disa_export)
-          send_data workbook.read_string, filename: "#{@project.name}_DISA.xlsx"
+          perform_export(
+            exportable: @project, mode: :vendor_submission, format: :excel,
+            component_ids: resolve_component_ids,
+            filename: "#{@project.name}_DISA.xlsx"
+          )
         when :excel
-          is_disa_export = false
-          workbook = export_excel(@project, @@components_to_export, is_disa_export)
-          send_data workbook.read_string, filename: "#{@project.name}.xlsx"
+          perform_export(
+            exportable: @project, mode: :working_copy, format: :excel,
+            component_ids: resolve_component_ids,
+            filename: "#{@project.name}.xlsx"
+          )
         when :xccdf
-          send_data export_xccdf_project(@project).string, filename: "#{@project.name}.zip"
+          send_data export_xccdf_project(@project, component_ids: resolve_component_ids).string,
+                    filename: "#{@project.name}.zip"
         when :inspec
-          send_data export_inspec_project(@project).string, filename: "#{@project.name}_inspec.zip"
+          send_data export_inspec_project(@project, component_ids: resolve_component_ids).string,
+                    filename: "#{@project.name}_inspec.zip"
         end
       end
       # JSON responses are just used to validate ahead of time that this
@@ -218,6 +239,14 @@ class ProjectsController < ApplicationController
     condition = project_params[:project_metadata_attributes]&.dig('data', 'Slack Channel ID').present? ||
                 project_params[:visibility].present?
     authorize_admin_project if condition
+  end
+
+  # Parse @@components_to_export from comma-separated string to integer array.
+  # Returns nil if not set (exports all components).
+  def resolve_component_ids
+    return nil unless defined?(@@components_to_export) && @@components_to_export.present?
+
+    @@components_to_export.split(',').map(&:to_i)
   end
 
   def project_name_changed?(current_project_name)

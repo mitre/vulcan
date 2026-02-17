@@ -36,6 +36,10 @@ Rails.application.routes.draw do
   # Legacy alias - redirect to new path
   get '/components/:component_id/controls', to: redirect('/components/%{component_id}/edit')
 
+  # Bulk export multiple components (e.g. from ProjectComponents page)
+  # Must be before /:id/:stig_id catch-all to avoid route collision
+  get '/components/bulk_export/:type', to: 'components#bulk_export'
+
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 

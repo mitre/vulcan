@@ -5,6 +5,7 @@
 #
 class ComponentsController < ApplicationController
   include ExportHelper
+  include Exportable
 
   before_action :set_component, only: %i[show update destroy export]
   before_action :set_component_basic, only: %i[find based_on_same_srg]
@@ -17,7 +18,7 @@ class ComponentsController < ApplicationController
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
   before_action :authorize_component_access, only: %i[show export find]
-  before_action :authorize_logged_in, only: %i[search index based_on_same_srg]
+  before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
 
@@ -152,7 +153,10 @@ class ComponentsController < ApplicationController
 
         case export_type
         when :csv
-          send_data @component.csv_export, filename: "#{@component.project.name}-#{@component.prefix}.csv"
+          perform_export(
+            exportable: @component, mode: :working_copy, format: :csv,
+            filename: "#{@component.project.name}-#{@component.prefix}.csv"
+          )
         when :inspec
           filename = "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
           send_data export_inspec_component(@component).string, filename: filename
@@ -163,6 +167,70 @@ class ComponentsController < ApplicationController
       end
       # JSON responses are just used to validate ahead of time that this
       # component can actually be exported
+      format.json { render json: { status: :ok } }
+    end
+  end
+
+  def bulk_export
+    export_type = params[:type]&.to_sym
+
+    unless %i[csv xccdf inspec].include?(export_type)
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: "Unsupported export type: #{export_type}",
+          variant: 'danger'
+        }
+      }, status: :bad_request
+      return
+    end
+
+    component_ids = params[:component_ids]&.split(',')&.map(&:to_i)
+    if component_ids.blank?
+      render json: {
+        toast: {
+          title: 'Export error',
+          message: 'No components selected for export.',
+          variant: 'danger'
+        }
+      }, status: :bad_request
+      return
+    end
+
+    components = Component.where(id: component_ids, released: true)
+
+    respond_to do |format|
+      format.html do
+        case export_type
+        when :csv
+          perform_export(
+            exportable: components.to_a, mode: :working_copy, format: :csv,
+            zip_filename: 'components_export.zip'
+          )
+        when :xccdf
+          zip_data = Zip::OutputStream.write_buffer do |zio|
+            components.eager_load(rules: %i[disa_rule_descriptions checks
+                                            satisfies satisfied_by]).find_each do |component|
+              version = component[:version] ? "V#{component[:version]}" : ''
+              release = component[:release] ? "R#{component[:release]}" : ''
+              zio.put_next_entry("#{component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml")
+              zio.write export_xccdf_component(component)
+            end
+          end
+          send_data zip_data.string, filename: 'components_export.zip'
+        when :inspec
+          zip_data = Zip::OutputStream.write_buffer do |zio|
+            components.eager_load(rules: %i[disa_rule_descriptions checks
+                                            satisfies satisfied_by]).find_each do |component|
+              version = component[:version] ? "V#{component[:version]}" : ''
+              release = component[:release] ? "R#{component[:release]}" : ''
+              dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline/"
+              inspec_helper(zio, component, dir)
+            end
+          end
+          send_data zip_data.string, filename: 'components_inspec.zip'
+        end
+      end
       format.json { render json: { status: :ok } }
     end
   end

@@ -74,12 +74,13 @@ export default {
       this.downloadExport(type, componentIds);
     },
     downloadExport(type, componentIds) {
-      // Export released components
+      // Export released components via bulk_export route
       const idsParam = componentIds.join(",");
+      const url = `/components/bulk_export/${type}?component_ids=${idsParam}`;
       axios
-        .get(`/components/export/${type}?component_ids=${idsParam}`)
+        .get(url)
         .then(() => {
-          window.open(`/components/export/${type}?component_ids=${idsParam}`);
+          window.open(url);
         })
         .catch(this.alertOrNotifyResponse);
     },
