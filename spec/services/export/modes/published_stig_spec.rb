@@ -32,7 +32,7 @@ RSpec.describe Export::Modes::PublishedStig do
     it 'includes only Applicable - Configurable rules' do
       scoped = mode.rule_scope(component.rules)
       statuses = scoped.pluck(:status).uniq
-      # Note: satisfied_by rules report status as AC via override, but we filter by DB column
+      # NOTE: satisfied_by rules report status as AC via override, but we filter by DB column
       expect(statuses).to all(eq('Applicable - Configurable'))
     end
 

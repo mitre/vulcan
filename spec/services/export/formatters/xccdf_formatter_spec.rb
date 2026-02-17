@@ -130,11 +130,13 @@ RSpec.describe Export::Formatters::XccdfFormatter do
     end
 
     let(:ac_rules) do
-      component.rules.eager_load(
-        :disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
-        srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
-      ).where(status: 'Applicable - Configurable')
-       .where.not(id: RuleSatisfaction.select(:rule_id))
+      component.rules
+               .eager_load(
+                 :disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
+                 srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
+               )
+               .where(status: 'Applicable - Configurable')
+               .where.not(id: RuleSatisfaction.select(:rule_id))
     end
 
     it 'produces XML structurally equivalent to ExportHelper#export_xccdf_component' do
