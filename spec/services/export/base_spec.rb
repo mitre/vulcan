@@ -54,11 +54,11 @@ RSpec.describe Export::Base do
   end
 
   describe '#call with project exportable (multiple components)' do
-    let!(:component2) { create(:component, project: project) }
-
     subject(:export) do
       described_class.new(exportable: project, mode: :working_copy, format: :csv)
     end
+
+    let!(:component2) { create(:component, project: project) }
 
     it 'returns an Export::Result' do
       result = export.call

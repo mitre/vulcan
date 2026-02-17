@@ -20,7 +20,7 @@ RSpec.describe Export::Formatters::ExcelFormatter do
   subject(:formatter) { described_class.new }
 
   describe '#generate' do
-    let(:headers) { ['Name', 'Status', 'Severity'] }
+    let(:headers) { %w[Name Status Severity] }
     let(:rows) { [['Rule 1', 'Applicable - Configurable', 'CAT II'], ['Rule 2', 'Not Applicable', 'CAT I']] }
 
     it 'returns a binary string' do
@@ -74,12 +74,12 @@ RSpec.describe Export::Formatters::ExcelFormatter do
       [
         {
           name: 'Component-A-V1R1-1',
-          headers: ['Name', 'Status'],
+          headers: %w[Name Status],
           rows: [['Rule 1', 'AC'], ['Rule 2', 'NA']]
         },
         {
           name: 'Component-B-V1R2-2',
-          headers: ['Name', 'Status'],
+          headers: %w[Name Status],
           rows: [['Rule 3', 'AIM']]
         }
       ]
@@ -111,8 +111,8 @@ RSpec.describe Export::Formatters::ExcelFormatter do
       result = formatter.generate_workbook(sheets: sheets)
       workbook = read_xlsx(result)
 
-      expect(workbook.sheet(0).row(1)).to eq ['Name', 'Status']
-      expect(workbook.sheet(1).row(1)).to eq ['Name', 'Status']
+      expect(workbook.sheet(0).row(1)).to eq %w[Name Status]
+      expect(workbook.sheet(1).row(1)).to eq %w[Name Status]
     end
 
     it 'each sheet has correct data rows' do

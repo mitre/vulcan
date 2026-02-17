@@ -16,19 +16,6 @@ require 'rails_helper'
 # See docs/disa-process/field-requirements.md for the full matrix.
 # ==========================================================================
 RSpec.describe 'VendorSubmission + Excel integration' do
-  let(:component) { create(:component) }
-  let(:project) { component.project }
-  let(:rules) { component.rules.where(satisfied_by: { id: nil }).left_joins(:satisfied_by).to_a }
-
-  before do
-    # Set up mixed statuses on rules without satisfied_by (to avoid status= guard)
-    rules[0].update_column(:status, 'Applicable - Configurable') if rules[0]
-    rules[1].update_column(:status, 'Applicable - Inherently Meets') if rules[1]
-    rules[2].update_column(:status, 'Applicable - Does Not Meet') if rules[2]
-    rules[3].update_column(:status, 'Not Applicable') if rules[3]
-    rules[4].update_column(:status, 'Not Yet Determined') if rules[4]
-  end
-
   subject(:result) do
     Export::Base.new(
       exportable: project,
@@ -36,6 +23,19 @@ RSpec.describe 'VendorSubmission + Excel integration' do
       format: :excel,
       component_ids: [component.id]
     ).call
+  end
+
+  let(:component) { create(:component) }
+  let(:project) { component.project }
+  let(:rules) { component.rules.where.missing(:satisfied_by).to_a }
+
+  before do
+    # Set up mixed statuses on rules without satisfied_by (to avoid status= guard)
+    rules[0]&.update_column(:status, 'Applicable - Configurable')
+    rules[1]&.update_column(:status, 'Applicable - Inherently Meets')
+    rules[2]&.update_column(:status, 'Applicable - Does Not Meet')
+    rules[3]&.update_column(:status, 'Not Applicable')
+    rules[4]&.update_column(:status, 'Not Yet Determined')
   end
 
   describe 'output format' do
@@ -87,14 +87,14 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     it 'excludes Not Yet Determined rules' do
       workbook = read_xlsx(result.data)
       data_rows = parse_data_rows(workbook, 0)
-      statuses = data_rows.map { |r| r['Status'] }
+      statuses = data_rows.pluck('Status')
       expect(statuses).not_to include('Not Yet Determined')
     end
 
     it 'includes all other statuses' do
       workbook = read_xlsx(result.data)
       data_rows = parse_data_rows(workbook, 0)
-      statuses = data_rows.map { |r| r['Status'] }.uniq
+      statuses = data_rows.pluck('Status').uniq
       expect(statuses).to include('Applicable - Configurable')
       expect(statuses).to include('Applicable - Inherently Meets')
       expect(statuses).to include('Applicable - Does Not Meet')
@@ -106,7 +106,7 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     it 'STIGID is blank for all rules' do
       workbook = read_xlsx(result.data)
       data_rows = parse_data_rows(workbook, 0)
-      stigids = data_rows.map { |r| r['STIGID'] }.compact.reject(&:empty?)
+      stigids = data_rows.filter_map { |r| r['STIGID'] }.reject(&:empty?)
       expect(stigids).to be_empty
     end
   end

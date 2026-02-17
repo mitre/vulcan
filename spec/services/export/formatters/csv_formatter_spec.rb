@@ -10,7 +10,7 @@ RSpec.describe Export::Formatters::CsvFormatter do
   subject(:formatter) { described_class.new }
 
   describe '#generate' do
-    let(:headers) { ['Name', 'Status', 'Severity'] }
+    let(:headers) { %w[Name Status Severity] }
     let(:rows) { [['Rule 1', 'Applicable - Configurable', 'CAT II'], ['Rule 2', 'Not Applicable', 'CAT I']] }
 
     it 'returns a CSV string' do

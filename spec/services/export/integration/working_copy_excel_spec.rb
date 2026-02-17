@@ -50,11 +50,11 @@ RSpec.describe 'WorkingCopy + Excel integration' do
   end
 
   describe 'multi component' do
-    let!(:component2) { create(:component, project: project) }
-
     subject(:result) do
       Export::Base.new(exportable: project, mode: :working_copy, format: :excel).call
     end
+
+    let!(:component2) { create(:component, project: project) }
 
     it 'produces a single workbook (not zip)' do
       expect(result.content_type).to eq 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
