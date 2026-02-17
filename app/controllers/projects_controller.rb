@@ -159,9 +159,15 @@ class ProjectsController < ApplicationController
     # rubocop:enable Style/ClassVars
 
     export_type = params[:type]&.to_sym
+    export_mode = params[:mode]&.to_sym
 
-    # Other export types will be included in the future
-    unless %i[csv disa_excel excel xccdf inspec].include?(export_type)
+    # Legacy support: disa_excel → vendor_submission + excel
+    if export_type == :disa_excel
+      export_type = :excel
+      export_mode = :vendor_submission
+    end
+
+    unless %i[csv excel xccdf inspec].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -189,21 +195,17 @@ class ProjectsController < ApplicationController
               zip_filename: "#{@project.name}.zip"
             )
           end
-        when :disa_excel
-          perform_export(
-            exportable: @project, mode: :vendor_submission, format: :excel,
-            component_ids: resolve_component_ids,
-            filename: "#{@project.name}_DISA.xlsx"
-          )
         when :excel
+          mode = export_mode || :working_copy
+          filename = mode == :vendor_submission ? "#{@project.name}_DISA.xlsx" : "#{@project.name}.xlsx"
           perform_export(
-            exportable: @project, mode: :working_copy, format: :excel,
+            exportable: @project, mode: mode, format: :excel,
             component_ids: resolve_component_ids,
-            filename: "#{@project.name}.xlsx"
+            filename: filename
           )
         when :xccdf
           perform_export(
-            exportable: @project, mode: :published_stig, format: :xccdf,
+            exportable: @project, mode: export_mode || :published_stig, format: :xccdf,
             component_ids: resolve_component_ids,
             zip_filename: "#{@project.name}.zip"
           )

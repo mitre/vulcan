@@ -391,24 +391,30 @@ describe("Project", () => {
       expect(wrapper.vm.showExportModal).toBe(true);
     });
 
-    it("executeExport calls downloadExport with type and componentIds from event", () => {
+    it("executeExport calls downloadExport with type, componentIds, and mode from event", () => {
       wrapper = createWrapper();
       wrapper.vm.downloadExport = vi.fn();
 
-      wrapper.vm.executeExport({ type: "disa_excel", componentIds: [1, 2, 3] });
+      wrapper.vm.executeExport({ type: "excel", mode: "vendor_submission", componentIds: [1, 2, 3] });
 
-      expect(wrapper.vm.downloadExport).toHaveBeenCalledWith("disa_excel", [1, 2, 3]);
+      expect(wrapper.vm.downloadExport).toHaveBeenCalledWith("excel", [1, 2, 3], "vendor_submission");
     });
 
-    it("executeExport works for all export types", () => {
-      const types = ["excel", "disa_excel", "inspec", "xccdf"];
-      types.forEach((type) => {
+    it("executeExport works for all export types with modes", () => {
+      const cases = [
+        { type: "excel", mode: "working_copy" },
+        { type: "excel", mode: "vendor_submission" },
+        { type: "xccdf", mode: "published_stig" },
+        { type: "inspec", mode: "published_stig" },
+        { type: "xccdf", mode: "backup" },
+      ];
+      cases.forEach(({ type, mode }) => {
         wrapper = createWrapper();
         wrapper.vm.downloadExport = vi.fn();
 
-        wrapper.vm.executeExport({ type, componentIds: [1] });
+        wrapper.vm.executeExport({ type, mode, componentIds: [1] });
 
-        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(type, [1]);
+        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(type, [1], mode);
         wrapper.destroy();
       });
     });

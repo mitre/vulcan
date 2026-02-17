@@ -136,6 +136,7 @@
     <ExportModal
       v-model="showExportModal"
       :components="project.components"
+      :available-modes="exportModes"
       @export="executeExport"
       @cancel="showExportModal = false"
     />
@@ -212,6 +213,9 @@ export default {
     };
   },
   computed: {
+    exportModes() {
+      return ["working_copy", "vendor_submission", "published_stig", "backup"];
+    },
     sortedAvailableComponents: function () {
       return _.sortBy(this.project.available_components, ["child_project_name"], ["asc"]);
     },
@@ -342,9 +346,9 @@ export default {
     openMembersModal() {
       this.$bvModal.show("project-members-modal");
     },
-    executeExport({ type, componentIds }) {
+    executeExport({ type, mode, componentIds }) {
       // Called by ExportModal when user confirms export
-      this.downloadExport(type, componentIds);
+      this.downloadExport(type, componentIds, mode);
     },
     // Having deleteComponent on the `ComponentCard` causes it to
     // disappear almost immediately because the component gets
@@ -358,15 +362,15 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    downloadExport: function (type, componentIds) {
+    downloadExport: function (type, componentIds, mode) {
+      let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
+      if (mode) {
+        url += `&mode=${mode}`;
+      }
       axios
-        .get(`/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`)
+        .get(url)
         .then((_res) => {
-          // Once it is validated that there is content to download, prompt
-          // the user to save the file
-          window.open(
-            `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`,
-          );
+          window.open(url);
         })
         .catch(this.alertOrNotifyResponse);
     },
