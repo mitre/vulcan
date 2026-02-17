@@ -12,7 +12,7 @@ module Export
       working_copy: %i[csv excel],
       vendor_submission: %i[excel],
       published_stig: %i[xccdf inspec],
-      backup: %i[xccdf]
+      backup: %i[json_archive]
     }.freeze
 
     MODE_CLASSES = {
@@ -26,7 +26,8 @@ module Export
       csv: 'Export::Formatters::CsvFormatter',
       excel: 'Export::Formatters::ExcelFormatter',
       xccdf: 'Export::Formatters::XccdfFormatter',
-      inspec: 'Export::Formatters::InspecFormatter'
+      inspec: 'Export::Formatters::InspecFormatter',
+      json_archive: 'Export::Formatters::JsonArchiveFormatter'
     }.freeze
 
     class << self

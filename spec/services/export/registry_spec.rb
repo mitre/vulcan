@@ -10,7 +10,7 @@ require 'rails_helper'
 #   working_copy + csv, working_copy + excel,
 #   vendor_submission + excel,
 #   published_stig + xccdf, published_stig + inspec,
-#   backup + xccdf
+#   backup + json_archive
 # ==========================================================================
 RSpec.describe Export::Registry do
   describe '.valid?' do
@@ -34,8 +34,8 @@ RSpec.describe Export::Registry do
       expect(described_class.valid?(:published_stig, :inspec)).to be true
     end
 
-    it 'accepts backup + xccdf' do
-      expect(described_class.valid?(:backup, :xccdf)).to be true
+    it 'accepts backup + json_archive' do
+      expect(described_class.valid?(:backup, :json_archive)).to be true
     end
 
     it 'rejects working_copy + xccdf (not a valid combination)' do

@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # ==========================================================================
 # REQUIREMENT: Backup mode exports ALL rules regardless of status, with all
-# metadata. This is for full-fidelity component backup/restore via XCCDF.
+# metadata. This is for full-fidelity component backup/restore via JSON archive.
 # No filtering, no transforms — preserves everything.
 # ==========================================================================
 RSpec.describe Export::Modes::Backup do
@@ -47,11 +47,26 @@ RSpec.describe Export::Modes::Backup do
   describe '#eager_load_associations' do
     it 'includes full set of associations for complete backup' do
       assocs = mode.eager_load_associations
-      expect(assocs).to be_an(Array)
-      expect(assocs).to include(:disa_rule_descriptions)
-      expect(assocs).to include(:checks)
-      expect(assocs).to include(:satisfies)
-      expect(assocs).to include(:satisfied_by)
+      flat_symbols = assocs.select { |a| a.is_a?(Symbol) }
+      expect(flat_symbols).to include(:disa_rule_descriptions)
+      expect(flat_symbols).to include(:checks)
+      expect(flat_symbols).to include(:references)
+      expect(flat_symbols).to include(:satisfies)
+      expect(flat_symbols).to include(:satisfied_by)
+    end
+
+    it 'includes reviews with user for attribution' do
+      assocs = mode.eager_load_associations
+      review_assoc = assocs.find { |a| a.is_a?(Hash) && a.key?(:reviews) }
+      expect(review_assoc).to be_present
+      expect(review_assoc[:reviews]).to eq(:user)
+    end
+
+    it 'includes additional_answers with question for name mapping' do
+      assocs = mode.eager_load_associations
+      answer_assoc = assocs.find { |a| a.is_a?(Hash) && a.key?(:additional_answers) }
+      expect(answer_assoc).to be_present
+      expect(answer_assoc[:additional_answers]).to eq(:additional_question)
     end
   end
 

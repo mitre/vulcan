@@ -27,7 +27,9 @@ module Export
       def eager_load_associations
         [
           :disa_rule_descriptions, :rule_descriptions, :checks,
-          :satisfies, :satisfied_by,
+          :references, :satisfies, :satisfied_by,
+          { reviews: :user },
+          { additional_answers: :additional_question },
           { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }
         ]
       end
