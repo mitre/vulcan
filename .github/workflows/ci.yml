@@ -1,0 +1,317 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/dependabot.yml'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/dependabot.yml'
+  release:
+    types: [published]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ─── LINT + SECURITY ─────────────────────────────────────
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version-file: '.ruby-version'
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - name: RuboCop
+        run: bundle exec rubocop --parallel
+      - name: ESLint
+        run: yarn lint:ci
+      - name: Brakeman
+        run: bundle exec brakeman -q --no-pager
+      - name: Bundle Audit
+        run: bundle exec bundler-audit check --update
+
+  # ─── FRONTEND TESTS + COVERAGE ───────────────────────────
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - name: Vitest with coverage
+        run: yarn test:unit --coverage
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-frontend
+          path: coverage/js
+          retention-days: 5
+
+  # ─── BACKEND TESTS + COVERAGE (4 shards) ─────────────────
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_node_index: [0, 1, 2, 3]
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: vulcan_vue_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: "--nosync"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 500ms
+          --health-timeout 3s
+          --health-retries 20
+          --shm-size=256mb
+      ldap:
+        image: rroemhild/test-openldap
+        ports:
+          - 10389:10389
+
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      RAILS_ENV: test
+      RUBY_YJIT_ENABLE: "1"
+      CI: "true"
+      # OIDC Testing
+      VULCAN_ENABLE_OIDC: "true"
+      VULCAN_OIDC_DISCOVERY: "true"
+      VULCAN_OIDC_ISSUER_URL: ${{ secrets.OKTA_TEST_ISSUER }}
+      VULCAN_OIDC_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
+      VULCAN_OIDC_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
+      OKTA_TEST_ISSUER: ${{ secrets.OKTA_TEST_ISSUER }}
+      OKTA_TEST_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
+      OKTA_TEST_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
+      # LDAP Testing (rroemhild/test-openldap public defaults)
+      VULCAN_ENABLE_LDAP: "true"
+      VULCAN_LDAP_HOST: localhost
+      VULCAN_LDAP_ATTRIBUTE: mail
+      VULCAN_LDAP_BIND_DN: "cn=admin,dc=planetexpress,dc=com"
+      VULCAN_LDAP_BASE: "ou=people,dc=planetexpress,dc=com"
+      VULCAN_LDAP_PORT: "10389"
+      VULCAN_LDAP_ADMIN_PASS: GoodNewsEveryone
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version-file: '.ruby-version'
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - name: Install system dependencies
+        run: sudo apt-get -yqq install libpq-dev
+
+      - name: Cache JS build
+        uses: actions/cache@v4
+        id: js-cache
+        with:
+          path: app/assets/builds
+          key: js-build-${{ hashFiles('app/javascript/**', 'yarn.lock', 'esbuild.config.js') }}
+      - name: Build JavaScript assets
+        if: steps.js-cache.outputs.cache-hit != 'true'
+        run: yarn build
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+
+      - name: Run backend tests (shard ${{ matrix.ci_node_index }}/4)
+        run: |
+          # Sort by file size (descending) then round-robin for better balance
+          TESTS=$(find spec -name '*_spec.rb' -print0 | xargs -0 ls -lS | awk '{print $NF}' | awk "NR % 4 == ${{ matrix.ci_node_index }}")
+          if [ -n "$TESTS" ]; then
+            echo "Running $(echo "$TESTS" | wc -l | tr -d ' ') spec files in shard ${{ matrix.ci_node_index }}"
+            bundle exec rspec --format progress $TESTS
+          else
+            echo "No tests for this shard"
+          fi
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-shard-${{ matrix.ci_node_index }}
+          path: coverage
+          retention-days: 5
+
+  # ─── SONARCLOUD (downloads coverage, scans) ──────────────
+  sonarcloud:
+    needs: [lint, frontend, backend]
+    if: always() && !cancelled()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts/
+
+      - name: Merge coverage reports
+        run: |
+          mkdir -p coverage coverage/js
+
+          # Move frontend lcov
+          if [ -f coverage-artifacts/coverage-frontend/lcov.info ]; then
+            cp coverage-artifacts/coverage-frontend/lcov.info coverage/js/lcov.info
+            echo "Frontend coverage: $(wc -l < coverage/js/lcov.info) lines"
+          else
+            echo "No frontend coverage found"
+          fi
+
+          # Merge backend SimpleCov shards
+          # SimpleCov .resultset.json files can be merged by combining the JSON hashes
+          ruby -e '
+            require "json"
+            merged = {}
+            Dir.glob("coverage-artifacts/coverage-shard-*/.resultset.json").each do |f|
+              data = JSON.parse(File.read(f))
+              merged.merge!(data)
+            end
+            if merged.any?
+              File.write("coverage/.resultset.json", JSON.pretty_generate(merged))
+              puts "Merged #{merged.keys.size} coverage result sets"
+            else
+              puts "No backend coverage found"
+            end
+          '
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # ─── DOCKER BUILD (master + release only) ────────────────
+  docker-build:
+    needs: [lint, frontend, backend]
+    if: github.event_name == 'push' || github.event_name == 'release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: mitre/vulcan:ci-build
+          outputs: type=docker,dest=/tmp/vulcan-image.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/vulcan-image.tar
+          retention-days: 1
+
+  # ─── DOCKER PUSH ─────────────────────────────────────────
+  docker-push:
+    needs: [docker-build]
+    if: github.event_name == 'push' || github.event_name == 'release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+      - name: Load Docker image
+        run: docker load -i /tmp/vulcan-image.tar
+      - name: Set tag
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "TAG=latest" >> $GITHUB_ENV
+          fi
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Push to DockerHub
+        run: |
+          docker tag mitre/vulcan:ci-build mitre/vulcan:${{ env.TAG }}
+          docker push mitre/vulcan:${{ env.TAG }}
+
+  # ─── SBOM SCAN ───────────────────────────────────────────
+  sbom-scan:
+    needs: [docker-build]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+      - name: Load Docker image
+        run: docker load -i /tmp/vulcan-image.tar
+      - name: SBOM scan and dependency submission
+        uses: anchore/sbom-action@v0
+        with:
+          image: mitre/vulcan:ci-build
+          artifact-name: image.spdx.json
+          dependency-snapshot: true

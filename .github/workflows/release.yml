@@ -1,0 +1,57 @@
+name: Create Release Draft
+
+on:
+  schedule:
+    - cron: "0 17 */14 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get current release version
+        id: current_version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = context.repo;
+            try {
+              const latestRelease = await github.rest.repos.getLatestRelease(repo);
+              return latestRelease.data.tag_name;
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('No releases found');
+                return 'v2.0.0';
+              }
+              throw error;
+            }
+
+      - name: Calculate next release version
+        id: next_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
+          CURRENT_VERSION=$(echo $CURRENT_VERSION | tr -d '"')
+          IFS='.' read -ra VERSION_PARTS <<< "${CURRENT_VERSION:1}"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          PATCH=$((PATCH + 1))
+          echo "NEW_VERSION=v${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_ENV
+
+      - name: Create release draft
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createRelease({
+              ...context.repo,
+              tag_name: process.env.NEW_VERSION,
+              name: `vulcan ${process.env.NEW_VERSION}`,
+              draft: true,
+            });
+            console.log(`Created draft release: ${process.env.NEW_VERSION}`);

@@ -29,5 +29,13 @@ export default defineConfig({
     pool: "threads",
     // Minimal output in CI, standard locally
     reporters: isCI ? ["dot"] : "default",
+    // Coverage configuration for SonarCloud integration
+    coverage: {
+      provider: "v8",
+      reporter: ["lcov"],
+      reportsDirectory: "coverage/js",
+      include: ["app/javascript/**/*.{js,vue}"],
+      exclude: ["app/javascript/packs/**"],
+    },
   },
 });
