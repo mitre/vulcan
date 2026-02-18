@@ -250,7 +250,7 @@ describe("Stigs", () => {
 
     it("handleExport opens window for each selected STIG", () => {
       wrapper = createWrapper();
-      const openSpy = vi.spyOn(window, "open").mockImplementation(() => {});
+      const openSpy = vi.spyOn(globalThis, "open").mockImplementation(() => {});
 
       wrapper.vm.handleExport({
         type: "xccdf",
@@ -267,7 +267,7 @@ describe("Stigs", () => {
 
     it("handleExport appends columns as query parameter for CSV", () => {
       wrapper = createWrapper();
-      const openSpy = vi.spyOn(window, "open").mockImplementation(() => {});
+      const openSpy = vi.spyOn(globalThis, "open").mockImplementation(() => {});
 
       wrapper.vm.handleExport({
         type: "csv",

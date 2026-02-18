@@ -222,7 +222,7 @@ RSpec.describe 'Stigs' do
     before { sign_in user }
 
     it 'returns JSON with STIG and rules for viewer', :aggregate_failures do
-      get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
+      get "/stigs/#{stig.id}", headers: { 'Accept' => application_json }
 
       expect(response).to have_http_status(:success)
       json = response.parsed_body
@@ -241,7 +241,7 @@ RSpec.describe 'Stigs' do
 
     it 'includes required rule fields for BenchmarkViewer', :aggregate_failures do
       create(:stig_rule, stig: stig)
-      get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
+      get "/stigs/#{stig.id}", headers: { 'Accept' => application_json }
 
       rule = response.parsed_body['stig_rules'].first
 
@@ -267,7 +267,7 @@ RSpec.describe 'Stigs' do
 
     it 'does NOT include unnecessary heavy fields', :aggregate_failures do
       create(:stig_rule, stig: stig)
-      get "/stigs/#{stig.id}", headers: { 'Accept' => 'application/json' }
+      get "/stigs/#{stig.id}", headers: { 'Accept' => application_json }
 
       json = response.parsed_body
       rule = json['stig_rules'].first

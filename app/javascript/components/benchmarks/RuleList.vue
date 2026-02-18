@@ -10,7 +10,7 @@
         class="form-control form-control-sm mb-2"
         :placeholder="searchPlaceholder"
       />
-      <label id="severity-filter-label" class="small text-muted mb-1 d-block">Severity</label>
+      <span id="severity-filter-label" class="small text-muted mb-1 d-block">Severity</span>
       <b-button-group size="sm" vertical class="w-100">
         <b-button
           :variant="selectedSeverity === '' ? 'secondary' : 'outline-secondary'"
@@ -49,7 +49,7 @@
     <!-- Table of Rules -->
     <div ref="ruleListContainer" class="mt-3" style="max-height: 700px; overflow-y: auto">
       <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
-      <table class="table table-hover" role="listbox" :aria-label="RULE_TERM.plural">
+      <table class="table table-hover" role="listbox" tabindex="0" :aria-label="RULE_TERM.plural">
         <thead>
           <tr>
             <th class="d-flex">
@@ -198,6 +198,18 @@ export default {
       }
       return "";
     },
+    scrollFocusedRowIntoView() {
+      const container = this.$refs.ruleListContainer;
+      if (!container) return;
+      const rows = container.querySelectorAll("tr[role='option']");
+      const row = rows[this.focusedIndex];
+      if (row) {
+        row.focus();
+        if (row.scrollIntoView) {
+          row.scrollIntoView({ block: "nearest" });
+        }
+      }
+    },
     handleKeydown(event) {
       const len = this.sortedRules.length;
       if (!len) return;
@@ -210,17 +222,7 @@ export default {
         } else {
           this.focusedIndex = start > 0 ? start - 1 : len - 1;
         }
-        this.$nextTick(() => {
-          const container = this.$refs.ruleListContainer;
-          if (!container) return;
-          const rows = container.querySelectorAll("tr[role='option']");
-          if (rows[this.focusedIndex]) {
-            rows[this.focusedIndex].focus();
-            if (rows[this.focusedIndex].scrollIntoView) {
-              rows[this.focusedIndex].scrollIntoView({ block: "nearest" });
-            }
-          }
-        });
+        this.$nextTick(() => this.scrollFocusedRowIntoView());
       } else if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         if (this.focusedIndex >= 0 && this.focusedIndex < len) {

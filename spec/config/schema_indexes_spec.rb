@@ -14,31 +14,33 @@ RSpec.describe 'base_rules table indexes', type: :model do
     indexes.find { |idx| idx.name == name }
   end
 
-  describe 'component severity composite index' do
-    # Supports filtering component rules by severity while excluding soft-deleted records.
-    it 'exists with correct columns' do
-      idx = find_index('index_base_rules_on_component_deleted_severity')
-      expect(idx).to be_present, 'composite index on [component_id, deleted_at, rule_severity] is missing'
-      expect(idx.columns).to eq(%w[component_id deleted_at rule_severity])
+  shared_examples 'an index with correct columns' do |index_name, expected_columns, description|
+    it "exists with correct columns (#{expected_columns.join(', ')})" do
+      idx = find_index(index_name)
+      expect(idx).to be_present, "composite index on #{expected_columns} is missing (#{description})"
+      expect(idx.columns).to eq(expected_columns)
     end
+  end
+
+  describe 'component severity composite index' do
+    it_behaves_like 'an index with correct columns',
+                    'index_base_rules_on_component_deleted_severity',
+                    %w[component_id deleted_at rule_severity],
+                    'filtering component rules by severity excluding soft-deleted'
   end
 
   describe 'SRG type/severity composite index' do
-    # Supports querying SRG rules by STI type and severity.
-    it 'exists with correct columns' do
-      idx = find_index('index_base_rules_on_srg_type_severity')
-      expect(idx).to be_present, 'composite index on [security_requirements_guide_id, type, rule_severity] is missing'
-      expect(idx.columns).to eq(%w[security_requirements_guide_id type rule_severity])
-    end
+    it_behaves_like 'an index with correct columns',
+                    'index_base_rules_on_srg_type_severity',
+                    %w[security_requirements_guide_id type rule_severity],
+                    'querying SRG rules by STI type and severity'
   end
 
   describe 'STIG type/severity composite index' do
-    # Supports querying STIG rules by STI type and severity.
-    it 'exists with correct columns' do
-      idx = find_index('index_base_rules_on_stig_type_severity')
-      expect(idx).to be_present, 'composite index on [stig_id, type, rule_severity] is missing'
-      expect(idx.columns).to eq(%w[stig_id type rule_severity])
-    end
+    it_behaves_like 'an index with correct columns',
+                    'index_base_rules_on_stig_type_severity',
+                    %w[stig_id type rule_severity],
+                    'querying STIG rules by STI type and severity'
   end
 
   describe 'rule_id + component_id unique index' do

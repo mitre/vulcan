@@ -11,6 +11,8 @@ require 'rails_helper'
 RSpec.describe Export::Modes::PublishedStig do
   subject(:mode) { described_class.new }
 
+  let(:status_ac) { 'Applicable - Configurable' }
+
   describe '#rule_scope' do
     let(:component) { create(:component) }
 
@@ -18,10 +20,10 @@ RSpec.describe Export::Modes::PublishedStig do
       # Component factory creates rules from SRG — all start as 'Not Yet Determined'.
       # Set up a mix of statuses for testing.
       rules = component.rules.order(:rule_id).to_a
-      raise 'Need at least 4 rules for this test' if rules.size < 4
+      raise StandardError, 'Need at least 4 rules for this test' if rules.size < 4
 
-      rules[0].update_columns(status: 'Applicable - Configurable')
-      rules[1].update_columns(status: 'Applicable - Configurable')
+      rules[0].update_columns(status: status_ac)
+      rules[1].update_columns(status: status_ac)
       rules[2].update_columns(status: 'Not Applicable')
       rules[3].update_columns(status: 'Not Yet Determined')
 
@@ -33,28 +35,28 @@ RSpec.describe Export::Modes::PublishedStig do
       scoped = mode.rule_scope(component.rules)
       statuses = scoped.pluck(:status).uniq
       # NOTE: satisfied_by rules report status as AC via override, but we filter by DB column
-      expect(statuses).to all(eq('Applicable - Configurable'))
+      expect(statuses).to all(eq(status_ac))
     end
 
     it 'excludes rules that are satisfied_by other rules' do
       rules = component.rules.order(:rule_id).to_a
       scoped = mode.rule_scope(component.rules)
       # rules[1] is AC but has satisfied_by — must be excluded
-      expect(scoped.pluck(:id)).not_to include(rules[1].id)
+      expect(scoped.ids).not_to include(rules[1].id)
     end
 
     it 'includes AC rules without satisfied_by relationships' do
       rules = component.rules.order(:rule_id).to_a
       scoped = mode.rule_scope(component.rules)
       # rules[0] is AC with no satisfied_by — must be included
-      expect(scoped.pluck(:id)).to include(rules[0].id)
+      expect(scoped.ids).to include(rules[0].id)
     end
 
     it 'excludes non-AC statuses (NA, NYD, AIM, ADNM)' do
       rules = component.rules.order(:rule_id).to_a
       scoped = mode.rule_scope(component.rules)
-      expect(scoped.pluck(:id)).not_to include(rules[2].id) # NA
-      expect(scoped.pluck(:id)).not_to include(rules[3].id) # NYD
+      expect(scoped.ids).not_to include(rules[2].id) # NA
+      expect(scoped.ids).not_to include(rules[3].id) # NYD
     end
   end
 

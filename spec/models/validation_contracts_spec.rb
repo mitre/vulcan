@@ -18,6 +18,9 @@ require 'rails_helper'
 # shoulda-matchers can test validations against valid base records.
 # =============================================================================
 
+REQUIRED_FIELD_VALIDATIONS = 'required field validations'
+UNIQUENESS_CONSTRAINTS = 'uniqueness constraints'
+
 RSpec.describe 'Model validation contracts' do
   # Shared setup: SRG + Project used by Component, Rule, and Review tests.
   # Created once per example group that needs them.
@@ -39,7 +42,7 @@ RSpec.describe 'Model validation contracts' do
   describe Component do
     subject { build(:component) }
 
-    describe 'required field validations' do
+    describe REQUIRED_FIELD_VALIDATIONS do
       it { is_expected.to validate_presence_of(:name) }
       it { is_expected.to validate_presence_of(:prefix) }
       it { is_expected.to validate_presence_of(:title) }
@@ -62,7 +65,7 @@ RSpec.describe 'Model validation contracts' do
   # PROJECT
   # ===========================================================================
   describe Project do
-    describe 'required field validations' do
+    describe REQUIRED_FIELD_VALIDATIONS do
       it { is_expected.to validate_presence_of(:name) }
     end
 
@@ -77,7 +80,7 @@ RSpec.describe 'Model validation contracts' do
   # USER
   # ===========================================================================
   describe User do
-    describe 'required field validations' do
+    describe REQUIRED_FIELD_VALIDATIONS do
       it { is_expected.to validate_presence_of(:name) }
     end
   end
@@ -86,14 +89,14 @@ RSpec.describe 'Model validation contracts' do
   # SECURITY REQUIREMENTS GUIDE (SRG)
   # ===========================================================================
   describe SecurityRequirementsGuide do
-    describe 'required field validations' do
+    describe REQUIRED_FIELD_VALIDATIONS do
       it { is_expected.to validate_presence_of(:srg_id) }
       it { is_expected.to validate_presence_of(:title) }
       it { is_expected.to validate_presence_of(:version) }
       it { is_expected.to validate_presence_of(:xml) }
     end
 
-    describe 'uniqueness constraints' do
+    describe UNIQUENESS_CONSTRAINTS do
       subject { create(:security_requirements_guide) }
 
       it { is_expected.to validate_uniqueness_of(:srg_id).scoped_to(:version).with_message(' ID has already been taken') }
@@ -109,7 +112,7 @@ RSpec.describe 'Model validation contracts' do
   # STIG
   # ===========================================================================
   describe Stig do
-    describe 'required field validations' do
+    describe REQUIRED_FIELD_VALIDATIONS do
       it { is_expected.to validate_presence_of(:stig_id) }
       it { is_expected.to validate_presence_of(:title) }
       it { is_expected.to validate_presence_of(:name) }
@@ -117,7 +120,7 @@ RSpec.describe 'Model validation contracts' do
       it { is_expected.to validate_presence_of(:xml) }
     end
 
-    describe 'uniqueness constraints' do
+    describe UNIQUENESS_CONSTRAINTS do
       subject { create(:stig) }
 
       it { is_expected.to validate_uniqueness_of(:stig_id).scoped_to(:version).with_message('ID has already been taken') }
@@ -222,7 +225,7 @@ RSpec.describe 'Model validation contracts' do
       Review.new(user: review_user, rule: review_rule, comment: 'Test', action: 'comment')
     end
 
-    describe 'required field validations' do
+    describe REQUIRED_FIELD_VALIDATIONS do
       it { is_expected.to validate_presence_of(:comment) }
       it { is_expected.to validate_presence_of(:action) }
     end
@@ -287,7 +290,7 @@ RSpec.describe 'Model validation contracts' do
   # PROJECT ACCESS REQUEST
   # ===========================================================================
   describe ProjectAccessRequest do
-    describe 'uniqueness constraints' do
+    describe UNIQUENESS_CONSTRAINTS do
       it 'prevents duplicate access requests for same user and project' do
         existing = create(:project_access_request)
         duplicate = ProjectAccessRequest.new(user: existing.user, project: existing.project)
@@ -321,12 +324,12 @@ RSpec.describe 'Model validation contracts' do
   # ADDITIONAL QUESTION
   # ===========================================================================
   describe AdditionalQuestion do
-    describe 'required field validations' do
+    describe REQUIRED_FIELD_VALIDATIONS do
       it { is_expected.to validate_presence_of(:name) }
       it { is_expected.to validate_presence_of(:question_type) }
     end
 
-    describe 'uniqueness constraints' do
+    describe UNIQUENESS_CONSTRAINTS do
       subject do
         c = create(:component)
         AdditionalQuestion.create!(name: 'Test Q', question_type: 'freeform', component: c)

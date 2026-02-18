@@ -15,6 +15,8 @@ require 'rails_helper'
 RSpec.describe Export::Formatters::XccdfFormatter do
   subject(:formatter) { described_class.new }
 
+  let(:status_ac) { 'Applicable - Configurable' }
+
   describe '#component_based?' do
     it 'returns true' do
       expect(formatter.component_based?).to be true
@@ -42,9 +44,9 @@ RSpec.describe Export::Formatters::XccdfFormatter do
       ).order(:rule_id)
 
       # Set first rule to AC for testing
-      rules.first.update_columns(status: 'Applicable - Configurable')
+      rules.first.update_columns(status: status_ac)
       # Reload to get fresh status
-      rules.where(status: 'Applicable - Configurable')
+      rules.where(status: status_ac)
     end
 
     let(:xml_string) { formatter.generate_from_component(component: component, rules: ac_rules) }
@@ -125,7 +127,7 @@ RSpec.describe Export::Formatters::XccdfFormatter do
     let(:component) do
       create(:component).tap do |c|
         # Set first rule to AC for a meaningful comparison
-        c.rules.first.update_columns(status: 'Applicable - Configurable')
+        c.rules.first.update_columns(status: status_ac)
       end
     end
 
@@ -135,7 +137,7 @@ RSpec.describe Export::Formatters::XccdfFormatter do
                  :disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
                  srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
                )
-               .where(status: 'Applicable - Configurable')
+               .where(status: status_ac)
                .where.not(id: RuleSatisfaction.select(:rule_id))
     end
 

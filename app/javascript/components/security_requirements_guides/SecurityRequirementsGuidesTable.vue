@@ -203,8 +203,8 @@ export default {
       return fields;
     },
     formatVersion(item) {
-      const v = item.version != null ? item.version : "";
-      const r = item.release != null ? item.release : "";
+      const v = item.version ?? "";
+      const r = item.release ?? "";
       return `V${v}R${r}`;
     },
     formatDate(value) {

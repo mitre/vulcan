@@ -9,13 +9,14 @@ require 'rails_helper'
 # Zip entry names follow the same pattern.
 # ==========================================================================
 RSpec.describe Export::FileNamer do
-  let(:component) { create(:component, name: 'Test Component', prefix: 'TCMP-00', version: 2, release: 3) }
+  let(:test_prefix) { 'TCMP-00' }
+  let(:component) { create(:component, name: 'Test Component', prefix: test_prefix, version: 2, release: 3) }
   let(:project) { component.project }
 
   describe '.component_filename' do
     it 'includes prefix and extension' do
       name = described_class.component_filename(component, '.csv')
-      expect(name).to include('TCMP-00')
+      expect(name).to include(test_prefix)
       expect(name).to end_with('.csv')
     end
 
@@ -37,7 +38,7 @@ RSpec.describe Export::FileNamer do
   describe '.zip_entry_name' do
     it 'includes prefix, version, release, and extension' do
       name = described_class.zip_entry_name(component, '.csv')
-      expect(name).to include('TCMP-00')
+      expect(name).to include(test_prefix)
       expect(name).to include('V2')
       expect(name).to include('R3')
       expect(name).to end_with('.csv')

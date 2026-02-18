@@ -47,6 +47,8 @@ module SeverityCounts
                        "base_rules.stig_id = #{table}.id"
                      when 'SecurityRequirementsGuide'
                        "base_rules.security_requirements_guide_id = #{table}.id"
+                     else
+                       raise ArgumentError, "SeverityCounts not supported for model: #{name}"
                      end
 
       # Add type filter for STI (not needed for Component since it uses component_id)

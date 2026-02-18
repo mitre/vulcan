@@ -17,6 +17,18 @@ require 'rails_helper'
 # - NYD rules excluded (not a DISA-recognized status)
 # - Satisfies text appended to VulnDiscussion (not separate column)
 # ==========================================================================
+STATUS_AC = 'Applicable - Configurable'
+STATUS_AIM = 'Applicable - Inherently Meets'
+STATUS_ADNM = 'Applicable - Does Not Meet'
+STATUS_NA = 'Not Applicable'
+TEST_STIG_ID = 'RHEL-09-001'
+TEST_CHECK = 'Verify the setting...'
+TEST_FIX = 'Configure the setting...'
+TEST_VULN = 'Without this...'
+TEST_CAT = 'CAT II'
+TEST_TEXT = 'some text'
+TEST_ORIGINAL = 'original value'
+
 RSpec.describe Export::Modes::VendorSubmission do
   subject(:mode) { described_class.new }
 
@@ -84,27 +96,27 @@ RSpec.describe Export::Modes::VendorSubmission do
     end
 
     it 'includes Applicable - Configurable rules' do
-      component.rules.first.update!(status: 'Applicable - Configurable')
+      component.rules.first.update!(status: STATUS_AC)
       scoped = mode.rule_scope(component.rules)
-      expect(scoped.where(status: 'Applicable - Configurable').count).to be >= 1
+      expect(scoped.where(status: STATUS_AC).count).to be >= 1
     end
 
     it 'includes Applicable - Inherently Meets rules' do
-      component.rules.first.update!(status: 'Applicable - Inherently Meets')
+      component.rules.first.update!(status: STATUS_AIM)
       scoped = mode.rule_scope(component.rules)
-      expect(scoped.where(status: 'Applicable - Inherently Meets').count).to be >= 1
+      expect(scoped.where(status: STATUS_AIM).count).to be >= 1
     end
 
     it 'includes Applicable - Does Not Meet rules' do
-      component.rules.first.update!(status: 'Applicable - Does Not Meet')
+      component.rules.first.update!(status: STATUS_ADNM)
       scoped = mode.rule_scope(component.rules)
-      expect(scoped.where(status: 'Applicable - Does Not Meet').count).to be >= 1
+      expect(scoped.where(status: STATUS_ADNM).count).to be >= 1
     end
 
     it 'includes Not Applicable rules' do
-      component.rules.first.update!(status: 'Not Applicable')
+      component.rules.first.update!(status: STATUS_NA)
       scoped = mode.rule_scope(component.rules)
-      expect(scoped.where(status: 'Not Applicable').count).to be >= 1
+      expect(scoped.where(status: STATUS_NA).count).to be >= 1
     end
   end
 
@@ -114,114 +126,114 @@ RSpec.describe Export::Modes::VendorSubmission do
   # ==========================================================================
   describe '#transform_value' do
     # Build a minimal exportable_rule double for each status
-    let(:ac_rule) { instance_double(Export::ExportableRule, status: 'Applicable - Configurable') }
-    let(:aim_rule) { instance_double(Export::ExportableRule, status: 'Applicable - Inherently Meets') }
-    let(:adnm_rule) { instance_double(Export::ExportableRule, status: 'Applicable - Does Not Meet') }
-    let(:na_rule) { instance_double(Export::ExportableRule, status: 'Not Applicable') }
+    let(:ac_rule) { instance_double(Export::ExportableRule, status: STATUS_AC) }
+    let(:aim_rule) { instance_double(Export::ExportableRule, status: STATUS_AIM) }
+    let(:adnm_rule) { instance_double(Export::ExportableRule, status: STATUS_ADNM) }
+    let(:na_rule) { instance_double(Export::ExportableRule, status: STATUS_NA) }
 
     # --- STIGID: blank for ALL statuses (Section 4.1.4) ---
     context 'stig_id (DISA fills during finalization)' do
       it 'blanks stig_id for AC' do
-        expect(mode.transform_value(:stig_id, 'RHEL-09-001', ac_rule)).to be_nil
+        expect(mode.transform_value(:stig_id, TEST_STIG_ID, ac_rule)).to be_nil
       end
 
       it 'blanks stig_id for AIM' do
-        expect(mode.transform_value(:stig_id, 'RHEL-09-001', aim_rule)).to be_nil
+        expect(mode.transform_value(:stig_id, TEST_STIG_ID, aim_rule)).to be_nil
       end
 
       it 'blanks stig_id for ADNM' do
-        expect(mode.transform_value(:stig_id, 'RHEL-09-001', adnm_rule)).to be_nil
+        expect(mode.transform_value(:stig_id, TEST_STIG_ID, adnm_rule)).to be_nil
       end
 
       it 'blanks stig_id for NA' do
-        expect(mode.transform_value(:stig_id, 'RHEL-09-001', na_rule)).to be_nil
+        expect(mode.transform_value(:stig_id, TEST_STIG_ID, na_rule)).to be_nil
       end
     end
 
     # --- Check Content: required for AC only (Section 4.1.11) ---
     context 'check_content' do
       it 'keeps check_content for AC' do
-        expect(mode.transform_value(:check_content, 'Verify the setting...', ac_rule)).to eq 'Verify the setting...'
+        expect(mode.transform_value(:check_content, TEST_CHECK, ac_rule)).to eq TEST_CHECK
       end
 
       it 'blanks check_content for AIM' do
-        expect(mode.transform_value(:check_content, 'Verify the setting...', aim_rule)).to be_nil
+        expect(mode.transform_value(:check_content, TEST_CHECK, aim_rule)).to be_nil
       end
 
       it 'blanks check_content for ADNM' do
-        expect(mode.transform_value(:check_content, 'Verify the setting...', adnm_rule)).to be_nil
+        expect(mode.transform_value(:check_content, TEST_CHECK, adnm_rule)).to be_nil
       end
 
       it 'blanks check_content for NA' do
-        expect(mode.transform_value(:check_content, 'Verify the setting...', na_rule)).to be_nil
+        expect(mode.transform_value(:check_content, TEST_CHECK, na_rule)).to be_nil
       end
     end
 
     # --- Fix Text: required for AC only (Section 4.1.13) ---
     context 'fixtext' do
       it 'keeps fixtext for AC' do
-        expect(mode.transform_value(:fixtext, 'Configure the setting...', ac_rule)).to eq 'Configure the setting...'
+        expect(mode.transform_value(:fixtext, TEST_FIX, ac_rule)).to eq TEST_FIX
       end
 
       it 'blanks fixtext for AIM' do
-        expect(mode.transform_value(:fixtext, 'Configure the setting...', aim_rule)).to be_nil
+        expect(mode.transform_value(:fixtext, TEST_FIX, aim_rule)).to be_nil
       end
 
       it 'blanks fixtext for ADNM' do
-        expect(mode.transform_value(:fixtext, 'Configure the setting...', adnm_rule)).to be_nil
+        expect(mode.transform_value(:fixtext, TEST_FIX, adnm_rule)).to be_nil
       end
 
       it 'blanks fixtext for NA' do
-        expect(mode.transform_value(:fixtext, 'Configure the setting...', na_rule)).to be_nil
+        expect(mode.transform_value(:fixtext, TEST_FIX, na_rule)).to be_nil
       end
     end
 
     # --- VulnDiscussion: blank for NA (Section 4.1.8) ---
     context 'vuln_discussion' do
       it 'keeps vuln_discussion for AC' do
-        expect(mode.transform_value(:vuln_discussion, 'Without this...', ac_rule)).to eq 'Without this...'
+        expect(mode.transform_value(:vuln_discussion, TEST_VULN, ac_rule)).to eq TEST_VULN
       end
 
       it 'keeps vuln_discussion for AIM' do
-        expect(mode.transform_value(:vuln_discussion, 'Without this...', aim_rule)).to eq 'Without this...'
+        expect(mode.transform_value(:vuln_discussion, TEST_VULN, aim_rule)).to eq TEST_VULN
       end
 
       it 'keeps vuln_discussion for ADNM' do
-        expect(mode.transform_value(:vuln_discussion, 'Without this...', adnm_rule)).to eq 'Without this...'
+        expect(mode.transform_value(:vuln_discussion, TEST_VULN, adnm_rule)).to eq TEST_VULN
       end
 
       it 'blanks vuln_discussion for NA' do
-        expect(mode.transform_value(:vuln_discussion, 'Without this...', na_rule)).to be_nil
+        expect(mode.transform_value(:vuln_discussion, TEST_VULN, na_rule)).to be_nil
       end
     end
 
     # --- Severity: blank for NA (Section 4.1.14) ---
     context 'severity' do
       it 'keeps severity for AC' do
-        expect(mode.transform_value(:severity, 'CAT II', ac_rule)).to eq 'CAT II'
+        expect(mode.transform_value(:severity, TEST_CAT, ac_rule)).to eq TEST_CAT
       end
 
       it 'keeps severity for AIM' do
-        expect(mode.transform_value(:severity, 'CAT II', aim_rule)).to eq 'CAT II'
+        expect(mode.transform_value(:severity, TEST_CAT, aim_rule)).to eq TEST_CAT
       end
 
       it 'keeps severity for ADNM' do
-        expect(mode.transform_value(:severity, 'CAT II', adnm_rule)).to eq 'CAT II'
+        expect(mode.transform_value(:severity, TEST_CAT, adnm_rule)).to eq TEST_CAT
       end
 
       it 'blanks severity for NA' do
-        expect(mode.transform_value(:severity, 'CAT II', na_rule)).to be_nil
+        expect(mode.transform_value(:severity, TEST_CAT, na_rule)).to be_nil
       end
     end
 
     # --- Mitigation: required for ADNM only (Section 4.1.15) ---
     context 'mitigation' do
       it 'blanks mitigation for AC' do
-        expect(mode.transform_value(:mitigation, 'some text', ac_rule)).to be_nil
+        expect(mode.transform_value(:mitigation, TEST_TEXT, ac_rule)).to be_nil
       end
 
       it 'blanks mitigation for AIM' do
-        expect(mode.transform_value(:mitigation, 'some text', aim_rule)).to be_nil
+        expect(mode.transform_value(:mitigation, TEST_TEXT, aim_rule)).to be_nil
       end
 
       it 'keeps mitigation for ADNM' do
@@ -229,14 +241,14 @@ RSpec.describe Export::Modes::VendorSubmission do
       end
 
       it 'blanks mitigation for NA' do
-        expect(mode.transform_value(:mitigation, 'some text', na_rule)).to be_nil
+        expect(mode.transform_value(:mitigation, TEST_TEXT, na_rule)).to be_nil
       end
     end
 
     # --- Artifact Description: required for AIM only (Section 4.1.16) ---
     context 'artifact_description' do
       it 'blanks artifact_description for AC' do
-        expect(mode.transform_value(:artifact_description, 'some text', ac_rule)).to be_nil
+        expect(mode.transform_value(:artifact_description, TEST_TEXT, ac_rule)).to be_nil
       end
 
       it 'keeps artifact_description for AIM' do
@@ -244,18 +256,18 @@ RSpec.describe Export::Modes::VendorSubmission do
       end
 
       it 'blanks artifact_description for ADNM' do
-        expect(mode.transform_value(:artifact_description, 'some text', adnm_rule)).to be_nil
+        expect(mode.transform_value(:artifact_description, TEST_TEXT, adnm_rule)).to be_nil
       end
 
       it 'blanks artifact_description for NA' do
-        expect(mode.transform_value(:artifact_description, 'some text', na_rule)).to be_nil
+        expect(mode.transform_value(:artifact_description, TEST_TEXT, na_rule)).to be_nil
       end
     end
 
     # --- Status Justification: required for AIM, ADNM, NA (Section 4.1.17) ---
     context 'status_justification' do
       it 'blanks status_justification for AC' do
-        expect(mode.transform_value(:status_justification, 'some text', ac_rule)).to be_nil
+        expect(mode.transform_value(:status_justification, TEST_TEXT, ac_rule)).to be_nil
       end
 
       it 'keeps status_justification for AIM' do
@@ -276,8 +288,8 @@ RSpec.describe Export::Modes::VendorSubmission do
       %i[nist_control_family ident srg_id srg_title title srg_vuln_discussion
          status srg_check srg_fix].each do |column|
         it "passes through #{column} unchanged for any status" do
-          expect(mode.transform_value(column, 'original value', ac_rule)).to eq 'original value'
-          expect(mode.transform_value(column, 'original value', na_rule)).to eq 'original value'
+          expect(mode.transform_value(column, TEST_ORIGINAL, ac_rule)).to eq TEST_ORIGINAL
+          expect(mode.transform_value(column, TEST_ORIGINAL, na_rule)).to eq TEST_ORIGINAL
         end
       end
     end

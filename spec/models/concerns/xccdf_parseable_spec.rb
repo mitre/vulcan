@@ -108,55 +108,36 @@ RSpec.describe XccdfParseable, type: :concern do
 
   # Integration tests for models that will use the concern
   describe 'integration with real models' do
-    # Component model now includes the concern
-    context 'Component model' do
-      let(:component) { build(:component) }
-
+    shared_examples 'includes XccdfParseable' do |model_class|
       it 'includes the concern' do
-        expect(Component.ancestors).to include(XccdfParseable)
+        expect(model_class.ancestors).to include(XccdfParseable)
       end
 
       it 'responds to parsed_benchmark' do
-        expect(component).to respond_to(:parsed_benchmark)
+        expect(instance).to respond_to(:parsed_benchmark)
       end
 
       it 'responds to parsed_benchmark=' do
-        expect(component).to respond_to(:parsed_benchmark=)
+        expect(instance).to respond_to(:parsed_benchmark=)
       end
     end
 
-    # STIG model now includes the concern
+    context 'Component model' do
+      let(:instance) { build(:component) }
+
+      it_behaves_like 'includes XccdfParseable', Component
+    end
+
     context 'STIG model' do
-      let(:stig) { build(:stig) }
+      let(:instance) { build(:stig) }
 
-      it 'includes the concern' do
-        expect(Stig.ancestors).to include(XccdfParseable)
-      end
-
-      it 'responds to parsed_benchmark' do
-        expect(stig).to respond_to(:parsed_benchmark)
-      end
-
-      it 'has the parsed_benchmark= writer' do
-        expect(stig).to respond_to(:parsed_benchmark=)
-      end
+      it_behaves_like 'includes XccdfParseable', Stig
     end
 
-    # SecurityRequirementsGuide now includes the concern
     context 'SecurityRequirementsGuide model' do
-      let(:srg) { build(:security_requirements_guide) }
+      let(:instance) { build(:security_requirements_guide) }
 
-      it 'includes the concern' do
-        expect(SecurityRequirementsGuide.ancestors).to include(XccdfParseable)
-      end
-
-      it 'responds to parsed_benchmark' do
-        expect(srg).to respond_to(:parsed_benchmark)
-      end
-
-      it 'has the parsed_benchmark= writer' do
-        expect(srg).to respond_to(:parsed_benchmark=)
-      end
+      it_behaves_like 'includes XccdfParseable', SecurityRequirementsGuide
     end
   end
 

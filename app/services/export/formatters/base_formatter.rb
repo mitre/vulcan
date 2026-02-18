@@ -10,6 +10,7 @@ module Export
     # 2. Component-based (XCCDF, InSpec): generate_from_component(component:, rules:)
     #    — rich objects, formatter builds structured output
     class BaseFormatter
+      # -- abstract interface
       def generate(headers:, rows:)
         raise NotImplementedError
       end
@@ -31,6 +32,7 @@ module Export
         false
       end
 
+      # -- abstract interface
       def generate_from_component(component:, rules:)
         raise NotImplementedError
       end
@@ -41,6 +43,7 @@ module Export
         false
       end
 
+      # -- abstract interface
       def generate_batch(component_rule_pairs:)
         raise NotImplementedError
       end

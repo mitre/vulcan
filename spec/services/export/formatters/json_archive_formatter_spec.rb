@@ -11,6 +11,9 @@ require 'rails_helper'
 RSpec.describe Export::Formatters::JsonArchiveFormatter do
   subject(:formatter) { described_class.new }
 
+  let(:manifest_file) { 'manifest.json' }
+  let(:component_file) { 'component.json' }
+
   describe 'interface' do
     it { expect(formatter.component_based?).to be true }
     it { expect(formatter.batch_generate?).to be true }
@@ -35,11 +38,11 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
     end
 
     it 'contains manifest.json at root' do
-      expect(zip_entries(data)).to include('manifest.json')
+      expect(zip_entries(data)).to include(manifest_file)
     end
 
     it 'contains component.json' do
-      expect(zip_entries(data)).to include('component.json')
+      expect(zip_entries(data)).to include(component_file)
     end
 
     it 'contains rules.json' do
@@ -55,7 +58,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
     end
 
     describe 'manifest.json contents' do
-      subject(:manifest) { JSON.parse(zip_read(data, 'manifest.json')) }
+      subject(:manifest) { JSON.parse(zip_read(data, manifest_file)) }
 
       it 'has backup_format_version' do
         expect(manifest['backup_format_version']).to eq('1.0')
@@ -79,7 +82,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
     end
 
     describe 'component.json contents' do
-      subject(:comp_json) { JSON.parse(zip_read(data, 'component.json')) }
+      subject(:comp_json) { JSON.parse(zip_read(data, component_file)) }
 
       it 'preserves component name' do
         expect(comp_json['name']).to eq(component.name)
@@ -140,7 +143,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
     end
 
     it 'contains manifest.json with both components' do
-      manifest = JSON.parse(zip_read(data, 'manifest.json'))
+      manifest = JSON.parse(zip_read(data, manifest_file))
       expect(manifest['components'].size).to eq(2)
     end
 
@@ -150,7 +153,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
 
     it 'has subdirectories for each component' do
       entries = zip_entries(data)
-      component_dirs = entries.select { |e| e.start_with?('components/') && e.include?('component.json') }
+      component_dirs = entries.select { |e| e.start_with?('components/') && e.include?(component_file) }
       expect(component_dirs.size).to eq(2)
     end
 

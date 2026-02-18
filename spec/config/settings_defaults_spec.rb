@@ -43,22 +43,22 @@ RSpec.describe 'Settings defaults' do
     # Initializer backup: sets false if value is nil
 
     it 'ldap is disabled by default' do
-      skip 'VULCAN_ENABLE_LDAP is set in environment' if ENV['VULCAN_ENABLE_LDAP'].present?
+      skip 'VULCAN_ENABLE_LDAP is set in environment' if ENV.fetch('VULCAN_ENABLE_LDAP', nil).present?
       expect(Settings.ldap['enabled']).to be false
     end
 
     it 'oidc is disabled by default' do
-      skip 'VULCAN_ENABLE_OIDC is set in environment' if ENV['VULCAN_ENABLE_OIDC'].present?
+      skip 'VULCAN_ENABLE_OIDC is set in environment' if ENV.fetch('VULCAN_ENABLE_OIDC', nil).present?
       expect(Settings.oidc['enabled']).to be false
     end
 
     it 'smtp is disabled by default' do
-      skip 'VULCAN_ENABLE_SMTP is set in environment' if ENV['VULCAN_ENABLE_SMTP'].present?
+      skip 'VULCAN_ENABLE_SMTP is set in environment' if ENV.fetch('VULCAN_ENABLE_SMTP', nil).present?
       expect(Settings.smtp['enabled']).to be false
     end
 
     it 'slack is disabled by default' do
-      skip 'VULCAN_ENABLE_SLACK_COMMS is set in environment' if ENV['VULCAN_ENABLE_SLACK_COMMS'].present?
+      skip 'VULCAN_ENABLE_SLACK_COMMS is set in environment' if ENV.fetch('VULCAN_ENABLE_SLACK_COMMS', nil).present?
       expect(Settings.slack['enabled']).to be false
     end
   end
@@ -75,15 +75,15 @@ RSpec.describe 'Settings defaults' do
 
   describe 'contact email fallback' do
     # Initializer: sets 'vulcan-support@example.com' if contact_email is blank
-    # YAML: reads ENV['VULCAN_CONTACT_EMAIL'] (nil when unset)
+    # YAML: reads ENV.fetch('VULCAN_CONTACT_EMAIL', nil) (nil when unset)
 
     it 'has a non-blank contact email' do
       expect(Settings['contact_email']).to be_present
     end
 
     it 'uses vulcan-support@example.com when VULCAN_CONTACT_EMAIL is unset' do
-      if ENV['VULCAN_CONTACT_EMAIL'].present?
-        expect(Settings['contact_email']).to eq(ENV['VULCAN_CONTACT_EMAIL'])
+      if ENV.fetch('VULCAN_CONTACT_EMAIL', nil).present?
+        expect(Settings['contact_email']).to eq(ENV.fetch('VULCAN_CONTACT_EMAIL', nil))
       else
         expect(Settings['contact_email']).to eq('vulcan-support@example.com')
       end

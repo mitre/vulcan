@@ -217,14 +217,6 @@ describe("ConfirmDeleteModal", () => {
         },
       });
 
-      // Get the component's options which includes styles
-      const componentStyles = ConfirmDeleteModal.options?.__file || "";
-      const componentSource = ConfirmDeleteModal.toString();
-
-      // Read the actual SFC source - the style block contains var(--warning)
-      // We're testing that the component SHOULD NOT use var(--warning)
-      // This test should FAIL before the fix is applied
-
       // Check if component has modal-class prop that adds confirm-delete-modal class
       const modal = wrapper.findComponent({ name: "BModal" });
       expect(modal.exists()).toBe(true);
@@ -237,8 +229,8 @@ describe("ConfirmDeleteModal", () => {
 
       // Direct test: The component source should not contain 'var(--warning)'
       // This will fail until we fix line 168
-      const vueFile = require("fs").readFileSync(
-        require("path").resolve(
+      const vueFile = require("node:fs").readFileSync(
+        require("node:path").resolve(
           __dirname,
           "../../../../app/javascript/components/shared/ConfirmDeleteModal.vue",
         ),

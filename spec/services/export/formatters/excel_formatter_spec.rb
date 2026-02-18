@@ -19,9 +19,11 @@ require 'rails_helper'
 RSpec.describe Export::Formatters::ExcelFormatter do
   subject(:formatter) { described_class.new }
 
+  let(:rule_1_name) { 'Rule 1' }
+
   describe '#generate' do
     let(:headers) { %w[Name Status Severity] }
-    let(:rows) { [['Rule 1', 'Applicable - Configurable', 'CAT II'], ['Rule 2', 'Not Applicable', 'CAT I']] }
+    let(:rows) { [[rule_1_name, 'Applicable - Configurable', 'CAT II'], ['Rule 2', 'Not Applicable', 'CAT I']] }
 
     it 'returns a binary string' do
       result = formatter.generate(headers: headers, rows: rows)
@@ -54,7 +56,7 @@ RSpec.describe Export::Formatters::ExcelFormatter do
     end
 
     it 'handles nil values in rows' do
-      rows_with_nil = [['Rule 1', nil, 'CAT II']]
+      rows_with_nil = [[rule_1_name, nil, 'CAT II']]
       result = formatter.generate(headers: headers, rows: rows_with_nil)
       workbook = read_xlsx(result)
       data_rows = parse_data_rows(workbook, 0)
@@ -75,7 +77,7 @@ RSpec.describe Export::Formatters::ExcelFormatter do
         {
           name: 'Component-A-V1R1-1',
           headers: %w[Name Status],
-          rows: [['Rule 1', 'AC'], ['Rule 2', 'NA']]
+          rows: [[rule_1_name, 'AC'], ['Rule 2', 'NA']]
         },
         {
           name: 'Component-B-V1R2-2',
@@ -121,7 +123,7 @@ RSpec.describe Export::Formatters::ExcelFormatter do
 
       sheet0 = parse_data_rows(workbook, 0)
       expect(sheet0.size).to eq 2
-      expect(sheet0.first['Name']).to eq 'Rule 1'
+      expect(sheet0.first['Name']).to eq rule_1_name
 
       sheet1 = parse_data_rows(workbook, 1)
       expect(sheet1.size).to eq 1

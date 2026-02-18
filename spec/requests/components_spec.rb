@@ -6,6 +6,7 @@ RSpec.describe 'Components' do
   let(:user) { create(:user) }
   let(:project) { create(:project) }
   let(:component) { create(:component, project: project) }
+  let(:application_json) { 'application/json' }
 
   before do
     Rails.application.reload_routes!
@@ -165,13 +166,13 @@ RSpec.describe 'Components' do
 
     it 'rejects unsupported export types' do
       get "/components/bulk_export/banana?component_ids=#{released.id}",
-          headers: { 'Accept' => 'application/json' }
+          headers: { 'Accept' => application_json }
       expect(response).to have_http_status(:bad_request)
     end
 
     it 'requires component_ids parameter' do
       get '/components/bulk_export/csv',
-          headers: { 'Accept' => 'application/json' }
+          headers: { 'Accept' => application_json }
       expect(response).to have_http_status(:bad_request)
     end
   end
@@ -196,7 +197,7 @@ RSpec.describe 'Components' do
     }
 
     it 'only returns released components' do
-      get '/components', headers: { 'Accept' => 'application/json' }
+      get '/components', headers: { 'Accept' => application_json }
 
       json = response.parsed_body
       ids = json.pluck('id')

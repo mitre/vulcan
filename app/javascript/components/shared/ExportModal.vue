@@ -12,8 +12,14 @@
       <div :class="{ 'col-5': showComponentSelection }" data-testid="config-panel">
         <!-- Mode/Purpose Selection (only when availableModes provided) -->
         <div v-if="hasModes" class="mb-3">
-          <label id="export-mode-label" class="font-weight-bold d-block mb-2">Purpose</label>
+          <label
+            id="export-mode-label"
+            for="export-mode-group"
+            class="font-weight-bold d-block mb-2"
+            >Purpose</label
+          >
           <b-form-radio-group
+            id="export-mode-group"
             v-model="selectedMode"
             stacked
             aria-labelledby="export-mode-label"
@@ -36,8 +42,14 @@
 
         <!-- Format Selection -->
         <div v-if="showFormatSection" class="mb-3">
-          <label id="export-format-label" class="font-weight-bold d-block mb-2">Format</label>
+          <label
+            id="export-format-label"
+            for="export-format-group"
+            class="font-weight-bold d-block mb-2"
+            >Format</label
+          >
           <b-form-radio-group
+            id="export-format-group"
             v-model="selectedFormat"
             stacked
             aria-labelledby="export-format-label"
@@ -59,8 +71,8 @@
         <!-- Column Picker (CSV only, when columnDefinitions provided) -->
         <template v-if="showColumnPicker">
           <hr />
-          <div>
-            <label id="export-columns-label" class="font-weight-bold d-block mb-2">Columns</label>
+          <div role="group" aria-labelledby="export-columns-label">
+            <span id="export-columns-label" class="font-weight-bold d-block mb-2">Columns</span>
             <div v-for="col in columnDefinitions" :key="col.key" class="mb-1">
               <b-form-checkbox
                 :checked="selectedColumns.includes(col.key)"
@@ -89,7 +101,7 @@
 
       <!-- Right Panel: Components (only when visible) -->
       <div v-if="showComponentSelection" class="col-7 border-left" data-testid="component-panel">
-        <label id="export-components-label" class="font-weight-bold d-block mb-2">Components</label>
+        <span id="export-components-label" class="font-weight-bold d-block mb-2">Components</span>
 
         <!-- Single Component: Simplified View -->
         <div v-if="isSingleComponent" data-testid="single-mode">

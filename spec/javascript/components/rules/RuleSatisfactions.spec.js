@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleSatisfactions from "@/components/rules/RuleSatisfactions.vue";

@@ -23,7 +23,7 @@ function parseLocalDate(dateString) {
 
   // For datetime strings, use default parsing
   const date = new Date(dateString);
-  return isNaN(date.getTime()) ? null : date;
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /**

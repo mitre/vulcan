@@ -88,14 +88,11 @@ module Import
     def find_component_dir(zip, manifest_entry)
       # Try to find the matching directory in the zip
       prefix = "components/#{manifest_entry['name'].tr(' ', '-')}-"
-      fallback = nil
-      zip.entries.each do |entry|
-        return entry.name.match(%r{\Acomponents/[^/]+/})[0] if entry.name.start_with?(prefix)
+      match = zip.entries.find { |entry| entry.name.start_with?(prefix) }
+      return match.name.match(%r{\Acomponents/[^/]+/})[0] if match
 
-        fallback = entry.name.sub('component.json', '') if fallback.nil? && entry.name.match?(%r{\Acomponents/[^/]+/component\.json\z})
-      end
-
-      fallback
+      fallback_entry = zip.entries.find { |entry| entry.name.match?(%r{\Acomponents/[^/]+/component\.json\z}) }
+      fallback_entry&.name&.sub('component.json', '')
     end
 
     def parse_component_files(zip, dir)

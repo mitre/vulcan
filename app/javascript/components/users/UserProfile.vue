@@ -48,7 +48,7 @@
                 v-model="form.name"
                 :disabled="isProviderManaged"
                 required
-                autocomplete="username"
+                autocomplete="name"
               />
             </b-form-group>
 

@@ -6,6 +6,9 @@
 class ComponentsController < ApplicationController
   include Exportable
 
+  EXPORT_ERROR_TITLE = 'Export error'
+  CONTROL_NOT_FOUND_TITLE = 'Control not found'
+
   before_action :set_component, only: %i[show update destroy export]
   before_action :set_component_basic, only: %i[find based_on_same_srg]
   before_action :set_project, only: %i[show create history]
@@ -137,7 +140,7 @@ class ComponentsController < ApplicationController
     unless %i[csv inspec xccdf json_archive].include?(export_type)
       render json: {
         toast: {
-          title: 'Export error',
+          title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
         }
@@ -185,7 +188,7 @@ class ComponentsController < ApplicationController
     unless %i[csv xccdf inspec].include?(export_type)
       render json: {
         toast: {
-          title: 'Export error',
+          title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
         }
@@ -197,7 +200,7 @@ class ComponentsController < ApplicationController
     if component_ids.blank?
       render json: {
         toast: {
-          title: 'Export error',
+          title: EXPORT_ERROR_TITLE,
           message: 'No components selected for export.',
           variant: 'danger'
         }
@@ -225,6 +228,8 @@ class ComponentsController < ApplicationController
             exportable: components.to_a, mode: :published_stig, format: :inspec,
             zip_filename: 'components_inspec.zip'
           )
+        else
+          head :unprocessable_entity
         end
       end
       format.json { render json: { status: :ok } }
@@ -369,7 +374,7 @@ class ComponentsController < ApplicationController
       format.json do
         render json: {
           toast: {
-            title: 'Control not found',
+            title: CONTROL_NOT_FOUND_TITLE,
             message: message,
             variant: 'danger'
           }
@@ -408,7 +413,7 @@ class ComponentsController < ApplicationController
           # as well as setting status code of the response to not_found (404)
           render json: {
             toast: {
-              title: 'Control not found',
+              title: CONTROL_NOT_FOUND_TITLE,
               message: message,
               variant: 'danger'
             }
@@ -435,7 +440,7 @@ class ComponentsController < ApplicationController
       end
       format.json do
         render json: {
-          toast: { title: 'Control not found', message: message, variant: 'danger' }
+          toast: { title: CONTROL_NOT_FOUND_TITLE, message: message, variant: 'danger' }
         }, status: :not_found
       end
     end

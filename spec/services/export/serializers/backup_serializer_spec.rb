@@ -8,6 +8,8 @@ require 'rails_helper'
 # rule_id string pairs, reviews with user attribution, additional answers
 # mapped by question name, and overlay parent references.
 # ==========================================================================
+TIMESTAMP_PATTERN = /\A\d{4}-\d{2}-\d{2}T/
+
 RSpec.describe Export::Serializers::BackupSerializer do
   let(:project) { create(:project) }
   let(:component) { create(:component, project: project) }
@@ -118,8 +120,8 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       it 'includes timestamps on each rule as ISO8601' do
         rule_data = data[:rules].first
-        expect(rule_data[:created_at]).to match(/\A\d{4}-\d{2}-\d{2}T/)
-        expect(rule_data[:updated_at]).to match(/\A\d{4}-\d{2}-\d{2}T/)
+        expect(rule_data[:created_at]).to match(TIMESTAMP_PATTERN)
+        expect(rule_data[:updated_at]).to match(TIMESTAMP_PATTERN)
       end
     end
 
@@ -175,7 +177,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
       end
 
       it 'includes review timestamp as ISO8601' do
-        expect(data[:reviews].first[:created_at]).to match(/\A\d{4}-\d{2}-\d{2}T/)
+        expect(data[:reviews].first[:created_at]).to match(TIMESTAMP_PATTERN)
       end
     end
 

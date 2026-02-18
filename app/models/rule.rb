@@ -186,23 +186,23 @@ class Rule < BaseRule
 
       fields.each do |field|
         # The only field we can revert on AdditionalAnswers is answer
-        field = 'answer' if audit.auditable_type.eql?('AdditionalAnswer')
+        revert_field = audit.auditable_type.eql?('AdditionalAnswer') ? 'answer' : field
 
-        raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(field)
+        raise(RuleRevertError, "Field to revert (#{revert_field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(revert_field)
 
         # The audited change can either be an array `[prev_val, new_val]`
         # or just the `val`
-        value = if audit.audited_changes[field].is_a?(Array)
-                  audit.audited_changes[field][0]
+        value = if audit.audited_changes[revert_field].is_a?(Array)
+                  audit.audited_changes[revert_field][0]
                 else
-                  audit.audited_changes[field]
+                  audit.audited_changes[revert_field]
                 end
 
         # Special case for AdditionalAnswer since it stores in the 'answer' field always
         if audit.auditable_type.eql?('AdditionalAnswer')
           record.answer = value
         else
-          record[field] = value
+          record[revert_field] = value
         end
       end
       record.audit_comment = audit_comment if record.changed?
@@ -317,6 +317,8 @@ class Rule < BaseRule
             relations.filter_map { |r| r.srg_rule&.version }
           when :stig
             relations.map { |r| "#{component.prefix}-#{r.rule_id}" }
+          else
+            raise ArgumentError, "Unknown satisfaction format: #{format}"
           end
 
     "#{label}: #{ids.uniq.sort.join(', ')}"

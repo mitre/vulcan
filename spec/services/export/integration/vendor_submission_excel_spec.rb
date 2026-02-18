@@ -25,16 +25,20 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     ).call
   end
 
+  let(:status_ac) { 'Applicable - Configurable' }
   let(:component) { create(:component) }
   let(:project) { component.project }
   let(:rules) { component.rules.where.missing(:satisfied_by).to_a }
+  let(:status_aim) { 'Applicable - Inherently Meets' }
+  let(:status_adnm) { 'Applicable - Does Not Meet' }
+  let(:status_na) { 'Not Applicable' }
 
   before do
     # Set up mixed statuses on rules without satisfied_by (to avoid status= guard)
-    rules[0]&.update_column(:status, 'Applicable - Configurable')
-    rules[1]&.update_column(:status, 'Applicable - Inherently Meets')
-    rules[2]&.update_column(:status, 'Applicable - Does Not Meet')
-    rules[3]&.update_column(:status, 'Not Applicable')
+    rules[0]&.update_column(:status, status_ac)
+    rules[1]&.update_column(:status, status_aim)
+    rules[2]&.update_column(:status, status_adnm)
+    rules[3]&.update_column(:status, status_na)
     rules[4]&.update_column(:status, 'Not Yet Determined')
   end
 
@@ -95,10 +99,10 @@ RSpec.describe 'VendorSubmission + Excel integration' do
       workbook = read_xlsx(result.data)
       data_rows = parse_data_rows(workbook, 0)
       statuses = data_rows.pluck('Status').uniq
-      expect(statuses).to include('Applicable - Configurable')
-      expect(statuses).to include('Applicable - Inherently Meets')
-      expect(statuses).to include('Applicable - Does Not Meet')
-      expect(statuses).to include('Not Applicable')
+      expect(statuses).to include(status_ac)
+      expect(statuses).to include(status_aim)
+      expect(statuses).to include(status_adnm)
+      expect(statuses).to include(status_na)
     end
   end
 
@@ -111,6 +115,16 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     end
   end
 
+  shared_examples 'blanks Check and Fix' do
+    it 'blanks Check' do
+      expect(status_row['Check']).to be_blank
+    end
+
+    it 'blanks Fix' do
+      expect(status_row['Fix']).to be_blank
+    end
+  end
+
   describe 'field-blanking per status' do
     let(:data_rows) do
       workbook = read_xlsx(result.data)
@@ -118,7 +132,7 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     end
 
     context 'Applicable - Configurable' do
-      let(:ac_row) { data_rows.find { |r| r['Status'] == 'Applicable - Configurable' } }
+      let(:ac_row) { data_rows.find { |r| r['Status'] == status_ac } }
 
       it 'keeps Check content' do
         # AC rules should have check content (unless DB is empty)
@@ -127,15 +141,10 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     end
 
     context 'Applicable - Inherently Meets (Section 4.1.11, 4.1.13)' do
-      let(:aim_row) { data_rows.find { |r| r['Status'] == 'Applicable - Inherently Meets' } }
+      let(:aim_row) { data_rows.find { |r| r['Status'] == status_aim } }
+      let(:status_row) { aim_row }
 
-      it 'blanks Check' do
-        expect(aim_row['Check']).to be_blank
-      end
-
-      it 'blanks Fix' do
-        expect(aim_row['Fix']).to be_blank
-      end
+      it_behaves_like 'blanks Check and Fix'
 
       it 'keeps VulDiscussion' do
         # VulDiscussion comes from SRG, should have content
@@ -148,15 +157,10 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     end
 
     context 'Applicable - Does Not Meet (Sections 4.1.11, 4.1.13)' do
-      let(:adnm_row) { data_rows.find { |r| r['Status'] == 'Applicable - Does Not Meet' } }
+      let(:adnm_row) { data_rows.find { |r| r['Status'] == status_adnm } }
+      let(:status_row) { adnm_row }
 
-      it 'blanks Check' do
-        expect(adnm_row['Check']).to be_blank
-      end
-
-      it 'blanks Fix' do
-        expect(adnm_row['Fix']).to be_blank
-      end
+      it_behaves_like 'blanks Check and Fix'
 
       it 'blanks Artifact Description' do
         expect(adnm_row['Artifact Description']).to be_blank
@@ -164,15 +168,10 @@ RSpec.describe 'VendorSubmission + Excel integration' do
     end
 
     context 'Not Applicable (Sections 4.1.8, 4.1.11, 4.1.13, 4.1.14)' do
-      let(:na_row) { data_rows.find { |r| r['Status'] == 'Not Applicable' } }
+      let(:na_row) { data_rows.find { |r| r['Status'] == status_na } }
+      let(:status_row) { na_row }
 
-      it 'blanks Check' do
-        expect(na_row['Check']).to be_blank
-      end
-
-      it 'blanks Fix' do
-        expect(na_row['Fix']).to be_blank
-      end
+      it_behaves_like 'blanks Check and Fix'
 
       it 'blanks VulDiscussion' do
         expect(na_row['VulDiscussion']).to be_blank

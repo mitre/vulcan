@@ -15,7 +15,7 @@ RSpec.describe Export::Modes::Backup do
 
     before do
       rules = component.rules.order(:rule_id).to_a
-      raise 'Need at least 4 rules for this test' if rules.size < 4
+      raise StandardError, 'Need at least 4 rules for this test' if rules.size < 4
 
       rules[0].update_columns(status: 'Applicable - Configurable')
       rules[1].update_columns(status: 'Not Applicable')
@@ -34,13 +34,13 @@ RSpec.describe Export::Modes::Backup do
     it 'includes rules with satisfied_by relationships' do
       rules = component.rules.order(:rule_id).to_a
       scoped = mode.rule_scope(component.rules)
-      expect(scoped.pluck(:id)).to include(rules[0].id)
+      expect(scoped.ids).to include(rules[0].id)
     end
 
     it 'includes NYD rules' do
       rules = component.rules.order(:rule_id).to_a
       scoped = mode.rule_scope(component.rules)
-      expect(scoped.pluck(:id)).to include(rules[3].id)
+      expect(scoped.ids).to include(rules[3].id)
     end
   end
 

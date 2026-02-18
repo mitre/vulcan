@@ -405,6 +405,8 @@ class Component < ApplicationRecord
           rule.update_column(:vendor_comments, clean.presence) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
         when :vuln_discussion
           source[:record].update_column(:vuln_discussion, clean.presence) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
+        else
+          raise ArgumentError, "Unknown satisfaction origin: #{source[:origin]}"
         end
       end
     end

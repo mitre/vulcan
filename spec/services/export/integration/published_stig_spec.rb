@@ -9,15 +9,17 @@ require 'rails_helper'
 # ==========================================================================
 RSpec.describe 'PublishedStig integration' do
   let(:component) { create(:component) }
+  let(:status_ac) { 'Applicable - Configurable' }
+  let(:zip_content_type) { 'application/zip' }
 
   before do
     # Set up mixed statuses
     rules = component.rules.order(:rule_id).to_a
-    raise 'Need at least 3 rules' if rules.size < 3
+    raise StandardError, 'Need at least 3 rules' if rules.size < 3
 
-    rules[0].update_columns(status: 'Applicable - Configurable')
+    rules[0].update_columns(status: status_ac)
     rules[0].update_inspec_code
-    rules[1].update_columns(status: 'Applicable - Configurable')
+    rules[1].update_columns(status: status_ac)
     rules[1].update_inspec_code
     rules[2].update_columns(status: 'Not Applicable')
   end
@@ -57,7 +59,7 @@ RSpec.describe 'PublishedStig integration' do
       ).call
 
       expect(result).to be_a(Export::Result)
-      expect(result.content_type).to eq('application/zip')
+      expect(result.content_type).to eq(zip_content_type)
       expect(result.data).to be_a(String)
       expect(result.data.size).to be > 0
     end
@@ -84,14 +86,14 @@ RSpec.describe 'PublishedStig integration' do
 
     it 'produces a zipped Result for multi-component project' do
       component2 = create(:component, project: project)
-      component2.rules.first.update_columns(status: 'Applicable - Configurable')
+      component2.rules.first.update_columns(status: status_ac)
 
       result = Export::Base.new(
         exportable: project, mode: :published_stig, format: :xccdf
       ).call
 
       # Multi-component = zip
-      expect(result.content_type).to eq('application/zip')
+      expect(result.content_type).to eq(zip_content_type)
       entries = []
       Zip::File.open_buffer(StringIO.new(result.data)) do |zip|
         zip.each { |entry| entries << entry.name }
@@ -106,14 +108,14 @@ RSpec.describe 'PublishedStig integration' do
 
     it 'produces a single zip with subdirectories' do
       component2 = create(:component, project: project)
-      component2.rules.first.update_columns(status: 'Applicable - Configurable')
+      component2.rules.first.update_columns(status: status_ac)
       component2.rules.first.update_inspec_code
 
       result = Export::Base.new(
         exportable: project, mode: :published_stig, format: :inspec
       ).call
 
-      expect(result.content_type).to eq('application/zip')
+      expect(result.content_type).to eq(zip_content_type)
       entries = []
       Zip::File.open_buffer(StringIO.new(result.data)) do |zip|
         zip.each { |entry| entries << entry.name }

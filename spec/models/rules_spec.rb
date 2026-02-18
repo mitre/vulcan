@@ -4,6 +4,40 @@ require 'rails_helper'
 
 RSpec.describe Review do
   let(:status_applicable) { 'Applicable - Configurable' }
+  # context 'overlaid rules are delegated to overlaid components' do
+  #   it 'properly collects all rule information into one rule' do
+  #     # Create a component overlay of `p2_c1 overlays p1_c1`
+  #     @p2_c1 = Component.create(project: @p2, version: 'Photon OS 3.1 V1R1', prefix: 'PHOS-03')
+  #     # Pick a rule to overlay
+  #     rule_to_overlay = @p1_c1.rules.first
+  #     # Create the overlaid version - connected via rule_id
+  #     new_rule = Rule.create(component: @p2_c1, rule_id: rule_to_overlay.rule_id)
+  #     # Verify that a field we will modify is currently nil
+  #     expect(new_rule.status).to eq(nil)
+  #     # Check that the field propagates through the overlay_rule method
+  #     expect(new_rule.overlay_rule.status).not_to eq(nil)
+  #     expect(new_rule.overlay_rule.status).to eq(rule_to_overlay.status)
+  #     # Verify that the new_rule has no checks or disa descriptions
+  #     expect(new_rule.checks.size).to eq(0)
+  #     expect(new_rule.disa_rule_descriptions.size).to eq(0)
+  #     # Verify that the overlaid rule has the right number of checks and disa descriptions
+  #     expect(new_rule.overlay_rule.checks.size).not_to eq(0)
+  #     expect(new_rule.overlay_rule.disa_rule_descriptions.size).not_to eq(0)
+  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size)
+  #     expect(new_rule.overlay_rule.disa_rule_descriptions.size).to eq(rule_to_overlay.disa_rule_descriptions.size)
+  #     # Add a check that is not an overlay on another check
+  #     Check.create(rule: new_rule, content: 'not an overlay check')
+  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size + 1)
+  #     # Add a check that is an overlay on another check
+  #     check_to_overlay = rule_to_overlay.checks.first
+  #     Check.create(rule: new_rule, content: 'an overlay check', check: check_to_overlay)
+  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size + 1)
+  #     # Make sure that the check text was overridden
+  #     expect(new_rule.overlay_rule.checks.select { |c| c.check_id == check_to_overlay.id }).to eq('an overlay check')
+  #   end
+  # end
+
+  let(:satisfies_prefix) { 'Satisfies: ' }
 
   before do
     srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
@@ -40,39 +74,6 @@ RSpec.describe Review do
       srg_rule: srg.srg_rules.first
     )
   end
-
-  # context 'overlaid rules are delegated to overlaid components' do
-  #   it 'properly collects all rule information into one rule' do
-  #     # Create a component overlay of `p2_c1 overlays p1_c1`
-  #     @p2_c1 = Component.create(project: @p2, version: 'Photon OS 3.1 V1R1', prefix: 'PHOS-03')
-  #     # Pick a rule to overlay
-  #     rule_to_overlay = @p1_c1.rules.first
-  #     # Create the overlaid version - connected via rule_id
-  #     new_rule = Rule.create(component: @p2_c1, rule_id: rule_to_overlay.rule_id)
-  #     # Verify that a field we will modify is currently nil
-  #     expect(new_rule.status).to eq(nil)
-  #     # Check that the field propagates through the overlay_rule method
-  #     expect(new_rule.overlay_rule.status).not_to eq(nil)
-  #     expect(new_rule.overlay_rule.status).to eq(rule_to_overlay.status)
-  #     # Verify that the new_rule has no checks or disa descriptions
-  #     expect(new_rule.checks.size).to eq(0)
-  #     expect(new_rule.disa_rule_descriptions.size).to eq(0)
-  #     # Verify that the overlaid rule has the right number of checks and disa descriptions
-  #     expect(new_rule.overlay_rule.checks.size).not_to eq(0)
-  #     expect(new_rule.overlay_rule.disa_rule_descriptions.size).not_to eq(0)
-  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size)
-  #     expect(new_rule.overlay_rule.disa_rule_descriptions.size).to eq(rule_to_overlay.disa_rule_descriptions.size)
-  #     # Add a check that is not an overlay on another check
-  #     Check.create(rule: new_rule, content: 'not an overlay check')
-  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size + 1)
-  #     # Add a check that is an overlay on another check
-  #     check_to_overlay = rule_to_overlay.checks.first
-  #     Check.create(rule: new_rule, content: 'an overlay check', check: check_to_overlay)
-  #     expect(new_rule.overlay_rule.checks.size).to eq(rule_to_overlay.checks.size + 1)
-  #     # Make sure that the check text was overridden
-  #     expect(new_rule.overlay_rule.checks.select { |c| c.check_id == check_to_overlay.id }).to eq('an overlay check')
-  #   end
-  # end
 
   context 'rule duplication' do
     it 'properly duplicated rule and required associated records' do
@@ -399,8 +400,8 @@ RSpec.describe Review do
 
     it 'generates SRG-format satisfaction text with full sorted IDs' do
       text = @p1r1.satisfaction_text(format: :srg, direction: :satisfies)
-      expect(text).to start_with('Satisfies: ')
-      ids = text.sub('Satisfies: ', '').split(', ')
+      expect(text).to start_with(satisfies_prefix)
+      ids = text.sub(satisfies_prefix, '').split(', ')
       expect(ids.size).to eq(2)
       # Full SRG IDs (e.g., "SRG-OS-000004-GPOS-00004")
       expect(ids).to all(match(/^SRG-/))
@@ -410,8 +411,8 @@ RSpec.describe Review do
 
     it 'generates STIG-format satisfaction text with component prefix' do
       text = @p1r1.satisfaction_text(format: :stig, direction: :satisfies)
-      expect(text).to start_with('Satisfies: ')
-      ids = text.sub('Satisfies: ', '').split(', ')
+      expect(text).to start_with(satisfies_prefix)
+      ids = text.sub(satisfies_prefix, '').split(', ')
       expect(ids.size).to eq(2)
       expect(ids).to all(start_with('PHOS-03-'))
       expect(ids).to eq(ids.sort)
@@ -438,7 +439,7 @@ RSpec.describe Review do
       # Adding same rule twice should not create duplicate text
       # HABTM has unique index so this tests the text output
       text = @p1r1.satisfaction_text(format: :srg, direction: :satisfies)
-      ids = text.sub('Satisfies: ', '').split(', ')
+      ids = text.sub(satisfies_prefix, '').split(', ')
       expect(ids).to eq(ids.uniq)
     end
   end
@@ -471,7 +472,7 @@ RSpec.describe Review do
       # Should NOT contain the old stale satisfaction text
       expect(text).not_to include('CNTR-00-001234')
       # Should contain the fresh dynamically generated satisfaction
-      expect(text).to include('Satisfies: ')
+      expect(text).to include(satisfies_prefix)
       expect(text).to include('User comment')
     end
 

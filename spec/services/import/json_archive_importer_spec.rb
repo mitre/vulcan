@@ -8,6 +8,8 @@ require 'rails_helper'
 # reviews, and supports dry_run mode. Conflict detection prevents duplicates.
 # ==========================================================================
 RSpec.describe Import::JsonArchiveImporter do
+  let(:manifest_file) { 'manifest.json' }
+  let(:component_file) { 'component.json' }
   let(:project) { create(:project) }
   let(:source_component) { create(:component, project: project) }
   let(:target_project) { create(:project) }
@@ -200,7 +202,7 @@ RSpec.describe Import::JsonArchiveImporter do
 
       it 'fails when manifest.json is missing' do
         zip_data = Zip::OutputStream.write_buffer do |zio|
-          zio.put_next_entry('component.json')
+          zio.put_next_entry(component_file)
           zio.write('{}')
         end.string
 
@@ -211,7 +213,7 @@ RSpec.describe Import::JsonArchiveImporter do
 
       it 'fails with malformed JSON in manifest' do
         zip_data = Zip::OutputStream.write_buffer do |zio|
-          zio.put_next_entry('manifest.json')
+          zio.put_next_entry(manifest_file)
           zio.write('{ not valid json }')
         end.string
 
@@ -245,9 +247,9 @@ RSpec.describe Import::JsonArchiveImporter do
         }
 
         Zip::OutputStream.write_buffer do |zio|
-          zio.put_next_entry('manifest.json')
+          zio.put_next_entry(manifest_file)
           zio.write(JSON.generate(manifest))
-          zio.put_next_entry('component.json')
+          zio.put_next_entry(component_file)
           zio.write(JSON.generate(component_data))
           # Intentionally omit: rules.json, satisfactions.json, reviews.json
         end.string
@@ -346,11 +348,11 @@ RSpec.describe Import::JsonArchiveImporter do
       Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
         zip.each do |entry|
           zio.put_next_entry(entry.name)
-          if entry.name == 'manifest.json'
+          if entry.name == manifest_file
             manifest = JSON.parse(zip.read(entry.name))
             manifest['components'].each { |c| c['srg_id'] = new_srg_id }
             zio.write(JSON.generate(manifest))
-          elsif entry.name == 'component.json'
+          elsif entry.name == component_file
             component_data = JSON.parse(zip.read(entry.name))
             component_data['based_on']['srg_id'] = new_srg_id
             zio.write(JSON.generate(component_data))

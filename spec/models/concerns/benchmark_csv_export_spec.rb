@@ -5,6 +5,9 @@ require 'csv'
 
 # rubocop:disable RSpec/IndexedLet, RSpec/VerifiedDoubleReference
 RSpec.describe BenchmarkCsvExport do
+  let(:rule_id_header) { 'Rule ID' }
+  let(:stig_id_header) { 'STIG ID' }
+  let(:srg_id_header) { 'SRG ID' }
   # REQUIREMENTS:
   # 1. Provides csv_export method with configurable columns
   # 2. Uses default columns from ExportConstants::BENCHMARK_CSV_DEFAULT_COLUMNS
@@ -119,12 +122,12 @@ RSpec.describe BenchmarkCsvExport do
     context 'with column selection' do
       it 'includes only selected columns' do
         csv = CSV.parse(benchmark.csv_export(columns: %i[rule_id version rule_severity]), headers: true)
-        expect(csv.headers).to eq(['Rule ID', 'STIG ID', 'Severity'])
+        expect(csv.headers).to eq([rule_id_header, stig_id_header, 'Severity'])
       end
 
       it 'preserves column order from selection' do
         csv = CSV.parse(benchmark.csv_export(columns: %i[title rule_id rule_severity]), headers: true)
-        expect(csv.headers).to eq(['Title', 'Rule ID', 'Severity'])
+        expect(csv.headers).to eq(['Title', rule_id_header, 'Severity'])
       end
 
       it 'calls csv_value_for only for selected columns' do
@@ -147,11 +150,11 @@ RSpec.describe BenchmarkCsvExport do
         csv = CSV.parse(
           benchmark.csv_export(
             columns: %i[rule_id version],
-            header_overrides: { version: 'SRG ID' }
+            header_overrides: { version: srg_id_header }
           ),
           headers: true
         )
-        expect(csv.headers).to eq(['Rule ID', 'SRG ID'])
+        expect(csv.headers).to eq([rule_id_header, srg_id_header])
       end
 
       it 'uses default header when no override exists' do
@@ -162,18 +165,18 @@ RSpec.describe BenchmarkCsvExport do
           ),
           headers: true
         )
-        expect(csv.headers).to eq(['Rule ID', 'STIG ID'])
+        expect(csv.headers).to eq([rule_id_header, stig_id_header])
       end
 
       it 'handles multiple header overrides' do
         csv = CSV.parse(
           benchmark.csv_export(
             columns: %i[rule_id version title],
-            header_overrides: { version: 'SRG ID', title: 'Requirement' }
+            header_overrides: { version: srg_id_header, title: 'Requirement' }
           ),
           headers: true
         )
-        expect(csv.headers).to eq(['Rule ID', 'SRG ID', 'Requirement'])
+        expect(csv.headers).to eq([rule_id_header, srg_id_header, 'Requirement'])
       end
     end
 
@@ -210,7 +213,7 @@ RSpec.describe BenchmarkCsvExport do
 
       it 'uses default_columns method when defined' do
         csv = CSV.parse(custom_benchmark.csv_export, headers: true)
-        expect(csv.headers).to eq(['Rule ID', 'STIG ID'])
+        expect(csv.headers).to eq([rule_id_header, stig_id_header])
       end
 
       it 'falls back to BENCHMARK_CSV_DEFAULT_COLUMNS when default_columns not defined' do

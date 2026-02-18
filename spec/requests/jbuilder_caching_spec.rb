@@ -19,48 +19,34 @@ RSpec.describe 'Jbuilder Caching' do
     Rails.cache.clear # Start with empty cache
   end
 
-  describe 'Components index caching' do
-    let!(:component) { create(:component, released: true) }
-
+  shared_examples 'consistent cached JSON' do |path|
     it 'returns consistent JSON with caching enabled' do
-      # First request - populates cache
-      get '/components.json'
+      get path
       expect(response).to have_http_status(:success)
       first_body = response.body
 
-      # Second request - should return same JSON (from cache)
-      get '/components.json'
+      get path
       expect(response).to have_http_status(:success)
       expect(response.body).to eq(first_body)
     end
+  end
+
+  describe 'Components index caching' do
+    let!(:component) { create(:component, released: true) }
+
+    it_behaves_like 'consistent cached JSON', '/components.json'
   end
 
   describe 'STIGs index caching' do
     let!(:stig) { create(:stig) }
 
-    it 'returns consistent JSON with caching enabled' do
-      get '/stigs.json'
-      expect(response).to have_http_status(:success)
-      first_body = response.body
-
-      get '/stigs.json'
-      expect(response).to have_http_status(:success)
-      expect(response.body).to eq(first_body)
-    end
+    it_behaves_like 'consistent cached JSON', '/stigs.json'
   end
 
   describe 'SRGs index caching' do
     let!(:srg) { create(:security_requirements_guide) }
 
-    it 'returns consistent JSON with caching enabled' do
-      get '/srgs.json'
-      expect(response).to have_http_status(:success)
-      first_body = response.body
-
-      get '/srgs.json'
-      expect(response).to have_http_status(:success)
-      expect(response.body).to eq(first_body)
-    end
+    it_behaves_like 'consistent cached JSON', '/srgs.json'
   end
 
   describe 'STIG show caching (rules collection)' do

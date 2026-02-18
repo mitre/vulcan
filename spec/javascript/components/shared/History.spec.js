@@ -215,7 +215,7 @@ describe("History", () => {
 
       // Find "show less" link
       const links = wrapper.findAll(".text-primary.clickable");
-      const showLess = links.filter((l) => l.text() === "show less").at(0);
+      const showLess = links.wrappers.find((l) => l.text() === "show less");
       await showLess.trigger("click");
 
       expect(wrapper.vm.numShownHistories).toBe(2);

@@ -77,10 +77,11 @@ module Export
         add_element(reference, 'dc:source', nil)
         benchmark << reference
 
+        plain_text_tag = 'plain-text'
         release_info = "Release: #{component[:release]} Benchmark Date: #{Time.zone.today.strftime('%-d %b %Y')}"
-        add_element(benchmark, 'plain-text', release_info, { id: 'release-info' })
-        add_element(benchmark, 'plain-text', '3.2.2.36079', { id: 'generator' })
-        add_element(benchmark, 'plain-text', '1.10.0', { id: 'conventionsVersion' })
+        add_element(benchmark, plain_text_tag, release_info, { id: 'release-info' })
+        add_element(benchmark, plain_text_tag, '3.2.2.36079', { id: 'generator' })
+        add_element(benchmark, plain_text_tag, '1.10.0', { id: 'conventionsVersion' })
         add_element(benchmark, 'version', component[:version].to_s)
 
         benchmark

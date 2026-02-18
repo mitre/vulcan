@@ -56,7 +56,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import ExportModal from "./ExportModal.vue";
 import RuleList from "../benchmarks/RuleList.vue";
