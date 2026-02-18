@@ -8,6 +8,10 @@ require 'rails_helper'
 # create_permission_enabled). Supports dry_run for preview. Returns redirect
 # URL on success, summary, and project_defaults from the archive.
 # ==========================================================================
+BACKUP_ENDPOINT = '/projects/create_from_backup'
+BACKUP_ZIP_CONTENT_TYPE = 'application/zip'
+BACKUP_RESTORED_NAME = 'Restored Project'
+
 RSpec.describe 'Project Create From Backup' do
   # Expensive setup — created once via test-prof savepoints
   let_it_be(:admin_user) { create(:user, admin: true) }
@@ -27,7 +31,7 @@ RSpec.describe 'Project Create From Backup' do
   let(:uploaded_file) do
     Rack::Test::UploadedFile.new(
       StringIO.new(project_backup_zip_data),
-      'application/zip',
+      BACKUP_ZIP_CONTENT_TYPE,
       true,
       original_filename: 'test-backup.zip'
     )
@@ -40,7 +44,7 @@ RSpec.describe 'Project Create From Backup' do
   describe 'POST /projects/create_from_backup' do
     context 'when not authenticated' do
       it 'redirects to login' do
-        post '/projects/create_from_backup', params: { file: uploaded_file }
+        post BACKUP_ENDPOINT, params: { file: uploaded_file }
         expect(response).to redirect_to(new_user_session_path)
       end
     end
@@ -50,7 +54,7 @@ RSpec.describe 'Project Create From Backup' do
 
       it 'creates a project with given name' do
         expect do
-          post '/projects/create_from_backup', params: {
+          post BACKUP_ENDPOINT, params: {
             file: uploaded_file,
             project_name: 'My Restored Project',
             project_description: 'Restored from backup',
@@ -65,9 +69,9 @@ RSpec.describe 'Project Create From Backup' do
       end
 
       it 'imports all components from archive' do
-        post '/projects/create_from_backup', params: {
+        post BACKUP_ENDPOINT, params: {
           file: uploaded_file,
-          project_name: 'Restored Project'
+          project_name: BACKUP_RESTORED_NAME
         }
 
         expect(response).to have_http_status(:ok)
@@ -76,19 +80,19 @@ RSpec.describe 'Project Create From Backup' do
       end
 
       it 'creates current user as admin member' do
-        post '/projects/create_from_backup', params: {
+        post BACKUP_ENDPOINT, params: {
           file: uploaded_file,
-          project_name: 'Restored Project'
+          project_name: BACKUP_RESTORED_NAME
         }
 
-        project = Project.find_by(name: 'Restored Project')
+        project = Project.find_by(name: BACKUP_RESTORED_NAME)
         membership = project.memberships.find_by(user: admin_user)
         expect(membership).to be_present
         expect(membership.role).to eq('admin')
       end
 
       it 'returns project_defaults in dry_run' do
-        post '/projects/create_from_backup', params: {
+        post BACKUP_ENDPOINT, params: {
           file: uploaded_file,
           dry_run: 'true'
         }
@@ -102,7 +106,7 @@ RSpec.describe 'Project Create From Backup' do
 
       it 'creates nothing in dry_run' do
         expect do
-          post '/projects/create_from_backup', params: {
+          post BACKUP_ENDPOINT, params: {
             file: uploaded_file,
             dry_run: 'true'
           }
@@ -112,11 +116,11 @@ RSpec.describe 'Project Create From Backup' do
       it 'rolls back project on import failure' do
         bad_zip = modify_manifest_srg(project_backup_zip_data, 'NONEXISTENT-SRG')
         bad_file = Rack::Test::UploadedFile.new(
-          StringIO.new(bad_zip), 'application/zip', true, original_filename: 'bad.zip'
+          StringIO.new(bad_zip), BACKUP_ZIP_CONTENT_TYPE, true, original_filename: 'bad.zip'
         )
 
         expect do
-          post '/projects/create_from_backup', params: {
+          post BACKUP_ENDPOINT, params: {
             file: bad_file,
             project_name: 'Should Not Exist'
           }
@@ -126,12 +130,12 @@ RSpec.describe 'Project Create From Backup' do
       end
 
       it 'requires project_name for real import' do
-        post '/projects/create_from_backup', params: { file: uploaded_file }
+        post BACKUP_ENDPOINT, params: { file: uploaded_file }
         expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it 'returns 400 when no file provided' do
-        post '/projects/create_from_backup'
+        post BACKUP_ENDPOINT
         expect(response).to have_http_status(:bad_request)
       end
 
@@ -146,10 +150,10 @@ RSpec.describe 'Project Create From Backup' do
           zip_filename: 'test.zip'
         ).call.data
         file = Rack::Test::UploadedFile.new(
-          StringIO.new(zip), 'application/zip', true, original_filename: 'test.zip'
+          StringIO.new(zip), BACKUP_ZIP_CONTENT_TYPE, true, original_filename: 'test.zip'
         )
 
-        post '/projects/create_from_backup', params: {
+        post BACKUP_ENDPOINT, params: {
           file: file,
           project_name: 'With Reviews',
           include_reviews: 'false'
@@ -168,7 +172,7 @@ RSpec.describe 'Project Create From Backup' do
       end
 
       it 'redirects to root (unauthorized)' do
-        post '/projects/create_from_backup', params: {
+        post BACKUP_ENDPOINT, params: {
           file: uploaded_file,
           project_name: 'Should Fail'
         }

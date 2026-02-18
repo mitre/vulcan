@@ -7,6 +7,8 @@ require 'rails_helper'
 # backup into a project. Requires admin role. Supports dry_run and
 # include_reviews params. Returns JSON with toast message, summary, warnings.
 # ==========================================================================
+IMPORT_ZIP_CONTENT_TYPE = 'application/zip'
+
 RSpec.describe 'Project Import Backup' do
   let(:admin_user) { create(:user) }
   let(:viewer_user) { create(:user) }
@@ -26,7 +28,7 @@ RSpec.describe 'Project Import Backup' do
   let(:uploaded_file) do
     Rack::Test::UploadedFile.new(
       StringIO.new(backup_zip_data),
-      'application/zip',
+      IMPORT_ZIP_CONTENT_TYPE,
       true,
       original_filename: 'backup.zip'
     )
@@ -180,7 +182,7 @@ RSpec.describe 'Project Import Backup' do
     let(:project_uploaded_file) do
       Rack::Test::UploadedFile.new(
         StringIO.new(project_backup_zip_data),
-        'application/zip',
+        IMPORT_ZIP_CONTENT_TYPE,
         true,
         original_filename: 'project-backup.zip'
       )
@@ -213,7 +215,7 @@ RSpec.describe 'Project Import Backup' do
     it 'returns 422 with error toast for invalid ZIP' do
       invalid_file = Rack::Test::UploadedFile.new(
         StringIO.new('not a zip'),
-        'application/zip',
+        IMPORT_ZIP_CONTENT_TYPE,
         true,
         original_filename: 'bad.zip'
       )

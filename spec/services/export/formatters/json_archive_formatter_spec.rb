@@ -13,6 +13,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
 
   let(:manifest_file) { 'manifest.json' }
   let(:component_file) { 'component.json' }
+  let(:project_file) { 'project.json' }
 
   describe 'interface' do
     it { expect(formatter.component_based?).to be true }
@@ -148,7 +149,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
     end
 
     it 'contains project.json' do
-      expect(zip_entries(data)).to include('project.json')
+      expect(zip_entries(data)).to include(project_file)
     end
 
     it 'has subdirectories for each component' do
@@ -169,12 +170,12 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
     end
 
     it 'project.json includes project name' do
-      project_json = JSON.parse(zip_read(data, 'project.json'))
+      project_json = JSON.parse(zip_read(data, project_file))
       expect(project_json['name']).to eq(first_component.project.name)
     end
 
     it 'project.json includes project description' do
-      project_json = JSON.parse(zip_read(data, 'project.json'))
+      project_json = JSON.parse(zip_read(data, project_file))
       expect(project_json['description']).to eq(first_component.project.description)
     end
 
@@ -183,7 +184,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
       Membership.create!(user: member_user, membership: first_component.project, role: 'author')
 
       new_data = formatter.generate_batch(component_rule_pairs: pairs)
-      project_json = JSON.parse(zip_read(new_data, 'project.json'))
+      project_json = JSON.parse(zip_read(new_data, project_file))
 
       expect(project_json['memberships']).to be_an(Array)
       membership = project_json['memberships'].find { |m| m['email'] == member_user.email }
@@ -198,7 +199,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
       Membership.create!(user: member_user, membership: first_component, role: 'admin')
 
       new_data = formatter.generate_batch(component_rule_pairs: pairs)
-      pj = JSON.parse(zip_read(new_data, 'project.json'))
+      pj = JSON.parse(zip_read(new_data, project_file))
       expect(pj['memberships'].size).to eq(1)
     end
   end

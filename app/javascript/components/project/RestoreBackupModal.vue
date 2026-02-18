@@ -74,6 +74,12 @@
 
       <!-- Summary Table -->
       <table class="table table-sm table-bordered" data-testid="summary-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="text-right">Count</th>
+          </tr>
+        </thead>
         <tbody>
           <tr>
             <td>Components</td>

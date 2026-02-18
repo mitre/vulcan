@@ -26,7 +26,7 @@ vi.mock("axios");
  *    - "Back" button to return to upload
  *
  * 3. ON SUCCESS:
- *    - Redirects to new project page via window.location
+ *    - Redirects to new project page via globalThis.location
  */
 describe("RestoreProjectModal", () => {
   let wrapper;
@@ -80,9 +80,9 @@ describe("RestoreProjectModal", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock window.location
-    delete window.location;
-    window.location = { href: "" };
+    // Mock globalThis.location
+    delete globalThis.location;
+    globalThis.location = { href: "" };
   });
 
   afterEach(() => {
@@ -258,7 +258,7 @@ describe("RestoreProjectModal", () => {
 
       await wrapper.vm.submitCreate();
 
-      expect(window.location).toBe("/projects/123");
+      expect(globalThis.location).toBe("/projects/123");
     });
   });
 

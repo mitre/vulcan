@@ -26,6 +26,8 @@ DISA_RULE_DESC_FIELDS = %w[vuln_discussion false_positives false_negatives docum
 
 CHECK_FIELDS = %w[system content_ref_name content_ref_href content].freeze
 
+ROUNDTRIP_BACKUP_FILENAME = 'project-backup.zip'
+
 RSpec.describe 'JSON Archive Backup Round-Trip' do
   let(:source_project) { create(:project, name: 'Source Project') }
   let(:target_project) { create(:project, name: 'Target Project') }
@@ -310,7 +312,7 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
           exportable: source_project,
           mode: :backup,
           format: :json_archive,
-          zip_filename: 'project-backup.zip'
+          zip_filename: ROUNDTRIP_BACKUP_FILENAME
         ).call.data
 
         result = Import::JsonArchiveImporter.new(
@@ -445,7 +447,7 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
           exportable: source_project,
           mode: :backup,
           format: :json_archive,
-          zip_filename: 'project-backup.zip'
+          zip_filename: ROUNDTRIP_BACKUP_FILENAME
         ).call.data
       end
 
@@ -501,7 +503,7 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
           exportable: source_project,
           mode: :backup,
           format: :json_archive,
-          zip_filename: 'project-backup.zip'
+          zip_filename: ROUNDTRIP_BACKUP_FILENAME
         ).call.data
 
         new_project = Project.create!(

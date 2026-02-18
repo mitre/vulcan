@@ -84,6 +84,12 @@
 
       <!-- Summary totals -->
       <table class="table table-sm table-bordered" data-testid="summary-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="text-right">Count</th>
+          </tr>
+        </thead>
         <tbody>
           <tr>
             <td>Total Rules</td>
@@ -243,7 +249,7 @@ export default {
         });
 
         if (response.data.redirect_url) {
-          window.location = response.data.redirect_url;
+          globalThis.location = response.data.redirect_url;
         } else {
           this.alertOrNotifyResponse(response);
           this.$emit("projectCreated");

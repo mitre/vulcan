@@ -7,6 +7,8 @@ class ProjectsController < ApplicationController
   include Exportable
   include ProjectMemberConstants
 
+  IMPORT_ERROR_TITLE = 'Import error'
+
   before_action :set_project, only: %i[show update destroy export import_backup]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy import_backup]
@@ -233,7 +235,7 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: 'Import error', message: 'No file provided', variant: 'danger' }
+        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
       }, status: :bad_request
       return
     end
@@ -274,7 +276,7 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: 'Import error', message: 'No file provided', variant: 'danger' }
+        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
       }, status: :bad_request
       return
     end
@@ -287,7 +289,7 @@ class ProjectsController < ApplicationController
     project_visibility = params[:project_visibility].presence || 'discoverable'
 
     if dry_run
-      perform_create_from_backup_dry_run(file, include_reviews, include_memberships, project_name)
+      perform_create_from_backup_dry_run(file, include_reviews, include_memberships)
     else
       perform_create_from_backup(file, include_reviews, include_memberships,
                                  project_name, project_description, project_visibility)
@@ -296,7 +298,7 @@ class ProjectsController < ApplicationController
 
   private
 
-  def perform_create_from_backup_dry_run(file, include_reviews, include_memberships, _project_name)
+  def perform_create_from_backup_dry_run(file, include_reviews, include_memberships)
     project_defaults = extract_project_defaults(file)
 
     # Dry-run no longer writes to DB — use unsaved project (no conflicts possible for new project)
@@ -333,7 +335,7 @@ class ProjectsController < ApplicationController
                                  project_name, project_description, project_visibility)
     unless project_name
       render json: {
-        toast: { title: 'Import error', message: 'Project name is required', variant: 'danger' }
+        toast: { title: IMPORT_ERROR_TITLE, message: 'Project name is required', variant: 'danger' }
       }, status: :unprocessable_entity
       return
     end
