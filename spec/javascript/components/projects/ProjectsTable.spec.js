@@ -143,7 +143,8 @@ describe("ProjectsTable", () => {
       const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
       await removeBtn.trigger("click");
 
-      expect(wrapper.vm.projectToDelete).toEqual(sampleProjects[0]);
+      // Table sorts by name — "Another Project" is first alphabetically
+      expect(wrapper.vm.projectToDelete).toEqual(sampleProjects[1]);
     });
 
     it("shows project name in modal", async () => {
@@ -152,7 +153,8 @@ describe("ProjectsTable", () => {
       await removeBtn.trigger("click");
       await wrapper.vm.$nextTick();
 
-      expect(wrapper.text()).toContain("Test Project");
+      // First Remove button is "Another Project" (alphabetical sort)
+      expect(wrapper.text()).toContain("Another Project");
     });
 
     it("Cancel closes modal without deleting", async () => {
