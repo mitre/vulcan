@@ -61,6 +61,8 @@ Rails.application.routes.draw do
   post '/components/:id/find', to: 'components#find'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
+  # Create new project from backup archive (before resources :projects to avoid id catch)
+  post '/projects/create_from_backup', to: 'projects#create_from_backup'
   # Import backup archive into project
   post '/projects/:id/import_backup', to: 'projects#import_backup'
   # SRG ID Search (legacy routes)

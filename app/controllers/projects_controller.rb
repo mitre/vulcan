@@ -12,7 +12,7 @@ class ProjectsController < ApplicationController
   before_action :authorize_admin_project, only: %i[update destroy import_backup]
   before_action :authorize_viewer_project, only: %i[show export]
   before_action :authorize_logged_in, only: %i[index search]
-  before_action :authorize_admin_or_create_permission_enabled, only: %i[create]
+  before_action :authorize_admin_or_create_permission_enabled, only: %i[create create_from_backup]
   before_action :check_permission_to_update, only: %i[update]
 
   def index
@@ -240,12 +240,16 @@ class ProjectsController < ApplicationController
 
     dry_run = params[:dry_run] == 'true'
     include_reviews = params[:include_reviews] != 'false'
+    include_memberships = params[:include_memberships] == 'true'
+    component_filter = params[:component_filter].present? ? JSON.parse(params[:component_filter]) : nil
 
     result = Import::JsonArchiveImporter.new(
       zip_file: file,
       project: @project,
       dry_run: dry_run,
-      include_reviews: include_reviews
+      include_reviews: include_reviews,
+      include_memberships: include_memberships,
+      component_filter: component_filter
     ).call
 
     if result.success?
@@ -266,7 +270,134 @@ class ProjectsController < ApplicationController
     end
   end
 
+  def create_from_backup
+    file = params[:file]
+    unless file
+      render json: {
+        toast: { title: 'Import error', message: 'No file provided', variant: 'danger' }
+      }, status: :bad_request
+      return
+    end
+
+    dry_run = params[:dry_run] == 'true'
+    include_reviews = params[:include_reviews] != 'false'
+    include_memberships = params[:include_memberships] == 'true'
+    project_name = params[:project_name].presence
+    project_description = params[:project_description].presence || ''
+    project_visibility = params[:project_visibility].presence || 'discoverable'
+
+    if dry_run
+      perform_create_from_backup_dry_run(file, include_reviews, include_memberships, project_name)
+    else
+      perform_create_from_backup(file, include_reviews, include_memberships,
+                                 project_name, project_description, project_visibility)
+    end
+  end
+
   private
+
+  def perform_create_from_backup_dry_run(file, include_reviews, include_memberships, _project_name)
+    project_defaults = extract_project_defaults(file)
+
+    # Dry-run no longer writes to DB — use unsaved project (no conflicts possible for new project)
+    temp_project = Project.new(name: 'Preview')
+
+    result = Import::JsonArchiveImporter.new(
+      zip_file: file,
+      project: temp_project,
+      dry_run: true,
+      include_reviews: include_reviews,
+      include_memberships: include_memberships
+    ).call
+
+    if result.success?
+      render json: {
+        summary: result.summary,
+        warnings: result.warnings,
+        project_defaults: project_defaults
+      }
+    else
+      render json: {
+        toast: {
+          title: 'Preview failed',
+          message: result.errors.join('; '),
+          variant: 'danger'
+        },
+        warnings: result.warnings,
+        project_defaults: project_defaults
+      }, status: :unprocessable_entity
+    end
+  end
+
+  def perform_create_from_backup(file, include_reviews, include_memberships,
+                                 project_name, project_description, project_visibility)
+    unless project_name
+      render json: {
+        toast: { title: 'Import error', message: 'Project name is required', variant: 'danger' }
+      }, status: :unprocessable_entity
+      return
+    end
+
+    project = nil
+    result = nil
+
+    ActiveRecord::Base.transaction do
+      project = Project.create!(
+        name: project_name,
+        description: project_description,
+        visibility: project_visibility,
+        memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
+      )
+
+      result = Import::JsonArchiveImporter.new(
+        zip_file: file,
+        project: project,
+        dry_run: false,
+        include_reviews: include_reviews,
+        include_memberships: include_memberships
+      ).call
+
+      raise ActiveRecord::Rollback unless result.success?
+    end
+
+    if result&.success?
+      render json: {
+        redirect_url: project_path(project),
+        summary: result.summary,
+        toast: 'Project created from backup successfully.'
+      }
+    else
+      render json: {
+        toast: {
+          title: 'Import failed',
+          message: result&.errors&.join('; ') || 'Unknown error',
+          variant: 'danger'
+        },
+        warnings: result&.warnings || []
+      }, status: :unprocessable_entity
+    end
+  end
+
+  def extract_project_defaults(file)
+    file_data = file.respond_to?(:read) ? file.read : file
+    file.rewind if file.respond_to?(:rewind)
+
+    defaults = { name: 'Restored Project', description: '', visibility: 'discoverable' }
+
+    Zip::File.open_buffer(file_data) do |zip|
+      project_entry = zip.find_entry('project.json')
+      if project_entry
+        project_json = JSON.parse(zip.read('project.json'))
+        defaults[:name] = project_json['name'] if project_json['name'].present?
+        defaults[:description] = project_json['description'] if project_json['description'].present?
+        defaults[:visibility] = project_json['visibility'] if project_json['visibility'].present?
+      end
+    end
+
+    defaults
+  rescue Zip::Error, JSON::ParserError
+    defaults
+  end
 
   def set_project
     @project = Project.find(params[:id])
