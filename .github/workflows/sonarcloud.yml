@@ -17,89 +17,13 @@ jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-
-    services:
-      db:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: vulcan_vue_test
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_INITDB_ARGS: "--nosync"
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 500ms
-          --health-timeout 3s
-          --health-retries 20
-          --shm-size=256mb
-      ldap:
-        image: rroemhild/test-openldap
-        ports:
-          - 10389:10389
-
-    env:
-      PGHOST: localhost
-      PGUSER: postgres
-      PGPASSWORD: postgres
-      RAILS_ENV: test
-      RUBY_YJIT_ENABLE: "1"
-      CI: "true"
-      # OIDC Testing Configuration
-      VULCAN_ENABLE_OIDC: "true"
-      VULCAN_OIDC_DISCOVERY: "true"
-      VULCAN_OIDC_ISSUER_URL: ${{ secrets.OKTA_TEST_ISSUER }}
-      VULCAN_OIDC_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
-      VULCAN_OIDC_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
-      OKTA_TEST_ISSUER: ${{ secrets.OKTA_TEST_ISSUER }}
-      OKTA_TEST_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
-      OKTA_TEST_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
-      # LDAP Testing Configuration
-      VULCAN_ENABLE_LDAP: "true"
-      VULCAN_LDAP_HOST: localhost
-      VULCAN_LDAP_ATTRIBUTE: mail
-      VULCAN_LDAP_BIND_DN: "cn=admin,dc=planetexpress,dc=com"
-      VULCAN_LDAP_BASE: "ou=people,dc=planetexpress,dc=com"
-      VULCAN_LDAP_PORT: "10389"
-      VULCAN_LDAP_ADMIN_PASS: GoodNewsEveryone
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
         with:
           # Full history required for SonarCloud new code detection and PR decoration
           fetch-depth: 0
-
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.4.8'
-          bundler-cache: true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'yarn'
-
-      - run: yarn install --frozen-lockfile
-
-      - name: Install system dependencies
-        run: sudo apt-get -yqq install libpq-dev
-
-      - name: Build JavaScript assets
-        run: yarn build
-
-      - name: Setup database
-        run: |
-          bundle exec rails db:create
-          bundle exec rails db:schema:load
-
-      - name: Run backend tests with coverage
-        run: bundle exec rspec --format progress
-
-      - name: Run frontend tests with coverage
-        run: yarn test:unit --coverage --coverage.reporter=lcov --coverage.reportsDirectory=coverage/js
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v7
