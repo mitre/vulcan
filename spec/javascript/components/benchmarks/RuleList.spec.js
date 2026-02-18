@@ -440,17 +440,17 @@ describe("RuleList", () => {
   // ACCESSIBILITY
   // ==========================================
   describe("accessibility", () => {
-    it("table has listbox role", () => {
+    it("list container has listbox role", () => {
       wrapper = createWrapper();
-      const table = wrapper.find("table");
-      expect(table.attributes("role")).toBe("listbox");
+      const listbox = wrapper.find("[role='listbox']");
+      expect(listbox.exists()).toBe(true);
     });
 
-    it("rows have option role", () => {
+    it("items have option role with aria-selected", () => {
       wrapper = createWrapper();
-      const rows = wrapper.findAll("tbody tr");
-      rows.wrappers.forEach((row) => {
-        expect(row.attributes("role")).toBe("option");
+      const options = wrapper.findAll("[role='option']");
+      options.wrappers.forEach((option) => {
+        expect(option.attributes("aria-selected")).toBeDefined();
       });
     });
   });

@@ -49,40 +49,37 @@
     <!-- Table of Rules -->
     <div ref="ruleListContainer" class="mt-3" style="max-height: 700px; overflow-y: auto">
       <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
-      <table class="table table-hover" role="listbox" tabindex="0" :aria-label="RULE_TERM.plural">
-        <thead>
-          <tr>
-            <th class="d-flex">
-              <b-form-select v-model="field" :options="fieldOptions" />
-              <b-icon
-                v-if="sortOrder === 'asc'"
-                icon="arrow-down-circle"
-                aria-hidden="true"
-                @click="sortOrder = 'desc'"
-              />
-              <b-icon
-                v-if="sortOrder === 'desc'"
-                icon="arrow-up-circle"
-                aria-hidden="true"
-                @click="sortOrder = 'asc'"
-              />
-            </th>
-          </tr>
-        </thead>
-        <tbody @keydown="handleKeydown">
-          <tr
-            v-for="(rule, index) in sortedRules"
-            :key="rule.id"
-            :class="rowClass(rule, index)"
-            :tabindex="index === focusedIndex || (focusedIndex === -1 && index === 0) ? 0 : -1"
-            role="option"
-            :aria-selected="selectedRule && selectedRule.id === rule.id"
-            @click="selectRule(rule)"
-          >
-            <td>{{ displayField(rule) }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="d-flex mb-2">
+        <b-form-select v-model="field" :options="fieldOptions" size="sm" />
+        <b-icon
+          v-if="sortOrder === 'asc'"
+          icon="arrow-down-circle"
+          aria-hidden="true"
+          class="ml-1 cursor-pointer"
+          @click="sortOrder = 'desc'"
+        />
+        <b-icon
+          v-if="sortOrder === 'desc'"
+          icon="arrow-up-circle"
+          aria-hidden="true"
+          class="ml-1 cursor-pointer"
+          @click="sortOrder = 'asc'"
+        />
+      </div>
+      <div role="listbox" tabindex="0" :aria-label="RULE_TERM.plural" @keydown="handleKeydown">
+        <div
+          v-for="(rule, index) in sortedRules"
+          :key="rule.id"
+          :class="rowClass(rule, index)"
+          :tabindex="index === focusedIndex || (focusedIndex === -1 && index === 0) ? 0 : -1"
+          role="option"
+          :aria-selected="String(selectedRule && selectedRule.id === rule.id)"
+          class="p-2 border-bottom cursor-pointer"
+          @click="selectRule(rule)"
+        >
+          {{ displayField(rule) }}
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -201,7 +198,7 @@ export default {
     scrollFocusedRowIntoView() {
       const container = this.$refs.ruleListContainer;
       if (!container) return;
-      const rows = container.querySelectorAll("tr[role='option']");
+      const rows = container.querySelectorAll("div[role='option']");
       const row = rows[this.focusedIndex];
       if (row) {
         row.focus();
