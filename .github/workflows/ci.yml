@@ -39,7 +39,7 @@ jobs:
           fetch-depth: 1
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version-file: '.ruby-version'
+          ruby-version: '.ruby-version'
           bundler-cache: true
       - uses: actions/setup-node@v4
         with:
@@ -144,7 +144,7 @@ jobs:
           fetch-depth: 1
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version-file: '.ruby-version'
+          ruby-version: '.ruby-version'
           bundler-cache: true
       - uses: actions/setup-node@v4
         with:
