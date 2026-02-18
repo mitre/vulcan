@@ -3,6 +3,8 @@
 # This is our main user model, local, LDAP, and omniauth users are all stored here.
 # We store provider and UID from the Omniauth provider that is logging a user in.
 class User < ApplicationRecord
+  # Raised when an OmniAuth login matches an existing user with a different provider
+  class ProviderConflictError < StandardError; end
   # All non-omniauthable Devise modules MUST be in a single call so Devise can
   # properly coordinate their interactions. In particular, :timeoutable must be
   # in the same call as :rememberable so Devise checks remember-me tokens before
@@ -90,32 +92,27 @@ class User < ApplicationRecord
     # This prevents "Email has already been taken" errors when users login with different email casing
     user = find_or_initialize_by(email: email.downcase)
 
-    # Log provider switching for security auditing
+    # SECURITY: Prevent provider hijacking — don't overwrite an existing account's provider
     if user.persisted? && user.provider != auth.provider
-      Rails.logger.warn "User #{user.email} switching authentication provider " \
-                        "from '#{user.provider}' to '#{auth.provider}'"
-      Rails.logger.info "Previous UID: #{user.uid}, New UID: #{auth.uid}"
+      existing_provider = user.provider || 'local'
+      Rails.logger.warn "BLOCKED: User #{user.email} attempted login via '#{auth.provider}' " \
+                        "but account exists with provider '#{existing_provider}'"
+      raise ProviderConflictError,
+            "An account with email #{user.email} already exists with #{existing_provider} authentication. " \
+            'Please sign in using your original authentication method, or contact an administrator.'
     end
 
     if user.new_record?
       Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{auth.provider}"
-    else
-      Rails.logger.info "Updating existing user from OmniAuth: email=#{email}, " \
-                        "provider=#{auth.provider}, previous_provider=#{user.provider}"
-    end
-
-    # Always update provider and uid for existing users
-    user.provider = auth.provider
-    user.uid = auth.uid
-
-    # Only update name if it's blank (preserve existing names)
-    user.name = auth.info.name.presence || "#{auth.provider} user" if user.name.blank?
-
-    # Only set password and skip confirmation for new users
-    if user.new_record?
-      # Use full-length secure token for better entropy
+      user.provider = auth.provider
+      user.uid = auth.uid
+      user.name = auth.info.name.presence || "#{auth.provider} user"
       user.password = Devise.friendly_token
       user.skip_confirmation!
+    else
+      Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{auth.provider}"
+      # Same provider — safe to update uid (e.g., provider re-issues uid)
+      user.uid = auth.uid
     end
 
     user.save!

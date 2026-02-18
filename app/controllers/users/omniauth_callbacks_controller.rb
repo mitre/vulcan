@@ -10,6 +10,7 @@ module Users
     rescue_from OmniAuth::Strategies::OAuth2::CallbackError, with: :omniauth_callback_error
     rescue_from Timeout::Error, with: :omniauth_timeout_error
     rescue_from Faraday::TimeoutError, with: :omniauth_timeout_error
+    rescue_from User::ProviderConflictError, with: :omniauth_provider_conflict
     rescue_from ArgumentError, with: :omniauth_validation_error
     rescue_from ActiveRecord::RecordInvalid, with: :omniauth_record_error
     rescue_from StandardError, with: :omniauth_generic_error
@@ -72,6 +73,12 @@ module Users
       Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
 
       flash.alert = 'Authentication timed out. Please try again.'
+      redirect_to new_user_session_path
+    end
+
+    def omniauth_provider_conflict(exception)
+      Rails.logger.warn "Provider conflict: #{exception.message}"
+      flash.alert = exception.message
       redirect_to new_user_session_path
     end
 
