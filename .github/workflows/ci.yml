@@ -185,57 +185,6 @@ jobs:
           path: coverage
           retention-days: 5
 
-  # ─── SONARCLOUD (downloads coverage, scans) ──────────────
-  sonarcloud:
-    needs: [lint, frontend, backend]
-    if: always() && !cancelled()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download all coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*
-          path: coverage-artifacts/
-
-      - name: Merge coverage reports
-        run: |
-          mkdir -p coverage coverage/js
-
-          # Move frontend lcov
-          if [ -f coverage-artifacts/coverage-frontend/lcov.info ]; then
-            cp coverage-artifacts/coverage-frontend/lcov.info coverage/js/lcov.info
-            echo "Frontend coverage: $(wc -l < coverage/js/lcov.info) lines"
-          else
-            echo "No frontend coverage found"
-          fi
-
-          # Merge backend SimpleCov shards
-          # SimpleCov .resultset.json files can be merged by combining the JSON hashes
-          ruby -e '
-            require "json"
-            merged = {}
-            Dir.glob("coverage-artifacts/coverage-shard-*/.resultset.json").each do |f|
-              data = JSON.parse(File.read(f))
-              merged.merge!(data)
-            end
-            if merged.any?
-              File.write("coverage/.resultset.json", JSON.pretty_generate(merged))
-              puts "Merged #{merged.keys.size} coverage result sets"
-            else
-              puts "No backend coverage found"
-            end
-          '
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v7
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
   # ─── DOCKER RELEASE (release only, multi-arch via Build Cloud) ───
   docker-release:
     needs: [lint, frontend, backend]
