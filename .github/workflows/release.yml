@@ -1,8 +1,6 @@
 name: Create Release Draft
 
 on:
-  schedule:
-    - cron: "0 17 */14 * *"
   workflow_dispatch:
 
 permissions:

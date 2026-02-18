@@ -236,82 +236,50 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # ─── DOCKER BUILD (master + release only) ────────────────
-  docker-build:
+  # ─── DOCKER RELEASE (release only, multi-arch via Build Cloud) ───
+  docker-release:
     needs: [lint, frontend, backend]
-    if: github.event_name == 'push' || github.event_name == 'release'
+    if: github.event_name == 'release'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          tags: mitre/vulcan:ci-build
-          outputs: type=docker,dest=/tmp/vulcan-image.tar
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp/vulcan-image.tar
-          retention-days: 1
-
-  # ─── DOCKER PUSH ─────────────────────────────────────────
-  docker-push:
-    needs: [docker-build]
-    if: github.event_name == 'push' || github.event_name == 'release'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp
-      - name: Load Docker image
-        run: docker load -i /tmp/vulcan-image.tar
-      - name: Set tag
-        run: |
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
-          else
-            echo "TAG=latest" >> $GITHUB_ENV
-          fi
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Push to DockerHub
-        run: |
-          docker tag mitre/vulcan:ci-build mitre/vulcan:${{ env.TAG }}
-          docker push mitre/vulcan:${{ env.TAG }}
-
-  # ─── SBOM SCAN ───────────────────────────────────────────
-  sbom-scan:
-    needs: [docker-build]
-    if: github.event_name == 'push'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
         with:
-          name: docker-image
-          path: /tmp
-      - name: Load Docker image
-        run: docker load -i /tmp/vulcan-image.tar
+          username: ${{ vars.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Set up Docker Buildx (Build Cloud)
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: cloud
+          endpoint: "mitre/mitre-builder"
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: mitre/vulcan
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
       - name: SBOM scan and dependency submission
         uses: anchore/sbom-action@v0
         with:
-          image: mitre/vulcan:ci-build
+          image: mitre/vulcan:${{ github.event.release.tag_name }}
           artifact-name: image.spdx.json
           dependency-snapshot: true
