@@ -595,6 +595,7 @@ GEM
       attr_required (>= 0.0.5)
       httpclient (>= 2.4)
     temple (0.10.4)
+    test-prof (1.5.2)
     thor (1.4.0)
     tilt (2.6.1)
     timeout (0.4.3)
@@ -737,6 +738,7 @@ DEPENDENCIES
   simplecov
   slack-ruby-client (= 1.0.0)
   slack_block_kit (= 0.3.3)
+  test-prof (~> 1.5)
   turbolinks (~> 5)
   tzinfo-data
   web-console (>= 3.3.0)

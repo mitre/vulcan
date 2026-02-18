@@ -359,6 +359,55 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       end
     end
 
+    describe 'membership round-trip' do
+      let(:member_user) { create(:user, email: 'member@test.org', name: 'Team Member') }
+
+      before do
+        Membership.create!(user: member_user, membership: source_project, role: 'author')
+      end
+
+      it 'restores memberships when include_memberships is true' do
+        zip = Export::Base.new(
+          exportable: source_project,
+          mode: :backup,
+          format: :json_archive,
+          zip_filename: 'membership-backup.zip'
+        ).call.data
+
+        result = Import::JsonArchiveImporter.new(
+          zip_file: zip, project: target_project,
+          include_reviews: true, include_memberships: true
+        ).call
+
+        expect(result).to be_success
+        expect(result.summary[:memberships_imported]).to be >= 1
+        expect(Membership.exists?(user: member_user, membership: target_project, membership_type: 'Project')).to be true
+      end
+
+      it 'warns for missing users during membership import' do
+        ghost = create(:user, email: 'ghost@test.org')
+        Membership.create!(user: ghost, membership: source_project, role: 'viewer')
+
+        zip = Export::Base.new(
+          exportable: source_project,
+          mode: :backup,
+          format: :json_archive,
+          zip_filename: 'membership-backup.zip'
+        ).call.data
+
+        ghost.memberships.delete_all
+        ghost.destroy!
+
+        result = Import::JsonArchiveImporter.new(
+          zip_file: zip, project: target_project,
+          include_reviews: true, include_memberships: true
+        ).call
+
+        expect(result).to be_success
+        expect(result.warnings).to include(a_string_matching(/ghost@test\.org.*not found/))
+      end
+    end
+
     describe 'bidirectional satisfactions' do
       let(:bidir_project) { create(:project, name: 'Bidir Source') }
       let(:bidir_target) { create(:project, name: 'Bidir Target') }
@@ -383,6 +432,94 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
         expect(result).to be_success
         imported_sats = RuleSatisfaction.where(rule_id: bidir_target.components.first.rule_ids)
         expect(imported_sats.count).to eq(2)
+      end
+    end
+
+    describe 'component filtering' do
+      let!(:second_component) do
+        create(:component, project: source_project, name: 'Second Component')
+      end
+
+      let(:project_zip) do
+        Export::Base.new(
+          exportable: source_project,
+          mode: :backup,
+          format: :json_archive,
+          zip_filename: 'project-backup.zip'
+        ).call.data
+      end
+
+      it 'imports only selected components' do
+        filter = { source_component.name => source_component.name }
+        result = Import::JsonArchiveImporter.new(
+          zip_file: project_zip,
+          project: target_project,
+          component_filter: filter
+        ).call
+
+        expect(result).to be_success
+        expect(result.summary[:components_imported]).to eq(1)
+        expect(target_project.components.pluck(:name)).to contain_exactly(source_component.name)
+      end
+
+      it 'renames component via filter' do
+        renamed = "#{source_component.name} (restored)"
+        filter = { source_component.name => renamed }
+        result = Import::JsonArchiveImporter.new(
+          zip_file: project_zip,
+          project: target_project,
+          component_filter: filter
+        ).call
+
+        expect(result).to be_success
+        expect(target_project.components.find_by(name: renamed)).to be_present
+      end
+
+      it 'handles conflicting component with rename' do
+        # Create conflict in target
+        create(:component, project: target_project,
+                           name: source_component.name,
+                           based_on: source_component.based_on)
+
+        renamed = "#{source_component.name} (restored)"
+        filter = { source_component.name => renamed, second_component.name => second_component.name }
+        result = Import::JsonArchiveImporter.new(
+          zip_file: project_zip,
+          project: target_project,
+          component_filter: filter
+        ).call
+
+        expect(result).to be_success
+        expect(target_project.components.find_by(name: renamed)).to be_present
+        expect(target_project.components.find_by(name: second_component.name)).to be_present
+      end
+    end
+
+    describe 'create-from-backup round-trip' do
+      it 'preserves all data through project creation' do
+        zip = Export::Base.new(
+          exportable: source_project,
+          mode: :backup,
+          format: :json_archive,
+          zip_filename: 'project-backup.zip'
+        ).call.data
+
+        new_project = Project.create!(
+          name: 'Created From Backup',
+          memberships_attributes: [{ user: review_user, role: 'admin' }]
+        )
+
+        result = Import::JsonArchiveImporter.new(
+          zip_file: zip,
+          project: new_project,
+          include_reviews: true
+        ).call
+
+        expect(result).to be_success
+        expect(result.summary[:components_imported]).to eq(1)
+        imported = new_project.components.find_by(name: source_component.name)
+        expect(imported).to be_present
+        expect(imported.rules.count).to eq(source_component.rules.count)
       end
     end
   end

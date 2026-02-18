@@ -80,6 +80,7 @@
       :fields="fields"
       :per-page="perPage"
       :current-page="currentPage"
+      sort-by="name"
       sort-icon-left
     >
       <template #cell(name)="data">

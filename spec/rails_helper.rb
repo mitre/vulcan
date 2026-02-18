@@ -14,6 +14,7 @@ $VERBOSE = original_verbose
 # Prevent database truncation if the environment is production
 abort('The Rails environment is running in production mode!') if Rails.env.production?
 require 'rspec/rails'
+require 'test_prof/recipes/rspec/let_it_be'
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Check that JavaScript assets are built before running tests

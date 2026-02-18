@@ -119,6 +119,7 @@ group :test do
   gem 'rubocop-rspec_rails'
   gem 'shoulda-matchers', '~> 7.0'
   gem 'simplecov', require: false
+  gem 'test-prof', '~> 1.5'
   gem 'webmock'
 end
 
