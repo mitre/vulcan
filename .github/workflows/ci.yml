@@ -83,13 +83,13 @@ jobs:
   # ─── BACKEND TESTS + COVERAGE (4 shards) ─────────────────
   backend:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        ci_node_index: [0, 1, 2, 3]
+        ci_node_index: [0, 1, 2, 3, 4, 5]
 
     services:
       db:
@@ -169,10 +169,10 @@ jobs:
           bundle exec rails db:create
           bundle exec rails db:schema:load
 
-      - name: Run backend tests (shard ${{ matrix.ci_node_index }}/4)
+      - name: Run backend tests (shard ${{ matrix.ci_node_index }}/6)
         run: |
           # Sort by file size (descending) then round-robin for better balance
-          TESTS=$(find spec -name '*_spec.rb' -print0 | xargs -0 ls -lS | awk '{print $NF}' | awk "NR % 4 == ${{ matrix.ci_node_index }}")
+          TESTS=$(find spec -name '*_spec.rb' -print0 | xargs -0 ls -lS | awk '{print $NF}' | awk "NR % 6 == ${{ matrix.ci_node_index }}")
           if [ -n "$TESTS" ]; then
             echo "Running $(echo "$TESTS" | wc -l | tr -d ' ') spec files in shard ${{ matrix.ci_node_index }}"
             bundle exec rspec --format progress $TESTS
