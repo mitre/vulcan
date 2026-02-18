@@ -7,9 +7,11 @@ module Import
     class ManifestValidator
       SUPPORTED_VERSIONS = ['1.0'].freeze
 
-      def initialize(manifest, project)
+      def initialize(manifest, project, component_filter: nil, dry_run: false)
         @manifest = manifest
         @project = project
+        @component_filter = component_filter
+        @dry_run = dry_run
       end
 
       def validate(result)
@@ -68,10 +70,17 @@ module Import
           existing = @project.components.find_by(name: entry['name'])
           next unless existing
 
-          result.add_error(
-            "Component name conflict: '#{entry['name']}' already exists in project '#{@project.name}'. " \
-            'Rename or delete the existing component before importing.'
-          )
+          # During dry-run or with component_filter, conflicts are warnings (user can deselect/rename)
+          if @component_filter || @dry_run
+            result.add_warning(
+              "Component name conflict: '#{entry['name']}' already exists in project '#{@project.name}'."
+            )
+          else
+            result.add_error(
+              "Component name conflict: '#{entry['name']}' already exists in project '#{@project.name}'. " \
+              'Rename or delete the existing component before importing.'
+            )
+          end
         end
       end
     end

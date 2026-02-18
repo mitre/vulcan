@@ -20,7 +20,7 @@ module Import
           prefix: @data['prefix'],
           version: @data['version'],
           release: @data['release'],
-          title: @data['title'],
+          title: @data['title'].presence || @data['name'],
           description: @data['description'],
           released: @data['released'] || false,
           admin_name: @data['admin_name'],

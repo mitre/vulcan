@@ -18,11 +18,14 @@ module Import
   #   dry_run: true         — validate only, no records created (wraps in rolled-back transaction)
   #   include_reviews: true — import review history (default: true)
   class JsonArchiveImporter
-    def initialize(zip_file:, project:, dry_run: false, include_reviews: true)
+    def initialize(zip_file:, project:, dry_run: false, include_reviews: true, include_memberships: false,
+                   component_filter: nil)
       @zip_file = zip_file
       @project = project
       @dry_run = dry_run
       @include_reviews = include_reviews
+      @include_memberships = include_memberships
+      @component_filter = component_filter
     end
 
     def call
@@ -32,7 +35,9 @@ module Import
       return result unless result.success?
 
       manifest = archive[:manifest]
-      JsonArchive::ManifestValidator.new(manifest, @project).validate(result)
+      JsonArchive::ManifestValidator.new(
+        manifest, @project, component_filter: @component_filter, dry_run: @dry_run
+      ).validate(result)
       return result unless result.success?
 
       if @dry_run
@@ -125,11 +130,30 @@ module Import
     end
 
     def perform_dry_run(archive, result)
-      ActiveRecord::Base.transaction do
-        import_components(archive, result)
-        result.merge_summary(dry_run: true)
-        raise ActiveRecord::Rollback
+      # Fast path: compute summary from parsed JSON without writing to DB
+      component_details = archive[:components].map do |comp_data|
+        name = comp_data[:component]['name']
+        {
+          name: name,
+          rule_count: comp_data[:rules].size,
+          conflict: @project.components.exists?(name: name)
+        }
       end
+
+      total_rules = archive[:components].sum { |c| c[:rules].size }
+      total_satisfactions = archive[:components].sum { |c| c[:satisfactions].size }
+      total_reviews = @include_reviews ? archive[:components].sum { |c| c[:reviews].size } : 0
+      total_memberships = @include_memberships ? (archive.dig(:project, 'memberships')&.size || 0) : 0
+
+      result.merge_summary(
+        dry_run: true,
+        components_imported: archive[:components].size,
+        rules_imported: total_rules,
+        satisfactions_imported: total_satisfactions,
+        reviews_imported: total_reviews,
+        memberships_imported: total_memberships,
+        component_details: component_details
+      )
     end
 
     def perform_import(archive, result)
@@ -144,10 +168,34 @@ module Import
       total_rules = 0
       total_satisfactions = 0
       total_reviews = 0
+      imported_count = 0
+
+      # Build component_details for preview (always computed from full archive)
+      component_details = archive[:components].map do |comp_data|
+        name = comp_data[:component]['name']
+        {
+          name: name,
+          rule_count: comp_data[:rules].size,
+          conflict: @project.components.exists?(name: name)
+        }
+      end
 
       archive[:components].each do |comp_data|
+        comp_name = comp_data[:component]['name']
+
+        # Apply component_filter: skip components not in filter keys
+        if @component_filter
+          next unless @component_filter.key?(comp_name)
+
+          # Rename component if filter maps to a different name
+          import_name = @component_filter[comp_name]
+          comp_data[:component]['name'] = import_name if import_name != comp_name
+        end
+
         component = JsonArchive::ComponentBuilder.new(comp_data[:component], @project, result).build
         next unless component
+
+        imported_count += 1
 
         rule_id_map = JsonArchive::RuleBuilder.new(comp_data[:rules], component, result).build_all
         total_rules += rule_id_map.size
@@ -165,11 +213,21 @@ module Import
         total_reviews += review_count
       end
 
+      total_memberships = 0
+      if @include_memberships
+        memberships_data = archive.dig(:project, 'memberships') || []
+        total_memberships = JsonArchive::MembershipBuilder.new(
+          memberships_data, @project, result
+        ).build_all
+      end
+
       result.merge_summary(
-        components_imported: archive[:components].size,
+        components_imported: imported_count,
         rules_imported: total_rules,
         satisfactions_imported: total_satisfactions,
-        reviews_imported: total_reviews
+        reviews_imported: total_reviews,
+        memberships_imported: total_memberships,
+        component_details: component_details
       )
     end
   end
