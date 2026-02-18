@@ -21,15 +21,21 @@ vi.mock("axios", () => ({
  *
  * 2. COMMAND BAR:
  *    - Uses BaseCommandBar for consistency
- *    - LEFT: New Project button (visible when admin OR create_permission_enabled)
- *    - RIGHT: Empty for now
+ *    - LEFT: Split dropdown — main click opens New Project modal,
+ *            dropdown item "From Backup" opens RestoreProjectModal
+ *    - Only visible when user can create projects
  *
  * 3. NEW PROJECT MODAL:
  *    - Modal for creating projects (not a separate page)
- *    - Triggered by New Project button
+ *    - Triggered by New Project button (split dropdown main click)
  *    - Only rendered when user can create projects
  *
- * 4. PROJECTS TABLE:
+ * 4. RESTORE PROJECT MODAL:
+ *    - Modal for creating project from backup archive
+ *    - Triggered by "From Backup" dropdown item
+ *    - Only rendered when user can create projects
+ *
+ * 5. PROJECTS TABLE:
  *    - Renders ProjectsTable
  *    - Passes projects data
  */
@@ -65,6 +71,7 @@ describe("Projects", () => {
         },
         ProjectsTable: true,
         NewProjectModal: true,
+        RestoreProjectModal: true,
       },
     });
   };
@@ -91,28 +98,28 @@ describe("Projects", () => {
   });
 
   // ==========================================
-  // COMMAND BAR — New Project Button
+  // COMMAND BAR — Split Dropdown
   // ==========================================
-  // Requirement: button visible when admin OR create_permission_enabled is true
+  // Requirement: dropdown visible when admin OR create_permission_enabled is true
   // Backend: authorize_admin_or_create_permission_enabled
   // Frontend: can_create_project prop (set by HAML from admin || Settings.project.create_permission_enabled)
-  describe("new project button visibility", () => {
-    it("shows New Project button when can_create_project is true (non-admin with permission)", () => {
+  describe("new project dropdown visibility", () => {
+    it("shows dropdown when can_create_project is true", () => {
       wrapper = createWrapper({ is_vulcan_admin: false, can_create_project: true });
-      const btn = wrapper.find('[data-testid="new-project-btn"]');
-      expect(btn.exists()).toBe(true);
+      const dropdown = wrapper.find('[data-testid="new-project-dropdown"]');
+      expect(dropdown.exists()).toBe(true);
     });
 
-    it("shows New Project button when user is admin", () => {
-      wrapper = createWrapper({ is_vulcan_admin: true, can_create_project: true });
-      const btn = wrapper.find('[data-testid="new-project-btn"]');
-      expect(btn.exists()).toBe(true);
-    });
-
-    it("hides New Project button when can_create_project is false", () => {
+    it("hides dropdown when can_create_project is false", () => {
       wrapper = createWrapper({ is_vulcan_admin: false, can_create_project: false });
-      const btn = wrapper.find('[data-testid="new-project-btn"]');
-      expect(btn.exists()).toBe(false);
+      const dropdown = wrapper.find('[data-testid="new-project-dropdown"]');
+      expect(dropdown.exists()).toBe(false);
+    });
+
+    it("shows From Backup dropdown item", () => {
+      wrapper = createWrapper({ can_create_project: true });
+      const item = wrapper.find('[data-testid="from-backup-item"]');
+      expect(item.exists()).toBe(true);
     });
   });
 
@@ -144,6 +151,21 @@ describe("Projects", () => {
       wrapper.vm.onProjectCreated();
 
       expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  // ==========================================
+  // RESTORE PROJECT MODAL
+  // ==========================================
+  describe("restore project modal", () => {
+    it("renders RestoreProjectModal when can_create_project is true", () => {
+      wrapper = createWrapper({ can_create_project: true });
+      expect(wrapper.findComponent({ name: "RestoreProjectModal" }).exists()).toBe(true);
+    });
+
+    it("does not render RestoreProjectModal when can_create_project is false", () => {
+      wrapper = createWrapper({ is_vulcan_admin: false, can_create_project: false });
+      expect(wrapper.findComponent({ name: "RestoreProjectModal" }).exists()).toBe(false);
     });
   });
 

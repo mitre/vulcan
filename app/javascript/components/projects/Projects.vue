@@ -5,16 +5,20 @@
     <!-- Command Bar -->
     <BaseCommandBar>
       <template #left>
-        <!-- New Project Button (admin or create_permission_enabled) -->
-        <b-button
+        <!-- New Project Button with optional "From Backup" dropdown -->
+        <b-dropdown
           v-if="can_create_project"
+          split
           variant="primary"
           size="sm"
-          data-testid="new-project-btn"
+          data-testid="new-project-dropdown"
           @click="openNewProjectModal"
         >
-          <b-icon icon="plus" /> New Project
-        </b-button>
+          <template #button-content> <b-icon icon="plus" /> New Project </template>
+          <b-dropdown-item data-testid="from-backup-item" @click="openRestoreProjectModal">
+            <b-icon icon="archive" /> From Backup
+          </b-dropdown-item>
+        </b-dropdown>
       </template>
       <template #right>
         <!-- No panels needed for list page -->
@@ -33,6 +37,13 @@
       v-model="showNewProjectModal"
       @project-created="onProjectCreated"
     />
+
+    <!-- Restore Project from Backup Modal -->
+    <RestoreProjectModal
+      v-if="can_create_project"
+      ref="restoreProjectModal"
+      @projectCreated="onProjectCreated"
+    />
   </div>
 </template>
 
@@ -40,11 +51,12 @@
 import ProjectsTable from "./ProjectsTable.vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import NewProjectModal from "./NewProjectModal.vue";
+import RestoreProjectModal from "./RestoreProjectModal.vue";
 import axios from "axios";
 
 export default {
   name: "Projects",
-  components: { ProjectsTable, BaseCommandBar, NewProjectModal },
+  components: { ProjectsTable, BaseCommandBar, NewProjectModal, RestoreProjectModal },
   props: {
     projects: {
       type: Array,
@@ -75,6 +87,9 @@ export default {
   methods: {
     openNewProjectModal() {
       this.showNewProjectModal = true;
+    },
+    openRestoreProjectModal() {
+      this.$refs.restoreProjectModal.showModal();
     },
     onProjectCreated() {
       this.showNewProjectModal = false;
