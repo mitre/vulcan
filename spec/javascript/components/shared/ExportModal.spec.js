@@ -1040,4 +1040,172 @@ describe("ExportModal", () => {
       expect(wrapper.vm.includeMemberships).toBe(true);
     });
   });
+
+  /**
+   * NYD PRE-FLIGHT WARNING TESTS
+   *
+   * REQUIREMENTS:
+   * 1. Components with ALL rules "Not Yet Determined" get a warning icon
+   * 2. Warning message appears when DISA mode selected and NYD-only components are selected
+   * 3. Danger variant when ALL selected components are NYD-only
+   * 4. Warning variant when SOME selected components are NYD-only
+   * 5. No warning for non-DISA modes (working_copy, backup)
+   * 6. No warning when no NYD-only components are selected
+   */
+  describe("NYD pre-flight warning", () => {
+    const nydComponent = {
+      id: 10,
+      name: "NYD Only",
+      version: "1",
+      release: "1",
+      status_counts: {
+        not_yet_determined: 50,
+        applicable_configurable: 0,
+        applicable_inherently_meets: 0,
+        applicable_does_not_meet: 0,
+        not_applicable: 0,
+      },
+    };
+
+    const mixedComponent = {
+      id: 20,
+      name: "Mixed Status",
+      version: "1",
+      release: "1",
+      status_counts: {
+        not_yet_determined: 10,
+        applicable_configurable: 30,
+        applicable_inherently_meets: 5,
+        applicable_does_not_meet: 0,
+        not_applicable: 5,
+      },
+    };
+
+    const acComponent = {
+      id: 30,
+      name: "All AC",
+      version: "1",
+      release: "1",
+      status_counts: {
+        not_yet_determined: 0,
+        applicable_configurable: 40,
+        applicable_inherently_meets: 0,
+        applicable_does_not_meet: 0,
+        not_applicable: 0,
+      },
+    };
+
+    const allModes = ["working_copy", "vendor_submission", "published_stig", "backup"];
+
+    it("shows warning icon on NYD-only components", async () => {
+      wrapper = createWrapper({
+        components: [nydComponent, mixedComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      const icons = wrapper.findAll('[data-testid="nyd-warning-icon"]');
+      expect(icons.length).toBe(1);
+    });
+
+    it("does not show warning icon on components with exportable rules", async () => {
+      wrapper = createWrapper({
+        components: [mixedComponent, acComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      expect(wrapper.find('[data-testid="nyd-warning-icon"]').exists()).toBe(false);
+    });
+
+    it("shows danger alert when ALL selected components are NYD-only in vendor_submission mode", async () => {
+      wrapper = createWrapper({
+        components: [nydComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      // Select vendor_submission mode
+      wrapper.vm.selectedMode = "vendor_submission";
+      wrapper.vm.selectedComponentIds = [nydComponent.id];
+      await wrapper.vm.$nextTick();
+
+      const alert = wrapper.find('[data-testid="nyd-warning"]');
+      expect(alert.exists()).toBe(true);
+      expect(alert.find(".alert").classes()).toContain("alert-danger");
+      expect(alert.text()).toContain("All selected components");
+      expect(alert.text()).toContain("empty output");
+    });
+
+    it("shows warning alert when SOME selected components are NYD-only in published_stig mode", async () => {
+      wrapper = createWrapper({
+        components: [nydComponent, acComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      wrapper.vm.selectedMode = "published_stig";
+      wrapper.vm.selectedComponentIds = [nydComponent.id, acComponent.id];
+      await wrapper.vm.$nextTick();
+
+      const alert = wrapper.find('[data-testid="nyd-warning"]');
+      expect(alert.exists()).toBe(true);
+      expect(alert.find(".alert").classes()).toContain("alert-warning");
+      expect(alert.text()).toContain("1 selected component has");
+      expect(alert.text()).toContain("empty worksheets");
+    });
+
+    it("does not show warning for working_copy mode", async () => {
+      wrapper = createWrapper({
+        components: [nydComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      wrapper.vm.selectedMode = "working_copy";
+      wrapper.vm.selectedComponentIds = [nydComponent.id];
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('[data-testid="nyd-warning"]').exists()).toBe(false);
+    });
+
+    it("does not show warning for backup mode", async () => {
+      wrapper = createWrapper({
+        components: [nydComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      wrapper.vm.selectedMode = "backup";
+      wrapper.vm.selectedComponentIds = [nydComponent.id];
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('[data-testid="nyd-warning"]').exists()).toBe(false);
+    });
+
+    it("does not show warning when no NYD-only components are selected", async () => {
+      wrapper = createWrapper({
+        components: [nydComponent, acComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      wrapper.vm.selectedMode = "vendor_submission";
+      wrapper.vm.selectedComponentIds = [acComponent.id];
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('[data-testid="nyd-warning"]').exists()).toBe(false);
+    });
+
+    it("handles components without status_counts gracefully", async () => {
+      const noCountsComponent = { id: 99, name: "No Counts", version: "1", release: "1" };
+      wrapper = createWrapper({
+        components: [noCountsComponent],
+        availableModes: allModes,
+        visible: true,
+      });
+
+      expect(wrapper.find('[data-testid="nyd-warning-icon"]').exists()).toBe(false);
+    });
+  });
 });

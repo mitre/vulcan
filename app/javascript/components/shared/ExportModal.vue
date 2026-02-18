@@ -138,12 +138,32 @@
             <div v-for="opt in componentOptions" :key="opt.value" class="col-6">
               <b-form-checkbox v-model="selectedComponentIds" :value="opt.value">
                 {{ opt.text }}
+                <b-icon-exclamation-triangle-fill
+                  v-if="isNydOnlyComponent(opt.value)"
+                  v-b-tooltip.hover
+                  variant="warning"
+                  class="ml-1"
+                  title="All rules are 'Not Yet Determined' — this component will produce empty output in DISA exports"
+                  data-testid="nyd-warning-icon"
+                />
               </b-form-checkbox>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- NYD Pre-flight Warning -->
+    <b-alert
+      v-if="nydWarningMessage"
+      show
+      :variant="allSelectedAreNydOnly ? 'danger' : 'warning'"
+      class="mt-3 mb-0"
+      data-testid="nyd-warning"
+    >
+      <b-icon-exclamation-triangle-fill class="mr-1" />
+      {{ nydWarningMessage }}
+    </b-alert>
 
     <!-- Inline Summary (mode-aware only) -->
     <div
@@ -310,6 +330,44 @@ export default {
     isBackupMode() {
       return this.hasModes && this.selectedMode === "backup";
     },
+    isDISAMode() {
+      return (
+        this.hasModes &&
+        (this.selectedMode === "vendor_submission" || this.selectedMode === "published_stig")
+      );
+    },
+    nydOnlyComponentIds() {
+      return this.components
+        .filter((c) => {
+          const sc = c.status_counts;
+          if (!sc) return false;
+          return (
+            sc.applicable_configurable === 0 &&
+            sc.applicable_inherently_meets === 0 &&
+            sc.applicable_does_not_meet === 0 &&
+            sc.not_applicable === 0 &&
+            sc.not_yet_determined > 0
+          );
+        })
+        .map((c) => c.id);
+    },
+    selectedNydOnlyCount() {
+      return this.selectedComponentIds.filter((id) => this.nydOnlyComponentIds.includes(id)).length;
+    },
+    allSelectedAreNydOnly() {
+      return (
+        this.selectedComponentIds.length > 0 &&
+        this.selectedNydOnlyCount === this.selectedComponentIds.length
+      );
+    },
+    nydWarningMessage() {
+      if (!this.isDISAMode || this.selectedNydOnlyCount === 0) return null;
+      if (this.allSelectedAreNydOnly) {
+        return "All selected components have only 'Not Yet Determined' rules and will produce empty output.";
+      }
+      const noun = this.selectedNydOnlyCount === 1 ? "component has" : "components have";
+      return `${this.selectedNydOnlyCount} selected ${noun} only 'Not Yet Determined' rules and will produce empty worksheets.`;
+    },
     canExport() {
       return this.selectedFormat !== null && this.selectedComponentIds.length > 0;
     },
@@ -363,6 +421,9 @@ export default {
     },
   },
   methods: {
+    isNydOnlyComponent(componentId) {
+      return this.nydOnlyComponentIds.includes(componentId);
+    },
     getModeLabel(mode) {
       return EXPORT_MODES[mode]?.label || mode;
     },
