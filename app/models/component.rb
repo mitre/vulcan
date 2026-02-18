@@ -79,9 +79,23 @@ class Component < ApplicationRecord
     super(options.merge(methods: methods)).merge(
       {
         based_on_title: based_on.title,
-        based_on_version: based_on.version
+        based_on_version: based_on.version,
+        status_counts: status_counts
       }
     )
+  end
+
+  # Returns a hash of rule counts grouped by status.
+  # Used by the frontend export modal to warn about NYD-only components.
+  def status_counts
+    counts = rules.where(deleted_at: nil).group(:status).count
+    {
+      not_yet_determined: counts['Not Yet Determined'] || 0,
+      applicable_configurable: counts['Applicable - Configurable'] || 0,
+      applicable_inherently_meets: counts['Applicable - Inherently Meets'] || 0,
+      applicable_does_not_meet: counts['Applicable - Does Not Meet'] || 0,
+      not_applicable: counts['Not Applicable'] || 0
+    }
   end
 
   # Fill out component based on spreadsheet

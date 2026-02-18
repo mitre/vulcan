@@ -709,4 +709,37 @@ RSpec.describe Component do
       expect(component.severity_low_count).to eq(expected_low)
     end
   end
+
+  describe '#status_counts' do
+    it 'returns counts for each rule status' do
+      counts = @p1_c1.status_counts
+      expect(counts).to have_key(:not_yet_determined)
+      expect(counts).to have_key(:applicable_configurable)
+      expect(counts).to have_key(:applicable_inherently_meets)
+      expect(counts).to have_key(:applicable_does_not_meet)
+      expect(counts).to have_key(:not_applicable)
+
+      # All rules default to NYD
+      total = @p1_c1.rules.where(deleted_at: nil).count
+      expect(counts[:not_yet_determined]).to eq(total)
+    end
+
+    it 'reflects status changes' do
+      rule = @p1_c1.rules.first
+      rule.update!(status: 'Applicable - Configurable')
+
+      counts = @p1_c1.status_counts
+      expect(counts[:applicable_configurable]).to eq(1)
+      expect(counts[:not_yet_determined]).to eq(@p1_c1.rules.where(deleted_at: nil).count - 1)
+    end
+  end
+
+  describe '#as_json' do
+    it 'includes status_counts' do
+      json = @p1_c1.as_json
+      # as_json merge uses symbol keys for custom additions
+      expect(json).to have_key(:status_counts)
+      expect(json[:status_counts]).to have_key(:not_yet_determined)
+    end
+  end
 end
