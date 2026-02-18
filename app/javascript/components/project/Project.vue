@@ -89,6 +89,7 @@
     <!-- Component Action Picker (NEW) -->
     <ComponentActionPicker
       v-model="showComponentActionPicker"
+      :show-restore="role_gte_to(effective_permissions, 'admin')"
       @next="handleComponentAction"
       @cancel="showComponentActionPicker = false"
     />
@@ -122,6 +123,12 @@
       ref="addComponentModal"
       :project_id="project.id"
       :available_components="sortedAvailableComponents"
+      @projectUpdated="refreshProject"
+    />
+    <RestoreBackupModal
+      v-if="role_gte_to(effective_permissions, 'admin')"
+      ref="restoreBackupModal"
+      :project_id="project.id"
       @projectUpdated="refreshProject"
     />
 
@@ -160,6 +167,7 @@ import ProjectSidepanels from "./ProjectSidepanels.vue";
 import ExportModal from "../shared/ExportModal.vue";
 import ProjectMembersModal from "./ProjectMembersModal.vue";
 import ComponentActionPicker from "./ComponentActionPicker.vue";
+import RestoreBackupModal from "./RestoreBackupModal.vue";
 
 export default {
   name: "Project",
@@ -173,6 +181,7 @@ export default {
     ExportModal,
     ProjectMembersModal,
     ComponentActionPicker,
+    RestoreBackupModal,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
@@ -338,6 +347,11 @@ export default {
             this.$refs.addComponentModal.showModal();
           }
           break;
+        case "restore":
+          if (this.$refs.restoreBackupModal) {
+            this.$refs.restoreBackupModal.showModal();
+          }
+          break;
       }
     },
     openExportModal() {
@@ -346,9 +360,9 @@ export default {
     openMembersModal() {
       this.$bvModal.show("project-members-modal");
     },
-    executeExport({ type, mode, componentIds }) {
+    executeExport({ type, mode, componentIds, includeMemberships }) {
       // Called by ExportModal when user confirms export
-      this.downloadExport(type, componentIds, mode);
+      this.downloadExport(type, componentIds, mode, includeMemberships);
     },
     // Having deleteComponent on the `ComponentCard` causes it to
     // disappear almost immediately because the component gets
@@ -362,10 +376,13 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    downloadExport: function (type, componentIds, mode) {
+    downloadExport: function (type, componentIds, mode, includeMemberships) {
       let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
       if (mode) {
         url += `&mode=${mode}`;
+      }
+      if (includeMemberships === false) {
+        url += `&include_memberships=false`;
       }
       axios
         .get(url)

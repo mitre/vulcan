@@ -405,6 +405,7 @@ describe("Project", () => {
         "excel",
         [1, 2, 3],
         "vendor_submission",
+        undefined,
       );
     });
 
@@ -422,7 +423,7 @@ describe("Project", () => {
 
         wrapper.vm.executeExport({ type, mode, componentIds: [1] });
 
-        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(type, [1], mode);
+        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(type, [1], mode, undefined);
         wrapper.destroy();
       });
     });

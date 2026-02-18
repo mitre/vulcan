@@ -44,6 +44,16 @@
             </div>
           </div>
         </b-form-radio>
+
+        <b-form-radio v-if="showRestore" value="restore" class="mb-3">
+          <div class="d-flex align-items-start">
+            <b-icon icon="archive" font-scale="1.5" class="mr-3 text-danger" />
+            <div>
+              <div class="font-weight-bold">Restore From Backup</div>
+              <small class="text-muted">Import components from a JSON archive (.zip)</small>
+            </div>
+          </div>
+        </b-form-radio>
       </b-form-radio-group>
     </div>
 
@@ -79,7 +89,7 @@
  *   - visible: Boolean (use v-model)
  *
  * Emits:
- *   - next: String - Action type ('create' | 'import' | 'copy' | 'overlay')
+ *   - next: String - Action type ('create' | 'import' | 'copy' | 'overlay' | 'restore')
  *   - cancel: User cancelled
  *   - update:visible: For v-model support
  */
@@ -91,6 +101,10 @@ export default {
   },
   props: {
     visible: {
+      type: Boolean,
+      default: false,
+    },
+    showRestore: {
       type: Boolean,
       default: false,
     },

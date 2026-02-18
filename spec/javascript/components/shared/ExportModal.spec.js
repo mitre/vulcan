@@ -948,4 +948,96 @@ describe("ExportModal", () => {
       expect(summary.text()).toContain("3 components");
     });
   });
+
+  // ==========================================
+  // MEMBERSHIP CHECKBOX (backup mode)
+  // ==========================================
+  describe("include memberships checkbox", () => {
+    const allModes = ["working_copy", "vendor_submission", "published_stig", "backup"];
+
+    it("shows checkbox when backup mode selected", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="include-memberships-checkbox"]');
+      expect(checkbox.exists()).toBe(true);
+    });
+
+    it("hides checkbox in non-backup modes", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="include-memberships-checkbox"]');
+      expect(checkbox.exists()).toBe(false);
+    });
+
+    it("hides checkbox in legacy mode (no modes)", () => {
+      wrapper = createWrapper({
+        components: singleComponent,
+        visible: true,
+      });
+
+      const checkbox = wrapper.find('[data-testid="include-memberships-checkbox"]');
+      expect(checkbox.exists()).toBe(false);
+    });
+
+    it("includes includeMemberships in export payload for backup", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+      // backup auto-selects json_archive
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]');
+      await exportBtn.trigger("click");
+
+      const payload = wrapper.emitted("export")[0][0];
+      expect(payload.includeMemberships).toBe(true);
+    });
+
+    it("does not include includeMemberships for non-backup modes", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "vendor_submission";
+      await wrapper.vm.$nextTick();
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]');
+      await exportBtn.trigger("click");
+
+      const payload = wrapper.emitted("export")[0][0];
+      expect(payload.includeMemberships).toBeUndefined();
+    });
+
+    it("resets to true on modal reopen", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      wrapper.vm.includeMemberships = false;
+
+      // Re-trigger visible watcher
+      await wrapper.setProps({ visible: false });
+      await wrapper.setProps({ visible: true });
+
+      expect(wrapper.vm.includeMemberships).toBe(true);
+    });
+  });
 });

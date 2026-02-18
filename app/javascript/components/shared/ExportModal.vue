@@ -68,6 +68,13 @@
           </b-form-radio-group>
         </div>
 
+        <!-- Backup Options (backup mode only) -->
+        <div v-if="isBackupMode" class="mb-3">
+          <b-form-checkbox v-model="includeMemberships" data-testid="include-memberships-checkbox">
+            Include project memberships
+          </b-form-checkbox>
+        </div>
+
         <!-- Column Picker (CSV only, when columnDefinitions provided) -->
         <template v-if="showColumnPicker">
           <hr />
@@ -238,6 +245,7 @@ export default {
       selectedFormat: null,
       selectedComponentIds: [],
       selectedColumns: [],
+      includeMemberships: true,
     };
   },
   computed: {
@@ -299,6 +307,9 @@ export default {
         this.columnDefinitions && this.columnDefinitions.length > 0 && this.selectedFormat === "csv"
       );
     },
+    isBackupMode() {
+      return this.hasModes && this.selectedMode === "backup";
+    },
     canExport() {
       return this.selectedFormat !== null && this.selectedComponentIds.length > 0;
     },
@@ -343,6 +354,8 @@ export default {
           } else {
             this.selectedComponentIds = [];
           }
+          // Reset backup options
+          this.includeMemberships = true;
           // Reset columns to defaults
           this.resetColumnsToDefaults();
         }
@@ -442,6 +455,10 @@ export default {
       // Include columns only for CSV format
       if (this.selectedFormat === "csv" && this.selectedColumns.length > 0) {
         payload.columns = [...this.selectedColumns];
+      }
+      // Include membership flag for backup mode
+      if (this.isBackupMode) {
+        payload.includeMemberships = this.includeMemberships;
       }
       this.$emit("export", payload);
       this.$emit("update:visible", false);

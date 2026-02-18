@@ -100,6 +100,19 @@ describe("ComponentActionPicker", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.selectedAction).toBe(null);
     });
+
+    it("hides Restore From Backup option by default", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find('input[value="restore"]').exists()).toBe(false);
+      expect(wrapper.text()).not.toContain("Restore From Backup");
+    });
+
+    it("shows Restore From Backup option when showRestore is true", () => {
+      wrapper = createWrapper({ showRestore: true });
+      expect(wrapper.find('input[value="restore"]').exists()).toBe(true);
+      expect(wrapper.text()).toContain("Restore From Backup");
+      expect(wrapper.text()).toContain("JSON archive");
+    });
   });
 
   // ==========================================
@@ -132,6 +145,24 @@ describe("ComponentActionPicker", () => {
       const overlayRadio = wrapper.find('input[value="overlay"]');
       await overlayRadio.setChecked();
       expect(wrapper.vm.selectedAction).toBe("overlay");
+    });
+
+    it("can select restore option", async () => {
+      wrapper = createWrapper({ showRestore: true });
+      const restoreRadio = wrapper.find('input[value="restore"]');
+      await restoreRadio.setChecked();
+      expect(wrapper.vm.selectedAction).toBe("restore");
+    });
+
+    it("emits next with restore when restore selected and Next clicked", async () => {
+      wrapper = createWrapper({ showRestore: true });
+      wrapper.vm.selectedAction = "restore";
+      await wrapper.vm.$nextTick();
+
+      const nextBtn = wrapper.find('[data-testid="next-btn"]');
+      await nextBtn.trigger("click");
+
+      expect(wrapper.emitted("next")[0]).toEqual(["restore"]);
     });
   });
 

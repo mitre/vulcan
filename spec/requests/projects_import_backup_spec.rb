@@ -161,6 +161,50 @@ RSpec.describe 'Project Import Backup' do
     end
   end
 
+  # ---------- Include memberships parameter ----------
+
+  describe 'include_memberships parameter' do
+    let(:member_user) { create(:user) }
+
+    let(:project_backup_zip_data) do
+      Membership.create!(user: member_user, membership: source_project, role: 'author')
+      source_component # ensure exists
+      Export::Base.new(
+        exportable: source_project,
+        mode: :backup,
+        format: :json_archive,
+        zip_filename: 'test-backup.zip'
+      ).call.data
+    end
+
+    let(:project_uploaded_file) do
+      Rack::Test::UploadedFile.new(
+        StringIO.new(project_backup_zip_data),
+        'application/zip',
+        true,
+        original_filename: 'project-backup.zip'
+      )
+    end
+
+    before { sign_in admin_user }
+
+    it 'skips memberships by default' do
+      post "/projects/#{project.id}/import_backup",
+           params: { file: project_uploaded_file }
+
+      body = response.parsed_body
+      expect(body['summary']['memberships_imported']).to eq(0)
+    end
+
+    it 'imports memberships when include_memberships=true' do
+      post "/projects/#{project.id}/import_backup",
+           params: { file: project_uploaded_file, include_memberships: 'true' }
+
+      body = response.parsed_body
+      expect(body['summary']['memberships_imported']).to eq(1)
+    end
+  end
+
   # ---------- Error responses ----------
 
   describe 'error handling' do

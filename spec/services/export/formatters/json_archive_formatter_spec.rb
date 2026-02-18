@@ -168,16 +168,38 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
       end
     end
 
-    describe 'project.json contents' do
-      subject(:project_json) { JSON.parse(zip_read(data, 'project.json')) }
+    it 'project.json includes project name' do
+      project_json = JSON.parse(zip_read(data, 'project.json'))
+      expect(project_json['name']).to eq(first_component.project.name)
+    end
 
-      it 'includes project name' do
-        expect(project_json['name']).to eq(first_component.project.name)
-      end
+    it 'project.json includes project description' do
+      project_json = JSON.parse(zip_read(data, 'project.json'))
+      expect(project_json['description']).to eq(first_component.project.description)
+    end
 
-      it 'includes project description' do
-        expect(project_json['description']).to eq(first_component.project.description)
-      end
+    it 'project.json includes memberships with email, name, role' do
+      member_user = create(:user)
+      Membership.create!(user: member_user, membership: first_component.project, role: 'author')
+
+      new_data = formatter.generate_batch(component_rule_pairs: pairs)
+      project_json = JSON.parse(zip_read(new_data, 'project.json'))
+
+      expect(project_json['memberships']).to be_an(Array)
+      membership = project_json['memberships'].find { |m| m['email'] == member_user.email }
+      expect(membership).to be_present
+      expect(membership['name']).to eq(member_user.name)
+      expect(membership['role']).to eq('author')
+    end
+
+    it 'project.json excludes component-level memberships' do
+      member_user = create(:user)
+      Membership.create!(user: member_user, membership: first_component.project, role: 'author')
+      Membership.create!(user: member_user, membership: first_component, role: 'admin')
+
+      new_data = formatter.generate_batch(component_rule_pairs: pairs)
+      pj = JSON.parse(zip_read(new_data, 'project.json'))
+      expect(pj['memberships'].size).to eq(1)
     end
   end
 

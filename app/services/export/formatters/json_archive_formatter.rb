@@ -88,7 +88,8 @@ module Export
           name: project.name,
           description: project.description,
           visibility: project.visibility,
-          metadata: project.project_metadata&.data
+          metadata: project.project_metadata&.data,
+          memberships: serialize_memberships(project)
         }
         zio.put_next_entry('project.json')
         zio.write(JSON.pretty_generate(project_data))
@@ -114,6 +115,12 @@ module Export
         version = component.version ? "V#{component.version}" : ''
         release = component.release ? "R#{component.release}" : ''
         "#{component.name.tr(' ', '-')}-#{version}#{release}/"
+      end
+
+      def serialize_memberships(project)
+        project.memberships.where(membership_type: 'Project').includes(:user).map do |m|
+          { email: m.user.email, name: m.user.name, role: m.role }
+        end
       end
 
       def vulcan_version
