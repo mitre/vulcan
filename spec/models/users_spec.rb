@@ -23,7 +23,7 @@ RSpec.describe User do
     end
 
     context 'when accessing an existing account using an omniauth provider' do
-      let(:user1) { create(:user) }
+      let(:user1) { create(:user, provider: 'ldap', uid: 'existing-ldap-uid') }
 
       it 'does not create a duplicate user' do
         auth = mock_omniauth_response(user1)
@@ -32,7 +32,7 @@ RSpec.describe User do
     end
 
     context 'when email casing differs between logins' do
-      let(:user1) { create(:user, email: 'user@example.com') }
+      let(:user1) { create(:user, email: 'user@example.com', provider: 'ldap', uid: 'ldap-uid-1') }
 
       it 'finds existing user regardless of email case' do
         # First login with different case
@@ -50,7 +50,7 @@ RSpec.describe User do
 
       it 'handles multiple case variations consistently' do
         # Create user with lowercase email
-        user = create(:user, email: 'test@domain.com')
+        user = create(:user, email: 'test@domain.com', provider: 'ldap', uid: 'ldap-uid-2')
 
         # Test various case combinations that should all find the same user
         test_cases = [
@@ -113,8 +113,8 @@ RSpec.describe User do
         it 'does not promote an existing user logging in again' do
           # Create an admin FIRST so subsequent users don't get promoted
           create(:user, admin: true)
-          # Create a non-admin user (won't be promoted because admin exists)
-          existing_user = create(:user, admin: false)
+          # Create a non-admin user with matching provider (won't be promoted because admin exists)
+          existing_user = create(:user, admin: false, provider: 'ldap', uid: 'existing-ldap-uid')
 
           # Existing user logs in via omniauth - should NOT be promoted
           auth = mock_omniauth_response(existing_user)
