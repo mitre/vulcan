@@ -35,7 +35,7 @@ export default defineConfig({
         text: "User Guide",
         items: [
           { text: "Overview", link: "/user-guide/overview" },
-          { text: "Data Management", link: "/user-guide/data-management" },
+          { text: "Data Management", link: "/user-guide/data-management/" },
           { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
         ],
       },
@@ -140,9 +140,9 @@ export default defineConfig({
         {
           text: "Data Management",
           items: [
-            { text: "Overview", link: "/user-guide/data-management" },
-            { text: "Import & Export", link: "/user-guide/import-export" },
-            { text: "Backup & Restore", link: "/user-guide/backup-restore" },
+            { text: "Overview", link: "/user-guide/data-management/" },
+            { text: "Import & Export", link: "/user-guide/data-management/import-export" },
+            { text: "Backup & Restore", link: "/user-guide/data-management/backup-restore" },
           ],
         },
       ],
