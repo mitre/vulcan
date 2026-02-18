@@ -203,9 +203,7 @@ describe("RuleSatisfactions", () => {
       ({ wrapper } = createWrapper({
         rule: { ...baseRule, satisfies: [sat1, sat2], satisfied_by: [] },
       }));
-      const removeBtns = wrapper
-        .findAll("button")
-        .wrappers.filter((b) => b.text() === "Remove");
+      const removeBtns = wrapper.findAll("button").wrappers.filter((b) => b.text() === "Remove");
       expect(removeBtns.length).toBe(2);
     });
 
@@ -213,9 +211,7 @@ describe("RuleSatisfactions", () => {
       ({ wrapper } = createWrapper({
         rule: { ...baseRule, satisfied_by: [sat1] },
       }));
-      const removeBtns = wrapper
-        .findAll("button")
-        .wrappers.filter((b) => b.text() === "Remove");
+      const removeBtns = wrapper.findAll("button").wrappers.filter((b) => b.text() === "Remove");
       expect(removeBtns.length).toBe(1);
     });
 
@@ -224,9 +220,7 @@ describe("RuleSatisfactions", () => {
         rule: { ...baseRule, satisfies: [sat1], satisfied_by: [] },
         readOnly: true,
       }));
-      const removeBtns = wrapper
-        .findAll("button")
-        .wrappers.filter((b) => b.text() === "Remove");
+      const removeBtns = wrapper.findAll("button").wrappers.filter((b) => b.text() === "Remove");
       removeBtns.forEach((btn) => {
         expect(btn.attributes("disabled")).toBeDefined();
       });
@@ -237,9 +231,7 @@ describe("RuleSatisfactions", () => {
         rule: { ...baseRule, satisfied_by: [sat1] },
         readOnly: true,
       }));
-      const removeBtns = wrapper
-        .findAll("button")
-        .wrappers.filter((b) => b.text() === "Remove");
+      const removeBtns = wrapper.findAll("button").wrappers.filter((b) => b.text() === "Remove");
       removeBtns.forEach((btn) => {
         expect(btn.attributes("disabled")).toBeDefined();
       });

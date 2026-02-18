@@ -71,8 +71,10 @@
         <!-- Column Picker (CSV only, when columnDefinitions provided) -->
         <template v-if="showColumnPicker">
           <hr />
-          <div role="group" aria-labelledby="export-columns-label">
-            <span id="export-columns-label" class="font-weight-bold d-block mb-2">Columns</span>
+          <fieldset aria-labelledby="export-columns-label">
+            <legend id="export-columns-label" class="font-weight-bold d-block mb-2 h6">
+              Columns
+            </legend>
             <div v-for="col in columnDefinitions" :key="col.key" class="mb-1">
               <b-form-checkbox
                 :checked="selectedColumns.includes(col.key)"
@@ -95,7 +97,7 @@
                 Defaults
               </b-button>
             </div>
-          </div>
+          </fieldset>
         </template>
       </div>
 

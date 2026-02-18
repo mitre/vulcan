@@ -13,8 +13,8 @@
             class="form-control"
             placeholder="Search Rule by STIG ID or SRG ID"
           /><br />
-          <label id="stig-severity-filter-label" class="small text-muted mb-1 d-block"
-            >Severity</label
+          <span id="stig-severity-filter-label" class="small text-muted mb-1 d-block"
+            >Severity</span
           >
           <b-button-group size="sm" class="d-flex">
             <b-button
