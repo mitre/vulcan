@@ -9,6 +9,11 @@ Vulcan supports importing and exporting security guidance in multiple formats. T
 | **XCCDF XML** | SRGs, STIGs | Components, Projects, STIGs, SRGs |
 | **XLSX / CSV** | Components (spreadsheet import) | Components, STIGs, SRGs (CSV); Projects (XLSX) |
 | **InSpec** | — | Components, Projects |
+| **JSON Archive** | Backup restore (Projects) | Backup (Projects) |
+
+::: tip Backup & Restore
+For full-fidelity project backup, restore, and migration, see [Backup & Restore](./backup-restore).
+:::
 
 ## Import
 
@@ -108,16 +113,25 @@ SRG CSV exports label the `version` column as **SRG ID** (instead of STIG ID) an
 
 ### Exporting a Project
 
-Projects export all their components at once:
+Projects use a **purpose-first** export workflow with four modes:
 
 1. Navigate to the Project page
 2. Click the **Export** button
-3. Select which components to include (or select all)
-4. Select the format:
-   - **XCCDF** — ZIP file with one XCCDF per component
-   - **InSpec** — ZIP file with one InSpec profile per component
-   - **Excel** — `.xlsx` with one worksheet per component
-   - **DISA Excel** — DoD-specific format with modified headers
+3. Select the **Purpose** (mode):
+
+| Purpose | Formats | Description |
+|---------|---------|-------------|
+| **Working Copy** | CSV, Excel | Internal review and editing |
+| **DISA Vendor Submission** | Excel | 17-column strict DISA template |
+| **STIG-Ready Publish Draft** | XCCDF, InSpec | Draft content for DISA review |
+| **Backup** | JSON Archive | Full-fidelity archive (see [Backup & Restore](./backup-restore)) |
+
+4. Select which components to include (or select all)
+5. Click **Export**
+
+::: warning NYD Components
+When exporting in DISA modes, components with only "Not Yet Determined" rules show a warning icon — these will produce empty output since NYD is not a DISA-accepted status.
+:::
 
 ### Satisfaction Export
 

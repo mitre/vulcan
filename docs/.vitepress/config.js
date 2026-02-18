@@ -36,6 +36,7 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/user-guide/overview" },
           { text: "Import & Export", link: "/user-guide/import-export" },
+          { text: "Backup & Restore", link: "/user-guide/backup-restore" },
           { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
         ],
       },
@@ -136,6 +137,7 @@ export default defineConfig({
           items: [
             { text: "Overview", link: "/user-guide/overview" },
             { text: "Import & Export", link: "/user-guide/import-export" },
+            { text: "Backup & Restore", link: "/user-guide/backup-restore" },
           ],
         },
       ],
