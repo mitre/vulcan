@@ -187,7 +187,7 @@ class OidcStartupValidator
       }
 
       deprecated_vars.each do |var, suggestion|
-        warnings << "#{var} is deprecated - #{suggestion}" if ENV[var].present?
+        warnings << "#{var} is deprecated - #{suggestion}" if ENV.fetch(var, nil).present?
       end
 
       warnings.each do |warning|

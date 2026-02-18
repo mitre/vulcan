@@ -313,7 +313,7 @@ module OidcDiscoveryHelper
     }.merge(details)
 
     # Use structured logging if available, otherwise readable format
-    if ENV['STRUCTURED_LOGGING'].present?
+    if ENV.fetch('STRUCTURED_LOGGING', nil).present?
       Rails.logger.info log_data.to_json
     else
       message = "OIDC Discovery [#{event_type.upcase}] #{issuer}"

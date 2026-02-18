@@ -14,7 +14,7 @@
 RSpec.configure do |config|
   # Skip Okta integration tests if not configured
   config.before(:each, :okta_integration) do
-    if ENV['OKTA_TEST_ISSUER'].blank?
+    if ENV.fetch('OKTA_TEST_ISSUER', nil).blank?
       skip <<~MESSAGE
         Okta integration tests require configuration.
 
@@ -40,11 +40,11 @@ end
 # Helper methods for OIDC testing
 module OktaTestHelpers
   def okta_test_issuer
-    ENV['VULCAN_OIDC_ISSUER_URL'] || ENV.fetch('OKTA_TEST_ISSUER', nil)
+    ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil) || ENV.fetch('OKTA_TEST_ISSUER', nil)
   end
 
   def oidc_enabled?
-    ENV['VULCAN_ENABLE_OIDC'] == 'true'
+    ENV.fetch('VULCAN_ENABLE_OIDC', nil) == 'true'
   end
 
   def okta_test_configured?
