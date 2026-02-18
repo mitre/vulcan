@@ -1,0 +1,53 @@
+# Lefthook configuration — replaces overcommit
+# https://github.com/evilmartians/lefthook
+#
+# Lefthook does NOT use git stash, avoiding the index.lock race condition
+# that plagued overcommit in worktree setups.
+
+pre-commit:
+  parallel: true
+  commands:
+    rubocop:
+      glob: "*.{rb,rake}"
+      run: bundle exec rubocop --autocorrect --display-cop-names --force-exclusion {staged_files}
+      stage_fixed: true
+    eslint:
+      glob: "*.{js,vue}"
+      run: yarn eslint --fix {staged_files}
+      stage_fixed: true
+    # Trailing whitespace handled by RuboCop (Ruby) and ESLint (JS/Vue)
+    # No separate fix-whitespace needed
+    yaml-syntax:
+      glob: "*.{yml,yaml}"
+      run: ruby -e "require 'yaml'; ARGV.each { |f| YAML.load_file(f) }" {staged_files}
+    json-syntax:
+      glob: "*.json"
+      run: ruby -e "require 'json'; ARGV.each { |f| JSON.parse(File.read(f)) }" {staged_files}
+    merge-conflicts:
+      run: git diff --staged --check
+
+commit-msg:
+  commands:
+    capitalized-subject:
+      # Allow conventional commits (feat:, fix:, chore:, etc.) or capitalized subjects
+      run: head -1 {1} | grep -qE '^([a-z]+(\(.+\))?:|[A-Z])'
+    empty-message:
+      run: test -s {1}
+    trailing-period:
+      run: "! head -1 {1} | grep -q '\\.$'"
+    text-width:
+      run: "! head -1 {1} | grep -qE '.{73,}'"
+
+post-checkout:
+  commands:
+    bundle-install:
+      run: bundle check || bundle install
+    yarn-install:
+      run: yarn install --frozen-lockfile 2>/dev/null || yarn install
+
+post-merge:
+  commands:
+    bundle-install:
+      run: bundle check || bundle install
+    yarn-install:
+      run: yarn install --frozen-lockfile 2>/dev/null || yarn install

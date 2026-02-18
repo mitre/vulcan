@@ -97,8 +97,7 @@ group :development do
   gem 'letter_opener'
   # Process manager for Procfile-based applications (development only)
   gem 'foreman'
-  # Git hooks management
-  gem 'overcommit', require: false
+  # Git hooks management (lefthook installed via brew, not bundled)
   # Security vulnerability scanner for Ruby dependencies
   gem 'bundler-audit', require: false
 end
