@@ -406,6 +406,7 @@ describe("Project", () => {
         [1, 2, 3],
         "vendor_submission",
         undefined,
+        undefined,
       );
     });
 
@@ -423,7 +424,13 @@ describe("Project", () => {
 
         wrapper.vm.executeExport({ type, mode, componentIds: [1] });
 
-        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(type, [1], mode, undefined);
+        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(
+          type,
+          [1],
+          mode,
+          undefined,
+          undefined,
+        );
         wrapper.destroy();
       });
     });

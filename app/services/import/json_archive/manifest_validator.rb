@@ -41,6 +41,8 @@ module Import
       end
 
       def validate_srg_dependencies(result)
+        archive_has_srgs = @manifest['srgs'].is_a?(Array) && @manifest['srgs'].any?
+
         @manifest['components'].each do |entry|
           srg_id = entry['srg_id']
           srg_version = entry['srg_version']
@@ -48,6 +50,9 @@ module Import
 
           srg = SecurityRequirementsGuide.find_by(srg_id: srg_id, version: srg_version)
           next if srg
+
+          # If archive includes SRGs, they'll be auto-imported — not an error
+          next if archive_has_srgs && @manifest['srgs'].any? { |s| s['srg_id'] == srg_id }
 
           # Try without version match
           srg_any_version = SecurityRequirementsGuide.find_by(srg_id: srg_id)

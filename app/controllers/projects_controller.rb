@@ -221,7 +221,8 @@ class ProjectsController < ApplicationController
           perform_export(
             exportable: @project, mode: :backup, format: :json_archive,
             component_ids: resolve_component_ids,
-            zip_filename: "vulcan-backup-#{@project.name}-#{Date.current}.zip"
+            zip_filename: "vulcan-backup-#{@project.name}-#{Date.current}.zip",
+            formatter_options: { include_srg: params[:include_srg] == 'true' }
           )
         end
       end

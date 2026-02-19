@@ -11,7 +11,7 @@ module Export
   #   Export::Base.new(exportable: [comp1, comp2], mode: :working_copy, format: :csv).call
   #   Export::Base.new(exportable: project, mode: :working_copy, format: :excel).call
   class Base
-    def initialize(exportable:, mode:, format:, component_ids: nil, zip_filename: nil)
+    def initialize(exportable:, mode:, format:, component_ids: nil, zip_filename: nil, formatter_options: {})
       raise ArgumentError, 'exportable cannot be nil' if exportable.nil?
 
       unless Registry.valid?(mode, format)
@@ -24,6 +24,7 @@ module Export
       @formatter = Registry.formatter_class(format).new
       @component_ids = component_ids
       @zip_filename = zip_filename
+      @formatter_options = formatter_options
     end
 
     def call
@@ -77,7 +78,7 @@ module Export
         { component: component, rules: scoped }
       end
 
-      data = @formatter.generate_batch(component_rule_pairs: pairs)
+      data = @formatter.generate_batch(component_rule_pairs: pairs, **@formatter_options)
       filename = @zip_filename || default_zip_filename
 
       Result.new(data: data, filename: filename, content_type: @formatter.content_type)

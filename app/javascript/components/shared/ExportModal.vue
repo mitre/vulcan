@@ -70,6 +70,12 @@
 
         <!-- Backup Options (backup mode only) -->
         <div v-if="isBackupMode" class="mb-3">
+          <b-form-checkbox v-model="includeSrg" data-testid="include-srg-checkbox">
+            Include base SRGs
+            <small class="text-muted d-block ml-4"
+              >Makes the archive portable across Vulcan instances</small
+            >
+          </b-form-checkbox>
           <b-form-checkbox v-model="includeMemberships" data-testid="include-memberships-checkbox">
             Include project memberships
           </b-form-checkbox>
@@ -265,6 +271,7 @@ export default {
       selectedFormat: null,
       selectedComponentIds: [],
       selectedColumns: [],
+      includeSrg: true,
       includeMemberships: true,
     };
   },
@@ -413,6 +420,7 @@ export default {
             this.selectedComponentIds = [];
           }
           // Reset backup options
+          this.includeSrg = true;
           this.includeMemberships = true;
           // Reset columns to defaults
           this.resetColumnsToDefaults();
@@ -517,8 +525,9 @@ export default {
       if (this.selectedFormat === "csv" && this.selectedColumns.length > 0) {
         payload.columns = [...this.selectedColumns];
       }
-      // Include membership flag for backup mode
+      // Include backup options
       if (this.isBackupMode) {
+        payload.includeSrg = this.includeSrg;
         payload.includeMemberships = this.includeMemberships;
       }
       this.$emit("export", payload);

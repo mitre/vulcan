@@ -15,13 +15,15 @@ module Exportable
   # @param component_ids [Array<Integer>, nil] optional component ID filter (projects only)
   # @param filename [String, nil] override the default filename
   # @param zip_filename [String, nil] override the default zip filename (multi-component)
-  def perform_export(exportable:, mode:, format:, component_ids: nil, filename: nil, zip_filename: nil)
+  def perform_export(exportable:, mode:, format:, component_ids: nil, filename: nil, zip_filename: nil,
+                     formatter_options: {})
     result = Export::Base.new(
       exportable: exportable,
       mode: mode,
       format: format,
       component_ids: component_ids,
-      zip_filename: zip_filename
+      zip_filename: zip_filename,
+      formatter_options: formatter_options
     ).call
 
     send_data result.data, filename: filename || result.filename, type: result.content_type

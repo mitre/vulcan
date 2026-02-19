@@ -1041,6 +1041,65 @@ describe("ExportModal", () => {
     });
   });
 
+  describe("Include SRG checkbox", () => {
+    it("shows checkbox in backup mode", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="include-srg-checkbox"]');
+      expect(checkbox.exists()).toBe(true);
+    });
+
+    it("hides checkbox in non-backup modes", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="include-srg-checkbox"]');
+      expect(checkbox.exists()).toBe(false);
+    });
+
+    it("includes includeSrg in export payload for backup", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]');
+      await exportBtn.trigger("click");
+
+      const payload = wrapper.emitted("export")[0][0];
+      expect(payload.includeSrg).toBe(true);
+    });
+
+    it("defaults to true and resets on modal reopen", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      wrapper.vm.includeSrg = false;
+
+      await wrapper.setProps({ visible: false });
+      await wrapper.setProps({ visible: true });
+
+      expect(wrapper.vm.includeSrg).toBe(true);
+    });
+  });
+
   /**
    * NYD PRE-FLIGHT WARNING TESTS
    *

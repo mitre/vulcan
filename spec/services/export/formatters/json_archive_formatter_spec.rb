@@ -204,6 +204,60 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
     end
   end
 
+  describe 'SRG inclusion (include_srg option)' do
+    let(:component) { create(:component) }
+    let(:pairs) { [{ component: component, rules: component.rules }] }
+
+    context 'when include_srg: true' do
+      subject(:data) { formatter.generate_batch(component_rule_pairs: pairs, include_srg: true) }
+
+      it 'writes srgs/ directory with SRG XML file' do
+        entries = zip_entries(data)
+        srg_files = entries.select { |e| e.start_with?('srgs/') && e.end_with?('.xml') }
+        expect(srg_files.size).to eq(1)
+      end
+
+      it 'SRG XML content matches the original' do
+        srg = SecurityRequirementsGuide.find(component.security_requirements_guide_id)
+        srg_files = zip_entries(data).select { |e| e.start_with?('srgs/') }
+        xml_content = zip_read(data, srg_files.first).force_encoding('UTF-8')
+        expect(xml_content).to eq(srg.xml)
+      end
+
+      it 'manifest.json includes srgs array' do
+        manifest = JSON.parse(zip_read(data, manifest_file))
+        expect(manifest['srgs']).to be_an(Array)
+        expect(manifest['srgs'].size).to eq(1)
+        expect(manifest['srgs'].first['srg_id']).to eq(component.based_on.srg_id)
+      end
+
+      it 'deduplicates SRGs when two components share the same SRG' do
+        srg = SecurityRequirementsGuide.find(component.security_requirements_guide_id)
+        second = create(:component, project: component.project, based_on: srg)
+        two_pairs = [component, second].map { |c| { component: c, rules: c.rules } }
+        two_data = formatter.generate_batch(component_rule_pairs: two_pairs, include_srg: true)
+
+        srg_files = zip_entries(two_data).select { |e| e.start_with?('srgs/') && e.end_with?('.xml') }
+        expect(srg_files.size).to eq(1)
+      end
+    end
+
+    context 'when include_srg: false (default)' do
+      subject(:data) { formatter.generate_batch(component_rule_pairs: pairs) }
+
+      it 'does not include srgs/ directory' do
+        entries = zip_entries(data)
+        srg_files = entries.select { |e| e.start_with?('srgs/') }
+        expect(srg_files).to be_empty
+      end
+
+      it 'manifest.json does not include srgs key' do
+        manifest = JSON.parse(zip_read(data, manifest_file))
+        expect(manifest).not_to have_key('srgs')
+      end
+    end
+  end
+
   private
 
   def zip_entries(data)

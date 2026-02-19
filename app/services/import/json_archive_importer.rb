@@ -52,7 +52,7 @@ module Import
     private
 
     def parse_archive(result)
-      archive = { components: [] }
+      archive = { components: [], srg_files: {} }
 
       begin
         Zip::File.open_buffer(read_file_data) do |zip|
@@ -64,6 +64,14 @@ module Import
 
           archive[:manifest] = JSON.parse(zip.read('manifest.json'))
           archive[:project] = safe_parse_json(zip, 'project.json')
+
+          # Parse SRG XML files from srgs/ directory
+          zip.entries.each do |entry|
+            next unless entry.name.start_with?('srgs/') && entry.name.end_with?('.xml')
+
+            filename = entry.name.sub('srgs/', '')
+            archive[:srg_files][filename] = zip.read(entry.name)
+          end
 
           # Detect archive structure: flat (single component) or nested (components/ directory)
           archive[:components] = detect_and_parse_components(zip, archive[:manifest])
@@ -133,10 +141,13 @@ module Import
       # Fast path: compute summary from parsed JSON without writing to DB
       component_details = archive[:components].map do |comp_data|
         name = comp_data[:component]['name']
+        based_on = comp_data[:component]['based_on'] || {}
         {
           name: name,
           rule_count: comp_data[:rules].size,
-          conflict: @project.components.exists?(name: name)
+          conflict: @project.components.exists?(name: name),
+          srg_title: based_on['title'],
+          srg_version: based_on['version']
         }
       end
 
@@ -144,6 +155,7 @@ module Import
       total_satisfactions = archive[:components].sum { |c| c[:satisfactions].size }
       total_reviews = @include_reviews ? archive[:components].sum { |c| c[:reviews].size } : 0
       total_memberships = @include_memberships ? (archive.dig(:project, 'memberships')&.size || 0) : 0
+      srg_details = srg_import_details(archive)
 
       result.merge_summary(
         dry_run: true,
@@ -152,12 +164,18 @@ module Import
         satisfactions_imported: total_satisfactions,
         reviews_imported: total_reviews,
         memberships_imported: total_memberships,
+        srgs_imported: srg_details.size,
+        srg_details: srg_details,
         component_details: component_details
       )
     end
 
     def perform_import(archive, result)
       ActiveRecord::Base.transaction do
+        # Import SRGs first — components depend on them
+        import_srgs(archive, result)
+        return unless result.success?
+
         import_components(archive, result)
 
         raise ActiveRecord::Rollback unless result.success?
@@ -173,10 +191,13 @@ module Import
       # Build component_details for preview (always computed from full archive)
       component_details = archive[:components].map do |comp_data|
         name = comp_data[:component]['name']
+        based_on = comp_data[:component]['based_on'] || {}
         {
           name: name,
           rule_count: comp_data[:rules].size,
-          conflict: @project.components.exists?(name: name)
+          conflict: @project.components.exists?(name: name),
+          srg_title: based_on['title'],
+          srg_version: based_on['version']
         }
       end
 
@@ -227,8 +248,27 @@ module Import
         satisfactions_imported: total_satisfactions,
         reviews_imported: total_reviews,
         memberships_imported: total_memberships,
+        srgs_imported: @srgs_imported || 0,
         component_details: component_details
       )
+    end
+
+    def import_srgs(archive, result)
+      manifest_srgs = archive.dig(:manifest, 'srgs') || []
+      @srgs_imported = JsonArchive::SrgImporter.new(
+        manifest_srgs: manifest_srgs,
+        srg_files: archive[:srg_files],
+        result: result
+      ).import_all
+    end
+
+    def srg_import_details(archive)
+      manifest_srgs = archive.dig(:manifest, 'srgs') || []
+      manifest_srgs.filter_map do |entry|
+        next if SecurityRequirementsGuide.exists?(srg_id: entry['srg_id'], version: entry['version'])
+
+        { srg_id: entry['srg_id'], title: entry['title'], version: entry['version'] }
+      end
     end
   end
 end

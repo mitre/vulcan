@@ -360,9 +360,9 @@ export default {
     openMembersModal() {
       this.$bvModal.show("project-members-modal");
     },
-    executeExport({ type, mode, componentIds, includeMemberships }) {
+    executeExport({ type, mode, componentIds, includeSrg, includeMemberships }) {
       // Called by ExportModal when user confirms export
-      this.downloadExport(type, componentIds, mode, includeMemberships);
+      this.downloadExport(type, componentIds, mode, includeSrg, includeMemberships);
     },
     // Having deleteComponent on the `ComponentCard` causes it to
     // disappear almost immediately because the component gets
@@ -376,10 +376,13 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    downloadExport: function (type, componentIds, mode, includeMemberships) {
+    downloadExport: function (type, componentIds, mode, includeSrg, includeMemberships) {
       let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
       if (mode) {
         url += `&mode=${mode}`;
+      }
+      if (includeSrg) {
+        url += `&include_srg=true`;
       }
       if (includeMemberships === false) {
         url += `&include_memberships=false`;

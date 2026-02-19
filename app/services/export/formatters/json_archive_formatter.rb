@@ -40,16 +40,19 @@ module Export
       end
 
       # Multi-component export (project-level backup).
-      def generate_batch(component_rule_pairs:)
+      # @param include_srg [Boolean] when true, include base SRG XML files in the archive
+      def generate_batch(component_rule_pairs:, include_srg: false)
         serializers = component_rule_pairs.map do |pair|
           Serializers::BackupSerializer.new(pair[:component], preloaded_rules: pair[:rules])
         end
 
         manifest_entries = serializers.map(&:manifest_entry)
+        srg_entries = include_srg ? collect_unique_srgs(component_rule_pairs) : []
 
         Zip::OutputStream.write_buffer do |zio|
-          write_manifest(zio, manifest_entries)
+          write_manifest(zio, manifest_entries, srg_entries: srg_entries)
           write_project_json(zio, component_rule_pairs.first[:component].project)
+          write_srg_files(zio, srg_entries) if srg_entries.any?
 
           component_rule_pairs.each_with_index do |pair, idx|
             component = pair[:component]
@@ -70,13 +73,14 @@ module Export
 
       private
 
-      def write_manifest(zio, component_entries)
+      def write_manifest(zio, component_entries, srg_entries: [])
         manifest = {
           backup_format_version: Serializers::BackupSerializer::BACKUP_FORMAT_VERSION,
           vulcan_version: vulcan_version,
           exported_at: Time.current.iso8601,
           components: component_entries
         }
+        manifest[:srgs] = srg_entries.map { |s| s.except(:xml) } if srg_entries.any?
         zio.put_next_entry('manifest.json')
         zio.write(JSON.pretty_generate(manifest))
       end
@@ -120,6 +124,38 @@ module Export
       def serialize_memberships(project)
         project.memberships.where(membership_type: 'Project').includes(:user).map do |m|
           { email: m.user.email, name: m.user.name, role: m.role }
+        end
+      end
+
+      def collect_unique_srgs(component_rule_pairs)
+        # Collect unique SRG IDs from components, then load full records (including xml column)
+        srg_ids = component_rule_pairs.filter_map { |p| p[:component].security_requirements_guide_id }.uniq
+        srgs = SecurityRequirementsGuide.where(id: srg_ids).index_by(&:id)
+
+        seen = {}
+        component_rule_pairs.each do |pair|
+          srg = srgs[pair[:component].security_requirements_guide_id]
+          next unless srg
+
+          key = [srg.srg_id, srg.version]
+          next if seen.key?(key)
+
+          filename = "#{srg.title.tr(' ', '_').gsub(/[^A-Za-z0-9_-]/, '')}-#{srg.version}.xml"
+          seen[key] = {
+            srg_id: srg.srg_id,
+            title: srg.title,
+            version: srg.version,
+            filename: filename,
+            xml: srg.xml
+          }
+        end
+        seen.values
+      end
+
+      def write_srg_files(zio, srg_entries)
+        srg_entries.each do |entry|
+          zio.put_next_entry("srgs/#{entry[:filename]}")
+          zio.write(entry[:xml])
         end
       end
 
