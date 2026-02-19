@@ -19,7 +19,7 @@ pre-commit:
     # No separate fix-whitespace needed
     yaml-syntax:
       glob: "*.{yml,yaml}"
-      run: ruby -e "require 'yaml'; ARGV.each { |f| YAML.load_file(f) }" {staged_files}
+      run: 'ruby -e "require ''yaml''; ARGV.each { |f| YAML.load_file(f, aliases: true) }" {staged_files}'
     json-syntax:
       glob: "*.json"
       run: ruby -e "require 'json'; ARGV.each { |f| JSON.parse(File.read(f)) }" {staged_files}
