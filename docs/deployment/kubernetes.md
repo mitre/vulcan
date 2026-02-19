@@ -206,6 +206,26 @@ spec:
         - name: VULCAN_SESSION_TIMEOUT
           value: "15m"    # DoD: 15m for users, 10m for admin
         
+        # Classification Banner (DoD deployments)
+        # - name: VULCAN_BANNER_ENABLED
+        #   value: "true"
+        # - name: VULCAN_BANNER_TEXT
+        #   value: "UNCLASSIFIED"
+        # - name: VULCAN_BANNER_BACKGROUND_COLOR
+        #   value: "#007a33"
+        # - name: VULCAN_BANNER_TEXT_COLOR
+        #   value: "#ffffff"
+
+        # Consent/Terms of Use Modal
+        # - name: VULCAN_CONSENT_ENABLED
+        #   value: "true"
+        # - name: VULCAN_CONSENT_VERSION
+        #   value: "1"
+        # - name: VULCAN_CONSENT_TITLE
+        #   value: "Acceptable Use Policy"
+        # - name: VULCAN_CONSENT_CONTENT
+        #   value: "By using this system you agree to the **acceptable use policy**."
+
         # LDAP Configuration (if using)
         - name: VULCAN_ENABLE_LDAP
           value: "true"

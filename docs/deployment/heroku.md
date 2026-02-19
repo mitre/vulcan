@@ -109,6 +109,28 @@ VULCAN_SMTP_DOMAIN=heroku.com
 VULCAN_SMTP_ENABLE_STARTTLS_AUTO=true
 ```
 
+### Classification Banner & Consent Modal
+
+For DoD/government deployments, enable the classification banner and consent modal:
+
+```bash
+# Classification banner (top + bottom of every page)
+heroku config:set VULCAN_BANNER_ENABLED=true
+heroku config:set VULCAN_BANNER_TEXT=UNCLASSIFIED
+heroku config:set VULCAN_BANNER_BACKGROUND_COLOR=#007a33
+heroku config:set VULCAN_BANNER_TEXT_COLOR=#ffffff
+
+# Consent/terms-of-use modal (blocks access until acknowledged)
+heroku config:set VULCAN_CONSENT_ENABLED=true
+heroku config:set VULCAN_CONSENT_VERSION=1
+heroku config:set VULCAN_CONSENT_TITLE="Acceptable Use Policy"
+heroku config:set VULCAN_CONSENT_CONTENT="By using this system you agree to the **acceptable use policy**."
+```
+
+Consent content supports Markdown. Increment `VULCAN_CONSENT_VERSION` to re-prompt all users after policy changes.
+
+See [ENVIRONMENT_VARIABLES.md](../../ENVIRONMENT_VARIABLES.md#classification-banner) for the full DoD color table.
+
 ### Authentication Providers
 
 For OAuth/OIDC authentication, add:

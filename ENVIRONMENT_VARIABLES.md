@@ -191,6 +191,41 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SLACK_API_TOKEN` | Slack API token | - | `xoxb-your-token` |
 | `VULCAN_SLACK_CHANNEL_ID` | Slack channel ID | - | `C1234567890` |
 
+## Classification Banner
+
+Display a colored banner at the top and bottom of every page, commonly used for DoD classification markings.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_BANNER_ENABLED` | Enable classification banner | `false` | `true` |
+| `VULCAN_BANNER_TEXT` | Banner text displayed on every page (plain text, no formatting) | `""` | `UNCLASSIFIED` |
+| `VULCAN_BANNER_BACKGROUND_COLOR` | Banner background color (hex) | `#007a33` | `#c8102e` |
+| `VULCAN_BANNER_TEXT_COLOR` | Banner text color (hex) | `#ffffff` | `#000000` |
+
+**DoD Standard Colors:**
+
+| Classification | Background | Text |
+|---------------|------------|------|
+| UNCLASSIFIED | `#007a33` | `#ffffff` |
+| CUI | `#502b85` | `#ffffff` |
+| CONFIDENTIAL | `#0033a0` | `#ffffff` |
+| SECRET | `#c8102e` | `#ffffff` |
+| TOP SECRET | `#ff671f` | `#ffffff` |
+| TS/SCI | `#f7ea48` | `#000000` |
+
+## Consent / Terms of Use Modal
+
+Display a blocking consent modal that users must acknowledge before accessing the application. Acknowledgment is stored in the browser's localStorage per version — incrementing the version re-prompts all users.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_CONSENT_ENABLED` | Enable consent modal | `false` | `true` |
+| `VULCAN_CONSENT_VERSION` | Version string for consent (increment to re-prompt) | `1` | `2` |
+| `VULCAN_CONSENT_TITLE` | Modal title | `Terms of Use` | `Acceptable Use Policy` |
+| `VULCAN_CONSENT_CONTENT` | Modal body content (supports **Markdown**) | `""` | `By using this system you agree to the **AUP**.` |
+
+**Consent Content Formatting**: The `VULCAN_CONSENT_CONTENT` variable supports full [Markdown](https://www.markdownguide.org/basic-syntax/) formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. The banner text (`VULCAN_BANNER_TEXT`) is plain text only — no formatting is applied.
+
 ## Project Settings
 
 | Variable | Description | Default | Example |

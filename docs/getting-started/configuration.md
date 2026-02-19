@@ -14,6 +14,8 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure LDAP:](#configure-ldap)
 - [Configure OIDC:](#configure-oidc)
 - [Configure Slack:](#configure-slack)
+- [Configure Classification Banner:](#configure-classification-banner) Display colored classification/sensitivity banner
+- [Configure Consent Modal:](#configure-consent-modal) Terms-of-use modal that blocks access until acknowledged
 
 ## Configuration Precedence
 
@@ -42,6 +44,8 @@ Each deployment type ships sensible defaults. Dev-friendly deployments enable lo
 | LDAP | false | false | `VULCAN_ENABLE_LDAP` |
 | SMTP | false | **true** | `VULCAN_ENABLE_SMTP` |
 | Slack | false | false | `VULCAN_ENABLE_SLACK_COMMS` |
+| Classification banner | false | varies | `VULCAN_BANNER_ENABLED` |
+| Consent modal | false | varies | `VULCAN_CONSENT_ENABLED` |
 
 **Bold** = enabled for that deployment type.
 
@@ -142,6 +146,65 @@ Each deployment type ships sensible defaults. Dev-friendly deployments enable lo
 - **api_token:** Slack Authentication token bearing required scopes.`(ENV: VULCAN_SLACK_API_TOKEN)`
 - **channel_id:**  Slack Channel, private group, or IM channel to send message to. Can be an encoded ID, or a name. `(ENV: VULCAN_SLACK_CHANNEL_ID)`
 
+## Configure Classification Banner
+
+Display a colored banner at the top and bottom of every page. Commonly used for DoD classification markings or environment identification (e.g., STAGING, TRAINING).
+
+- **enabled:** Show the banner on every page. `(ENV: VULCAN_BANNER_ENABLED)(default: false)`
+- **text:** Plain text displayed in the banner — no formatting applied. `(ENV: VULCAN_BANNER_TEXT)(default: "")`
+- **background_color:** Banner background color as a hex value. `(ENV: VULCAN_BANNER_BACKGROUND_COLOR)(default: #007a33)`
+- **text_color:** Banner text color as a hex value. `(ENV: VULCAN_BANNER_TEXT_COLOR)(default: #ffffff)`
+
+### DoD Standard Colors
+
+| Classification | Background | Text |
+|---------------|------------|------|
+| UNCLASSIFIED | `#007a33` | `#ffffff` |
+| CUI | `#502b85` | `#ffffff` |
+| CONFIDENTIAL | `#0033a0` | `#ffffff` |
+| SECRET | `#c8102e` | `#ffffff` |
+| TOP SECRET | `#ff671f` | `#ffffff` |
+| TS/SCI | `#f7ea48` | `#000000` |
+
+### Example
+
+```bash
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=UNCLASSIFIED
+VULCAN_BANNER_BACKGROUND_COLOR=#007a33
+VULCAN_BANNER_TEXT_COLOR=#ffffff
+```
+
+## Configure Consent Modal
+
+Display a blocking consent/terms-of-use modal that users must acknowledge before accessing the application. Acknowledgment is stored in the browser's localStorage. Incrementing the version re-prompts all users — useful when policies change.
+
+- **enabled:** Show the consent modal on page load. `(ENV: VULCAN_CONSENT_ENABLED)(default: false)`
+- **version:** Version identifier for the consent terms. Increment this value to force all users to re-acknowledge. `(ENV: VULCAN_CONSENT_VERSION)(default: 1)`
+- **title:** Modal dialog title. `(ENV: VULCAN_CONSENT_TITLE)(default: Terms of Use)`
+- **content:** Modal body content. Supports **Markdown** formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. `(ENV: VULCAN_CONSENT_CONTENT)(default: "")`
+
+### Example
+
+```bash
+VULCAN_CONSENT_ENABLED=true
+VULCAN_CONSENT_VERSION=1
+VULCAN_CONSENT_TITLE=Acceptable Use Policy
+VULCAN_CONSENT_CONTENT="## Terms of Use
+
+By accessing this system you agree to the following:
+
+1. **Authorized use only** — this system is for official use
+2. **Activity is monitored** — all actions may be logged
+3. **No expectation of privacy** — on this government system
+
+> Contact your administrator with questions."
+```
+
+::: tip Version-Based Re-prompting
+When you update your terms, increment `VULCAN_CONSENT_VERSION` (e.g., from `1` to `2`). All users will see the modal again on their next visit, regardless of prior acknowledgment.
+:::
+
 ## Example Vulcan.yml
 
 ```
@@ -201,6 +264,16 @@ defaults: &defaults
         userinfo_endpoint:
         jwks_uri:
         post_logout_redirect_uri:
+  banner:
+    enabled:
+    text:
+    background_color:
+    text_color:
+  consent:
+    enabled:
+    version:
+    title:
+    content:
   slack:
     enabled:
     api_token:
