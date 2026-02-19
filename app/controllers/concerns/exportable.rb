@@ -16,14 +16,15 @@ module Exportable
   # @param filename [String, nil] override the default filename
   # @param zip_filename [String, nil] override the default zip filename (multi-component)
   def perform_export(exportable:, mode:, format:, component_ids: nil, filename: nil, zip_filename: nil,
-                     formatter_options: {})
+                     formatter_options: {}, mode_options: {})
     result = Export::Base.new(
       exportable: exportable,
       mode: mode,
       format: format,
       component_ids: component_ids,
       zip_filename: zip_filename,
-      formatter_options: formatter_options
+      formatter_options: formatter_options,
+      mode_options: mode_options
     ).call
 
     send_data result.data, filename: filename || result.filename, type: result.content_type

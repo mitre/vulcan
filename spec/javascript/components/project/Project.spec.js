@@ -407,6 +407,7 @@ describe("Project", () => {
         "vendor_submission",
         undefined,
         undefined,
+        undefined,
       );
     });
 
@@ -428,6 +429,7 @@ describe("Project", () => {
           type,
           [1],
           mode,
+          undefined,
           undefined,
           undefined,
         );

@@ -186,15 +186,18 @@ class ProjectsController < ApplicationController
         when :csv
           component_ids = resolve_component_ids
           components = component_ids ? @project.components.where(id: component_ids) : @project.components
+          csv_mode_options = export_mode_options
           if components.size == 1
             perform_export(
               exportable: components.first, mode: :working_copy, format: :csv,
-              filename: "#{@project.name}-#{components.first.prefix}.csv"
+              filename: "#{@project.name}-#{components.first.prefix}.csv",
+              mode_options: csv_mode_options
             )
           else
             perform_export(
               exportable: components.to_a, mode: :working_copy, format: :csv,
-              zip_filename: "#{@project.name}.zip"
+              zip_filename: "#{@project.name}.zip",
+              mode_options: csv_mode_options
             )
           end
         when :excel
@@ -203,7 +206,8 @@ class ProjectsController < ApplicationController
           perform_export(
             exportable: @project, mode: mode, format: :excel,
             component_ids: resolve_component_ids,
-            filename: filename
+            filename: filename,
+            mode_options: export_mode_options
           )
         when :xccdf
           perform_export(
@@ -427,6 +431,12 @@ class ProjectsController < ApplicationController
 
   # Parse @@components_to_export from comma-separated string to integer array.
   # Returns nil if not set (exports all components).
+  def export_mode_options
+    options = {}
+    options[:exclude_satisfied_by] = true if params[:exclude_satisfied_by] == 'true'
+    options
+  end
+
   def resolve_component_ids
     return nil unless defined?(@@components_to_export) && @@components_to_export.present?
 

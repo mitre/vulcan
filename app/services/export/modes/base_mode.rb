@@ -8,6 +8,10 @@ module Export
     # - How to transform values per-column (transform_value)
     # - What associations to eager load (eager_load_associations)
     class BaseMode
+      def initialize(options = {})
+        @options = options
+      end
+
       def columns
         raise NotImplementedError
       end
@@ -30,6 +34,17 @@ module Export
       # Associations to eager_load on the rules relation for this mode.
       def eager_load_associations
         raise NotImplementedError
+      end
+
+      private
+
+      # Exclude rules that are satisfied by other rules.
+      # Reusable by any mode that supports the exclude_satisfied_by option.
+      def exclude_satisfied_by(rules)
+        return rules unless @options[:exclude_satisfied_by]
+
+        satisfied_by_ids = RuleSatisfaction.where(rule_id: rules.select(:id)).select(:rule_id)
+        rules.where.not(id: satisfied_by_ids)
       end
     end
   end

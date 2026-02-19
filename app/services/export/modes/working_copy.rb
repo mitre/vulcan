@@ -14,9 +14,10 @@ module Export
         ExportConstants::EXPORT_HEADERS
       end
 
-      # No filtering — all rules included.
+      # No status filtering — all rules included.
+      # Optional: exclude_satisfied_by removes rules with satisfied_by relationships.
       def rule_scope(rules)
-        rules
+        exclude_satisfied_by(rules)
       end
 
       # Identity transform — values pass through unchanged.

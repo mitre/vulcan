@@ -39,8 +39,10 @@ module Export
       end
 
       # Exclude NYD rules — not a DISA-recognized status.
+      # Optional: exclude_satisfied_by removes rules with satisfied_by relationships.
       def rule_scope(rules)
-        rules.where.not(status: 'Not Yet Determined')
+        scoped = rules.where.not(status: 'Not Yet Determined')
+        exclude_satisfied_by(scoped)
       end
 
       # Apply DISA field-blanking rules per status.

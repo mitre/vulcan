@@ -11,7 +11,8 @@ module Export
   #   Export::Base.new(exportable: [comp1, comp2], mode: :working_copy, format: :csv).call
   #   Export::Base.new(exportable: project, mode: :working_copy, format: :excel).call
   class Base
-    def initialize(exportable:, mode:, format:, component_ids: nil, zip_filename: nil, formatter_options: {})
+    def initialize(exportable:, mode:, format:, component_ids: nil, zip_filename: nil,
+                   formatter_options: {}, mode_options: {})
       raise ArgumentError, 'exportable cannot be nil' if exportable.nil?
 
       unless Registry.valid?(mode, format)
@@ -20,7 +21,7 @@ module Export
       end
 
       @exportable = exportable
-      @mode = Registry.mode_class(mode).new
+      @mode = Registry.mode_class(mode).new(mode_options)
       @formatter = Registry.formatter_class(format).new
       @component_ids = component_ids
       @zip_filename = zip_filename

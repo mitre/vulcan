@@ -81,6 +81,16 @@
           </b-form-checkbox>
         </div>
 
+        <!-- Satisfied-by filter (working_copy/vendor_submission with csv/excel) -->
+        <div v-if="showSatisfiedByToggle" class="mb-3">
+          <b-form-checkbox v-model="excludeSatisfiedBy" data-testid="exclude-satisfied-by-checkbox">
+            Exclude satisfied-by rules
+            <small class="text-muted d-block ml-4"
+              >Omit rules whose requirements are covered by another rule</small
+            >
+          </b-form-checkbox>
+        </div>
+
         <!-- Column Picker (CSV only, when columnDefinitions provided) -->
         <template v-if="showColumnPicker">
           <hr />
@@ -273,6 +283,7 @@ export default {
       selectedColumns: [],
       includeSrg: true,
       includeMemberships: true,
+      excludeSatisfiedBy: false,
     };
   },
   computed: {
@@ -336,6 +347,14 @@ export default {
     },
     isBackupMode() {
       return this.hasModes && this.selectedMode === "backup";
+    },
+    showSatisfiedByToggle() {
+      if (!this.hasModes) return false;
+      const tabularModes = ["working_copy", "vendor_submission"];
+      const tabularFormats = ["csv", "excel"];
+      return (
+        tabularModes.includes(this.selectedMode) && tabularFormats.includes(this.selectedFormat)
+      );
     },
     isDISAMode() {
       return (
@@ -422,6 +441,8 @@ export default {
           // Reset backup options
           this.includeSrg = true;
           this.includeMemberships = true;
+          // Reset satisfied-by filter
+          this.excludeSatisfiedBy = false;
           // Reset columns to defaults
           this.resetColumnsToDefaults();
         }
@@ -524,6 +545,10 @@ export default {
       // Include columns only for CSV format
       if (this.selectedFormat === "csv" && this.selectedColumns.length > 0) {
         payload.columns = [...this.selectedColumns];
+      }
+      // Include satisfied-by filter
+      if (this.excludeSatisfiedBy) {
+        payload.excludeSatisfiedBy = true;
       }
       // Include backup options
       if (this.isBackupMode) {

@@ -360,9 +360,23 @@ export default {
     openMembersModal() {
       this.$bvModal.show("project-members-modal");
     },
-    executeExport({ type, mode, componentIds, includeSrg, includeMemberships }) {
+    executeExport({
+      type,
+      mode,
+      componentIds,
+      includeSrg,
+      includeMemberships,
+      excludeSatisfiedBy,
+    }) {
       // Called by ExportModal when user confirms export
-      this.downloadExport(type, componentIds, mode, includeSrg, includeMemberships);
+      this.downloadExport(
+        type,
+        componentIds,
+        mode,
+        includeSrg,
+        includeMemberships,
+        excludeSatisfiedBy,
+      );
     },
     // Having deleteComponent on the `ComponentCard` causes it to
     // disappear almost immediately because the component gets
@@ -376,7 +390,14 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    downloadExport: function (type, componentIds, mode, includeSrg, includeMemberships) {
+    downloadExport: function (
+      type,
+      componentIds,
+      mode,
+      includeSrg,
+      includeMemberships,
+      excludeSatisfiedBy,
+    ) {
       let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
       if (mode) {
         url += `&mode=${mode}`;
@@ -386,6 +407,9 @@ export default {
       }
       if (includeMemberships === false) {
         url += `&include_memberships=false`;
+      }
+      if (excludeSatisfiedBy) {
+        url += `&exclude_satisfied_by=true`;
       }
       axios
         .get(url)

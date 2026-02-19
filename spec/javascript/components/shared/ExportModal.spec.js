@@ -1101,6 +1101,118 @@ describe("ExportModal", () => {
   });
 
   /**
+   * EXCLUDE SATISFIED-BY TOGGLE TESTS
+   *
+   * REQUIREMENTS:
+   * 1. Checkbox appears for working_copy and vendor_submission modes
+   *    when format is csv or excel
+   * 2. Hidden for backup, published_stig modes and non-tabular formats
+   * 3. Defaults to false (include all rules by default)
+   * 4. Included in export payload when checked
+   * 5. Resets on modal reopen
+   */
+  describe("Exclude satisfied-by toggle", () => {
+    it("shows checkbox for working_copy mode with csv format", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      wrapper.vm.selectedFormat = "csv";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="exclude-satisfied-by-checkbox"]');
+      expect(checkbox.exists()).toBe(true);
+    });
+
+    it("shows checkbox for vendor_submission mode with excel format", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "vendor_submission";
+      await wrapper.vm.$nextTick();
+      wrapper.vm.selectedFormat = "excel";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="exclude-satisfied-by-checkbox"]');
+      expect(checkbox.exists()).toBe(true);
+    });
+
+    it("hides checkbox for backup mode", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "backup";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="exclude-satisfied-by-checkbox"]');
+      expect(checkbox.exists()).toBe(false);
+    });
+
+    it("hides checkbox for published_stig mode", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+
+      const checkbox = wrapper.find('[data-testid="exclude-satisfied-by-checkbox"]');
+      expect(checkbox.exists()).toBe(false);
+    });
+
+    it("defaults to false (include all rules)", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+
+      expect(wrapper.vm.excludeSatisfiedBy).toBe(false);
+    });
+
+    it("includes excludeSatisfiedBy in export payload when checked", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+      wrapper.vm.selectedFormat = "csv";
+      wrapper.vm.excludeSatisfiedBy = true;
+      await wrapper.vm.$nextTick();
+
+      const exportBtn = wrapper.find('[data-testid="export-btn"]');
+      await exportBtn.trigger("click");
+
+      const payload = wrapper.emitted("export")[0][0];
+      expect(payload.excludeSatisfiedBy).toBe(true);
+    });
+
+    it("resets to false on modal reopen", async () => {
+      wrapper = createWrapper({
+        availableModes: allModes,
+        components: singleComponent,
+        visible: true,
+      });
+      wrapper.vm.excludeSatisfiedBy = true;
+
+      await wrapper.setProps({ visible: false });
+      await wrapper.setProps({ visible: true });
+
+      expect(wrapper.vm.excludeSatisfiedBy).toBe(false);
+    });
+  });
+
+  /**
    * NYD PRE-FLIGHT WARNING TESTS
    *
    * REQUIREMENTS:
