@@ -65,54 +65,11 @@
         A new project <strong>{{ projectName }}</strong> will be created with:
       </p>
 
-      <!-- Component list -->
-      <div v-if="componentDetails.length > 0" class="mb-3" data-testid="component-list">
-        <h6 class="font-weight-bold mb-2">Components ({{ componentDetails.length }})</h6>
-        <div
-          v-for="(comp, index) in componentDetails"
-          :key="index"
-          class="d-flex justify-content-between align-items-center py-1 border-bottom"
-          data-testid="component-detail-row"
-        >
-          <span>
-            <b-icon icon="folder" class="mr-1 text-muted" />
-            {{ comp.name }}
-          </span>
-          <small class="text-muted">{{ comp.rule_count }} rules</small>
-        </div>
-      </div>
-
-      <!-- Summary totals -->
-      <table class="table table-sm table-bordered" data-testid="summary-table">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th class="text-right">Count</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Total Rules</td>
-            <td class="text-right font-weight-bold">{{ summary.rules_imported }}</td>
-          </tr>
-          <tr>
-            <td>Satisfactions</td>
-            <td class="text-right font-weight-bold">{{ summary.satisfactions_imported }}</td>
-          </tr>
-          <tr>
-            <td>Reviews</td>
-            <td class="text-right font-weight-bold">{{ summary.reviews_imported }}</td>
-          </tr>
-          <tr v-if="summary.memberships_imported !== undefined">
-            <td>Memberships</td>
-            <td class="text-right font-weight-bold">{{ summary.memberships_imported }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <b-alert v-for="(warning, index) in warnings" :key="index" variant="warning" show>
-        {{ warning }}
-      </b-alert>
+      <BackupPreview
+        :summary="summary"
+        :component-details="summary.component_details || []"
+        :warnings="warnings"
+      />
     </div>
 
     <!-- Footer -->
@@ -150,9 +107,11 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import BackupPreview from "../shared/BackupPreview.vue";
 
 export default {
   name: "RestoreProjectModal",
+  components: { BackupPreview },
   mixins: [FormMixinVue, AlertMixinVue],
   data() {
     return {
@@ -173,12 +132,6 @@ export default {
         { value: "hidden", text: "Hidden" },
       ],
     };
-  },
-  computed: {
-    componentDetails() {
-      if (!this.summary || !this.summary.component_details) return [];
-      return this.summary.component_details;
-    },
   },
   methods: {
     showModal() {

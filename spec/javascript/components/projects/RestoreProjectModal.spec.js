@@ -20,8 +20,7 @@ vi.mock("axios");
  *
  * 2. PREVIEW STEP:
  *    - Pre-fills project name/description from archive
- *    - Shows summary counts
- *    - Shows warnings if any
+ *    - Delegates rendering to BackupPreview (read-only mode)
  *    - "Create Project" button to confirm
  *    - "Back" button to return to upload
  *
@@ -39,8 +38,8 @@ describe("RestoreProjectModal", () => {
         satisfactions_imported: 12,
         reviews_imported: 8,
         component_details: [
-          { name: "Photon OS 4", rule_count: 50 },
-          { name: "RHEL 9", rule_count: 44 },
+          { name: "Photon OS 4", rule_count: 50, srg_title: "GPOS SRG", srg_version: "V3R3" },
+          { name: "RHEL 9", rule_count: 44, srg_title: "GPOS SRG", srg_version: "V3R3" },
         ],
       },
       warnings: [],
@@ -180,7 +179,7 @@ describe("RestoreProjectModal", () => {
       expect(wrapper.vm.step).toBe("preview");
     });
 
-    it("shows summary in preview", async () => {
+    it("shows summary in preview via BackupPreview", async () => {
       axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
@@ -201,14 +200,25 @@ describe("RestoreProjectModal", () => {
       await wrapper.vm.submitDryRun();
       await wrapper.vm.$nextTick();
 
-      const list = wrapper.find('[data-testid="component-list"]');
-      expect(list.exists()).toBe(true);
-      const rows = wrapper.findAll('[data-testid="component-detail-row"]');
+      const rows = wrapper.findAll('[data-testid="component-row"]');
       expect(rows.length).toBe(2);
       expect(wrapper.text()).toContain("Photon OS 4");
       expect(wrapper.text()).toContain("RHEL 9");
       expect(wrapper.text()).toContain("50 rules");
       expect(wrapper.text()).toContain("44 rules");
+    });
+
+    it("shows SRG info per component", async () => {
+      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      wrapper = createWrapper();
+      wrapper.vm.showModal();
+      wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
+
+      await wrapper.vm.submitDryRun();
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.text()).toContain("GPOS SRG");
+      expect(wrapper.text()).toContain("V3R3");
     });
 
     it("calls correct endpoint", async () => {

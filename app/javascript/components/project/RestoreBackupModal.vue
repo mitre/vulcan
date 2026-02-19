@@ -34,79 +34,14 @@
         >:
       </p>
 
-      <!-- Component Selection (when component_details available) -->
-      <div v-if="componentSelections.length > 0" data-testid="component-picker">
-        <h6 class="font-weight-bold mb-2">Select components to import:</h6>
-        <div class="component-list mb-3">
-          <div
-            v-for="(comp, index) in componentSelections"
-            :key="index"
-            class="d-flex align-items-center py-1 border-bottom"
-            data-testid="component-row"
-          >
-            <b-form-checkbox
-              v-model="comp.selected"
-              :data-testid="'component-checkbox-' + index"
-              class="mr-2"
-            />
-            <div class="flex-grow-1">
-              <template v-if="comp.conflict && comp.selected">
-                <b-form-input
-                  v-model="comp.importName"
-                  size="sm"
-                  :data-testid="'component-name-input-' + index"
-                  class="d-inline-block"
-                  style="width: 250px"
-                />
-              </template>
-              <template v-else>
-                {{ comp.name }}
-              </template>
-            </div>
-            <small class="text-muted mr-2">{{ comp.ruleCount }} rules</small>
-            <b-badge v-if="comp.conflict" variant="warning" data-testid="conflict-badge">
-              conflict
-            </b-badge>
-            <b-icon v-else icon="check-circle" variant="success" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Summary Table -->
-      <table class="table table-sm table-bordered" data-testid="summary-table">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th class="text-right">Count</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Components</td>
-            <td class="text-right font-weight-bold">{{ selectedComponentCount }}</td>
-          </tr>
-          <tr>
-            <td>Rules</td>
-            <td class="text-right font-weight-bold">{{ selectedRuleCount }}</td>
-          </tr>
-          <tr>
-            <td>Satisfactions</td>
-            <td class="text-right font-weight-bold">{{ summary.satisfactions_imported }}</td>
-          </tr>
-          <tr>
-            <td>Reviews</td>
-            <td class="text-right font-weight-bold">{{ summary.reviews_imported }}</td>
-          </tr>
-          <tr v-if="summary.memberships_imported !== undefined">
-            <td>Memberships</td>
-            <td class="text-right font-weight-bold">{{ summary.memberships_imported }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <b-alert v-for="(warning, index) in warnings" :key="index" variant="warning" show>
-        {{ warning }}
-      </b-alert>
+      <BackupPreview
+        :summary="summary"
+        :component-details="summary.component_details || []"
+        :warnings="warnings"
+        :selectable="true"
+        :existing-names="existingComponentNames"
+        @selection-change="onSelectionChange"
+      />
     </div>
 
     <!-- Footer -->
@@ -130,7 +65,7 @@
         <b-button
           variant="success"
           data-testid="import-btn"
-          :disabled="loading || selectedComponentCount === 0"
+          :disabled="loading || selectedComponentCount === 0 || hasUnresolvedConflicts"
           @click="submitImport"
         >
           {{ loading ? "Importing..." : "Import" }}
@@ -144,9 +79,11 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import BackupPreview from "../shared/BackupPreview.vue";
 
 export default {
   name: "RestoreBackupModal",
+  components: { BackupPreview },
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     project_id: {
@@ -164,34 +101,11 @@ export default {
       loading: false,
       summary: null,
       warnings: [],
-      componentSelections: [],
+      selectedComponentCount: 0,
+      hasUnresolvedConflicts: false,
+      componentFilter: null,
+      existingComponentNames: [],
     };
-  },
-  computed: {
-    selectedComponentCount() {
-      if (this.componentSelections.length === 0) {
-        return this.summary ? this.summary.components_imported : 0;
-      }
-      return this.componentSelections.filter((c) => c.selected).length;
-    },
-    selectedRuleCount() {
-      if (this.componentSelections.length === 0) {
-        return this.summary ? this.summary.rules_imported : 0;
-      }
-      return this.componentSelections
-        .filter((c) => c.selected)
-        .reduce((sum, c) => sum + c.ruleCount, 0);
-    },
-    componentFilter() {
-      if (this.componentSelections.length === 0) return null;
-      const filter = {};
-      this.componentSelections
-        .filter((c) => c.selected)
-        .forEach((c) => {
-          filter[c.name] = c.importName;
-        });
-      return filter;
-    },
   },
   methods: {
     showModal() {
@@ -206,7 +120,15 @@ export default {
       this.loading = false;
       this.summary = null;
       this.warnings = [];
-      this.componentSelections = [];
+      this.selectedComponentCount = 0;
+      this.hasUnresolvedConflicts = false;
+      this.componentFilter = null;
+      this.existingComponentNames = [];
+    },
+    onSelectionChange({ selectedCount, componentFilter, hasUnresolvedConflicts }) {
+      this.selectedComponentCount = selectedCount;
+      this.componentFilter = componentFilter;
+      this.hasUnresolvedConflicts = hasUnresolvedConflicts;
     },
     buildFormData(dryRun) {
       const formData = new FormData();
@@ -219,16 +141,6 @@ export default {
       }
       return formData;
     },
-    buildComponentSelections(details) {
-      if (!details || !Array.isArray(details)) return [];
-      return details.map((d) => ({
-        name: d.name,
-        importName: d.conflict ? `${d.name} (restored)` : d.name,
-        ruleCount: d.rule_count,
-        conflict: d.conflict,
-        selected: true,
-      }));
-    },
     async submitDryRun() {
       this.loading = true;
       try {
@@ -239,9 +151,11 @@ export default {
         );
         this.summary = response.data.summary;
         this.warnings = response.data.warnings || [];
-        this.componentSelections = this.buildComponentSelections(
-          response.data.summary.component_details,
-        );
+        // Extract existing names from conflicting components
+        const details = response.data.summary.component_details || [];
+        this.existingComponentNames = details.filter((d) => d.conflict).map((d) => d.name);
+        // Initialize selection count from summary
+        this.selectedComponentCount = response.data.summary.components_imported || 0;
         this.step = "preview";
       } catch (error) {
         this.alertOrNotifyResponse(error.response);

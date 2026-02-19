@@ -18,8 +18,8 @@ vi.mock("axios");
  *    - Sends dry_run=true POST to /projects/:id/import_backup
  *
  * 2. PREVIEW STEP:
- *    - Shows summary counts (components, rules, satisfactions, reviews)
- *    - Shows warnings if any
+ *    - Delegates rendering to BackupPreview (selectable mode)
+ *    - Shows summary counts, component picker, SRG alerts, warnings
  *    - "Import" button to confirm
  *    - "Back" button to return to upload
  *
@@ -192,7 +192,6 @@ describe("RestoreBackupModal", () => {
       await wrapper.vm.submitDryRun();
       await wrapper.vm.$nextTick();
 
-      expect(wrapper.text()).toContain("2");
       expect(wrapper.text()).toContain("94");
       expect(wrapper.text()).toContain("12");
       expect(wrapper.text()).toContain("8");
@@ -245,6 +244,7 @@ describe("RestoreBackupModal", () => {
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
       wrapper.vm.step = "preview";
       wrapper.vm.summary = MOCK_DRY_RUN_RESPONSE.data.summary;
+      wrapper.vm.selectedComponentCount = 2;
 
       await wrapper.vm.submitImport();
 
@@ -259,6 +259,7 @@ describe("RestoreBackupModal", () => {
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
       wrapper.vm.step = "preview";
       wrapper.vm.summary = MOCK_DRY_RUN_RESPONSE.data.summary;
+      wrapper.vm.selectedComponentCount = 2;
 
       await wrapper.vm.submitImport();
 
@@ -272,6 +273,7 @@ describe("RestoreBackupModal", () => {
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
       wrapper.vm.step = "preview";
       wrapper.vm.summary = MOCK_DRY_RUN_RESPONSE.data.summary;
+      wrapper.vm.selectedComponentCount = 2;
 
       await wrapper.vm.submitImport();
 
@@ -333,7 +335,7 @@ describe("RestoreBackupModal", () => {
   });
 
   // ==========================================
-  // COMPONENT PICKER (preview step)
+  // COMPONENT PICKER (delegated to BackupPreview)
   // ==========================================
   describe("component picker", () => {
     const MOCK_DRY_RUN_WITH_DETAILS = {
@@ -362,29 +364,17 @@ describe("RestoreBackupModal", () => {
       await wrapper.vm.$nextTick();
     };
 
-    it("shows component checkboxes when component_details present", async () => {
+    it("shows component rows when component_details present", async () => {
       await setupPreviewWithDetails();
-      const picker = wrapper.find('[data-testid="component-picker"]');
-      expect(picker.exists()).toBe(true);
       const rows = wrapper.findAll('[data-testid="component-row"]');
       expect(rows.length).toBe(2);
     });
 
-    it("all components selected by default", async () => {
+    it("shows status indicators for components", async () => {
       await setupPreviewWithDetails();
-      expect(wrapper.vm.componentSelections.every((c) => c.selected)).toBe(true);
-    });
-
-    it("conflicting component gets auto-renamed import name", async () => {
-      await setupPreviewWithDetails();
-      const conflicting = wrapper.vm.componentSelections.find((c) => c.conflict);
-      expect(conflicting.importName).toBe("Component B (restored)");
-    });
-
-    it("shows conflict badge for conflicting components", async () => {
-      await setupPreviewWithDetails();
-      const badges = wrapper.findAll('[data-testid="conflict-badge"]');
-      expect(badges.length).toBe(1);
+      // Non-conflicting component shows ready
+      const readyIcons = wrapper.findAll('[data-testid="status-ready"]');
+      expect(readyIcons.length).toBeGreaterThanOrEqual(1);
     });
 
     it("conflicting component name is editable when selected", async () => {
@@ -393,21 +383,20 @@ describe("RestoreBackupModal", () => {
       expect(nameInput.exists()).toBe(true);
     });
 
-    it("summary updates based on selection", async () => {
-      await setupPreviewWithDetails();
-      // Deselect first component
-      wrapper.vm.componentSelections[0].selected = false;
-      await wrapper.vm.$nextTick();
-
-      expect(wrapper.vm.selectedComponentCount).toBe(1);
-      expect(wrapper.vm.selectedRuleCount).toBe(44);
-    });
-
     it("sends component_filter JSON in FormData on import", async () => {
       await setupPreviewWithDetails();
       axios.post.mockResolvedValue({
         data: { toast: "Backup restored successfully." },
       });
+
+      // BackupPreview emits selection-change with componentFilter
+      const preview = wrapper.findComponent({ name: "BackupPreview" });
+      preview.vm.$emit("selection-change", {
+        selectedCount: 2,
+        selectedRuleCount: 94,
+        componentFilter: { "Component A": "Component A", "Component B": "Component B (restored)" },
+      });
+      await wrapper.vm.$nextTick();
 
       await wrapper.vm.submitImport();
 
@@ -419,14 +408,21 @@ describe("RestoreBackupModal", () => {
 
     it("import button disabled when no components selected", async () => {
       await setupPreviewWithDetails();
-      wrapper.vm.componentSelections.forEach((c) => (c.selected = false));
+
+      // Simulate selection-change with 0 selected
+      const preview = wrapper.findComponent({ name: "BackupPreview" });
+      preview.vm.$emit("selection-change", {
+        selectedCount: 0,
+        selectedRuleCount: 0,
+        componentFilter: {},
+      });
       await wrapper.vm.$nextTick();
 
       const importBtn = wrapper.find('[data-testid="import-btn"]');
       expect(importBtn.attributes("disabled")).toBeDefined();
     });
 
-    it("does not show picker when component_details absent", async () => {
+    it("does not show component rows when component_details absent", async () => {
       // Use the standard dry-run response (no component_details)
       axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
@@ -435,8 +431,8 @@ describe("RestoreBackupModal", () => {
       await wrapper.vm.submitDryRun();
       await wrapper.vm.$nextTick();
 
-      const picker = wrapper.find('[data-testid="component-picker"]');
-      expect(picker.exists()).toBe(false);
+      const rows = wrapper.findAll('[data-testid="component-row"]');
+      expect(rows.length).toBe(0);
     });
   });
 
