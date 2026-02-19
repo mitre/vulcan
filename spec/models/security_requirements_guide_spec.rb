@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe SecurityRequirementsGuide do
-  let(:srg) { create(:security_requirements_guide) }
+  let_it_be(:srg) { create(:security_requirements_guide) }
 
   context 'severity_counts' do
     it 'returns aggregated severity counts' do

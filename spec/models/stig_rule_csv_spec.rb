@@ -4,7 +4,6 @@ require 'rails_helper'
 
 RSpec.describe StigRule, '#csv_value_for' do
   let(:none_identified) { 'None identified.' }
-  let(:stig) { create(:stig) }
   let(:stig_rule) do
     create(:stig_rule,
            stig: stig,
@@ -20,6 +19,8 @@ RSpec.describe StigRule, '#csv_value_for' do
            legacy_ids: 'V-56571, SV-70831',
            status: 'Applicable - Configurable')
   end
+
+  let_it_be(:stig) { create(:stig) }
 
   before do
     # Update the auto-created associated records (before_create creates empty ones)

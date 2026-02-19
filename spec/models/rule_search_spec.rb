@@ -10,9 +10,9 @@ RSpec.describe 'Rule Search' do
   # - Should support fuzzy matching (typo tolerance)
   # - Rule.search_phrase should support exact phrase matching with quotes
 
-  let!(:srg) { create(:security_requirements_guide) }
-  let!(:project) { create(:project) }
-  let!(:component) { create(:component, project: project, based_on: srg) }
+  let_it_be(:srg) { create(:security_requirements_guide) }
+  let_it_be(:project) { create(:project) }
+  let_it_be(:component) { create(:component, project: project, based_on: srg) }
 
   describe '.search_content' do
     # Create rules in a before block to ensure they exist before ALL tests

@@ -3,15 +3,27 @@
 require 'rails_helper'
 
 RSpec.describe Component do
-  before do
+  # Create SRG, project, and component ONCE. Each example gets a savepoint
+  # that rollbacks any mutations (update_columns, rule locks, etc.).
+  # This eliminates ~50 SRG parses + ~50 component rule imports.
+  let_it_be(:shared_srg) do
     srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
-    @srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
-    @srg.xml = srg_xml
-    @srg.save!
+    srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
+    srg.xml = srg_xml
+    srg.save!
+    srg
+  end
+  let_it_be(:shared_project) { Project.create!(name: 'Photon OS 3') }
+  let_it_be(:shared_component, refind: true) do
+    Component.create!(project: shared_project, name: 'Photon OS 3', title: 'Photon OS 3 STIG',
+                      version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: shared_srg)
+  end
 
-    @p1 = Project.create!(name: 'Photon OS 3')
-    @p1_c1 = Component.create!(project: @p1, name: 'Photon OS 3', title: 'Photon OS 3 STIG', version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: @srg)
+  before do
+    @srg = shared_srg
+    @p1 = shared_project
+    @p1_c1 = shared_component
   end
 
   context 'component release' do
@@ -641,9 +653,9 @@ RSpec.describe Component do
     end
 
     it 'returns zero counts for components with no rules' do
-      empty_component = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG', version: 'Empty V1R1', prefix: 'EMPT-00', based_on: @srg)
-      empty_component.rules.destroy_all
-      empty_component.reload
+      empty_component = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG',
+                                          version: 'Empty V1R1', prefix: 'EMPT-00', based_on: @srg,
+                                          skip_import_srg_rules: true)
       counts = empty_component.severity_counts
       expect(counts[:high]).to eq(0)
       expect(counts[:medium]).to eq(0)
@@ -682,9 +694,9 @@ RSpec.describe Component do
     end
 
     it 'handles components with no rules' do
-      empty = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG', version: 'Empty V1R1', prefix: 'EMPT-01', based_on: @srg)
-      empty.rules.destroy_all
-      empty.reload
+      empty = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG',
+                                version: 'Empty V1R1', prefix: 'EMPT-01', based_on: @srg,
+                                skip_import_srg_rules: true)
 
       component = Component.with_severity_counts.find(empty.id)
       expect(component.severity_high_count).to eq(0)

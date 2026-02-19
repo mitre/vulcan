@@ -29,12 +29,13 @@ CHECK_FIELDS = %w[system content_ref_name content_ref_href content].freeze
 ROUNDTRIP_BACKUP_FILENAME = 'project-backup.zip'
 
 RSpec.describe 'JSON Archive Backup Round-Trip' do
-  let(:source_project) { create(:project, name: 'Source Project') }
-  let(:target_project) { create(:project, name: 'Target Project') }
-  let(:review_user) { create(:user) }
-
-  # Build a rich source component with all data types
-  let!(:source_component) do
+  # ------------------------------------------------------------------
+  # EXPENSIVE SETUP — source data created ONCE, shared via savepoints.
+  # Each example gets its own target_project (cheap) for import.
+  # ------------------------------------------------------------------
+  let_it_be(:source_project, reload: true) { create(:project, name: 'Source Project') }
+  let_it_be(:review_user) { create(:user) }
+  let_it_be(:source_component) do
     create(:component,
            project: source_project,
            name: 'Round Trip Test',
@@ -48,62 +49,64 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
            release: 3)
   end
 
-  # Load the actual SRG (bypass select scope on based_on)
-  let(:srg) { SecurityRequirementsGuide.find(source_component.security_requirements_guide_id) }
+  # Enrich source data ONCE (part of let_it_be lifecycle)
+  let_it_be(:_enrichment) do
+    rules = source_component.rules.order(:rule_id).to_a
 
-  before do
-    # Enrich rules with realistic data
-    enrich_rules!
+    # Set varied statuses
+    rules[0..2].each { |r| r.update_columns(status: 'Applicable - Configurable') }
+    rules[3]&.update_columns(status: 'Applicable - Inherently Meets')
+    rules[4]&.update_columns(status: 'Not Applicable')
 
-    # Add satisfactions: rules[5] is satisfied by rules[0]
-    RuleSatisfaction.create!(
-      rule_id: source_component.rules.order(:rule_id)[5].id,
-      satisfied_by_rule_id: source_component.rules.order(:rule_id)[0].id
+    # Add user-authored content to first rule
+    rules[0].update_columns(
+      fixtext: 'Configure the system to enforce password complexity requirements.',
+      vendor_comments: 'Vendor confirms this setting is supported in version 4.0+.',
+      status_justification: 'This control is configurable via /etc/security/pwquality.conf.',
+      artifact_description: 'Evidence: screenshot of configuration file',
+      locked: true,
+      inspec_control_file: "control 'SV-000001' do\n  impact 0.5\n  describe file('/etc/security/pwquality.conf') do\n    it { should exist }\n  end\nend",
+      inspec_control_file_lang: 'ruby'
     )
 
-    # Add reviews with user attribution (use a non-locked rule for review actions)
-    rule_for_review = source_component.rules.order(:rule_id).second
-    Review.create!(
-      user: review_user,
-      rule: rule_for_review,
-      action: 'lock_control',
-      comment: 'Locking for release review'
-    )
-    rule_for_review.reload
-    Review.create!(
-      user: review_user,
-      rule: rule_for_review,
-      action: 'unlock_control',
-      comment: 'Unlocking after review'
-    )
+    # Add satisfactions
+    RuleSatisfaction.create!(rule_id: rules[5].id, satisfied_by_rule_id: rules[0].id)
+
+    # Add reviews
+    Review.create!(user: review_user, rule: rules[1], action: 'lock_control', comment: 'Locking for release review')
+    rules[1].reload
+    Review.create!(user: review_user, rule: rules[1], action: 'unlock_control', comment: 'Unlocking after review')
 
     # Add additional question + answer
     question = source_component.additional_questions.create!(
-      name: 'Deployment Environment',
-      question_type: 'dropdown',
+      name: 'Deployment Environment', question_type: 'dropdown',
       options: %w[Production Staging Development]
     )
-    AdditionalAnswer.create!(
-      rule: source_component.rules.first,
-      additional_question: question,
-      answer: 'Production'
-    )
+    AdditionalAnswer.create!(rule: rules[0], additional_question: question, answer: 'Production')
   end
+
+  # Pre-generate the backup ZIP once (the export is deterministic for unchanged source data)
+  let_it_be(:source_backup_zip) do
+    Export::Base.new(
+      exportable: source_component.reload,
+      mode: :backup,
+      format: :json_archive
+    ).call.data
+  end
+
+  # Load the actual SRG (bypass select scope on based_on)
+  let(:srg) { SecurityRequirementsGuide.find(source_component.security_requirements_guide_id) }
+
+  # Per-example: cheap target project for import
+  let(:target_project) { create(:project, name: 'Target Project') }
 
   # ---------- The golden round-trip test ----------
 
   describe 'export then import' do
-    let(:export_result) do
-      Export::Base.new(
-        exportable: source_component,
-        mode: :backup,
-        format: :json_archive
-      ).call
-    end
-
+    # Use pre-generated backup ZIP (export is deterministic, no need to re-export per example)
     let(:import_result) do
       Import::JsonArchiveImporter.new(
-        zip_file: export_result.data,
+        zip_file: source_backup_zip,
         project: target_project,
         include_reviews: true
       ).call
@@ -500,7 +503,7 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
     describe 'create-from-backup round-trip' do
       it 'preserves all data through project creation' do
         zip = Export::Base.new(
-          exportable: source_project,
+          exportable: source_project.reload,
           mode: :backup,
           format: :json_archive,
           zip_filename: ROUNDTRIP_BACKUP_FILENAME
@@ -529,24 +532,4 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
   private
 
   # Enrich factory-created rules with realistic user-authored data
-  def enrich_rules!
-    rules = source_component.rules.order(:rule_id).to_a
-
-    # Set varied statuses
-    rules[0..2].each { |r| r.update_columns(status: 'Applicable - Configurable') }
-    rules[3]&.update_columns(status: 'Applicable - Inherently Meets')
-    rules[4]&.update_columns(status: 'Not Applicable')
-    # rules[5..] remain "Not Yet Determined"
-
-    # Add user-authored content to first rule
-    rules[0].update_columns(
-      fixtext: 'Configure the system to enforce password complexity requirements.',
-      vendor_comments: 'Vendor confirms this setting is supported in version 4.0+.',
-      status_justification: 'This control is configurable via /etc/security/pwquality.conf.',
-      artifact_description: 'Evidence: screenshot of configuration file',
-      locked: true,
-      inspec_control_file: "control 'SV-000001' do\n  impact 0.5\n  describe file('/etc/security/pwquality.conf') do\n    it { should exist }\n  end\nend",
-      inspec_control_file_lang: 'ruby'
-    )
-  end
 end

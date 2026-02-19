@@ -3,9 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe 'Rules' do
-  let(:user) { create(:user) }
-  let(:project) { create(:project) }
-  let(:component) { create(:component, project: project) }
+  let_it_be(:user) { create(:user) }
+  let_it_be(:project) { create(:project) }
+  let_it_be(:component) { create(:component, project: project) }
   let(:rule) { component.rules.first }
 
   before do

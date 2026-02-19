@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Stig do
-  let(:stig) { create(:stig) }
+  let_it_be(:stig) { create(:stig) }
 
   context 'validation' do
     it 'validates presence of stig_id, title, version, and xml' do

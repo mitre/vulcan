@@ -36,11 +36,30 @@ RSpec.describe Export::Modes::WorkingCopy do
   end
 
   describe '#rule_scope' do
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
 
-    it 'returns all rules (no filtering)' do
+    it 'returns all rules by default (no filtering)' do
       rules = component.rules
       expect(mode.rule_scope(rules)).to eq rules
+    end
+
+    context 'with exclude_satisfied_by option' do
+      subject(:mode) { described_class.new(exclude_satisfied_by: true) }
+
+      it 'excludes rules that have satisfied_by relationships' do
+        rules = component.rules.order(:id)
+        parent_rule = rules.first
+        child_rule = rules.second
+        normal_rule = rules.third
+
+        # parent_rule is satisfied BY child_rule — parent_rule should be excluded
+        RuleSatisfaction.create!(rule_id: parent_rule.id, satisfied_by_rule_id: child_rule.id)
+
+        result = mode.rule_scope(component.rules)
+        expect(result).to include(normal_rule)
+        expect(result).to include(child_rule)
+        expect(result).not_to include(parent_rule)
+      end
     end
   end
 

@@ -11,7 +11,7 @@ require 'rails_helper'
 # - Protect against regressions where caching is accidentally removed
 #
 RSpec.describe 'Jbuilder Caching' do
-  let(:user) { create(:user) }
+  let_it_be(:user) { create(:user) }
 
   before do
     Rails.application.reload_routes!
@@ -38,20 +38,20 @@ RSpec.describe 'Jbuilder Caching' do
   end
 
   describe 'STIGs index caching' do
-    let!(:stig) { create(:stig) }
+    let_it_be(:stig) { create(:stig) }
 
     it_behaves_like 'consistent cached JSON', '/stigs.json'
   end
 
   describe 'SRGs index caching' do
-    let!(:srg) { create(:security_requirements_guide) }
+    let_it_be(:srg) { create(:security_requirements_guide) }
 
     it_behaves_like 'consistent cached JSON', '/srgs.json'
   end
 
   describe 'STIG show caching (rules collection)' do
-    let(:stig) { create(:stig) }
-    let!(:rule) { create(:stig_rule, stig: stig) }
+    let_it_be(:stig) { create(:stig) }
+    let_it_be(:rule) { create(:stig_rule, stig: stig) }
 
     it 'returns consistent JSON with cached rules' do
       get "/stigs/#{stig.id}.json"
@@ -80,8 +80,8 @@ RSpec.describe 'Jbuilder Caching' do
   end
 
   describe 'SRG show caching (rules collection)' do
-    let(:srg) { create(:security_requirements_guide) }
-    let!(:rule) { create(:srg_rule, security_requirements_guide: srg) }
+    let_it_be(:srg) { create(:security_requirements_guide) }
+    let_it_be(:rule) { create(:srg_rule, security_requirements_guide: srg) }
 
     it 'returns consistent JSON with cached rules' do
       get "/srgs/#{srg.id}.json"

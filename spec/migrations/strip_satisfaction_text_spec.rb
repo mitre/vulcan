@@ -6,15 +6,23 @@ RSpec.describe 'StripSatisfactionTextFromVendorComments migration', type: :model
   # REQUIREMENT: DB migration strips stale satisfaction text from vendor_comments
   # and vuln_discussion columns, leaving user-authored content intact.
 
-  before do
+  let_it_be(:shared_srg) do
     srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
-    @srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
-    @srg.xml = srg_xml
-    @srg.save!
-
+    srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
+    srg.xml = srg_xml
+    srg.save!
+    srg
+  end
+  let_it_be(:shared_component) do
     project = Project.create!(name: 'Migration Test')
-    @component = Component.create!(project: project, name: 'Migration Test Component', title: 'Migration Test STIG', version: 'Test V1R1', prefix: 'TSTT-01', based_on: @srg)
+    Component.create!(project: project, name: 'Migration Test Component', title: 'Migration Test STIG',
+                      version: 'Test V1R1', prefix: 'TSTT-01', based_on: shared_srg)
+  end
+
+  before do
+    @srg = shared_srg
+    @component = shared_component.reload
   end
 
   describe 'SATISFACTION_STRIP_PATTERN' do

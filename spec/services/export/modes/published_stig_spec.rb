@@ -14,7 +14,7 @@ RSpec.describe Export::Modes::PublishedStig do
   let(:status_ac) { 'Applicable - Configurable' }
 
   describe '#rule_scope' do
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
 
     before do
       # Component factory creates rules from SRG — all start as 'Not Yet Determined'.

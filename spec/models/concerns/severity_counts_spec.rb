@@ -18,7 +18,7 @@ RSpec.describe SeverityCounts do
 
   # Use real models with their actual behavior
   # Component auto-creates rules from SRG on creation
-  let(:srg) do
+  let_it_be(:srg) do
     srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
     parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
     srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
@@ -26,7 +26,7 @@ RSpec.describe SeverityCounts do
     srg.save!
     srg
   end
-  let(:component) { create(:component, based_on: srg) }
+  let_it_be(:component) { create(:component, based_on: srg) }
 
   # Helper to get actual counts (varies based on deletion filters and test setup)
   def actual_counts(record)
@@ -132,7 +132,7 @@ RSpec.describe SeverityCounts do
   end
 
   describe 'integration with STIG model' do
-    let(:stig) { create(:stig) }
+    let_it_be(:stig) { create(:stig) }
 
     it 'works with actual STIG model' do
       json = stig.as_json

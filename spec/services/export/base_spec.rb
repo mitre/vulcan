@@ -10,8 +10,8 @@ require 'rails_helper'
 # This is the integration test that proves the new service system works.
 # ==========================================================================
 RSpec.describe Export::Base do
-  let(:component) { create(:component) }
-  let(:project) { component.project }
+  let_it_be(:component) { create(:component) }
+  let_it_be(:project) { component.project }
 
   describe '#call with working_copy + csv' do
     subject(:export) do
@@ -58,7 +58,7 @@ RSpec.describe Export::Base do
       described_class.new(exportable: project, mode: :working_copy, format: :csv)
     end
 
-    let!(:component2) { create(:component, project: project) }
+    let_it_be(:component2) { create(:component, project: project) }
 
     it 'returns an Export::Result' do
       result = export.call
@@ -114,7 +114,7 @@ RSpec.describe Export::Base do
   end
 
   describe '#call with specific component_ids' do
-    let!(:component2) { create(:component, project: project) }
+    let_it_be(:component2_for_ids) { create(:component, project: project) }
 
     it 'exports only specified components when component_ids given' do
       export = described_class.new(

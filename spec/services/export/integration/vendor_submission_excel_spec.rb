@@ -26,12 +26,13 @@ RSpec.describe 'VendorSubmission + Excel integration' do
   end
 
   let(:status_ac) { 'Applicable - Configurable' }
-  let(:component) { create(:component) }
   let(:project) { component.project }
   let(:rules) { component.rules.where.missing(:satisfied_by).to_a }
   let(:status_aim) { 'Applicable - Inherently Meets' }
   let(:status_adnm) { 'Applicable - Does Not Meet' }
   let(:status_na) { 'Not Applicable' }
+
+  let_it_be(:component) { create(:component) }
 
   before do
     # Set up mixed statuses on rules without satisfied_by (to avoid status= guard)
@@ -189,21 +190,5 @@ RSpec.describe 'VendorSubmission + Excel integration' do
         expect(na_row['Artifact Description']).to be_blank
       end
     end
-  end
-
-  private
-
-  def read_xlsx(binary_data)
-    tmpfile = Tempfile.new(['test', '.xlsx'])
-    tmpfile.binmode
-    tmpfile.write(binary_data)
-    tmpfile.close
-    workbook = Roo::Spreadsheet.open(tmpfile.path)
-    workbook.instance_variable_set(:@_tmpfile, tmpfile)
-    workbook
-  end
-
-  def parse_data_rows(workbook, sheet_index)
-    workbook.sheet(sheet_index).parse(headers: true).drop(1)
   end
 end

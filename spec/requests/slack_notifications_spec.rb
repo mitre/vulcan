@@ -8,10 +8,10 @@ RSpec.describe 'Slack Notifications' do
   end
 
   describe 'ApplicationController#slack_notification_params argument forwarding' do
-    let(:admin) { create(:user, admin: true) }
-    let(:project) { create(:project) }
-    let(:srg) { create(:security_requirements_guide) }
-    let(:component) { create(:component, project: project, based_on: srg) }
+    let_it_be(:admin) { create(:user, admin: true) }
+    let_it_be(:project) { create(:project) }
+    let_it_be(:srg) { create(:security_requirements_guide) }
+    let_it_be(:component) { create(:component, project: project, based_on: srg) }
     let(:rule) { component.rules.first }
 
     before do

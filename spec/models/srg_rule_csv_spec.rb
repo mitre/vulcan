@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe SrgRule, '#csv_value_for' do
-  let(:srg) { create(:security_requirements_guide) }
+  let_it_be(:srg) { create(:security_requirements_guide) }
   let(:srg_rule) do
     create(:srg_rule,
            security_requirements_guide: srg,

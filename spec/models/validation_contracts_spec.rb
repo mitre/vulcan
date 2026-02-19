@@ -24,9 +24,9 @@ UNIQUENESS_CONSTRAINTS = 'uniqueness constraints'
 RSpec.describe 'Model validation contracts' do
   # Shared setup: SRG + Project used by Component, Rule, and Review tests.
   # Created once per example group that needs them.
-  let(:srg) { create(:security_requirements_guide) }
-  let(:project) { create(:project) }
-  let(:component) { create(:component, project: project, based_on: srg) }
+  let_it_be(:srg) { create(:security_requirements_guide) }
+  let_it_be(:project) { create(:project) }
+  let_it_be(:component) { create(:component, project: project, based_on: srg) }
 
   # ===========================================================================
   # COMPONENT

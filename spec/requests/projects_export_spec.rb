@@ -8,9 +8,9 @@ require 'rails_helper'
 # project controller's allowlist omits :csv, so requesting CSV returns 400.
 # ==========================================================================
 RSpec.describe 'Project Exports' do
-  let(:user) { create(:user) }
-  let(:project) { create(:project) }
-  let!(:component) { create(:component, project: project) }
+  let_it_be(:user) { create(:user) }
+  let_it_be(:project) { create(:project) }
+  let_it_be(:component) { create(:component, project: project) }
 
   before do
     Rails.application.reload_routes!

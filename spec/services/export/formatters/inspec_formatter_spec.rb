@@ -39,7 +39,7 @@ RSpec.describe Export::Formatters::InspecFormatter do
   end
 
   describe '#generate_from_component' do
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
     let(:ac_rules) do
       component.rules.eager_load(
         :disa_rule_descriptions, :checks, :satisfies, :satisfied_by
@@ -140,8 +140,8 @@ RSpec.describe Export::Formatters::InspecFormatter do
   end
 
   describe '#generate_batch' do
-    let(:first_component) { create(:component) }
-    let(:second_component) { create(:component) }
+    let_it_be(:first_component) { create(:component) }
+    let_it_be(:second_component) { create(:component) }
     let(:pairs) do
       [first_component, second_component].map do |c|
         rules = c.rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by)
@@ -181,24 +181,6 @@ RSpec.describe Export::Formatters::InspecFormatter do
       dir = "#{first_component.name.tr(' ', '-')}-#{version_str}#{release_str}-stig-baseline/"
 
       expect(entries.any? { |e| e.start_with?(dir) }).to be true
-    end
-  end
-
-  private
-
-  def zip_entries(data)
-    entries = []
-    io = StringIO.new(data)
-    Zip::File.open_buffer(io) do |zip|
-      zip.each { |entry| entries << entry.name }
-    end
-    entries
-  end
-
-  def zip_read(data, name)
-    io = StringIO.new(data)
-    Zip::File.open_buffer(io) do |zip|
-      return zip.read(name)
     end
   end
 end

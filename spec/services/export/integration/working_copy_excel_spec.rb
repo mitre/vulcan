@@ -12,8 +12,8 @@ require 'rails_helper'
 # - Multi-component produces multi-sheet workbook
 # ==========================================================================
 RSpec.describe 'WorkingCopy + Excel integration' do
-  let(:component) { create(:component) }
-  let(:project) { component.project }
+  let_it_be(:component) { create(:component) }
+  let_it_be(:project) { component.project }
 
   describe 'single component' do
     subject(:result) do
@@ -54,7 +54,7 @@ RSpec.describe 'WorkingCopy + Excel integration' do
       Export::Base.new(exportable: project, mode: :working_copy, format: :excel).call
     end
 
-    let!(:component2) { create(:component, project: project) }
+    let_it_be(:component2) { create(:component, project: project) }
 
     it 'produces a single workbook (not zip)' do
       expect(result.content_type).to eq 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -75,21 +75,5 @@ RSpec.describe 'WorkingCopy + Excel integration' do
       expect(sheet0_rows.size).to eq components[0].rules.count
       expect(sheet1_rows.size).to eq components[1].rules.count
     end
-  end
-
-  private
-
-  def read_xlsx(binary_data)
-    tmpfile = Tempfile.new(['test', '.xlsx'])
-    tmpfile.binmode
-    tmpfile.write(binary_data)
-    tmpfile.close
-    workbook = Roo::Spreadsheet.open(tmpfile.path)
-    workbook.instance_variable_set(:@_tmpfile, tmpfile)
-    workbook
-  end
-
-  def parse_data_rows(workbook, sheet_index)
-    workbook.sheet(sheet_index).parse(headers: true).drop(1)
   end
 end

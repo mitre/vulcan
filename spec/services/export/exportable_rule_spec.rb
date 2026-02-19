@@ -11,7 +11,7 @@ require 'rails_helper'
 # making mode transforms and formatter access clear and maintainable.
 # ==========================================================================
 RSpec.describe Export::ExportableRule do
-  let(:component) { create(:component) }
+  let_it_be(:component) { create(:component) }
   let(:rule) { component.rules.first }
   let(:exportable) { described_class.new(rule) }
 

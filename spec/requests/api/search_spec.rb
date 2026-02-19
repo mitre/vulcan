@@ -13,19 +13,21 @@ RSpec.describe 'Api::Search' do
   # - Returns empty for queries < 2 chars
 
   let(:search_path) { '/api/search/global' }
+  # Components automatically get rules from the SRG via based_on
+  let(:web_component_name) { 'Web Server Component' }
+
   # Create admin_user FIRST to prevent first-user-admin promotion
-  let!(:admin_user) { create(:user, admin: true) }
-  let(:user) { create(:user) }
+  let_it_be(:admin_user) { create(:user, admin: true) }
+  let_it_be(:user) { create(:user) }
   # Create test data
   # Note: Set visibility to 'hidden' for project2 so it only appears via membership
   # (default visibility is 'discoverable' which would show in search)
-  let!(:project1) { create(:project, name: 'Security Baseline Project') }
-  let!(:project2) { create(:project, name: 'Another Secret Project', visibility: :hidden) }
-  # Components automatically get rules from the SRG via based_on
-  let(:web_component_name) { 'Web Server Component' }
-  let!(:srg) { create(:security_requirements_guide) }
-  let!(:component1) { create(:component, project: project1, name: web_component_name, prefix: 'WEBS-01', based_on: srg) }
-  let!(:component2) { create(:component, project: project2, name: 'Database Component', prefix: 'DBAS-01', based_on: srg) }
+  let_it_be(:project1) { create(:project, name: 'Security Baseline Project') }
+  let_it_be(:project2) { create(:project, name: 'Another Secret Project', visibility: :hidden) }
+
+  let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
+  let_it_be(:component1) { create(:component, project: project1, name: 'Web Server Component', prefix: 'WEBS-01', based_on: srg) }
+  let_it_be(:component2) { create(:component, project: project2, name: 'Database Component', prefix: 'DBAS-01', based_on: srg) }
 
   before do # rubocop:disable RSpec/ScatteredSetup
     Rails.application.reload_routes!
@@ -347,7 +349,7 @@ RSpec.describe 'Api::Search' do
       end
     end
 
-    context 'STIG rules search' do # rubocop:disable RSpec/MultipleMemoizedHelpers
+    context 'STIG rules search' do
       # Requirements:
       # - STIG rules are public resources - any authenticated user can search them
       # - Search by rule_id, vuln_id, title, fixtext, or check content
@@ -490,7 +492,7 @@ RSpec.describe 'Api::Search' do
       end
     end
 
-    context 'SRG rules search' do # rubocop:disable RSpec/MultipleMemoizedHelpers
+    context 'SRG rules search' do
       # Requirements:
       # - SRG rules are public resources - any authenticated user can search them
       # - Search by rule_id, title, fixtext, ident (CCIs), check content

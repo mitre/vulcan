@@ -4,9 +4,10 @@ require 'rails_helper'
 
 RSpec.describe 'SecurityRequirementsGuides' do
   let(:content_disposition_header) { 'Content-Disposition' }
-  let!(:user) { create(:user, admin: true) }
-  let(:user2) { create(:user) }
-  let(:srg) { create(:security_requirements_guide) }
+
+  let_it_be(:user) { create(:user, admin: true) }
+  let_it_be(:user2) { create(:user) }
+  let_it_be(:srg) { create(:security_requirements_guide) }
 
   before do
     Rails.application.reload_routes!

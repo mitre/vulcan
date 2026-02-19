@@ -36,7 +36,7 @@ RSpec.describe Export::Formatters::XccdfFormatter do
   end
 
   describe '#generate_from_component' do
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
     let(:ac_rules) do
       rules = component.rules.eager_load(
         :disa_rule_descriptions, :checks, :satisfies, :satisfied_by,

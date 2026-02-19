@@ -163,24 +163,4 @@ RSpec.describe Export::Formatters::ExcelFormatter do
       expect(formatter.file_extension).to eq '.xlsx'
     end
   end
-
-  private
-
-  # Helper to read xlsx binary string with Roo
-  def read_xlsx(binary_data)
-    tmpfile = Tempfile.new(['test', '.xlsx'])
-    tmpfile.binmode
-    tmpfile.write(binary_data)
-    tmpfile.close
-    workbook = Roo::Spreadsheet.open(tmpfile.path)
-    # Store tmpfile reference to prevent GC cleanup before we're done
-    workbook.instance_variable_set(:@_tmpfile, tmpfile)
-    workbook
-  end
-
-  # Roo parse(headers: true) returns header self-mapping as first element.
-  # Drop it to get just data rows (matching export_helper_spec pattern).
-  def parse_data_rows(workbook, sheet_index)
-    workbook.sheet(sheet_index).parse(headers: true).drop(1)
-  end
 end

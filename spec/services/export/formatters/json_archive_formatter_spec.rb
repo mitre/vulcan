@@ -25,7 +25,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
   describe '#generate_from_component' do
     subject(:data) { formatter.generate_from_component(component: component, rules: rules) }
 
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
     let(:rules) { component.rules }
 
     it 'returns binary zip data' do
@@ -131,8 +131,8 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
   describe '#generate_batch' do
     subject(:data) { formatter.generate_batch(component_rule_pairs: pairs) }
 
-    let(:first_component) { create(:component) }
-    let(:second_component) { create(:component, project: first_component.project) }
+    let_it_be(:first_component) { create(:component) }
+    let_it_be(:second_component) { create(:component, project: first_component.project) }
     let(:pairs) do
       [first_component, second_component].map do |c|
         { component: c, rules: c.rules }
@@ -205,7 +205,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
   end
 
   describe 'SRG inclusion (include_srg option)' do
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
     let(:pairs) { [{ component: component, rules: component.rules }] }
 
     context 'when include_srg: true' do
@@ -259,20 +259,6 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
   end
 
   private
-
-  def zip_entries(data)
-    entries = []
-    Zip::File.open_buffer(StringIO.new(data)) do |zip|
-      zip.each { |entry| entries << entry.name }
-    end
-    entries
-  end
-
-  def zip_read(data, name)
-    Zip::File.open_buffer(StringIO.new(data)) do |zip|
-      return zip.read(name)
-    end
-  end
 
   def component_dir_for(component)
     version = component.version ? "V#{component.version}" : ''

@@ -5,11 +5,12 @@ require 'rails_helper'
 RSpec.describe 'Stigs' do
   let(:content_disposition_header) { 'Content-Disposition' }
   let(:application_json) { 'application/json' }
-  let(:stig) { create(:stig) }
-  # Use let! to ensure admin user is created first (before user2)
+
+  let_it_be(:stig) { create(:stig) }
+  # Use let_it_be to ensure admin user is created first (before user2)
   # This prevents user2 from being promoted to admin by first-user-admin callback
-  let!(:user) { create(:user, admin: true) }
-  let(:user2) { create(:user) }
+  let_it_be(:user) { create(:user, admin: true) }
+  let_it_be(:user2) { create(:user) }
 
   before do
     Rails.application.reload_routes!

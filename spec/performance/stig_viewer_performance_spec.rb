@@ -4,8 +4,8 @@ require 'rails_helper'
 require 'benchmark'
 
 RSpec.describe 'STIG Viewer Performance', type: :request do
-  let(:user) { create(:user) }
-  let(:stig) { create(:stig) }
+  let_it_be(:user) { create(:user) }
+  let_it_be(:stig) { create(:stig) }
 
   before do
     Rails.application.reload_routes!

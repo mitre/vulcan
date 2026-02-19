@@ -83,7 +83,7 @@ RSpec.describe Export::Modes::VendorSubmission do
   end
 
   describe '#rule_scope' do
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
 
     it 'excludes Not Yet Determined rules' do
       # Ensure at least one NYD rule exists
@@ -117,6 +117,35 @@ RSpec.describe Export::Modes::VendorSubmission do
       component.rules.first.update!(status: STATUS_NA)
       scoped = mode.rule_scope(component.rules)
       expect(scoped.where(status: STATUS_NA).count).to be >= 1
+    end
+
+    context 'with exclude_satisfied_by option' do
+      subject(:mode) { described_class.new(exclude_satisfied_by: true) }
+
+      it 'excludes rules that have satisfied_by relationships' do
+        rules = component.rules.order(:id)
+        parent_rule = rules.first
+        child_rule = rules.second
+        normal_rule = rules.third
+
+        # Set all to AC so they pass the NYD filter
+        [parent_rule, child_rule, normal_rule].each { |r| r.update!(status: STATUS_AC) }
+        RuleSatisfaction.create!(rule_id: parent_rule.id, satisfied_by_rule_id: child_rule.id)
+
+        result = mode.rule_scope(component.rules)
+        expect(result).to include(normal_rule)
+        expect(result).to include(child_rule)
+        expect(result).not_to include(parent_rule)
+      end
+
+      it 'still excludes NYD rules' do
+        rules = component.rules.order(:id)
+        rules.first.update!(status: 'Not Yet Determined')
+        rules.second.update!(status: STATUS_AC)
+
+        result = mode.rule_scope(component.rules)
+        expect(result.where(status: 'Not Yet Determined')).to be_empty
+      end
     end
   end
 

@@ -11,7 +11,7 @@ RSpec.describe Export::Modes::Backup do
   subject(:mode) { described_class.new }
 
   describe '#rule_scope' do
-    let(:component) { create(:component) }
+    let_it_be(:component) { create(:component) }
 
     before do
       rules = component.rules.order(:rule_id).to_a
