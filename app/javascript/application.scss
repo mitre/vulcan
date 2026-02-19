@@ -60,6 +60,24 @@ html {
   }
 }
 
+// Classification banner (DoD standard colors set via inline style from Settings)
+.classification-banner {
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 2px 0;
+  letter-spacing: 0.5px;
+  z-index: 1040; // Above navbar (1030) but below modals (1050)
+  position: relative;
+
+  &--bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
 // Breadcrumbs as section headers
 .breadcrumb {
   font-size: 1.5rem;

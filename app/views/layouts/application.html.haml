@@ -16,6 +16,9 @@
 
     = yield :assets
   %body
+    - if Settings.banner.enabled && Settings.banner.text.present?
+      .classification-banner{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }
+        = Settings.banner.text
     #navbar
       %navbar{
         'v-bind:navigation': @navigation.to_json,
@@ -23,7 +26,8 @@
         'v-bind:users_path': (current_user&.admin ? users_path : '').to_json,
         'v-bind:profile_path': edit_user_registration_path.to_json,
         'v-bind:sign_out_path': destroy_user_session_path.to_json,
-        'v-bind:access_requests': @access_requests.to_json
+        'v-bind:access_requests': @access_requests.to_json,
+        'v-bind:consent_config': Settings.consent.to_json
       }
     #Toaster
       %toaster{
@@ -32,3 +36,6 @@
       }
     .pt-3.container-fluid{"data-behavior" => "vue"}
       = yield
+    - if Settings.banner.enabled && Settings.banner.text.present?
+      .classification-banner.classification-banner--bottom{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }
+        = Settings.banner.text

@@ -85,6 +85,16 @@ defaults: &defaults
         userinfo_endpoint: <%= ENV['VULCAN_OIDC_USERINFO_URL'] %>
         jwks_uri: <%= ENV['VULCAN_OIDC_JWKS_URI'] %>
         post_logout_redirect_uri: '/'
+  banner:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_BANNER_ENABLED']) || false %>
+    text: <%= ENV['VULCAN_BANNER_TEXT'] || '' %>
+    background_color: <%= ENV.fetch('VULCAN_BANNER_BACKGROUND_COLOR', '#007a33') %>
+    text_color: <%= ENV.fetch('VULCAN_BANNER_TEXT_COLOR', '#ffffff') %>
+  consent:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_CONSENT_ENABLED']) || false %>
+    version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1') %>
+    title: <%= ENV.fetch('VULCAN_CONSENT_TITLE', 'Terms of Use') %>
+    content: <%= ENV['VULCAN_CONSENT_CONTENT'] || '' %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>

@@ -24,6 +24,18 @@ Settings.project['create_permission_enabled'] = true if Settings.project['create
 Settings['smtp'] ||= Settingslogic.new({})
 Settings.smtp['enabled'] = false if Settings.smtp['enabled'].nil?
 
+Settings['banner'] ||= Settingslogic.new({})
+Settings.banner['enabled'] = false if Settings.banner['enabled'].nil?
+Settings.banner['text'] = '' if Settings.banner['text'].nil?
+Settings.banner['background_color'] = '#007a33' if Settings.banner['background_color'].blank?
+Settings.banner['text_color'] = '#ffffff' if Settings.banner['text_color'].blank?
+
+Settings['consent'] ||= Settingslogic.new({})
+Settings.consent['enabled'] = false if Settings.consent['enabled'].nil?
+Settings.consent['version'] = '1' if Settings.consent['version'].blank?
+Settings.consent['title'] = 'Terms of Use' if Settings.consent['title'].blank?
+Settings.consent['content'] = '' if Settings.consent['content'].nil?
+
 Settings['slack'] ||= Settingslogic.new({})
 Settings.slack['enabled'] = false if Settings.slack['enabled'].nil?
 

@@ -67,6 +67,7 @@
     >
       New version: Vulcan {{ latestRelease }} is now available!!
     </b-alert>
+    <ConsentModal v-if="consent_config && consent_config.enabled" :config="consent_config" />
   </div>
 </template>
 
@@ -74,11 +75,12 @@
 import semver from "semver";
 import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
+import ConsentModal from "../shared/ConsentModal.vue";
 import { version } from "../../../../package.json";
 
 export default {
   name: "Navbar",
-  components: { NavbarItem, GlobalSearch },
+  components: { NavbarItem, GlobalSearch, ConsentModal },
   props: {
     navigation: {
       type: Array,
@@ -104,6 +106,11 @@ export default {
       type: Array,
       required: false,
       default: () => [],
+    },
+    consent_config: {
+      type: Object,
+      required: false,
+      default: () => null,
     },
   },
   data() {
