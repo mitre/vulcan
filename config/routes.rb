@@ -22,6 +22,8 @@ Rails.application.routes.draw do
       post :send_password_reset
       post :generate_reset_link
       post :set_password
+      post :lock
+      post :unlock
     end
   end
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'

@@ -4,11 +4,14 @@
 # Controller for application users.
 #
 class UsersController < ApplicationController
+  USER_JSON_FIELDS = %i[id name email provider admin failed_attempts locked_at].freeze
+
   before_action :authorize_admin
-  before_action :set_user, only: %i[update destroy send_password_reset generate_reset_link set_password]
+  before_action :set_user, only: %i[update destroy send_password_reset generate_reset_link set_password lock unlock]
 
   def index
-    @users = User.alphabetical.select(:id, :name, :email, :provider, :admin, :last_sign_in_at)
+    @users = User.alphabetical.select(:id, :name, :email, :provider, :admin, :last_sign_in_at,
+                                      :failed_attempts, :locked_at)
     @histories = Audited.audit_class.includes(:auditable, :user)
                         .where(auditable_type: 'User')
                         .order(created_at: :desc)
@@ -24,7 +27,7 @@ class UsersController < ApplicationController
       (password_params[:password].presence || generate_compliant_password)
 
     if user.save
-      result = { user: user.as_json(only: %i[id name email provider admin]) }
+      result = { user: user.as_json(only: USER_JSON_FIELDS) }
 
       if password_params[:password].present?
         result[:toast] = "User #{user.email} created with the provided password."
@@ -73,7 +76,7 @@ class UsersController < ApplicationController
           flash.notice = 'Successfully updated user.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully updated user', user: @user.as_json(only: %i[id name email provider admin]) } }
+        format.json { render json: { toast: 'Successfully updated user', user: @user.as_json(only: USER_JSON_FIELDS) } }
       end
     else
       respond_to do |format|
@@ -155,6 +158,30 @@ class UsersController < ApplicationController
     render json: {
       toast: 'Reset link generated. Copy it and deliver to the user.',
       reset_url: reset_url
+    }
+  end
+
+  # Admin locks a user account
+  def lock
+    if @user == current_user
+      return render json: {
+        toast: { title: 'Cannot lock yourself.', message: ['You cannot lock your own account.'], variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    @user.lock_access!(send_instructions: false)
+    render json: {
+      toast: "Account #{@user.email} locked.",
+      user: @user.as_json(only: USER_JSON_FIELDS)
+    }
+  end
+
+  # Admin unlocks a locked user account
+  def unlock
+    @user.unlock_access!
+    render json: {
+      toast: "Account #{@user.email} unlocked.",
+      user: @user.as_json(only: USER_JSON_FIELDS)
     }
   end
 

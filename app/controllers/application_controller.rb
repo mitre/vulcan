@@ -8,6 +8,7 @@ class ApplicationController < ActionController::Base
 
   before_action :setup_navigation, :authenticate_user!
   before_action :check_access_request_notifications
+  before_action :check_locked_user_notifications
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
@@ -243,5 +244,14 @@ class ApplicationController < ActionController::Base
       @access_requests << project.access_requests.eager_load(:user, :project).as_json(methods: %i[user project]) if current_user.can_admin_project?(project)
     end
     @access_requests.flatten!
+  end
+
+  def check_locked_user_notifications
+    @locked_users = []
+    return unless user_signed_in? && current_user.admin? && Settings.lockout&.enabled
+
+    @locked_users = User.where.not(locked_at: nil)
+                        .select(:id, :name, :email)
+                        .as_json(only: %i[id name email])
   end
 end
