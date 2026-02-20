@@ -22,7 +22,12 @@
       </template>
     </BaseCommandBar>
 
-    <UsersTable :users="localUsers" @edit-user="openEditModal" @user-deleted="onUserDeleted" />
+    <UsersTable
+      :users="localUsers"
+      :lockout-enabled="lockoutEnabled"
+      @edit-user="openEditModal"
+      @user-deleted="onUserDeleted"
+    />
 
     <!-- Create User Modal -->
     <CreateUserModal
@@ -38,6 +43,7 @@
       :user="selectedUser"
       :smtp-enabled="smtpEnabled"
       :password-policy="passwordPolicy"
+      :lockout-enabled="lockoutEnabled"
       @user-updated="onUserUpdated"
     />
 
@@ -86,6 +92,10 @@ export default {
       type: Object,
       default: null,
     },
+    lockoutEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup() {
     const { activePanel, togglePanel, closePanel } = useSidebar();
@@ -106,6 +116,16 @@ export default {
     isPanelActive() {
       return (panel) => this.activePanel === panel;
     },
+  },
+  mounted() {
+    const params = new URLSearchParams(window.location.search);
+    const unlockId = params.get("unlock");
+    if (unlockId) {
+      const user = this.localUsers.find((u) => u.id === parseInt(unlockId, 10));
+      if (user) {
+        this.openEditModal(user);
+      }
+    }
   },
   methods: {
     openEditModal(user) {

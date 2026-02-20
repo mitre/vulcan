@@ -53,6 +53,9 @@
         <b-badge :variant="data.item.admin ? 'danger' : 'secondary'">
           {{ data.item.admin ? "Admin" : "User" }}
         </b-badge>
+        <b-badge v-if="lockoutEnabled && data.item.locked_at" variant="warning" class="ml-1">
+          Locked
+        </b-badge>
       </template>
 
       <!-- Column template for Last Sign In -->
@@ -116,6 +119,10 @@ export default {
     users: {
       type: Array,
       required: true,
+    },
+    lockoutEnabled: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {

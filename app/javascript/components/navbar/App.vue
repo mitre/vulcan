@@ -28,22 +28,30 @@
               <template #button-content>
                 <b-icon icon="bell" aria-hidden="true" />
                 <b-badge
-                  v-if="access_requests.length"
+                  v-if="notificationCount"
                   variant="danger"
                   class="rounded-pill position-absolute top-0 start-100 translate-middle"
                   style="top: 0; right: 0"
                 >
-                  {{ access_requests.length }}
+                  {{ notificationCount }}
                 </b-badge>
               </template>
               <b-dropdown-item
                 v-for="(access_request, index) in access_requests"
-                :key="index"
+                :key="'ar-' + index"
                 :href="`/projects/${access_request.project_id}`"
               >
                 {{
                   `${access_request.user.name} has requested access to project ${access_request.project.name}`
                 }}
+              </b-dropdown-item>
+              <b-dropdown-item
+                v-for="locked_user in localLockedUsers"
+                :key="'lu-' + locked_user.id"
+                :href="`/users?unlock=${locked_user.id}`"
+              >
+                <b-icon icon="lock" class="mr-1 text-warning" />
+                {{ locked_user.name }} ({{ locked_user.email }}) account is locked
               </b-dropdown-item>
             </b-nav-item-dropdown>
             <b-nav-item-dropdown right>
@@ -107,6 +115,11 @@ export default {
       required: false,
       default: () => [],
     },
+    locked_users: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
     consent_config: {
       type: Object,
       required: false,
@@ -118,12 +131,33 @@ export default {
       latestRelease: "",
       currentVersion: version,
       updateAvailable: false,
+      localLockedUsers: [...this.locked_users],
     };
+  },
+  computed: {
+    notificationCount() {
+      return this.access_requests.length + this.localLockedUsers.length;
+    },
   },
   mounted() {
     this.fetchLatestRelease();
+    document.addEventListener("vulcan:lockout-changed", this.onLockoutChanged);
+  },
+  beforeDestroy() {
+    document.removeEventListener("vulcan:lockout-changed", this.onLockoutChanged);
   },
   methods: {
+    onLockoutChanged(event) {
+      const { action, user } = event.detail;
+      if (action === "locked") {
+        // Add user if not already present
+        if (!this.localLockedUsers.find((u) => u.id === user.id)) {
+          this.localLockedUsers.push({ id: user.id, name: user.name, email: user.email });
+        }
+      } else if (action === "unlocked") {
+        this.localLockedUsers = this.localLockedUsers.filter((u) => u.id !== user.id);
+      }
+    },
     fetchLatestRelease() {
       const owner = "mitre";
       const repo = "vulcan";

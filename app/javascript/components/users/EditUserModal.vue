@@ -1,12 +1,11 @@
 <template>
   <b-modal :visible="visible" title="Edit User" centered @hidden="onHidden" @ok="onSubmit">
     <b-form v-if="localUser" @submit.prevent="onSubmit">
-      <!-- Name -->
+      <!-- ── User Identity ── -->
       <b-form-group label="Name" label-for="edit-user-name">
         <b-form-input id="edit-user-name" v-model="localUser.name" required autocomplete="off" />
       </b-form-group>
 
-      <!-- Email -->
       <b-form-group label="Email" label-for="edit-user-email">
         <b-form-input
           id="edit-user-email"
@@ -17,119 +16,175 @@
         />
       </b-form-group>
 
-      <!-- Provider (read-only) -->
       <b-form-group label="Authentication Provider">
         <b-badge :variant="providerVariant">{{ providerLabel }}</b-badge>
       </b-form-group>
 
-      <!-- Admin -->
+      <!-- ── Permissions ── -->
       <b-form-group>
         <b-form-checkbox id="edit-user-admin" v-model="localUser.admin">
           Admin privileges
         </b-form-checkbox>
       </b-form-group>
 
-      <!-- Password Management (local users only) -->
-      <template v-if="isLocalUser">
+      <!-- ── Account Security ── -->
+      <template v-if="lockoutEnabled || isLocalUser">
         <hr />
-        <p class="font-weight-bold mb-2">Password Management</p>
+        <p class="font-weight-bold mb-2">
+          <b-icon icon="shield-lock" class="mr-1" />
+          Account Security
+        </p>
 
-        <!-- SMTP available: send reset email -->
-        <div v-if="smtpEnabled">
-          <b-button
-            variant="outline-secondary"
-            size="sm"
-            :disabled="resetSending"
-            data-testid="send-reset-btn"
-            @click="sendPasswordReset"
-          >
-            <b-spinner v-if="resetSending" small class="mr-1" />
-            <b-icon v-else icon="envelope" class="mr-1" />
-            Send Password Reset Email
-          </b-button>
+        <!-- Account Status -->
+        <div v-if="lockoutEnabled" class="mb-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span>
+              <span class="text-muted mr-1">Status:</span>
+              <template v-if="isLocked">
+                <b-badge variant="warning">
+                  <b-icon icon="lock" class="mr-1" />
+                  Locked
+                </b-badge>
+                <small class="text-muted ml-1">
+                  ({{ localUser.failed_attempts }} failed
+                  {{ localUser.failed_attempts === 1 ? "attempt" : "attempts" }})
+                </small>
+              </template>
+              <template v-else>
+                <b-badge variant="success">
+                  <b-icon icon="check-circle" class="mr-1" />
+                  Active
+                </b-badge>
+              </template>
+            </span>
+            <b-button
+              v-if="isLocked"
+              variant="outline-warning"
+              size="sm"
+              :disabled="unlocking"
+              data-testid="unlock-btn"
+              @click="unlockUser"
+            >
+              <b-spinner v-if="unlocking" small class="mr-1" />
+              <b-icon v-else icon="unlock" class="mr-1" />
+              Unlock
+            </b-button>
+            <b-button
+              v-else
+              variant="outline-danger"
+              size="sm"
+              :disabled="locking"
+              data-testid="lock-btn"
+              @click="lockUser"
+            >
+              <b-spinner v-if="locking" small class="mr-1" />
+              <b-icon v-else icon="lock" class="mr-1" />
+              Lock Account
+            </b-button>
+          </div>
         </div>
 
-        <!-- No SMTP: generate link or set password -->
-        <div v-else>
-          <!-- Option 1: Generate reset link -->
-          <div class="mb-3">
+        <!-- Password Management (local users only) -->
+        <template v-if="isLocalUser">
+          <p class="font-weight-bold mb-2 mt-3">Password Management</p>
+
+          <!-- SMTP available: send reset email -->
+          <div v-if="smtpEnabled">
             <b-button
               variant="outline-secondary"
               size="sm"
-              :disabled="resetLinkGenerating"
-              data-testid="generate-reset-link-btn"
-              @click="generateResetLink"
+              :disabled="resetSending"
+              data-testid="send-reset-btn"
+              @click="sendPasswordReset"
             >
-              <b-spinner v-if="resetLinkGenerating" small class="mr-1" />
-              <b-icon v-else icon="link-45deg" class="mr-1" />
-              Generate Reset Link
+              <b-spinner v-if="resetSending" small class="mr-1" />
+              <b-icon v-else icon="envelope" class="mr-1" />
+              Send Password Reset Email
             </b-button>
-            <p class="small text-muted mt-1 mb-0">
-              Creates a link the user can use to set their own password.
-            </p>
           </div>
 
-          <!-- Show generated link -->
-          <div v-if="generatedResetUrl" class="mb-3" data-testid="reset-url-display">
-            <b-input-group size="sm">
-              <b-form-input :value="generatedResetUrl" readonly />
-              <b-input-group-append>
-                <b-button variant="outline-secondary" @click="copyResetUrl">
-                  <b-icon icon="clipboard" />
-                </b-button>
-              </b-input-group-append>
-            </b-input-group>
-          </div>
-
-          <!-- Option 2: Set password directly (collapsed by default) -->
-          <div>
-            <b-button
-              variant="link"
-              size="sm"
-              class="p-0 text-muted"
-              @click="showManualPassword = !showManualPassword"
-            >
-              <b-icon :icon="showManualPassword ? 'chevron-down' : 'chevron-right'" class="mr-1" />
-              Set password manually
-            </b-button>
-
-            <b-collapse :visible="showManualPassword" class="mt-2">
-              <b-form-group label="New Password" label-for="edit-user-password" label-sr-only>
-                <PasswordField
-                  id="edit-user-password"
-                  v-model="directPassword"
-                  name="user[password]"
-                  autocomplete="new-password"
-                  :policy="passwordPolicy"
-                />
-              </b-form-group>
-              <b-form-group
-                label="Confirm Password"
-                label-for="edit-user-password-confirm"
-                label-sr-only
-              >
-                <PasswordField
-                  id="edit-user-password-confirm"
-                  v-model="directPasswordConfirm"
-                  name="user[password_confirmation]"
-                  autocomplete="new-password"
-                  :must-match="directPassword"
-                />
-              </b-form-group>
+          <!-- No SMTP: generate link or set password -->
+          <div v-else>
+            <div class="mb-3">
               <b-button
-                variant="outline-warning"
+                variant="outline-secondary"
                 size="sm"
-                :disabled="!directPassword || !passwordsMatch || settingPassword"
-                data-testid="set-password-btn"
-                @click="setPasswordDirectly"
+                :disabled="resetLinkGenerating"
+                data-testid="generate-reset-link-btn"
+                @click="generateResetLink"
               >
-                <b-spinner v-if="settingPassword" small class="mr-1" />
-                <b-icon v-else icon="key" class="mr-1" />
-                Set Password
+                <b-spinner v-if="resetLinkGenerating" small class="mr-1" />
+                <b-icon v-else icon="link-45deg" class="mr-1" />
+                Generate Reset Link
               </b-button>
-            </b-collapse>
+              <p class="small text-muted mt-1 mb-0">
+                Creates a link the user can use to set their own password.
+              </p>
+            </div>
+
+            <div v-if="generatedResetUrl" class="mb-3" data-testid="reset-url-display">
+              <b-input-group size="sm">
+                <b-form-input :value="generatedResetUrl" readonly />
+                <b-input-group-append>
+                  <b-button variant="outline-secondary" @click="copyResetUrl">
+                    <b-icon icon="clipboard" />
+                  </b-button>
+                </b-input-group-append>
+              </b-input-group>
+            </div>
+
+            <div>
+              <b-button
+                variant="link"
+                size="sm"
+                class="p-0 text-muted"
+                @click="showManualPassword = !showManualPassword"
+              >
+                <b-icon
+                  :icon="showManualPassword ? 'chevron-down' : 'chevron-right'"
+                  class="mr-1"
+                />
+                Set password manually
+              </b-button>
+
+              <b-collapse :visible="showManualPassword" class="mt-2">
+                <b-form-group label="New Password" label-for="edit-user-password" label-sr-only>
+                  <PasswordField
+                    id="edit-user-password"
+                    v-model="directPassword"
+                    name="user[password]"
+                    autocomplete="new-password"
+                    :policy="passwordPolicy"
+                  />
+                </b-form-group>
+                <b-form-group
+                  label="Confirm Password"
+                  label-for="edit-user-password-confirm"
+                  label-sr-only
+                >
+                  <PasswordField
+                    id="edit-user-password-confirm"
+                    v-model="directPasswordConfirm"
+                    name="user[password_confirmation]"
+                    autocomplete="new-password"
+                    :must-match="directPassword"
+                  />
+                </b-form-group>
+                <b-button
+                  variant="outline-warning"
+                  size="sm"
+                  :disabled="!directPassword || !passwordsMatch || settingPassword"
+                  data-testid="set-password-btn"
+                  @click="setPasswordDirectly"
+                >
+                  <b-spinner v-if="settingPassword" small class="mr-1" />
+                  <b-icon v-else icon="key" class="mr-1" />
+                  Set Password
+                </b-button>
+              </b-collapse>
+            </div>
           </div>
-        </div>
+        </template>
       </template>
     </b-form>
   </b-modal>
@@ -166,10 +221,16 @@ export default {
       type: Object,
       default: null,
     },
+    lockoutEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
       localUser: null,
+      unlocking: false,
+      locking: false,
       resetSending: false,
       resetLinkGenerating: false,
       generatedResetUrl: null,
@@ -182,6 +243,9 @@ export default {
   computed: {
     isLocalUser() {
       return !this.localUser || !this.localUser.provider;
+    },
+    isLocked() {
+      return this.localUser && !!this.localUser.locked_at;
     },
     providerLabel() {
       if (!this.localUser || !this.localUser.provider) return "Local";
@@ -216,6 +280,48 @@ export default {
     },
   },
   methods: {
+    async lockUser() {
+      if (!this.localUser) return;
+      this.locking = true;
+
+      try {
+        const response = await axios.post(`/users/${this.localUser.id}/lock`);
+        this.alertOrNotifyResponse(response);
+        this.$emit("user-updated", response.data.user);
+        this.localUser.locked_at = response.data.user.locked_at;
+        this.localUser.failed_attempts = response.data.user.failed_attempts;
+        document.dispatchEvent(
+          new CustomEvent("vulcan:lockout-changed", {
+            detail: { action: "locked", user: response.data.user },
+          }),
+        );
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.locking = false;
+      }
+    },
+    async unlockUser() {
+      if (!this.localUser) return;
+      this.unlocking = true;
+
+      try {
+        const response = await axios.post(`/users/${this.localUser.id}/unlock`);
+        this.alertOrNotifyResponse(response);
+        this.$emit("user-updated", response.data.user);
+        this.localUser.locked_at = null;
+        this.localUser.failed_attempts = 0;
+        document.dispatchEvent(
+          new CustomEvent("vulcan:lockout-changed", {
+            detail: { action: "unlocked", user: response.data.user },
+          }),
+        );
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.unlocking = false;
+      }
+    },
     async onSubmit(event) {
       if (event) event.preventDefault();
       if (!this.localUser) return;
