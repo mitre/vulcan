@@ -1,5 +1,21 @@
 # frozen_string_literal: true
 
+# Generates a random password that meets the configured complexity policy
+def generate_compliant_password
+  p = Settings.password
+  base = Devise.friendly_token(20)
+  # Append enough of each required character type to meet minimums
+  suffix = ''
+  suffix += 'A' * p.min_uppercase.to_i if p.min_uppercase.to_i.positive?
+  suffix += 'a' * p.min_lowercase.to_i if p.min_lowercase.to_i.positive?
+  suffix += '1' * p.min_number.to_i if p.min_number.to_i.positive?
+  suffix += '!' * p.min_special.to_i if p.min_special.to_i.positive?
+  password = base + suffix
+  min = p.min_length.to_i
+  password = password.ljust(min, 'x') if password.length < min
+  password
+end
+
 namespace :admin do
   desc 'Bootstrap admin user from environment variables (VULCAN_ADMIN_EMAIL, VULCAN_ADMIN_PASSWORD)'
   task bootstrap: :environment do
@@ -31,7 +47,7 @@ namespace :admin do
     # Generate password if not provided
     generated_password = false
     if admin_password.blank?
-      admin_password = Devise.friendly_token(32)
+      admin_password = generate_compliant_password
       generated_password = true
     end
 

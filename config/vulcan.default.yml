@@ -95,6 +95,12 @@ defaults: &defaults
     version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1') %>
     title: <%= ENV.fetch('VULCAN_CONSENT_TITLE', 'Terms of Use') %>
     content: <%= ENV['VULCAN_CONSENT_CONTENT'] || '' %>
+  password:
+    min_length: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LENGTH', '15') %>
+    min_uppercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_UPPERCASE', '2') %>
+    min_lowercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LOWERCASE', '2') %>
+    min_number: <%= ENV.fetch('VULCAN_PASSWORD_MIN_NUMBER', '2') %>
+    min_special: <%= ENV.fetch('VULCAN_PASSWORD_MIN_SPECIAL', '2') %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>

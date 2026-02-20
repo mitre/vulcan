@@ -11,5 +11,10 @@ document.addEventListener("turbolinks:load", () => {
   new Vue({
     el: "#login",
     components: { PasswordField },
+    data() {
+      return {
+        registerPassword: "",
+      };
+    },
   });
 });

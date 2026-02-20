@@ -226,6 +226,18 @@ Display a blocking consent modal that users must acknowledge before accessing th
 
 **Consent Content Formatting**: The `VULCAN_CONSENT_CONTENT` variable supports full [Markdown](https://www.markdownguide.org/basic-syntax/) formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. The banner text (`VULCAN_BANNER_TEXT`) is plain text only — no formatting is applied.
 
+## Password Policy
+
+DoD-aligned defaults ("2222" policy). Set any count to `0` to disable that requirement.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_PASSWORD_MIN_LENGTH` | Minimum password length | `15` | `8` |
+| `VULCAN_PASSWORD_MIN_UPPERCASE` | Minimum uppercase letters | `2` | `0` |
+| `VULCAN_PASSWORD_MIN_LOWERCASE` | Minimum lowercase letters | `2` | `0` |
+| `VULCAN_PASSWORD_MIN_NUMBER` | Minimum digits | `2` | `0` |
+| `VULCAN_PASSWORD_MIN_SPECIAL` | Minimum special characters | `2` | `0` |
+
 ## Project Settings
 
 | Variable | Description | Default | Example |

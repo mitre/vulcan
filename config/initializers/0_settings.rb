@@ -36,6 +36,13 @@ Settings.consent['version'] = '1' if Settings.consent['version'].blank?
 Settings.consent['title'] = 'Terms of Use' if Settings.consent['title'].blank?
 Settings.consent['content'] = '' if Settings.consent['content'].nil?
 
+Settings['password'] ||= Settingslogic.new({})
+Settings.password['min_length'] = 15 if Settings.password['min_length'].nil?
+Settings.password['min_uppercase'] = 2 if Settings.password['min_uppercase'].nil?
+Settings.password['min_lowercase'] = 2 if Settings.password['min_lowercase'].nil?
+Settings.password['min_number'] = 2 if Settings.password['min_number'].nil?
+Settings.password['min_special'] = 2 if Settings.password['min_special'].nil?
+
 Settings['slack'] ||= Settingslogic.new({})
 Settings.slack['enabled'] = false if Settings.slack['enabled'].nil?
 

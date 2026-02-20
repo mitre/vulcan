@@ -41,11 +41,11 @@ end
 # Seeds for Users #
 # --------------- #
 puts 'Creating Users...'
-User.create(name: FFaker::Name.name, email: 'admin@example.com', password: '1234567ab!', admin: true)
+User.create(name: FFaker::Name.name, email: 'admin@example.com', password: '1qaz!QAZ1qaz!QAZ', admin: true)
 users = []
 10.times do
   name = FFaker::Name.name
-  users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: '1234567ab!')
+  users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: '1qaz!QAZ1qaz!QAZ')
 end
 User.import(users)
 User.find_each do |user|

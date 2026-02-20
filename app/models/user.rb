@@ -17,6 +17,7 @@ class User < ApplicationRecord
   audited only: %i[admin name email], max_audits: 1000
 
   include ProjectMemberConstants
+  include PasswordComplexityValidator
 
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
 
