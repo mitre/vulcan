@@ -10,11 +10,7 @@ RSpec.describe 'POST /users/:id/unlock' do
 
   before do
     Rails.application.reload_routes!
-    # Lock the user by exhausting failed attempts
-    Settings.lockout.maximum_attempts.times do
-      locked_user.valid_for_authentication? { false }
-    end
-    locked_user.reload
+    locked_user.lock_access!(send_instructions: false)
   end
 
   context 'when not authenticated' do

@@ -48,11 +48,7 @@ RSpec.describe 'User lockout (Devise :lockable)' do
     let(:user) { create(:user) }
 
     before do
-      # Lock the user
-      Settings.lockout.maximum_attempts.times do
-        user.valid_for_authentication? { false }
-      end
-      user.reload
+      user.lock_access!(send_instructions: false)
     end
 
     it 'is locked before unlock' do

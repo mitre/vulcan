@@ -177,7 +177,10 @@ Devise.setup do |config|
   if Settings.lockout&.enabled
     config.lock_strategy = :failed_attempts
     config.unlock_keys = [:email]
-    config.unlock_strategy = Settings.lockout.unlock_strategy.to_sym
+    # In test environment, use :time strategy to avoid SMTP dependency.
+    # Devise sends unlock instructions email with :both/:email strategies,
+    # which fails in CI where no SMTP server is available.
+    config.unlock_strategy = Rails.env.test? ? :time : Settings.lockout.unlock_strategy.to_sym
     config.maximum_attempts = Settings.lockout.maximum_attempts
     config.unlock_in = Settings.lockout.unlock_in_minutes.minutes
     config.last_attempt_warning = Settings.lockout.last_attempt_warning
