@@ -16,6 +16,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure Slack:](#configure-slack)
 - [Configure Classification Banner:](#configure-classification-banner) Display colored classification/sensitivity banner
 - [Configure Consent Modal:](#configure-consent-modal) Terms-of-use modal that blocks access until acknowledged
+- [Configure Password Policy:](#configure-password-policy) Password complexity requirements (DoD 2222 default)
 
 ## Configuration Precedence
 
@@ -46,6 +47,8 @@ Each deployment type ships sensible defaults. Dev-friendly deployments enable lo
 | Slack | false | false | `VULCAN_ENABLE_SLACK_COMMS` |
 | Classification banner | false | varies | `VULCAN_BANNER_ENABLED` |
 | Consent modal | false | varies | `VULCAN_CONSENT_ENABLED` |
+| Password min length | 15 | 15 | `VULCAN_PASSWORD_MIN_LENGTH` |
+| Password complexity (2222) | **enabled** | **enabled** | `VULCAN_PASSWORD_MIN_*` |
 
 **Bold** = enabled for that deployment type.
 
@@ -205,6 +208,42 @@ By accessing this system you agree to the following:
 When you update your terms, increment `VULCAN_CONSENT_VERSION` (e.g., from `1` to `2`). All users will see the modal again on their next visit, regardless of prior acknowledgment.
 :::
 
+## Configure Password Policy
+
+Configurable password complexity enforcement. Defaults are DoD-aligned ("2222" policy: 15 characters minimum, 2 uppercase, 2 lowercase, 2 numbers, 2 special characters). Set any count to `0` to disable that requirement.
+
+Validation is enforced both server-side (Rails model validation) and client-side (real-time checklist on registration, password reset, and profile pages).
+
+- **min_length:** Minimum total password length. `(ENV: VULCAN_PASSWORD_MIN_LENGTH)(default: 15)`
+- **min_uppercase:** Minimum uppercase letters required. `(ENV: VULCAN_PASSWORD_MIN_UPPERCASE)(default: 2)`
+- **min_lowercase:** Minimum lowercase letters required. `(ENV: VULCAN_PASSWORD_MIN_LOWERCASE)(default: 2)`
+- **min_number:** Minimum digits required. `(ENV: VULCAN_PASSWORD_MIN_NUMBER)(default: 2)`
+- **min_special:** Minimum special characters required. `(ENV: VULCAN_PASSWORD_MIN_SPECIAL)(default: 2)`
+
+### Example: DoD Standard (default)
+
+```bash
+VULCAN_PASSWORD_MIN_LENGTH=15
+VULCAN_PASSWORD_MIN_UPPERCASE=2
+VULCAN_PASSWORD_MIN_LOWERCASE=2
+VULCAN_PASSWORD_MIN_NUMBER=2
+VULCAN_PASSWORD_MIN_SPECIAL=2
+```
+
+### Example: Relaxed Development
+
+```bash
+VULCAN_PASSWORD_MIN_LENGTH=8
+VULCAN_PASSWORD_MIN_UPPERCASE=0
+VULCAN_PASSWORD_MIN_LOWERCASE=0
+VULCAN_PASSWORD_MIN_NUMBER=0
+VULCAN_PASSWORD_MIN_SPECIAL=0
+```
+
+::: tip OmniAuth Users
+Password complexity is only validated for local (email/password) accounts. OmniAuth users (OIDC, LDAP, GitHub) use random token passwords and skip complexity validation.
+:::
+
 ## Example Vulcan.yml
 
 ```
@@ -274,6 +313,12 @@ defaults: &defaults
     version:
     title:
     content:
+  password:
+    min_length:
+    min_uppercase:
+    min_lowercase:
+    min_number:
+    min_special:
   slack:
     enabled:
     api_token:

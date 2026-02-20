@@ -35,6 +35,7 @@ export default defineConfig({
         text: "User Guide",
         items: [
           { text: "Overview", link: "/user-guide/overview" },
+          { text: "User Management", link: "/user-guide/user-management" },
           { text: "Data Management", link: "/user-guide/data-management/" },
           { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
         ],
@@ -135,6 +136,7 @@ export default defineConfig({
           text: "User Guide",
           items: [
             { text: "Overview", link: "/user-guide/overview" },
+            { text: "User Management", link: "/user-guide/user-management" },
           ],
         },
         {
