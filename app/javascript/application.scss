@@ -61,6 +61,9 @@ html {
 }
 
 // Classification banner (DoD standard colors set via inline style from Settings)
+// Classification banner height variable — used for body padding offset
+$banner-height: 20px;
+
 .classification-banner {
   text-align: center;
   font-weight: bold;
@@ -69,6 +72,7 @@ html {
   letter-spacing: 0.5px;
   z-index: 1040; // Above navbar (1030) but below modals (1050)
   position: relative;
+  height: $banner-height;
 
   &--bottom {
     position: fixed;
@@ -76,6 +80,11 @@ html {
     left: 0;
     right: 0;
   }
+}
+
+// Offset body padding when fixed bottom banner is present
+body.has-classification-banner {
+  padding-bottom: $banner-height;
 }
 
 // Breadcrumbs as section headers

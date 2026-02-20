@@ -15,7 +15,7 @@
     / CSS customizations can be added here if needed
 
     = yield :assets
-  %body
+  %body{ class: (Settings.banner.enabled && Settings.banner.text.present?) ? 'has-classification-banner' : nil }
     - if Settings.banner.enabled && Settings.banner.text.present?
       .classification-banner{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }
         = Settings.banner.text
