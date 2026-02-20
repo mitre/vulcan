@@ -30,48 +30,50 @@
           />
 
           <!-- Fix Text -->
-          <b-form-group v-if="selectedRule.fixtext">
-            <label :for="`rule-fixtext-${selectedRule.id}`">
-              Fix
-              <b-icon
-                v-b-tooltip.hover.html="
-                  'Describe how to correctly configure the requirement to remediate the system vulnerability'
-                "
-                icon="info-circle"
-                aria-hidden="true"
+          <RuleFormGroup
+            v-if="selectedRule.fixtext"
+            field-name="fixtext"
+            label="Fix"
+            tooltip="Describe how to correctly configure the requirement to remediate the system vulnerability"
+            :fields="fixtextFields"
+            :disabled="true"
+            read-only
+            id-prefix="rule"
+          >
+            <template #default="{ inputId, isDisabled }">
+              <b-form-textarea
+                :id="inputId"
+                :value="selectedRule.fixtext"
+                placeholder=""
+                :disabled="isDisabled"
+                rows="1"
+                max-rows="99"
               />
-            </label>
-            <b-form-textarea
-              :id="`rule-fixtext-${selectedRule.id}`"
-              :value="selectedRule.fixtext"
-              placeholder=""
-              :disabled="true"
-              rows="1"
-              max-rows="99"
-            />
-          </b-form-group>
+            </template>
+          </RuleFormGroup>
 
           <!-- Vendor Comment (if present) -->
-          <b-form-group v-if="selectedRule.vendor_comments">
-            <label :for="`rule-vendor-comments-${selectedRule.id}`">
-              Vendor Comments
-              <b-icon
-                v-b-tooltip.hover.html="
-                  'Provide context to a reviewing authority; not a published field'
-                "
-                icon="info-circle"
-                aria-hidden="true"
+          <RuleFormGroup
+            v-if="selectedRule.vendor_comments"
+            field-name="vendor_comments"
+            label="Vendor Comments"
+            tooltip="Provide context to a reviewing authority; not a published field"
+            :fields="vendorCommentsFields"
+            :disabled="true"
+            read-only
+            id-prefix="rule"
+          >
+            <template #default="{ inputId, isDisabled }">
+              <b-form-textarea
+                :id="inputId"
+                :value="selectedRule.vendor_comments"
+                placeholder=""
+                :disabled="isDisabled"
+                rows="1"
+                max-rows="99"
               />
-            </label>
-            <b-form-textarea
-              :id="`rule-vendor-comments-${selectedRule.id}`"
-              :value="selectedRule.vendor_comments"
-              placeholder=""
-              :disabled="true"
-              rows="1"
-              max-rows="99"
-            />
-          </b-form-group>
+            </template>
+          </RuleFormGroup>
         </b-form>
       </div>
     </template>
@@ -81,10 +83,11 @@
 <script>
 import DisaRuleDescriptionForm from "../rules/forms/DisaRuleDescriptionForm";
 import CheckForm from "../rules/forms/CheckForm";
+import RuleFormGroup from "../shared/RuleFormGroup.vue";
 
 export default {
   name: "RuleDetails",
-  components: { DisaRuleDescriptionForm, CheckForm },
+  components: { DisaRuleDescriptionForm, CheckForm, RuleFormGroup },
   props: {
     type: {
       type: String,
@@ -116,10 +119,13 @@ export default {
       return { displayed: ["vuln_discussion"], disabled: [] };
     },
     checkFormFields() {
-      return {
-        displayed: ["content"],
-        disabled: [],
-      };
+      return { displayed: ["content"], disabled: [] };
+    },
+    fixtextFields() {
+      return { displayed: ["fixtext"], disabled: [] };
+    },
+    vendorCommentsFields() {
+      return { displayed: ["vendor_comments"], disabled: [] };
     },
   },
 };
