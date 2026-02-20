@@ -84,7 +84,7 @@ $banner-height: 20px;
 
 // Offset body padding when fixed bottom banner is present
 body.has-classification-banner {
-  padding-bottom: $banner-height;
+  padding-bottom: $banner-height + 4px;
 }
 
 // Breadcrumbs as section headers
