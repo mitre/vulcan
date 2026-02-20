@@ -195,6 +195,7 @@ import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import PasswordField from "../shared/PasswordField.vue";
+import { EVENTS, dispatch } from "../../utils/notificationEvents";
 
 export default {
   name: "EditUserModal",
@@ -290,11 +291,7 @@ export default {
         this.$emit("user-updated", response.data.user);
         this.localUser.locked_at = response.data.user.locked_at;
         this.localUser.failed_attempts = response.data.user.failed_attempts;
-        document.dispatchEvent(
-          new CustomEvent("vulcan:lockout-changed", {
-            detail: { action: "locked", user: response.data.user },
-          }),
-        );
+        dispatch(EVENTS.LOCKOUT_CHANGED, { action: "locked", user: response.data.user });
       } catch (error) {
         this.alertOrNotifyResponse(error);
       } finally {
@@ -311,11 +308,7 @@ export default {
         this.$emit("user-updated", response.data.user);
         this.localUser.locked_at = null;
         this.localUser.failed_attempts = 0;
-        document.dispatchEvent(
-          new CustomEvent("vulcan:lockout-changed", {
-            detail: { action: "unlocked", user: response.data.user },
-          }),
-        );
+        dispatch(EVENTS.LOCKOUT_CHANGED, { action: "unlocked", user: response.data.user });
       } catch (error) {
         this.alertOrNotifyResponse(error);
       } finally {

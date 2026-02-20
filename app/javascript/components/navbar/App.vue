@@ -37,7 +37,7 @@
                 </b-badge>
               </template>
               <b-dropdown-item
-                v-for="(access_request, index) in access_requests"
+                v-for="(access_request, index) in localAccessRequests"
                 :key="'ar-' + index"
                 :href="`/projects/${access_request.project_id}`"
               >
@@ -85,6 +85,7 @@ import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
 import ConsentModal from "../shared/ConsentModal.vue";
 import { version } from "../../../../package.json";
+import { EVENTS, listen } from "../../utils/notificationEvents";
 
 export default {
   name: "Navbar",
@@ -132,30 +133,40 @@ export default {
       currentVersion: version,
       updateAvailable: false,
       localLockedUsers: [...this.locked_users],
+      localAccessRequests: [...this.access_requests],
+      cleanupLockout: null,
+      cleanupAccessRequest: null,
     };
   },
   computed: {
     notificationCount() {
-      return this.access_requests.length + this.localLockedUsers.length;
+      return this.localAccessRequests.length + this.localLockedUsers.length;
     },
   },
   mounted() {
     this.fetchLatestRelease();
-    document.addEventListener("vulcan:lockout-changed", this.onLockoutChanged);
+    this.cleanupLockout = listen(EVENTS.LOCKOUT_CHANGED, this.onLockoutChanged);
+    this.cleanupAccessRequest = listen(EVENTS.ACCESS_REQUEST_CHANGED, this.onAccessRequestChanged);
   },
   beforeDestroy() {
-    document.removeEventListener("vulcan:lockout-changed", this.onLockoutChanged);
+    if (this.cleanupLockout) this.cleanupLockout();
+    if (this.cleanupAccessRequest) this.cleanupAccessRequest();
   },
   methods: {
     onLockoutChanged(event) {
       const { action, user } = event.detail;
       if (action === "locked") {
-        // Add user if not already present
         if (!this.localLockedUsers.find((u) => u.id === user.id)) {
           this.localLockedUsers.push({ id: user.id, name: user.name, email: user.email });
         }
       } else if (action === "unlocked") {
         this.localLockedUsers = this.localLockedUsers.filter((u) => u.id !== user.id);
+      }
+    },
+    onAccessRequestChanged(event) {
+      const { action, id } = event.detail;
+      if (action === "resolved") {
+        this.localAccessRequests = this.localAccessRequests.filter((r) => r.id !== id);
       }
     },
     fetchLatestRelease() {
