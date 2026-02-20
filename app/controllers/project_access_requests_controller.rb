@@ -24,15 +24,27 @@ class ProjectAccessRequestsController < ApplicationController
     if @access_request.destroy
       if current_user.can_admin_project?(@access_request.project)
         send_smtp_notification(UserMailer, 'reject_access', @access_request.user, @access_request.project) if Settings.smtp.enabled
-        flash.notice = "Sucessfully denied #{@access_request.user.name}'s request to access project."
+        toast = "Sucessfully denied #{@access_request.user.name}'s request to access project."
       else
-        flash.notice = "Your request to access #{@access_request.project.name} has been cancelled."
+        toast = "Your request to access #{@access_request.project.name} has been cancelled."
+      end
+
+      respond_to do |format|
+        format.html do
+          flash.notice = toast
+          redirect_back(fallback_location: root_path)
+        end
+        format.json { render json: { toast: toast, id: @access_request.id } }
       end
     else
-      flash.alert = @access_request.errors.full_messages.to_sentence
+      respond_to do |format|
+        format.html do
+          flash.alert = @access_request.errors.full_messages.to_sentence
+          redirect_back(fallback_location: root_path)
+        end
+        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_entity }
+      end
     end
-
-    redirect_back(fallback_location: root_path)
   end
 
   private

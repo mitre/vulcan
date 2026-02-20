@@ -1,11 +1,11 @@
 <template>
   <div>
     <!-- Pending Access Request -->
-    <h2 v-if="access_requests.length > 0 && editable">
-      Pending Access Requests <span class="badge bg-info">{{ access_requests.length }}</span>
+    <h2 v-if="localAccessRequests.length > 0 && editable">
+      Pending Access Requests <span class="badge bg-info">{{ localAccessRequests.length }}</span>
     </h2>
     <b-table
-      v-if="access_requests.length > 0 && editable"
+      v-if="localAccessRequests.length > 0 && editable"
       id="project-access-requests"
       :items="pendingProjectMembers"
       :fields="requestFields"
@@ -29,14 +29,13 @@
           Accept Request
         </b-button>
         <b-button
-          class="btn btn-danger ml-2"
-          data-method="delete"
-          :href="`/projects/${membership_id}/project_access_requests/${getAccessRequestId(
-            data.item,
-          )}`"
-          rel="nofollow"
+          variant="danger"
+          class="ml-2"
+          :disabled="rejectingId === getAccessRequestId(data.item)"
+          @click="rejectRequest(data.item)"
         >
-          <b-icon icon="x-circle" aria-hidden="true" />
+          <b-spinner v-if="rejectingId === getAccessRequestId(data.item)" small class="mr-1" />
+          <b-icon v-else icon="x-circle" aria-hidden="true" />
           Reject Request
         </b-button>
       </template>
@@ -155,14 +154,17 @@
 </template>
 
 <script>
+import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import NewMembership from "./NewMembership.vue";
+import { EVENTS, dispatch } from "../../utils/notificationEvents";
 
 export default {
   name: "MembershipsTable",
   components: { NewMembership },
-  mixins: [FormMixinVue, RoleComparisonMixin],
+  mixins: [FormMixinVue, RoleComparisonMixin, AlertMixinVue],
   props: {
     memberships: {
       type: Array,
@@ -210,6 +212,8 @@ export default {
       currentPage: 1,
       selectedMember: null,
       access_request_id: null,
+      rejectingId: null,
+      localAccessRequests: [...this.access_requests],
       fields: [
         { key: "name", label: "User", sortable: true },
         { key: "role", sortable: true },
@@ -234,7 +238,7 @@ export default {
     // Users with pending access request
     pendingProjectMembers: function () {
       return this.available_members.filter((member) =>
-        this.access_requests.some((request) => request.user_id === member.id),
+        this.localAccessRequests.some((request) => request.user_id === member.id),
       );
     },
     // Used by b-pagination to know how many total rows there are
@@ -253,7 +257,7 @@ export default {
       this.access_request_id = this.getAccessRequestId(member);
     },
     getAccessRequestId: function (member) {
-      return this.access_requests.find((request) => request.user_id === member.id).id;
+      return this.localAccessRequests.find((request) => request.user_id === member.id).id;
     },
     // Automatically submit the form when a user selects a form option
     roleChanged: function (_event, project_member) {
@@ -266,6 +270,23 @@ export default {
     // Path to POST/DELETE to when updating/deleting a user
     formAction: function (project_member) {
       return `/memberships/${project_member.id}`;
+    },
+    async rejectRequest(member) {
+      const requestId = this.getAccessRequestId(member);
+      this.rejectingId = requestId;
+
+      try {
+        const response = await axios.delete(
+          `/projects/${this.membership_id}/project_access_requests/${requestId}`,
+        );
+        this.alertOrNotifyResponse(response);
+        this.localAccessRequests = this.localAccessRequests.filter((r) => r.id !== requestId);
+        dispatch(EVENTS.ACCESS_REQUEST_CHANGED, { action: "resolved", id: requestId });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.rejectingId = null;
+      }
     },
   },
 };
