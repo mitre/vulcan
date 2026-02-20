@@ -27,4 +27,10 @@ module RuleConstants
     medium
     high
   ].freeze
+
+  LOCKABLE_SECTION_NAMES = [
+    'Title', 'Severity', 'Status', 'Fix', 'Check',
+    'Vulnerability Discussion', 'DISA Metadata',
+    'Vendor Comments', 'Artifact Description', 'XCCDF Metadata'
+  ].freeze
 end

@@ -5,10 +5,11 @@
 #
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
-  before_action :set_component, only: %i[lock_controls]
+  before_action :set_component, only: %i[lock_controls lock_sections]
   before_action :set_project
   before_action :authorize_author_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
+  before_action :authorize_review_component, only: %i[lock_sections]
 
   def create
     review_params_without_component_id = review_params.except('component_id')
@@ -101,6 +102,50 @@ class ReviewsController < ApplicationController
       toast: {
         title: "Successfully locked #{unlocked.size} #{'control'.pluralize(unlocked.size)}.",
         message: "The following controls were locked: #{unlocked.map(&:displayed_name).join(', ')}",
+        variant: 'success'
+      }
+    }
+  end
+
+  def lock_sections
+    sections = params[:sections]
+    locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
+    comment = params[:comment]
+
+    invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
+    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
+
+    rules = @component.rules.where(locked: false)
+    count = 0
+
+    rules.each do |rule|
+      old_fields = rule.locked_fields.dup
+      fields = rule.locked_fields.dup
+      sections.each do |section|
+        if locked
+          fields[section] = true
+        else
+          fields.delete(section)
+        end
+      end
+      next if fields == old_fields
+
+      rule.update!(locked_fields: fields)
+      action_word = locked ? 'Locked' : 'Unlocked'
+      rule.audits.create!(
+        action: 'update',
+        audited_changes: { 'locked_fields' => [old_fields, fields] },
+        user: current_user,
+        comment: comment.presence || "#{action_word} sections: #{sections.join(', ')}"
+      )
+      count += 1
+    end
+
+    action_word = locked ? 'locked' : 'unlocked'
+    render json: {
+      toast: {
+        title: 'Section lock applied',
+        message: "#{action_word.capitalize} #{sections.size} section(s) on #{count} rule(s)",
         variant: 'success'
       }
     }

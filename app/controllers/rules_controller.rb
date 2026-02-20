@@ -4,13 +4,14 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update destroy revert related_rules]
-  before_action :set_component, only: %i[index show create update revert related_rules]
-  before_action :set_project, only: %i[index show create update revert related_rules]
+  before_action :set_rule, only: %i[show update destroy revert related_rules section_locks bulk_section_locks]
+  before_action :set_component, only: %i[index show create update revert related_rules section_locks bulk_section_locks]
+  before_action :set_project, only: %i[index show create update revert related_rules section_locks bulk_section_locks]
   before_action :set_project_permissions, only: %i[index]
   before_action :authorize_viewer_component, only: %i[index show related_rules]
   before_action :authorize_author_component, only: %i[create update revert]
   before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_section_lock, only: %i[section_locks bulk_section_locks]
   before_action :authorize_logged_in, only: %i[search]
 
   def index
@@ -116,7 +117,69 @@ class RulesController < ApplicationController
     }, status: :unprocessable_entity
   end
 
+  def section_locks
+    section = params[:section]
+    locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
+    comment = params[:comment]
+
+    return render json: { error: "Invalid section: #{section}" }, status: :unprocessable_entity unless RuleConstants::LOCKABLE_SECTION_NAMES.include?(section)
+
+    old_fields = @rule.locked_fields.dup
+    fields = @rule.locked_fields.dup
+    if locked
+      fields[section] = true
+    else
+      fields.delete(section)
+    end
+    @rule.update!(locked_fields: fields)
+
+    @rule.audits.create!(
+      action: 'update',
+      audited_changes: { 'locked_fields' => [old_fields, fields] },
+      user: current_user,
+      comment: comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
+    )
+
+    render json: { rule: @rule.as_json, toast: "#{section} #{locked ? 'locked' : 'unlocked'}" }
+  end
+
+  def bulk_section_locks
+    sections = params[:sections]
+    locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
+    comment = params[:comment]
+
+    invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
+    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
+
+    old_fields = @rule.locked_fields.dup
+    fields = @rule.locked_fields.dup
+    sections.each do |section|
+      if locked
+        fields[section] = true
+      else
+        fields.delete(section)
+      end
+    end
+    @rule.update!(locked_fields: fields)
+
+    action_word = locked ? 'Locked' : 'Unlocked'
+    @rule.audits.create!(
+      action: 'update',
+      audited_changes: { 'locked_fields' => [old_fields, fields] },
+      user: current_user,
+      comment: comment.presence || "#{action_word} sections: #{sections.join(', ')}"
+    )
+
+    render json: { rule: @rule.as_json, toast: "#{action_word} #{sections.size} sections" }
+  end
+
   private
+
+  def authorize_section_lock
+    return if current_user&.can_review_component?(@component)
+
+    raise(NotAuthorizedError, 'You are not authorized to manage section locks on this component')
+  end
 
   def create_or_duplicate
     if authorize_author_project.nil? && rule_create_params[:duplicate]

@@ -63,11 +63,14 @@ class Rule < BaseRule
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
     set locked: false
+    customize(lambda { |_original, copy|
+      copy.locked_fields = {}
+    })
 
     include_association :additional_answers, if: :single_rule_clone?
   end
 
-  audited except: %i[component_id review_requestor_id created_at updated_at locked inspec_control_file],
+  audited except: %i[component_id review_requestor_id created_at updated_at locked locked_fields inspec_control_file],
           max_audits: 1000,
           associated_with: :component
   has_associated_audits
@@ -101,6 +104,7 @@ class Rule < BaseRule
   validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
+  validate :locked_fields_must_be_valid_sections
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
   default_scope { where(deleted_at: nil) }
@@ -336,6 +340,15 @@ class Rule < BaseRule
   end
 
   private
+
+  def locked_fields_must_be_valid_sections
+    return if locked_fields.blank?
+
+    invalid = locked_fields.keys - LOCKABLE_SECTION_NAMES
+    return if invalid.empty?
+
+    errors.add(:locked_fields, "contains invalid section names: #{invalid.join(', ')}")
+  end
 
   def sort_ident
     self.ident = ident.to_s.split(/, */).uniq.sort.join(', ')

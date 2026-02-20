@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_14_000023) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_20_145113) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -95,6 +95,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_14_000023) do
     t.string "srg_id"
     t.string "vuln_id"
     t.string "legacy_ids"
+    t.jsonb "locked_fields", default: {}
     t.index ["component_id", "deleted_at", "rule_severity"], name: "index_base_rules_on_component_deleted_severity"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"

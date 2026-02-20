@@ -9,7 +9,7 @@ module Import
       # base_rules columns that map directly from the serialized data.
       # Excludes timestamps (restored separately) and nested records.
       DIRECT_COLUMNS = %w[
-        locked status status_justification artifact_description vendor_comments
+        locked locked_fields status status_justification artifact_description vendor_comments
         rule_id rule_severity rule_weight version title ident ident_system
         fixtext fixtext_fixref fix_id changes_requested
         inspec_control_body inspec_control_file
