@@ -5,7 +5,10 @@
     <!-- Command Bar -->
     <BaseCommandBar>
       <template #left>
-        <!-- No actions for now -->
+        <b-button size="sm" variant="primary" @click="showCreateModal = true">
+          <b-icon icon="person-plus" class="mr-1" />
+          Create User
+        </b-button>
       </template>
       <template #right>
         <b-button-group size="sm">
@@ -19,7 +22,24 @@
       </template>
     </BaseCommandBar>
 
-    <UsersTable :users="users" />
+    <UsersTable :users="localUsers" @edit-user="openEditModal" @user-deleted="onUserDeleted" />
+
+    <!-- Create User Modal -->
+    <CreateUserModal
+      v-model="showCreateModal"
+      :smtp-enabled="smtpEnabled"
+      :password-policy="passwordPolicy"
+      @user-created="onUserCreated"
+    />
+
+    <!-- Edit User Modal -->
+    <EditUserModal
+      v-model="showEditModal"
+      :user="selectedUser"
+      :smtp-enabled="smtpEnabled"
+      :password-policy="passwordPolicy"
+      @user-updated="onUserUpdated"
+    />
 
     <!-- User History Slideover -->
     <b-sidebar
@@ -40,13 +60,15 @@
 
 <script>
 import UsersTable from "./UsersTable.vue";
+import CreateUserModal from "./CreateUserModal.vue";
+import EditUserModal from "./EditUserModal.vue";
 import History from "../shared/History.vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import { useSidebar } from "../../composables";
 
 export default {
   name: "Users",
-  components: { UsersTable, History, BaseCommandBar },
+  components: { UsersTable, CreateUserModal, EditUserModal, History, BaseCommandBar },
   props: {
     users: {
       type: Array,
@@ -56,10 +78,26 @@ export default {
       type: Array,
       required: true,
     },
+    smtpEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    passwordPolicy: {
+      type: Object,
+      default: null,
+    },
   },
   setup() {
     const { activePanel, togglePanel, closePanel } = useSidebar();
     return { activePanel, togglePanel, closePanel };
+  },
+  data() {
+    return {
+      localUsers: [...this.users],
+      showCreateModal: false,
+      showEditModal: false,
+      selectedUser: null,
+    };
   },
   computed: {
     breadcrumbs() {
@@ -67,6 +105,24 @@ export default {
     },
     isPanelActive() {
       return (panel) => this.activePanel === panel;
+    },
+  },
+  methods: {
+    openEditModal(user) {
+      this.selectedUser = user;
+      this.showEditModal = true;
+    },
+    onUserCreated(user) {
+      this.localUsers.push(user);
+    },
+    onUserUpdated(updatedUser) {
+      const idx = this.localUsers.findIndex((u) => u.id === updatedUser.id);
+      if (idx !== -1) {
+        this.$set(this.localUsers, idx, updatedUser);
+      }
+    },
+    onUserDeleted(user) {
+      this.localUsers = this.localUsers.filter((u) => u.id !== user.id);
     },
   },
 };

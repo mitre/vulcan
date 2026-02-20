@@ -88,20 +88,22 @@
                 label-for="user-password"
                 description="Leave blank if you don't want to change it"
               >
-                <b-form-input
+                <PasswordField
                   id="user-password"
                   v-model="form.password"
-                  type="password"
+                  name="user[password]"
                   autocomplete="new-password"
+                  :policy="passwordPolicy"
                 />
               </b-form-group>
 
               <b-form-group label="Confirm New Password" label-for="user-password-confirmation">
-                <b-form-input
+                <PasswordField
                   id="user-password-confirmation"
                   v-model="form.password_confirmation"
-                  type="password"
+                  name="user[password_confirmation]"
                   autocomplete="new-password"
+                  :must-match="form.password"
                 />
               </b-form-group>
 
@@ -162,13 +164,14 @@ import axios from "axios";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import History from "../shared/History.vue";
+import PasswordField from "../shared/PasswordField.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useSidebar } from "../../composables";
 
 export default {
   name: "UserProfile",
-  components: { BaseCommandBar, ConfirmDeleteModal, History },
+  components: { BaseCommandBar, ConfirmDeleteModal, History, PasswordField },
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     user: {
@@ -178,6 +181,10 @@ export default {
     histories: {
       type: Array,
       default: () => [],
+    },
+    passwordPolicy: {
+      type: Object,
+      default: null,
     },
   },
   setup() {

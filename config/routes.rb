@@ -14,7 +14,16 @@ Rails.application.routes.draw do
     sessions: 'sessions'
   }
 
-  resources :users, only: %i[index create update destroy]
+  resources :users, only: %i[index update destroy] do
+    collection do
+      post :admin_create
+    end
+    member do
+      post :send_password_reset
+      post :generate_reset_link
+      post :set_password
+    end
+  end
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
   resources :stigs, only: %i[index show create destroy]
 
