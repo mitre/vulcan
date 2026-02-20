@@ -68,6 +68,8 @@
           :read-only="readOnly"
           :advanced-mode="localAdvancedFields"
           :additional_questions="additional_questions"
+          :effective-permissions="effectivePermissions"
+          @toggle-section-lock="$emit('toggle-section-lock', $event)"
         />
       </b-tab>
       <b-tab title="InSpec Control Body" lazy>

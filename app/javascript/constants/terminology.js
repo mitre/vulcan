@@ -128,6 +128,18 @@ export const MESSAGE_LABELS = {
   revertHistoryTitle: `Revert ${RULE_TERM.singular} History`,
 };
 
+// Review action descriptions — maps review action strings to display labels.
+// Used in RulesCodeEditorView, ProjectComponent, RuleReviews.
+export const ACTION_DESCRIPTIONS = {
+  comment: "Commented",
+  request_review: "Requested Review",
+  revoke_review_request: "Revoked Request for Review",
+  request_changes: "Requested Changes",
+  approve: "Approved",
+  lock_control: "Locked",
+  unlock_control: "Unlocked",
+};
+
 // Role descriptions (used in NewMembership)
 // Order matches available_roles: viewer, author, reviewer, admin
 export const ROLE_DESCRIPTIONS = [

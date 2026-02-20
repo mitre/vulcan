@@ -173,7 +173,7 @@ export const LOCKABLE_SECTIONS = {
   Severity: ["rule_severity", "severity_override_guidance"],
   Status: ["status", "status_justification"],
   Fix: ["fixtext", "fix_id", "fixtext_fixref"],
-  Check: ["content"],
+  Check: ["content", "system", "content_ref_name", "content_ref_href"],
   "Vulnerability Discussion": ["vuln_discussion"],
   "DISA Metadata": [
     "documentable",
@@ -191,4 +191,12 @@ export const LOCKABLE_SECTIONS = {
   ],
   "Vendor Comments": ["vendor_comments"],
   "Artifact Description": ["artifact_description"],
+  "XCCDF Metadata": ["version", "rule_weight", "ident", "ident_system"],
 };
+
+// Reverse lookup: field name → section name (computed once at import time)
+export const FIELD_TO_SECTION = Object.fromEntries(
+  Object.entries(LOCKABLE_SECTIONS).flatMap(([section, fields]) =>
+    fields.map((field) => [field, section]),
+  ),
+);

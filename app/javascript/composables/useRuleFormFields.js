@@ -97,19 +97,26 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
       if (!result.disabled.includes("fixtext")) result.disabled.push("fixtext");
     }
 
+    // Inject section-locked fields into disabled array
+    injectLockedFields(result);
+
     return result;
   });
 
   // ─── DISA description fields ──────────────────────────────
   const disaDescriptionFields = computed(() => {
     const config = getStatusConfig(effectiveStatus.value);
-    return buildFieldSet(config.disa, advancedMode.value);
+    const result = buildFieldSet(config.disa, advancedMode.value);
+    injectLockedFields(result);
+    return result;
   });
 
   // ─── Check form fields ────────────────────────────────────
   const checkFormFields = computed(() => {
     const config = getStatusConfig(effectiveStatus.value);
-    return buildFieldSet(config.check, advancedMode.value);
+    const result = buildFieldSet(config.check, advancedMode.value);
+    injectLockedFields(result);
+    return result;
   });
 
   // ─── Section visibility ───────────────────────────────────
@@ -125,14 +132,13 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
     return hasAdvancedDisa || hasAdvancedRule;
   });
 
-  // ─── Granular locking stubs (Phase 5) ─────────────────────
+  // ─── Per-section locking ─────────────────────────────────
   function isFieldLocked(fieldName) {
     const r = rule.value;
-    if (!r.locked_fields) return false;
-    // Find which section this field belongs to
-    for (const [, fields] of Object.entries(LOCKABLE_SECTIONS)) {
-      if (fields.includes(fieldName)) {
-        return !!r.locked_fields[fieldName];
+    if (!r.locked_fields || r.locked) return false;
+    for (const [section, fields] of Object.entries(LOCKABLE_SECTIONS)) {
+      if (fields.includes(fieldName) && r.locked_fields[section]) {
+        return true;
       }
     }
     return false;
@@ -141,6 +147,40 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   function isFieldEditable(fieldName) {
     if (isFormDisabled.value) return false;
     return !isFieldLocked(fieldName);
+  }
+
+  // ─── Field state CSS class ──────────────────────────────
+  // Returns the CSS class for visual state indication on form groups.
+  // Priority: section-locked > under-review > whole-locked > none
+  function fieldStateClass(fieldName) {
+    const r = rule.value;
+    if (isFieldLocked(fieldName)) return "field-state--section-locked";
+    if (r.review_requestor_id) return "field-state--under-review";
+    if (r.locked) return "field-state--whole-locked";
+    return "";
+  }
+
+  // Which field state is active for the entire rule (for legend display)
+  const activeFieldStates = computed(() => {
+    const r = rule.value;
+    const states = [];
+    if (r.locked_fields && Object.keys(r.locked_fields).length > 0 && !r.locked) {
+      states.push("section-locked");
+    }
+    if (r.review_requestor_id) states.push("under-review");
+    if (r.locked) states.push("whole-locked");
+    return states;
+  });
+
+  // Inject section-locked fields into disabled arrays
+  function injectLockedFields(result) {
+    const r = rule.value;
+    if (!r.locked_fields || r.locked) return;
+    for (const fieldName of result.displayed) {
+      if (isFieldLocked(fieldName) && !result.disabled.includes(fieldName)) {
+        result.disabled.push(fieldName);
+      }
+    }
   }
 
   return {
@@ -167,5 +207,9 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
     // Granular locking
     isFieldLocked,
     isFieldEditable,
+
+    // Field state visualization
+    fieldStateClass,
+    activeFieldStates,
   };
 }

@@ -122,11 +122,27 @@ export default {
         return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
       } else if (changes.field == "locked_at") {
         return `account was ${changes.new_value ? "locked" : "unlocked"}`;
+      } else if (changes.field == "locked_fields") {
+        return this.computeLockedFieldsText(changes);
       } else {
         return `${changes.field} was updated from ${this.prettifyObjects(
           changes.prev_value,
         )} to ${this.prettifyObjects(changes.new_value)}`;
       }
+    },
+    computeLockedFieldsText: function (changes) {
+      const prev = changes.prev_value || {};
+      const next = changes.new_value || {};
+      const prevKeys = typeof prev === "object" ? Object.keys(prev) : [];
+      const nextKeys = typeof next === "object" ? Object.keys(next) : [];
+      const locked = nextKeys.filter((k) => !prevKeys.includes(k));
+      const unlocked = prevKeys.filter((k) => !nextKeys.includes(k));
+      const parts = [];
+      if (locked.length > 0) parts.push(`locked: ${locked.join(", ")}`);
+      if (unlocked.length > 0) parts.push(`unlocked: ${unlocked.join(", ")}`);
+      return parts.length > 0
+        ? `section locks updated (${parts.join("; ")})`
+        : "section locks updated";
     },
     prettifyObjects: function (value) {
       if (typeof value === "object") {

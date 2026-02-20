@@ -39,6 +39,7 @@ import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
 
 export default {
   name: "RuleReviews",
@@ -60,15 +61,7 @@ export default {
   data: function () {
     return {
       numShownReviews: 2,
-      actionDescriptions: {
-        comment: "Commented",
-        request_review: "Requested Review",
-        revoke_review_request: "Revoked Request for Review",
-        request_changes: "Requested Changes",
-        approve: "Approved",
-        lock_control: "Locked",
-        unlock_control: "Unlocked",
-      },
+      actionDescriptions: ACTION_DESCRIPTIONS,
     };
   },
   computed: {

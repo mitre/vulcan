@@ -137,6 +137,26 @@
         :rule="selectedRule"
         :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
       />
+
+      <!-- Section Lock Comment Modal -->
+      <b-modal
+        v-model="sectionLockModal.visible"
+        :title="sectionLockModalTitle"
+        centered
+        data-testid="section-lock-modal"
+        @ok="confirmSectionLock"
+        @cancel="cancelSectionLock"
+      >
+        <p>{{ sectionLockModalMessage }}</p>
+        <b-form-group label="Comment (optional)" label-for="section-lock-comment">
+          <b-form-textarea
+            id="section-lock-comment"
+            v-model="sectionLockModal.comment"
+            placeholder="Reason for this change..."
+            rows="2"
+          />
+        </b-form-group>
+      </b-modal>
     </template>
 
     <!-- Main Content -->
@@ -171,6 +191,7 @@
           @open-related-modal="$bvModal.show('related-rules-modal')"
           @toggle-panel="togglePanel"
           @toggle-advanced-fields="toggleAdvancedFields"
+          @toggle-section-lock="toggleSectionLock"
         />
       </template>
     </template>
@@ -212,7 +233,12 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import Multiselect from "vue-multiselect";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
+import {
+  RULE_TERM,
+  MESSAGE_LABELS,
+  ACTION_DESCRIPTIONS,
+  selectedCountLabel,
+} from "../../constants/terminology";
 import { truncateId } from "../../utils/idFormatter";
 
 export default {
@@ -376,23 +402,33 @@ export default {
   data() {
     return {
       localAdvancedFields: this.component.advanced_fields,
+      sectionLockModal: {
+        visible: false,
+        section: null,
+        isLocking: false,
+        comment: "",
+      },
       term: RULE_TERM,
       msg: MESSAGE_LABELS,
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
       showSRGIdChecked: null,
-      actionDescriptions: {
-        comment: "Commented",
-        request_review: "Requested Review",
-        revoke_review_request: "Revoked Request for Review",
-        request_changes: "Requested Changes",
-        approve: "Approved",
-        lock_control: "Locked",
-        unlock_control: "Unlocked",
-      },
+      actionDescriptions: ACTION_DESCRIPTIONS,
     };
   },
   computed: {
+    sectionLockModalTitle() {
+      const s = this.sectionLockModal;
+      return s.isLocking
+        ? "Lock " + (s.section || "") + " Section"
+        : "Unlock " + (s.section || "") + " Section";
+    },
+    sectionLockModalMessage() {
+      const s = this.sectionLockModal;
+      return s.isLocking
+        ? "Lock the " + (s.section || "") + " section? Locked fields will be read-only for authors."
+        : "Unlock the " + (s.section || "") + " section? Fields will become editable again.";
+    },
     isViewerOnly() {
       return this.effectivePermissions === "viewer";
     },
@@ -515,6 +551,37 @@ export default {
         }
       }
     },
+    toggleSectionLock(section) {
+      const rule = this.selectedRule;
+      if (!rule) return;
+      const isLocked = !!(rule.locked_fields || {})[section];
+      this.sectionLockModal = {
+        visible: true,
+        section,
+        isLocking: !isLocked,
+        comment: "",
+      };
+    },
+    confirmSectionLock() {
+      const { section, isLocking, comment } = this.sectionLockModal;
+      const rule = this.selectedRule;
+      if (!rule) return;
+      this.sectionLockModal.visible = false;
+      axios
+        .patch(`/rules/${rule.id}/section_locks`, {
+          section,
+          locked: isLocking,
+          comment: comment.trim() || undefined,
+        })
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.$root.$emit("refresh:rule", rule.id, "all");
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    cancelSectionLock() {
+      this.sectionLockModal.visible = false;
+    },
     toggleAdvancedFields(advancedFields) {
       // Confirmation is now handled in RuleEditor component
       const payload = {
@@ -532,7 +599,6 @@ export default {
         .catch(this.alertOrNotifyResponse);
     },
     lockRule(comment) {
-      if (!comment.trim()) return;
       const rule = this.selectedRule;
       if (!rule) return;
       axios
@@ -540,7 +606,7 @@ export default {
           review: {
             component_id: rule.component_id,
             action: "lock_control",
-            comment: comment.trim(),
+            comment: (comment || "").trim() || "Locked",
           },
         })
         .then((response) => {
@@ -550,7 +616,6 @@ export default {
         .catch(this.alertOrNotifyResponse);
     },
     unlockRule(comment) {
-      if (!comment.trim()) return;
       const rule = this.selectedRule;
       if (!rule) return;
       axios
@@ -558,7 +623,7 @@ export default {
           review: {
             component_id: rule.component_id,
             action: "unlock_control",
-            comment: comment.trim(),
+            comment: (comment || "").trim() || "Unlocked",
           },
         })
         .then((response) => {
