@@ -102,23 +102,32 @@ VULCAN_SESSION_TIMEOUT=10m     # Required: 10 min for admin, 15 min for users
 **What's Required:** Display approved banner before system access
 
 **How Vulcan Implements It:**
-- Customizable banner via `VULCAN_WELCOME_TEXT`
-- Displayed on login page before authentication
-- Must be acknowledged to proceed
 
-**Example Banner:**
+Vulcan provides three complementary mechanisms:
+
+1. **Welcome Text** — Customizable text on the login page via `VULCAN_WELCOME_TEXT`
+2. **Classification Banner** — Persistent top/bottom banner on every page showing system sensitivity level (e.g., UNCLASSIFIED, CUI). Configured via `VULCAN_BANNER_ENABLED`, `VULCAN_BANNER_TEXT`, `VULCAN_BANNER_BACKGROUND_COLOR`, `VULCAN_BANNER_TEXT_COLOR`. Server-rendered (works without JavaScript).
+3. **Consent Modal** — Blocks access until user acknowledges terms of use. Supports Markdown content. Version-based re-prompting via localStorage. Configured via `VULCAN_CONSENT_ENABLED`, `VULCAN_CONSENT_VERSION`, `VULCAN_CONSENT_TITLE`, `VULCAN_CONSENT_MARKDOWN`.
+
+**Configuration:**
 ```bash
-export VULCAN_WELCOME_TEXT="
-╔══════════════════════════════════════════════════════════════╗
-║                    AUTHORIZED USE ONLY                       ║
-║                                                              ║
-║ This U.S. Government system is for authorized use only.     ║
-║ By accessing this system, you consent to monitoring and     ║
-║ recording of all activities. Unauthorized use is prohibited ║
-║ and subject to criminal and civil penalties.                ║
-╚══════════════════════════════════════════════════════════════╝
-"
+# Classification Banner (visible on every page)
+export VULCAN_BANNER_ENABLED=true
+export VULCAN_BANNER_TEXT="UNCLASSIFIED"
+export VULCAN_BANNER_BACKGROUND_COLOR="#007a33"
+export VULCAN_BANNER_TEXT_COLOR="#ffffff"
+
+# Consent Modal (must acknowledge before use)
+export VULCAN_CONSENT_ENABLED=true
+export VULCAN_CONSENT_VERSION=1
+export VULCAN_CONSENT_TITLE="Terms of Use"
+export VULCAN_CONSENT_MARKDOWN="By using this system you agree to the **acceptable use policy**."
+
+# Welcome Text (login page)
+export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. All activities are monitored."
 ```
+
+See [Configuration](/getting-started/configuration) for full details including color codes for standard classification levels.
 
 ### 📝 Audit & Accountability (AU)
 
@@ -201,6 +210,37 @@ oidc:
   email_field: "email"
   name_field: "name"
 ```
+
+#### Password Complexity (IA-05)
+
+**What's Required:** Enforce password complexity meeting organizational standards
+
+**How Vulcan Implements It:**
+- Configurable count-based validator: minimum length, uppercase, lowercase, numbers, special characters
+- Default policy follows DoD "2222" standard: 15 chars, 2 of each character type
+- Real-time checklist in the UI shows compliance as user types
+- OmniAuth users (OIDC, LDAP, GitHub) skip complexity validation — their passwords are managed externally
+- All thresholds configurable via environment variables
+
+**Configuration:**
+```bash
+export VULCAN_PASSWORD_MIN_LENGTH=15       # Default: 15
+export VULCAN_PASSWORD_MIN_UPPERCASE=2     # Default: 2
+export VULCAN_PASSWORD_MIN_LOWERCASE=2     # Default: 2
+export VULCAN_PASSWORD_MIN_NUMBER=2        # Default: 2
+export VULCAN_PASSWORD_MIN_SPECIAL=2       # Default: 2
+```
+
+See [Configure Password Policy](/getting-started/configuration#configure-password-policy) for details.
+
+#### Admin Account Protection (AC-06)
+
+**What's Required:** Prevent unauthorized privilege escalation and ensure admin continuity
+
+**How Vulcan Implements It:**
+- **Last-admin protection**: The system prevents demoting or deleting the only admin user, ensuring at least one administrator always exists
+- **Admin bootstrap**: Three methods to create the initial admin account (env vars, first-user-admin, rake task)
+- **SMTP-aware password tools**: When SMTP is unavailable, admins can generate reset links or set passwords directly — email-dependent forms show a "contact your admin" message instead of silently failing
 
 ### 🛡️ System & Communications Protection (SC)
 
@@ -505,21 +545,23 @@ end
 
 ### Security Roadmap
 
-**Q4 2024:**
+**Completed (v2.3.1):**
 - ✅ OIDC auto-discovery
 - ✅ Enhanced audit logging
 - ✅ Container security hardening
+- ✅ Classification banner and consent modal
+- ✅ Password complexity policy (DoD 2222)
+- ✅ Admin user management with last-admin protection
+- ✅ SMTP-aware Devise views (no silent failures)
+- ✅ Deny-by-default authorization safety net
 
-**Q1 2025:**
-- ⏳ Session limits per user
-- ⏳ Logout confirmation
-- ⏳ FIPS 140-2 cryptography mode
-- ⏳ Built-in MFA for local accounts
-
-**Q2 2025:**
-- 📋 Zero Trust architecture support
+**Planned:**
+- ⏳ Account lockout UI (Devise `:lockable` — DB columns exist, module not yet enabled)
+- ⏳ Session limits per user (Issue #634)
+- ⏳ Logout confirmation (Issue #635)
+- 📋 FIPS 140-2 cryptography mode
+- 📋 Built-in MFA for local accounts
 - 📋 Enhanced RBAC with custom roles
-- 📋 Automated compliance reporting
 
 ## Configuration Verification & Cross-References
 
@@ -536,10 +578,13 @@ This table provides direct links to the Vulcan source code that implements each 
 | **OIDC** | Auto-Discovery | [`config/initializers/oidc_startup_validation.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/oidc_startup_validation.rb) | ✅ Implemented |
 | **LDAP** | Configuration | [`config/vulcan.default.yml:35-44`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L35) | ✅ Implemented |
 | **Authorization** | RBAC | [`app/controllers/application_controller.rb:16-22`](https://github.com/mitre/vulcan/blob/master/app/controllers/application_controller.rb#L16) | ✅ Implemented |
+| **Classification Banner** | System Sensitivity | [`config/vulcan.default.yml`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml)<br>[`app/views/layouts/application.html.haml`](https://github.com/mitre/vulcan/blob/master/app/views/layouts/application.html.haml) | ✅ Implemented |
+| **Consent Modal** | Terms Acknowledgement | [`app/javascript/components/navbar/ConsentModal.vue`](https://github.com/mitre/vulcan/blob/master/app/javascript/components/navbar/ConsentModal.vue) | ✅ Implemented |
+| **Password Complexity** | DoD 2222 Policy | [`app/models/concerns/password_complexity_validator.rb`](https://github.com/mitre/vulcan/blob/master/app/models/concerns/password_complexity_validator.rb) | ✅ Implemented |
+| **Last-Admin Protection** | Prevent Lockout | [`app/controllers/users_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/users_controller.rb) | ✅ Implemented |
+| **Admin User Management** | Create/Edit/Delete | [`app/controllers/users_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/users_controller.rb) | ✅ Implemented |
 | **Session Limits** | Per-User Limits | [Issue #634](https://github.com/mitre/vulcan/issues/634) | 🚧 In Development |
 | **Logout Message** | Confirmation | [Issue #635](https://github.com/mitre/vulcan/issues/635) | 🚧 In Development |
-| **Session Timeout Default** | 10 min default | [Issue #685](https://github.com/mitre/vulcan/issues/685) | 📋 Planned |
-| **CSRF Documentation** | Explicit validation | [Issue #686](https://github.com/mitre/vulcan/issues/686) | 📋 Planned |
 
 ### Configuration Clarifications
 
@@ -588,9 +633,9 @@ Available in `/docs/compliance/`:
 
 ---
 
-**Document Version:** 2.3.0  
-**Last Updated:** December 2024  
-**Classification:** UNCLASSIFIED  
+**Document Version:** 2.3.1
+**Last Updated:** February 2026
+**Classification:** UNCLASSIFIED
 **Distribution:** Public Release
 
 *This document is maintained as part of the Vulcan project and updated with each security-relevant release.*

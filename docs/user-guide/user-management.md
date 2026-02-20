@@ -62,6 +62,15 @@ Password management tools are only available for **local** users (not OIDC, LDAP
 
 - **Set password manually** — expand the collapsed section to set a password directly. Requires password and confirmation fields. The password must meet the configured policy. Use this for urgent access needs.
 
+## Last-Admin Protection
+
+Vulcan prevents you from accidentally locking out all administrators:
+
+- You **cannot demote** the only admin user (remove their admin privileges)
+- You **cannot delete** the only admin user
+
+If you need to remove an admin, promote another user to admin first. This protection applies to both the admin UI and the API.
+
 ## Deleting Users
 
 Click the **delete** (trash) icon on any user row. A confirmation dialog appears before deletion. This action is permanent and cannot be undone.

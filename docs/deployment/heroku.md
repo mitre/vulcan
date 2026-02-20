@@ -129,7 +129,7 @@ heroku config:set VULCAN_CONSENT_CONTENT="By using this system you agree to the 
 
 Consent content supports Markdown. Increment `VULCAN_CONSENT_VERSION` to re-prompt all users after policy changes.
 
-See [ENVIRONMENT_VARIABLES.md](../../ENVIRONMENT_VARIABLES.md#classification-banner) for the full DoD color table.
+See [Configuration](/getting-started/configuration#classification-banner) for the full DoD color table.
 
 ### Authentication Providers
 
