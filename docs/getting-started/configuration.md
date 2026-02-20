@@ -16,6 +16,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure Slack:](#configure-slack)
 - [Configure Classification Banner:](#configure-classification-banner) Display colored classification/sensitivity banner
 - [Configure Consent Modal:](#configure-consent-modal) Terms-of-use modal that blocks access until acknowledged
+- [Configure Account Lockout:](#configure-account-lockout) Lock accounts after failed login attempts (STIG AC-07)
 - [Configure Password Policy:](#configure-password-policy) Password complexity requirements (DoD 2222 default)
 
 ## Configuration Precedence
@@ -47,6 +48,8 @@ Each deployment type ships sensible defaults. Dev-friendly deployments enable lo
 | Slack | false | false | `VULCAN_ENABLE_SLACK_COMMS` |
 | Classification banner | false | varies | `VULCAN_BANNER_ENABLED` |
 | Consent modal | false | varies | `VULCAN_CONSENT_ENABLED` |
+| Account lockout | **enabled** | **enabled** | `VULCAN_LOCKOUT_ENABLED` |
+| Lockout attempts | 3 | 3 | `VULCAN_LOCKOUT_MAX_ATTEMPTS` |
 | Password min length | 15 | 15 | `VULCAN_PASSWORD_MIN_LENGTH` |
 | Password complexity (2222) | **enabled** | **enabled** | `VULCAN_PASSWORD_MIN_*` |
 
@@ -208,6 +211,43 @@ By accessing this system you agree to the following:
 When you update your terms, increment `VULCAN_CONSENT_VERSION` (e.g., from `1` to `2`). All users will see the modal again on their next visit, regardless of prior acknowledgment.
 :::
 
+## Configure Account Lockout
+
+STIG AC-07 compliant account lockout. Locks accounts after consecutive failed login attempts and provides multiple unlock methods.
+
+- **enabled:** Enable account lockout. `(ENV: VULCAN_LOCKOUT_ENABLED)(default: true)`
+- **maximum_attempts:** Number of failed attempts before the account is locked. `(ENV: VULCAN_LOCKOUT_MAX_ATTEMPTS)(default: 3)`
+- **unlock_in_minutes:** Minutes before a locked account automatically unlocks. `(ENV: VULCAN_LOCKOUT_UNLOCK_IN_MINUTES)(default: 15)`
+- **unlock_strategy:** How locked accounts can be unlocked. `(ENV: VULCAN_LOCKOUT_UNLOCK_STRATEGY)(default: both)`
+  - `email` — sends an unlock link (requires SMTP)
+  - `time` — auto-unlocks after the configured minutes
+  - `both` — either method works (recommended)
+- **last_attempt_warning:** Show a warning on the last attempt before lock. `(ENV: VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING)(default: true)`
+
+### Admin Unlock
+
+Administrators can manually unlock any account from the Users page (`/users`). Click the edit (pencil) icon on a locked user to see the unlock button. Admin unlock works regardless of SMTP configuration.
+
+### Example: STIG AC-07 (default)
+
+```bash
+VULCAN_LOCKOUT_ENABLED=true
+VULCAN_LOCKOUT_MAX_ATTEMPTS=3
+VULCAN_LOCKOUT_UNLOCK_IN_MINUTES=15
+VULCAN_LOCKOUT_UNLOCK_STRATEGY=both
+VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING=true
+```
+
+### Example: Disabled for Development
+
+```bash
+VULCAN_LOCKOUT_ENABLED=false
+```
+
+::: tip
+When SMTP is not configured, the `both` strategy ensures locked accounts still auto-unlock via the time-based method. Administrators can also unlock accounts manually from the Users page at any time.
+:::
+
 ## Configure Password Policy
 
 Configurable password complexity enforcement. Defaults are DoD-aligned ("2222" policy: 15 characters minimum, 2 uppercase, 2 lowercase, 2 numbers, 2 special characters). Set any count to `0` to disable that requirement.
@@ -313,6 +353,12 @@ defaults: &defaults
     version:
     title:
     content:
+  lockout:
+    enabled:
+    maximum_attempts:
+    unlock_in_minutes:
+    unlock_strategy:
+    last_attempt_warning:
   password:
     min_length:
     min_uppercase:

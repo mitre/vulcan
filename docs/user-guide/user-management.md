@@ -62,6 +62,26 @@ Password management tools are only available for **local** users (not OIDC, LDAP
 
 - **Set password manually** — expand the collapsed section to set a password directly. Requires password and confirmation fields. The password must meet the configured policy. Use this for urgent access needs.
 
+## Account Lockout
+
+When account lockout is enabled (default), user accounts are automatically locked after consecutive failed login attempts. Locked users see an "account is locked" message when attempting to log in.
+
+### Identifying Locked Users
+
+On the Users page, locked accounts display a **Locked** badge (yellow) next to their role badge.
+
+### Unlocking Accounts
+
+Three methods are available:
+
+1. **Admin unlock** — open the Edit User modal for a locked user. A warning alert shows the number of failed attempts with an **Unlock** button. Click to unlock immediately. Works regardless of SMTP configuration.
+
+2. **Time-based auto-unlock** — the account automatically unlocks after the configured period (default: 15 minutes).
+
+3. **Email unlock** — if SMTP is configured, the user receives an unlock link via email when their account is locked.
+
+The default unlock strategy (`both`) enables all three methods. See [Configure Account Lockout](/getting-started/configuration#configure-account-lockout) for customization.
+
 ## Last-Admin Protection
 
 Vulcan prevents you from accidentally locking out all administrators:

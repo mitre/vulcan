@@ -177,6 +177,16 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SLACK_API_TOKEN` | Slack API token | - | `xoxb-your-token` |
 | `VULCAN_SLACK_CHANNEL_ID` | Slack channel ID | - | `C1234567890` |
 
+## Account Lockout (STIG AC-07)
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_LOCKOUT_ENABLED` | Enable account lockout | `true` | `false` |
+| `VULCAN_LOCKOUT_MAX_ATTEMPTS` | Failed attempts before lock | `3` | `5` |
+| `VULCAN_LOCKOUT_UNLOCK_IN_MINUTES` | Minutes before auto-unlock | `15` | `30` |
+| `VULCAN_LOCKOUT_UNLOCK_STRATEGY` | Unlock method: `email`, `time`, or `both` | `both` | `time` |
+| `VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING` | Warn user on last attempt before lock | `true` | `false` |
+
 ## Project Settings
 
 | Variable | Description | Default | Example |
