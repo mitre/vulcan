@@ -21,7 +21,7 @@ gem 'jbuilder', '~> 2.7'
 # Use HAML instead of ERB
 gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
-gem 'devise'
+gem 'devise', '~> 4.9'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
 # LDAP Auth
