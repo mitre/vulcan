@@ -36,6 +36,13 @@ Settings.consent['version'] = '1' if Settings.consent['version'].blank?
 Settings.consent['title'] = 'Terms of Use' if Settings.consent['title'].blank?
 Settings.consent['content'] = '' if Settings.consent['content'].nil?
 
+Settings['lockout'] ||= Settingslogic.new({})
+Settings.lockout['enabled'] = true if Settings.lockout['enabled'].nil?
+Settings.lockout['maximum_attempts'] = 3 if Settings.lockout['maximum_attempts'].nil?
+Settings.lockout['unlock_in_minutes'] = 15 if Settings.lockout['unlock_in_minutes'].nil?
+Settings.lockout['unlock_strategy'] = 'both' if Settings.lockout['unlock_strategy'].blank?
+Settings.lockout['last_attempt_warning'] = true if Settings.lockout['last_attempt_warning'].nil?
+
 Settings['password'] ||= Settingslogic.new({})
 Settings.password['min_length'] = 15 if Settings.password['min_length'].nil?
 Settings.password['min_uppercase'] = 2 if Settings.password['min_uppercase'].nil?

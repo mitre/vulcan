@@ -226,6 +226,25 @@ Display a blocking consent modal that users must acknowledge before accessing th
 
 **Consent Content Formatting**: The `VULCAN_CONSENT_CONTENT` variable supports full [Markdown](https://www.markdownguide.org/basic-syntax/) formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. The banner text (`VULCAN_BANNER_TEXT`) is plain text only — no formatting is applied.
 
+## Account Lockout (STIG AC-07)
+
+Lock accounts after consecutive failed login attempts. Enabled by default with STIG AC-07 compliant settings.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_LOCKOUT_ENABLED` | Enable account lockout | `true` | `false` |
+| `VULCAN_LOCKOUT_MAX_ATTEMPTS` | Failed attempts before lock | `3` | `5` |
+| `VULCAN_LOCKOUT_UNLOCK_IN_MINUTES` | Minutes before auto-unlock | `15` | `30` |
+| `VULCAN_LOCKOUT_UNLOCK_STRATEGY` | Unlock method: `email`, `time`, or `both` | `both` | `time` |
+| `VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING` | Warn user on last attempt before lock | `true` | `false` |
+
+**Unlock strategies:**
+- `email` — sends an unlock link to the user's email (requires SMTP)
+- `time` — automatically unlocks after `VULCAN_LOCKOUT_UNLOCK_IN_MINUTES`
+- `both` — either method works (recommended, ensures unlock even without SMTP)
+
+Administrators can also manually unlock accounts from the Users page (`/users`).
+
 ## Password Policy
 
 DoD-aligned defaults ("2222" policy). Set any count to `0` to disable that requirement.
