@@ -117,6 +117,54 @@ describe("UsersTable", () => {
     });
   });
 
+  describe("locked user badge", () => {
+    it("shows Locked badge when user has locked_at", () => {
+      const usersWithLocked = [
+        ...users,
+        {
+          id: 4,
+          name: "Locked User",
+          email: "locked@test.com",
+          admin: false,
+          provider: null,
+          last_sign_in_at: null,
+          locked_at: "2026-02-19T10:00:00Z",
+          failed_attempts: 3,
+        },
+      ];
+      mountTable({ users: usersWithLocked, lockoutEnabled: true });
+      const badges = wrapper.findAll(".badge");
+      const badgeTexts = badges.wrappers.map((b) => b.text());
+      expect(badgeTexts).toContain("Locked");
+    });
+
+    it("does not show Locked badge when lockoutEnabled is false", () => {
+      const usersWithLocked = [
+        {
+          id: 4,
+          name: "Locked User",
+          email: "locked@test.com",
+          admin: false,
+          provider: null,
+          last_sign_in_at: null,
+          locked_at: "2026-02-19T10:00:00Z",
+          failed_attempts: 3,
+        },
+      ];
+      mountTable({ users: usersWithLocked, lockoutEnabled: false });
+      const badges = wrapper.findAll(".badge");
+      const badgeTexts = badges.wrappers.map((b) => b.text());
+      expect(badgeTexts).not.toContain("Locked");
+    });
+
+    it("does not show Locked badge when user is not locked", () => {
+      mountTable({ lockoutEnabled: true });
+      const badges = wrapper.findAll(".badge");
+      const badgeTexts = badges.wrappers.map((b) => b.text());
+      expect(badgeTexts).not.toContain("Locked");
+    });
+  });
+
   describe("delete action", () => {
     beforeEach(() => mountTable());
 

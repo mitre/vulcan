@@ -244,6 +244,122 @@ describe("EditUserModal", () => {
     });
   });
 
+  describe("unlock button", () => {
+    it("shows unlock section when user is locked and lockoutEnabled", () => {
+      mountModal({
+        lockoutEnabled: true,
+        user: { ...testUser, locked_at: "2026-02-19T10:00:00Z", failed_attempts: 3 },
+      });
+      expect(wrapper.vm.isLocked).toBe(true);
+      expect(wrapper.vm.lockoutEnabled).toBe(true);
+    });
+
+    it("hides unlock button when user is not locked", () => {
+      mountModal({ lockoutEnabled: true });
+      expect(document.querySelector('[data-testid="unlock-btn"]')).toBeFalsy();
+    });
+
+    it("hides unlock button when lockoutEnabled is false", () => {
+      mountModal({
+        lockoutEnabled: false,
+        user: { ...testUser, locked_at: "2026-02-19T10:00:00Z", failed_attempts: 3 },
+      });
+      expect(document.querySelector('[data-testid="unlock-btn"]')).toBeFalsy();
+    });
+
+    it("sends POST to unlock endpoint on click", async () => {
+      const unlockedUser = { ...testUser, locked_at: null, failed_attempts: 0 };
+      axios.post.mockResolvedValue({
+        data: { toast: "Unlocked.", user: unlockedUser },
+      });
+      mountModal({
+        lockoutEnabled: true,
+        user: { ...testUser, locked_at: "2026-02-19T10:00:00Z", failed_attempts: 3 },
+      });
+
+      await wrapper.vm.unlockUser();
+
+      expect(axios.post).toHaveBeenCalledWith("/users/42/unlock");
+    });
+
+    it("emits user-updated with unlocked user data", async () => {
+      const unlockedUser = { ...testUser, locked_at: null, failed_attempts: 0 };
+      axios.post.mockResolvedValue({
+        data: { toast: "Unlocked.", user: unlockedUser },
+      });
+      mountModal({
+        lockoutEnabled: true,
+        user: { ...testUser, locked_at: "2026-02-19T10:00:00Z", failed_attempts: 3 },
+      });
+
+      await wrapper.vm.unlockUser();
+
+      expect(wrapper.emitted("user-updated")).toBeTruthy();
+      expect(wrapper.emitted("user-updated")[0][0].locked_at).toBeNull();
+    });
+  });
+
+  describe("lock button", () => {
+    it("shows lock button when user is NOT locked and lockoutEnabled", () => {
+      mountModal({
+        lockoutEnabled: true,
+        user: { ...testUser, locked_at: null, failed_attempts: 0 },
+      });
+      expect(wrapper.vm.isLocked).toBe(false);
+      expect(wrapper.vm.lockoutEnabled).toBe(true);
+      // Lock button renders in BModal (teleported) — verify via vm state
+      // The template condition is: lockoutEnabled && !isLocked
+      expect(wrapper.vm.locking).toBe(false);
+    });
+
+    it("hides lock button when user IS locked", () => {
+      mountModal({
+        lockoutEnabled: true,
+        user: { ...testUser, locked_at: "2026-02-19T10:00:00Z", failed_attempts: 3 },
+      });
+      expect(document.querySelector('[data-testid="lock-btn"]')).toBeFalsy();
+    });
+
+    it("hides lock button when lockoutEnabled is false", () => {
+      mountModal({
+        lockoutEnabled: false,
+        user: { ...testUser, locked_at: null, failed_attempts: 0 },
+      });
+      expect(document.querySelector('[data-testid="lock-btn"]')).toBeFalsy();
+    });
+
+    it("sends POST to lock endpoint on click", async () => {
+      const lockedUser = { ...testUser, locked_at: "2026-02-20T00:00:00Z", failed_attempts: 0 };
+      axios.post.mockResolvedValue({
+        data: { toast: "Locked.", user: lockedUser },
+      });
+      mountModal({
+        lockoutEnabled: true,
+        user: { ...testUser, locked_at: null, failed_attempts: 0 },
+      });
+
+      await wrapper.vm.lockUser();
+
+      expect(axios.post).toHaveBeenCalledWith("/users/42/lock");
+    });
+
+    it("emits user-updated with locked user data", async () => {
+      const lockedUser = { ...testUser, locked_at: "2026-02-20T00:00:00Z", failed_attempts: 0 };
+      axios.post.mockResolvedValue({
+        data: { toast: "Locked.", user: lockedUser },
+      });
+      mountModal({
+        lockoutEnabled: true,
+        user: { ...testUser, locked_at: null, failed_attempts: 0 },
+      });
+
+      await wrapper.vm.lockUser();
+
+      expect(wrapper.emitted("user-updated")).toBeTruthy();
+      expect(wrapper.emitted("user-updated")[0][0].locked_at).toBeTruthy();
+    });
+  });
+
   describe("password actions hidden for non-local users", () => {
     it("hides all password actions for OIDC users", () => {
       mountModal({ smtpEnabled: false, user: { ...testUser, provider: "oidc" } });
