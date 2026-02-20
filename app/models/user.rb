@@ -12,7 +12,7 @@ class User < ApplicationRecord
   # provider configuration.
   devise :database_authenticatable, :registerable, :rememberable,
          :recoverable, :confirmable, :trackable, :validatable,
-         :timeoutable
+         :timeoutable, :lockable
 
   audited only: %i[admin name email], max_audits: 1000
 
