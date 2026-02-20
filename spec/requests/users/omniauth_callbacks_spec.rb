@@ -17,14 +17,14 @@ RSpec.describe 'Remember Me Functionality' do
   end
 
   describe 'Local Login with remember_me' do
-    let(:user) { create(:user, password: 'password123', password_confirmation: 'password123') }
+    let(:user) { create(:user, password: 'S3cure!#TestPas1', password_confirmation: 'S3cure!#TestPas1') }
 
     context 'when remember_me is checked' do
       it 'sets remember_created_at on the user' do
         post user_session_path, params: {
           user: {
             email: user.email,
-            password: 'password123',
+            password: 'S3cure!#TestPas1',
             remember_me: '1'
           }
         }
@@ -37,7 +37,7 @@ RSpec.describe 'Remember Me Functionality' do
         post user_session_path, params: {
           user: {
             email: user.email,
-            password: 'password123',
+            password: 'S3cure!#TestPas1',
             remember_me: '1'
           }
         }
@@ -52,7 +52,7 @@ RSpec.describe 'Remember Me Functionality' do
         post user_session_path, params: {
           user: {
             email: user.email,
-            password: 'password123',
+            password: 'S3cure!#TestPas1',
             remember_me: '0'
           }
         }
@@ -65,7 +65,7 @@ RSpec.describe 'Remember Me Functionality' do
         post user_session_path, params: {
           user: {
             email: user.email,
-            password: 'password123',
+            password: 'S3cure!#TestPas1',
             remember_me: '0'
           }
         }

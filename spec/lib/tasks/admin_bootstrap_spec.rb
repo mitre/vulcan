@@ -6,7 +6,7 @@ require 'rake'
 RSpec.describe 'admin:bootstrap rake task' do
   let(:bootstrap_task) { 'admin:bootstrap' }
   let(:bootstrap_email) { 'bootstrap-admin@example.com' }
-  let(:bootstrap_password) { 'SecurePassword123!' }
+  let(:bootstrap_password) { 'SecurePass!@1234' }
 
   before(:all) do
     Rails.application.load_tasks

@@ -157,9 +157,7 @@ describe("PasswordField", () => {
 
     it("sets autocomplete attribute when provided", () => {
       wrapper = createWrapper({ autocomplete: "current-password" });
-      expect(wrapper.find("input").attributes("autocomplete")).toBe(
-        "current-password",
-      );
+      expect(wrapper.find("input").attributes("autocomplete")).toBe("current-password");
     });
 
     it("sets required attribute when provided", () => {
@@ -174,9 +172,7 @@ describe("PasswordField", () => {
 
     it("sets title attribute when provided", () => {
       wrapper = createWrapper({ title: "This field is required." });
-      expect(wrapper.find("input").attributes("title")).toBe(
-        "This field is required.",
-      );
+      expect(wrapper.find("input").attributes("title")).toBe("This field is required.");
     });
 
     it("applies additional CSS class when provided", () => {
@@ -206,7 +202,160 @@ describe("PasswordField", () => {
   });
 
   // ==========================================
-  // 6. ACCESSIBILITY
+  // 6. POLICY CHECKLIST
+  // ==========================================
+  describe("policy checklist", () => {
+    // DoD 2222 default: 15 chars, 2 of each character class
+    const defaultPolicy = {
+      min_length: 15,
+      min_uppercase: 2,
+      min_lowercase: 2,
+      min_number: 2,
+      min_special: 2,
+    };
+
+    it("does not render checklist when no policy prop", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find('[data-testid="password-checklist"]').exists()).toBe(false);
+    });
+
+    it("does not render checklist when policy provided but input empty", () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      expect(wrapper.find('[data-testid="password-checklist"]').exists()).toBe(false);
+    });
+
+    it("renders checklist when policy provided and user has typed", async () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      await wrapper.find("input").setValue("a");
+      expect(wrapper.find('[data-testid="password-checklist"]').exists()).toBe(true);
+    });
+
+    it("shows all rules from policy", async () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      await wrapper.find("input").setValue("a");
+      const rules = wrapper.findAll('[data-testid="password-rule"]');
+      // length + uppercase + lowercase + number + special = 5
+      expect(rules.length).toBe(5);
+    });
+
+    it("marks met rules with text-success when count satisfied", async () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      // "ab" has 2 lowercase — meets that rule
+      await wrapper.find("input").setValue("ab");
+      const rules = wrapper.findAll('[data-testid="password-rule"]');
+      const lowercaseRule = rules.wrappers.find((r) => r.text().includes("lowercase"));
+      expect(lowercaseRule.classes()).toContain("text-success");
+    });
+
+    it("marks unmet rules with text-danger when count not satisfied", async () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      // "a" has only 1 lowercase, need 2
+      await wrapper.find("input").setValue("A");
+      const rules = wrapper.findAll('[data-testid="password-rule"]');
+      const uppercaseRule = rules.wrappers.find((r) => r.text().includes("uppercase"));
+      expect(uppercaseRule.classes()).toContain("text-danger");
+    });
+
+    it("shows correct count in labels", async () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      await wrapper.find("input").setValue("a");
+      const rules = wrapper.findAll('[data-testid="password-rule"]');
+      const uppercaseRule = rules.wrappers.find((r) => r.text().includes("uppercase"));
+      expect(uppercaseRule.text()).toContain("2 uppercase letters");
+    });
+
+    it("uses singular form when count is 1", async () => {
+      const singlePolicy = {
+        min_length: 8,
+        min_uppercase: 1,
+        min_lowercase: 0,
+        min_number: 0,
+        min_special: 0,
+      };
+      wrapper = createWrapper({ policy: singlePolicy });
+      await wrapper.find("input").setValue("a");
+      const rules = wrapper.findAll('[data-testid="password-rule"]');
+      const uppercaseRule = rules.wrappers.find((r) => r.text().includes("uppercase"));
+      expect(uppercaseRule.text()).toMatch(/1 uppercase letter$/);
+    });
+
+    it("emits update:valid true when all rules met", async () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      // AAbbc12!@defghi = 2up, 7low, 2num, 2spec, 15chars
+      await wrapper.find("input").setValue("AAbbc12!@defghi");
+      const validEvents = wrapper.emitted("update:valid");
+      expect(validEvents[validEvents.length - 1]).toEqual([true]);
+    });
+
+    it("emits update:valid false when rules not met", async () => {
+      wrapper = createWrapper({ policy: defaultPolicy });
+      await wrapper.find("input").setValue("weak");
+      const validEvents = wrapper.emitted("update:valid");
+      expect(validEvents[validEvents.length - 1]).toEqual([false]);
+    });
+
+    it("skips disabled rules (count = 0)", async () => {
+      const lengthOnlyPolicy = {
+        min_length: 6,
+        min_uppercase: 0,
+        min_lowercase: 0,
+        min_number: 0,
+        min_special: 0,
+      };
+      wrapper = createWrapper({ policy: lengthOnlyPolicy });
+      await wrapper.find("input").setValue("abcdef");
+      const rules = wrapper.findAll('[data-testid="password-rule"]');
+      // Only length rule
+      expect(rules.length).toBe(1);
+      const validEvents = wrapper.emitted("update:valid");
+      expect(validEvents[validEvents.length - 1]).toEqual([true]);
+    });
+  });
+
+  // ==========================================
+  // 7. PASSWORD MATCH INDICATOR
+  // ==========================================
+  describe("password match indicator", () => {
+    it("does not show match indicator when mustMatch not provided", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find('[data-testid="password-match"]').exists()).toBe(false);
+    });
+
+    it("does not show match indicator when input empty", () => {
+      wrapper = createWrapper({ mustMatch: "password123" });
+      expect(wrapper.find('[data-testid="password-match"]').exists()).toBe(false);
+    });
+
+    it("shows 'Passwords match' when values are identical", async () => {
+      wrapper = createWrapper({ mustMatch: "MyPassword" });
+      await wrapper.find("input").setValue("MyPassword");
+      const match = wrapper.find('[data-testid="password-match"]');
+      expect(match.exists()).toBe(true);
+      expect(match.text()).toContain("Passwords match");
+      expect(match.classes()).toContain("text-success");
+    });
+
+    it("shows 'Passwords do not match' when values differ", async () => {
+      wrapper = createWrapper({ mustMatch: "MyPassword" });
+      await wrapper.find("input").setValue("different");
+      const match = wrapper.find('[data-testid="password-match"]');
+      expect(match.exists()).toBe(true);
+      expect(match.text()).toContain("Passwords do not match");
+      expect(match.classes()).toContain("text-danger");
+    });
+
+    it("updates dynamically when mustMatch prop changes", async () => {
+      wrapper = createWrapper({ mustMatch: "original" });
+      await wrapper.find("input").setValue("original");
+      expect(wrapper.find('[data-testid="password-match"]').classes()).toContain("text-success");
+
+      await wrapper.setProps({ mustMatch: "changed" });
+      expect(wrapper.find('[data-testid="password-match"]').classes()).toContain("text-danger");
+    });
+  });
+
+  // ==========================================
+  // 8. ACCESSIBILITY
   // ==========================================
   describe("accessibility", () => {
     it("toggle button has aria-label describing its action", () => {
@@ -218,9 +367,7 @@ describe("PasswordField", () => {
     it("aria-label changes when password is visible", async () => {
       wrapper = createWrapper();
       await wrapper.find("button").trigger("click");
-      expect(wrapper.find("button").attributes("aria-label")).toBe(
-        "Hide password",
-      );
+      expect(wrapper.find("button").attributes("aria-label")).toBe("Hide password");
     });
   });
 });
