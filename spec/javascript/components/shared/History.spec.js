@@ -11,12 +11,9 @@ import History from "@/components/shared/History.vue";
  *    - Shows comments when present on a history group
  *    - Groups histories by name, created_at (rounded to minute), and comment
  *
- * 2. PAGINATION:
- *    - Initially shows 2 groups (numShownHistories=2)
- *    - "show more" link appears when there are more groups than currently shown
- *    - Clicking "show more" increases visible count by 2
- *    - "show less" appears when count > 2 AND total groups > 2
- *    - Clicking "show less" decreases visible count by 2
+ * 2. ALL GROUPS VISIBLE:
+ *    - All history groups are rendered (no pagination)
+ *    - Content scrolls naturally in parent container
  *
  * 3. ACTION DISPLAY:
  *    - Create action: green text with "was Created" (or membership-specific text)
@@ -132,93 +129,22 @@ describe("History", () => {
   });
 
   // ==========================================
-  // PAGINATION
+  // ALL GROUPS VISIBLE
   // ==========================================
-  describe("pagination", () => {
-    const manyHistories = [
-      makeHistory({
-        id: 1,
-        name: "User A",
-        created_at: "2024-06-15T10:00:00.000Z",
-      }),
-      makeHistory({
-        id: 2,
-        name: "User B",
-        created_at: "2024-06-15T11:00:00.000Z",
-      }),
-      makeHistory({
-        id: 3,
-        name: "User C",
-        created_at: "2024-06-15T12:00:00.000Z",
-      }),
-      makeHistory({
-        id: 4,
-        name: "User D",
-        created_at: "2024-06-15T13:00:00.000Z",
-      }),
-    ];
-
-    it("initially shows only 2 groups", () => {
-      wrapper = createWrapper({ histories: manyHistories });
-      expect(wrapper.vm.numShownHistories).toBe(2);
-      expect(wrapper.vm.shownGroupedHistories.length).toBe(2);
-    });
-
-    it('shows "show more" when there are more groups than visible', () => {
-      wrapper = createWrapper({ histories: manyHistories });
-      expect(wrapper.text()).toContain("show more");
-    });
-
-    it('does not show "show more" when all groups are visible', () => {
-      const twoHistories = [
-        makeHistory({
-          id: 1,
-          name: "User A",
-          created_at: "2024-06-15T10:00:00.000Z",
-        }),
-        makeHistory({
-          id: 2,
-          name: "User B",
-          created_at: "2024-06-15T11:00:00.000Z",
-        }),
+  describe("all groups visible", () => {
+    it("renders all history groups without pagination", () => {
+      const manyHistories = [
+        makeHistory({ id: 1, name: "User A", created_at: "2024-06-15T10:00:00.000Z" }),
+        makeHistory({ id: 2, name: "User B", created_at: "2024-06-15T11:00:00.000Z" }),
+        makeHistory({ id: 3, name: "User C", created_at: "2024-06-15T12:00:00.000Z" }),
+        makeHistory({ id: 4, name: "User D", created_at: "2024-06-15T13:00:00.000Z" }),
       ];
-      wrapper = createWrapper({ histories: twoHistories });
+      wrapper = createWrapper({ histories: manyHistories });
+      expect(wrapper.vm.groupedHistories.length).toBe(4);
+      expect(wrapper.text()).toContain("User A");
+      expect(wrapper.text()).toContain("User D");
       expect(wrapper.text()).not.toContain("show more");
-    });
-
-    it('clicking "show more" increases visible count by 2', async () => {
-      wrapper = createWrapper({ histories: manyHistories });
-      const showMore = wrapper.find(".text-primary.clickable");
-      await showMore.trigger("click");
-
-      expect(wrapper.vm.numShownHistories).toBe(4);
-    });
-
-    it('shows "show less" when count > 2 AND groups > 2', async () => {
-      wrapper = createWrapper({ histories: manyHistories });
-      // Initially no "show less"
       expect(wrapper.text()).not.toContain("show less");
-
-      // Click "show more" to increase count to 4
-      const showMore = wrapper.find(".text-primary.clickable");
-      await showMore.trigger("click");
-
-      expect(wrapper.text()).toContain("show less");
-    });
-
-    it('clicking "show less" decreases visible count by 2', async () => {
-      wrapper = createWrapper({ histories: manyHistories });
-
-      // Increase to 4
-      wrapper.vm.numShownHistories = 4;
-      await wrapper.vm.$nextTick();
-
-      // Find "show less" link
-      const links = wrapper.findAll(".text-primary.clickable");
-      const showLess = links.wrappers.find((l) => l.text() === "show less");
-      await showLess.trigger("click");
-
-      expect(wrapper.vm.numShownHistories).toBe(2);
     });
   });
 
@@ -308,6 +234,36 @@ describe("History", () => {
         ],
       });
       expect(wrapper.text()).toContain("was promoted to admin");
+    });
+
+    it('shows "account was locked" for locked_at field set to a timestamp', () => {
+      wrapper = createWrapper({
+        revertable: false,
+        histories: [
+          makeHistory({
+            action: "update",
+            audited_changes: [
+              { field: "locked_at", prev_value: null, new_value: "2024-06-15T10:30:00.000Z" },
+            ],
+          }),
+        ],
+      });
+      expect(wrapper.text()).toContain("account was locked");
+    });
+
+    it('shows "account was unlocked" for locked_at field set to null', () => {
+      wrapper = createWrapper({
+        revertable: false,
+        histories: [
+          makeHistory({
+            action: "update",
+            audited_changes: [
+              { field: "locked_at", prev_value: "2024-06-15T10:30:00.000Z", new_value: null },
+            ],
+          }),
+        ],
+      });
+      expect(wrapper.text()).toContain("account was unlocked");
     });
 
     it("shows admin demotion text for admin field update to false", () => {

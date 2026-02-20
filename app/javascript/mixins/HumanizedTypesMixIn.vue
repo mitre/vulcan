@@ -37,6 +37,7 @@ export default {
         documentable: "Documentable",
         mitigations: "Mitigations",
         locked: "Locked",
+        locked_at: "Account Locked",
         status: "Status",
         title: "Title",
         ident: "Ident",

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-for="group in shownGroupedHistories" :key="group.id">
+    <div v-for="group in groupedHistories" :key="group.id">
       <p class="ml-2 mb-0 mt-2">
         <strong>{{ group.history.name }}</strong>
       </p>
@@ -57,22 +57,6 @@
         </template>
       </div>
     </div>
-    <div class="d-flex justify-content-center align-items-center mt-2">
-      <p
-        v-if="numShownHistories < groupedHistories.length"
-        class="text-primary clickable"
-        @click="numShownHistories += 2"
-      >
-        show more
-      </p>
-      <p
-        v-if="numShownHistories > 2 && groupedHistories.length > 2"
-        class="ml-4 text-primary clickable"
-        @click="numShownHistories -= 2"
-      >
-        show less
-      </p>
-    </div>
   </div>
 </template>
 
@@ -112,17 +96,9 @@ export default {
       required: false,
     },
   },
-  data: function () {
-    return {
-      numShownHistories: 2,
-    };
-  },
   computed: {
     groupedHistories() {
       return this.groupHistories(this.histories);
-    },
-    shownGroupedHistories() {
-      return this.groupedHistories.slice(0, this.numShownHistories);
     },
   },
   methods: {
@@ -141,9 +117,11 @@ export default {
         return "Created";
       }
     },
-    computeUpdateText: function (changes, abbreviated) {
+    computeUpdateText: function (changes) {
       if (changes.field == "admin") {
         return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
+      } else if (changes.field == "locked_at") {
+        return `account was ${changes.new_value ? "locked" : "unlocked"}`;
       } else {
         return `${changes.field} was updated from ${this.prettifyObjects(
           changes.prev_value,

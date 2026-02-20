@@ -170,6 +170,8 @@ class UsersController < ApplicationController
     end
 
     @user.lock_access!(send_instructions: false)
+    @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [nil, @user.locked_at.iso8601] },
+                         user: current_user, comment: "Account locked by #{current_user.name}")
     render json: {
       toast: "Account #{@user.email} locked.",
       user: @user.as_json(only: USER_JSON_FIELDS)
@@ -178,7 +180,10 @@ class UsersController < ApplicationController
 
   # Admin unlocks a locked user account
   def unlock
+    prev_locked_at = @user.locked_at&.iso8601
     @user.unlock_access!
+    @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [prev_locked_at, nil] },
+                         user: current_user, comment: "Account unlocked by #{current_user.name}")
     render json: {
       toast: "Account #{@user.email} unlocked.",
       user: @user.as_json(only: USER_JSON_FIELDS)

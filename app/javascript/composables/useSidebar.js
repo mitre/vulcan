@@ -15,6 +15,10 @@ export function useSidebar() {
   // State
   const activePanel = ref(null);
 
+  function lockBodyScroll(val) {
+    document.body.style.overflow = val ? "hidden" : "";
+  }
+
   // Methods
   function togglePanel(panelName) {
     if (activePanel.value === panelName) {
@@ -22,14 +26,17 @@ export function useSidebar() {
     } else {
       activePanel.value = panelName;
     }
+    lockBodyScroll(activePanel.value);
   }
 
   function openPanel(panelName) {
     activePanel.value = panelName;
+    lockBodyScroll(activePanel.value);
   }
 
   function closePanel() {
     activePanel.value = null;
+    lockBodyScroll(null);
   }
 
   function isSidebarOpen(panelName) {
