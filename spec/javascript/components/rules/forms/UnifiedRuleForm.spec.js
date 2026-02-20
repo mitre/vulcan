@@ -180,29 +180,20 @@ describe("UnifiedRuleForm", () => {
       );
     });
 
-    it("shows collapsible DISA section for Does Not Meet (has advanced DISA additions)", () => {
+    it("passes DISA fields inline for Does Not Meet advanced (includes advanced additions)", () => {
       wrapper = createWrapper({ status: "Applicable - Does Not Meet" }, { advancedMode: true });
-      // DNM has advancedDisplayed DISA fields so should get collapsible sections
-      expect(wrapper.findComponent({ name: "DisaRuleDescriptionForm" }).exists()).toBe(true);
-      const headings = wrapper.findAll("h2");
-      const hasRuleDescriptionHeading = headings.wrappers.some(
-        (h) => h.text() === "Rule Description",
-      );
-      expect(hasRuleDescriptionHeading).toBe(true);
+      const ruleForm = wrapper.findComponent({ name: "RuleForm" });
+      expect(ruleForm.props("disa_fields")).toBeDefined();
+      expect(ruleForm.props("disa_fields").displayed).toContain("mitigations");
+      // Advanced additions present inline
+      expect(ruleForm.props("disa_fields").displayed).toContain("false_positives");
     });
 
-    it("does NOT show collapsible DISA section for NYD advanced (no advanced additions)", () => {
+    it("passes DISA fields inline for NYD advanced", () => {
       wrapper = createWrapper({ status: "Not Yet Determined" }, { advancedMode: true });
-      // NYD has no advancedDisplayed entries, so disa_fields stay inline in RuleForm
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
       expect(ruleForm.props("disa_fields")).toBeDefined();
       expect(ruleForm.props("disa_fields").displayed).toContain("vuln_discussion");
-      // No collapsible heading
-      const headings = wrapper.findAll("h2");
-      const hasRuleDescriptionHeading = headings.wrappers.some(
-        (h) => h.text() === "Rule Description",
-      );
-      expect(hasRuleDescriptionHeading).toBe(false);
     });
   });
 
@@ -229,26 +220,24 @@ describe("UnifiedRuleForm", () => {
       expect(ruleForm.props("disa_fields")).toBeUndefined();
     });
 
-    it("does NOT pass disa_fields to RuleForm in advanced mode (collapsible section handles it)", () => {
+    it("passes disa_fields inline in advanced mode (no collapsible sections)", () => {
       wrapper = createWrapper({ status: "Applicable - Configurable" }, { advancedMode: true });
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
-      expect(ruleForm.props("disa_fields")).toBeUndefined();
+      expect(ruleForm.props("disa_fields")).toBeDefined();
+      expect(ruleForm.props("disa_fields").displayed).toContain("vuln_discussion");
+      // Advanced fields included inline
+      expect(ruleForm.props("disa_fields").displayed).toContain("documentable");
     });
 
-    it("shows collapsible DISA section in advanced mode when DISA fields exist", () => {
+    it("no collapsible headings in any mode", () => {
       wrapper = createWrapper({ status: "Applicable - Configurable" }, { advancedMode: true });
-      expect(wrapper.findComponent({ name: "DisaRuleDescriptionForm" }).exists()).toBe(true);
-    });
-
-    it("hides collapsible DISA section in basic mode", () => {
-      wrapper = createWrapper({ status: "Applicable - Configurable" }, { advancedMode: false });
-      // In basic mode, DisaRuleDescriptionForm is rendered inside RuleForm (via disa_fields prop)
-      // The collapsible section with its own heading should NOT exist
       const headings = wrapper.findAll("h2");
       const hasRuleDescriptionHeading = headings.wrappers.some(
         (h) => h.text() === "Rule Description",
       );
+      const hasChecksHeading = headings.wrappers.some((h) => h.text() === "Checks");
       expect(hasRuleDescriptionHeading).toBe(false);
+      expect(hasChecksHeading).toBe(false);
     });
   });
 
@@ -275,29 +264,18 @@ describe("UnifiedRuleForm", () => {
       expect(ruleForm.props("check_fields")).toBeUndefined();
     });
 
-    it("does NOT pass check_fields to RuleForm in advanced mode (collapsible section handles it)", () => {
+    it("passes check_fields inline in advanced mode (no collapsible sections)", () => {
       wrapper = createWrapper({ status: "Applicable - Configurable" }, { advancedMode: true });
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
-      expect(ruleForm.props("check_fields")).toBeUndefined();
-    });
-
-    it("shows collapsible Checks section in advanced mode for Configurable", () => {
-      wrapper = createWrapper({ status: "Applicable - Configurable" }, { advancedMode: true });
-      const headings = wrapper.findAll("h2");
-      const hasChecksHeading = headings.wrappers.some((h) => h.text() === "Checks");
-      expect(hasChecksHeading).toBe(true);
-    });
-
-    it("keeps check fields inline for NYD advanced mode (no collapsible section)", () => {
-      wrapper = createWrapper({ status: "Not Yet Determined" }, { advancedMode: true });
-      const ruleForm = wrapper.findComponent({ name: "RuleForm" });
-      // NYD has no advanced additions, so check fields stay inline in RuleForm
       expect(ruleForm.props("check_fields")).toBeDefined();
       expect(ruleForm.props("check_fields").displayed).toContain("content");
-      // No collapsible heading
-      const headings = wrapper.findAll("h2");
-      const hasChecksHeading = headings.wrappers.some((h) => h.text() === "Checks");
-      expect(hasChecksHeading).toBe(false);
+    });
+
+    it("passes check_fields inline for NYD advanced mode", () => {
+      wrapper = createWrapper({ status: "Not Yet Determined" }, { advancedMode: true });
+      const ruleForm = wrapper.findComponent({ name: "RuleForm" });
+      expect(ruleForm.props("check_fields")).toBeDefined();
+      expect(ruleForm.props("check_fields").displayed).toContain("content");
     });
   });
 

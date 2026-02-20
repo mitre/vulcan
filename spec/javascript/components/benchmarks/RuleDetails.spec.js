@@ -8,16 +8,16 @@ import RuleDetails from "@/components/benchmarks/RuleDetails.vue";
  *
  * REQUIREMENTS:
  *
- * 1. GENERIC (works for STIG and SRG):
- *    - Accepts type prop ('stig' | 'srg')
+ * 1. GENERIC (works for STIG, SRG, and Component):
+ *    - Accepts type prop ('stig' | 'srg' | 'component')
  *    - Displays rule title
  *    - Renders vuln discussion form
  *    - Renders check form
- *    - Renders fix text
- *    - Renders vendor comments if present
+ *    - Renders fix text via RuleFormGroup
+ *    - Renders vendor comments via RuleFormGroup if present
  *
  * 2. NO TYPE-SPECIFIC DISPLAY:
- *    - Component structure is the same for both types
+ *    - Component structure is the same for all types
  *    - All fields are generic (rule has same structure)
  *
  * 3. DISABLED FORMS:
@@ -84,6 +84,7 @@ describe("RuleDetails", () => {
       const validator = RuleDetails.props.type.validator;
       expect(validator("stig")).toBe(true);
       expect(validator("srg")).toBe(true);
+      expect(validator("component")).toBe(true);
       expect(validator("invalid")).toBe(false);
     });
   });
@@ -97,20 +98,25 @@ describe("RuleDetails", () => {
       expect(wrapper.text()).toContain("Test Rule Title");
     });
 
-    it("renders fix text field", () => {
+    it("renders fix text via RuleFormGroup", () => {
       wrapper = createWrapper();
-      // Should contain "Fix" label
-      expect(wrapper.text()).toContain("Fix");
+      const groups = wrapper.findAllComponents({ name: "RuleFormGroup" });
+      const fixtextGroup = groups.wrappers.find((w) => w.props("fieldName") === "fixtext");
+      expect(fixtextGroup).toBeTruthy();
     });
 
-    it("renders vendor comments when present", () => {
+    it("renders vendor comments via RuleFormGroup when present", () => {
       wrapper = createWrapper({ selectedRule: mockRule });
-      expect(wrapper.text()).toContain("Vendor Comments");
+      const groups = wrapper.findAllComponents({ name: "RuleFormGroup" });
+      const vcGroup = groups.wrappers.find((w) => w.props("fieldName") === "vendor_comments");
+      expect(vcGroup).toBeTruthy();
     });
 
     it("does not render vendor comments when absent", () => {
       wrapper = createWrapper({ selectedRule: mockRuleWithoutVendorComments });
-      expect(wrapper.text()).not.toContain("Vendor Comments");
+      const groups = wrapper.findAllComponents({ name: "RuleFormGroup" });
+      const vcGroup = groups.wrappers.find((w) => w.props("fieldName") === "vendor_comments");
+      expect(vcGroup).toBeFalsy();
     });
   });
 
@@ -156,13 +162,15 @@ describe("RuleDetails", () => {
     it("renders identically for STIG type", () => {
       const stigWrapper = createWrapper({ type: "stig" });
       expect(stigWrapper.text()).toContain("Test Rule Title");
-      expect(stigWrapper.text()).toContain("Fix");
+      const groups = stigWrapper.findAllComponents({ name: "RuleFormGroup" });
+      expect(groups.wrappers.find((w) => w.props("fieldName") === "fixtext")).toBeTruthy();
     });
 
     it("renders identically for SRG type", () => {
       const srgWrapper = createWrapper({ type: "srg" });
       expect(srgWrapper.text()).toContain("Test Rule Title");
-      expect(srgWrapper.text()).toContain("Fix");
+      const groups = srgWrapper.findAllComponents({ name: "RuleFormGroup" });
+      expect(groups.wrappers.find((w) => w.props("fieldName") === "fixtext")).toBeTruthy();
     });
   });
 
@@ -171,7 +179,6 @@ describe("RuleDetails", () => {
   // ==========================================
   describe("null/undefined rule handling", () => {
     it("accepts null selectedRule without Vue warnings", () => {
-      // Capture console errors
       const errors = [];
       const originalError = console.error;
       console.error = (...args) => errors.push(args.join(" "));
@@ -184,10 +191,8 @@ describe("RuleDetails", () => {
         },
       });
 
-      // Restore console.error
       console.error = originalError;
 
-      // Should not emit Vue prop validation errors
       const propErrors = errors.filter(
         (e) => e.includes("Invalid prop") || e.includes("type check failed"),
       );

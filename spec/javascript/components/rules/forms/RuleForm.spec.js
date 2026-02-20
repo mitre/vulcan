@@ -108,7 +108,7 @@ describe("RuleForm", () => {
 
     it("renders severity dropdown when in displayed", () => {
       wrapper = createWrapper();
-      expect(wrapper.find('[id^="ruleEditor-rule_severity-top-group-"]').exists()).toBe(true);
+      expect(wrapper.find('[id^="ruleEditor-rule_severity-group-"]').exists()).toBe(true);
     });
 
     it("renders title field when in displayed", () => {
@@ -203,7 +203,7 @@ describe("RuleForm", () => {
       wrapper = createWrapper({
         fields: { displayed: ["status", "rule_severity", "title"], disabled: ["rule_severity"] },
       });
-      const select = wrapper.find('select[id^="ruleEditor-rule_severity-top-"]');
+      const select = wrapper.find('select[id^="ruleEditor-rule_severity-"]');
       expect(select.element.disabled).toBe(true);
     });
 
@@ -211,7 +211,7 @@ describe("RuleForm", () => {
       wrapper = createWrapper({
         fields: { displayed: ["status", "rule_severity", "title"], disabled: [] },
       });
-      const select = wrapper.find('select[id^="ruleEditor-rule_severity-top-"]');
+      const select = wrapper.find('select[id^="ruleEditor-rule_severity-"]');
       expect(select.element.disabled).toBe(false);
     });
 
@@ -240,9 +240,7 @@ describe("RuleForm", () => {
         fields: { displayed: ["status", "rule_severity", "title"], disabled: [] },
       });
       expect(wrapper.find('select[id^="ruleEditor-status-"]').element.disabled).toBe(true);
-      expect(wrapper.find('select[id^="ruleEditor-rule_severity-top-"]').element.disabled).toBe(
-        true,
-      );
+      expect(wrapper.find('select[id^="ruleEditor-rule_severity-"]').element.disabled).toBe(true);
       expect(wrapper.find('textarea[id^="ruleEditor-title-"]').element.disabled).toBe(true);
     });
   });
@@ -256,7 +254,7 @@ describe("RuleForm", () => {
 
     it("displays the correct IA Control value", () => {
       wrapper = createWrapper();
-      const iaInput = wrapper.find('input[id^="ruleEditor-ia_control-"]');
+      const iaInput = wrapper.find('input[id^="ruleEditor-nist_control_family-"]');
       expect(iaInput.element.value).toBe("AC-2 (1)");
     });
 
@@ -268,7 +266,7 @@ describe("RuleForm", () => {
 
     it("IA Control and CCI inputs are readonly", () => {
       wrapper = createWrapper();
-      const iaInput = wrapper.find('input[id^="ruleEditor-ia_control-"]');
+      const iaInput = wrapper.find('input[id^="ruleEditor-nist_control_family-"]');
       const cciInput = wrapper.find('input[id^="ruleEditor-cci-"]');
       expect(iaInput.attributes("readonly")).toBeDefined();
       expect(cciInput.attributes("readonly")).toBeDefined();
