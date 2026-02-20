@@ -38,6 +38,17 @@ commit-msg:
     text-width:
       run: "! head -1 {1} | grep -qE '.{73,}'"
 
+pre-push:
+  parallel: true
+  commands:
+    rubocop:
+      run: bundle exec rubocop --display-cop-names --force-exclusion
+    eslint:
+      glob: "*.{js,vue}"
+      run: yarn lint:ci
+    brakeman:
+      run: bundle exec brakeman --quiet --no-pager
+
 post-checkout:
   commands:
     bundle-install:
