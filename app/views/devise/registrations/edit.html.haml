@@ -4,5 +4,6 @@
 #user-profile
   %userprofile{                                           |
     'v-bind:user': current_user.to_json,                  |
-    'v-bind:histories': (@histories || []).to_json        |
+    'v-bind:histories': (@histories || []).to_json,       |
+    'v-bind:password-policy': Settings.password.to_json   |
   }

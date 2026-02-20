@@ -1,23 +1,16 @@
 - content_for :assets do
   = javascript_include_tag 'login'
 
-#login
-  %h2 Change your password
+= render layout: 'devise/shared/card_wrapper', locals: { icon: 'lock', title: 'Change Your Password' } do
   = form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put }) do |f|
     = render "devise/shared/error_messages", resource: resource
     = f.hidden_field :reset_password_token
-    .form-group
-      = f.label :password, "New password"
-      %br/
-      - if @minimum_password_length
-        %em
-          (#{@minimum_password_length} characters minimum)
-        %br/
-      %password-field{name: "user[password]", id: "user_password", autocomplete: "new-password", ":autofocus" => "true"}
-    .form-group
-      = f.label :password_confirmation, "Confirm new password"
-      %br/
-      %password-field{name: "user[password_confirmation]", id: "user_password_confirmation", autocomplete: "new-password"}
-    .actions
-      = f.submit "Change my password", class: 'btn btn-success'
-  = render "devise/shared/links"
+    #login
+      .form-group
+        = f.label :password, "New password"
+        %password-field{name: "user[password]", id: "user_password", autocomplete: "new-password", ":autofocus" => "true", ":policy" => Settings.password.to_json, "v-model" => "registerPassword"}
+      .form-group
+        = f.label :password_confirmation, "Confirm new password"
+        %password-field{name: "user[password_confirmation]", id: "user_password_confirmation", autocomplete: "new-password", ":must-match" => "registerPassword"}
+      .actions.mt-3
+        = f.submit "Change my password", class: 'btn btn-success btn-block'

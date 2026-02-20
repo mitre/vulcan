@@ -1,10 +1,11 @@
-%h2 Resend unlock instructions
-= form_for(resource, as: resource_name, url: unlock_path(resource_name), html: { method: :post }) do |f|
-  = render "devise/shared/error_messages", resource: resource
-  .field
-    = f.label :email
-    %br/
-    = f.email_field :email, autofocus: true, autocomplete: "email"
-  .actions
-    = f.submit "Resend unlock instructions"
-= render "devise/shared/links"
+= render layout: 'devise/shared/card_wrapper', locals: { icon: 'unlock', title: 'Resend Unlock Instructions' } do
+  - if Settings.smtp.enabled
+    = form_for(resource, as: resource_name, url: unlock_path(resource_name), html: { method: :post }) do |f|
+      = render "devise/shared/error_messages", resource: resource
+      .form-group
+        = f.label :email
+        = f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control"
+      .actions.mt-3
+        = f.submit "Resend unlock instructions", class: "btn btn-success btn-block"
+  - else
+    = render 'devise/shared/smtp_unavailable', action_description: 'unlock your account'
