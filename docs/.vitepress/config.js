@@ -35,7 +35,9 @@ export default defineConfig({
         text: "User Guide",
         items: [
           { text: "Overview", link: "/user-guide/overview" },
+          { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
           { text: "User Management", link: "/user-guide/user-management" },
+          { text: "Section Locks", link: "/user-guide/section-locks" },
           { text: "Data Management", link: "/user-guide/data-management/" },
           { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
         ],
@@ -43,6 +45,7 @@ export default defineConfig({
       {
         text: "Deployment",
         items: [
+          { text: "Overview", link: "/deployment/" },
           { text: "Docker", link: "/deployment/docker" },
           { text: "Kubernetes", link: "/deployment/kubernetes" },
           { text: "Heroku", link: "/deployment/heroku" },
@@ -128,6 +131,7 @@ export default defineConfig({
             { text: "Installation", link: "/getting-started/installation" },
             { text: "Configuration", link: "/getting-started/configuration" },
             { text: "Environment Variables", link: "/getting-started/environment-variables" },
+            { text: "Troubleshooting", link: "/getting-started/troubleshooting" },
           ],
         },
       ],
@@ -136,7 +140,9 @@ export default defineConfig({
           text: "User Guide",
           items: [
             { text: "Overview", link: "/user-guide/overview" },
+            { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
             { text: "User Management", link: "/user-guide/user-management" },
+            { text: "Section Locks", link: "/user-guide/section-locks" },
           ],
         },
         {
@@ -152,6 +158,7 @@ export default defineConfig({
         {
           text: "Deployment Options",
           items: [
+            { text: "Overview", link: "/deployment/" },
             { text: "Docker", link: "/deployment/docker" },
             { text: "Bare Metal", link: "/deployment/bare-metal" },
             { text: "Heroku", link: "/deployment/heroku" },
@@ -186,6 +193,7 @@ export default defineConfig({
             { text: "Documentation Guide", link: "/development/documentation" },
             { text: "Architecture", link: "/development/architecture" },
             { text: "Authorization", link: "/development/authorization" },
+            { text: "Section Locks", link: "/development/section-locks" },
             { text: "Testing", link: "/development/testing" },
             { text: "Release Process", link: "/development/release-process" },
             { text: "Vue 3 Migration", link: "/development/vue3-migration" },

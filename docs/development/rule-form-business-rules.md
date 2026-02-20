@@ -97,10 +97,10 @@ There are no technical means to achieve compliance.
 | Status Justification | Yes | Yes |
 | Vendor Comments | Yes | Yes |
 | Mitigations Available | Yes | Yes |
-| Mitigations | Yes | Yes |
-| Mitigation Control | Yes | Yes |
-| POA&M Available | Yes | Yes |
-| POA&M | Yes | Yes |
+| Mitigations | When Mitigations Available ON | Yes |
+| Mitigation Control | When Mitigations Available ON | Yes |
+| POA&M Available | When Mitigations Available OFF | Yes |
+| POA&M | When POA&M Available ON (and Mitigations OFF) | Yes |
 | IA Control | Yes | Read-only |
 | CCI | Yes | Read-only |
 
@@ -159,7 +159,29 @@ These reference fields are **always visible** for all statuses and both modes. T
 
 ### Mitigations / POA&M Toggle Pattern
 
-The `Mitigations Available` and `POA&M Available` fields are checkboxes that act as toggles. Their associated text fields (`Mitigations`, `POA&M`) only render when the parent checkbox is checked.
+The `Mitigations Available` and `POA&M Available` fields are mutually exclusive (XOR) toggle switches with cascading visibility:
+
+**Mitigations Available toggle:**
+- Always visible when in the displayed field list
+- When ON: shows `Mitigations` textarea and `Mitigation Control` field
+- When ON: hides `POA&M Available` toggle (and its dependent `POA&M` textarea)
+
+**POA&M Available toggle:**
+- Only visible when `Mitigations Available` is OFF
+- When ON: shows `POA&M` textarea
+
+**Conditional fields:**
+| Field | Shows when |
+|-------|-----------|
+| Mitigations | `mitigations_available` is ON |
+| Mitigation Control | `mitigations_available` is ON |
+| POA&M Available toggle | `mitigations_available` is OFF |
+| POA&M | `poam_available` is ON AND `mitigations_available` is OFF |
+
+**Always-visible fields** (not toggle-dependent):
+Potential Impacts, Third Party Tools, Responsibility, IA Controls, Severity Override Guidance
+
+This XOR pattern ensures a rule has either a mitigation OR a POA&M, never both simultaneously. If data inconsistency occurs (both flags true), the mitigations path takes precedence and POA&M fields are hidden.
 
 ## Form-Level Disabled States
 

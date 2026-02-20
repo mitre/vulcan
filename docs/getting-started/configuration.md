@@ -66,6 +66,61 @@ Each deployment type ships sensible defaults. Dev-friendly deployments enable lo
 | Bare metal production | `.env` (copy from `.env.production.example`) | Hardened: OIDC enabled, local login disabled |
 | No env vars at all | `vulcan.default.yml` + `0_settings.rb` | Defaults to dev-friendly (local login enabled) |
 
+### What You Must Provide
+
+#### Development (local Rails or Docker quickstart)
+
+**Required** — nothing beyond what ships in `.env.example`. Copy it and go:
+
+```bash
+cp .env.example .env
+bundle exec rails db:prepare
+foreman start -f Procfile.dev
+```
+
+Defaults give you: local login, registration, first-user-becomes-admin, no SMTP, no OIDC. The seed password is `1qaz!QAZ1qaz!QAZ`.
+
+#### Production Deployment
+
+**Required** (you must set these — no usable defaults):
+
+| Variable | Why | How to generate |
+|----------|-----|-----------------|
+| `SECRET_KEY_BASE` | Rails session encryption | `openssl rand -hex 64` |
+| `CIPHER_PASSWORD` | Data encryption at rest | `openssl rand -hex 64` |
+| `CIPHER_SALT` | Data encryption salt | `openssl rand -hex 64` |
+| `POSTGRES_PASSWORD` | Database access | `openssl rand -hex 33` |
+| `VULCAN_APP_URL` | Email links, OIDC callbacks | Your domain (e.g., `https://vulcan.example.com`) |
+
+**Required** — at least one auth provider:
+
+| Provider | Key Variables |
+|----------|--------------|
+| OIDC (recommended) | `VULCAN_ENABLE_OIDC=true`, `VULCAN_OIDC_ISSUER_URL`, `VULCAN_OIDC_CLIENT_ID`, `VULCAN_OIDC_CLIENT_SECRET` |
+| LDAP | `VULCAN_ENABLE_LDAP=true`, `VULCAN_LDAP_HOST`, `VULCAN_LDAP_BASE`, `VULCAN_LDAP_BIND_DN`, `VULCAN_LDAP_ADMIN_PASS` |
+| Local login | `VULCAN_ENABLE_LOCAL_LOGIN=true` (not recommended for production) |
+
+**Strongly recommended for production**:
+
+| Variable | Default | Production Value | Why |
+|----------|---------|-----------------|-----|
+| `VULCAN_ENABLE_LOCAL_LOGIN` | true | **false** | External auth is more secure |
+| `VULCAN_ENABLE_USER_REGISTRATION` | true | **false** | Users provisioned via OIDC/LDAP |
+| `VULCAN_FIRST_USER_ADMIN` | true | **false** | Use `VULCAN_ADMIN_EMAIL` instead |
+| `VULCAN_SESSION_TIMEOUT` | 1h | **15m** | DoD standard (STIG AC-12) |
+| `VULCAN_ENABLE_REMEMBER_ME` | true | **false** | Disable for high-security environments |
+| `VULCAN_ENABLE_SMTP` | false | **true** | Enables email notifications and unlock |
+| `RAILS_FORCE_SSL` | true | **true** | Keep default |
+
+**Optional** (sensible defaults work out of the box):
+
+- Account lockout — enabled by default, STIG AC-07 compliant
+- Password policy — DoD 2222 defaults (15 chars, 2 of each type)
+- Classification banner — disabled by default, set if required
+- Consent modal — disabled by default, set if required
+
+Use `./setup-docker-secrets.sh` to generate all required secrets automatically, or copy `.env.production.example` and fill in your values.
+
 ### Design Principles
 
 - **Opt-in services** (LDAP, OIDC, SMTP, Slack) default to `false` — they require external infrastructure
