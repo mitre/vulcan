@@ -156,7 +156,7 @@ export default {
     onLockoutChanged(event) {
       const { action, user } = event.detail;
       if (action === "locked") {
-        if (!this.localLockedUsers.find((u) => u.id === user.id)) {
+        if (!this.localLockedUsers.some((u) => u.id === user.id)) {
           this.localLockedUsers.push({ id: user.id, name: user.name, email: user.email });
         }
       } else if (action === "unlocked") {

@@ -10,7 +10,7 @@ RSpec.describe ExportHelper do
   let_it_be(:component) { create(:component) }
   let_it_be(:project) { component.project }
 
-  let(:component_ids) { project.components.pluck(:id).join(',') }
+  let(:component_ids) { project.components.ids.join(',') }
 
   describe '#export_excel' do
     # Generate workbooks once and read binary string immediately (FastExcel temp dirs are ephemeral)
@@ -18,7 +18,7 @@ RSpec.describe ExportHelper do
       helper = Object.new.extend(ExportHelper)
       comp = Component.first
       proj = comp.project
-      ids = proj.components.pluck(:id).join(',')
+      ids = proj.components.ids.join(',')
       normal_wb = helper.export_excel(proj, ids, false)
       disa_wb = helper.export_excel(proj, ids, true)
       {

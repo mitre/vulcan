@@ -95,7 +95,7 @@ class Component < ApplicationRecord
     counts = rules.where(deleted_at: nil).group(:status).count
     {
       not_yet_determined: counts['Not Yet Determined'] || 0,
-      applicable_configurable: counts['Applicable - Configurable'] || 0,
+      applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
       applicable_inherently_meets: counts['Applicable - Inherently Meets'] || 0,
       applicable_does_not_meet: counts['Applicable - Does Not Meet'] || 0,
       not_applicable: counts['Not Applicable'] || 0
@@ -294,7 +294,7 @@ class Component < ApplicationRecord
       new_srg_rule = new_srg_rules[copied_rule[:version]]
 
       # delete rules that are no longer present - calling destroy here will also persist new_component in the DB
-      copied_rule.destroy! if new_srg_rule.blank? && copied_rule.status != 'Applicable - Configurable'
+      copied_rule.destroy! if new_srg_rule.blank? && copied_rule.status != STATUS_APPLICABLE_CONFIGURABLE
 
       # skip if not in new SRG (leave old SRG rule references on it) - only for "non-Configurable" rules
       next if new_srg_rule.blank?
@@ -307,7 +307,7 @@ class Component < ApplicationRecord
       copied_rule.srg_rule = new_srg_rule
 
       # don't touch the "Applicable - Configurable" rules, leave original content in place (title,check,fix,discussion)
-      next if copied_rule.status == 'Applicable - Configurable'
+      next if copied_rule.status == STATUS_APPLICABLE_CONFIGURABLE
 
       # Update fields for "non-Configurable" - reset to new SRG rule info for title, check, fix, discussion
       copied_rule.title = new_srg_rule.title
