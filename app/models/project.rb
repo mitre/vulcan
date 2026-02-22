@@ -16,7 +16,8 @@ class Project < ApplicationRecord
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :memberships
 
-  validates :name, presence: true
+  validates :name, presence: true, length: { maximum: 255 }
+  validates :description, length: { maximum: 5000 }
 
   scope :alphabetical, -> { order(:name) }
 

@@ -2,7 +2,10 @@
 
 # Controller for Stigs
 class StigsController < ApplicationController
+  include UploadValidatable
+
   before_action :authorize_admin, only: %i[create destroy]
+  before_action -> { validate_upload(:file, max_size: 50.megabytes, allowed_types: %w[.xml]) }, only: :create
   before_action :authorize_logged_in, only: %i[index show export]
   before_action :set_stig, only: %i[show destroy export]
 

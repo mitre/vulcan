@@ -6,6 +6,7 @@
 class ProjectsController < ApplicationController
   include Exportable
   include ProjectMemberConstants
+  include UploadValidatable
 
   IMPORT_ERROR_TITLE = 'Import error'
 
@@ -16,6 +17,8 @@ class ProjectsController < ApplicationController
   before_action :authorize_logged_in, only: %i[index search]
   before_action :authorize_admin_or_create_permission_enabled, only: %i[create create_from_backup]
   before_action :check_permission_to_update, only: %i[update]
+  before_action -> { validate_upload(:file, max_size: 100.megabytes, allowed_types: %w[.zip]) },
+                only: %i[import_backup create_from_backup]
 
   def index
     @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])

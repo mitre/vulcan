@@ -26,7 +26,7 @@ class DisaRuleDescription < ApplicationRecord
     begin
       # Customize the Nokogiri parser options to attempt to recover from syntax errors while
       # also disabling character entity parsing.
-      options = Nokogiri::XML::ParseOptions::RECOVER | Nokogiri::XML::ParseOptions::NOENT
+      options = Nokogiri::XML::ParseOptions::RECOVER | Nokogiri::XML::ParseOptions::NONET
       # Parse the XML with custom options
       doc = Nokogiri::XML(disa_rule_description_mapping, nil, nil, options)
       # Convert the Nokogiri document to a Ruby Hash

@@ -93,6 +93,8 @@ RSpec.configure do |config|
 
   config.before do
     ActionMailer::Base.deliveries.clear
+    # Reset rack-attack cache to prevent 429s from bleeding between tests
+    Rack::Attack.reset! if defined?(Rack::Attack)
   end
 
   # System specs and JS-tagged specs use a separate browser thread that can't

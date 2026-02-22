@@ -2,7 +2,10 @@
 
 # Controller for SecurityRequirementsGuides
 class SecurityRequirementsGuidesController < ApplicationController
+  include UploadValidatable
+
   before_action :authorize_admin, only: %i[create destroy]
+  before_action -> { validate_upload(:file, max_size: 50.megabytes, allowed_types: %w[.xml]) }, only: :create
   before_action :authorize_logged_in, only: %i[index show export]
   before_action :security_requirements_guide, only: %i[show destroy export]
 

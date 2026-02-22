@@ -5,6 +5,7 @@
 #
 class ComponentsController < ApplicationController
   include Exportable
+  include UploadValidatable
 
   EXPORT_ERROR_TITLE = 'Export error'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
@@ -23,6 +24,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
+  before_action :validate_component_upload, only: :create
 
   def index
     components = Component.with_severity_counts
@@ -499,6 +501,13 @@ class ComponentsController < ApplicationController
                   { additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
                     component_metadata_attributes: { data: {} } }]
     )
+  end
+
+  def validate_component_upload
+    file = params.dig(:component, :file)
+    return if file.blank? # no file = creating from SRG, not spreadsheet import
+
+    validate_upload_size(file, 50.megabytes) && validate_upload_type(file, %w[.xlsx .csv])
   end
 
   def component_create_params

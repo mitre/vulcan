@@ -68,6 +68,10 @@ class Component < ApplicationRecord
   validates_with PrefixValidator
 
   validates :name, :prefix, :title, presence: true
+  validates :name, length: { maximum: 255 }
+  validates :prefix, length: { maximum: 10 }
+  validates :title, length: { maximum: 500 }
+  validates :description, length: { maximum: 5000 }
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,
