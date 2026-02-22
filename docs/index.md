@@ -90,14 +90,13 @@ Vulcan bridges the gap between security requirements and practical implementatio
     <ul>
       <li>Ruby 3.4.8 with Rails 8.0.2.1</li>
       <li>PostgreSQL 12+</li>
-      <li>Redis for caching</li>
     </ul>
   </div>
   <div class="tech-section">
     <h3>Frontend</h3>
     <ul>
-      <li>Vue 2.6.11</li>
-      <li>Bootstrap 4.4.1</li>
+      <li>Vue 2.7.16</li>
+      <li>Bootstrap 4.6.2</li>
       <li>Turbolinks 5.2.0</li>
     </ul>
   </div>

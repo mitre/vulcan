@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_20_145113) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_22_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -288,6 +288,32 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_20_145113) do
     t.index ["title"], name: "index_srgs_on_title_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
+  create_table "session_histories", force: :cascade do |t|
+    t.string "token", null: false
+    t.inet "ip_address"
+    t.string "user_agent"
+    t.datetime "last_accessed_at", null: false
+    t.boolean "active", default: true, null: false
+    t.string "owner_type", null: false
+    t.bigint "owner_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_session_histories_on_active"
+    t.index ["ip_address"], name: "index_session_histories_on_ip_address"
+    t.index ["last_accessed_at"], name: "index_session_histories_on_last_accessed_at"
+    t.index ["owner_type", "owner_id"], name: "index_session_histories_on_owner"
+    t.index ["token"], name: "index_session_histories_on_token", unique: true
+  end
+
+  create_table "sessions", force: :cascade do |t|
+    t.string "session_id", null: false
+    t.text "data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["session_id"], name: "index_sessions_on_session_id", unique: true
+    t.index ["updated_at"], name: "index_sessions_on_updated_at"
+  end
+
   create_table "stigs", force: :cascade do |t|
     t.string "stig_id"
     t.string "title"
@@ -328,6 +354,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_20_145113) do
     t.integer "failed_attempts", default: 0, null: false
     t.string "unlock_token"
     t.datetime "locked_at"
+    t.string "password_salt"
+    t.string "unique_session_id"
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true, where: "((provider IS NOT NULL) AND (uid IS NOT NULL))"

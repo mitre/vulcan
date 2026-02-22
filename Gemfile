@@ -25,8 +25,8 @@ gem 'devise', '~> 4.9'
 # PBKDF2-SHA512 password hashing for FIPS 140-2 compliance
 gem 'devise-encryptable'
 # Session limiting (AC-10), session tracking, and server-side session store
-gem 'devise-security', github: 'mitre/devise-security', branch: 'main'
 gem 'activerecord-session_store'
+gem 'devise-security', github: 'mitre/devise-security', branch: 'main'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
 # LDAP Auth

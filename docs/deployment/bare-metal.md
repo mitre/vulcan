@@ -177,7 +177,7 @@ bundle exec rails c
 # In Rails console:
 User.create!(
   email: 'admin@example.com',
-  password: 'secure_password',
+  password: '1qaz!QAZ1qaz!QAZ',  # Must comply with DoD 2222 policy (15+ chars, 2 of each type)
   admin: true,
   confirmed_at: Time.now
 )

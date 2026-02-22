@@ -16,11 +16,10 @@ Vulcan is a Rails-based web application designed for creating and managing Secur
 - **Ruby 3.4.8** - Programming language
 - **Rails 8.0.2.1** - Web application framework
 - **PostgreSQL** - Primary database
-- **Redis** - Caching and background jobs (optional)
 
 ### Frontend
-- **Vue 2.6.11** - Reactive UI framework
-- **Bootstrap 4.4.1** - CSS framework
+- **Vue 2.7.16** - Reactive UI framework
+- **Bootstrap 4.6.2** - CSS framework
 - **Bootstrap-Vue 2.13.0** - Vue Bootstrap components
 - **Turbolinks 5.2.0** - Page navigation optimization
 - **esbuild** - JavaScript bundling
@@ -54,7 +53,7 @@ vulcan/
 
 ## Vue.js Architecture
 
-Vulcan uses a unique approach with 14 separate Vue instances, one per page:
+Vulcan uses a unique approach with 16 separate Vue instances, one per page:
 
 ```javascript
 // Each pack file creates its own Vue instance
@@ -67,20 +66,22 @@ new Vue({
 ```
 
 ### Vue Instances by Page
+- `application.js` - Base application with Turbolinks/Rails UJS setup
+- `login.js` - Login page
 - `navbar.js` - Global navigation
-- `toaster.js` - Global notifications
-- `projects.js` - Projects listing
 - `project.js` - Single project view
+- `project_component.js` - Single component editing
 - `project_components.js` - Component management
-- `project_component.js` - Single component
-- `project_component_reviews.js` - Review workflow
-- `project_component_history.js` - Audit history
-- `project_component_review_summary.js` - Review summary
-- `project_members.js` - Team management
-- `project_access_requests.js` - Access requests
-- `project_import.js` - Import functionality
-- `project_export.js` - Export functionality
-- `memberships.js` - User memberships
+- `projects.js` - Projects listing
+- `released_component.js` - Released component view
+- `rules.js` - Rule management
+- `security_requirements_guides.js` - SRG listing and management
+- `srg.js` - Single SRG view
+- `stig.js` - Single STIG view
+- `stigs.js` - STIGs listing
+- `toaster.js` - Global notifications
+- `user_profile.js` - User profile management
+- `users.js` - User administration
 
 ### Benefits of Multiple Vue Instances
 - Gradual migration path
@@ -118,46 +119,14 @@ devise :oidc_authenticatable      # OIDC/SAML
 ```ruby
 Project has_many :components
 Component has_many :rules
-Rule belongs_to :srg_requirement
+Rule belongs_to :srg_rule
 Component has_many :reviews
 Review belongs_to :user
 ```
 
 ## API Design
 
-### RESTful Endpoints
-```
-GET    /api/v1/projects
-POST   /api/v1/projects
-GET    /api/v1/projects/:id
-PATCH  /api/v1/projects/:id
-DELETE /api/v1/projects/:id
-
-GET    /api/v1/projects/:project_id/components
-POST   /api/v1/projects/:project_id/components
-# ... similar patterns for all resources
-```
-
-### JSON Response Format
-```json
-{
-  "data": {
-    "id": "123",
-    "type": "project",
-    "attributes": {
-      "name": "Example Project",
-      "created_at": "2025-01-01T00:00:00Z"
-    },
-    "relationships": {
-      "components": {
-        "data": [
-          { "id": "456", "type": "component" }
-        ]
-      }
-    }
-  }
-}
-```
+Vulcan is not a public REST API. The only external-facing API endpoint is `GET /api/search/global`, used internally by the navbar search. All other data is served via standard Rails HTML responses with JSON used for Vue component data.
 
 ## Security Architecture
 

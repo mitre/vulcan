@@ -177,6 +177,13 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SLACK_API_TOKEN` | Slack API token | - | `xoxb-your-token` |
 | `VULCAN_SLACK_CHANNEL_ID` | Slack channel ID | - | `C1234567890` |
 
+## Session Limits (STIG AC-10)
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_SESSION_LIMITS_ENABLED` | Enable per-user concurrent session limits | `true` | `false` |
+| `VULCAN_MAX_CONCURRENT_SESSIONS` | Maximum concurrent sessions per user. Oldest session evicted when exceeded. | `1` | `3` |
+
 ## Account Lockout (STIG AC-07)
 
 | Variable | Description | Default | Example |

@@ -10,7 +10,6 @@ This guide walks through setting up a local Vulcan development environment.
 - **Node.js 22 LTS** and **Yarn** package manager
 - **PostgreSQL 12+** database server
 - **Git** version control
-- **Redis** (optional, for caching)
 
 ### Recommended Tools
 
@@ -199,14 +198,14 @@ rails console
 
 User.create!(
   email: 'admin@example.com',
-  password: 'password123',
+  password: 'S3cure!#Pass001',
   admin: true,
   confirmed_at: Time.now
 )
 
 User.create!(
   email: 'user@example.com',
-  password: 'password123',
+  password: 'S3cure!#Pass001',
   confirmed_at: Time.now
 )
 ```
@@ -217,11 +216,13 @@ User.create!(
    - Go to GitHub Settings > Developer settings > OAuth Apps
    - Set callback URL: `http://localhost:3000/users/auth/github/callback`
 
-2. Add to `.env.development`:
-```bash
-VULCAN_ENABLE_GITHUB_AUTH=true
-VULCAN_GITHUB_APP_ID=your_client_id
-VULCAN_GITHUB_APP_SECRET=your_client_secret
+2. Add to `config/vulcan.yml` under the `providers` key:
+```yaml
+providers:
+  - { name: 'github',
+      app_id: 'your_client_id',
+      app_secret: 'your_client_secret',
+      args: { scope: 'user:email' } }
 ```
 
 ## Development Workflow
@@ -267,11 +268,11 @@ yarn lint:ci
 
 #### Run All Tests
 ```bash
-# Ruby tests
-bundle exec rspec
+# Ruby tests (use parallel_rspec for full suite — 3-4x faster)
+bundle exec parallel_rspec spec/
 
 # JavaScript tests
-yarn test
+yarn test:unit
 
 # Specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -432,13 +433,7 @@ docker compose exec web bash
 
 ### Development Speed
 
-1. **Spring** (Rails 7 and below):
-```bash
-spring stop
-spring status
-```
-
-2. **Bootsnap** (enabled by default):
+1. **Bootsnap** (enabled by default):
 ```ruby
 # config/boot.rb
 require 'bootsnap/setup'
@@ -446,7 +441,7 @@ require 'bootsnap/setup'
 
 3. **Parallel Testing**:
 ```bash
-PARALLEL_WORKERS=4 bundle exec rspec
+bundle exec parallel_rspec spec/
 ```
 
 ### Database Performance
@@ -546,7 +541,7 @@ rails generate migration AddAdminToUsers admin:boolean
 10.times do |i|
   User.create!(
     email: "user#{i}@example.com",
-    password: 'password123'
+    password: '1qaz!QAZ1qaz!QAZ'
   )
 end
 ```

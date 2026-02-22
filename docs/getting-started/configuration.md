@@ -16,6 +16,7 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure Slack:](#configure-slack)
 - [Configure Classification Banner:](#configure-classification-banner) Display colored classification/sensitivity banner
 - [Configure Consent Modal:](#configure-consent-modal) Terms-of-use modal that blocks access until acknowledged
+- [Configure Session Limits:](#configure-session-limits) Per-user concurrent session limits (STIG AC-10)
 - [Configure Account Lockout:](#configure-account-lockout) Lock accounts after failed login attempts (STIG AC-07)
 - [Configure Password Policy:](#configure-password-policy) Password complexity requirements (DoD 2222 default)
 
@@ -114,6 +115,7 @@ Defaults give you: local login, registration, first-user-becomes-admin, no SMTP,
 
 **Optional** (sensible defaults work out of the box):
 
+- Session limits — enabled by default, STIG AC-10 compliant (one session per user)
 - Account lockout — enabled by default, STIG AC-07 compliant
 - Password policy — DoD 2222 defaults (15 chars, 2 of each type)
 - Classification banner — disabled by default, set if required
@@ -162,7 +164,7 @@ Use `./setup-docker-secrets.sh` to generate all required secrets automatically, 
 
 ## Configure LDAP
 
-- **enabled:** `(ENV: ENABLE_LDAP)(default: false)`
+- **enabled:** `(ENV: VULCAN_ENABLE_LDAP)(default: false)`
 - **servers:**
   - **main:**
     - **host:** `(ENV: VULCAN_LDAP_HOST)(default: localhost)`
@@ -264,6 +266,39 @@ By accessing this system you agree to the following:
 
 ::: tip Version-Based Re-prompting
 When you update your terms, increment `VULCAN_CONSENT_VERSION` (e.g., from `1` to `2`). All users will see the modal again on their next visit, regardless of prior acknowledgment.
+:::
+
+## Configure Session Limits
+
+STIG AC-10 compliant per-user concurrent session limits. When a user exceeds the configured maximum number of active sessions, the oldest session is evicted and that user is redirected to the login page.
+
+Uses `devise-security` `:session_limitable` and `:session_traceable` with `activerecord-session_store` for server-side session tracking. Each login creates a `SessionHistory` record with token, IP, and user agent for audit purposes.
+
+- **enabled:** Enable per-user session limits. `(ENV: VULCAN_SESSION_LIMITS_ENABLED)(default: true)`
+- **max_sessions:** Maximum concurrent sessions per user. `(ENV: VULCAN_MAX_CONCURRENT_SESSIONS)(default: 1)`
+
+### Example: Strict (default — one session per user)
+
+```bash
+VULCAN_SESSION_LIMITS_ENABLED=true
+VULCAN_MAX_CONCURRENT_SESSIONS=1
+```
+
+### Example: Allow 3 concurrent sessions
+
+```bash
+VULCAN_SESSION_LIMITS_ENABLED=true
+VULCAN_MAX_CONCURRENT_SESSIONS=3
+```
+
+### Example: Disabled for Development
+
+```bash
+VULCAN_SESSION_LIMITS_ENABLED=false
+```
+
+::: tip
+Session limits work alongside session timeout (VULCAN_SESSION_TIMEOUT) and account lockout (VULCAN_LOCKOUT_ENABLED) for defense in depth. Session history records are retained for audit trail purposes even after sessions expire.
 :::
 
 ## Configure Account Lockout

@@ -94,7 +94,6 @@ VULCAN_SESSION_TIMEOUT=10m     # Required: 10 min for admin, 15 min for users
 ```
 
 ⚠️ **Known Gaps:**
-- Session limit per user (Issue #634) - In development
 - Logout confirmation message (Issue #635) - In development
 
 #### System Use Notification (AC-08)
@@ -287,6 +286,23 @@ server {
     }
 }
 ```
+
+#### Input Security Hardening (SI-10)
+
+**What's Required:** Check validity of information inputs
+
+**How Vulcan Implements It:**
+
+| Protection | Implementation | Scope |
+|-----------|---------------|-------|
+| **XXE Prevention** | `NONET` flag on all XML parsers (Nokogiri + HappyMapper) | XCCDF uploads |
+| **File Size Limits** | `before_action` validation: 50 MB XML, 100 MB ZIP, 50 MB spreadsheet | All uploads |
+| **Content-Type Validation** | File extension whitelist per endpoint (.xml, .zip, .xlsx/.csv) | All uploads |
+| **Rate Limiting** | rack-attack: 5 login attempts/min/IP, 10 uploads/min/IP | Login + uploads |
+| **Input Length Limits** | ActiveRecord validations on Project/Component metadata fields | Database writes |
+
+**Configuration:**
+Rate limiting is enabled by default. Thresholds can be adjusted in `config/initializers/rack_attack.rb`.
 
 ## Deployment Configurations
 
@@ -539,7 +555,6 @@ end
 
 | Control | Gap | Workaround | Target Resolution |
 |---------|-----|------------|-------------------|
-| AC-10 | No session limits per user | Monitor via SIEM | Q1 2025 (Issue #634) |
 | AC-12(02) | No logout confirmation | Check audit logs | Q1 2025 (Issue #635) |
 | AU-05 | No built-in log overflow handling | External log rotation | Use log management system |
 
@@ -554,12 +569,19 @@ end
 - ✅ Admin user management with last-admin protection
 - ✅ SMTP-aware Devise views (no silent failures)
 - ✅ Deny-by-default authorization safety net
+- ✅ Account lockout (Devise `:lockable`, AC-07 compliance, admin unlock UI)
+- ✅ XXE prevention (NOENT→NONET in XML parsers, HappyMapper NONET patch)
+- ✅ Upload validation (file size limits + content-type checks on all endpoints)
+- ✅ Rate limiting (rack-attack: login throttling, upload throttling)
+- ✅ Input length limits on project and component metadata
+- ✅ Per-section rule field locking
+
+- ✅ Session limits per user (configurable `max_active_sessions`, session history tracking)
+- ✅ Logout confirmation (Devise flash notice via Toaster component)
+- ✅ Devise hardening (paranoid mode, DELETE logout, cookie security, change notifications)
+- ✅ PBKDF2-SHA512 password hashing (FIPS 140-2 compliant, transparent bcrypt migration)
 
 **Planned:**
-- ⏳ Account lockout UI (Devise `:lockable` — DB columns exist, module not yet enabled)
-- ⏳ Session limits per user (Issue #634)
-- ⏳ Logout confirmation (Issue #635)
-- 📋 FIPS 140-2 cryptography mode
 - 📋 Built-in MFA for local accounts
 - 📋 Enhanced RBAC with custom roles
 
@@ -583,8 +605,16 @@ This table provides direct links to the Vulcan source code that implements each 
 | **Password Complexity** | DoD 2222 Policy | [`app/models/concerns/password_complexity_validator.rb`](https://github.com/mitre/vulcan/blob/master/app/models/concerns/password_complexity_validator.rb) | ✅ Implemented |
 | **Last-Admin Protection** | Prevent Lockout | [`app/controllers/users_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/users_controller.rb) | ✅ Implemented |
 | **Admin User Management** | Create/Edit/Delete | [`app/controllers/users_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/users_controller.rb) | ✅ Implemented |
-| **Session Limits** | Per-User Limits | [Issue #634](https://github.com/mitre/vulcan/issues/634) | 🚧 In Development |
-| **Logout Message** | Confirmation | [Issue #635](https://github.com/mitre/vulcan/issues/635) | 🚧 In Development |
+| **Account Lockout** | AC-07 Compliance | [`app/models/user.rb`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb)<br>[`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
+| **Upload Validation** | File Size + Content-Type | [`app/controllers/concerns/upload_validatable.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/concerns/upload_validatable.rb) | ✅ Implemented |
+| **Rate Limiting** | Login + Upload Throttling | [`config/initializers/rack_attack.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/rack_attack.rb) | ✅ Implemented |
+| **XXE Prevention** | XML Parser Hardening | [`app/models/disa_rule_description.rb`](https://github.com/mitre/vulcan/blob/master/app/models/disa_rule_description.rb)<br>[`config/initializers/nokogiri_security.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/nokogiri_security.rb) | ✅ Implemented |
+| **Section Locking** | Per-Field Rule Locks | [`app/controllers/rules_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/rules_controller.rb) | ✅ Implemented |
+| **Session Limits** | Per-User Limits (AC-10) | [`app/models/user.rb`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb)<br>[`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
+| **Session History** | Login Audit Trail | [`db/migrate/..._create_session_histories.rb`](https://github.com/mitre/vulcan/blob/master/db/migrate/) | ✅ Implemented |
+| **Logout Message** | Confirmation (AC-12) | [`app/controllers/sessions_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/sessions_controller.rb) | ✅ Implemented |
+| **Paranoid Mode** | Account Enumeration Prevention | [`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
+| **Cookie Security** | Secure + HttpOnly + SameSite | [`config/initializers/session_store.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/session_store.rb)<br>[`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
 
 ### Configuration Clarifications
 
@@ -606,7 +636,6 @@ The following improvements are tracked as GitHub issues:
 |----------|-------|-------------|--------|
 | **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | v2.3.0 |
 | **High** | [#635](https://github.com/mitre/vulcan/issues/635) | Add logout confirmation message | v2.3.0 |
-| **Medium** | [#634](https://github.com/mitre/vulcan/issues/634) | Implement per-user session limits | v2.3.0 |
 | **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v2.3.0 |
 
 These improvements will be addressed as part of the Vue 3 migration and Turbolinks removal work in v2.3.0.

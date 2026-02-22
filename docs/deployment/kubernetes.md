@@ -481,18 +481,6 @@ spec:
 
 ## Monitoring
 
-### Prometheus Metrics
-
-Add annotations for Prometheus scraping:
-
-```yaml
-metadata:
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "3000"
-    prometheus.io/path: "/metrics"
-```
-
 ### Health Checks
 
 Vulcan provides health endpoints for Kubernetes probes:
