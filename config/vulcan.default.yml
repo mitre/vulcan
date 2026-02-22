@@ -95,6 +95,9 @@ defaults: &defaults
     version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1') %>
     title: <%= ENV.fetch('VULCAN_CONSENT_TITLE', 'Terms of Use') %>
     content: <%= ENV['VULCAN_CONSENT_CONTENT'] || '' %>
+  session_limits:
+    enabled: <%= ENV.fetch('VULCAN_SESSION_LIMITS_ENABLED', 'true') != 'false' %>
+    max_sessions: <%= ENV.fetch('VULCAN_MAX_CONCURRENT_SESSIONS', '1').to_i %>
   lockout:
     enabled: <%= ENV.fetch('VULCAN_LOCKOUT_ENABLED', 'true') != 'false' %>
     maximum_attempts: <%= ENV.fetch('VULCAN_LOCKOUT_MAX_ATTEMPTS', '3').to_i %>

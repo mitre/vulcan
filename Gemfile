@@ -22,6 +22,11 @@ gem 'jbuilder', '~> 2.7'
 gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
 gem 'devise', '~> 4.9'
+# PBKDF2-SHA512 password hashing for FIPS 140-2 compliance
+gem 'devise-encryptable'
+# Session limiting (AC-10), session tracking, and server-side session store
+gem 'devise-security', github: 'mitre/devise-security', branch: 'main'
+gem 'activerecord-session_store'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
 # LDAP Auth
@@ -85,6 +90,9 @@ gem 'rexml'
 gem 'ox'
 
 gem 'rubyzip'
+
+# Rate limiting and request throttling
+gem 'rack-attack'
 
 gem 'mitre-inspec-objects'
 gem 'rest-client'

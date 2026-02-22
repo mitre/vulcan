@@ -68,7 +68,7 @@ Devise.setup do |config|
   # It will change confirmation, password recovery and other workflows
   # to behave the same regardless if the e-mail provided was right or wrong.
   # Does not affect registerable.
-  # config.paranoid = true
+  config.paranoid = true
 
   # By default Devise will store the user in session. You can skip storage for
   # particular strategies by setting this option.
@@ -101,10 +101,10 @@ Devise.setup do |config|
   config.stretches = Rails.env.test? ? 1 : 11
 
   # Send a notification to the original email when the user's email is changed.
-  # config.send_email_changed_notification = false
+  config.send_email_changed_notification = true
 
   # Send a notification email when the user's password is changed.
-  # config.send_password_change_notification = false
+  config.send_password_change_notification = true
 
   # ==> Configuration for :confirmable
   # A period that the user is allowed to access the website even without
@@ -152,7 +152,11 @@ Devise.setup do |config|
 
   # Options to be passed to the created cookie. For instance, you can set
   # secure: true in order to force SSL only cookies.
-  # config.rememberable_options = {}
+  config.rememberable_options = {
+    secure: Rails.env.production?,
+    httponly: true,
+    same_site: :lax
+  }
 
   # ==> Configuration for :validatable
   # Range for password length.
@@ -174,9 +178,9 @@ Devise.setup do |config|
   # STIG AC-07: Lock after N consecutive invalid logon attempts.
   # Configured via VULCAN_LOCKOUT_* environment variables.
   # Defaults: 3 attempts, 15 min unlock, strategy: both (email + time).
+  config.lock_strategy = :failed_attempts
+  config.unlock_keys = [:email]
   if Settings.lockout&.enabled
-    config.lock_strategy = :failed_attempts
-    config.unlock_keys = [:email]
     # In test environment, use :time strategy to avoid SMTP dependency.
     # Devise sends unlock instructions email with :both/:email strategies,
     # which fails in CI where no SMTP server is available.
@@ -184,7 +188,21 @@ Devise.setup do |config|
     config.maximum_attempts = Settings.lockout.maximum_attempts
     config.unlock_in = Settings.lockout.unlock_in_minutes.minutes
     config.last_attempt_warning = Settings.lockout.last_attempt_warning
+  else
+    # Effectively disable lockout while keeping the module loaded
+    config.maximum_attempts = 1_000_000
+    config.unlock_strategy = :time
+    config.unlock_in = 1.minute
   end
+
+  # ==> Configuration for :session_limitable + :session_traceable (AC-10)
+  # Enforces per-user concurrent session limits via devise-security.
+  # session_traceable tracks individual sessions in the session_histories table.
+  # When max_active_sessions is exceeded, the oldest session is evicted.
+  # The :session_limitable module is conditionally skipped in the User model
+  # based on Settings.session_limits.enabled.
+  config.max_active_sessions = Settings.session_limits&.max_sessions || 1
+  config.session_ip_verification = false # Behind reverse proxy, client IPs vary
 
   # ==> Configuration for :recoverable
   #
@@ -194,11 +212,11 @@ Devise.setup do |config|
   # Time interval you can reset your password with a reset password key.
   # Don't put a too small interval or your users won't have the time to
   # change their passwords.
-  config.reset_password_within = 6.hours
+  config.reset_password_within = 2.hours
 
   # When set to false, does not sign a user in automatically after their password is
   # reset. Defaults to true, so a user is signed in automatically after a reset.
-  # config.sign_in_after_reset_password = true
+  config.sign_in_after_reset_password = false
 
   # ==> Configuration for :encryptable
   # Allow you to use another hashing or encryption algorithm besides bcrypt (default).
@@ -208,7 +226,7 @@ Devise.setup do |config|
   # stretches to 10, and copy REST_AUTH_SITE_KEY to pepper).
   #
   # Require the `devise-encryptable` gem when using anything other than bcrypt
-  # config.encryptor = :sha512
+  config.encryptor = :pbkdf2_sha512
 
   # ==> Scopes configuration
   # Turn scoped views on. Before rendering "sessions/new", it will first check for
@@ -236,7 +254,7 @@ Devise.setup do |config|
   # config.navigational_formats = ['*/*', :html]
 
   # The default HTTP method used to sign out a resource. Default is :delete.
-  config.sign_out_via = :get
+  config.sign_out_via = :delete
 
   # ==> OmniAuth
   # Add a new OmniAuth provider. Check the wiki for more information on setting

@@ -174,11 +174,11 @@ RSpec.describe 'User Registrations' do
       }
 
       expect(response).to have_http_status(:redirect)
-      # Check that confirmation email was sent for email change
-      expect(ActionMailer::Base.deliveries.count).to eq(1)
-      confirmation_email = ActionMailer::Base.deliveries.last
+      # Devise sends: confirmation email + email-changed notification + password-changed notification
+      expect(ActionMailer::Base.deliveries.count).to eq(3)
+      confirmation_email = ActionMailer::Base.deliveries.find { |e| e.subject.include?('Confirmation') }
+      expect(confirmation_email).to be_present
       expect(confirmation_email.to).to include(new_user_data.email)
-      expect(confirmation_email.subject).to include('Confirmation')
 
       existing_user.reload.confirm
 

@@ -1,3 +1,11 @@
+GIT
+  remote: https://github.com/mitre/devise-security.git
+  revision: 9f560ed125c096205ba9434de8feea532ce97b4c
+  branch: main
+  specs:
+    devise-security (0.18.0)
+      devise (>= 4.8.1)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -56,6 +64,12 @@ GEM
       timeout (>= 0.4.0)
     activerecord-import (2.2.0)
       activerecord (>= 4.2)
+    activerecord-session_store (2.2.0)
+      actionpack (>= 7.0)
+      activerecord (>= 7.0)
+      cgi (>= 0.3.6)
+      rack (>= 2.0.8, < 4)
+      railties (>= 7.0)
     activestorage (8.0.2.1)
       actionpack (= 8.0.2.1)
       activejob (= 8.0.2.1)
@@ -109,6 +123,7 @@ GEM
       rack-test (>= 0.6.3)
       regexp_parser (>= 1.5, < 3.0)
       xpath (~> 3.2)
+    cgi (0.5.1)
     chef-config (18.8.11)
       addressable
       chef-utils (= 18.8.11)
@@ -144,6 +159,8 @@ GEM
       railties (>= 4.1.0)
       responders
       warden (~> 1.2.3)
+    devise-encryptable (0.2.0)
+      devise (>= 2.1.0)
     diff-lcs (1.6.2)
     docile (1.4.1)
     domain_name (0.6.20240107)
@@ -424,6 +441,8 @@ GEM
     pyu-ruby-sasl (0.0.3.3)
     racc (1.8.1)
     rack (2.2.22)
+    rack-attack (6.8.0)
+      rack (>= 1.0, < 4)
     rack-oauth2 (1.21.3)
       activesupport
       attr_required
@@ -684,6 +703,7 @@ PLATFORMS
 DEPENDENCIES
   abbrev
   activerecord-import
+  activerecord-session_store
   amoeba
   audited (~> 5.8.0)
   bootsnap (>= 1.4.2)
@@ -694,6 +714,8 @@ DEPENDENCIES
   csv
   database_cleaner-active_record
   devise (~> 4.9)
+  devise-encryptable
+  devise-security!
   dotenv-rails
   factory_bot_rails (~> 6.5.0)
   fast_excel
@@ -722,6 +744,7 @@ DEPENDENCIES
   pg_search
   propshaft
   puma (~> 7.0)
+  rack-attack
   rails (~> 8.0.0)
   rest-client
   rexml

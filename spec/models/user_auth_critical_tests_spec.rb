@@ -152,8 +152,9 @@ RSpec.describe User do
       it 'uses full-length Devise token for new users' do
         auth = mock_omniauth_response(build(:user, email: 'new@example.com'), provider: 'oidc')
 
-        # Mock to verify full token is used
-        expect(Devise).to receive(:friendly_token).with(no_args).and_call_original
+        # Verify Devise.friendly_token is called (at least once for password,
+        # devise-encryptable also calls it for password_salt generation)
+        expect(Devise).to receive(:friendly_token).with(no_args).at_least(:once).and_call_original
 
         user = User.from_omniauth(auth)
         expect(user.password).to be_present

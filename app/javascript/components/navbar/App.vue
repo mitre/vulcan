@@ -60,7 +60,7 @@
               </template>
               <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
               <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
-              <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
+              <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
             </b-nav-item-dropdown>
           </b-navbar-nav>
         </div>
@@ -182,6 +182,27 @@ export default {
         .catch((error) => {
           this.latestRelease = "";
         });
+    },
+    signOut() {
+      const csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content");
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = this.sign_out_path;
+
+      const methodInput = document.createElement("input");
+      methodInput.type = "hidden";
+      methodInput.name = "_method";
+      methodInput.value = "delete";
+      form.appendChild(methodInput);
+
+      const tokenInput = document.createElement("input");
+      tokenInput.type = "hidden";
+      tokenInput.name = "authenticity_token";
+      tokenInput.value = csrfToken;
+      form.appendChild(tokenInput);
+
+      document.body.appendChild(form);
+      form.submit();
     },
     checkUpdateAvailable() {
       if (!this.latestRelease || this.latestRelease.trim() === "") return false;

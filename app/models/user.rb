@@ -12,7 +12,7 @@ class User < ApplicationRecord
   # provider configuration.
   devise :database_authenticatable, :registerable, :rememberable,
          :recoverable, :confirmable, :trackable, :validatable,
-         :timeoutable, :lockable
+         :timeoutable, :lockable, :encryptable, :session_limitable, :session_traceable
 
   audited only: %i[admin name email], max_audits: 1000
 
@@ -22,6 +22,11 @@ class User < ApplicationRecord
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
 
   validates :name, presence: true
+
+  # AC-10: Skip session limiting when disabled via settings
+  def skip_session_limitable?
+    !Settings.session_limits&.enabled
+  end
 
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
   after_create :promote_first_user_to_admin
@@ -33,6 +38,24 @@ class User < ApplicationRecord
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
 
   scope :alphabetical, -> { order(:name) }
+
+  # Transparent password migration from bcrypt to PBKDF2-SHA512.
+  # On successful login with a bcrypt-hashed password, re-hashes with PBKDF2.
+  def valid_password?(password)
+    if encrypted_password.start_with?('$2a$', '$2b$')
+      # Legacy bcrypt password — verify with BCrypt directly
+      require 'bcrypt'
+      result = BCrypt::Password.new(encrypted_password) == password
+      if result
+        # Re-hash with PBKDF2-SHA512
+        self.password = password
+        save(validate: false)
+      end
+      result
+    else
+      super
+    end
+  end
 
   def available_projects
     admin ? Project.all : Project.where(id: projects.pluck(:id)).or(Project.discoverable).distinct
