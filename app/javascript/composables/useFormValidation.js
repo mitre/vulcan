@@ -33,7 +33,9 @@ const RULES = {
 
   email: (value) => {
     if (!value) return null;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : "Please enter a valid email address";
+    return /^[^\s@]{1,64}@[^\s@]{1,255}$/.test(value) && value.includes(".")
+      ? null
+      : "Please enter a valid email address";
   },
 
   minLength: (min) => (value) => {

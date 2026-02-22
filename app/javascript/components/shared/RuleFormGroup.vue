@@ -45,6 +45,8 @@
 <script>
 import { FIELD_TO_SECTION } from "../../composables/ruleFieldConfig";
 
+let _rfgUid = 0;
+
 export default {
   name: "RuleFormGroup",
   props: {
@@ -66,7 +68,7 @@ export default {
     customDisplayCheck: { type: Function, default: null },
   },
   data() {
-    return { mod: Math.floor(Math.random() * 1000) };
+    return { mod: _rfgUid++ };
   },
   computed: {
     groupId() {
