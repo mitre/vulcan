@@ -47,9 +47,11 @@ class User < ApplicationRecord
       require 'bcrypt'
       result = BCrypt::Password.new(encrypted_password) == password
       if result
-        # Re-hash with PBKDF2-SHA512
-        self.password = password
-        save(validate: false)
+        # Re-hash with PBKDF2-SHA512 directly via encryptor to avoid
+        # holding cleartext in @password (CodeQL rb/clear-text-storage-sensitive-data)
+        new_salt = self.class.password_salt
+        new_hash = encryptor_class.digest(password, self.class.stretches, new_salt, self.class.pepper)
+        update_columns(encrypted_password: new_hash, password_salt: new_salt) # rubocop:disable Rails/SkipsModelValidations -- intentional: avoid callbacks during migration
       end
       result
     else
