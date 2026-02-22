@@ -11,13 +11,13 @@ export const panelNames = ["related", "satisfies", "reviews", "history"];
  *
  * @returns {Object} Sidebar state and methods
  */
+function lockBodyScroll(val) {
+  document.body.style.overflow = val ? "hidden" : "";
+}
+
 export function useSidebar() {
   // State
   const activePanel = ref(null);
-
-  function lockBodyScroll(val) {
-    document.body.style.overflow = val ? "hidden" : "";
-  }
 
   // Methods
   function togglePanel(panelName) {

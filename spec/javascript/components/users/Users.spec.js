@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { localVue } from "@test/testHelper";
 import Users from "@/components/users/Users.vue";
 
@@ -33,20 +33,14 @@ const baseProps = {
 };
 
 describe("Users auto-open unlock modal", () => {
-  let originalSearch;
-
-  beforeEach(() => {
-    originalSearch = window.location.search;
-  });
-
   afterEach(() => {
     // Reset URL
-    window.history.replaceState({}, "", window.location.pathname);
+    globalThis.history.replaceState({}, "", globalThis.location.pathname);
   });
 
   it("auto-opens edit modal for user specified in ?unlock= param", async () => {
     // Set query param before mount
-    window.history.replaceState({}, "", "?unlock=7");
+    globalThis.history.replaceState({}, "", "?unlock=7");
 
     const wrapper = mount(Users, {
       localVue,
@@ -61,7 +55,7 @@ describe("Users auto-open unlock modal", () => {
   });
 
   it("does not auto-open modal when no unlock param", async () => {
-    window.history.replaceState({}, "", "?");
+    globalThis.history.replaceState({}, "", "?");
 
     const wrapper = mount(Users, {
       localVue,
@@ -75,7 +69,7 @@ describe("Users auto-open unlock modal", () => {
   });
 
   it("does not auto-open modal when unlock param references non-existent user", async () => {
-    window.history.replaceState({}, "", "?unlock=999");
+    globalThis.history.replaceState({}, "", "?unlock=999");
 
     const wrapper = mount(Users, {
       localVue,

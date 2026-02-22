@@ -1,11 +1,11 @@
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { localVue } from "@test/testHelper";
 import App from "@/components/navbar/App.vue";
 import { EVENTS, dispatch } from "@/utils/notificationEvents";
 
 // Stub fetch for version check
-global.fetch = vi.fn(() =>
+globalThis.fetch = vi.fn(() =>
   Promise.resolve({ json: () => Promise.resolve({ tag_name: "v0.0.0" }) }),
 );
 

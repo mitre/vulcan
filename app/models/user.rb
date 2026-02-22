@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'bcrypt'
+
 # This is our main user model, local, LDAP, and omniauth users are all stored here.
 # We store provider and UID from the Omniauth provider that is logging a user in.
 class User < ApplicationRecord
@@ -41,10 +43,15 @@ class User < ApplicationRecord
 
   # Transparent password migration from bcrypt to PBKDF2-SHA512.
   # On successful login with a bcrypt-hashed password, re-hashes with PBKDF2.
+  #
+  # TODO(FIPS): This migration path uses BCrypt for *verification only* of legacy
+  # passwords — no new bcrypt hashes are created. Once migrated, the user's password
+  # is stored as PBKDF2-SHA512. Evaluate whether read-only bcrypt verification during
+  # migration affects FIPS 140-2 compliance posture, and determine a sunset date after
+  # which unmigrated accounts should require a password reset instead.
   def valid_password?(password)
     if encrypted_password.start_with?('$2a$', '$2b$')
       # Legacy bcrypt password — verify with BCrypt directly
-      require 'bcrypt'
       result = BCrypt::Password.new(encrypted_password) == password
       if result
         # Re-hash with PBKDF2-SHA512 directly via encryptor to avoid

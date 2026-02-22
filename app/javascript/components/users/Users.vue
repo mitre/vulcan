@@ -118,10 +118,10 @@ export default {
     },
   },
   mounted() {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     const unlockId = params.get("unlock");
     if (unlockId) {
-      const user = this.localUsers.find((u) => u.id === parseInt(unlockId, 10));
+      const user = this.localUsers.find((u) => u.id === Number.parseInt(unlockId, 10));
       if (user) {
         this.openEditModal(user);
       }
