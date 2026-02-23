@@ -4,38 +4,43 @@ require 'rails_helper'
 
 # REQUIREMENT: Validation error messages must include the specific field name
 # and limit so users can fix their data. No generic "failed to import" messages.
+# All limits reference Settings.input_limits for configurability.
 RSpec.describe 'Input length validation error messages' do
   describe 'BaseRule' do
     # Use StigRule as concrete subclass (BaseRule is abstract via STI)
     let(:rule) { StigRule.new(rule_id: 'TEST-001', status: 'Not Yet Determined', rule_severity: 'medium') }
+    let(:title_limit) { Settings.input_limits.title }
+    let(:long_text_limit) { Settings.input_limits.long_text }
+    let(:ident_limit) { Settings.input_limits.ident }
+    let(:inspec_limit) { Settings.input_limits.inspec_code }
 
     it 'reports field name and max for title' do
-      rule.title = 'x' * 1001
+      rule.title = 'x' * (title_limit + 1)
       rule.valid?
-      expect(rule.errors.full_messages).to include('Title is too long (maximum is 1000 characters)')
+      expect(rule.errors.full_messages).to include("Title is too long (maximum is #{title_limit} characters)")
     end
 
     it 'reports field name and max for fixtext' do
-      rule.fixtext = 'x' * 10_001
+      rule.fixtext = 'x' * (long_text_limit + 1)
       rule.valid?
-      expect(rule.errors.full_messages).to include('Fixtext is too long (maximum is 10000 characters)')
+      expect(rule.errors.full_messages).to include("Fixtext is too long (maximum is #{long_text_limit} characters)")
     end
 
     it 'reports field name and max for ident' do
-      rule.ident = 'C' * 2049
+      rule.ident = 'C' * (ident_limit + 1)
       rule.valid?
-      expect(rule.errors.full_messages).to include('Ident is too long (maximum is 2048 characters)')
+      expect(rule.errors.full_messages).to include("Ident is too long (maximum is #{ident_limit} characters)")
     end
 
     it 'reports field name and max for inspec_control_body' do
-      rule.inspec_control_body = 'x' * 50_001
+      rule.inspec_control_body = 'x' * (inspec_limit + 1)
       rule.valid?
-      expect(rule.errors.full_messages).to include('Inspec control body is too long (maximum is 50000 characters)')
+      expect(rule.errors.full_messages).to include("Inspec control body is too long (maximum is #{inspec_limit} characters)")
     end
 
     it 'allows values at exactly the limit' do
-      rule.title = 'x' * 1000
-      rule.fixtext = 'x' * 10_000
+      rule.title = 'x' * title_limit
+      rule.fixtext = 'x' * long_text_limit
       rule.ident = 'CCI-000001'
       rule.valid?
       expect(rule.errors[:title]).to be_empty
@@ -45,30 +50,35 @@ RSpec.describe 'Input length validation error messages' do
   end
 
   describe 'DisaRuleDescription' do
+    let(:long_text_limit) { Settings.input_limits.long_text }
+
     it 'reports field name and max for vuln_discussion' do
-      desc = DisaRuleDescription.new(vuln_discussion: 'x' * 10_001)
+      desc = DisaRuleDescription.new(vuln_discussion: 'x' * (long_text_limit + 1))
       desc.valid?
-      expect(desc.errors.full_messages).to include('Vuln discussion is too long (maximum is 10000 characters)')
+      expect(desc.errors.full_messages).to include("Vuln discussion is too long (maximum is #{long_text_limit} characters)")
     end
 
     it 'allows values at exactly the limit' do
-      desc = DisaRuleDescription.new(vuln_discussion: 'x' * 10_000)
+      desc = DisaRuleDescription.new(vuln_discussion: 'x' * long_text_limit)
       desc.valid?
       expect(desc.errors[:vuln_discussion]).to be_empty
     end
   end
 
   describe 'Check' do
+    let(:long_text_limit) { Settings.input_limits.long_text }
+    let(:short_string_limit) { Settings.input_limits.short_string }
+
     it 'reports field name and max for content' do
-      check = Check.new(content: 'x' * 10_001)
+      check = Check.new(content: 'x' * (long_text_limit + 1))
       check.valid?
-      expect(check.errors.full_messages).to include('Content is too long (maximum is 10000 characters)')
+      expect(check.errors.full_messages).to include("Content is too long (maximum is #{long_text_limit} characters)")
     end
 
     it 'reports field name and max for system' do
-      check = Check.new(system: 'x' * 256)
+      check = Check.new(system: 'x' * (short_string_limit + 1))
       check.valid?
-      expect(check.errors.full_messages).to include('System is too long (maximum is 255 characters)')
+      expect(check.errors.full_messages).to include("System is too long (maximum is #{short_string_limit} characters)")
     end
   end
 
