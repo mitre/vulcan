@@ -196,7 +196,6 @@ export default defineConfig({
             { text: "Section Locks", link: "/development/section-locks" },
             { text: "Testing", link: "/development/testing" },
             { text: "Release Process", link: "/development/release-process" },
-            { text: "Vue 3 Migration", link: "/development/vue3-migration" },
           ],
         },
         {
