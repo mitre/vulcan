@@ -423,7 +423,7 @@ spec:
         spec:
           containers:
           - name: postgres-backup
-            image: postgres:15
+            image: postgres:18
             env:
             - name: PGPASSWORD
               valueFrom:

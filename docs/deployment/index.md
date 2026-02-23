@@ -30,7 +30,7 @@ Choose the deployment method that fits your infrastructure and team.
 Every production deployment needs:
 
 1. **Secrets** — `SECRET_KEY_BASE`, `CIPHER_PASSWORD`, `CIPHER_SALT` (generate with `openssl rand -hex 64`)
-2. **PostgreSQL 12+** — dedicated database with secure password
+2. **PostgreSQL 18** — dedicated database with secure password
 3. **Authentication** — at least one provider (OIDC recommended, LDAP, or local login)
 4. **SSL/TLS** — HTTPS for all production traffic
 
