@@ -23,7 +23,9 @@ class User < ApplicationRecord
 
   devise :omniauthable, omniauth_providers: Devise.omniauth_providers
 
-  validates :name, presence: true
+  validates :name, presence: true,
+                   length: { maximum: ->(_r) { Settings.input_limits.user_name } }
+  validates :email, length: { maximum: ->(_r) { Settings.input_limits.user_email } }, allow_nil: true
 
   # AC-10: Skip session limiting when disabled via settings
   def skip_session_limitable?

@@ -68,10 +68,13 @@ class Component < ApplicationRecord
   validates_with PrefixValidator
 
   validates :name, :prefix, :title, presence: true
-  validates :name, length: { maximum: 255 }
-  validates :prefix, length: { maximum: 10 }
-  validates :title, length: { maximum: 500 }
-  validates :description, length: { maximum: 5000 }
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_COMPONENT_*)
+  validates :name, length: { maximum: ->(_r) { Settings.input_limits.component_name } }
+  validates :prefix, length: { maximum: ->(_r) { Settings.input_limits.component_prefix } }
+  validates :title, length: { maximum: ->(_r) { Settings.input_limits.component_title } }
+  validates :description, length: { maximum: ->(_r) { Settings.input_limits.component_description } }
+  validates :admin_name, :admin_email,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,

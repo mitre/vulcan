@@ -5,9 +5,11 @@ class Check < ApplicationRecord
   audited associated_with: :base_rule, on: %i[update], except: %i[base_rule_id], max_audits: 1000
   belongs_to :base_rule
 
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_*)
   validates :system, :content_ref_name, :content_ref_href,
-            length: { maximum: 255 }, allow_nil: true
-  validates :content, length: { maximum: 10_000 }, allow_nil: true
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
+  validates :content,
+            length: { maximum: ->(_r) { Settings.input_limits.long_text } }, allow_nil: true
 
   # Because from_mappings take advantage of accepts_nested_attributes, these methods
   # must return Hashes instead of an actual object to be properly created and associated

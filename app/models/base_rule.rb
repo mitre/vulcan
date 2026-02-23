@@ -34,17 +34,22 @@ class BaseRule < ApplicationRecord
     message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.compact_blank.join("', '")}'"
   }
 
-  # Length limits to prevent abuse via oversized input
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_*)
   validates :rule_id, :rule_weight, :version, :ident_system,
             :fixtext_fixref, :fix_id, :srg_id, :vuln_id, :legacy_ids,
-            length: { maximum: 255 }, allow_nil: true
-  validates :ident, length: { maximum: 2_048 }, allow_nil: true # comma-joined CCI list
-  validates :title, :status_justification,
-            length: { maximum: 1_000 }, allow_nil: true
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
+  validates :ident,
+            length: { maximum: ->(_r) { Settings.input_limits.ident } }, allow_nil: true
+  validates :title,
+            length: { maximum: ->(_r) { Settings.input_limits.title } }, allow_nil: true
+  validates :status_justification,
+            length: { maximum: ->(_r) { Settings.input_limits.medium_text } }, allow_nil: true
   validates :fixtext, :artifact_description, :vendor_comments,
-            length: { maximum: 10_000 }, allow_nil: true
+            length: { maximum: ->(_r) { Settings.input_limits.long_text } }, allow_nil: true
   validates :inspec_control_body, :inspec_control_file,
-            length: { maximum: 50_000 }, allow_nil: true
+            length: { maximum: ->(_r) { Settings.input_limits.inspec_code } }, allow_nil: true
+  validates :inspec_control_body_lang, :inspec_control_file_lang,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
 
   # In all cases of has_many, it is very unlikely (based on past releases of SRGs
   # that there will be multiple of these fields. Just take the first one.

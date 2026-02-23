@@ -16,8 +16,11 @@ class Project < ApplicationRecord
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :memberships
 
-  validates :name, presence: true, length: { maximum: 255 }
-  validates :description, length: { maximum: 5000 }
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_PROJECT_*)
+  validates :name, presence: true, length: { maximum: ->(_r) { Settings.input_limits.project_name } }
+  validates :description, length: { maximum: ->(_r) { Settings.input_limits.project_description } }
+  validates :admin_name, :admin_email,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
 
   scope :alphabetical, -> { order(:name) }
 

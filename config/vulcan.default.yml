@@ -110,6 +110,28 @@ defaults: &defaults
     min_lowercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LOWERCASE', '2') %>
     min_number: <%= ENV.fetch('VULCAN_PASSWORD_MIN_NUMBER', '2') %>
     min_special: <%= ENV.fetch('VULCAN_PASSWORD_MIN_SPECIAL', '2') %>
+  input_limits:
+    # Maximum lengths for text fields, grouped by category.
+    # Based on analysis of real DISA STIG/SRG data (1,785 rules across 8 benchmarks).
+    # Admins can tune via environment variables per deployment.
+    short_string: <%= ENV.fetch('VULCAN_LIMIT_SHORT_STRING', '255').to_i %>
+    ident: <%= ENV.fetch('VULCAN_LIMIT_IDENT', '2048').to_i %>
+    title: <%= ENV.fetch('VULCAN_LIMIT_TITLE', '500').to_i %>
+    medium_text: <%= ENV.fetch('VULCAN_LIMIT_MEDIUM_TEXT', '1000').to_i %>
+    long_text: <%= ENV.fetch('VULCAN_LIMIT_LONG_TEXT', '10000').to_i %>
+    inspec_code: <%= ENV.fetch('VULCAN_LIMIT_INSPEC_CODE', '50000').to_i %>
+    component_name: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_NAME', '255').to_i %>
+    component_prefix: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_PREFIX', '10').to_i %>
+    component_title: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_TITLE', '500').to_i %>
+    component_description: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_DESCRIPTION', '5000').to_i %>
+    project_name: <%= ENV.fetch('VULCAN_LIMIT_PROJECT_NAME', '255').to_i %>
+    project_description: <%= ENV.fetch('VULCAN_LIMIT_PROJECT_DESCRIPTION', '5000').to_i %>
+    user_name: <%= ENV.fetch('VULCAN_LIMIT_USER_NAME', '255').to_i %>
+    user_email: <%= ENV.fetch('VULCAN_LIMIT_USER_EMAIL', '255').to_i %>
+    review_comment: <%= ENV.fetch('VULCAN_LIMIT_REVIEW_COMMENT', '10000').to_i %>
+    benchmark_name: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_NAME', '500').to_i %>
+    benchmark_title: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_TITLE', '500').to_i %>
+    benchmark_description: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_DESCRIPTION', '10000').to_i %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>

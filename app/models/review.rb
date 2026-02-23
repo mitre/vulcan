@@ -7,6 +7,8 @@ class Review < ApplicationRecord
   has_one :component, through: :rule
 
   validates :comment, :action, presence: true
+  validates :action, length: { maximum: ->(_r) { Settings.input_limits.short_string } }
+  validates :comment, length: { maximum: ->(_r) { Settings.input_limits.review_comment } }
 
   before_create :take_review_action
   validate :validate_project_permissions

@@ -13,6 +13,12 @@ class Stig < ApplicationRecord
     scope: :version,
     message: 'ID has already been taken'
   }
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_*)
+  validates :stig_id, :version,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }
+  validates :title, length: { maximum: ->(_r) { Settings.input_limits.benchmark_title } }
+  validates :name, length: { maximum: ->(_r) { Settings.input_limits.benchmark_name } }
+  validates :description, length: { maximum: ->(_r) { Settings.input_limits.benchmark_description } }, allow_nil: true
 
   after_create :import_stig_rules
   # STIG parameter is the entire parsed benchmark

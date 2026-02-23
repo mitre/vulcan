@@ -257,6 +257,36 @@ DoD-aligned defaults ("2222" policy). Set any count to `0` to disable that requi
 | `VULCAN_PASSWORD_MIN_NUMBER` | Minimum digits | `2` | `0` |
 | `VULCAN_PASSWORD_MIN_SPECIAL` | Minimum special characters | `2` | `0` |
 
+## Input Length Limits
+
+Configurable maximum lengths for text fields. Defaults are based on analysis of real DISA STIG/SRG
+data across 1,785 rules. Group limits by category rather than individual fields — each env var
+controls a category of related fields.
+
+See [docs/development/input-length-limits.md](docs/development/input-length-limits.md) for the
+complete field-to-setting mapping.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_LIMIT_SHORT_STRING` | IDs, version strings, reference fields | `255` | `512` |
+| `VULCAN_LIMIT_IDENT` | Comma-joined CCI list (real max: 310) | `2048` | `4096` |
+| `VULCAN_LIMIT_TITLE` | Rule titles (real max: 436) | `500` | `1000` |
+| `VULCAN_LIMIT_MEDIUM_TEXT` | Status justification, brief text | `1000` | `2000` |
+| `VULCAN_LIMIT_LONG_TEXT` | Descriptions, check content, fixtext (real max: 6,330) | `10000` | `20000` |
+| `VULCAN_LIMIT_INSPEC_CODE` | InSpec control bodies (user-authored) | `50000` | `100000` |
+| `VULCAN_LIMIT_COMPONENT_NAME` | Component name | `255` | `500` |
+| `VULCAN_LIMIT_COMPONENT_PREFIX` | STIG ID prefix | `10` | `15` |
+| `VULCAN_LIMIT_COMPONENT_TITLE` | Component title | `500` | `1000` |
+| `VULCAN_LIMIT_COMPONENT_DESCRIPTION` | Component description | `5000` | `10000` |
+| `VULCAN_LIMIT_PROJECT_NAME` | Project name | `255` | `500` |
+| `VULCAN_LIMIT_PROJECT_DESCRIPTION` | Project description | `5000` | `10000` |
+| `VULCAN_LIMIT_USER_NAME` | User display name | `255` | `500` |
+| `VULCAN_LIMIT_USER_EMAIL` | User email address | `255` | `500` |
+| `VULCAN_LIMIT_REVIEW_COMMENT` | Review comments | `10000` | `20000` |
+| `VULCAN_LIMIT_BENCHMARK_NAME` | SRG/STIG display name | `500` | `1000` |
+| `VULCAN_LIMIT_BENCHMARK_TITLE` | SRG/STIG title | `500` | `1000` |
+| `VULCAN_LIMIT_BENCHMARK_DESCRIPTION` | STIG description | `10000` | `20000` |
+
 ## Project Settings
 
 | Variable | Description | Default | Example |
