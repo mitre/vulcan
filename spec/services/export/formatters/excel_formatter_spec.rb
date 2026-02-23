@@ -163,4 +163,59 @@ RSpec.describe Export::Formatters::ExcelFormatter do
       expect(formatter.file_extension).to eq '.xlsx'
     end
   end
+
+  # ===========================================================================
+  # REQUIREMENT: When rows contain a "Source" column, the formatter must:
+  # - Apply grey background to inherited rows (Source = "Inherited")
+  # - Lock inherited row cells so they can't be edited
+  # - Add data validation dropdowns for Status, Severity, and Source columns
+  # - Enable sheet protection (allows filter/sort, enforces cell locks)
+  # - Add auto-filter on the header row
+  # ===========================================================================
+  describe 'inherited row styling and data validation' do
+    let(:headers) { %w[STIGID Status Check Fix Severity Source] }
+    let(:direct_row) { ['TEST-001', 'Applicable - Configurable', 'check text', 'fix text', 'CAT II', 'Direct'] }
+    let(:inherited_row) { ['TEST-002', 'Applicable - Configurable', 'inherited check', 'inherited fix', 'CAT II', 'Inherited'] }
+    let(:rows) { [direct_row, inherited_row] }
+
+    let(:result) { formatter.generate(headers: headers, rows: rows) }
+    let(:workbook) { read_xlsx(result) }
+
+    it 'includes all rows in the output' do
+      data_rows = parse_data_rows(workbook, 0)
+      expect(data_rows.size).to eq 2
+    end
+
+    it 'preserves Source column values' do
+      data_rows = parse_data_rows(workbook, 0)
+      expect(data_rows[0]['Source']).to eq 'Direct'
+      expect(data_rows[1]['Source']).to eq 'Inherited'
+    end
+
+    # Test XLSX internals by reading the zip XML directly
+    describe 'xlsx structure' do
+      let(:xlsx_xml) do
+        entries = {}
+        Zip::File.open_buffer(StringIO.new(result)) do |zip|
+          zip.each { |entry| entries[entry.name] = entry.get_input_stream.read }
+        end
+        entries
+      end
+
+      it 'includes sheet protection' do
+        sheet_xml = xlsx_xml.values.find { |v| v.include?('<sheetData') }
+        expect(sheet_xml).to include('sheetProtection')
+      end
+
+      it 'includes data validations' do
+        sheet_xml = xlsx_xml.values.find { |v| v.include?('<sheetData') }
+        expect(sheet_xml).to include('dataValidation')
+      end
+
+      it 'includes autoFilter on the header row' do
+        sheet_xml = xlsx_xml.values.find { |v| v.include?('<sheetData') }
+        expect(sheet_xml).to include('autoFilter')
+      end
+    end
+  end
 end

@@ -105,8 +105,17 @@ module Export
     # Used by ExcelFormatter where each component becomes one worksheet.
     def export_as_workbook(components)
       sheets = components.sort_by(&:id).map do |component|
-        rows = build_rows(component)
-        { name: FileNamer.worksheet_name(component), headers: @mode.headers, rows: rows }
+        rows_with_sources = build_rows_with_sources(component)
+        sheet = {
+          name: FileNamer.worksheet_name(component),
+          headers: @mode.headers,
+          rows: rows_with_sources.map { |r| r[:row] }
+        }
+        if @mode.include_source_column?
+          sheet[:row_sources] = rows_with_sources.map { |r| r[:source] }
+          sheet[:row_rules] = rows_with_sources.map { |r| r[:rule] }
+        end
+        sheet
       end
 
       data = @formatter.generate_workbook(sheets: sheets)
@@ -126,15 +135,20 @@ module Export
     end
 
     def build_rows(component)
+      build_rows_with_sources(component).map { |r| r[:row] } # rubocop:disable Rails/Pluck
+    end
+
+    def build_rows_with_sources(component)
       rules = load_rules(component)
       scoped_rules = @mode.rule_scope(rules)
 
       scoped_rules.order(:version, :rule_id).map do |rule|
         exportable_rule = ExportableRule.new(rule)
-        @mode.columns.map do |key|
+        row = @mode.columns.map do |key|
           value = exportable_rule.value_for(key)
           @mode.transform_value(key, value, exportable_rule)
         end
+        { row: row, source: exportable_rule.value_for(:source), rule: rule }
       end
     end
 

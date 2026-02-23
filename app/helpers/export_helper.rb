@@ -34,9 +34,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
   def export_excel(project, component_ids, is_disa_export)
     components_to_export = project.components.where(id: component_ids.split(','))
-    # One file for all data types, each data type in a different tab
-    workbook = FastExcel.open(constant_memory: true)
-    # components_to_export = components_type == 'all' ? project.components : project.components.where(released: true)
+    package = Axlsx::Package.new
+    package.use_shared_strings = true
+
+    wrap_style = package.workbook.styles.add_style(alignment: { wrap_text: true })
+
     components_to_export.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers, :satisfies, :satisfied_by, {
@@ -46,51 +48,46 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       name_ending = "-V#{component[:version]}R#{component[:release]}-#{component[:id]}"
       # excel worksheet name has a limit of 31 characters
       worksheet_name = component[:name].gsub(/\s+/, '').first(31 - name_ending.length) + name_ending
-      worksheet = workbook.add_worksheet(worksheet_name)
-      worksheet.auto_width = true
-      if is_disa_export
-        worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
-      else
-        worksheet.append_row(ExportConstants::EXPORT_HEADERS)
-      end
-      last_row_num = 0
-      component.rules.order(:version, :rule_id).each do |rule|
-        # fast_excel unfortunately does not provide a method to modify the @last_row_number class variable
-        # so it needs to be manually kept track of
-        csv_attributes = is_disa_export ? rule.csv_attributes : rule.csv_attributes.append(rule.inspec_control_body)
-        if is_disa_export
-          if rule.status != 'Applicable - Configurable' && rule.status != 'Not Yet Determined'
-            check_text, fix_text = get_check_and_fix_text(rule.status).values_at('check_text', 'fix_text')
-            csv_attributes[CSV_ATTRIBUTE_MAP[:export_checktext]] = check_text
-            csv_attributes[CSV_ATTRIBUTE_MAP[:export_fixtext]] = fix_text
-          end
-          # For "Applicable - Configurable" controls remove any text
-          # in the "Status Justification", "Mitigation",and "Artifact Description" fields for the export.
-          # For "Applicable - Inherently Meets" and "Not Applicable" controls.
-          # remove any text in the "Mitigation" field for the export.
-          case rule.status
-          when 'Applicable - Configurable'
-            csv_attributes[CSV_ATTRIBUTE_MAP[:status_justification]] = nil
-            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-            csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
-          when 'Applicable - Inherently Meets'
-            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-          when 'Not Applicable'
-            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-            csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
-          end
-        end
+      headers = is_disa_export ? ExportConstants::DISA_EXPORT_HEADERS : ExportConstants::EXPORT_HEADERS
 
-        last_row_num += 1
-        csv_attributes.each_with_index do |value, col_index|
-          worksheet.write_string(last_row_num, col_index, value.to_s, nil)
+      package.workbook.add_worksheet(name: worksheet_name) do |ws|
+        ws.add_row(headers, types: Array.new(headers.size, :string))
+
+        component.rules.order(:version, :rule_id).each do |rule|
+          csv_attributes = is_disa_export ? rule.csv_attributes : rule.csv_attributes.append(rule.inspec_control_body)
+          if is_disa_export
+            if rule.status != 'Applicable - Configurable' && rule.status != 'Not Yet Determined'
+              check_text, fix_text = get_check_and_fix_text(rule.status).values_at('check_text', 'fix_text')
+              csv_attributes[CSV_ATTRIBUTE_MAP[:export_checktext]] = check_text
+              csv_attributes[CSV_ATTRIBUTE_MAP[:export_fixtext]] = fix_text
+            end
+            # For "Applicable - Configurable" controls remove any text
+            # in the "Status Justification", "Mitigation",and "Artifact Description" fields for the export.
+            # For "Applicable - Inherently Meets" and "Not Applicable" controls.
+            # remove any text in the "Mitigation" field for the export.
+            case rule.status
+            when 'Applicable - Configurable'
+              csv_attributes[CSV_ATTRIBUTE_MAP[:status_justification]] = nil
+              csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
+              csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
+            when 'Applicable - Inherently Meets'
+              csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
+            when 'Not Applicable'
+              csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
+              csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
+            end
+          end
+
+          ws.add_row(
+            csv_attributes.map(&:to_s),
+            types: Array.new(csv_attributes.size, :string),
+            style: wrap_style
+          )
         end
       end
     end
 
-    workbook.close if workbook.is_open
-
-    workbook
+    package
   end
 
   def get_check_and_fix_text(status)

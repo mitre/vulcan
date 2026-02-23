@@ -29,11 +29,11 @@ RSpec.describe 'WorkingCopy + Excel integration' do
       expect(result.content_type).to eq 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     end
 
-    it 'has all 20 headers including InSpec Control Body' do
+    it 'has all 21 headers including InSpec Control Body and Source' do
       workbook = read_xlsx(result.data)
       headers = workbook.sheet(0).row(1)
-      expect(headers.size).to eq 20
-      expect(headers.last).to eq 'InSpec Control Body'
+      expect(headers.size).to eq 21
+      expect(headers).to include('InSpec Control Body', 'Source')
     end
 
     it 'includes all rules (no filtering)' do

@@ -13,19 +13,17 @@ RSpec.describe ExportHelper do
   let(:component_ids) { project.components.ids.join(',') }
 
   describe '#export_excel' do
-    # Generate workbooks once and read binary string immediately (FastExcel temp dirs are ephemeral)
+    # Generate packages once and read binary string immediately
     let_it_be(:excel_binaries) do
       helper = Object.new.extend(ExportHelper)
       comp = Component.first
       proj = comp.project
       ids = proj.components.ids.join(',')
-      normal_wb = helper.export_excel(proj, ids, false)
-      disa_wb = helper.export_excel(proj, ids, true)
+      normal_pkg = helper.export_excel(proj, ids, false)
+      disa_pkg = helper.export_excel(proj, ids, true)
       {
-        normal: normal_wb.read_string,
-        disa: disa_wb.read_string,
-        normal_filename: normal_wb.filename,
-        disa_filename: disa_wb.filename
+        normal: normal_pkg.to_stream.read,
+        disa: disa_pkg.to_stream.read
       }
     end
 
@@ -35,9 +33,7 @@ RSpec.describe ExportHelper do
     context 'in all scenarios' do
       it 'creates an excel format of a given project' do
         expect(excel_binaries[:normal]).to be_present
-        expect(excel_binaries[:normal_filename]).to end_with 'xlsx'
         expect(excel_binaries[:disa]).to be_present
-        expect(excel_binaries[:disa_filename]).to end_with 'xlsx'
       end
 
       it 'creates an excel file with the # sheets == # of components that was requested for export' do

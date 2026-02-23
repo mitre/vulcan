@@ -36,6 +36,12 @@ module Export
         raise NotImplementedError
       end
 
+      # Whether to include the Source column (Direct/Inherited) in Excel exports.
+      # Override in modes where inherited row distinction is useful.
+      def include_source_column?
+        false
+      end
+
       private
 
       # Exclude rules that are satisfied by other rules.

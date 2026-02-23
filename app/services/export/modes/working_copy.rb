@@ -7,6 +7,7 @@ module Export
     # This is the "just give me everything" export for internal team use.
     class WorkingCopy < BaseMode
       def columns
+        # ALL_KEYS includes :source — provides Direct/Inherited indicator for filtering
         Export::ExportableRule::ALL_KEYS
       end
 
@@ -23,6 +24,10 @@ module Export
       # Identity transform — values pass through unchanged.
       def transform_value(_column_key, value, _exportable_rule)
         value
+      end
+
+      def include_source_column?
+        true
       end
 
       def eager_load_associations

@@ -28,8 +28,11 @@ module Export
       satisfies
     ].freeze
 
-    # All 20 keys including the optional InSpec control body.
+    # All 20 export column keys including the optional InSpec control body.
     ALL_KEYS = [*CSV_KEYS, :inspec_control_body].freeze
+
+    # Full set of queryable keys (ALL_KEYS + metadata keys like :source).
+    QUERYABLE_KEYS = [*ALL_KEYS, :source].freeze
 
     attr_reader :rule
 
@@ -40,7 +43,7 @@ module Export
     end
 
     def value_for(key)
-      raise ArgumentError, "Unknown export key: #{key}" unless ALL_KEYS.include?(key)
+      raise ArgumentError, "Unknown export key: #{key}" unless QUERYABLE_KEYS.include?(key)
 
       send(:"fetch_#{key}")
     end
@@ -143,6 +146,10 @@ module Export
 
     def fetch_inspec_control_body
       rule.inspec_control_body
+    end
+
+    def fetch_source
+      rule.satisfied_by.any? ? 'Inherited' : 'Direct'
     end
   end
 end
