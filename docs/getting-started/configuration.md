@@ -374,9 +374,36 @@ VULCAN_PASSWORD_MIN_SPECIAL=0
 Password complexity is only validated for local (email/password) accounts. OmniAuth users (OIDC, LDAP, GitHub) use random token passwords and skip complexity validation.
 :::
 
+## Configure Input Length Limits
+
+Configurable maximum lengths for all text input fields. Defaults are based on analysis of real DISA STIG/SRG data (1,785 rules across 8 benchmarks). Limits are grouped by category — each env var controls a category of related fields.
+
+See [Input Length Limits](../development/input-length-limits.md) for the complete field-to-setting mapping.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VULCAN_LIMIT_SHORT_STRING` | IDs, version strings, reference fields | `255` |
+| `VULCAN_LIMIT_IDENT` | Comma-joined CCI list | `2048` |
+| `VULCAN_LIMIT_TITLE` | Rule titles | `500` |
+| `VULCAN_LIMIT_MEDIUM_TEXT` | Status justification, brief text | `1000` |
+| `VULCAN_LIMIT_LONG_TEXT` | Descriptions, check content, fixtext | `10000` |
+| `VULCAN_LIMIT_INSPEC_CODE` | InSpec control bodies | `50000` |
+| `VULCAN_LIMIT_COMPONENT_NAME` | Component name | `255` |
+| `VULCAN_LIMIT_COMPONENT_PREFIX` | STIG ID prefix | `10` |
+| `VULCAN_LIMIT_COMPONENT_TITLE` | Component title | `500` |
+| `VULCAN_LIMIT_COMPONENT_DESCRIPTION` | Component description | `5000` |
+| `VULCAN_LIMIT_PROJECT_NAME` | Project name | `255` |
+| `VULCAN_LIMIT_PROJECT_DESCRIPTION` | Project description | `5000` |
+| `VULCAN_LIMIT_USER_NAME` | User display name | `255` |
+| `VULCAN_LIMIT_USER_EMAIL` | User email address | `255` |
+| `VULCAN_LIMIT_REVIEW_COMMENT` | Review comments | `10000` |
+| `VULCAN_LIMIT_BENCHMARK_NAME` | SRG/STIG display name | `500` |
+| `VULCAN_LIMIT_BENCHMARK_TITLE` | SRG/STIG title | `500` |
+| `VULCAN_LIMIT_BENCHMARK_DESCRIPTION` | STIG description | `10000` |
+
 ## Example Vulcan.yml
 
-```
+```yaml
 defaults: &defaults
   welcome_text:
   contact_email:
@@ -396,6 +423,15 @@ defaults: &defaults
   local_login:
     enabled:
     email_confirmation:
+    session_timeout:
+    remember_me_enabled:
+    remember_me_duration:
+  user_registration:
+    enabled:
+  admin_bootstrap:
+    first_user_admin:
+  project:
+    create_permission_enabled:
   ldap:
     enabled:
     servers:
@@ -409,15 +445,15 @@ defaults: &defaults
         password:
         base:
   oidc:
-    enabled: 
+    enabled:
     strategy:
     title:
     args:
-      name: 
+      name:
       scope:
-      uid_field: 
+      uid_field:
       response_type:
-      issuer: 
+      issuer:
       client_auth_method:
       client_signing_alg:
       nonce:
@@ -443,6 +479,9 @@ defaults: &defaults
     version:
     title:
     content:
+  session_limits:
+    enabled:
+    max_sessions:
   lockout:
     enabled:
     maximum_attempts:
@@ -455,6 +494,25 @@ defaults: &defaults
     min_lowercase:
     min_number:
     min_special:
+  input_limits:
+    short_string:
+    ident:
+    title:
+    medium_text:
+    long_text:
+    inspec_code:
+    component_name:
+    component_prefix:
+    component_title:
+    component_description:
+    project_name:
+    project_description:
+    user_name:
+    user_email:
+    review_comment:
+    benchmark_name:
+    benchmark_title:
+    benchmark_description:
   slack:
     enabled:
     api_token:

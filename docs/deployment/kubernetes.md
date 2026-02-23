@@ -99,7 +99,7 @@ data:
       local_login:
         enabled: true
         email_confirmation: false
-        session_timeout: 60
+        session_timeout: "1h"  # Accepts: 30s, 15m, 1h, or plain seconds (900)
       
       user_registration:
         enabled: true

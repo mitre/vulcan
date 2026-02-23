@@ -381,8 +381,11 @@ Create `/etc/logrotate.d/vulcan`:
 ### Health Check Endpoint
 
 ```bash
-# Add to monitoring system
-curl https://vulcan.example.com/health
+# Liveness check (no database)
+curl https://vulcan.example.com/up
+
+# Readiness check (database connectivity)
+curl https://vulcan.example.com/health_check
 ```
 
 ### System Monitoring

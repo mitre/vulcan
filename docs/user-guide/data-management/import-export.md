@@ -51,6 +51,34 @@ Components can be imported from spreadsheets (`.xlsx` or `.csv`):
 
 The spreadsheet importer maps column headers to fields, validates SRG IDs against the selected SRG, and converts severity values (`CAT I/II/III` to `high/medium/low`).
 
+### Update from Spreadsheet (Round-Trip Editing)
+
+Existing components can be bulk-edited via spreadsheet round-trip:
+
+1. **Export** the component as CSV or Excel (Working Copy mode)
+2. **Edit** rules in Excel or Google Sheets
+3. **Re-import** the edited spreadsheet to update the component
+
+**How to use:**
+
+1. Navigate to the Component page
+2. Click **Update from Spreadsheet** in the command bar
+3. Upload the edited `.xlsx` or `.csv` file
+4. Review the **word-diff preview** showing exactly what changed per rule
+5. Click **Apply Changes** to save, or **Cancel** to discard
+
+**Behavior:**
+
+- Rules are matched by SRG ID (the `SRG ID` column in the spreadsheet)
+- Only **editable fields** are updated — section-locked fields are skipped
+- A word-level diff is shown for each changed field before applying
+- Satisfaction relationships are re-parsed from `vendor_comments` after update
+- Rules not found in the spreadsheet are left unchanged (no deletions)
+
+::: warning Section Locks
+If a rule has locked sections (e.g., check content locked by a reviewer), those fields will be skipped during import even if the spreadsheet contains different values. The preview will show these as "skipped (locked)."
+:::
+
 ### Satisfaction Relationships
 
 When a component is created or imported, Vulcan parses `vendor_comments` on each rule to detect satisfaction relationships between rules.
