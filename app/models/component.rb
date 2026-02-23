@@ -105,31 +105,18 @@ class Component < ApplicationRecord
   # Fill out component based on spreadsheet
   def from_spreadsheet(spreadsheet)
     self.skip_import_srg_rules = true
-    # Parse the spreadsheet and extract data from the first sheet. Include headers so data is of the form
-    # {VulDiscussion: 'Value', SRG ID: 'Value', etc...}
-    parsed = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
-    parsed = normalize_import_headers(parsed)
-    file_headers = parsed.first.keys
-    # Since the component isn't saved yet, calling `based_on` here returns the wrong information
-    srg_rules = SecurityRequirementsGuide.find(security_requirements_guide_id).srg_rules
 
-    missing_headers = REQUIRED_MAPPING_CONSTANTS.values - file_headers
-    unless missing_headers.empty?
-      errors.add(:base, "The following required headers were missing #{missing_headers.join(', ')}")
+    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    if result.key?(:error)
+      errors.add(:base, result[:error])
       return
     end
 
-    spreadsheet_srg_ids = parsed.pluck(IMPORT_MAPPING[:srg_id])
+    parsed = result[:rows]
+    file_headers = result[:file_headers]
+    srg_rules = result[:srg_rules]
     database_srg_ids = srg_rules.map(&:version)
-
-    missing_from_srg = spreadsheet_srg_ids - database_srg_ids
-    unless missing_from_srg.empty?
-      errors.add(:base, 'The following required SRG IDs were missing from the selected SRG ' \
-                        "#{truncate(missing_from_srg.join(', '), length: 300)}. " \
-                        'Please remove these rows or select a different SRG and try again.')
-      return
-    end
-
+    spreadsheet_srg_ids = parsed.pluck(IMPORT_MAPPING[:srg_id])
     missing_from_spreadsheet = database_srg_ids - spreadsheet_srg_ids
 
     # Missing rows from the spreadsheet should still be present in the database
@@ -522,6 +509,48 @@ class Component < ApplicationRecord
     end
   end
 
+  # Preview changes from a spreadsheet without saving.
+  # Returns a hash with :updated, :unchanged, :skipped_locked, :warnings keys,
+  # or { error: "message" } on validation failure.
+  def update_from_spreadsheet(spreadsheet, _user = nil)
+    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    return { error: result[:error] } if result.key?(:error)
+
+    build_update_comparison(result[:rows])
+  end
+
+  # Apply changes from a spreadsheet to the database.
+  # Returns { success: true, count: N } or { error: "message" }.
+  def apply_spreadsheet_update(spreadsheet, _user = nil)
+    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    return { error: result[:error] } if result.key?(:error)
+
+    loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
+                                    srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    rule_by_rule_id = loaded_rules.index_by(&:rule_id)
+    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    updated_count = 0
+
+    ActiveRecord::Base.transaction do
+      result[:rows].each do |row|
+        rule = find_rule_for_row(row, rule_by_rule_id, rule_by_srg_id)
+        next unless rule
+        next unless rule.row_editable?
+
+        changes = compute_rule_changes(rule, row)
+        # Filter out section-locked fields
+        changes.select! { |field, _| rule.field_editable?(field) }
+        next if changes.empty?
+
+        apply_rule_changes(rule, row, changes)
+        updated_count += 1
+      end
+    end
+
+    create_rule_satisfactions if updated_count.positive?
+    { success: true, count: updated_count }
+  end
+
   private
 
   # Parse satisfaction text from any source string.
@@ -552,24 +581,153 @@ class Component < ApplicationRecord
     rule_id_map[target_rule_id]
   end
 
-  # Normalize spreadsheet headers using HEADER_ALIASES so that benchmark CSV
-  # export headers (e.g., "STIG ID", "Title") are mapped to the standard DISA
-  # import headers (e.g., "STIGID", "Requirement") before processing.
-  def normalize_import_headers(parsed)
-    return parsed if parsed.empty?
+  # Build a comparison of spreadsheet rows vs current rule data.
+  # Match by STIG ID (unique per rule) to handle multiple rules sharing the same SRG ID.
+  def build_update_comparison(rows)
+    loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
+                                    srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    # Build lookup by rule_id (numeric portion of STIG ID)
+    rule_by_rule_id = loaded_rules.index_by(&:rule_id)
+    # Also build SRG ID lookup for rows without STIG ID
+    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    result = { updated: [], unchanged: [], skipped_locked: [], warnings: [] }
 
-    # Build a rename map for only the aliases that appear in this file's headers
-    file_headers = parsed.first.keys
-    rename_map = {}
-    HEADER_ALIASES.each do |export_header, import_header|
-      rename_map[export_header] = import_header if file_headers.include?(export_header)
+    rows.each do |row|
+      srg_id = row[IMPORT_MAPPING[:srg_id]]
+      rule = find_rule_for_row(row, rule_by_rule_id, rule_by_srg_id)
+
+      unless rule
+        result[:warnings] << "SRG ID #{srg_id} not found in component"
+        next
+      end
+
+      # Whole-row skip: inherited or whole-locked
+      unless rule.row_editable?
+        reason = rule.satisfied_by.any? ? 'inherited' : 'locked'
+        result[:skipped_locked] << { rule_id: rule.rule_id, srg_id: srg_id, reason: reason }
+        next
+      end
+
+      changes = compute_rule_changes(rule, row)
+
+      # Filter out changes to section-locked fields
+      skipped_fields = changes.keys.reject { |field| rule.field_editable?(field) }
+      skipped_fields.each { |f| changes.delete(f) }
+
+      if changes.empty? && skipped_fields.empty?
+        result[:unchanged] << { rule_id: rule.rule_id, srg_id: srg_id, reason: 'no changes' }
+      elsif changes.empty? && skipped_fields.any?
+        result[:skipped_locked] << { rule_id: rule.rule_id, srg_id: srg_id,
+                                     reason: 'section locked', skipped_fields: skipped_fields }
+      elsif skipped_fields.any?
+        # Some fields changed, some were locked — report both
+        result[:updated] << { rule_id: rule.rule_id, srg_id: srg_id, changes: changes }
+        result[:skipped_locked] << { rule_id: rule.rule_id, srg_id: srg_id,
+                                     reason: 'section locked', skipped_fields: skipped_fields }
+      else
+        result[:updated] << { rule_id: rule.rule_id, srg_id: srg_id, changes: changes }
+      end
     end
 
-    return parsed if rename_map.empty?
+    result
+  end
 
-    parsed.map do |row|
-      row.transform_keys { |key| rename_map[key] || key }
+  # Find the matching rule for a spreadsheet row.
+  # Prefer STIG ID match (unique per rule) over SRG ID (can be shared).
+  def find_rule_for_row(row, rule_by_rule_id, rule_by_srg_id)
+    stig_id = row[IMPORT_MAPPING[:stig_id]]
+    if stig_id.present?
+      # Extract numeric rule_id from STIG ID (e.g., "RNDT-00-000063" → "000063")
+      numeric_id = stig_id.sub(prefix, '').delete('^0-9')
+      return rule_by_rule_id[numeric_id] if rule_by_rule_id.key?(numeric_id)
     end
+
+    # Fall back to SRG ID match
+    srg_id = row[IMPORT_MAPPING[:srg_id]]
+    rule_by_srg_id[srg_id]
+  end
+
+  # Compare a rule's current fields against a spreadsheet row.
+  # Returns a hash of { field_sym => { from: old, to: new } } for changed fields.
+  # Uses the same values as csv_export to ensure idempotent round-trip.
+  def compute_rule_changes(rule, row)
+    changes = {}
+
+    # Build the "current exported values" map matching csv_attributes column order.
+    # csv_attributes: [IA Control, CCI, SRGID, STIGID, SRG Req, Requirement,
+    #   SRG VulDiscussion, VulDiscussion, Status, SRG Check, Check,
+    #   SRG Fix, Fix, Severity, Mitigation, Artifact Description,
+    #   Status Justification, Vendor Comments, Satisfies]
+    csv_attrs = rule.csv_attributes
+    current = {
+      title: csv_attrs[5],                    # Requirement
+      vuln_discussion: csv_attrs[7],          # VulDiscussion
+      status: csv_attrs[8],                   # Status
+      check_content: csv_attrs[10],           # Check (export_checktext)
+      fixtext: csv_attrs[12],                 # Fix (export_fixtext)
+      rule_severity: csv_attrs[13],           # Severity (CAT I/II/III format)
+      artifact_description: csv_attrs[15],    # Artifact Description
+      status_justification: csv_attrs[16]     # Status Justification
+    }
+
+    # Compare simple text fields
+    %i[title vuln_discussion artifact_description status_justification].each do |field|
+      import_key = IMPORT_MAPPING[field]
+      new_val = row[import_key].to_s.strip
+      old_val = current[field].to_s.strip
+      changes[field] = { from: old_val, to: new_val } if old_val != new_val
+    end
+
+    # Check content and fixtext
+    %i[check_content fixtext].each do |field|
+      import_key = IMPORT_MAPPING[field]
+      new_val = row[import_key].to_s.strip
+      old_val = current[field].to_s.strip
+      changes[field] = { from: old_val, to: new_val } if old_val != new_val
+    end
+
+    # Status (case-insensitive mapping)
+    new_status_raw = row[IMPORT_MAPPING[:status]]
+    if new_status_raw.present?
+      status_index = STATUSES.find_index { |s| s.casecmp(new_status_raw)&.zero? }
+      new_status = status_index ? STATUSES[status_index] : nil
+      changes[:status] = { from: current[:status], to: new_status } if new_status && new_status != current[:status]
+    end
+
+    # Severity (CAT I/II/III → high/medium/low for storage, but compare in display format)
+    new_severity_raw = row[IMPORT_MAPPING[:rule_severity]]
+    if new_severity_raw.present? && (new_severity_raw.strip.upcase != current[:rule_severity].to_s.strip.upcase)
+      new_severity = SEVERITIES_MAP.invert[new_severity_raw.upcase]
+      changes[:rule_severity] = { from: rule.rule_severity, to: new_severity } if new_severity
+    end
+
+    changes
+  end
+
+  # Apply computed changes to a rule from a spreadsheet row.
+  def apply_rule_changes(rule, row, changes)
+    # Direct fields
+    rule.title = changes[:title][:to] if changes[:title]
+    rule.fixtext = changes[:fixtext][:to] if changes[:fixtext]
+    rule.status = changes[:status][:to] if changes[:status]
+    rule.rule_severity = changes[:rule_severity][:to] if changes[:rule_severity]
+    rule.status_justification = changes[:status_justification][:to] if changes[:status_justification]
+    rule.artifact_description = changes[:artifact_description][:to] if changes[:artifact_description]
+
+    # Nested: vuln_discussion
+    rule.disa_rule_descriptions.first&.update!(vuln_discussion: changes[:vuln_discussion][:to]) if changes[:vuln_discussion]
+
+    # Nested: check content
+    rule.checks.first&.update!(content: changes[:check_content][:to]) if changes[:check_content]
+
+    # Vendor comments / satisfaction text
+    rule.vendor_comments = row[IMPORT_MAPPING[:vendor_comments]] if row[IMPORT_MAPPING[:vendor_comments]].present?
+    if row[IMPORT_MAPPING[:satisfies]].present?
+      satisfaction_line = "Satisfies: #{row[IMPORT_MAPPING[:satisfies]]}"
+      rule.vendor_comments = [rule.vendor_comments, satisfaction_line].compact_blank.join('. ')
+    end
+
+    rule.save! if rule.changed?
   end
 
   def import_srg_rules

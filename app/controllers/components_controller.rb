@@ -10,14 +10,14 @@ class ComponentsController < ApplicationController
   EXPORT_ERROR_TITLE = 'Export error'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
-  before_action :set_component, only: %i[show update destroy export]
+  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update]
   before_action :set_component_basic, only: %i[find based_on_same_srg]
   before_action :set_project, only: %i[show create history]
   before_action :set_component_permissions, only: %i[show]
   before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
-  before_action :authorize_author_component, only: %i[update]
+  before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
   before_action :authorize_component_access, only: %i[show export find]
@@ -299,6 +299,36 @@ class ComponentsController < ApplicationController
     end
 
     render json: history
+  end
+
+  def preview_spreadsheet_update
+    file = params[:file]
+    unless file
+      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      return
+    end
+
+    result = @component.update_from_spreadsheet(file)
+    if result[:error]
+      render json: { error: result[:error] }, status: :unprocessable_entity
+    else
+      render json: result
+    end
+  end
+
+  def apply_spreadsheet_update
+    file = params[:file]
+    unless file
+      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      return
+    end
+
+    result = @component.apply_spreadsheet_update(file, current_user)
+    if result[:success]
+      render json: { toast: "Successfully updated #{result[:count]} rules from spreadsheet." }
+    elsif result[:error]
+      render json: { error: result[:error] }, status: :unprocessable_entity
+    end
   end
 
   def find

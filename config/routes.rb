@@ -71,6 +71,9 @@ Rails.application.routes.draw do
   get '/components/:id/search/based_on_same_srg', to: 'components#based_on_same_srg'
   # Compare components
   get '/components/:id/compare/:diff_id', to: 'components#compare'
+  # Spreadsheet round-trip update
+  post '/components/:id/preview_spreadsheet_update', to: 'components#preview_spreadsheet_update'
+  patch '/components/:id/apply_spreadsheet_update', to: 'components#apply_spreadsheet_update'
   # Find
   post '/components/:id/find', to: 'components#find'
   # Export project

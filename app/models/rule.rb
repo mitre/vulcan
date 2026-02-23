@@ -339,6 +339,27 @@ class Rule < BaseRule
     parts.compact.join('. ')
   end
 
+  # Is the entire row editable? False if inherited or whole-locked.
+  def row_editable?
+    return false if satisfied_by.any?
+    return false if locked?
+
+    true
+  end
+
+  # Is a specific field editable on this rule?
+  # Checks: inherited → whole lock → section lock.
+  def field_editable?(field_key)
+    field_sym = field_key.to_sym
+    section = RuleConstants::FIELD_TO_SECTION[field_sym]
+    raise ArgumentError, "Unknown field for editability check: #{field_key}" unless section
+
+    return false unless row_editable?
+    return false if (locked_fields || {}).key?(section)
+
+    true
+  end
+
   private
 
   def locked_fields_must_be_valid_sections
@@ -371,11 +392,11 @@ class Rule < BaseRule
   end
 
   def export_fixtext
-    satisfied_by.size.positive? ? satisfied_by.first.fixtext : fixtext
+    satisfied_by.size.positive? ? satisfied_by.order(:id).first.fixtext : fixtext
   end
 
   def export_checktext
-    satisfied_by.size.positive? ? satisfied_by.first.checks.first&.content : checks.first&.content
+    satisfied_by.size.positive? ? satisfied_by.order(:id).first.checks.first&.content : checks.first&.content
   end
 
   def cannot_be_locked_and_under_review
