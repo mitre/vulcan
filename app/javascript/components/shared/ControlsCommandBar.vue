@@ -34,6 +34,13 @@
           <b-icon icon="patch-check" /> Release
         </b-button>
       </span>
+
+      <!-- Update from Spreadsheet (author+ only) -->
+      <UpdateFromSpreadsheetModal
+        v-if="canEdit"
+        :component="component"
+        @spreadsheet-updated="onSpreadsheetUpdated"
+      />
     </template>
 
     <!-- Right: Panel Toggles -->
@@ -117,11 +124,12 @@
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import BaseCommandBar from "./BaseCommandBar.vue";
+import UpdateFromSpreadsheetModal from "../components/UpdateFromSpreadsheetModal.vue";
 import { PANEL_LABELS } from "../../constants/terminology";
 
 export default {
   name: "ControlsCommandBar",
-  components: { BaseCommandBar },
+  components: { BaseCommandBar, UpdateFromSpreadsheetModal },
   mixins: [RoleComparisonMixin, DateFormatMixinVue],
   props: {
     component: {
@@ -203,6 +211,9 @@ export default {
     },
     onTogglePanel(panel) {
       this.$emit("toggle-panel", panel);
+    },
+    onSpreadsheetUpdated() {
+      this.$emit("spreadsheet-updated");
     },
   },
 };

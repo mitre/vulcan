@@ -20,6 +20,7 @@
           @release="confirmComponentRelease"
           @open-members="$bvModal.show('members-modal')"
           @toggle-panel="togglePanel"
+          @spreadsheet-updated="refreshComponent"
         />
       </template>
 
