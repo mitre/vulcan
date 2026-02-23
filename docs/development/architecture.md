@@ -53,7 +53,7 @@ vulcan/
 
 ## Vue.js Architecture
 
-Vulcan uses a unique approach with 16 separate Vue instances, one per page:
+Vulcan uses 16 JavaScript entry points — 14 Vue instances (one per page), a base application setup, and a global notification component:
 
 ```javascript
 // Each pack file creates its own Vue instance
@@ -148,7 +148,7 @@ Permission hierarchy: `admin > author > reviewer > viewer`, scoped to Project or
 See [Authorization Architecture](authorization.md) for details.
 
 ### Data Protection
-- Passwords hashed with bcrypt
+- Passwords hashed with PBKDF2-SHA512 (migrated from bcrypt in v2.3.1)
 - API tokens stored encrypted
 - SSL/TLS required in production
 - Sensitive data filtered from logs
@@ -157,16 +157,15 @@ See [Authorization Architecture](authorization.md) for details.
 
 ### Optimizations
 - Database query optimization with includes/joins
-- Fragment caching for expensive views
+- Jbuilder collection caching for JSON views
+- Composite indexes for severity count queries
 - Turbolinks for faster page transitions
-- CDN for static assets
-- Docker multi-stage builds (1.76GB image)
+- Docker multi-stage builds with jemalloc for memory efficiency
 
 ### Monitoring
-- Application Performance Monitoring (APM)
-- Error tracking with rollbar/sentry
-- Custom metrics via StatsD
-- Health check endpoints
+- Health check endpoints (`/up`, `/health_check`, `/health_check/database`, `/health_check/migrations`)
+- Container-friendly logging (`RAILS_LOG_TO_STDOUT`, optional `STRUCTURED_LOGGING` for JSON output)
+- Rack::Attack rate limiting on login and file upload endpoints
 
 ## Deployment Architecture
 
@@ -207,22 +206,42 @@ FROM ruby:3.4.8-slim
 2. Validates required headers against `ImportConstants::REQUIRED_MAPPING_CONSTANTS`
 3. Maps columns to rule attributes, converts severity (`CAT I/II/III` → `high/medium/low`)
 
+**Spreadsheet Re-import (Update from Spreadsheet):**
+1. `POST /components/:id/update_from_spreadsheet` receives XLSX or CSV
+2. `SpreadsheetParser` parses rows, matches rules by SRG ID
+3. `Component#apply_spreadsheet_changes` compares fields using `Rule#field_editable?`
+4. Only editable, changed fields are updated — locked sections are skipped
+5. Returns a diff summary (changed rules, skipped fields, errors)
+
 ### Export Pipeline
+
+The export system uses a service-based architecture with modes and formatters.
+
+**Export modes** (project-level, purpose-first):
+
+| Mode | Formats | Description |
+|------|---------|-------------|
+| Working Copy | CSV, Excel | Internal review and bulk editing |
+| Vendor Submission | Excel | 17-column strict DISA template |
+| STIG-Ready Publish Draft | XCCDF, InSpec | Draft content for DISA review |
+| Backup | JSON Archive | Full-fidelity project backup |
 
 **Formats by entity:**
 
-| Entity | XCCDF | CSV | InSpec | Excel | DISA Excel |
-|--------|-------|-----|--------|-------|------------|
+| Entity | XCCDF | CSV | InSpec | Excel | JSON Archive |
+|--------|-------|-----|--------|-------|-------------|
 | Component | Yes | Yes | Yes | — | — |
-| Project | Yes (ZIP) | — | Yes (ZIP) | Yes | Yes |
+| Project | Yes (ZIP) | Yes | Yes (ZIP) | Yes | Yes |
 | STIG | Yes | Yes | — | — | — |
 | SRG | Yes | Yes | — | — | — |
 
 **Key files:**
-- `app/helpers/export_helper.rb` — XCCDF, InSpec, and Excel export logic
+- `app/services/export/` — service-based export pipeline (Registry, Base, modes, formatters)
+- `app/services/export/formatters/excel_formatter.rb` — caxlsx-based Excel with locked sections
+- `app/helpers/export_helper.rb` — legacy XCCDF/InSpec export (DISA format)
 - `app/constants/export_constants.rb` — column definitions, headers, defaults
 - `app/javascript/constants/csvColumns.js` — frontend column picker definitions
-- `app/javascript/components/shared/ExportModal.vue` — reusable export UI
+- `app/javascript/components/shared/ExportModal.vue` — mode-first export UI
 
 **CSV architecture:**
 - `BaseRule#csv_value_for(column_key)` maps 18 column keys to rule attribute values
