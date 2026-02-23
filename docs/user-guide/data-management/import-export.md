@@ -197,26 +197,26 @@ InSpec exports create a ZIP archive containing:
 
 ### STIG Columns (18 available)
 
-| Column | Header | Example |
-|--------|--------|---------|
-| `rule_id` | Rule ID | `SV-203591r557031_rule` |
-| `version` | STIG ID | `RHEL-09-000001` |
-| `srg_id` | SRG ID | `SRG-OS-000001-GPOS-00001` |
-| `vuln_id` | Vuln ID | `V-203591` |
-| `rule_severity` | Severity | `medium` |
-| `title` | Title | `The system must...` |
-| `vuln_discussion` | Vuln Discussion | `Without authentication...` |
-| `check_content` | Check Content | `Verify the system...` |
-| `fixtext` | Fix Text | `Configure the system...` |
-| `ident` | CCI | `CCI-000068` |
-| `nist_control_family` | NIST Control Family | `AC-17 (2)` |
-| `legacy_ids` | Legacy IDs | `V-56571, SV-70831` |
-| `status` | Status | `Applicable - Configurable` |
-| `rule_weight` | Rule Weight | `10.0` |
-| `mitigations` | Mitigations | |
-| `severity_override_guidance` | Severity Override Guidance | |
-| `false_positives` | False Positives | |
-| `false_negatives` | False Negatives | |
+| Column | Header | Default | Example |
+|--------|--------|:-------:|---------|
+| `rule_id` | Rule ID | ✅ | `SV-203591r557031_rule` |
+| `version` | STIG ID | ✅ | `RHEL-09-000001` |
+| `srg_id` | SRG ID | ✅ | `SRG-OS-000001-GPOS-00001` |
+| `vuln_id` | Vuln ID | ✅ | `V-203591` |
+| `rule_severity` | Severity | ✅ | `medium` |
+| `title` | Title | ✅ | `The system must...` |
+| `vuln_discussion` | Description | ✅ | `Without authentication...` |
+| `check_content` | Check | ✅ | `Verify the system...` |
+| `fixtext` | Fix | ✅ | `Configure the system...` |
+| `ident` | CCI | ✅ | `CCI-000068` |
+| `nist_control_family` | 800-53 Controls | ✅ | `AC-17 (2)` |
+| `legacy_ids` | Legacy IDs | ✅ | `V-56571, SV-70831` |
+| `status` | Status | | `Applicable - Configurable` |
+| `rule_weight` | Weight | | `10.0` |
+| `mitigations` | Mitigations | | |
+| `severity_override_guidance` | Severity Override | | |
+| `false_positives` | False Positives | | |
+| `false_negatives` | False Negatives | | |
 
 ### SRG Columns (16 available)
 

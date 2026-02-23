@@ -22,7 +22,15 @@ This document lists all environment variables that can be used to configure Vulc
 
 **Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
 
-**Worktree Isolation**: When developing with multiple git worktrees (e.g., v2.x and v3.x), set `DB_SUFFIX` in each worktree's `.env` to give each branch its own database. This prevents migration conflicts when branches have diverging schemas. Not needed in production.
+**Worktree Isolation**: When developing with multiple git worktrees (e.g., v2.x and v3.x), set `DB_SUFFIX` in each worktree's `.env` to give each branch its own database. This prevents migration conflicts when branches have diverging schemas. Not needed in production — each deployment has its own database.
+
+```bash
+# v2.x worktree .env
+DB_SUFFIX=_v2    # → vulcan_vue_development_v2, vulcan_vue_test_v2
+
+# v3.x worktree .env
+DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
+```
 
 **Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` is deprecated. Use `POSTGRES_PASSWORD` instead.
 
@@ -32,7 +40,7 @@ This document lists all environment variables that can be used to configure Vulc
 |----------|-------------|---------|---------|
 | `VULCAN_APP_URL` | Application URL | `http://localhost:3000` | `https://vulcan.example.com` |
 | `VULCAN_WELCOME_TEXT` | Welcome message on login page | `Welcome to Vulcan` | `Welcome to MITRE Vulcan` |
-| `VULCAN_CONTACT_EMAIL` | Contact email for notifications | `do_not_reply@vulcan` | `admin@example.com` |
+| `VULCAN_CONTACT_EMAIL` | Contact email for notifications and default SMTP username | `vulcan-support@example.com` | `support@mycompany.com` |
 
 ## Authentication Settings
 
@@ -42,6 +50,8 @@ This document lists all environment variables that can be used to configure Vulc
 | `VULCAN_ENABLE_LOCAL_LOGIN` | Enable local username/password login | `true` | `true` or `false` |
 | `VULCAN_ENABLE_EMAIL_CONFIRMATION` | Require email confirmation for new users | `false` | `true` or `false` |
 | `VULCAN_SESSION_TIMEOUT` | Session inactivity timeout. Accepts explicit suffix (`30s`, `15m`, `1h`) or plain numbers (1-9 = hours, 10-299 = minutes, 300+ = seconds). | `1h` | `900` (DoD 15-min), `15m`, `1h` |
+| `VULCAN_ENABLE_REMEMBER_ME` | Show "Remember Me" checkbox on login forms | `true` | `false` for DoD |
+| `VULCAN_REMEMBER_ME_DURATION` | How long Remember Me keeps session alive. Same format as session timeout. | `8h` | `1d`, `28800` |
 
 ### User Registration
 | Variable | Description | Default | Example |
@@ -75,6 +85,10 @@ Vulcan provides multiple ways to create the initial admin user. These are evalua
 
 **Docker Default**: In Docker deployments, `VULCAN_FIRST_USER_ADMIN=true` is the default, allowing
 immediate use after `docker compose up`. For production, disable this and use `VULCAN_ADMIN_EMAIL`.
+
+**Security Note**: The first-user-admin feature uses PostgreSQL advisory locks to prevent race
+condition attacks (similar to WordPress installer vulnerabilities). However, for production
+deployments, explicit admin configuration via environment variables is recommended.
 
 ### OIDC/OAuth (e.g., Okta, Auth0, Keycloak)
 
@@ -162,7 +176,7 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SMTP_ADDRESS` | SMTP server address | - | `smtp.gmail.com` |
 | `VULCAN_SMTP_PORT` | SMTP server port | - | `587` |
 | `VULCAN_SMTP_DOMAIN` | SMTP domain | - | `example.com` |
-| `VULCAN_SMTP_SERVER_USERNAME` | SMTP username | - | `notifications@example.com` |
+| `VULCAN_SMTP_SERVER_USERNAME` | SMTP username (defaults to VULCAN_CONTACT_EMAIL if not set) | - | `notifications@example.com` |
 | `VULCAN_SMTP_SERVER_PASSWORD` | SMTP password | - | `smtp_password` |
 | `VULCAN_SMTP_AUTHENTICATION` | SMTP authentication method | - | `plain` |
 | `VULCAN_SMTP_OPENSSL_VERIFY_MODE` | OpenSSL verify mode for SMTP | - | `none` |
@@ -177,14 +191,44 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SLACK_API_TOKEN` | Slack API token | - | `xoxb-your-token` |
 | `VULCAN_SLACK_CHANNEL_ID` | Slack channel ID | - | `C1234567890` |
 
-## Session Limits (STIG AC-10)
+## Classification Banner
+
+Display a colored banner at the top and bottom of every page, commonly used for DoD classification markings.
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `VULCAN_SESSION_LIMITS_ENABLED` | Enable per-user concurrent session limits | `true` | `false` |
-| `VULCAN_MAX_CONCURRENT_SESSIONS` | Maximum concurrent sessions per user. Oldest session evicted when exceeded. | `1` | `3` |
+| `VULCAN_BANNER_ENABLED` | Enable classification banner | `false` | `true` |
+| `VULCAN_BANNER_TEXT` | Banner text displayed on every page (plain text, no formatting) | `""` | `UNCLASSIFIED` |
+| `VULCAN_BANNER_BACKGROUND_COLOR` | Banner background color (hex) | `#007a33` | `#c8102e` |
+| `VULCAN_BANNER_TEXT_COLOR` | Banner text color (hex) | `#ffffff` | `#000000` |
+
+**DoD Standard Colors:**
+
+| Classification | Background | Text |
+|---------------|------------|------|
+| UNCLASSIFIED | `#007a33` | `#ffffff` |
+| CUI | `#502b85` | `#ffffff` |
+| CONFIDENTIAL | `#0033a0` | `#ffffff` |
+| SECRET | `#c8102e` | `#ffffff` |
+| TOP SECRET | `#ff671f` | `#ffffff` |
+| TS/SCI | `#f7ea48` | `#000000` |
+
+## Consent / Terms of Use Modal
+
+Display a blocking consent modal that users must acknowledge before accessing the application. Acknowledgment is stored in the browser's localStorage per version — incrementing the version re-prompts all users.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_CONSENT_ENABLED` | Enable consent modal | `false` | `true` |
+| `VULCAN_CONSENT_VERSION` | Version string for consent (increment to re-prompt) | `1` | `2` |
+| `VULCAN_CONSENT_TITLE` | Modal title | `Terms of Use` | `Acceptable Use Policy` |
+| `VULCAN_CONSENT_CONTENT` | Modal body content (supports **Markdown**) | `""` | `By using this system you agree to the **AUP**.` |
+
+**Consent Content Formatting**: The `VULCAN_CONSENT_CONTENT` variable supports full [Markdown](https://www.markdownguide.org/basic-syntax/) formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. The banner text (`VULCAN_BANNER_TEXT`) is plain text only — no formatting is applied.
 
 ## Account Lockout (STIG AC-07)
+
+Lock accounts after consecutive failed login attempts. Enabled by default with STIG AC-07 compliant settings.
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
@@ -193,6 +237,55 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_LOCKOUT_UNLOCK_IN_MINUTES` | Minutes before auto-unlock | `15` | `30` |
 | `VULCAN_LOCKOUT_UNLOCK_STRATEGY` | Unlock method: `email`, `time`, or `both` | `both` | `time` |
 | `VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING` | Warn user on last attempt before lock | `true` | `false` |
+
+**Unlock strategies:**
+- `email` — sends an unlock link to the user's email (requires SMTP)
+- `time` — automatically unlocks after `VULCAN_LOCKOUT_UNLOCK_IN_MINUTES`
+- `both` — either method works (recommended, ensures unlock even without SMTP)
+
+Administrators can also manually unlock accounts from the Users page (`/users`).
+
+## Password Policy
+
+DoD-aligned defaults ("2222" policy). Set any count to `0` to disable that requirement.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_PASSWORD_MIN_LENGTH` | Minimum password length | `15` | `8` |
+| `VULCAN_PASSWORD_MIN_UPPERCASE` | Minimum uppercase letters | `2` | `0` |
+| `VULCAN_PASSWORD_MIN_LOWERCASE` | Minimum lowercase letters | `2` | `0` |
+| `VULCAN_PASSWORD_MIN_NUMBER` | Minimum digits | `2` | `0` |
+| `VULCAN_PASSWORD_MIN_SPECIAL` | Minimum special characters | `2` | `0` |
+
+## Input Length Limits
+
+Configurable maximum lengths for text fields. Defaults are based on analysis of real DISA STIG/SRG
+data across 1,785 rules. Group limits by category rather than individual fields — each env var
+controls a category of related fields.
+
+See [Input Length Limits](../development/input-length-limits.md) for the
+complete field-to-setting mapping.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_LIMIT_SHORT_STRING` | IDs, version strings, reference fields | `255` | `512` |
+| `VULCAN_LIMIT_IDENT` | Comma-joined CCI list (real max: 310) | `2048` | `4096` |
+| `VULCAN_LIMIT_TITLE` | Rule titles (real max: 436) | `500` | `1000` |
+| `VULCAN_LIMIT_MEDIUM_TEXT` | Status justification, brief text | `1000` | `2000` |
+| `VULCAN_LIMIT_LONG_TEXT` | Descriptions, check content, fixtext (real max: 6,330) | `10000` | `20000` |
+| `VULCAN_LIMIT_INSPEC_CODE` | InSpec control bodies (user-authored) | `50000` | `100000` |
+| `VULCAN_LIMIT_COMPONENT_NAME` | Component name | `255` | `500` |
+| `VULCAN_LIMIT_COMPONENT_PREFIX` | STIG ID prefix | `10` | `15` |
+| `VULCAN_LIMIT_COMPONENT_TITLE` | Component title | `500` | `1000` |
+| `VULCAN_LIMIT_COMPONENT_DESCRIPTION` | Component description | `5000` | `10000` |
+| `VULCAN_LIMIT_PROJECT_NAME` | Project name | `255` | `500` |
+| `VULCAN_LIMIT_PROJECT_DESCRIPTION` | Project description | `5000` | `10000` |
+| `VULCAN_LIMIT_USER_NAME` | User display name | `255` | `500` |
+| `VULCAN_LIMIT_USER_EMAIL` | User email address | `255` | `500` |
+| `VULCAN_LIMIT_REVIEW_COMMENT` | Review comments | `10000` | `20000` |
+| `VULCAN_LIMIT_BENCHMARK_NAME` | SRG/STIG display name | `500` | `1000` |
+| `VULCAN_LIMIT_BENCHMARK_TITLE` | SRG/STIG title | `500` | `1000` |
+| `VULCAN_LIMIT_BENCHMARK_DESCRIPTION` | STIG description | `10000` | `20000` |
 
 ## Project Settings
 

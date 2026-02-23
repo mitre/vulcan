@@ -446,6 +446,7 @@ defaults: &defaults
         base:
   oidc:
     enabled:
+    discovery:
     strategy:
     title:
     args:
@@ -457,6 +458,7 @@ defaults: &defaults
       client_auth_method:
       client_signing_alg:
       nonce:
+      prompt:
       client_options:
         port:
         scheme:
