@@ -17,7 +17,7 @@
 
 services:
   db:
-    image: postgres:12-alpine
+    image: postgres:18-alpine
     restart: unless-stopped
     volumes:
       - vulcan_dbdata:/var/lib/postgresql/data
