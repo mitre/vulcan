@@ -46,7 +46,9 @@ class Stig < ApplicationRecord
     if failures.empty?
       reload
     else
-      errors.add(:base, 'Some rules failed to import successfully for the SRG.')
+      detail = failures.first(3).map { |r| "#{r.rule_id}: #{r.errors.full_messages.join(', ')}" }.join('; ')
+      detail += " (and #{failures.size - 3} more)" if failures.size > 3
+      errors.add(:base, "#{failures.size} rules failed to import: #{detail}")
       raise ActiveRecord::Rollback
     end
   end

@@ -7,6 +7,11 @@ class DisaRuleDescription < ApplicationRecord
   audited associated_with: :base_rule, on: %i[update], except: %i[base_rule_id], max_audits: 1000
   belongs_to :base_rule
 
+  validates :vuln_discussion, :false_positives, :false_negatives, :mitigations,
+            :severity_override_guidance, :potential_impacts, :third_party_tools,
+            :mitigation_control, :responsibility, :ia_controls, :poam,
+            length: { maximum: 10_000 }, allow_nil: true
+
   # Because from_mappings take advantage of accepts_nested_attributes, these methods
   # must return Hashes instead of an actual object to be properly created and associated
   # with the rule.
