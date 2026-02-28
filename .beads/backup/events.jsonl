@@ -15,3 +15,4 @@
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-02-27T13:28:34Z","event_type":"closed","id":15,"issue_id":"vulcan-clean-04w6","new_value":"Frontend wired: watch file → POST detect_srg → auto-populate SRG. 6 new tests, 1908 frontend total pass.","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-02-27T13:28:40Z","event_type":"closed","id":16,"issue_id":"vulcan-clean-ilq","new_value":"Auto-detect SRG from spreadsheet: backend (peek_srg_ids + detect_srg endpoint) + frontend (watch file → auto-populate SRG dropdown). 15 backend + 6 frontend tests. DRY header normalization.","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-02-28T11:20:46Z","event_type":"created","id":17,"issue_id":"vulcan-clean-wwsy","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-02-28T11:20:59Z","event_type":"closed","id":18,"issue_id":"vulcan-clean-wwsy","new_value":"Closed","old_value":""}
