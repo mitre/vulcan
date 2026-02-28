@@ -106,8 +106,8 @@ docker pull mitre/vulcan:latest
 
 # Test locally
 ./setup-docker-secrets.sh  # if not already done
-# In docker-compose.yml, use: image: mitre/vulcan:v2.3.2
-docker compose up
+# In docker-compose.prod.yml, use: image: mitre/vulcan:v2.3.2
+docker compose -f docker-compose.prod.yml up
 ```
 
 ## Docker Image Details

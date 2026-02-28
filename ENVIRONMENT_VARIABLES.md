@@ -14,11 +14,15 @@ This document lists all environment variables that can be used to configure Vulc
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `DATABASE_URL` | PostgreSQL connection string (12-factor, takes precedence) | - | `postgres://user:pass@localhost:5432/vulcan_production` |
+| `DATABASE_PORT` | PostgreSQL client connection port (used by database.yml) | `5432` | `5435` |
+| `DATABASE_HOST` | PostgreSQL host (used by database.yml) | `127.0.0.1` | `localhost` |
+| `DATABASE_GSSENCMODE` | GSSAPI encryption mode (set to `disable` on macOS with Kerberos) | `prefer` | `disable` |
 | `DB_SUFFIX` | Database name suffix for worktree isolation (development only) | - | `_v2`, `_v3` |
-| `POSTGRES_USER` | PostgreSQL username | `postgres` | `vulcan_user` |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `postgres` | `secure_password` |
-| `POSTGRES_DB` | PostgreSQL database name | `vulcan_postgres_production` | `vulcan_prod` |
-| `DATABASE_PORT` | PostgreSQL port | `5432` | `5432` |
+| `POSTGRES_PORT` | Docker host-side port mapping (should match DATABASE_PORT) | `5432` | `5435` |
+| `POSTGRES_USER` | PostgreSQL username (Docker init + database.yml) | `postgres` | `vulcan_user` |
+| `POSTGRES_PASSWORD` | PostgreSQL password (Docker init + database.yml) | `postgres` | `secure_password` |
+| `POSTGRES_DB` | PostgreSQL database name (Docker init + production database.yml) | `vulcan_postgres_production` | `vulcan_prod` |
+| `PORT` | Application server (Puma) listen port | `3000` | `3001` |
 
 **Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
 
@@ -33,6 +37,8 @@ DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
 ```
 
 **Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` is deprecated. Use `POSTGRES_PASSWORD` instead.
+
+**Multi-Project Development**: See [docs/development/port-registry.md](docs/development/port-registry.md) for recommended port assignments when running multiple projects simultaneously.
 
 ## General Application Settings
 
@@ -321,12 +327,12 @@ In production, set these as actual environment variables through your deployment
 
 When using Docker, you can set environment variables in:
 - `.env` file (created by `setup-docker-secrets.sh`)
-- `docker-compose.yml` using the `environment:` section
+- `docker-compose.prod.yml` using the `environment:` section
 - Container runtime with `-e` flags
 
 **For Container Deployments** (Docker, ECS, Kubernetes):
 ```yaml
-# docker-compose.yml
+# docker-compose.prod.yml
 environment:
   RAILS_LOG_TO_STDOUT: "true"
   STRUCTURED_LOGGING: "true"  # Enable JSON logging for CloudWatch/monitoring

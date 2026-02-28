@@ -37,7 +37,7 @@ bin/vulcan
 # Dev-only files
 Procfile.dev
 vitest.config.js
-docker-compose.dev.yml
+docker-compose.prod.yml
 setup-docker-secrets.sh
 
 # Documentation files not needed at runtime
