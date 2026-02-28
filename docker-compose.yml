@@ -1,69 +1,31 @@
-# Vulcan Docker Compose Configuration
+# Development Docker Compose (default)
+# Runs PostgreSQL with sensible defaults for local development.
 #
-# Quick Start:
-#   ./setup-docker-secrets.sh    # Generate .env with secrets (one time)
-#   docker compose up            # Start Vulcan
-#   Open http://localhost:3000
-#   Register first user - they become admin automatically
+# Usage:
+#   docker compose up -d
+#   bin/rails db:prepare
+#   foreman start -f Procfile.dev
 #
-# For production deployments:
-#   1. Run ./setup-docker-secrets.sh
-#   2. Edit .env to configure authentication (OIDC, LDAP, or local)
-#   3. Set VULCAN_ADMIN_EMAIL and VULCAN_ADMIN_PASSWORD for admin bootstrap
-#   4. docker compose up -d
-#
-# Database setup (db:prepare) runs automatically on container start via
-# the docker-entrypoint script. Admin bootstrap hooks into db:prepare.
+# Production: use docker-compose.prod.yml instead.
+name: vulcan-v2x
 
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
-    volumes:
-      - vulcan_dbdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}  #ggignore
-      POSTGRES_DB: ${POSTGRES_DB:-vulcan_postgres_production}
-    expose:
-      - "5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
+    volumes:
+      - vulcan_dev_dbdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
       retries: 5
 
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    environment:
-      # Database connection - uses defaults from Dockerfile if not set
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db/${POSTGRES_DB:-vulcan_postgres_production}  #ggignore
-      RAILS_SERVE_STATIC_FILES: "true"
-      RAILS_ENV: production
-      NODE_ENV: production
-      # jemalloc is enabled in the Dockerfile
-      LD_PRELOAD: /usr/local/lib/libjemalloc.so
-      MALLOC_ARENA_MAX: "2"
-    # .env file provides secrets (SECRET_KEY_BASE, CIPHER_PASSWORD, etc.)
-    # Generate with: ./setup-docker-secrets.sh
-    env_file:
-      - path: .env
-        required: false
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/users/sign_in || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
 volumes:
-  vulcan_dbdata:
+  vulcan_dev_dbdata:
