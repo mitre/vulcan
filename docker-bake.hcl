@@ -26,20 +26,20 @@ variable "IMAGE_NAME" {
 }
 
 variable "VERSION" {
-  default = "2.3.1"
+  default = "latest"
+}
+
+variable "BUNDLER_VERSION" {
+  default = "2.3.27"
 }
 
 // Use VULCAN_RUBY_VERSION to avoid conflict with RVM's RUBY_VERSION
 variable "VULCAN_RUBY_VERSION" {
-  default = "3.3.9"
+  default = "3.4.8"
 }
 
 variable "VULCAN_NODE_VERSION" {
   default = "22.16.0"
-}
-
-variable "WEB_PORT" {
-  default = "3000"
 }
 
 // ============================================================================
@@ -71,9 +71,10 @@ target "production" {
   platforms = ["linux/amd64"]
 
   args = {
-    RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
-    NODE_VERSION = "${VULCAN_NODE_VERSION}"
-    WEB_PORT     = "${WEB_PORT}"
+    RUBY_VERSION    = "${VULCAN_RUBY_VERSION}"
+    NODE_VERSION    = "${VULCAN_NODE_VERSION}"
+    BUNDLER_VERSION = "${BUNDLER_VERSION}"
+
   }
 
   labels = {
@@ -124,9 +125,10 @@ target "dev" {
   platforms = ["linux/amd64"]
 
   args = {
-    RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
-    NODE_VERSION = "${VULCAN_NODE_VERSION}"
-    WEB_PORT     = "${WEB_PORT}"
+    RUBY_VERSION    = "${VULCAN_RUBY_VERSION}"
+    NODE_VERSION    = "${VULCAN_NODE_VERSION}"
+    BUNDLER_VERSION = "${BUNDLER_VERSION}"
+
   }
 
   labels = {

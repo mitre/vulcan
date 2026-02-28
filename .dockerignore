@@ -48,3 +48,51 @@
 
 # Ignore test files
 /spec
+
+# Ignore documentation site (has its own node_modules)
+/docs
+
+# Ignore development downloads and test artifacts
+/downloads
+/coverage
+
+# Ignore development-only files
+/.beads
+/.overcommit.yml
+/lefthook.yml
+/.rubocop.yml
+/.eslintrc.js
+/.prettierrc
+/vitest.config.js
+/babel.config.js
+/jsconfig.json
+/sonar-project.properties
+/postcss.config.js
+
+# Ignore non-Linux binaries
+/bin/vulcan
+
+# Ignore compose and bake files (not needed inside image)
+/docker-compose*.yml
+/docker-bake.hcl
+/Caddyfile*
+/nginx.conf*
+/setup-docker-secrets.sh
+
+# Ignore markdown files not needed at runtime
+/CHANGELOG.md
+/CODE_OF_CONDUCT.md
+/CONTRIBUTING.md
+/LICENSE.md
+/NOTICE.md
+/README.md
+/RELEASE_NOTES.md
+/SECURITY.md
+/ROADMAP.md
+/BENCHMARK-VIEWER-DESIGN.md
+/AGENT-STATUS
+/ENVIRONMENT_VARIABLES.md
+/CLAUDE.md
+/_config.yml
+/CNAME
+/create_admin.rb
