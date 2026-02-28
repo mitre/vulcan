@@ -114,6 +114,11 @@ jobs:
           - 10389:10389
 
     env:
+      # Application config (read by database.yml)
+      DATABASE_HOST: localhost
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # libpq vars (read by pg_isready, psql CLI tools)
       PGHOST: localhost
       PGUSER: postgres
       PGPASSWORD: postgres
