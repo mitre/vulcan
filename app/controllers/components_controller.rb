@@ -21,7 +21,7 @@ class ComponentsController < ApplicationController
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
   before_action :authorize_component_access, only: %i[show export find]
-  before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export]
+  before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
   before_action :validate_component_upload, only: :create
@@ -299,6 +299,36 @@ class ComponentsController < ApplicationController
     end
 
     render json: history
+  end
+
+  def detect_srg
+    file = params[:file]
+    unless file
+      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      return
+    end
+
+    srg_ids = SpreadsheetParser.peek_srg_ids(file)
+    if srg_ids.empty?
+      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_entity
+      return
+    end
+
+    # Find which SRGs these rule IDs belong to
+    rules = SrgRule.where(version: srg_ids).includes(:security_requirements_guide)
+    srgs = rules.map(&:security_requirements_guide).uniq
+
+    if srgs.empty?
+      render json: { error: 'Could not identify a matching SRG for the IDs in this spreadsheet' },
+             status: :unprocessable_entity
+    elsif srgs.size > 1
+      names = srgs.map { |s| "#{s.title} (#{s.version})" }.join(', ')
+      render json: { error: "SRG IDs map to multiple SRGs: #{names}. Please select manually." },
+             status: :unprocessable_entity
+    else
+      srg = srgs.first
+      render json: { id: srg.id, srg_id: srg.srg_id, title: srg.title, version: srg.version }
+    end
   end
 
   def preview_spreadsheet_update

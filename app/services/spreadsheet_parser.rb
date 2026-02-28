@@ -7,6 +7,45 @@ class SpreadsheetParser
 
   attr_reader :errors
 
+  # Lightweight class method: peek at the SRGID column without full validation.
+  # Returns an array of unique, non-blank SRG ID strings found in the file.
+  # Returns [] on any error (missing column, parse failure, empty file).
+  #
+  # @param spreadsheet [String, ActionDispatch::Http::UploadedFile] path or uploaded file
+  # @return [Array<String>]
+  # Normalize aliased export headers back to import header names.
+  # Shared by peek_srg_ids and instance normalize_headers.
+  #
+  # @param rows [Array<Hash>] parsed spreadsheet rows with header keys
+  # @return [Array<Hash>] rows with aliased headers renamed
+  def self.normalize_header_aliases(rows)
+    return rows if rows.empty?
+
+    file_headers = rows.first.keys
+    rename_map = {}
+    ImportConstants::HEADER_ALIASES.each do |export_header, import_header|
+      rename_map[export_header] = import_header if file_headers.include?(export_header)
+    end
+
+    return rows if rename_map.empty?
+
+    rows.map { |row| row.transform_keys { |key| rename_map[key] || key } }
+  end
+
+  def self.peek_srg_ids(spreadsheet)
+    rows = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
+    return [] if rows.empty?
+
+    rows = normalize_header_aliases(rows)
+
+    srg_id_col = ImportConstants::IMPORT_MAPPING[:srg_id] # "SRGID"
+    return [] unless rows.first.key?(srg_id_col)
+
+    rows.pluck(srg_id_col).compact_blank.uniq
+  rescue StandardError
+    []
+  end
+
   # @param spreadsheet [String, ActionDispatch::Http::UploadedFile] path or uploaded file
   # @param srg_id [Integer] SecurityRequirementsGuide ID to validate against
   def initialize(spreadsheet, srg_id)
@@ -53,19 +92,7 @@ class SpreadsheetParser
   end
 
   def normalize_headers(parsed)
-    return parsed if parsed.empty?
-
-    file_headers = parsed.first.keys
-    rename_map = {}
-    HEADER_ALIASES.each do |export_header, import_header|
-      rename_map[export_header] = import_header if file_headers.include?(export_header)
-    end
-
-    return parsed if rename_map.empty?
-
-    parsed.map do |row|
-      row.transform_keys { |key| rename_map[key] || key }
-    end
+    self.class.normalize_header_aliases(parsed)
   end
 
   def error_result(message)

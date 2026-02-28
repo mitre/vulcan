@@ -77,8 +77,15 @@
                 :min-length="0"
                 :max-suggestions="0"
                 :number="0"
+                :disabled="detecting"
                 @select="setSelectedSrg($refs.srgSearch.selected)"
               />
+              <small v-if="detecting" class="text-muted">
+                <b-spinner small type="grow" /> Detecting SRG from spreadsheet...
+              </small>
+              <small v-else-if="srgAutoDetected" class="text-success">
+                <i class="bi-check-circle" /> SRG auto-detected from spreadsheet
+              </small>
             </b-form-group>
             <!-- Name the component -->
             <b-form-group label="Name">
@@ -251,6 +258,8 @@ export default {
       srgs: [],
       displayedSrgs: [],
       file: null,
+      detecting: false,
+      srgAutoDetected: false,
       componentKey: 0,
       potentialPocs: this.project ? this.project.users : [],
       admin_name: "",
@@ -284,7 +293,39 @@ export default {
       }
     },
   },
+  watch: {
+    file: function (newFile) {
+      if (newFile && this.spreadsheet_import) {
+        this.detectSrg(newFile);
+      } else {
+        this.srgAutoDetected = false;
+      }
+    },
+  },
   methods: {
+    detectSrg: function (file) {
+      this.detecting = true;
+      this.srgAutoDetected = false;
+      let formData = new FormData();
+      formData.append("file", file);
+      axios
+        .post("/components/detect_srg", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((response) => {
+          const detected = response.data;
+          this.security_requirements_guide_id = detected.id;
+          this.security_requirements_guide_displayed = `${detected.title} (${detected.version})`;
+          this.srgAutoDetected = true;
+        })
+        .catch(() => {
+          // Detection failed — user picks manually, no error needed
+          this.srgAutoDetected = false;
+        })
+        .finally(() => {
+          this.detecting = false;
+        });
+    },
     showModal: function () {
       this.selected_project_id = this.project_id;
       this.selected_component_id = null;
@@ -303,6 +344,9 @@ export default {
         ? this.addDisplayNameToComponents(this.project.components)
         : [];
       this.displayedSrgs = [];
+      this.file = null;
+      this.detecting = false;
+      this.srgAutoDetected = false;
       this.$refs["AddComponentModal"].show();
     },
     setComponentPoc: function (user) {
