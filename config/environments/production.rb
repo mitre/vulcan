@@ -26,13 +26,13 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # SSL Configuration - controlled by FORCE_SSL environment variable
-  # - When true: Assumes SSL termination at proxy, forces HTTPS, uses secure cookies (production default)
-  # - When false: Allows HTTP, generates http:// URLs (for local/dev Kubernetes without ingress)
-  force_ssl_enabled = ENV.fetch('FORCE_SSL', 'true') == 'true'
+  # Don't blindly assume SSL - the reverse proxy should set X-Forwarded-Proto header.
+  # Setting assume_ssl=true without an actual SSL-terminating proxy causes infinite
+  # redirect loops (#700) and Puma HTTP parse errors (#702).
+  config.assume_ssl = false
 
-  config.assume_ssl = force_ssl_enabled
-  config.force_ssl = force_ssl_enabled
+  # Secure by default. Set RAILS_FORCE_SSL=false for local Docker testing without SSL.
+  config.force_ssl = ENV.fetch("RAILS_FORCE_SSL", "true").downcase != "false"
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
