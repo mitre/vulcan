@@ -2,18 +2,41 @@
 
 # rubocop:disable Rails/Output
 
-# Populate the database for demonstration use.
-raise 'This task is only for use in a development environment' unless Rails.env.development? || ENV.fetch('DISABLE_DATABASE_ENVIRONMENT_CHECK', false)
+# Populate the database for demonstration/evaluation use.
+#
+# Environments:
+#   - development/test: always seeds (existing behavior)
+#   - production: only seeds when VULCAN_SEED_DEMO_DATA=true
+#
+# Usage:
+#   VULCAN_SEED_DEMO_DATA=true docker compose up   # demo instance with sample data
+#   docker compose up                                # clean production (no demo data)
+#
+unless Rails.env.development? || Rails.env.test? || ENV['VULCAN_SEED_DEMO_DATA'] == 'true'
+  puts 'Skipping seed data (set VULCAN_SEED_DEMO_DATA=true to populate demo data)'
+  return
+end
 
-# Check if database has already been seeded
-# Seeds are meant to run once on a fresh database (Rails convention)
+# Idempotency: don't re-seed if demo data already exists
 if User.exists?(email: 'admin@example.com')
   puts "\n✅ Database already contains seed data"
   puts ''
   puts 'To reset and reseed the database, use:'
   puts '  bin/rails db:reset'
   puts ''
-  exit 0
+  return
+end
+
+# DoD-compliant demo password: 16 chars, 2+ uppercase, 2+ lowercase, 2+ digits, 2+ special
+DEMO_PASSWORD = '12qwaszx!@QWASZX'
+
+# Create demo admin only if no admin exists yet (admin:bootstrap may have already created one)
+unless User.exists?(admin: true)
+  puts 'Creating demo admin (admin@example.com)...'
+  admin = User.new(name: 'Demo Admin', email: 'admin@example.com', password: DEMO_PASSWORD, admin: true)
+  admin.skip_confirmation!
+  admin.save!
+  puts "  Demo admin created (password: #{DEMO_PASSWORD})"
 end
 
 puts "Populating database for demo use:\n\n"
@@ -22,11 +45,10 @@ puts "Populating database for demo use:\n\n"
 # Seeds for Users #
 # --------------- #
 puts 'Creating Users...'
-User.create(name: FFaker::Name.name, email: 'admin@example.com', password: '1234567ab!', admin: true)
 users = []
 10.times do
   name = FFaker::Name.name
-  users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: '1234567ab!')
+  users << User.new(name: name, email: "#{name.split.join('.')}@example.com", password: DEMO_PASSWORD)
 end
 User.import(users)
 User.find_each do |user|
