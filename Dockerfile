@@ -62,9 +62,9 @@ ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
     BUNDLE_PATH="/usr/local/bundle"
 
 # =============================================================================
-# BUILD STAGE - Compile gems and assets
+# BUILD-BASE STAGE - Build tools + Node.js (shared by build and development)
 # =============================================================================
-FROM base AS build
+FROM base AS build-base
 
 # Install packages needed to build gems and node modules
 RUN apt-get update -qq && \
@@ -86,6 +86,11 @@ RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
     tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
     rm node.tar.xz && \
     npm install -g pnpm@10
+
+# =============================================================================
+# BUILD STAGE - Compile gems and assets
+# =============================================================================
+FROM build-base AS build
 
 # Build stage environment - production mode for asset compilation
 ARG BUNDLER_VERSION
@@ -117,37 +122,21 @@ RUN bundle exec vite build
 # Precompile Rails assets
 RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
 
-# Remove dev/test files and node_modules BEFORE copying to production stage
-# This is critical - doing it here reduces the final image size significantly
-RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec test .git
+# Remove dev/test files, node_modules, and source maps to reduce image size
+RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec test .git && \
+    find public -name '*.map' -delete 2>/dev/null || true
 
 # =============================================================================
 # DEVELOPMENT STAGE - Full development environment
 # =============================================================================
-FROM base AS development
+FROM build-base AS development
 
-# Install development packages
+# Additional dev tools (build deps + Node.js already in build-base)
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
-      build-essential \
-      git \
-      gnupg \
-      libpq-dev \
-      libyaml-dev \
-      pkg-config \
-      zlib1g-dev \
       vim \
       less && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
-
-# Install Node.js and pnpm
-ARG NODE_VERSION
-ARG TARGETARCH
-RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
-    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
-    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
-    rm node.tar.xz && \
-    npm install -g pnpm@10
 
 # Development environment
 ENV RAILS_ENV="development" \
@@ -176,10 +165,7 @@ RUN groupadd --system --gid 1000 rails && \
 
 USER 1000:1000
 
-# Port configuration
-ARG WEB_PORT=3000
-ARG PROMETHEUS_PORT=9394
-EXPOSE ${WEB_PORT} ${PROMETHEUS_PORT}
+EXPOSE 3000 9394
 
 # Development server with file watching
 CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
@@ -196,28 +182,27 @@ ENV RAILS_ENV="production" \
     RAILS_LOG_TO_STDOUT="true" \
     RAILS_SERVE_STATIC_FILES="true"
 
-# Copy built artifacts from build stage
-# Note: cleanup already done in build stage to minimize copy size
-COPY --from=build /usr/local/bundle /usr/local/bundle
-COPY --from=build /rails /rails
-
-# Create non-root user and set ownership
+# Create non-root user before COPY --chown (avoids extra chown layer)
 RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
-    mkdir -p db log storage tmp && \
-    chown -R rails:rails db log storage tmp public
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
+
+# Copy built artifacts from build stage with correct ownership
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build --chown=rails:rails /rails /rails
+
+# Ensure writable directories exist
+RUN mkdir -p db log storage tmp
 
 USER 1000:1000
 
-# Port configuration
-ARG WEB_PORT=3000
-ARG PROMETHEUS_PORT=9394
-
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${WEB_PORT}/up || exit 1
+  CMD curl -f http://localhost:3000/up || exit 1
 
-EXPOSE ${WEB_PORT} ${PROMETHEUS_PORT}
+EXPOSE 3000 9394
+
+# Entrypoint handles db:prepare on server start (Rails standard pattern)
+ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Production server
 CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

@@ -42,18 +42,6 @@ variable "BUNDLER_VERSION" {
   default = "2.6.5"
 }
 
-variable "WEB_PORT" {
-  default = "3000"
-}
-
-variable "PROMETHEUS_PORT" {
-  default = "9394"
-}
-
-variable "DATABASE_PORT" {
-  default = "5432"
-}
-
 // ============================================================================
 // Groups - Build multiple targets at once
 // ============================================================================
@@ -86,8 +74,7 @@ target "production" {
     RUBY_VERSION     = "${VULCAN_RUBY_VERSION}"
     NODE_VERSION     = "${VULCAN_NODE_VERSION}"
     BUNDLER_VERSION  = "${BUNDLER_VERSION}"
-    WEB_PORT         = "${WEB_PORT}"
-    PROMETHEUS_PORT  = "${PROMETHEUS_PORT}"
+
   }
 
   labels = {
@@ -141,8 +128,7 @@ target "dev" {
     RUBY_VERSION     = "${VULCAN_RUBY_VERSION}"
     NODE_VERSION     = "${VULCAN_NODE_VERSION}"
     BUNDLER_VERSION  = "${BUNDLER_VERSION}"
-    WEB_PORT         = "${WEB_PORT}"
-    PROMETHEUS_PORT  = "${PROMETHEUS_PORT}"
+
   }
 
   labels = {
