@@ -96,6 +96,20 @@ immediate use after `docker compose up`. For production, disable this and use `V
 condition attacks (similar to WordPress installer vulnerabilities). However, for production
 deployments, explicit admin configuration via environment variables is recommended.
 
+### Demo/Evaluation Data
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_SEED_DEMO_DATA` | Populate database with demo data in production | `false` | `true` |
+
+When `VULCAN_SEED_DEMO_DATA=true`, `db:seed` creates sample users, projects, and components for evaluation purposes. In development/test environments, demo data is always seeded.
+
+If no admin user exists (i.e., `VULCAN_ADMIN_EMAIL` was not set), a fallback demo admin is created:
+- **Email**: `admin@example.com`
+- **Password**: `12qwaszx\!@QWASZX` (DoD 2222/15 compliant)
+
+If an admin already exists from `admin:bootstrap`, the demo admin is skipped and only sample projects/users are created.
+
 ### OIDC/OAuth (e.g., Okta, Auth0, Keycloak)
 
 **New in v2.2+**: Vulcan supports automatic endpoint discovery, reducing configuration from 8+ variables to just 4 essential ones.
