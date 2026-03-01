@@ -221,7 +221,7 @@ spec:
           value: "true"
         - name: RAILS_LOG_TO_STDOUT
           value: "true"
-        - name: FORCE_SSL
+        - name: RAILS_FORCE_SSL
           value: "true"  # Set to false for local/dev clusters without ingress TLS
         - name: SECRET_KEY_BASE
           valueFrom:
