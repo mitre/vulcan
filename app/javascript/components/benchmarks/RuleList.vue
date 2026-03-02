@@ -118,14 +118,23 @@ export default {
     };
   },
   computed: {
+    severityCounts() {
+      return this.rules.reduce(
+        (acc, r) => {
+          if (r.rule_severity) acc[r.rule_severity] = (acc[r.rule_severity] || 0) + 1;
+          return acc;
+        },
+        { high: 0, medium: 0, low: 0 },
+      );
+    },
     high_count() {
-      return this.filterBySeverity("high").length;
+      return this.severityCounts.high;
     },
     medium_count() {
-      return this.filterBySeverity("medium").length;
+      return this.severityCounts.medium;
     },
     low_count() {
-      return this.filterBySeverity("low").length;
+      return this.severityCounts.low;
     },
     searchPlaceholder() {
       const primaryId = this.type === "stig" ? "STIG ID" : "SRG ID";

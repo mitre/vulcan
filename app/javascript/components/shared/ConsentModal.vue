@@ -23,9 +23,11 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import axios from "axios";
+import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
   name: "ConsentModal",
+  mixins: [FormMixinVue],
   props: {
     config: {
       type: Object,
@@ -60,14 +62,8 @@ export default {
   },
   methods: {
     async onAgree() {
-      const csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content");
       try {
-        await axios.post("/consent/acknowledge", null, {
-          headers: {
-            "X-CSRF-Token": csrfToken,
-            Accept: "application/json",
-          },
-        });
+        await axios.post("/consent/acknowledge");
         this.acknowledged = true;
         this.showModal = false;
       } catch {

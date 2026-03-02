@@ -11,8 +11,6 @@
         v-model="searchText"
         debounce="300"
         placeholder="Search projects, components, rules, SRGs, STIGs..."
-        @focus="focus = true"
-        @blur="focus = false"
       />
     </b-input-group>
     <b-popover
@@ -90,7 +88,7 @@
             v-for="rule in stigRules"
             :key="rule.id"
             class="text-truncate"
-            :href="`/stigs/${rule.stig_id}?rule_id=${rule.rule_id}`"
+            :href="`/stigs/${rule.stig_id}?rule_id=${encodeURIComponent(rule.rule_id)}`"
           >
             <span class="font-weight-bold">{{ rule.rule_id }}</span>
             <small class="text-muted ml-1">{{ rule.title }}</small>
@@ -104,7 +102,7 @@
             v-for="rule in srgRules"
             :key="rule.id"
             class="text-truncate"
-            :href="`/srgs/${rule.srg_id}?rule_id=${rule.rule_id}`"
+            :href="`/srgs/${rule.srg_id}?rule_id=${encodeURIComponent(rule.rule_id)}`"
           >
             <span class="font-weight-bold">{{ rule.rule_id }}</span>
             <small class="text-muted ml-1">{{ rule.title }}</small>
@@ -137,8 +135,6 @@ export default {
   name: "GlobalSearch",
   data() {
     return {
-      focus: false,
-      loading: false,
       searchText: "",
       projects: [],
       components: [],
@@ -150,18 +146,6 @@ export default {
     };
   },
   computed: {
-    show: function () {
-      return (
-        (this.showProjects ||
-          this.showComponents ||
-          this.showRules ||
-          this.showSrgs ||
-          this.showStigs ||
-          this.showStigRules ||
-          this.showSrgRules) &&
-        this.focus
-      );
-    },
     showProjects: function () {
       return this.projects?.length > 0;
     },
@@ -198,7 +182,6 @@ export default {
         return;
       }
 
-      this.loading = true;
       try {
         // Use new unified search API
         const response = await axios.get("/api/search/global", {
@@ -236,8 +219,6 @@ export default {
         this.stigs = [];
         this.stigRules = [];
         this.srgRules = [];
-      } finally {
-        this.loading = false;
       }
     },
   },

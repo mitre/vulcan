@@ -117,7 +117,7 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
-import { MESSAGE_LABELS, ACTION_DESCRIPTIONS } from "../../constants/terminology";
+import { MESSAGE_LABELS } from "../../constants/terminology";
 import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import RuleFilterBar from "../rules/RuleFilterBar.vue";
@@ -221,7 +221,6 @@ export default {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
-      actionDescriptions: ACTION_DESCRIPTIONS,
     };
   },
   computed: {

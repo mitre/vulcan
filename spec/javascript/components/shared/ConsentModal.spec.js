@@ -92,7 +92,7 @@ describe("ConsentModal", () => {
       await wrapper.vm.onAgree();
       await wrapper.vm.$nextTick();
 
-      expect(axios.post).toHaveBeenCalledWith("/consent/acknowledge", null, expect.any(Object));
+      expect(axios.post).toHaveBeenCalledWith("/consent/acknowledge");
       expect(wrapper.vm.showModal).toBe(false);
     });
 

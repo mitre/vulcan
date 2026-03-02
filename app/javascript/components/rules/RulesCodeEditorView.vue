@@ -233,12 +233,7 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import Multiselect from "vue-multiselect";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import {
-  RULE_TERM,
-  MESSAGE_LABELS,
-  ACTION_DESCRIPTIONS,
-  selectedCountLabel,
-} from "../../constants/terminology";
+import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
 import { truncateId } from "../../utils/idFormatter";
 
 export default {
@@ -413,7 +408,6 @@ export default {
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
       showSRGIdChecked: null,
-      actionDescriptions: ACTION_DESCRIPTIONS,
     };
   },
   computed: {
@@ -493,18 +487,6 @@ export default {
           };
         });
     },
-    updateStatus(newStatus) {
-      const rule = this.selectedRule;
-      if (rule) {
-        this.$root.$emit("update:rule", { ...rule, status: newStatus });
-      }
-    },
-    updateSeverity(newSeverity) {
-      const rule = this.selectedRule;
-      if (rule) {
-        this.$root.$emit("update:rule", { ...rule, rule_severity: newSeverity });
-      }
-    },
     saveRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
@@ -540,7 +522,6 @@ export default {
         .catch(this.alertOrNotifyResponse);
     },
     handleReviewSubmitted() {
-      this.showReviewPane = false;
       const rule = this.selectedRule;
       if (rule) {
         this.$root.$emit("refresh:rule", rule.id, "all");

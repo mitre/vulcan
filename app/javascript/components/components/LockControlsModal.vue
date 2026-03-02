@@ -131,7 +131,7 @@ export default {
       }
 
       if (this.lockMode === "full") {
-        this.lockControls(bvModalEvt);
+        this.lockControls();
       } else {
         this.lockSections();
       }
