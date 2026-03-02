@@ -10,6 +10,21 @@ class ApplicationController < ActionController::Base
   before_action :check_access_request_notifications
   before_action :check_locked_user_notifications
 
+  # AC-8: Determines if the current user must acknowledge consent.
+  # Returns true when consent is enabled and the session has no valid acknowledgment.
+  def consent_required?
+    return false unless Settings.consent&.enabled
+
+    acknowledged_at = session[:consent_acknowledged_at]
+    return true if acknowledged_at.blank?
+
+    ttl = Settings.consent.respond_to?(:ttl) ? Settings.consent.ttl : nil
+    return false if ttl.blank? || ttl.to_s == '0'
+
+    Time.zone.parse(acknowledged_at) + parse_duration(ttl) < Time.current
+  end
+  helper_method :consent_required?
+
   rescue_from NotAuthorizedError, with: :not_authorized
 
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
@@ -132,6 +147,17 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  # Parses duration strings like "1h", "30m", "24h", "3600" into seconds.
+  def parse_duration(value)
+    str = value.to_s.strip
+    case str
+    when /\A(\d+)h\z/i then ::Regexp.last_match(1).to_i.hours
+    when /\A(\d+)m\z/i then ::Regexp.last_match(1).to_i.minutes
+    when /\A(\d+)s?\z/ then ::Regexp.last_match(1).to_i.seconds
+    else 0.seconds
+    end
+  end
 
   # Determine the slack channel(s) and user id to which the slack notification should be sent.
   def find_slack_channel(object, notification_type)

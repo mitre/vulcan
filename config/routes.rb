@@ -95,6 +95,9 @@ Rails.application.routes.draw do
     get 'search/global', to: 'search#global'
   end
 
+  # AC-8: Server-side consent acknowledgment
+  post '/consent/acknowledge', to: 'consent#acknowledge'
+
   root to: 'projects#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
 end

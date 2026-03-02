@@ -76,6 +76,9 @@
         },
         "VULCAN_CONSENT_CONTENT": {
           "value": "This is a preview instance of Vulcan for review purposes. By continuing, you acknowledge that this environment may be reset at any time and should not be used for production work. All activity may be monitored."
+        },
+        "VULCAN_CONSENT_TTL": {
+          "value": "0"
         }
       },
       "scripts": {

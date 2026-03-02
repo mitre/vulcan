@@ -22,8 +22,7 @@
 <script>
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-
-const STORAGE_KEY_PREFIX = "vulcan-consent-v";
+import axios from "axios";
 
 export default {
   name: "ConsentModal",
@@ -33,6 +32,7 @@ export default {
       required: true,
       default: () => ({
         enabled: false,
+        required: false,
         version: "1",
         title: "Terms of Use",
         content: "",
@@ -42,6 +42,7 @@ export default {
   data() {
     return {
       showModal: false,
+      acknowledged: false,
     };
   },
   computed: {
@@ -50,34 +51,33 @@ export default {
       const html = marked(this.config.content);
       return DOMPurify.sanitize(html);
     },
-    storageKey() {
-      return `${STORAGE_KEY_PREFIX}${this.config.version}`;
-    },
   },
   mounted() {
-    if (this.config.enabled && !this.isAcknowledged()) {
+    // Server tells us whether consent is required via config.required
+    if (this.config.enabled && this.config.required) {
       this.showModal = true;
     }
   },
   methods: {
-    isAcknowledged() {
+    async onAgree() {
+      const csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content");
       try {
-        return localStorage.getItem(this.storageKey) === "true";
+        await axios.post("/consent/acknowledge", null, {
+          headers: {
+            "X-CSRF-Token": csrfToken,
+            Accept: "application/json",
+          },
+        });
+        this.acknowledged = true;
+        this.showModal = false;
       } catch {
-        return false;
+        // POST failed — keep modal visible, consent not recorded
+        this.showModal = true;
       }
-    },
-    onAgree() {
-      try {
-        localStorage.setItem(this.storageKey, "true");
-      } catch {
-        // localStorage unavailable — allow access anyway
-      }
-      this.showModal = false;
     },
     onHidden() {
       // Re-show if not acknowledged (prevents programmatic dismissal)
-      if (!this.isAcknowledged()) {
+      if (!this.acknowledged) {
         this.$nextTick(() => {
           this.showModal = true;
         });

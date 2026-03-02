@@ -28,7 +28,7 @@
         'v-bind:sign_out_path': destroy_user_session_path.to_json,
         'v-bind:access_requests': @access_requests.to_json,
         'v-bind:locked_users': @locked_users.to_json,
-        'v-bind:consent_config': Settings.consent.to_json
+        'v-bind:consent_config': Settings.consent.to_h.merge(required: consent_required?).to_json
       }
     #Toaster
       %toaster{

@@ -1,24 +1,30 @@
 /**
  * ConsentModal.spec.js
  *
- * Requirements:
- * - Shows modal when enabled AND user has not acknowledged current version
- * - Does NOT show modal when disabled
- * - Does NOT show modal when user has already acknowledged current version
- * - "I Agree" button writes acknowledgment to localStorage
- * - Version increment re-prompts the user (new version key)
+ * Requirements (NIST AC-8):
+ * - Shows modal when server says consent is required (config.required === true)
+ * - Does NOT show modal when config.required is false (already acknowledged server-side)
+ * - Does NOT show modal when disabled (config.enabled is false)
+ * - "I Agree" button POSTs to /consent/acknowledge (server-side tracking)
+ * - On POST success, hides the modal
+ * - On POST failure, re-shows the modal (consent not recorded)
  * - Modal cannot be dismissed via backdrop click or Escape key
  * - Content is rendered as sanitized markdown
  */
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ConsentModal from "@/components/shared/ConsentModal.vue";
+import axios from "axios";
+
+// Mock axios
+vi.mock("axios");
 
 describe("ConsentModal", () => {
   let wrapper;
 
   const defaultConfig = {
     enabled: true,
+    required: true,
     version: "1",
     title: "Terms of Use",
     content: "**You must agree** to the terms.",
@@ -35,16 +41,15 @@ describe("ConsentModal", () => {
   };
 
   beforeEach(() => {
-    localStorage.clear();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
     if (wrapper) wrapper.destroy();
-    // Clean up any modal remnants from document.body
     document.querySelectorAll(".modal-backdrop, .modal").forEach((el) => el.remove());
   });
 
-  describe("when enabled and not acknowledged", () => {
+  describe("when enabled and required (not acknowledged server-side)", () => {
     beforeEach(() => {
       wrapper = createWrapper();
     });
@@ -58,7 +63,7 @@ describe("ConsentModal", () => {
       expect(modal.props("title")).toBe("Terms of Use");
     });
 
-    it("renders sanitized markdown content via computed property", () => {
+    it("renders sanitized markdown content", () => {
       expect(wrapper.vm.sanitizedContent).toContain("<strong>You must agree</strong>");
     });
 
@@ -79,23 +84,34 @@ describe("ConsentModal", () => {
   });
 
   describe("when I Agree is clicked", () => {
-    it("writes acknowledgment to localStorage and hides modal", async () => {
+    it("POSTs to /consent/acknowledge and hides modal on success", async () => {
+      axios.post.mockResolvedValue({ status: 200 });
       wrapper = createWrapper();
       expect(wrapper.vm.showModal).toBe(true);
 
-      // Call the method directly (BModal footer slot rendering is unreliable in jsdom)
-      wrapper.vm.onAgree();
+      await wrapper.vm.onAgree();
       await wrapper.vm.$nextTick();
 
-      expect(localStorage.getItem("vulcan-consent-v1")).toBe("true");
+      expect(axios.post).toHaveBeenCalledWith("/consent/acknowledge", null, expect.any(Object));
       expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("re-shows modal if POST fails", async () => {
+      axios.post.mockRejectedValue(new Error("Network error"));
+      wrapper = createWrapper();
+      expect(wrapper.vm.showModal).toBe(true);
+
+      await wrapper.vm.onAgree();
+      await wrapper.vm.$nextTick();
+
+      expect(axios.post).toHaveBeenCalled();
+      expect(wrapper.vm.showModal).toBe(true);
     });
   });
 
-  describe("when already acknowledged", () => {
+  describe("when required is false (already acknowledged server-side)", () => {
     it("does not show the modal", () => {
-      localStorage.setItem("vulcan-consent-v1", "true");
-      wrapper = createWrapper();
+      wrapper = createWrapper({ ...defaultConfig, required: false });
       expect(wrapper.vm.showModal).toBe(false);
     });
   });
@@ -103,20 +119,6 @@ describe("ConsentModal", () => {
   describe("when disabled", () => {
     it("does not show the modal", () => {
       wrapper = createWrapper({ ...defaultConfig, enabled: false });
-      expect(wrapper.vm.showModal).toBe(false);
-    });
-  });
-
-  describe("version increment", () => {
-    it("re-prompts when version changes", () => {
-      localStorage.setItem("vulcan-consent-v1", "true");
-      wrapper = createWrapper({ ...defaultConfig, version: "2" });
-      expect(wrapper.vm.showModal).toBe(true);
-    });
-
-    it("does not re-prompt for same version", () => {
-      localStorage.setItem("vulcan-consent-v1", "true");
-      wrapper = createWrapper();
       expect(wrapper.vm.showModal).toBe(false);
     });
   });
@@ -136,13 +138,6 @@ describe("ConsentModal", () => {
     it("renders empty content gracefully", () => {
       wrapper = createWrapper({ ...defaultConfig, content: "" });
       expect(wrapper.vm.sanitizedContent).toBe("");
-    });
-  });
-
-  describe("storage key format", () => {
-    it("uses version-specific storage key", () => {
-      wrapper = createWrapper({ ...defaultConfig, version: "42" });
-      expect(wrapper.vm.storageKey).toBe("vulcan-consent-v42");
     });
   });
 });

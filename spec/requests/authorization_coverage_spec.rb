@@ -56,7 +56,10 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # Api::SearchController scopes ALL queries to current_user.available_projects.
   # Authorization is data-scoped (users only see what they have access to),
   # not action-scoped. Any authenticated user can search.
-  'api/search#global' => 'Data-scoped auth via current_user.available_projects'
+  'api/search#global' => 'Data-scoped auth via current_user.available_projects',
+  # ConsentController records AC-8 consent acknowledgment in the session.
+  # Any authenticated user must be able to acknowledge consent — no role check needed.
+  'consent#acknowledge' => 'AC-8 consent acknowledgment — any authenticated user'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

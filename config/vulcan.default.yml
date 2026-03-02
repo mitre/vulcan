@@ -95,6 +95,7 @@ defaults: &defaults
     version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1') %>
     title: <%= ENV.fetch('VULCAN_CONSENT_TITLE', 'Terms of Use') %>
     content: <%= ENV['VULCAN_CONSENT_CONTENT'] || '' %>
+    ttl: <%= ENV.fetch('VULCAN_CONSENT_TTL', '0') %>
   session_limits:
     enabled: <%= ENV.fetch('VULCAN_SESSION_LIMITS_ENABLED', 'true') != 'false' %>
     max_sessions: <%= ENV.fetch('VULCAN_MAX_CONCURRENT_SESSIONS', '1').to_i %>
