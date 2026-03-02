@@ -69,106 +69,121 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
     end
   end
 
-  describe 'consent_required? helper' do
+  describe 'consent_required? on login page (not signed in)' do
+    before do
+      Settings.consent['enabled'] = true
+      Settings.consent['title'] = 'Terms'
+      Settings.consent['content'] = 'Agree.'
+    end
+
+    after do
+      Settings.consent['enabled'] = false
+    end
+
+    it 'sets required to false (consent only applies after authentication)' do
+      get new_user_session_path
+      expect(consent_config_from_response['required']).to be false
+    end
+  end
+
+  describe 'consent_required? when signed in and disabled' do
     before do
       sign_in user
+      Settings.consent['enabled'] = false
     end
 
-    context 'when consent is disabled' do
-      before do
-        Settings.consent['enabled'] = false
-      end
+    it 'sets required to false' do
+      get root_path
+      expect(consent_config_from_response['required']).to be false
+    end
+  end
 
-      it 'sets required to false' do
-        get root_path
-        expect(consent_config_from_response['required']).to be false
-      end
+  describe 'consent_required? when signed in and not acknowledged' do
+    before do
+      sign_in user
+      Settings.consent['enabled'] = true
+      Settings.consent['title'] = 'Terms'
+      Settings.consent['content'] = 'Agree to terms.'
     end
 
-    context 'when consent is enabled and not acknowledged' do
-      before do
-        Settings.consent['enabled'] = true
-        Settings.consent['title'] = 'Terms'
-        Settings.consent['content'] = 'Agree to terms.'
-      end
+    after do
+      Settings.consent['enabled'] = false
+    end
 
-      after do
-        Settings.consent['enabled'] = false
-      end
+    it 'sets required to true' do
+      get root_path
+      expect(consent_config_from_response['required']).to be true
+    end
+  end
 
-      it 'sets required to true' do
+  describe 'consent_required? when signed in and acknowledged' do
+    before do
+      sign_in user
+      Settings.consent['enabled'] = true
+      Settings.consent['title'] = 'Terms'
+      Settings.consent['content'] = 'Agree to terms.'
+    end
+
+    after do
+      Settings.consent['enabled'] = false
+    end
+
+    it 'sets required to false after acknowledgment' do
+      post '/consent/acknowledge'
+      get root_path
+      expect(consent_config_from_response['required']).to be false
+    end
+  end
+
+  describe 'consent_required? with TTL configured' do
+    before do
+      sign_in user
+      Settings.consent['enabled'] = true
+      Settings.consent['ttl'] = '1h'
+      Settings.consent['title'] = 'Terms'
+      Settings.consent['content'] = 'Agree to terms.'
+    end
+
+    after do
+      Settings.consent['enabled'] = false
+      Settings.consent['ttl'] = '0'
+    end
+
+    it 'sets required to false within TTL window' do
+      post '/consent/acknowledge'
+      get root_path
+      expect(consent_config_from_response['required']).to be false
+    end
+
+    it 'sets required to true after TTL expires' do
+      Settings.consent['ttl'] = '1m'
+
+      post '/consent/acknowledge'
+
+      travel_to(2.minutes.from_now) do
         get root_path
         expect(consent_config_from_response['required']).to be true
       end
     end
+  end
 
-    context 'when consent is enabled and acknowledged' do
-      before do
-        Settings.consent['enabled'] = true
-        Settings.consent['title'] = 'Terms'
-        Settings.consent['content'] = 'Agree to terms.'
-      end
-
-      after do
-        Settings.consent['enabled'] = false
-      end
-
-      it 'sets required to false after acknowledgment' do
-        post '/consent/acknowledge'
-        get root_path
-        expect(consent_config_from_response['required']).to be false
-      end
+  describe 'consent_required? with TTL 0 (per-session default)' do
+    before do
+      sign_in user
+      Settings.consent['enabled'] = true
+      Settings.consent['ttl'] = '0'
+      Settings.consent['title'] = 'Terms'
+      Settings.consent['content'] = 'Agree to terms.'
     end
 
-    context 'when consent TTL is configured' do
-      before do
-        Settings.consent['enabled'] = true
-        Settings.consent['ttl'] = '1h'
-        Settings.consent['title'] = 'Terms'
-        Settings.consent['content'] = 'Agree to terms.'
-      end
-
-      after do
-        Settings.consent['enabled'] = false
-        Settings.consent['ttl'] = '0'
-      end
-
-      it 'sets required to false within TTL window' do
-        post '/consent/acknowledge'
-        get root_path
-        expect(consent_config_from_response['required']).to be false
-      end
-
-      it 'sets required to true after TTL expires' do
-        # Use a short TTL (1 minute) and travel past it but within session timeout
-        Settings.consent['ttl'] = '1m'
-
-        post '/consent/acknowledge'
-
-        travel_to(2.minutes.from_now) do
-          get root_path
-          expect(consent_config_from_response['required']).to be true
-        end
-      end
+    after do
+      Settings.consent['enabled'] = false
     end
 
-    context 'when TTL is 0 (default, per-session)' do
-      before do
-        Settings.consent['enabled'] = true
-        Settings.consent['ttl'] = '0'
-        Settings.consent['title'] = 'Terms'
-        Settings.consent['content'] = 'Agree to terms.'
-      end
-
-      after do
-        Settings.consent['enabled'] = false
-      end
-
-      it 'sets required to false after acknowledgment (valid for session lifetime)' do
-        post '/consent/acknowledge'
-        get root_path
-        expect(consent_config_from_response['required']).to be false
-      end
+    it 'sets required to false after acknowledgment (valid for session lifetime)' do
+      post '/consent/acknowledge'
+      get root_path
+      expect(consent_config_from_response['required']).to be false
     end
   end
 end

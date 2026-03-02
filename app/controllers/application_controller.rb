@@ -13,6 +13,7 @@ class ApplicationController < ActionController::Base
   # AC-8: Determines if the current user must acknowledge consent.
   # Returns true when consent is enabled and the session has no valid acknowledgment.
   def consent_required?
+    return false unless user_signed_in?
     return false unless Settings.consent&.enabled
 
     acknowledged_at = session[:consent_acknowledged_at]
