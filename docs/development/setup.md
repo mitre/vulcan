@@ -49,15 +49,54 @@ yarn install
 
 ### 3. Database Setup
 
+#### Option A: Docker PostgreSQL (Recommended)
+
 ```bash
-# Create database
-rails db:create
+# Start PostgreSQL container
+docker compose up db -d
 
-# Run migrations
-rails db:migrate
+# Wait for healthy status
+docker compose ps db   # should show "healthy"
 
-# Seed development data (optional)
-rails db:seed
+# Create and migrate development database
+bin/rails db:prepare
+
+# Seed development data (optional — creates demo users, projects, SRGs, STIGs)
+bin/rails db:seed
+```
+
+#### Option B: Local PostgreSQL
+
+```bash
+# macOS
+brew install postgresql@18
+brew services start postgresql@18
+
+# Create and migrate
+bin/rails db:prepare
+bin/rails db:seed
+```
+
+#### Setting Up Parallel Test Databases
+
+`parallel_rspec` uses one database per CPU core. Set them up once after initial database creation:
+
+```bash
+# 1. Create parallel test databases (vulcan_vue_test, vulcan_vue_test2, ..., vulcan_vue_testN)
+bundle exec rake parallel:create
+
+# 2. Migrate the primary test database (loads schema_migrations)
+bin/rails db:migrate RAILS_ENV=test
+
+# 3. Load schema into all parallel test databases
+bundle exec rake parallel:load_schema
+```
+
+After schema changes (new migrations), re-sync parallel databases:
+
+```bash
+bin/rails db:migrate RAILS_ENV=test
+bundle exec rake parallel:load_schema
 ```
 
 ### 4. Start Development Server
@@ -406,28 +445,58 @@ rails server -p 3001
 
 ## Docker Development
 
-### Using Docker Compose
+### Database-Only (Recommended for Local Dev)
+
+Use Docker for PostgreSQL while running Rails natively for faster iteration:
 
 ```bash
-# Build containers
-docker compose build
+# Start PostgreSQL only
+docker compose up db -d
 
-# Start services
-docker compose up
+# Verify healthy
+docker compose ps db
 
-# Run migrations
-docker compose run web rails db:create db:migrate
+# Set up databases (dev + parallel test)
+bin/rails db:prepare
+bundle exec rake parallel:create
+bin/rails db:migrate RAILS_ENV=test
+bundle exec rake parallel:load_schema
 
-# Access container
-docker compose exec web bash
+# Run Rails natively
+foreman start -f Procfile.dev
 ```
 
-### Docker Development Tips
+### Full Docker Stack (Production-Like Testing)
 
-1. Use volumes for code hot-reload
-2. Separate services for web, db, redis
-3. Use .dockerignore for faster builds
-4. Override configs with docker-compose.override.yml
+```bash
+# Generate secrets
+./setup-docker-secrets.sh
+
+# Build and start everything
+docker compose -f docker-compose.prod.yml up --build
+
+# Database setup runs automatically via docker-entrypoint
+# First user becomes admin when VULCAN_FIRST_USER_ADMIN=true (default in Docker)
+```
+
+### Multi-Project Setup
+
+When running multiple MITRE projects simultaneously, assign unique ports to avoid conflicts. See `docs/development/port-registry.md` for port assignments.
+
+```bash
+# Example .env for vulcan-v2.x alongside other projects
+DATABASE_PORT=5435
+POSTGRES_PORT=5435
+PORT=3000
+DATABASE_GSSENCMODE=disable
+```
+
+### Docker Tips
+
+1. Use `docker compose up db -d` (database-only) for fastest development cycle
+2. Use `.dockerignore` for faster builds (excludes docs/, downloads/, coverage/)
+3. Production image uses multi-stage build with jemalloc (~596MB)
+4. `docker-compose.prod.yml` supports Caddy or nginx reverse proxy profiles
 
 ## Performance Optimization
 

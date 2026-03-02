@@ -315,11 +315,48 @@ end
 ```yaml
 # config/database.yml
 test:
-  adapter: postgresql
-  database: vulcan_test
-  pool: 5
-  timeout: 5000
+  <<: *default
+  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
 ```
+
+`TEST_ENV_NUMBER` is set automatically by `parallel_tests` — each worker gets a suffix (blank, 2, 3, ..., N) creating databases `vulcan_vue_test`, `vulcan_vue_test2`, etc.
+
+`DB_SUFFIX` is optional, used for worktree isolation (e.g., `_v2` → `vulcan_vue_test_v2`).
+
+### Initial Setup (One-Time)
+
+```bash
+# 1. Ensure PostgreSQL is running (Docker or local)
+docker compose up db -d
+
+# 2. Create all parallel test databases
+bundle exec rake parallel:create
+
+# 3. Migrate the primary test database
+bin/rails db:migrate RAILS_ENV=test
+
+# 4. Load schema into all parallel databases
+bundle exec rake parallel:load_schema
+```
+
+### After Schema Changes
+
+When you add new migrations, re-sync the parallel databases:
+
+```bash
+bin/rails db:migrate RAILS_ENV=test
+bundle exec rake parallel:load_schema
+```
+
+### Key Rake Tasks
+
+| Task | Purpose |
+|---|---|
+| `parallel:create` | Create parallel test databases |
+| `parallel:load_schema` | Load `db/schema.rb` into all parallel databases |
+| `parallel:prepare` | Dump + load schema (requires migrated primary DB) |
+| `parallel:migrate` | Run pending migrations on all parallel databases |
+| `parallel:drop` | Drop all parallel test databases |
 
 ### Database Cleaner Setup
 
