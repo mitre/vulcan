@@ -72,7 +72,7 @@ Vulcan provides multiple ways to create the initial admin user. These are evalua
 |----------|-------------|---------|---------|
 | `VULCAN_ADMIN_EMAIL` | Email for auto-created admin user | - | `admin@example.com` |
 | `VULCAN_ADMIN_PASSWORD` | Password for auto-created admin user | Auto-generated | `SecurePass123!` |
-| `VULCAN_FIRST_USER_ADMIN` | First registered user becomes admin | `true` (Docker) | `true` or `false` |
+| `VULCAN_FIRST_USER_ADMIN` | First registered user becomes admin | `true` | `true` or `false` |
 
 **Priority Order:**
 1. **Environment Variables** (Most Secure): Set `VULCAN_ADMIN_EMAIL` and optionally `VULCAN_ADMIN_PASSWORD`
@@ -89,7 +89,7 @@ Vulcan provides multiple ways to create the initial admin user. These are evalua
    - Interactive terminal prompt
    - Best for: Traditional deployments, manual setup
 
-**Docker Default**: In Docker deployments, `VULCAN_FIRST_USER_ADMIN=true` is the default, allowing
+**Default**: `VULCAN_FIRST_USER_ADMIN=true` in all environments (set to `false` in production to require explicit admin creation), allowing
 immediate use after `docker compose up`. For production, disable this and use `VULCAN_ADMIN_EMAIL`.
 
 **Security Note**: The first-user-admin feature uses PostgreSQL advisory locks to prevent race
@@ -265,6 +265,15 @@ Lock accounts after consecutive failed login attempts. Enabled by default.
 - `both` — either method works (recommended, ensures unlock even without SMTP)
 
 Administrators can also manually unlock accounts from the Users page (`/users`).
+
+## Session Limits
+
+Per-user concurrent session limits (AC-10).
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_SESSION_LIMITS_ENABLED` | Enable per-user session limits | `true` | `false` |
+| `VULCAN_MAX_CONCURRENT_SESSIONS` | Maximum concurrent sessions per user | `1` | `3` |
 
 ## Password Policy
 

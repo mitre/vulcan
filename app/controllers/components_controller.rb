@@ -239,7 +239,9 @@ class ComponentsController < ApplicationController
   end
 
   def based_on_same_srg
-    srg_title = Component.find(params[:id]).based_on.title
+    return head :not_found unless @component&.based_on
+
+    srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.pluck(:id)
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
@@ -269,8 +271,8 @@ class ComponentsController < ApplicationController
 
   def history
     history = []
-    components = Project.find_by(id: params[:project_id]).components.where(name: params[:name])
-                        .where.not(version: nil).where.not(release: nil).order(:version, :release)
+    components = @project.components.where(name: params[:name])
+                         .where.not(version: nil).where.not(release: nil).order(:version, :release)
     components.each_with_index do |component, idx|
       # nothing to compare first component to
       unless idx.zero?
