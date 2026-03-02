@@ -243,12 +243,13 @@ Display a blocking consent modal that users must acknowledge before accessing th
 | `VULCAN_CONSENT_VERSION` | Version string for consent (increment to re-prompt) | `1` | `2` |
 | `VULCAN_CONSENT_TITLE` | Modal title | `Terms of Use` | `Acceptable Use Policy` |
 | `VULCAN_CONSENT_CONTENT` | Modal body content (supports **Markdown**) | `""` | `By using this system you agree to the **AUP**.` |
+| `VULCAN_CONSENT_TTL` | How long consent acknowledgment remains valid. `0` = per-session (re-prompt on every new session, DoD compliant). Accepts durations: `1h`, `30m`, `24h`. | `0` | `24h` |
 
 **Consent Content Formatting**: The `VULCAN_CONSENT_CONTENT` variable supports full [Markdown](https://www.markdownguide.org/basic-syntax/) formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. The banner text (`VULCAN_BANNER_TEXT`) is plain text only — no formatting is applied.
 
-## Account Lockout (STIG AC-07)
+## Account Lockout
 
-Lock accounts after consecutive failed login attempts. Enabled by default with STIG AC-07 compliant settings.
+Lock accounts after consecutive failed login attempts. Enabled by default.
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|

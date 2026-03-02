@@ -240,12 +240,13 @@ VULCAN_BANNER_TEXT_COLOR=#ffffff
 
 ## Configure Consent Modal
 
-Display a blocking consent/terms-of-use modal that users must acknowledge before accessing the application. Acknowledgment is stored in the browser's localStorage. Incrementing the version re-prompts all users — useful when policies change.
+Display a blocking consent/terms-of-use modal that users must acknowledge before accessing the application. Acknowledgment is tracked server-side in the Rails session (AC-8 compliant). On logout, session timeout, or browser close, the consent state is cleared and the modal re-appears. Incrementing the version re-prompts all users — useful when policies change.
 
 - **enabled:** Show the consent modal on page load. `(ENV: VULCAN_CONSENT_ENABLED)(default: false)`
 - **version:** Version identifier for the consent terms. Increment this value to force all users to re-acknowledge. `(ENV: VULCAN_CONSENT_VERSION)(default: 1)`
 - **title:** Modal dialog title. `(ENV: VULCAN_CONSENT_TITLE)(default: Terms of Use)`
 - **content:** Modal body content. Supports **Markdown** formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. `(ENV: VULCAN_CONSENT_CONTENT)(default: "")`
+- **ttl:** How long consent acknowledgment remains valid within a session. `0` = per-session, re-prompt every login (DoD default). Accepts durations like `24h`, `12h`, `30m`. `(ENV: VULCAN_CONSENT_TTL)(default: 0)`
 
 ### Example
 
@@ -262,10 +263,15 @@ By accessing this system you agree to the following:
 3. **No expectation of privacy** — on this government system
 
 > Contact your administrator with questions."
+VULCAN_CONSENT_TTL=0
 ```
 
 ::: tip Version-Based Re-prompting
-When you update your terms, increment `VULCAN_CONSENT_VERSION` (e.g., from `1` to `2`). All users will see the modal again on their next visit, regardless of prior acknowledgment.
+When you update your terms, increment `VULCAN_CONSENT_VERSION` (e.g., from `1` to `2`). All users will see the modal again on their next login, regardless of prior acknowledgment.
+:::
+
+::: tip Consent TTL (AC-8)
+`VULCAN_CONSENT_TTL=0` (default) requires consent every session — DoD compliant. Set to `24h` or `12h` for less strict environments where re-prompting on every login is not required.
 :::
 
 ## Configure Session Limits

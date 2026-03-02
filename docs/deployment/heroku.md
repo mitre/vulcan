@@ -125,9 +125,10 @@ heroku config:set VULCAN_CONSENT_ENABLED=true
 heroku config:set VULCAN_CONSENT_VERSION=1
 heroku config:set VULCAN_CONSENT_TITLE="Acceptable Use Policy"
 heroku config:set VULCAN_CONSENT_CONTENT="By using this system you agree to the **acceptable use policy**."
+heroku config:set VULCAN_CONSENT_TTL=0
 ```
 
-Consent content supports Markdown. Increment `VULCAN_CONSENT_VERSION` to re-prompt all users after policy changes.
+Consent acknowledgment is tracked server-side in the Rails session (AC-8 compliant). `VULCAN_CONSENT_TTL=0` means consent is required every session (DoD default). Set to `24h` or `12h` for less strict environments. Consent content supports Markdown. Increment `VULCAN_CONSENT_VERSION` to re-prompt all users after policy changes.
 
 See [Configuration](/getting-started/configuration#classification-banner) for the full DoD color table.
 

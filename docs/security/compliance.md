@@ -106,7 +106,7 @@ Vulcan provides three complementary mechanisms:
 
 1. **Welcome Text** — Customizable text on the login page via `VULCAN_WELCOME_TEXT`
 2. **Classification Banner** — Persistent top/bottom banner on every page showing system sensitivity level (e.g., UNCLASSIFIED, CUI). Configured via `VULCAN_BANNER_ENABLED`, `VULCAN_BANNER_TEXT`, `VULCAN_BANNER_BACKGROUND_COLOR`, `VULCAN_BANNER_TEXT_COLOR`. Server-rendered (works without JavaScript).
-3. **Consent Modal** — Blocks access until user acknowledges terms of use. Supports Markdown content. Version-based re-prompting via localStorage. Configured via `VULCAN_CONSENT_ENABLED`, `VULCAN_CONSENT_VERSION`, `VULCAN_CONSENT_TITLE`, `VULCAN_CONSENT_MARKDOWN`.
+3. **Consent Modal** — Blocks access until user acknowledges terms of use. Supports Markdown content. Acknowledgment is tracked server-side in the Rails session (not browser localStorage), tying consent to the authentication lifecycle per AC-8. Configured via `VULCAN_CONSENT_ENABLED`, `VULCAN_CONSENT_VERSION`, `VULCAN_CONSENT_TITLE`, `VULCAN_CONSENT_CONTENT`, `VULCAN_CONSENT_TTL`.
 
 **Configuration:**
 ```bash
@@ -120,7 +120,8 @@ export VULCAN_BANNER_TEXT_COLOR="#ffffff"
 export VULCAN_CONSENT_ENABLED=true
 export VULCAN_CONSENT_VERSION=1
 export VULCAN_CONSENT_TITLE="Terms of Use"
-export VULCAN_CONSENT_MARKDOWN="By using this system you agree to the **acceptable use policy**."
+export VULCAN_CONSENT_CONTENT="By using this system you agree to the **acceptable use policy**."
+export VULCAN_CONSENT_TTL=0    # 0 = per-session (DoD default)
 
 # Welcome Text (login page)
 export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. All activities are monitored."

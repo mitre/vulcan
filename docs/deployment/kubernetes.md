@@ -225,6 +225,8 @@ spec:
         #   value: "Acceptable Use Policy"
         # - name: VULCAN_CONSENT_CONTENT
         #   value: "By using this system you agree to the **acceptable use policy**."
+        # - name: VULCAN_CONSENT_TTL
+        #   value: "0"    # 0 = per-session (DoD default), or e.g. 24h, 12h
 
         # LDAP Configuration (if using)
         - name: VULCAN_ENABLE_LDAP
