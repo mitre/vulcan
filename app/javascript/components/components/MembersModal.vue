@@ -263,31 +263,25 @@ export default {
     resetAddForm() {
       this.newMember = { userId: null, role: "viewer" };
     },
-    addMember() {
+    async addMember() {
       if (!this.newMember.userId) return;
 
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = "/memberships";
-
-      const fields = {
-        "membership[user_id]": this.newMember.userId,
-        "membership[role]": this.newMember.role,
-        "membership[membership_type]": "Component",
-        "membership[membership_id]": this.component.id,
-        authenticity_token: this.authenticityToken,
-      };
-
-      for (const [name, value] of Object.entries(fields)) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
+      try {
+        await axios.post("/memberships.json", {
+          membership: {
+            user_id: this.newMember.userId,
+            role: this.newMember.role,
+            membership_type: "Component",
+            membership_id: this.component.id,
+          },
+        });
+        this.resetAddForm();
+        this.$bvModal.hide(this.addMemberModalId);
+        this.$emit("membershipsUpdated");
+      } catch (error) {
+        const message = error.response?.data?.toast?.message || "Could not add member.";
+        this.alert(message, "danger");
       }
-
-      document.body.appendChild(form);
-      form.submit();
     },
     async updateRole(member) {
       try {

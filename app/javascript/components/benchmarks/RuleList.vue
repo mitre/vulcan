@@ -97,7 +97,8 @@ export default {
     },
     initialSelectedRule: {
       type: Object,
-      required: true,
+      required: false,
+      default: () => null,
     },
     type: {
       type: String,
@@ -167,6 +168,11 @@ export default {
         const comparison = aVal.localeCompare(bVal);
         return this.sortOrder === "asc" ? comparison : -comparison;
       });
+    },
+  },
+  watch: {
+    initialSelectedRule(newRule) {
+      this.selectedRule = newRule;
     },
   },
   methods: {

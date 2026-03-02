@@ -87,7 +87,7 @@
                 <div class="diff-old rounded px-2 py-1 mt-1 small text-monospace">
                   <span class="diff-prefix">&minus;</span>
                   <span
-                    v-for="(seg, i) in diffWords(change.from, change.to).old"
+                    v-for="(seg, i) in precomputedDiffs[data.item.rule_id][field].old"
                     :key="'o' + i"
                     :class="{ 'diff-highlight-old': seg.changed }"
                     >{{ seg.text }}</span
@@ -96,7 +96,7 @@
                 <div class="diff-new rounded px-2 py-1 mt-1 small text-monospace">
                   <span class="diff-prefix">+</span>
                   <span
-                    v-for="(seg, i) in diffWords(change.from, change.to).new"
+                    v-for="(seg, i) in precomputedDiffs[data.item.rule_id][field].new"
                     :key="'n' + i"
                     :class="{ 'diff-highlight-new': seg.changed }"
                     >{{ seg.text }}</span
@@ -289,6 +289,17 @@ export default {
         srg_id: item.srg_id,
         changes: item.changes,
       }));
+    },
+    // Precompute LCS diffs to avoid O(m*n) computation per render cycle in v-for
+    precomputedDiffs() {
+      const cache = {};
+      this.updatedTableItems.forEach((item) => {
+        cache[item.rule_id] = {};
+        Object.entries(item.changes).forEach(([field, change]) => {
+          cache[item.rule_id][field] = this.diffWords(change.from, change.to);
+        });
+      });
+      return cache;
     },
   },
   methods: {

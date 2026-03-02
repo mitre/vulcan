@@ -109,7 +109,7 @@
 </template>
 
 <script>
-import { toRef } from "vue";
+import { computed } from "vue";
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -177,10 +177,9 @@ export default {
     },
   },
   setup(props) {
-    // Create reactive reference to rules from component
-    const component = props.initialComponentState;
-    const rulesRef = toRef(component, "rules");
-    const componentId = component.id;
+    // Use computed to derive rules reactively — toRef on a plain object is not reactive in Vue 2.7
+    const componentId = props.initialComponentState.id;
+    const rulesRef = computed(() => props.initialComponentState.rules || []);
 
     // Use composables
     const { selectedRuleId, openRuleIds, selectedRule, selectRule, deselectRule } =

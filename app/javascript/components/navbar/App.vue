@@ -80,7 +80,9 @@
 </template>
 
 <script>
+import axios from "axios";
 import semver from "semver";
+import FormMixinVue from "../../mixins/FormMixin.vue";
 import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
 import ConsentModal from "../shared/ConsentModal.vue";
@@ -90,6 +92,7 @@ import { EVENTS, listen } from "../../utils/notificationEvents";
 export default {
   name: "Navbar",
   components: { NavbarItem, GlobalSearch, ConsentModal },
+  mixins: [FormMixinVue],
   props: {
     navigation: {
       type: Array,
@@ -183,26 +186,14 @@ export default {
           this.latestRelease = "";
         });
     },
-    signOut() {
-      const csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content");
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = this.sign_out_path;
-
-      const methodInput = document.createElement("input");
-      methodInput.type = "hidden";
-      methodInput.name = "_method";
-      methodInput.value = "delete";
-      form.appendChild(methodInput);
-
-      const tokenInput = document.createElement("input");
-      tokenInput.type = "hidden";
-      tokenInput.name = "authenticity_token";
-      tokenInput.value = csrfToken;
-      form.appendChild(tokenInput);
-
-      document.body.appendChild(form);
-      form.submit();
+    async signOut() {
+      try {
+        await axios.delete(this.sign_out_path);
+      } catch {
+        // Sign-out may return a redirect (302) which axios treats as an error.
+        // Either way, navigate to the root to complete sign-out.
+      }
+      window.location.assign("/");
     },
     checkUpdateAvailable() {
       if (!this.latestRelease || this.latestRelease.trim() === "") return false;
