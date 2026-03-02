@@ -171,6 +171,7 @@ export default {
     },
     canManageSectionLocks() {
       if (this.readOnly || this.rule.locked || this.rule.review_requestor_id) return false;
+      if (this.rule.status === "Not Yet Determined") return false;
       return ["admin", "reviewer"].includes(this.effectivePermissions);
     },
   },

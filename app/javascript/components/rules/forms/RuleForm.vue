@@ -528,6 +528,16 @@ export default {
     status_text: function () {
       return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
     },
+    nydTooltip() {
+      if (this.rule.status !== "Not Yet Determined") return null;
+      return (
+        "Fields are locked while status is <strong>Not Yet Determined</strong>. " +
+        "Change the status to <em>Applicable \u2013 Configurable</em>, " +
+        "<em>Applicable \u2013 Does Not Meet</em>, " +
+        "<em>Applicable \u2013 Inherently Meets</em>, or " +
+        "<em>Not Applicable</em> to unlock."
+      );
+    },
     tooltips: function () {
       return {
         status:
@@ -537,7 +547,7 @@ export default {
         )
           ? null
           : "Explain the rationale behind selecting one of the above statuses",
-        title: "Describe the vulnerability for this control",
+        title: this.nydTooltip || "Describe the vulnerability for this control",
         version: null,
         rule_severity:
           "CAT I (High): a grave or critical problem, CAT II (Medium): a fairly serious problem, CAT III (Low): a relatively minor problem",
@@ -555,7 +565,8 @@ export default {
         fix_id: null,
         fixtext_fixref: null,
         fixtext:
-          this.rule.status === "Applicable - Configurable"
+          this.nydTooltip ||
+          (this.rule.status === "Applicable - Configurable"
             ? "Describe how to correctly configure the requirement to remediate the system vulnerability"
             : [
                   "Applicable - Does Not Meet",
@@ -563,11 +574,12 @@ export default {
                   "Not Applicable",
                 ].includes(this.rule.status)
               ? null
-              : "Explain how to fix the vulnerability discussed",
+              : "Explain how to fix the vulnerability discussed"),
         ident:
           "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",
         ident_system: null,
-        vendor_comments: "Provide context to a reviewing authority; not a published field",
+        vendor_comments:
+          this.nydTooltip || "Provide context to a reviewing authority; not a published field",
       };
     },
   },

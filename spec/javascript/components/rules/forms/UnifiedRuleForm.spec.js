@@ -543,4 +543,26 @@ describe("UnifiedRuleForm", () => {
       expect(wrapper.text()).not.toContain("Some fields are hidden");
     });
   });
+
+  // ─── NYD section locking ──────────────────────────────────
+  describe("section locking disabled for Not Yet Determined", () => {
+    // REQUIREMENT: Section lock/unlock controls should not appear when
+    // status is NYD — locking sections before determination is meaningless.
+
+    it("canManageSectionLocks is false when status is Not Yet Determined", () => {
+      wrapper = createWrapper(
+        { status: "Not Yet Determined", locked: false, review_requestor_id: null },
+        { effectivePermissions: "admin" },
+      );
+      expect(wrapper.vm.canManageSectionLocks).toBe(false);
+    });
+
+    it("canManageSectionLocks is true when status is Applicable - Configurable", () => {
+      wrapper = createWrapper(
+        { status: "Applicable - Configurable", locked: false, review_requestor_id: null },
+        { effectivePermissions: "admin" },
+      );
+      expect(wrapper.vm.canManageSectionLocks).toBe(true);
+    });
+  });
 });

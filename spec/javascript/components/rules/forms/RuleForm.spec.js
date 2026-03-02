@@ -378,4 +378,32 @@ describe("RuleForm", () => {
       expect(select.element.value).toBe("Applicable - Configurable");
     });
   });
+
+  // ─── NYD tooltip guidance ───────────────────────────────────
+  describe("Not Yet Determined tooltip guidance", () => {
+    // REQUIREMENT: When status is NYD, field tooltips should explain
+    // that the user must change status before editing those fields.
+
+    it("shows NYD guidance tooltip for title when status is NYD", () => {
+      wrapper = createWrapper({ rule: makeRule({ status: "Not Yet Determined" }) });
+      expect(wrapper.vm.tooltips.title).toContain("Change the status");
+    });
+
+    it("shows normal tooltip for title when status is not NYD", () => {
+      wrapper = createWrapper({ rule: makeRule({ status: "Applicable - Configurable" }) });
+      expect(wrapper.vm.tooltips.title).toBe("Describe the vulnerability for this control");
+    });
+
+    it("does NOT replace the status tooltip with NYD guidance", () => {
+      // Status field must always show status descriptions so user knows what to pick
+      wrapper = createWrapper({ rule: makeRule({ status: "Not Yet Determined" }) });
+      expect(wrapper.vm.tooltips.status).toContain("Configurable");
+      expect(wrapper.vm.tooltips.status).not.toContain("Change the status");
+    });
+
+    it("shows NYD guidance for fixtext when status is NYD", () => {
+      wrapper = createWrapper({ rule: makeRule({ status: "Not Yet Determined" }) });
+      expect(wrapper.vm.tooltips.fixtext).toContain("Change the status");
+    });
+  });
 });
