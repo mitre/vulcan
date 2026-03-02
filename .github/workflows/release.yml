@@ -1,37 +1,66 @@
 name: Release
 
-# Release-please creates/updates a "Release PR" from conventional commits.
-# When the Release PR is merged, it tags + publishes a GitHub Release.
-# The CI workflow (ci.yml) then builds and pushes Docker images on the
-# `release: [published]` event.
+# Tag-triggered release workflow.
+# Push a semver tag to create a GitHub Release with auto-generated changelog.
+# The CI workflow (ci.yml) handles Docker builds on `release: [published]`.
 #
 # Flow:
-#   1. Merge PRs with conventional commits (feat:, fix:, etc.)
-#   2. release-please maintains a Release PR with changelog
-#   3. Merge the Release PR when ready to release
-#   4. GitHub Release created → CI builds Docker image → pushed to DockerHub
+#   1. git tag v2.3.1 && git push origin v2.3.1
+#   2. This workflow generates changelog via git-cliff (Keep a Changelog format)
+#   3. Creates GitHub Release with changelog as body
+#   4. ci.yml triggers on release → runs tests → builds Docker image
 #
-# See: https://github.com/googleapis/release-please-action
+# See: https://git-cliff.org, https://keepachangelog.com
 
 on:
   push:
-    branches: [master]
+    tags:
+      - 'v[0-9]+.*'
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  release-please:
+  release:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
     steps:
-      - uses: googleapis/release-please-action@v4
-        id: release
+      - uses: actions/checkout@v4
         with:
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
+          fetch-depth: 0  # Full history needed for changelog generation
+
+      - name: Generate changelog for this release
+        uses: orhun/git-cliff-action@v4
+        id: changelog
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGES.md
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.changelog.outputs.content }}
+          generate_release_notes: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update CHANGELOG.md in repo
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit CHANGELOG.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || git commit -m "docs: update CHANGELOG.md for ${{ github.ref_name }}"
+          git push origin HEAD:master

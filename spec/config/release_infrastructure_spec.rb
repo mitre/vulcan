@@ -7,38 +7,43 @@ RSpec.describe 'release infrastructure' do
   # Version must be consistent across all sources. Docker builds trigger
   # on published GitHub releases (handled by ci.yml).
 
-  describe 'release-please configuration' do
-    it 'release-please-config.json exists and is valid JSON' do
-      config_path = Rails.root.join('release-please-config.json')
+  describe 'release workflow' do
+    let(:workflow) { Rails.root.join('.github/workflows/release.yml').read }
+
+    it 'triggers on semver tag push' do
+      expect(workflow).to match(/push:.*tags:.*v\[0-9\]/m),
+                          'release workflow must trigger on v* tag push'
+    end
+
+    it 'uses git-cliff for changelog generation' do
+      expect(workflow).to include('git-cliff-action'),
+                          'release workflow must use git-cliff for Keep a Changelog format'
+    end
+
+    it 'creates a GitHub Release' do
+      expect(workflow).to match(/action-gh-release|createRelease/),
+                          'release workflow must create a GitHub Release'
+    end
+  end
+
+  describe 'changelog configuration' do
+    it 'cliff.toml exists with Keep a Changelog sections' do
+      config_path = Rails.root.join('cliff.toml')
       expect(config_path).to exist
-      config = JSON.parse(config_path.read)
-      expect(config).to have_key('packages')
-    end
-
-    it '.release-please-manifest.json exists with current version' do
-      manifest_path = Rails.root.join('.release-please-manifest.json')
-      expect(manifest_path).to exist
-      manifest = JSON.parse(manifest_path.read)
-      expect(manifest['.']).to eq(Vulcan::VERSION)
-    end
-
-    it 'release workflow exists and uses release-please-action' do
-      workflow = Rails.root.join('.github/workflows/release.yml')
-      expect(workflow).to exist
-      content = workflow.read
-      expect(content).to include('googleapis/release-please-action')
+      content = config_path.read
+      expect(content).to include('Added')
+      expect(content).to include('Fixed')
+      expect(content).to include('Keep a Changelog')
     end
   end
 
   describe 'version consistency' do
-    it 'VERSION file, package.json, manifest, and Vulcan::VERSION all match' do
+    it 'VERSION file, package.json, and Vulcan::VERSION all match' do
       version_file = Rails.root.join('VERSION').read.strip.delete_prefix('v')
       package_json = JSON.parse(Rails.root.join('package.json').read)['version']
-      manifest = JSON.parse(Rails.root.join('.release-please-manifest.json').read)['.']
 
       expect(version_file).to eq(Vulcan::VERSION), 'VERSION file mismatch'
       expect(package_json).to eq(Vulcan::VERSION), 'package.json mismatch'
-      expect(manifest).to eq(Vulcan::VERSION), '.release-please-manifest.json mismatch'
     end
   end
 
