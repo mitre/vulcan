@@ -12,32 +12,44 @@
 # - Small datasets (< 1000 rows): Minimal difference
 # - Large datasets (10,000+ rows): 10-100x speedup for ILIKE queries
 #
+# Uses disable_ddl_transaction! + algorithm: :concurrently to avoid
+# exclusive write locks on large tables during deployment.
+#
 class AddTrigramIndexesForSearch < ActiveRecord::Migration[7.2]
+  disable_ddl_transaction!
+
   def up
     # Enable pg_trgm extension if not already enabled
     enable_extension 'pg_trgm' unless extension_enabled?('pg_trgm')
 
     # Projects - searched by name
     add_index :projects, :name, using: :gin, opclass: :gin_trgm_ops,
-              name: 'index_projects_on_name_trigram'
+              name: 'index_projects_on_name_trigram',
+              algorithm: :concurrently, if_not_exists: true
 
     # Components - searched by name, prefix
     add_index :components, :name, using: :gin, opclass: :gin_trgm_ops,
-              name: 'index_components_on_name_trigram'
+              name: 'index_components_on_name_trigram',
+              algorithm: :concurrently, if_not_exists: true
     add_index :components, :prefix, using: :gin, opclass: :gin_trgm_ops,
-              name: 'index_components_on_prefix_trigram'
+              name: 'index_components_on_prefix_trigram',
+              algorithm: :concurrently, if_not_exists: true
 
     # STIGs - searched by name, title
     add_index :stigs, :name, using: :gin, opclass: :gin_trgm_ops,
-              name: 'index_stigs_on_name_trigram'
+              name: 'index_stigs_on_name_trigram',
+              algorithm: :concurrently, if_not_exists: true
     add_index :stigs, :title, using: :gin, opclass: :gin_trgm_ops,
-              name: 'index_stigs_on_title_trigram'
+              name: 'index_stigs_on_title_trigram',
+              algorithm: :concurrently, if_not_exists: true
 
     # SRGs - searched by name, title
     add_index :security_requirements_guides, :name, using: :gin, opclass: :gin_trgm_ops,
-              name: 'index_srgs_on_name_trigram'
+              name: 'index_srgs_on_name_trigram',
+              algorithm: :concurrently, if_not_exists: true
     add_index :security_requirements_guides, :title, using: :gin, opclass: :gin_trgm_ops,
-              name: 'index_srgs_on_title_trigram'
+              name: 'index_srgs_on_title_trigram',
+              algorithm: :concurrently, if_not_exists: true
   end
 
   def down
