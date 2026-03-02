@@ -1,55 +1,37 @@
-name: Create Release Draft
+name: Release
+
+# Release-please creates/updates a "Release PR" from conventional commits.
+# When the Release PR is merged, it tags + publishes a GitHub Release.
+# The CI workflow (ci.yml) then builds and pushes Docker images on the
+# `release: [published]` event.
+#
+# Flow:
+#   1. Merge PRs with conventional commits (feat:, fix:, etc.)
+#   2. release-please maintains a Release PR with changelog
+#   3. Merge the Release PR when ready to release
+#   4. GitHub Release created → CI builds Docker image → pushed to DockerHub
+#
+# See: https://github.com/googleapis/release-please-action
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [master]
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  create-draft:
+  release-please:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Get current release version
-        id: current_version
-        uses: actions/github-script@v7
+      - uses: googleapis/release-please-action@v4
+        id: release
         with:
-          script: |
-            const repo = context.repo;
-            try {
-              const latestRelease = await github.rest.repos.getLatestRelease(repo);
-              return latestRelease.data.tag_name;
-            } catch (error) {
-              if (error.status === 404) {
-                console.log('No releases found');
-                return 'v2.0.0';
-              }
-              throw error;
-            }
-
-      - name: Calculate next release version
-        id: next_version
-        run: |
-          CURRENT_VERSION="${{ steps.current_version.outputs.result }}"
-          CURRENT_VERSION=$(echo $CURRENT_VERSION | tr -d '"')
-          IFS='.' read -ra VERSION_PARTS <<< "${CURRENT_VERSION:1}"
-          MAJOR=${VERSION_PARTS[0]}
-          MINOR=${VERSION_PARTS[1]}
-          PATCH=${VERSION_PARTS[2]}
-          PATCH=$((PATCH + 1))
-          echo "NEW_VERSION=v${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_ENV
-
-      - name: Create release draft
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.repos.createRelease({
-              ...context.repo,
-              tag_name: process.env.NEW_VERSION,
-              name: `vulcan ${process.env.NEW_VERSION}`,
-              draft: true,
-            });
-            console.log(`Created draft release: ${process.env.NEW_VERSION}`);
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
