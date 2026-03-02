@@ -146,11 +146,19 @@ Access the application at `http://localhost:3000`
 ### Running Tests
 
 ```bash
-# Run all tests
-bundle exec rspec
+# Run full backend suite (parallel — 3-4x faster than serial)
+bundle exec parallel_rspec spec/
 
 # Run specific test file
 bundle exec rspec spec/models/user_spec.rb
+
+# Run frontend tests
+yarn test:unit
+
+# IMPORTANT: After running db:migrate, sync all parallel test databases.
+# Parallel tests use separate databases (one per CPU core). New migrations
+# only apply to the primary test DB — parallel:prepare propagates to all.
+bundle exec rake parallel:prepare
 
 # Run linters
 bundle exec rubocop --autocorrect-all
