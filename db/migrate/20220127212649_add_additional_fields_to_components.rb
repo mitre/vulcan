@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddAdditionalFieldsToComponents < ActiveRecord::Migration[6.1]
   def change
     rename_column :components, :version, :name

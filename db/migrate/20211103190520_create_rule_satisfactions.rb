@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateRuleSatisfactions < ActiveRecord::Migration[6.1]
   def change
     create_table :rule_satisfactions, id: false do |t|

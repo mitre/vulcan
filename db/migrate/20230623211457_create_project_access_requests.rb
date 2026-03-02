@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateProjectAccessRequests < ActiveRecord::Migration[6.1]
   def change
     create_table :project_access_requests do |t|

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateComponentMetadataTable < ActiveRecord::Migration[6.1]
   def change
     create_table :component_metadata do |t|

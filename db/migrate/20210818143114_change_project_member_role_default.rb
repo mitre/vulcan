@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ChangeProjectMemberRoleDefault < ActiveRecord::Migration[6.1]
   def up
     change_column_default :project_members, :role, 'author'

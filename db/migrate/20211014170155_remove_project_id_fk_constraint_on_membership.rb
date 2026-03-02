@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class RemoveProjectIdFkConstraintOnMembership < ActiveRecord::Migration[6.1]
   def change
     # This was a FK left behind from when ProjectMembers referenced only projects

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CacheRuleCountAndAdminInfoOnComponents < ActiveRecord::Migration[6.1]
   def change
     add_column :components, :rules_count, :integer, default: 0
