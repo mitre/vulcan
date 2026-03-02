@@ -282,6 +282,7 @@ class ApplicationController < ActionController::Base
     return unless user_signed_in? && current_user.admin? && Settings.lockout&.enabled
 
     @locked_users = User.where.not(locked_at: nil)
+                        .limit(100)
                         .select(:id, :name, :email)
                         .as_json(only: %i[id name email])
   end

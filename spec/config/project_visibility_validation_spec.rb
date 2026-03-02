@@ -13,7 +13,7 @@ RSpec.describe 'project_visibility param validation' do
 
   it 'validates project_visibility against allowed values before use' do
     # Must not pass raw params directly to Project.create — needs allowlist check
-    expect(controller).to match(/Project\.visibilities\.keys|VALID_VISIBILITIES|visibilities\.include/),
-                          'project_visibility must be validated against Project.visibilities.keys before assignment'
+    expect(controller).to match(/Project\.visibilities\.(keys|key\?|include)|VALID_VISIBILITIES/),
+                          'project_visibility must be validated against Project.visibilities before assignment'
   end
 end

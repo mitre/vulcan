@@ -19,7 +19,7 @@ module Api
 
     # Override Devise's authentication failure behavior
     # Return 401 JSON instead of redirecting to login page
-    def authenticate_user!(*args)
+    def authenticate_user!(*)
       return head :unauthorized unless user_signed_in?
 
       super

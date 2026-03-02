@@ -234,7 +234,7 @@ class UsersController < ApplicationController
     lowers = Array.new(2) { ('a'..'z').to_a.sample(random: SecureRandom) }.join
     digits = Array.new(2) { ('0'..'9').to_a.sample(random: SecureRandom) }.join
     specials = Array.new(2) { '!@#$%^&*()_+-='.chars.sample(random: SecureRandom) }.join
-    "#{base}#{uppers}#{lowers}#{digits}#{specials}"
+    "#{base}#{uppers}#{lowers}#{digits}#{specials}".chars.shuffle(random: SecureRandom).join
   end
 
   def generate_reset_url(user)

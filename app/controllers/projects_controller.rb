@@ -248,7 +248,16 @@ class ProjectsController < ApplicationController
     dry_run = params[:dry_run] == 'true'
     include_reviews = params[:include_reviews] != 'false'
     include_memberships = params[:include_memberships] == 'true'
-    component_filter = params[:component_filter].present? ? JSON.parse(params[:component_filter]) : nil
+    component_filter = nil
+    if params[:component_filter].present?
+      begin
+        component_filter = JSON.parse(params[:component_filter])
+      rescue JSON::ParserError
+        render json: { toast: { title: 'Invalid request', message: 'component_filter must be valid JSON', variant: 'danger' } },
+               status: :bad_request
+        return
+      end
+    end
 
     result = Import::JsonArchiveImporter.new(
       zip_file: file,
