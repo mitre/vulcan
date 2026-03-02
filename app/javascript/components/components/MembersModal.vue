@@ -135,7 +135,7 @@
 
     <!-- Add Member Modal -->
     <b-modal
-      id="add-member-modal"
+      :id="addMemberModalId"
       title="Add Member"
       centered
       @ok="addMember"
@@ -159,7 +159,7 @@
 
     <!-- Remove Confirmation Modal -->
     <b-modal
-      id="remove-member-modal"
+      :id="removeMemberModalId"
       title="Remove Member"
       centered
       ok-variant="danger"
@@ -175,6 +175,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 
@@ -208,7 +209,13 @@ export default {
   },
   computed: {
     modalId() {
-      return "members-modal";
+      return `members-modal-${this.component.id}`;
+    },
+    addMemberModalId() {
+      return `add-member-modal-${this.component.id}`;
+    },
+    removeMemberModalId() {
+      return `remove-member-modal-${this.component.id}`;
     },
     modalTitle() {
       const inheritedCount = this.component.inherited_memberships?.length || 0;
@@ -251,7 +258,7 @@ export default {
   },
   methods: {
     showAddMemberModal() {
-      this.$bvModal.show("add-member-modal");
+      this.$bvModal.show(this.addMemberModalId);
     },
     resetAddForm() {
       this.newMember = { userId: null, role: "viewer" };
@@ -282,54 +289,32 @@ export default {
       document.body.appendChild(form);
       form.submit();
     },
-    updateRole(member) {
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = `/memberships/${member.id}`;
-
-      const fields = {
-        _method: "put",
-        "membership[role]": member.role,
-        authenticity_token: this.authenticityToken,
-      };
-
-      for (const [name, value] of Object.entries(fields)) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
+    async updateRole(member) {
+      try {
+        await axios.put(`/memberships/${member.id}.json`, {
+          membership: { role: member.role },
+        });
+        this.$emit("membershipsUpdated");
+      } catch (error) {
+        const message = error.response?.data?.toast?.message || "Could not update role.";
+        this.alert(message, "danger");
       }
-
-      document.body.appendChild(form);
-      form.submit();
     },
     confirmRemove(member) {
       this.memberToRemove = member;
-      this.$bvModal.show("remove-member-modal");
+      this.$bvModal.show(this.removeMemberModalId);
     },
-    removeMember() {
+    async removeMember() {
       if (!this.memberToRemove) return;
 
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = `/memberships/${this.memberToRemove.id}`;
-
-      const fields = {
-        _method: "delete",
-        authenticity_token: this.authenticityToken,
-      };
-
-      for (const [name, value] of Object.entries(fields)) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
+      try {
+        await axios.delete(`/memberships/${this.memberToRemove.id}.json`);
+        this.memberToRemove = null;
+        this.$emit("membershipsUpdated");
+      } catch (error) {
+        const message = error.response?.data?.toast?.message || "Could not remove member.";
+        this.alert(message, "danger");
       }
-
-      document.body.appendChild(form);
-      form.submit();
     },
   },
 };

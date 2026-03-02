@@ -18,7 +18,7 @@
           :active-panel="activePanel"
           :read-only="true"
           @release="confirmComponentRelease"
-          @open-members="$bvModal.show('members-modal')"
+          @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
           @spreadsheet-updated="refreshComponent"
         />

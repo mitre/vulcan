@@ -275,5 +275,18 @@ describe("ComponentCard", () => {
       expect(wrapper.emitted("deleteComponent")).toBeTruthy();
       expect(wrapper.emitted("deleteComponent")[0]).toEqual([1]);
     });
+
+    it("resets isDeleting when delete fails", async () => {
+      // REQUIREMENT: If the parent's delete operation fails, the card must
+      // exit the "Removing..." spinner state so the user can retry or cancel.
+      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper.vm.confirmDelete();
+      expect(wrapper.vm.isDeleting).toBe(true);
+
+      // Simulate parent signaling failure via resetDelete method
+      wrapper.vm.resetDelete();
+      expect(wrapper.vm.isDeleting).toBe(false);
+      expect(wrapper.vm.showDeleteConfirmation).toBe(false);
+    });
   });
 });

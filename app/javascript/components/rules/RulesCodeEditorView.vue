@@ -13,7 +13,7 @@
         :effective-permissions="effectivePermissions"
         :active-panel="activePanel"
         :read-only="false"
-        @open-members="$bvModal.show('members-modal')"
+        @open-members="$bvModal.show(`members-modal-${component.id}`)"
         @toggle-panel="togglePanel"
       />
 

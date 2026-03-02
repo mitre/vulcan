@@ -210,6 +210,10 @@ export default {
       this.isDeleting = true;
       this.$emit("deleteComponent", this.component.id);
     },
+    resetDelete() {
+      this.isDeleting = false;
+      this.showDeleteConfirmation = false;
+    },
   },
 };
 </script>

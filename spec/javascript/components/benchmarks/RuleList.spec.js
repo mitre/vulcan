@@ -309,6 +309,63 @@ describe("RuleList", () => {
   });
 
   // ==========================================
+  // SEVERITY COUNT REACTIVITY
+  // ==========================================
+  describe("severity counts update when rules prop changes", () => {
+    // REQUIREMENT: Severity counts must reflect the CURRENT rules prop,
+    // not a stale snapshot from mount time.
+    it("updates high_count when rules prop changes", async () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.high_count).toBe(1);
+
+      const newRules = [
+        ...stigRules,
+        {
+          id: 4,
+          rule_id: "SV-204000r1_rule",
+          version: "RHEL-08-010300",
+          srg_id: "SRG-OS-000500",
+          title: "Fourth",
+          rule_severity: "high",
+        },
+      ];
+      await wrapper.setProps({ rules: newRules });
+
+      expect(wrapper.vm.high_count).toBe(2);
+    });
+
+    it("updates medium_count when rules prop changes", async () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.medium_count).toBe(1);
+
+      const newRules = stigRules.filter((r) => r.rule_severity !== "medium");
+      await wrapper.setProps({ rules: newRules });
+
+      expect(wrapper.vm.medium_count).toBe(0);
+    });
+
+    it("updates low_count when rules prop changes", async () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.low_count).toBe(1);
+
+      const newRules = [
+        ...stigRules,
+        {
+          id: 5,
+          rule_id: "SV-204001r1_rule",
+          version: "RHEL-08-010400",
+          srg_id: "SRG-OS-000600",
+          title: "Fifth",
+          rule_severity: "low",
+        },
+      ];
+      await wrapper.setProps({ rules: newRules });
+
+      expect(wrapper.vm.low_count).toBe(2);
+    });
+  });
+
+  // ==========================================
   // SEVERITY FILTER
   // ==========================================
   describe("severity filtering", () => {

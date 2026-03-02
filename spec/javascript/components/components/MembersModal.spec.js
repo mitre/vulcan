@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import MembersModal from "@/components/components/MembersModal.vue";
@@ -80,8 +80,24 @@ describe("MembersModal", () => {
 
     it("exposes correct modal id for b-modal targeting", () => {
       wrapper = createWrapper();
-      // Other components use this ID to show the modal: $bvModal.show('members-modal')
-      expect(wrapper.vm.modalId).toBe("members-modal");
+      // Other components use this ID to show the modal: $bvModal.show('members-modal-41')
+      expect(wrapper.vm.modalId).toBe("members-modal-41");
+    });
+
+    it("scopes nested modal IDs to component to prevent collisions", () => {
+      // REQUIREMENT: Multiple MembersModal instances on the same page must not
+      // have ID collisions. All nested modal IDs must include component.id.
+      wrapper = createWrapper();
+      expect(wrapper.vm.addMemberModalId).toBe("add-member-modal-41");
+      expect(wrapper.vm.removeMemberModalId).toBe("remove-member-modal-41");
+    });
+
+    it("uses different IDs for different components", () => {
+      const comp99 = { ...defaultProps.component, id: 99 };
+      wrapper = createWrapper({ component: comp99 });
+      expect(wrapper.vm.modalId).toBe("members-modal-99");
+      expect(wrapper.vm.addMemberModalId).toBe("add-member-modal-99");
+      expect(wrapper.vm.removeMemberModalId).toBe("remove-member-modal-99");
     });
   });
 
@@ -192,6 +208,43 @@ describe("MembersModal", () => {
       };
       wrapper = createWrapper({ component: componentWithNullInherited });
       expect(wrapper.vm.filteredInheritedMembers).toEqual([]);
+    });
+  });
+
+  describe("membership operations use axios (not form.submit)", () => {
+    // REQUIREMENT: updateRole and removeMember must use axios for JSON requests,
+    // not form.submit() which bypasses Turbolinks and causes full page reloads.
+
+    it("updateRole does not create a DOM form", async () => {
+      wrapper = createWrapper();
+      const createElementSpy = vi.spyOn(document, "createElement");
+      const member = { id: 1, role: "author" };
+
+      try {
+        await wrapper.vm.updateRole(member);
+      } catch {
+        // axios may not be configured in test, that's ok
+      }
+
+      const formCalls = createElementSpy.mock.calls.filter((c) => c[0] === "form");
+      expect(formCalls.length).toBe(0);
+      createElementSpy.mockRestore();
+    });
+
+    it("removeMember does not create a DOM form", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.memberToRemove = { id: 1, name: "Test" };
+      const createElementSpy = vi.spyOn(document, "createElement");
+
+      try {
+        await wrapper.vm.removeMember();
+      } catch {
+        // axios may not be configured in test, that's ok
+      }
+
+      const formCalls = createElementSpy.mock.calls.filter((c) => c[0] === "form");
+      expect(formCalls.length).toBe(0);
+      createElementSpy.mockRestore();
     });
   });
 

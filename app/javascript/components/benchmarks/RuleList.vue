@@ -110,9 +110,6 @@ export default {
       RULE_TERM,
       searchText: "",
       selectedSeverity: "",
-      low_count: this.filterBySeverity("low").length,
-      medium_count: this.filterBySeverity("medium").length,
-      high_count: this.filterBySeverity("high").length,
       field: this.type === "srg" ? "srg_id" : "rule_id",
       sortOrder: "asc",
       selectedRule: this.initialSelectedRule,
@@ -120,6 +117,15 @@ export default {
     };
   },
   computed: {
+    high_count() {
+      return this.filterBySeverity("high").length;
+    },
+    medium_count() {
+      return this.filterBySeverity("medium").length;
+    },
+    low_count() {
+      return this.filterBySeverity("low").length;
+    },
     searchPlaceholder() {
       const primaryId = this.type === "stig" ? "STIG ID" : "SRG ID";
       return `Search by ${primaryId}, Rule ID, or title`;
