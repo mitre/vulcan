@@ -3,13 +3,15 @@
 require 'rails_helper'
 
 # Requirements (NIST AC-8):
-# - System must display notification BEFORE granting access
-# - Notification must be retained until user acknowledges and takes explicit action to log on
-# - Acknowledgment must be tied to the authentication session, not browser lifecycle
-# - Server-side tracking provides audit trail and prevents client-side tampering
+# - Display notification BEFORE granting access (consent blocks login page)
+# - Retain notification until user acknowledges and takes explicit action to log on
+# - Acknowledgment tied to authentication session, not browser lifecycle
+# - Server-side tracking provides audit trail and prevents tampering
 # - Optional TTL allows configurable consent duration within a session
 #
-# These tests verify the server-side consent tracking endpoint and helper.
+# Flow: login page → consent modal blocks → user clicks "I Agree" →
+# consent stored in session → user logs in → consent preserved across
+# Devise session reset → user accesses app without seeing modal again.
 
 RSpec.describe 'Consent Acknowledgment (AC-8)' do
   include ActiveSupport::Testing::TimeHelpers
@@ -20,56 +22,34 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
     Rails.application.reload_routes!
   end
 
-  # Helper to extract the consent_config JSON from the rendered HTML.
-  # The layout renders it as an HTML-escaped JSON string in a v-bind attribute.
   def consent_config_from_response
-    # Match the HTML-escaped JSON in v-bind:consent_config='...'
     match = response.body.match(/consent_config='([^']+)'/)
     return {} unless match
 
-    # Unescape HTML entities and parse JSON
-    json_str = CGI.unescapeHTML(match[1])
-    JSON.parse(json_str)
+    JSON.parse(CGI.unescapeHTML(match[1]))
   end
 
   describe 'POST /consent/acknowledge' do
-    context 'when not authenticated' do
-      it 'redirects to login' do
-        post '/consent/acknowledge'
-        expect(response).to redirect_to(new_user_session_path)
-      end
+    it 'works without authentication (consent happens before login)' do
+      post '/consent/acknowledge'
+      expect(response).to have_http_status(:ok)
     end
 
-    context 'when authenticated' do
-      before { sign_in user }
+    it 'stores acknowledgment in session' do
+      post '/consent/acknowledge'
+      # Verify by checking consent_required on next request
+      Settings.consent['enabled'] = true
+      Settings.consent['title'] = 'Terms'
+      Settings.consent['content'] = 'Agree.'
 
-      it 'returns 200 OK' do
-        post '/consent/acknowledge'
-        expect(response).to have_http_status(:ok)
-      end
+      get new_user_session_path
+      expect(consent_config_from_response['required']).to be false
 
-      it 'stores acknowledgment in session so consent is no longer required' do
-        Settings.consent['enabled'] = true
-        Settings.consent['title'] = 'Terms'
-        Settings.consent['content'] = 'Agree.'
-
-        # Before acknowledgment
-        get root_path
-        expect(consent_config_from_response['required']).to be true
-
-        # Acknowledge
-        post '/consent/acknowledge'
-
-        # After acknowledgment
-        get root_path
-        expect(consent_config_from_response['required']).to be false
-
-        Settings.consent['enabled'] = false
-      end
+      Settings.consent['enabled'] = false
     end
   end
 
-  describe 'consent_required? on login page (not signed in)' do
+  describe 'consent on login page (AC-8: before granting access)' do
     before do
       Settings.consent['enabled'] = true
       Settings.consent['title'] = 'Terms'
@@ -80,20 +60,49 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
       Settings.consent['enabled'] = false
     end
 
-    it 'sets required to false (consent only applies after authentication)' do
+    it 'requires consent on login page (blocks access before authentication)' do
+      get new_user_session_path
+      expect(consent_config_from_response['required']).to be true
+    end
+
+    it 'does not require consent after acknowledgment on login page' do
+      post '/consent/acknowledge'
       get new_user_session_path
       expect(consent_config_from_response['required']).to be false
     end
   end
 
-  describe 'consent_required? when signed in and disabled' do
+  describe 'consent preserved across login (session reset)' do
     before do
+      Settings.consent['enabled'] = true
+      Settings.consent['title'] = 'Terms'
+      Settings.consent['content'] = 'Agree.'
+    end
+
+    after do
+      Settings.consent['enabled'] = false
+    end
+
+    it 'preserves consent acknowledgment after Devise login' do
+      # Acknowledge on login page (before auth)
+      post '/consent/acknowledge'
+
+      # Log in (Devise resets session, but consent is preserved)
       sign_in user
+
+      # After login, consent should still be acknowledged
+      get root_path
+      expect(consent_config_from_response['required']).to be false
+    end
+  end
+
+  describe 'consent_required? when disabled' do
+    before do
       Settings.consent['enabled'] = false
     end
 
     it 'sets required to false' do
-      get root_path
+      get new_user_session_path
       expect(consent_config_from_response['required']).to be false
     end
   end

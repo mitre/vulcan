@@ -7,6 +7,16 @@ require 'json'
 class SessionsController < Devise::SessionsController
   include OidcDiscoveryHelper
 
+  # AC-8: Preserve consent acknowledgment across Devise's session reset.
+  # Devise calls reset_session on login (session fixation protection).
+  # We save the consent timestamp before and restore it after so the
+  # user doesn't have to acknowledge twice (once on login page, once after).
+  def create
+    consent_at = session[:consent_acknowledged_at]
+    super
+    session[:consent_acknowledged_at] = consent_at if consent_at.present?
+  end
+
   def destroy
     id_token = session[:id_token]
 
