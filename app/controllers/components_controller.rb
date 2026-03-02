@@ -240,8 +240,14 @@ class ComponentsController < ApplicationController
 
   def based_on_same_srg
     srg_title = Component.find(params[:id]).based_on.title
+    accessible_project_ids = current_user.available_projects.pluck(:id)
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
+                          .where(project_id: accessible_project_ids)
+                          .or(Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
+                                       .where.not(id: params[:id])
+                                       .where(released: true))
+                          .distinct
                           .order(:project_id)
                           .joins(:project)
                           .select('components.id, components.name, components.version, components.prefix, ' \
@@ -250,8 +256,12 @@ class ComponentsController < ApplicationController
   end
 
   def compare
-    base = Component.find_by(id: params[:id]).rules.pluck(:rule_id, :inspec_control_file).to_h
-    diff = Component.find_by(id: params[:diff_id]).rules.pluck(:rule_id, :inspec_control_file).to_h
+    base_component = Component.find_by(id: params[:id])
+    diff_component = Component.find_by(id: params[:diff_id])
+    return head :not_found unless base_component && diff_component
+
+    base = base_component.rules.pluck(:rule_id, :inspec_control_file).to_h
+    diff = diff_component.rules.pluck(:rule_id, :inspec_control_file).to_h
     render json: base.keys.union(diff.keys).sort.index_with { |rule_id|
       { base: base[rule_id], diff: diff[rule_id], changed: base[rule_id] != diff[rule_id] }
     }

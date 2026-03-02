@@ -144,7 +144,7 @@ class RulesController < ApplicationController
   end
 
   def bulk_section_locks
-    sections = params[:sections]
+    sections = Array(params[:sections])
     locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
     comment = params[:comment]
 

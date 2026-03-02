@@ -291,7 +291,7 @@ class ProjectsController < ApplicationController
     include_memberships = params[:include_memberships] == 'true'
     project_name = params[:project_name].presence
     project_description = params[:project_description].presence || ''
-    project_visibility = params[:project_visibility].presence || 'discoverable'
+    project_visibility = Project.visibilities.key?(params[:project_visibility]) ? params[:project_visibility] : 'discoverable'
 
     if dry_run
       perform_create_from_backup_dry_run(file, include_reviews, include_memberships)

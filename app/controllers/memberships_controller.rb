@@ -21,10 +21,27 @@ class MembershipsController < ApplicationController
       when 'Component'
         send_membership_notification(:create_component_membership, membership)
       end
-      redirect_to membership.membership
+
+      respond_to do |format|
+        format.html { redirect_to membership.membership }
+        format.json { render json: { toast: 'Successfully created membership.' } }
+      end
     else
-      flash.alert = "Unable to create membership. #{membership.errors.full_messages}"
-      redirect_back(fallback_location: root_path)
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to create membership. #{membership.errors.full_messages}"
+          redirect_back(fallback_location: root_path)
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not create membership.',
+              message: membership.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
   end
 

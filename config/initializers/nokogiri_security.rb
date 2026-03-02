@@ -14,7 +14,15 @@ module HappyMapperNonetPatch
         config.strict
       end
       super(doc, options)
+    elsif xml.respond_to?(:read)
+      # IO/StringIO — read to string first, then apply NONET
+      doc = Nokogiri::XML(xml.read) do |config|
+        config.nonet
+        config.strict
+      end
+      super(doc, options)
     else
+      # Already a Nokogiri document or other parsed object — pass through
       super
     end
   end

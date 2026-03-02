@@ -108,7 +108,7 @@ class ReviewsController < ApplicationController
   end
 
   def lock_sections
-    sections = params[:sections]
+    sections = Array(params[:sections])
     locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
     comment = params[:comment]
 
