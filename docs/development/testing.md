@@ -15,8 +15,10 @@ Comprehensive guide for testing Vulcan application code, including unit tests, i
 ### Quick Commands
 
 ```bash
-# Run all tests (ALWAYS use parallel_rspec — 3-4x faster than rspec)
-bundle exec parallel_rspec spec/
+# Run all tests — use one of these (caps at 8 processors for stability)
+rake spec:parallel                    # Rake task (recommended)
+bin/parallel_rspec spec/              # Binstub alternative
+bundle exec parallel_rspec spec/      # Direct (uses all CPUs — may be flaky)
 
 # Run specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -24,8 +26,11 @@ bundle exec rspec spec/models/user_spec.rb
 # Run specific test by line number
 bundle exec rspec spec/models/user_spec.rb:42
 
+# Run frontend tests
+yarn test:unit
+
 # Run tests with coverage
-COVERAGE=true bundle exec parallel_rspec spec/
+COVERAGE=true rake spec:parallel
 
 # Run only failed tests
 bundle exec rspec --only-failures
@@ -33,6 +38,11 @@ bundle exec rspec --only-failures
 # Run tests matching pattern
 bundle exec rspec -e "should validate presence"
 ```
+
+> **Why 8 processors?** On 10-core machines, running 10 parallel rspec processes
+> plus PostgreSQL causes CPU contention that produces flaky failures. The
+> `rake spec:parallel` task and `bin/parallel_rspec` binstub cap at 8, leaving
+> headroom for the database and OS.
 
 ### Test Types
 
@@ -341,12 +351,19 @@ bundle exec rake parallel:load_schema
 
 ### After Schema Changes
 
-When you add new migrations, re-sync the parallel databases:
+When you add new migrations, parallel databases are **auto-synced**:
 
 ```bash
-bin/rails db:migrate RAILS_ENV=test
-bundle exec rake parallel:load_schema
+# This automatically runs parallel:prepare after migrating
+bin/rails db:migrate
+
+# Manual sync if needed
+bundle exec rake parallel:prepare
 ```
+
+> The `lib/tasks/parallel_sync.rake` hook runs `parallel:prepare` automatically
+> after `db:migrate`, `db:reset`, and `db:schema:load`. You should never need
+> to sync manually unless something goes wrong.
 
 ### Key Rake Tasks
 
