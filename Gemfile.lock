@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/mitre/devise-security.git
   revision: 9f560ed125c096205ba9434de8feea532ce97b4c
-  branch: main
+  ref: 9f560ed125c096205ba9434de8feea532ce97b4c
   specs:
     devise-security (0.18.0)
       devise (>= 4.8.1)

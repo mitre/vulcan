@@ -26,7 +26,7 @@ gem 'devise', '~> 4.9'
 gem 'devise-encryptable'
 # Session limiting (AC-10), session tracking, and server-side session store
 gem 'activerecord-session_store'
-gem 'devise-security', github: 'mitre/devise-security', branch: 'main'
+gem 'devise-security', github: 'mitre/devise-security', ref: '9f560ed125c096205ba9434de8feea532ce97b4c'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
 # LDAP Auth
