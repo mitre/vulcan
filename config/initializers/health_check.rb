@@ -53,7 +53,8 @@ HealthCheck.setup do |config|
   # Cache health check responses for 30 seconds to reduce DB load
   config.max_age = 30
 
-  # Success/failure messages
-  config.success = 'ok'
+  # Success/failure messages — include version for deployment verification
+  require_relative '../../lib/vulcan/version'
+  config.success = "ok (vulcan #{Vulcan::VERSION})"
   config.failure = 'service unavailable'
 end

@@ -86,7 +86,6 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
 import ConsentModal from "../shared/ConsentModal.vue";
-import { version } from "../../../../package.json";
 import { EVENTS, listen } from "../../utils/notificationEvents";
 
 export default {
@@ -129,11 +128,16 @@ export default {
       required: false,
       default: () => null,
     },
+    app_version: {
+      type: String,
+      required: false,
+      default: "0.0.0",
+    },
   },
   data() {
     return {
       latestRelease: "",
-      currentVersion: version,
+      currentVersion: this.app_version,
       updateAvailable: false,
       localLockedUsers: [...this.locked_users],
       localAccessRequests: [...this.access_requests],

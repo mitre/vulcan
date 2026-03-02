@@ -15,4 +15,13 @@ RSpec.describe 'parallel test database sync hook' do
     expect(content).to match(/db:migrate.*parallel:prepare|enhance.*parallel/m),
                        'Must hook parallel:prepare after db:migrate'
   end
+
+  it 'bin/parallel_rspec binstub caps processors to prevent flaky failures' do
+    binstub = Rails.root.join('bin/parallel_rspec')
+    expect(binstub).to exist, 'bin/parallel_rspec must exist as the standard way to run parallel tests'
+
+    content = binstub.read
+    expect(content).to match(/PARALLEL_TEST_PROCESSORS/),
+                       'binstub must set PARALLEL_TEST_PROCESSORS to cap CPU usage'
+  end
 end

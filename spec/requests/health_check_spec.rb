@@ -18,7 +18,7 @@ RSpec.describe 'Health Check Endpoints' do
     it 'returns ok when database is connected' do
       get '/health_check'
       expect(response).to have_http_status(:ok)
-      expect(response.body).to eq('ok')
+      expect(response.body).to start_with('ok')
     end
   end
 
@@ -26,7 +26,7 @@ RSpec.describe 'Health Check Endpoints' do
     it 'returns ok when database is connected' do
       get '/health_check/database'
       expect(response).to have_http_status(:ok)
-      expect(response.body).to eq('ok')
+      expect(response.body).to start_with('ok')
     end
   end
 end

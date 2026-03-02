@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Wrapper for parallel_rspec that sets sane defaults.
+# Caps at 8 processors to prevent CPU contention flaky failures.
+# See: https://makandracards.com/makandra/495461
+export PARALLEL_TEST_PROCESSORS="${PARALLEL_TEST_PROCESSORS:-8}"
+exec bundle exec parallel_rspec "$@"
