@@ -98,7 +98,9 @@ VULCAN_SESSION_TIMEOUT=10m     # Required: 10 min for admin, 15 min for users
 
 #### System Use Notification (AC-08)
 
-**What's Required:** Display approved banner before system access
+**What's Required:** Display approved system use notification before granting access. Retain the notification until users acknowledge the usage conditions and take explicit action to log on.
+
+**Control Intent:** AC-8 targets the *logon interface* — the authentication event, not every HTTP request. Per the NIST SP 800-53 Rev 5 discussion: *"System use notifications can be implemented using messages or warning banners displayed before individuals log in to systems. System use notifications are used only for access via logon interfaces with human users."* The obligation is satisfied once per authentication session. Page refreshes, navigation, and tab switching within an active session do not require re-display.
 
 **How Vulcan Implements It:**
 
@@ -107,6 +109,20 @@ Vulcan provides three complementary mechanisms:
 1. **Welcome Text** — Customizable text on the login page via `VULCAN_WELCOME_TEXT`
 2. **Classification Banner** — Persistent top/bottom banner on every page showing system sensitivity level (e.g., UNCLASSIFIED, CUI). Configured via `VULCAN_BANNER_ENABLED`, `VULCAN_BANNER_TEXT`, `VULCAN_BANNER_BACKGROUND_COLOR`, `VULCAN_BANNER_TEXT_COLOR`. Server-rendered (works without JavaScript).
 3. **Consent Modal** — Blocks access until user acknowledges terms of use. Supports Markdown content. Acknowledgment is tracked server-side in the Rails session (not browser localStorage), tying consent to the authentication lifecycle per AC-8. Configured via `VULCAN_CONSENT_ENABLED`, `VULCAN_CONSENT_VERSION`, `VULCAN_CONSENT_TITLE`, `VULCAN_CONSENT_CONTENT`, `VULCAN_CONSENT_TTL`.
+
+**Consent Flow (AC-8 a/b):**
+
+1. User navigates to login page → consent modal blocks all interaction
+2. User reads notice and clicks "I Agree" → `POST /consent/acknowledge` stores timestamp in Rails session (server-side)
+3. User submits login credentials → Devise authenticates and resets session (fixation protection) → Vulcan preserves consent timestamp across the reset
+4. User accesses app → `consent_required?` returns false → no modal
+5. On logout, session timeout, or browser close → session cleared → consent required again on next visit
+
+**Per-session acknowledgment is the standard government implementation pattern.** Hard refreshes and page navigation within an active session do not re-trigger the modal because the Rails session (and the consent timestamp within it) persists across requests. The modal only re-appears when the session itself ends.
+
+::: tip Configurable TTL
+`VULCAN_CONSENT_TTL=0` (default) means per-session — consent expires when the session ends. Organizations requiring less frequent prompting can set a duration (e.g., `24h`, `8h`, `30m`). Per-session is the DoD-compliant default.
+:::
 
 **Configuration:**
 ```bash
@@ -128,6 +144,11 @@ export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. All activities are monitored."
 ```
 
 See [Configuration](/getting-started/configuration) for full details including color codes for standard classification levels.
+
+**References:**
+- [NIST SP 800-53 Rev 5 — AC-8](https://csf.tools/reference/sp800-53/r5/ac/ac-8/) — Full control text and discussion
+- [NIST Cybersecurity & Privacy Reference Tool (CPRT)](https://csrc.nist.gov/projects/cprt) — Authoritative control catalog
+- [DISA ASD STIG V-222434 / V-222435 / V-222436](https://public.cyber.mil/stigs/) — Application Security and Development STIG checks for AC-8 a, b, and c
 
 ### 📝 Audit & Accountability (AU)
 
