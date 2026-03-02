@@ -24,7 +24,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
-  before_action :validate_component_upload, only: :create
+  before_action :validate_component_upload, only: %i[create detect_srg]
 
   def index
     components = Component.with_severity_counts

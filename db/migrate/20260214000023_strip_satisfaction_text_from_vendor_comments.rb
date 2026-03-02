@@ -31,7 +31,8 @@ class StripSatisfactionTextFromVendorComments < ActiveRecord::Migration[8.0]
 
   def down
     # Data migration — satisfaction text cannot be reconstructed from structured records
-    # because the original formatting varies. No-op on rollback.
-    Rails.logger.warn('StripSatisfactionTextFromVendorComments: rollback is a no-op — text cannot be reconstructed')
+    # because the original formatting varies. Raise explicitly so engineers know rollback didn't work.
+    raise ActiveRecord::IrreversibleMigration,
+          'Cannot reverse: stripped satisfaction text cannot be reconstructed from structured records'
   end
 end

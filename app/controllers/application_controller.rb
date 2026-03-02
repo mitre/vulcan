@@ -21,7 +21,12 @@ class ApplicationController < ActionController::Base
     ttl = Settings.consent.respond_to?(:ttl) ? Settings.consent.ttl : nil
     return false if ttl.blank? || ttl.to_s == '0'
 
-    Time.zone.parse(acknowledged_at) + parse_duration(ttl) < Time.current
+    parsed = Time.zone.parse(acknowledged_at)
+    return true unless parsed # nil from unparseable string → re-prompt
+
+    parsed + parse_duration(ttl) < Time.current
+  rescue ArgumentError
+    true # corrupted timestamp → re-prompt
   end
   helper_method :consent_required?
 
