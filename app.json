@@ -79,6 +79,9 @@
         },
         "VULCAN_CONSENT_TTL": {
           "value": "0"
+        },
+        "VULCAN_SEED_DEMO_DATA": {
+          "value": "true"
         }
       },
       "scripts": {

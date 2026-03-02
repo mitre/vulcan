@@ -34,14 +34,14 @@ Set the following environment variables:
 
 ```bash
 # Enable GitHub authentication
-VULCAN_ENABLE_GITHUB_AUTH=true
+GITHUB_ENABLE_AUTH=true
 
 # GitHub OAuth credentials
-VULCAN_GITHUB_APP_ID=your_client_id_here
-VULCAN_GITHUB_APP_SECRET=your_client_secret_here
+GITHUB_APP_ID=your_client_id_here
+GITHUB_APP_SECRET=your_client_secret_here
 
 # Optional: Request additional scopes
-VULCAN_GITHUB_SCOPE="user:email,read:org"
+GITHUB_SCOPE="user:email,read:org"
 ```
 
 ### Using Configuration File

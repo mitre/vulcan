@@ -64,12 +64,22 @@ RSpec.describe 'Settings defaults' do
   end
 
   describe 'OIDC discovery defaults to true' do
-    # YAML pattern: `ActiveModel::Type::Boolean.new.cast(ENV['...']) || true`
-    # When env var is unset: cast(nil) => nil, nil || true => true
+    # YAML pattern: `ActiveModel::Type::Boolean.new.cast(ENV['...']) != false`
+    # When env var is unset: cast(nil) => nil, nil != false => true
     # Initializer backup: sets true if value is nil
 
     it 'discovery is enabled' do
       expect(Settings.oidc['discovery']).to be true
+    end
+
+    it 'discovery setting is only inside args (not duplicated at section level)' do
+      # Parse the YAML (with ERB) and check structure semantically
+      erb_rendered = ERB.new(Rails.root.join('config/vulcan.default.yml').read).result
+      yaml = YAML.safe_load(erb_rendered, permitted_classes: [Symbol, Proc], aliases: true)
+      oidc = yaml.dig('defaults', 'oidc')
+
+      expect(oidc.keys).not_to include('discovery'),
+                               'oidc section should not have a top-level discovery key (it belongs in oidc.args)'
     end
   end
 
