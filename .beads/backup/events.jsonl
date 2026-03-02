@@ -37,3 +37,21 @@
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-01T08:49:46Z","event_type":"closed","id":37,"issue_id":"vulcan-clean-afpf","new_value":"6 commits on v3.x: Docker build, compose, config/entrypoint, vite_typescript_tag, seeds guard, secure cookie test","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-01T08:50:05Z","event_type":"closed","id":38,"issue_id":"vulcan-clean-9p1w","new_value":"8 commits on v2.x, 6 commits on v3.x. Both worktrees have stable touchpoints. All v2.x tests pass (1514 examples, 0 failures).","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:11Z","event_type":"created","id":39,"issue_id":"vulcan-clean-y4wx","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:13Z","event_type":"created","id":40,"issue_id":"vulcan-clean-e6k2","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:14Z","event_type":"created","id":41,"issue_id":"vulcan-clean-ytxp","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:16Z","event_type":"created","id":42,"issue_id":"vulcan-clean-y33r","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:17Z","event_type":"created","id":43,"issue_id":"vulcan-clean-ansq","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:19Z","event_type":"created","id":44,"issue_id":"vulcan-clean-h3mk","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:21Z","event_type":"created","id":45,"issue_id":"vulcan-clean-rlpf","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T09:59:22Z","event_type":"created","id":46,"issue_id":"vulcan-clean-ixuo","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:11Z","event_type":"created","id":47,"issue_id":"vulcan-clean-27wy","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:13Z","event_type":"created","id":48,"issue_id":"vulcan-clean-852k","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:14Z","event_type":"created","id":49,"issue_id":"vulcan-clean-m25u","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:16Z","event_type":"created","id":50,"issue_id":"vulcan-clean-gb74","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:18Z","event_type":"created","id":51,"issue_id":"vulcan-clean-ltra","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:19Z","event_type":"created","id":52,"issue_id":"vulcan-clean-ecln","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:21Z","event_type":"created","id":53,"issue_id":"vulcan-clean-cbug","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:23Z","event_type":"created","id":54,"issue_id":"vulcan-clean-8fal","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:24Z","event_type":"created","id":55,"issue_id":"vulcan-clean-z0b4","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:04:26Z","event_type":"created","id":56,"issue_id":"vulcan-clean-hptt","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T10:05:20Z","event_type":"closed","id":57,"issue_id":"vulcan-clean-z0b4","new_value":"Already implemented: User#valid_password? detects bcrypt, verifies, re-hashes to PBKDF2 on login. No lockout risk.","old_value":""}
