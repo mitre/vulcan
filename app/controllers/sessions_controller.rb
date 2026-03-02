@@ -61,7 +61,7 @@ class SessionsController < Devise::SessionsController
     }
 
     # Add client_id if available (required by some providers)
-    client_id = Settings.oidc.args.client_options.identifier || ENV.fetch('VULCAN_OIDC_CLIENT_ID', nil)
+    client_id = Settings.oidc.args.client_options.identifier
     params[:client_id] = client_id if client_id.present?
 
     "#{logout_endpoint}?#{params.to_query}"
@@ -73,7 +73,7 @@ class SessionsController < Devise::SessionsController
   end
 
   def okta_fallback_logout_url
-    issuer_url = Settings.oidc.args.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
+    issuer_url = Settings.oidc.args.issuer
     "#{issuer_url.to_s.chomp('/')}/oauth2/v1/logout"
   end
 end

@@ -296,7 +296,7 @@ module OidcDiscoveryHelper
   def fetch_oidc_endpoint(endpoint_name, fallback_url = nil)
     return fallback_url unless Settings.oidc.discovery
 
-    issuer_url = Settings.oidc.args.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
+    issuer_url = Settings.oidc.args.issuer
     return fallback_url unless issuer_url
 
     discovery = fetch_oidc_discovery_document(issuer_url)
