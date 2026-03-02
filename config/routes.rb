@@ -93,6 +93,7 @@ Rails.application.routes.draw do
   # API namespace for JSON endpoints
   namespace :api do
     get 'search/global', to: 'search#global'
+    get 'version', to: 'version#show'
   end
 
   # AC-8: Server-side consent acknowledgment

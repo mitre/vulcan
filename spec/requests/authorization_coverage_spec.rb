@@ -49,6 +49,7 @@ SKIP_CONTROLLER_PREFIXES = %w[
   health_check/
   action_mailbox/
   consent
+  api/version
 ].freeze
 
 # Specific controller#action pairs that intentionally use authenticate_user!
