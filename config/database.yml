@@ -11,7 +11,7 @@ default: &default
   username: <%= ENV.fetch('POSTGRES_USER', 'postgres') %>
   password: <%= ENV.fetch('POSTGRES_PASSWORD', 'postgres') %>
   gssencmode: <%= ENV.fetch('DATABASE_GSSENCMODE', 'prefer') %>
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 3 } %>
 
 development:
   <<: *default

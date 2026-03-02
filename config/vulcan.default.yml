@@ -55,7 +55,6 @@ defaults: &defaults
         base: <%= ENV['VULCAN_LDAP_BASE'] %>
   oidc:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_OIDC']) || false %>
-    discovery: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_DISCOVERY']) || true %>
     strategy: :openid_connect
     title: <%= ENV['VULCAN_OIDC_PROVIDER_TITLE'] || 'OIDC Provider' %>
     args:
@@ -66,7 +65,7 @@ defaults: &defaults
       - :profile
       uid_field: 'sub'
       response_type: :code
-      discovery: true
+      discovery: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_DISCOVERY']) != false %>
       issuer: <%= ENV['VULCAN_OIDC_ISSUER_URL'] %>
       client_auth_method: :secret
       client_signing_alg: <%= ENV['VULCAN_OIDC_CLIENT_SIGNING_ALG']&.to_sym || :RS256 %>
@@ -97,14 +96,14 @@ defaults: &defaults
     content: <%= ENV['VULCAN_CONSENT_CONTENT'] || '' %>
     ttl: <%= ENV.fetch('VULCAN_CONSENT_TTL', '0') %>
   session_limits:
-    enabled: <%= ENV.fetch('VULCAN_SESSION_LIMITS_ENABLED', 'true') != 'false' %>
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_SESSION_LIMITS_ENABLED', 'true')) != false %>
     max_sessions: <%= ENV.fetch('VULCAN_MAX_CONCURRENT_SESSIONS', '1').to_i %>
   lockout:
-    enabled: <%= ENV.fetch('VULCAN_LOCKOUT_ENABLED', 'true') != 'false' %>
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_LOCKOUT_ENABLED', 'true')) != false %>
     maximum_attempts: <%= ENV.fetch('VULCAN_LOCKOUT_MAX_ATTEMPTS', '3').to_i %>
     unlock_in_minutes: <%= ENV.fetch('VULCAN_LOCKOUT_UNLOCK_IN_MINUTES', '15').to_i %>
     unlock_strategy: <%= ENV.fetch('VULCAN_LOCKOUT_UNLOCK_STRATEGY', 'both') %>
-    last_attempt_warning: <%= ENV.fetch('VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING', 'true') != 'false' %>
+    last_attempt_warning: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING', 'true')) != false %>
   password:
     min_length: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LENGTH', '15') %>
     min_uppercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_UPPERCASE', '2') %>
