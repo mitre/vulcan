@@ -155,13 +155,10 @@ class ProjectsController < ApplicationController
   end
 
   def export
-    # Using class variable @@components_to_export here to save params[:component_ids] value in memory,
-    # because format.html below triggers a redirect to this same action controller
-    # causing to lose the :component_ids param.
-
-    # rubocop:disable Style/ClassVars
-    @@components_to_export = params[:component_ids] if params[:component_ids].present?
-    # rubocop:enable Style/ClassVars
+    # Stash component_ids in session so it survives the format.html redirect
+    # back to this action (which loses query params). Session is per-user,
+    # unlike the old @@class_variable which was shared across all threads.
+    session[:components_to_export] = params[:component_ids] if params[:component_ids].present?
 
     export_type = params[:type]&.to_sym
     export_mode = params[:mode]&.to_sym
@@ -432,7 +429,7 @@ class ProjectsController < ApplicationController
     authorize_admin_project if condition
   end
 
-  # Parse @@components_to_export from comma-separated string to integer array.
+  # Parse session[:components_to_export] from comma-separated string to integer array.
   # Returns nil if not set (exports all components).
   def export_mode_options
     options = {}
@@ -441,9 +438,10 @@ class ProjectsController < ApplicationController
   end
 
   def resolve_component_ids
-    return nil unless defined?(@@components_to_export) && @@components_to_export.present?
+    value = session.delete(:components_to_export)
+    return nil if value.blank?
 
-    @@components_to_export.split(',').map(&:to_i)
+    value.split(',').map(&:to_i)
   end
 
   def project_name_changed?(current_project_name)
