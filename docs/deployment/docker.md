@@ -95,7 +95,7 @@ Key variables for Docker:
 volumes:
   - ./data/postgres:/var/lib/postgresql/data
   - ./data/uploads:/app/public/uploads
-  - ./certs:/app/certs  # For corporate SSL certificates
+  - ./certs:/rails/certs  # For corporate SSL certificates
 ```
 
 ## Production Deployment
@@ -221,10 +221,10 @@ docker logs -f vulcan
 
 ```bash
 # Backup
-docker compose exec postgres pg_dump -U vulcan vulcan_production > backup.sql
+docker compose exec db pg_dump -U postgres vulcan_vue_production > backup.sql
 
 # Restore
-docker compose exec -T postgres psql -U vulcan vulcan_production < backup.sql
+docker compose exec -T db psql -U postgres vulcan_vue_production < backup.sql
 ```
 
 ### Application Data

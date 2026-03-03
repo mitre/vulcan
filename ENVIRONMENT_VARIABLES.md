@@ -44,7 +44,7 @@ DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `VULCAN_APP_URL` | Application URL | `http://localhost:3000` | `https://vulcan.example.com` |
+| `VULCAN_APP_URL` | Application URL (for mailer links) | — (must be set for emails) | `https://vulcan.example.com` |
 | `VULCAN_WELCOME_TEXT` | Welcome message on login page | `Welcome to Vulcan` | `Welcome to MITRE Vulcan` |
 | `VULCAN_CONTACT_EMAIL` | Contact email for notifications and default SMTP username | `vulcan-support@example.com` | `support@mycompany.com` |
 
@@ -142,13 +142,13 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 | `VULCAN_OIDC_JWKS_URI` | OIDC JWKS endpoint | `https://dev-12345.okta.com/oauth2/default/v1/keys` |
 
 #### Deprecated Variables
-*These variables are no longer needed with auto-discovery enabled*
+*With auto-discovery enabled, these are usually not needed. They are still read by the YAML config as fallback/override values for non-discovery setups.*
 
-| Variable | Replacement | Notes |
-|----------|-------------|-------|
-| `VULCAN_OIDC_HOST` | Use `VULCAN_OIDC_ISSUER_URL` | Automatically extracted from issuer URL |
-| `VULCAN_OIDC_PORT` | Use `VULCAN_OIDC_ISSUER_URL` | Automatically extracted from issuer URL |
-| `VULCAN_OIDC_SCHEME` | Use `VULCAN_OIDC_ISSUER_URL` | Automatically extracted from issuer URL |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VULCAN_OIDC_HOST` | OIDC provider hostname (fallback when discovery disabled) | — |
+| `VULCAN_OIDC_PORT` | OIDC provider port | `443` |
+| `VULCAN_OIDC_SCHEME` | OIDC provider scheme | `https` |
 
 #### Migration Examples
 
@@ -235,7 +235,7 @@ Display a colored banner at the top and bottom of every page, commonly used for 
 
 ## Consent / Terms of Use Modal
 
-Display a blocking consent modal that users must acknowledge before accessing the application. Acknowledgment is stored in the browser's localStorage per version — incrementing the version re-prompts all users.
+Display a blocking consent modal that users must acknowledge before accessing the application. Acknowledgment is tracked server-side in the Rails session with a configurable TTL. Setting TTL to `0` (default) requires consent once per session (AC-8 compliant).
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|

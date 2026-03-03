@@ -8,7 +8,7 @@
 # Any changes to this file will requre a restart of the Vulcan service.
 
 defaults: &defaults
-  welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || nil %>
+  welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || 'Welcome to Vulcan' %>
   contact_email: <%= ENV['VULCAN_CONTACT_EMAIL']%>
   app_url: <%= ENV['VULCAN_APP_URL'] || nil %>
   smtp:

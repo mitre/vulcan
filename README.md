@@ -1,7 +1,6 @@
 # Vulcan
 
-[![Run Test Suite](https://github.com/mitre/vulcan/actions/workflows/run-tests.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/run-tests.yml)
-[![Docker Hub Push](https://github.com/mitre/vulcan/actions/workflows/push-to-docker.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/push-to-docker.yml)
+[![CI](https://github.com/mitre/vulcan/actions/workflows/ci.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Latest Release](https://img.shields.io/github/v/release/mitre/vulcan)](https://github.com/mitre/vulcan/releases/latest)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mitre/vulcan)](https://hub.docker.com/r/mitre/vulcan)
@@ -87,13 +86,14 @@ yarn dev      # Start dev server
 - **Node.js 22 LTS** for JavaScript runtime
 
 ### Frontend
-- **Vue 2.6.11** (14 separate instances for different pages)
-- **Bootstrap 4.4.1** with Bootstrap-Vue 2.13.0
+- **Vue 2.7.16** (14 separate instances for different pages)
+- **Bootstrap 4.6.2** with Bootstrap-Vue 2.13.0
 - **Turbolinks 5.2.0** for navigation optimization
 - **esbuild** for JavaScript bundling (replaced Webpacker)
 
 ### Testing & Quality
-- **RSpec** for Ruby testing (190+ tests)
+- **RSpec** for Ruby testing (1600+ backend tests)
+- **Vitest** for Vue component testing (1900+ frontend tests)
 - **ESLint** & **Prettier** for JavaScript linting
 - **RuboCop** for Ruby style enforcement
 - **Brakeman** for security scanning
@@ -194,10 +194,7 @@ bundle exec bundler-audit
    docker compose -f docker-compose.prod.yml up -d
    ```
 
-5. **Initialize database** (first time only):
-   ```bash
-   docker compose -f docker-compose.prod.yml run --rm web bundle exec rake db:create db:schema:load db:migrate
-   ```
+5. **Database setup** is automatic — `db:prepare` runs on container start via the Docker entrypoint. No manual step needed.
 
 ### Docker Image Features
 

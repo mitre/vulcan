@@ -182,8 +182,8 @@ Use `./setup-docker-secrets.sh` to generate all required secrets automatically, 
 - **strategy:** :openid_connect `Omniauth Strategy for working with OIDC providers`
 - **title:** : Description or Title for the OIDC Provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
 - **args:** 
-  - **name:** Name of the OIDC provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
-  - **scope:** Which OpenID scope to include (:openid is always required) `default: [:openid]`
+  - **name:** Strategy name (hardcoded as `:oidc` — not configurable)
+  - **scope:** OpenID scopes requested `default: [:openid, :email, :profile]`
   - **uid_field:** The field of the user info response to be used as a unique id
   - **response_type:** Which OAuth2 response type to use with the authorization request `default: [:code]`
   - **issuer:** Root url for the authorization server `(ENV: VULCAN_OIDC_ISSUER_URL)`

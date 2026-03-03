@@ -2,7 +2,7 @@
 # check=error=true
 
 # =============================================================================
-# Vulcan v2.2.x Multi-Stage Dockerfile
+# Vulcan Multi-Stage Dockerfile
 # =============================================================================
 # Supports multiple build targets:
 #   - development: Full dev environment with all dependencies
