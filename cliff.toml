@@ -33,14 +33,15 @@ conventional_commits = true
 filter_unconventional = true
 split_commits = false
 commit_parsers = [
+    { message = "^WIP", skip = true },
     { message = "^feat", group = "Added" },
     { message = "^fix", group = "Fixed" },
     { message = "^refactor", group = "Changed" },
     { message = "^perf", group = "Changed" },
-    { message = "^test", group = "Tests" },
-    { message = "^doc", group = "Documentation" },
-    { message = "^docs", group = "Documentation" },
-    { message = "^chore", group = "Maintenance" },
+    { message = "^test", group = "Changed" },
+    { message = "^docs", group = "Changed" },
+    { message = "^doc", group = "Changed" },
+    { message = "^chore", group = "Changed" },
     { message = "^style", skip = true },
     { message = "^ci", skip = true },
     { body = ".*security", group = "Security" },
