@@ -24,7 +24,7 @@ on:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
   # ─── LINT + SECURITY ─────────────────────────────────────
@@ -43,7 +43,7 @@ jobs:
           bundler-cache: true
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
       - name: RuboCop
@@ -67,7 +67,7 @@ jobs:
           fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
       - name: Vitest with coverage
@@ -80,22 +80,21 @@ jobs:
           path: coverage/js
           retention-days: 5
 
-  # ─── BACKEND TESTS + COVERAGE (4 shards) ─────────────────
+  # ─── BACKEND TESTS + COVERAGE (6 shards) ─────────────────
   backend:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: read
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        ci_node_index: [0, 1, 2, 3, 4, 5]
+        ci_node_index: [1, 2, 3, 4, 5, 6]
 
     services:
       db:
         image: postgres:18-alpine
         env:
-          POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
           POSTGRES_DB: vulcan_vue_test
           POSTGRES_HOST_AUTH_METHOD: trust
@@ -107,7 +106,6 @@ jobs:
           --health-interval 500ms
           --health-timeout 3s
           --health-retries 20
-          --shm-size=256mb
       ldap:
         image: rroemhild/test-openldap
         ports:
@@ -125,15 +123,13 @@ jobs:
       RAILS_ENV: test
       RUBY_YJIT_ENABLE: "1"
       CI: "true"
-      # OIDC Testing
+      # OIDC Testing — VULCAN_OIDC_* is the primary source;
+      # spec/support/okta_test_config.rb falls back to these
       VULCAN_ENABLE_OIDC: "true"
       VULCAN_OIDC_DISCOVERY: "true"
       VULCAN_OIDC_ISSUER_URL: ${{ secrets.OKTA_TEST_ISSUER }}
       VULCAN_OIDC_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
       VULCAN_OIDC_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
-      OKTA_TEST_ISSUER: ${{ secrets.OKTA_TEST_ISSUER }}
-      OKTA_TEST_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
-      OKTA_TEST_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
       # LDAP Testing (rroemhild/test-openldap public defaults)
       VULCAN_ENABLE_LDAP: "true"
       VULCAN_LDAP_HOST: localhost
@@ -153,7 +149,7 @@ jobs:
           bundler-cache: true
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
       - name: Install system dependencies
@@ -164,7 +160,7 @@ jobs:
         id: js-cache
         with:
           path: app/assets/builds
-          key: js-build-${{ hashFiles('app/javascript/**', 'yarn.lock', 'esbuild.config.js') }}
+          key: js-build-${{ hashFiles('app/javascript/**', 'yarn.lock', 'esbuild.config.js', 'package.json') }}
       - name: Build JavaScript assets
         if: steps.js-cache.outputs.cache-hit != 'true'
         run: yarn build
@@ -176,14 +172,10 @@ jobs:
 
       - name: Run backend tests (shard ${{ matrix.ci_node_index }}/6)
         run: |
-          # Sort by file size (descending) then round-robin for better balance
-          TESTS=$(find spec -name '*_spec.rb' -print0 | xargs -0 ls -lS | awk '{print $NF}' | awk "NR % 6 == ${{ matrix.ci_node_index }}")
-          if [ -n "$TESTS" ]; then
-            echo "Running $(echo "$TESTS" | wc -l | tr -d ' ') spec files in shard ${{ matrix.ci_node_index }}"
-            bundle exec rspec --format progress $TESTS
-          else
-            echo "No tests for this shard"
-          fi
+          bundle exec parallel_rspec \
+            -n 6 \
+            --only-group ${{ matrix.ci_node_index }} \
+            spec/
 
       - name: Upload backend coverage
         uses: actions/upload-artifact@v4
@@ -193,6 +185,24 @@ jobs:
           path: coverage
           retention-days: 5
 
+  # ─── GATE — single required status check for branch protection ───
+  ci-gate:
+    needs: [lint, frontend, backend]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Check all jobs passed
+        run: |
+          results='${{ toJSON(needs.*.result) }}'
+          if echo "$results" | grep -qE '"(failure|cancelled|skipped)"'; then
+            echo "::error::One or more CI jobs failed, were cancelled, or were skipped"
+            exit 1
+          fi
+          echo "All CI jobs passed"
+
   # ─── DOCKER RELEASE (release only, multi-arch via Build Cloud) ───
   docker-release:
     needs: [lint, frontend, backend]
@@ -200,7 +210,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
-      contents: write
+      contents: write   # Required for anchore/sbom-action dependency-snapshot submission
+      packages: write
     steps:
       - uses: actions/checkout@v4
 

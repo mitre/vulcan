@@ -7,8 +7,9 @@ name: Release
 # Flow:
 #   1. git tag v2.3.1 && git push origin v2.3.1
 #   2. This workflow generates changelog via git-cliff (Keep a Changelog format)
-#   3. Creates GitHub Release with changelog as body
-#   4. ci.yml triggers on release → runs tests → builds Docker image
+#   3. Commits updated CHANGELOG.md to master
+#   4. Creates GitHub Release with changelog as body
+#   5. ci.yml triggers on release → runs tests → builds Docker image
 #
 # See: https://git-cliff.org, https://keepachangelog.com
 
@@ -17,27 +18,48 @@ on:
     tags:
       - 'v[0-9]+.*'
 
-permissions:
-  contents: write
-
 jobs:
   release:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history needed for changelog generation
 
-      - name: Generate changelog for this release
+      - name: Generate release body
         uses: orhun/git-cliff-action@v4
         id: changelog
         with:
           config: cliff.toml
           args: --latest --strip header
         env:
-          OUTPUT: CHANGES.md
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate full CHANGELOG.md
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit CHANGELOG.md to master
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Save generated CHANGELOG before switching branches (checkout overwrites tracked files)
+          cp CHANGELOG.md /tmp/CHANGELOG.md
+          git fetch origin master
+          git checkout master
+          git pull --ff-only origin master
+          cp /tmp/CHANGELOG.md CHANGELOG.md
+          git add CHANGELOG.md
+          git diff --staged --quiet || git commit -m "docs: update CHANGELOG.md for ${{ github.ref_name }}"
+          git push origin master
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -47,20 +69,3 @@ jobs:
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update CHANGELOG.md in repo
-        uses: orhun/git-cliff-action@v4
-        with:
-          config: cliff.toml
-          args: --verbose
-        env:
-          OUTPUT: CHANGELOG.md
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit CHANGELOG.md
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git diff --staged --quiet || git commit -m "docs: update CHANGELOG.md for ${{ github.ref_name }}"
-          git push origin HEAD:master
