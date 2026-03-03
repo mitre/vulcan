@@ -7,61 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v2.3.1] - 2026-02-14
-
-### Upgraded
-- Ruby 3.4.8 (from 3.3.9) with nkf gem for compatibility
-- Puma 7.2.0 (from 5.6.9) for Heroku Router 2.0 compatibility
-- Added parallel_tests for faster CI execution
+## [v2.3.1] - 2026-03-03
 
 ### Added
-- Global search infrastructure with pg_search gem and query transformation
-- Unified multi-stage Dockerfile with CLI and improved .dockerignore
-- Admin bootstrap with first-user-admin and env var support
-- Health check endpoints for Kubernetes and Docker deployments
+
+- Multi-stage Dockerfile with CLI integration and improved .dockerignore
+- Admin bootstrap: first-user-admin on registration and env var (`VULCAN_ADMIN_EMAIL`/`VULCAN_ADMIN_PASSWORD`) support
+- Health check endpoints for Kubernetes/Docker readiness probes
 - DB_SUFFIX environment variable for worktree database isolation
-- Command bars for view and edit pages
+- GET /api/version endpoint
+- Tag-triggered release automation with git-cliff changelog generation
+- Frontend tests added to CI pipeline
+- Centralized version infrastructure and parallel test stability improvements
+- Global search using pg_search: full-text search across rules, STIGs, SRGs, and SRG rules via unified API endpoint and frontend composable
+- FilterBar and FilterGroup shared components with disabled state support and configurable display defaults
+- EasyMDE markdown editor with custom Shiki syntax highlighting for rule content fields
+- Centralized terminology constants for consistent UI text across components
+- Unified rule form replacing separate Basic and Advanced forms, with IA Control/CCI display and severity override guidance
+- RuleFormGroup shared component for DRY form field rendering
+- Per-section rule locking: backend field-level editability abstraction and locking UI
+- Rule panel buttons and actions toolbar with two-row layout redesign
+- Auto-select first visible rule on page load
+- Right sidebar panels converted to Bootstrap slideovers
+- Command bars for rule view and edit pages with unified layout structure
+- Project page standardized with command bar, sidepanels, and ComponentActionPicker for component creation
+- Projects, Released Components, STIGs, SRGs, and Users list pages standardized with breadcrumbs and command bars
+- User Profile page converted to Vue with breadcrumb navigation and comprehensive settings
 - Redesigned MembersModal with tabbed interface
-- UnifiedRuleForm replacing Basic and Advanced forms
-- CSV export with configurable column picker
-- Severity filter buttons as connected button group with CAT I/II/III labels
-- Postel's Law applied to satisfaction parsing and session timeout config
-- Vitest testing infrastructure for Vue 2 components
-- Centralized terminology constants (BENCHMARK_TERM, EXPORT_FORMATS)
-- Configurable Remember Me via `VULCAN_ENABLE_REMEMBER_ME` and `VULCAN_REMEMBER_ME_DURATION` env vars
-- DISA Process documentation (Overview, Field Requirements, Export Requirements, Intent Form)
-- VitePress documentation system replacing MkDocs
-- Mermaid diagram support in documentation
-- Custom Vulcan branding with SVG logos and Media Kit page
-- Comprehensive import/export and deployment documentation
+- Redesigned severity filter buttons as connected button group
+- Unified BenchmarkViewer with composable navigation, SRG detail pages, sortable columns, severity badges, and keyboard navigation
+- STIG/SRG XCCDF export with frontend integration
+- CSV export with configurable column picker for STIGs and SRGs
+- Export service with Registry, formatters (XCCDF, InSpec, Excel, CSV, JSON archive), and mode-first ExportModal with progressive disclosure
+- VendorSubmission mode for DISA-compliant exports; PublishedStig and Backup export modes
+- JSON archive backup export with full-fidelity serializer, membership backup/restore, and dry-run import support
+- Restore from backup: component picker modal, per-component detail, POST /projects/create_from_backup endpoint
+- Export pre-flight warning for components with all NYD (Not Yet Determined) rules
+- Exclude-satisfied-by toggle for Excel/CSV exports
+- Satisfaction data import/export via CSV column and VulnDiscussion parsing; Postel's Law applied to ingest (liberal) and export (canonical)
+- CSV header aliases for backward-compatible import
+- SRG auto-detection from spreadsheet import
+- Spreadsheet update modal with word-diff preview
+- Excel exporter switched from FastExcel to caxlsx with Source column and per-cell lock styling
+- Configurable Remember Me with 8-hour default
+- PasswordField component with show/hide toggle, replacing all password inputs
+- Configurable password complexity policy (DoD 8500.2/2222 compliant)
+- Admin user management UI: create, edit, password reset tools
+- Account lockout (STIG AC-07): Devise lockable module, lock/unlock endpoints, navbar notifications, and audit trail
+- Shared notification event bus for cross-component reactivity
+- Authentication security hardening: PBKDF2 password hashing, session hardening, Devise audit logging
+- Frontend form validation composable
+- Classification banner and configurable consent modal (AC-8)
+- AC-8 server-side consent tracking with configurable TTL (`VULCAN_CONSENT_TTL`)
+- Input length limits (configurable via Settings), CSP headers, and detailed import error messages
+- VULCAN_SEED_DEMO_DATA guard to prevent demo seeding in production
+- Reusable delete confirmation system with JSON responses for axios compatibility
+- TimeoutParser with Postel's Law for flexible session timeout configuration
 
 ### Changed
-- Documentation navigation reorganized with Deployment, Authentication, and Security sections
-- Documentation dependencies isolated from main application
-- CI workflow uses parallel_rspec instead of serial rspec
+
+- Upgraded Ruby from 3.3.9 to 3.4.8 and Puma to 7.2.0
+- Upgraded Node.js to 24 LTS
+- Upgraded PostgreSQL from 12/16 to 18 across Docker, CI, and documentation
+- Replaced overcommit with lefthook for git hooks; added pre-push checks for RuboCop, ESLint, and Brakeman
+- Added RuboCop plugins: rubocop-capybara, rubocop-factory_bot, rubocop-rspec_rails
+- Applied SonarCloud-driven improvements across Ruby, Vue, and JavaScript files
+- Replaced BasicRuleForm and AdvancedRuleForm with a single UnifiedRuleForm; removed dead severities prop chain
+- Extracted shared ControlsCommandBar and ControlsSidepanels components; reorganized buttons by semantic group
+- Renamed History to Activity in rule command bar; moved Members button to modal actions group
+- Replaced RulesReadOnlyView with route-based views; updated RulesCodeEditorView to use composables
+- Migrated all rule and component UI references to RULE_TERM terminology constants
+- Removed old NewProject page system; replaced dead Stig components with RuleFormGroup
+- Added Vitest infrastructure for Vue 2 component testing with coverage reporting
+- Converted 36 spec files to `let_it_be` for approximately 65% faster backend test suite
+- Added shoulda-matchers 7.0 and validation contract specs for all core models
+- Added composite indexes for severity count queries and Jbuilder collection caching
+- DRY'd seed data, model concerns, SRG ID serialization, satisfaction text, and notification dispatch
+- Added request specs for components, rules, exports, and backup round-trip integration
+- Added frontend test coverage for mixins, modals, utilities, banner, consent, lockout, and section locking
+- Wired XCCDF and InSpec exports through a unified export service
+- Pinned Devise to ~> 4.9 to prevent accidental upgrade to v5
+- Increased CI backend shards from 4 to 6; added frozen_string_literal to all migration files
+- Updated deployment documentation: Docker, database setup, env vars, port registry, and authorization
+- Added backup/restore, data management, AC-8 consent, and security control documentation
+- Optimized Heroku slug size with .slugignore and node_modules cleanup
+- Bumped version to v2.3.1
 
 ### Fixed
-- Nested attributes not saving in rules controller (#692)
-- Also Satisfies resetting parent rule status
-- Vue reactivity for satisfied_by relationship field visibility
-- SRG search result links to use /srgs/ route
-- Database config with DATABASE_URL support
-- Consolidate Devise modules into single call in User model
-- Remember Me duration reduced from 2 weeks to 8 hours (configurable)
-- XCCDF export: `SecurityOverrideGuidance` typo fixed to `SeverityOverrideGuidance`
-- All ESLint errors and warnings resolved (20 errors, 6 warnings to 0)
-- Documentation build issues with dead links and localhost URLs
-- Remove dangerous DISABLE_DATABASE_ENVIRONMENT_CHECK from Docker entrypoint
-- Fix Heroku review app postdeploy to use DISABLE_DATABASE_ENVIRONMENT_CHECK with db:schema:load
-- Add db:seed and admin:bootstrap to review app postdeploy for usable review apps
-- Resolve 10 Copilot-identified bugs (modulo-by-zero, YAML.safe_load, CSS vars, prop types)
 
-### Security
-- Updated rexml and rack gems (CVE-2025-58767, GHSA-625h)
-- Configurable SSL for Docker deployments (#700, #702)
-- Enhanced deployment security configurations
-- YAML.safe_load replaces YAML.load_file in SearchAbbreviationService
-- Database deployment safety regression tests (13 tests) prevent future misconfigurations
+- Sanitize SQL LIKE input to prevent injection in search queries
+- Enforce deny-by-default authorization on all controller actions; prevent provider hijacking on existing accounts
+- Input security hardening: XXE prevention, upload validation, rate limiting
+- Avoid cleartext password storage during bcrypt-to-PBKDF2 migration
+- Replace thread-unsafe class variables in export controller with session storage
+- Remove dangerous DISABLE_DATABASE_ENVIRONMENT_CHECK from Docker entrypoint
+- Remove explicit secure cookie flag; let Rails SSL middleware set it automatically
+- Add Devise Lockable migration for existing deployments
+- Consent modal now shown before login, not after (AC-8 compliance)
+- Resolve nested attributes not saving in rules controller (#692)
+- Also Satisfies no longer resets parent rule status; show disabled buttons in read-only mode
+- Display SRG IDs in satisfaction relationships and all rule views; enable paste/type input
+- Derive srg_id from association in non-member component view
+- Sort rules by rule_id and version before auto-selecting first visible rule
+- Show New Project button for non-admin users with create permission; show delete button for project admins
+- Correct SRG search result links to use /srgs/ route
+- Respect component_ids selection for XCCDF and InSpec exports
+- Add null guards for missing SRG data and name/email in search filters
+- Fix v-b-tooltip directive pattern app-wide
+- Use CAT I/II/III labels, fix text contrast for severity badges
+- Replace table with div for accessible listbox in RuleList
+- Fix body padding offset for fixed classification banner
+- Correct file picker accept attribute for component import
+- Enable Remember Me checkbox for OmniAuth/LDAP logins
+- Docker build fix, configurable SSL for Docker deployments (#700, #702, #703)
+- Database config with DATABASE_URL support; DRY database.yml defaults
+- CSP configuration for OIDC provider and Vue 2 unsafe-eval
+- Use CONCURRENTLY for GIN and composite index migrations to avoid table locks
+- Make seeds idempotent using find_or_create_by!
+- Resolve ESLint and RuboCop linting issues
+- Resolve SonarCloud reliability bugs, security hotspots, and CI workflow issues
+- Update rexml, rack, faraday, and uri gems to patch known CVEs
 
 ## [v2.2.1] - 2025-08-16
 
@@ -247,7 +312,7 @@ For releases prior to v2.1.6, please see the [GitHub releases page](https://gith
 
 ---
 
-[v2.3.1]: https://github.com/mitre/vulcan/compare/v2.2.1...v2.3.1
+[v2.3.1]: https://github.com/mitre/vulcan/compare/v2.2.0...v2.3.1
 [v2.2.1]: https://github.com/mitre/vulcan/compare/v2.2.0...v2.2.1
 [v2.2.0]: https://github.com/mitre/vulcan/compare/v2.1.9...v2.2.0
 [v2.1.9]: https://github.com/mitre/vulcan/compare/v2.1.8...v2.1.9
