@@ -18,7 +18,7 @@
 
 # Make sure versions match .ruby-version
 ARG RUBY_VERSION=3.4.8
-ARG NODE_VERSION=22.16.0
+ARG NODE_VERSION=24.14.0
 
 # =============================================================================
 # BASE STAGE - Common foundation for all stages

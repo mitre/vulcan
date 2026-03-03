@@ -83,7 +83,7 @@ yarn dev      # Start dev server
 ### Core Framework
 - **Ruby 3.4.8** with **Rails 8.0.2.1**
 - **PostgreSQL 12+** database
-- **Node.js 22 LTS** for JavaScript runtime
+- **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
 - **Vue 2.7.16** (14 separate instances for different pages)
@@ -111,7 +111,7 @@ yarn dev      # Start dev server
 
 - Ruby 3.4.8 (use rbenv or rvm)
 - PostgreSQL 12+
-- Node.js 22 LTS
+- Node.js 24 LTS
 - Yarn package manager
 
 ### Local Installation

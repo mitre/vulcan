@@ -7,7 +7,7 @@ This guide walks through setting up a local Vulcan development environment.
 ### Required Software
 
 - **Ruby 3.4.8** (use rbenv or rvm for version management)
-- **Node.js 22 LTS** and **Yarn** package manager
+- **Node.js 24 LTS** and **Yarn** package manager
 - **PostgreSQL 18** database server
 - **Git** version control
 
