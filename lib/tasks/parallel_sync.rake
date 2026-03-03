@@ -10,6 +10,7 @@ if defined?(ParallelTests)
   %w[db:migrate db:reset db:schema:load].each do |task_name|
     Rake::Task[task_name].enhance do
       next unless Rails.env.local?
+      next if ENV['CI'] # CI shards each use a single database
 
       puts 'Syncing parallel test databases...'
       Rake::Task['parallel:prepare'].invoke
