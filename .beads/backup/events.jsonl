@@ -140,3 +140,9 @@
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T21:32:59Z","event_type":"created","id":140,"issue_id":"vulcan-clean-36s2","new_value":"","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T21:33:02Z","event_type":"created","id":141,"issue_id":"vulcan-clean-di76","new_value":"","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:53:40Z","event_type":"created","id":142,"issue_id":"vulcan-clean-26mh","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:53:42Z","event_type":"created","id":143,"issue_id":"vulcan-clean-w34e","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:53:46Z","event_type":"created","id":144,"issue_id":"vulcan-clean-z9if","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:53:50Z","event_type":"created","id":145,"issue_id":"vulcan-clean-s2vd","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:58:30Z","event_type":"closed","id":148,"issue_id":"vulcan-clean-t941","new_value":"Fixed: parallel_sync.rake was running parallel:prepare in CI. Added ENV[CI] guard. CI green.","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:58:30Z","event_type":"closed","id":149,"issue_id":"vulcan-clean-di76","new_value":"Committed curated CHANGELOG.md with 110 entries (f721229)","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:42Z","event_type":"created","id":150,"issue_id":"vulcan-clean-7jiq","new_value":"","old_value":""}
