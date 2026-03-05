@@ -340,4 +340,28 @@ describe("RuleNavigator", () => {
       expect(sorted[1].rule_id).toBe("001003");
     });
   });
+
+  // ─── B1 Regression: Nest satisfies spacer ──────────────────
+  // REQUIREMENT: When "Nest Satisfied" is toggled on but NO rules have children,
+  // leaf rules should NOT shift right. The spacer (tree-toggle-spacer) only appears
+  // when there are parent rules with chevrons to align with.
+  describe("nest satisfies spacer (B1 regression)", () => {
+    it("hasParentRules is false when no rules have satisfies", () => {
+      const rules = [createRule(1, "000001"), createRule(2, "000002")];
+      wrapper = createWrapper({ rules }, { nestSatisfiedRulesChecked: true });
+      expect(wrapper.vm.hasParentRules).toBe(false);
+    });
+
+    it("hasParentRules is true when at least one rule has satisfies", () => {
+      const parentRule = createRule(1, "000001", {
+        satisfies: [createSatisfactionRef(2, "000002", "SRG-OS-000002")],
+      });
+      const leafRule = createRule(3, "000003");
+      wrapper = createWrapper(
+        { rules: [parentRule, leafRule] },
+        { nestSatisfiedRulesChecked: true },
+      );
+      expect(wrapper.vm.hasParentRules).toBe(true);
+    });
+  });
 });

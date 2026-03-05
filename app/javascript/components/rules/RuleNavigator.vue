@@ -133,7 +133,7 @@
               />
             </template>
             <!-- Spacer for leaf nodes to align with parents that have chevrons -->
-            <template v-else-if="filters.nestSatisfiedRulesChecked">
+            <template v-else-if="filters.nestSatisfiedRulesChecked && hasParentRules">
               <span class="tree-toggle-spacer" />
             </template>
             <span v-if="filters.showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
@@ -315,6 +315,9 @@ export default {
           this.localFilters = value;
         }
       },
+    },
+    hasParentRules() {
+      return this.filteredRules.some((r) => r.satisfies && r.satisfies.length > 0);
     },
     sidebarStyle: function () {
       return {
