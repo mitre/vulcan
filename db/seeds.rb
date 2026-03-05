@@ -149,12 +149,15 @@ puts "Created #{Stig.count} STIGs"
 # Helper: find or create a component with all required attributes  #
 # ---------------------------------------------------------------- #
 def seed_component(project:, name:, title:, prefix:, based_on:, version: 1, release: 1, **attrs)
-  Component.find_or_create_by!(project: project, name: name, version: version, release: release) do |c|
-    c.title = title
-    c.prefix = prefix
-    c.based_on = based_on
-    attrs.each { |k, v| c.send(:"#{k}=", v) }
-  end
+  raise "seed_component: based_on (SRG) is nil for '#{name}' — check SRG seed files" unless based_on
+
+  c = Component.find_or_initialize_by(project: project, name: name, version: version, release: release)
+  c.title = title
+  c.prefix = prefix
+  c.based_on = based_on
+  attrs.each { |k, v| c.send(:"#{k}=", v) }
+  c.save!
+  c
 end
 
 # ---------------------------- #

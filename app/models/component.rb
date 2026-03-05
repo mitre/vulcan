@@ -41,7 +41,9 @@ class Component < ApplicationRecord
     })
   end
 
-  audited except: %i[id admin_name admin_email rules_count memberships_count created_at updated_at], max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited except: %i[id admin_name admin_email rules_count memberships_count]
   has_associated_audits
 
   belongs_to :project, inverse_of: :components
@@ -85,8 +87,8 @@ class Component < ApplicationRecord
     # SeverityCounts concern already adds severity_counts via its as_json
     super(options.merge(methods: methods)).merge(
       {
-        based_on_title: based_on.title,
-        based_on_version: based_on.version,
+        based_on_title: based_on&.title,
+        based_on_version: based_on&.version,
         status_counts: status_counts
       }
     )
