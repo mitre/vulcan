@@ -2,7 +2,9 @@
 
 # These are additional answers for the additional questions on a specific component
 class AdditionalAnswer < ApplicationRecord
-  audited only: %i[answer], associated_with: :rule, max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited only: %i[answer], associated_with: :rule
 
   validates :additional_question_id, uniqueness: { scope: :rule_id }
 

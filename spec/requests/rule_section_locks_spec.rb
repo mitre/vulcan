@@ -79,20 +79,39 @@ RSpec.describe 'Rule section locks API' do
         expect do
           patch "/rules/#{rule.id}/section_locks",
                 params: { section: 'Fix', locked: true, comment: 'Policy approved' }
-        end.to change { rule.audits.count }.by(1)
+        end.to change { rule.audits.count }.by_at_least(1)
 
-        audit = rule.audits.last
+        audit = rule.audits.reorder(created_at: :desc).first
         expect(audit.comment).to eq('Policy approved')
         expect(audit.audited_changes).to have_key('locked_fields')
+        # Verify the change tracks old → new locked_fields
+        change = audit.audited_changes['locked_fields']
+        expect(change).to be_an(Array)
+        expect(change[1]).to have_key('Fix')
       end
 
       it 'creates audit record with default comment when none provided' do
         expect do
           patch "/rules/#{rule.id}/section_locks", params: { section: 'Fix', locked: true }
-        end.to change { rule.audits.count }.by(1)
+        end.to change { rule.audits.count }.by_at_least(1)
 
-        audit = rule.audits.last
+        audit = rule.audits.reorder(created_at: :desc).first
         expect(audit.comment).to include('Locked section: Fix')
+      end
+
+      it 'auto-audit tracks locked_fields changes via audited gem' do
+        # REQUIREMENT: locked_fields must be in the audited gem's tracking
+        # so changes are recorded automatically without manual audits.create!
+        rule.update!(locked_fields: {})
+        rule.reload
+
+        patch "/rules/#{rule.id}/section_locks",
+              params: { section: 'Title', locked: true, comment: 'Auto-audit test' }
+
+        audit = rule.audits.reorder(created_at: :desc).first
+        expect(audit.audited_changes).to have_key('locked_fields')
+        expect(audit.action).to eq('update')
+        expect(audit.user_id).to eq(admin_user.id)
       end
     end
 

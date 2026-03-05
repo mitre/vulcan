@@ -2,6 +2,8 @@
 
 # Rule RuleDescription class
 class RuleDescription < ApplicationRecord
-  audited associated_with: :base_rule, except: %i[base_rule_id], max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited associated_with: :base_rule, except: %i[base_rule_id]
   belongs_to :base_rule
 end

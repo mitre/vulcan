@@ -7,7 +7,9 @@ class AdditionalQuestion < ApplicationRecord
     include_association :additional_answers
   end
 
-  audited except: %i[component_id created_at updated_at], associated_with: :component, max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited except: %i[component_id], associated_with: :component
 
   FIELD_TYPES = %w[dropdown freeform url].freeze
 

@@ -2,7 +2,9 @@
 
 # Rule Check class
 class Check < ApplicationRecord
-  audited associated_with: :base_rule, on: %i[update], except: %i[base_rule_id], max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited associated_with: :base_rule, on: %i[update], except: %i[base_rule_id]
   belongs_to :base_rule
 
   # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_*)

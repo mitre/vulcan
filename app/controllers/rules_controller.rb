@@ -124,21 +124,15 @@ class RulesController < ApplicationController
 
     return render json: { error: "Invalid section: #{section}" }, status: :unprocessable_entity unless RuleConstants::LOCKABLE_SECTION_NAMES.include?(section)
 
-    old_fields = @rule.locked_fields.dup
     fields = @rule.locked_fields.dup
     if locked
       fields[section] = true
     else
       fields.delete(section)
     end
-    @rule.update!(locked_fields: fields)
 
-    @rule.audits.create!(
-      action: 'update',
-      audited_changes: { 'locked_fields' => [old_fields, fields] },
-      user: current_user,
-      comment: comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
-    )
+    @rule.audit_comment = comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
+    @rule.update!(locked_fields: fields)
 
     render json: { rule: @rule.as_json, toast: "#{section} #{locked ? 'locked' : 'unlocked'}" }
   end
@@ -151,7 +145,6 @@ class RulesController < ApplicationController
     invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
     return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
 
-    old_fields = @rule.locked_fields.dup
     fields = @rule.locked_fields.dup
     sections.each do |section|
       if locked
@@ -160,15 +153,10 @@ class RulesController < ApplicationController
         fields.delete(section)
       end
     end
-    @rule.update!(locked_fields: fields)
 
     action_word = locked ? 'Locked' : 'Unlocked'
-    @rule.audits.create!(
-      action: 'update',
-      audited_changes: { 'locked_fields' => [old_fields, fields] },
-      user: current_user,
-      comment: comment.presence || "#{action_word} sections: #{sections.join(', ')}"
-    )
+    @rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
+    @rule.update!(locked_fields: fields)
 
     render json: { rule: @rule.as_json, toast: "#{action_word} #{sections.size} sections" }
   end

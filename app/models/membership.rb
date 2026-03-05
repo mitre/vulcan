@@ -3,7 +3,9 @@
 # A Member is the has_many: :through Model that stores information
 # about a User's membership of a Project
 class Membership < ApplicationRecord
-  audited except: %i[id created_at updated_at], max_audits: 1000, associated_with: :membership
+  include VulcanAuditable
+
+  vulcan_audited except: %i[id], associated_with: :membership
 
   include ProjectMemberConstants
 

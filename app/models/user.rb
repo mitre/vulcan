@@ -16,7 +16,9 @@ class User < ApplicationRecord
          :recoverable, :confirmable, :trackable, :validatable,
          :timeoutable, :lockable, :encryptable, :session_limitable, :session_traceable
 
-  audited only: %i[admin name email], max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited only: %i[admin name email]
 
   include ProjectMemberConstants
   include PasswordComplexityValidator
