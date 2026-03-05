@@ -338,40 +338,50 @@ class Component < ApplicationRecord
   def duplicate_reviews_and_history(component_id)
     return unless component_id
 
+    conn = ActiveRecord::Base.connection
+
     Component.find(component_id).rules.each do |orig_rule|
       new_rule = rules.find { |r| r.rule_id == orig_rule.rule_id }
       next if new_rule.nil?
 
-      ActiveRecord::Base.connection.exec_query(
-        'UPDATE base_rules SET created_at = ?, updated_at = ? WHERE id = ?',
-        'SQL',
-        [[nil, orig_rule.created_at], [nil, orig_rule.updated_at], [nil, new_rule.id]]
+      # Preserve original timestamps on duplicated rules
+      conn.exec_update(
+        self.class.sanitize_sql_array([
+                                        'UPDATE base_rules SET created_at = ?, updated_at = ? WHERE id = ?',
+                                        orig_rule.created_at, orig_rule.updated_at, new_rule.id
+                                      ])
       )
 
-      ActiveRecord::Base.connection.exec_query(
-        'DELETE FROM audits WHERE auditable_type = ? AND auditable_id = ?',
-        'SQL',
-        [[nil, 'BaseRule'], [nil, new_rule.id]]
+      # Remove auto-generated audits from the duplication save
+      conn.exec_delete(
+        self.class.sanitize_sql_array([
+                                        'DELETE FROM audits WHERE auditable_type = ? AND auditable_id = ?',
+                                        'BaseRule', new_rule.id
+                                      ])
       )
 
-      ActiveRecord::Base.connection.exec_query(
-        "INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, user_id, user_type,
-                             username, action, audited_changes, version, comment, remote_address, request_uuid,
-                             created_at, audited_user_id, audited_username)
-         SELECT ?, auditable_type, associated_id, associated_type, user_id, user_type, username,
-                action, audited_changes, version, comment, remote_address, request_uuid, created_at,
-                audited_user_id, audited_username
-         FROM audits WHERE auditable_type = ? AND auditable_id = ?",
-        'SQL',
-        [[nil, new_rule.id], [nil, 'BaseRule'], [nil, orig_rule.id]]
+      # Copy original rule's audit history to the new rule
+      conn.exec_insert(
+        self.class.sanitize_sql_array([
+                                        "INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, user_id, user_type,
+                               username, action, audited_changes, version, comment, remote_address, request_uuid,
+                               created_at, audited_user_id, audited_username)
+           SELECT ?, auditable_type, associated_id, associated_type, user_id, user_type, username,
+                  action, audited_changes, version, comment, remote_address, request_uuid, created_at,
+                  audited_user_id, audited_username
+           FROM audits WHERE auditable_type = ? AND auditable_id = ?",
+                                        new_rule.id, 'BaseRule', orig_rule.id
+                                      ])
       )
 
-      ActiveRecord::Base.connection.exec_query(
-        'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
-         SELECT user_id, ?, action, comment, created_at, updated_at
-         FROM reviews WHERE rule_id = ?',
-        'SQL',
-        [[nil, new_rule.id], [nil, orig_rule.id]]
+      # Copy reviews from original rule
+      conn.exec_insert(
+        self.class.sanitize_sql_array([
+                                        'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
+           SELECT user_id, ?, action, comment, created_at, updated_at
+           FROM reviews WHERE rule_id = ?',
+                                        new_rule.id, orig_rule.id
+                                      ])
       )
     end
   end

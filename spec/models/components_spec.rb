@@ -795,5 +795,17 @@ RSpec.describe Component do
 
       dup.destroy!
     end
+
+    it 'duplicate_reviews_and_history copies without error' do
+      original = shared_component
+      dup = original.duplicate(new_version: 98, new_release: 98)
+      dup.save!
+
+      # This was raising TypeError (Rails 8 bind params) and
+      # NoMethodError (sanitize_sql_array as instance method)
+      expect { dup.duplicate_reviews_and_history(original.id) }.not_to raise_error
+
+      dup.destroy!
+    end
   end
 end
