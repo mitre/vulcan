@@ -57,6 +57,37 @@ describe("RuleEditor", () => {
   });
 
   // ==========================================
+  // TAB LABELS
+  // ==========================================
+  describe("tab labels", () => {
+    // C10: "Test Script" tab - title should be exact
+    // REQUIREMENT: Tab clearly labels the InSpec test code section (not "InSpec Control Body" which is implementation detail)
+    // b-tabs component with multiple tabs: Documentation, Test Script, InSpec Control (Read-Only)
+    it("renders with tab component structure (b-tabs)", () => {
+      wrapper = createWrapper();
+      // Verify the component uses b-tabs for tab navigation
+      const tabs = wrapper.findComponent({ name: "BTabs" });
+      expect(tabs.exists()).toBe(true);
+    });
+
+    it("has three tab children for navigation and content", () => {
+      wrapper = createWrapper();
+      const tabs = wrapper.findComponent({ name: "BTabs" });
+      // b-tabs contains multiple b-tab children
+      const btabs = tabs.findAll({ name: "BTab" });
+      expect(btabs.length).toBe(3);
+    });
+
+    it("second tab is 'Test Script' for InSpec control body editing", () => {
+      wrapper = createWrapper();
+      const tabs = wrapper.findComponent({ name: "BTabs" });
+      const btabs = tabs.findAll({ name: "BTab" });
+      // Verify second tab (index 1) has title "Test Script" via props
+      expect(btabs.wrappers[1].props("title")).toBe("Test Script");
+    });
+  });
+
+  // ==========================================
   // EVENT FORWARDING (Integration Tests)
   // ==========================================
   describe("event forwarding from RuleActionsToolbar", () => {

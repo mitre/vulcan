@@ -64,9 +64,10 @@ describe("terminology constants", () => {
       expect(PANEL_LABELS).toHaveProperty("ruleReviews");
     });
 
-    it("component labels use COMPONENT_TERM.label", () => {
-      expect(PANEL_LABELS.compHistory).toContain(COMPONENT_TERM.label);
-      expect(PANEL_LABELS.compReviews).toContain(COMPONENT_TERM.label);
+    it("component panel labels are concise (no prefix)", () => {
+      // REQUIREMENT: wdower review — "Comp Activity" → "Activity", "Comp Reviews" → "Reviews"
+      expect(PANEL_LABELS.compHistory).toBe("Activity");
+      expect(PANEL_LABELS.compReviews).toBe("Reviews");
     });
 
     it("rule labels use RULE_TERM.label", () => {
@@ -360,12 +361,11 @@ describe("terminology constants", () => {
       expect(PANEL_LABELS.ruleReviews).toMatch(expectedRuleReviewsPattern);
     });
 
-    it("changing COMPONENT_TERM would update all derived labels", () => {
-      const expectedCompActivityPattern = new RegExp(`${COMPONENT_TERM.label}.*Activity`);
-      const expectedCompReviewsPattern = new RegExp(`${COMPONENT_TERM.label}.*Reviews`);
-
-      expect(PANEL_LABELS.compHistory).toMatch(expectedCompActivityPattern);
-      expect(PANEL_LABELS.compReviews).toMatch(expectedCompReviewsPattern);
+    it("component panel labels are independent of COMPONENT_TERM", () => {
+      // REQUIREMENT: Panel labels "Activity" and "Reviews" are concise —
+      // they don't derive from COMPONENT_TERM since the panel context is obvious
+      expect(PANEL_LABELS.compHistory).not.toContain(COMPONENT_TERM.label);
+      expect(PANEL_LABELS.compReviews).not.toContain(COMPONENT_TERM.label);
     });
   });
 });

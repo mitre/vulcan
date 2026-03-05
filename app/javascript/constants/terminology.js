@@ -54,8 +54,8 @@ export const PANEL_LABELS = {
   details: "Details",
   metadata: "Metadata",
   questions: "Questions",
-  compHistory: `${COMPONENT_TERM.label} Activity`,
-  compReviews: `${COMPONENT_TERM.label} Reviews`,
+  compHistory: "Activity",
+  compReviews: "Reviews",
 
   // Rule panels (require selected rule)
   satisfies: "Satisfies",

@@ -28,14 +28,14 @@
         <b-form-group label="Lock Mode" class="mb-3">
           <b-form-radio-group v-model="lockMode" stacked>
             <b-form-radio value="full" data-testid="lock-mode-full">
-              <strong>Lock entire rules</strong>
+              <strong>Lock all rule fields</strong>
               <br />
               <small class="text-muted">
                 Locks all fields on all unlocked rules (existing behavior)
               </small>
             </b-form-radio>
             <b-form-radio value="sections" data-testid="lock-mode-sections">
-              <strong>Lock sections only</strong>
+              <strong>Lock selection of fields</strong>
               <br />
               <small class="text-muted">
                 Lock specific sections across all rules while leaving other sections editable

@@ -76,14 +76,14 @@ describe("RuleActionsToolbar", () => {
       const buttons = wrapper.findAll("button, .comment-modal-stub");
       const buttonTexts = buttons.wrappers.map((b) => b.text().trim());
 
-      // Expected order: Related, Satisfies, History, Reviews, Comment, Review, Save, Clone, Delete, Lock
+      // Expected order: Related, Satisfies, History, Reviews, Comment, Change Review Status, Save, Clone, Delete, Lock
       const expectedOrder = [
         "Related",
         "Satisfies",
         "History",
         "Reviews",
         "Comment",
-        "Review",
+        "Change Review Status",
         "Save",
         "Clone",
         "Delete",
@@ -191,17 +191,19 @@ describe("RuleActionsToolbar", () => {
       });
     });
 
-    describe("Review button", () => {
-      it("is visible", () => {
+    describe("Change Review Status button", () => {
+      // C1: Button text should be "Change Review Status" not just "Review"
+      // REQUIREMENT: Label must clearly indicate the action changes review status (state-changing operation)
+      it("displays button text 'Change Review Status'", () => {
         wrapper = createWrapper();
-        expect(wrapper.text()).toContain("Review");
+        expect(wrapper.text()).toContain("Change Review Status");
       });
 
       it("is disabled in read-only mode", () => {
         wrapper = createWrapper({ readOnly: true });
         const btn = wrapper
           .findAll("button")
-          .wrappers.find((b) => b.text().includes("Review") && !b.text().includes("Reviews"));
+          .wrappers.find((b) => b.text().includes("Change Review Status"));
         expect(btn.attributes("disabled")).toBe("disabled");
       });
 
@@ -209,7 +211,7 @@ describe("RuleActionsToolbar", () => {
         wrapper = createWrapper();
         const btn = wrapper
           .findAll("button")
-          .wrappers.find((b) => b.text().includes("Review") && !b.text().includes("Reviews"));
+          .wrappers.find((b) => b.text().includes("Change Review Status"));
         await btn.trigger("click");
         expect(wrapper.emitted("open-review-modal")).toBeTruthy();
       });

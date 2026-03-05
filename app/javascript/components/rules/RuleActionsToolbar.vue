@@ -51,7 +51,7 @@
           :disabled="readOnly"
           @click="$emit('open-review-modal')"
         >
-          <b-icon icon="clipboard-check" /> Review
+          <b-icon icon="clipboard-check" /> Change Review Status
         </b-button>
         <CommentModal
           :title="msg.saveTitle"

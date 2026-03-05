@@ -72,7 +72,7 @@
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
         />
       </b-tab>
-      <b-tab title="InSpec Control Body" lazy>
+      <b-tab title="Test Script" lazy>
         <InspecControlEditor :rule="rule" field="inspec_control_body" :read-only="readOnly" />
       </b-tab>
       <b-tab title="InSpec Control (Read-Only)" lazy>
