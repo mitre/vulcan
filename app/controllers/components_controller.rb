@@ -119,8 +119,20 @@ class ComponentsController < ApplicationController
 
   def destroy
     ActiveRecord::Base.transaction do
-      # Soft deleted rules must be destroyed in order for component to be destroyed
-      Rule.unscoped.where(component_id: @component.id).destroy_all
+      rule_ids = Rule.unscoped.where(component_id: @component.id).pluck(:id)
+
+      if rule_ids.any?
+        # Bulk-delete dependent records first (avoid N+1 destroy callbacks)
+        Review.where(rule_id: rule_ids).delete_all
+        AdditionalAnswer.where(rule_id: rule_ids).delete_all
+        RuleSatisfaction.where(rule_id: rule_ids).or(RuleSatisfaction.where(satisfied_by_rule_id: rule_ids)).delete_all
+        Audited::Audit.where(auditable_type: 'BaseRule', auditable_id: rule_ids).delete_all
+        Check.where(base_rule_id: rule_ids).delete_all
+        DisaRuleDescription.where(base_rule_id: rule_ids).delete_all
+        RuleDescription.where(base_rule_id: rule_ids).delete_all
+        Rule.unscoped.where(id: rule_ids).delete_all
+      end
+
       @component.destroy!
       send_slack_notification(:remove_component, @component) if Settings.slack.enabled
       render json: { toast: 'Successfully removed component from project.' }

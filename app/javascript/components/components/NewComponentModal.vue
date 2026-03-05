@@ -401,6 +401,15 @@ export default {
       let failed = false;
       if (bvModalEvt) bvModalEvt.preventDefault();
 
+      // Show progress feedback for potentially slow operations
+      this.$bvToast.toast("Creating component — this may take a moment for large SRGs...", {
+        title: "Working",
+        variant: "info",
+        solid: true,
+        noAutoHide: true,
+        id: "create-component-progress",
+      });
+
       // Guard before POST
       if (!this.prefix && !this.spreadsheet_import) {
         this.$bvToast.toast("Please enter a prefix", {
@@ -436,6 +445,7 @@ export default {
       }
       if (failed) {
         this.loading = false;
+        this.$bvToast.hide("create-component-progress");
         return;
       }
 
@@ -493,6 +503,7 @@ export default {
     },
     completeLoading: function () {
       this.loading = false;
+      this.$bvToast.hide("create-component-progress");
     },
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);
