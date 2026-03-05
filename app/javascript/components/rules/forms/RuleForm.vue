@@ -163,6 +163,7 @@
           :disabled="disabled"
           :locked-sections="lockedSections"
           :can-manage-section-locks="canManageSectionLocks"
+          :show-section-locks="showSectionLocks"
           :field-state-class-fn="fieldStateClassFn"
           :fields="disa_fields"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
@@ -179,6 +180,7 @@
           :fields="check_fields"
           :locked-sections="lockedSections"
           :can-manage-section-locks="canManageSectionLocks"
+          :show-section-locks="showSectionLocks"
           :field-state-class-fn="fieldStateClassFn"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
         />
@@ -477,6 +479,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    showSectionLocks: {
+      type: Boolean,
+      default: false,
+    },
     fieldStateClassFn: {
       type: Function,
       default: () => () => "",
@@ -518,6 +524,7 @@ export default {
         disabled: this.disabled,
         lockedSections: this.lockedSections,
         canManageSectionLocks: this.canManageSectionLocks,
+        showSectionLocks: this.showSectionLocks,
         validFeedback: this.validFeedback || {},
         invalidFeedback: this.invalidFeedback || {},
       };

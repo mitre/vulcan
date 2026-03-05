@@ -10,20 +10,31 @@
         aria-hidden="true"
       />
       <b-icon
-        v-if="canManageSectionLocks && resolvedSection && isSectionLocked"
-        v-b-tooltip.hover="'Click to unlock ' + resolvedSection + ' section'"
+        v-if="showSectionLockIcon && isSectionLocked"
+        v-b-tooltip.hover="
+          canManageSectionLocks
+            ? 'Click to unlock ' + resolvedSection + ' section'
+            : 'Section locked (set status to manage locks)'
+        "
         icon="lock-fill"
-        class="text-warning ml-1 clickable"
+        :class="['ml-1', canManageSectionLocks ? 'text-warning clickable' : 'text-muted']"
         :data-testid="'section-lock-' + resolvedSection.replace(/\s+/g, '')"
-        @click="$emit('toggle-section-lock', resolvedSection)"
+        @click="canManageSectionLocks && $emit('toggle-section-lock', resolvedSection)"
       />
       <b-icon
-        v-else-if="canManageSectionLocks && resolvedSection && !isSectionLocked"
-        v-b-tooltip.hover="'Click to lock ' + resolvedSection + ' section'"
+        v-else-if="showSectionLockIcon && !isSectionLocked"
+        v-b-tooltip.hover="
+          canManageSectionLocks
+            ? 'Click to lock ' + resolvedSection + ' section'
+            : 'Set status to manage section locks'
+        "
         icon="unlock"
-        class="text-muted ml-1 clickable"
+        :class="[
+          'ml-1',
+          canManageSectionLocks ? 'text-success clickable' : 'text-muted opacity-50',
+        ]"
         :data-testid="'section-lock-' + resolvedSection.replace(/\s+/g, '')"
-        @click="$emit('toggle-section-lock', resolvedSection)"
+        @click="canManageSectionLocks && $emit('toggle-section-lock', resolvedSection)"
       />
     </label>
 
@@ -58,6 +69,7 @@ export default {
     disabled: { type: Boolean, default: false },
     lockedSections: { type: Object, default: () => ({}) },
     canManageSectionLocks: { type: Boolean, default: false },
+    showSectionLocks: { type: Boolean, default: false },
     lockSection: { type: String, default: null },
     validFeedback: { type: Object, default: () => ({}) },
     invalidFeedback: { type: Object, default: () => ({}) },
@@ -93,6 +105,9 @@ export default {
     // Auto-resolve section from FIELD_TO_SECTION lookup, with manual override via lockSection prop
     resolvedSection() {
       return this.lockSection || FIELD_TO_SECTION[this.fieldName] || null;
+    },
+    showSectionLockIcon() {
+      return (this.showSectionLocks || this.canManageSectionLocks) && !!this.resolvedSection;
     },
     isSectionLocked() {
       return !!(

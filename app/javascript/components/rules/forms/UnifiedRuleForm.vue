@@ -69,6 +69,7 @@
         :disabled="isFormDisabled"
         :fields="ruleFormFields"
         :locked-sections="lockedSections"
+        :show-section-locks="showSectionLocks"
         :can-manage-section-locks="canManageSectionLocks"
         :field-state-class-fn="fieldStateClass"
         :disa_fields="showDisaSection ? disaDescriptionFields : undefined"
@@ -169,10 +170,13 @@ export default {
     lockedSections() {
       return this.rule.locked_fields || {};
     },
-    canManageSectionLocks() {
+    showSectionLocks() {
       if (this.readOnly || this.rule.locked || this.rule.review_requestor_id) return false;
-      if (this.rule.status === "Not Yet Determined") return false;
       return ["admin", "reviewer"].includes(this.effectivePermissions);
+    },
+    canManageSectionLocks() {
+      if (!this.showSectionLocks) return false;
+      return this.rule.status !== "Not Yet Determined";
     },
   },
   methods: {

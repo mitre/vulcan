@@ -111,6 +111,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    showSectionLocks: {
+      type: Boolean,
+      default: false,
+    },
     fieldStateClassFn: {
       type: Function,
       default: () => () => "",
@@ -164,6 +168,7 @@ export default {
         disabled: this.disabled,
         lockedSections: this.lockedSections,
         canManageSectionLocks: this.canManageSectionLocks,
+        showSectionLocks: this.showSectionLocks,
         validFeedback: this.validFeedback || {},
         invalidFeedback: this.invalidFeedback || {},
       };

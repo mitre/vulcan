@@ -544,10 +544,19 @@ describe("UnifiedRuleForm", () => {
     });
   });
 
-  // ─── NYD section locking ──────────────────────────────────
-  describe("section locking disabled for Not Yet Determined", () => {
-    // REQUIREMENT: Section lock/unlock controls should not appear when
-    // status is NYD — locking sections before determination is meaningless.
+  // ─── Section lock visibility vs interactivity ─────────────
+  describe("section lock icons: visible but disabled for NYD", () => {
+    // REQUIREMENT: Lock icons should always be VISIBLE for admin/reviewer
+    // but DISABLED (non-interactive) when status is "Not Yet Determined".
+    // This prevents icons from disappearing and confusing users.
+
+    it("showSectionLocks is true for admin even when status is NYD", () => {
+      wrapper = createWrapper(
+        { status: "Not Yet Determined", locked: false, review_requestor_id: null },
+        { effectivePermissions: "admin" },
+      );
+      expect(wrapper.vm.showSectionLocks).toBe(true);
+    });
 
     it("canManageSectionLocks is false when status is Not Yet Determined", () => {
       wrapper = createWrapper(
@@ -557,12 +566,48 @@ describe("UnifiedRuleForm", () => {
       expect(wrapper.vm.canManageSectionLocks).toBe(false);
     });
 
-    it("canManageSectionLocks is true when status is Applicable - Configurable", () => {
+    it("both showSectionLocks and canManageSectionLocks true for Configurable admin", () => {
       wrapper = createWrapper(
         { status: "Applicable - Configurable", locked: false, review_requestor_id: null },
         { effectivePermissions: "admin" },
       );
+      expect(wrapper.vm.showSectionLocks).toBe(true);
       expect(wrapper.vm.canManageSectionLocks).toBe(true);
+    });
+
+    it("showSectionLocks is false for non-admin/reviewer", () => {
+      wrapper = createWrapper(
+        { status: "Applicable - Configurable", locked: false, review_requestor_id: null },
+        { effectivePermissions: "author" },
+      );
+      expect(wrapper.vm.showSectionLocks).toBe(false);
+      expect(wrapper.vm.canManageSectionLocks).toBe(false);
+    });
+
+    it("showSectionLocks is false when rule is locked", () => {
+      wrapper = createWrapper(
+        { status: "Applicable - Configurable", locked: true, review_requestor_id: null },
+        { effectivePermissions: "admin" },
+      );
+      expect(wrapper.vm.showSectionLocks).toBe(false);
+    });
+
+    it("showSectionLocks is false when under review", () => {
+      wrapper = createWrapper(
+        { status: "Applicable - Configurable", locked: false, review_requestor_id: 42 },
+        { effectivePermissions: "admin" },
+      );
+      expect(wrapper.vm.showSectionLocks).toBe(false);
+    });
+
+    it("passes showSectionLocks to RuleForm", () => {
+      wrapper = createWrapper(
+        { status: "Not Yet Determined", locked: false, review_requestor_id: null },
+        { effectivePermissions: "admin" },
+      );
+      const ruleForm = wrapper.findComponent({ name: "RuleForm" });
+      expect(ruleForm.props("showSectionLocks")).toBe(true);
+      expect(ruleForm.props("canManageSectionLocks")).toBe(false);
     });
   });
 });
