@@ -126,7 +126,7 @@
       @hidden="$emit('close-panel')"
     >
       <div class="px-3 py-2">
-        <History :histories="component.histories" :revertable="false" abbreviate-type="BaseRule" />
+        <History :histories="displayedHistories" :revertable="false" abbreviate-type="BaseRule" />
       </div>
     </b-sidebar>
 
@@ -222,6 +222,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import { SIDEBAR_TITLES } from "../../constants/terminology";
@@ -282,6 +283,7 @@ export default {
   data() {
     return {
       titles: SIDEBAR_TITLES,
+      localHistories: [],
       actionDescriptions: {
         comment: "Commented",
         request_review: "Requested Review",
@@ -299,6 +301,26 @@ export default {
     },
     canAuthor() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    // Use local histories if available (refreshed via event), otherwise fall back to prop
+    displayedHistories() {
+      return this.localHistories.length > 0 ? this.localHistories : this.component.histories;
+    },
+  },
+  mounted() {
+    this.$root.$on("refresh:activity", this.refreshHistories);
+  },
+  beforeDestroy() {
+    this.$root.$off("refresh:activity", this.refreshHistories);
+  },
+  methods: {
+    refreshHistories() {
+      axios
+        .get(`/components/${this.component.id}/histories`)
+        .then((response) => {
+          this.localHistories = response.data;
+        })
+        .catch(() => {}); // Silently fail — non-critical UI refresh
     },
   },
 };

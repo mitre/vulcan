@@ -10,7 +10,7 @@ class ProjectsController < ApplicationController
 
   IMPORT_ERROR_TITLE = 'Import error'
 
-  before_action :set_project, only: %i[show update destroy export import_backup]
+  before_action :set_project, only: %i[show update destroy export import_backup histories]
   before_action :set_project_permissions, only: %i[show]
   before_action :authorize_admin_project, only: %i[update destroy import_backup]
   before_action :authorize_viewer_project, only: %i[show export]
@@ -64,6 +64,12 @@ class ProjectsController < ApplicationController
       format.html
       format.json { render json: @project_json }
     end
+  end
+
+  def histories
+    return head :not_found unless @project
+
+    render json: @project.histories(50)
   end
 
   def create

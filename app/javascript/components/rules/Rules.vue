@@ -385,6 +385,8 @@ export default {
 
       if (updated == "all") {
         this.reactiveRules.splice(ruleIndex, 1, response.data);
+        // Notify sidepanels to refresh activity/reviews (B5 reactivity fix)
+        this.$root.$emit("refresh:activity");
       } else if (updated == "comments") {
         this.reactiveRules[ruleIndex].comments.push(...response.data.comments);
       }

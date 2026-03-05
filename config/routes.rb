@@ -54,6 +54,8 @@ Rails.application.routes.draw do
   # Must be before /:id/:stig_id catch-all to avoid route collision
   get '/components/bulk_export/:type', to: 'components#bulk_export'
 
+  # Component activity history (B5 reactivity fix) — MUST be before :stig_id catch-all
+  get '/components/:id/histories', to: 'components#histories'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 
@@ -78,6 +80,8 @@ Rails.application.routes.draw do
   patch '/components/:id/apply_spreadsheet_update', to: 'components#apply_spreadsheet_update'
   # Find
   post '/components/:id/find', to: 'components#find'
+  # Project activity history (Phase 4)
+  get '/projects/:id/histories', to: 'projects#histories'
   # Export project
   get '/projects/:id/export/:type', to: 'projects#export'
   # Create new project from backup archive (before resources :projects to avoid id catch)
