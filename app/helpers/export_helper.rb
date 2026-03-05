@@ -24,13 +24,9 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     }
   }.freeze
 
-  CSV_ATTRIBUTE_MAP = {
-    export_checktext: 11,
-    export_fixtext: 13,
-    status_justification: 14,
-    mitigation: 15,
-    artifact_description: 16
-  }.freeze
+  # Named field keys for DISA export content modification.
+  # Used with csv_attributes_hash to avoid fragile positional indices.
+  DISA_MODIFIABLE_FIELDS = ['Check', 'Fix', 'Status Justification', 'Mitigation', 'Artifact Description'].freeze
 
   def export_excel(project, component_ids, is_disa_export)
     components_to_export = project.components.where(id: component_ids.split(','))
@@ -54,33 +50,19 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
         ws.add_row(headers, types: Array.new(headers.size, :string))
 
         component.rules.order(:version, :rule_id).each do |rule|
-          csv_attributes = is_disa_export ? rule.csv_attributes : rule.csv_attributes.append(rule.inspec_control_body)
+          attrs = rule.csv_attributes_hash
+
           if is_disa_export
-            if rule.status != 'Applicable - Configurable' && rule.status != 'Not Yet Determined'
-              check_text, fix_text = get_check_and_fix_text(rule.status).values_at('check_text', 'fix_text')
-              csv_attributes[CSV_ATTRIBUTE_MAP[:export_checktext]] = check_text
-              csv_attributes[CSV_ATTRIBUTE_MAP[:export_fixtext]] = fix_text
-            end
-            # For "Applicable - Configurable" controls remove any text
-            # in the "Status Justification", "Mitigation",and "Artifact Description" fields for the export.
-            # For "Applicable - Inherently Meets" and "Not Applicable" controls.
-            # remove any text in the "Mitigation" field for the export.
-            case rule.status
-            when 'Applicable - Configurable'
-              csv_attributes[CSV_ATTRIBUTE_MAP[:status_justification]] = nil
-              csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-              csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
-            when 'Applicable - Inherently Meets'
-              csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-            when 'Not Applicable'
-              csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-              csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
-            end
+            apply_disa_content_rules!(attrs, rule.status)
+            row = attrs.values_at(*headers)
+          else
+            row = attrs.values_at(*ExportConstants::DISA_EXPORT_HEADERS)
+            row << rule.inspec_control_body
           end
 
           ws.add_row(
-            csv_attributes.map(&:to_s),
-            types: Array.new(csv_attributes.size, :string),
+            row.map(&:to_s),
+            types: Array.new(row.size, :string),
             style: wrap_style
           )
         end
@@ -93,6 +75,33 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   def get_check_and_fix_text(status)
     # this following helps in modifying check_text and fix_text when the user has opted for DISA Excel Export
     DISA_STATUS_TEXTS[status]
+  end
+
+  # Apply DISA content rules to a csv_attributes_hash.
+  # Replaces check/fix with boilerplate for non-AC statuses,
+  # and blanks fields that should be empty per status.
+  def apply_disa_content_rules!(attrs, status)
+    # Replace check/fix with DISA boilerplate for non-AC/non-NYD statuses
+    if status != 'Applicable - Configurable' && status != 'Not Yet Determined'
+      texts = get_check_and_fix_text(status)
+      if texts
+        attrs['Check'] = texts['check_text']
+        attrs['Fix'] = texts['fix_text']
+      end
+    end
+
+    # Blank fields per DISA Process Guide field requirements
+    case status
+    when 'Applicable - Configurable'
+      attrs['Status Justification'] = nil
+      attrs['Mitigation'] = nil
+      attrs['Artifact Description'] = nil
+    when 'Applicable - Inherently Meets'
+      attrs['Mitigation'] = nil
+    when 'Not Applicable'
+      attrs['Mitigation'] = nil
+      attrs['Artifact Description'] = nil
+    end
   end
 
   def export_xccdf_project(project, component_ids: nil)

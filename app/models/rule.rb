@@ -70,9 +70,10 @@ class Rule < BaseRule
     include_association :additional_answers, if: :single_rule_clone?
   end
 
-  audited except: %i[component_id review_requestor_id created_at updated_at locked locked_fields inspec_control_file],
-          max_audits: 1000,
-          associated_with: :component
+  include VulcanAuditable
+
+  vulcan_audited except: %i[component_id review_requestor_id inspec_control_file],
+                 associated_with: :component
   has_associated_audits
 
   belongs_to :component, counter_cache: true
@@ -233,28 +234,35 @@ class Rule < BaseRule
     end
   end
 
+  # Returns export data as a hash keyed by DISA header name.
+  # Used by export_helper to build rows in header order without fragile positional indices.
+  def csv_attributes_hash
+    {
+      'IA Control' => nist_control_family,
+      'CCI' => ident,
+      'SRGID' => version,
+      'STIGID' => "#{component.prefix}-#{rule_id}",
+      'SRG Requirement' => srg_rule.title,
+      'Requirement' => title,
+      'SRG VulDiscussion' => srg_rule.disa_rule_descriptions.first&.vuln_discussion,
+      'VulDiscussion' => disa_rule_descriptions.first&.vuln_discussion,
+      'Status' => status,
+      'SRG Check' => srg_rule.checks.first&.content,
+      'Check' => export_checktext,
+      'SRG Fix' => srg_rule.fixtext,
+      'Fix' => export_fixtext,
+      'Severity' => SEVERITIES_MAP[rule_severity] || rule_severity,
+      'Mitigation' => disa_rule_descriptions.first&.mitigations,
+      'Artifact Description' => artifact_description,
+      'Status Justification' => status_justification,
+      'Vendor Comments' => vendor_comments,
+      'Satisfies' => satisfaction_text(format: :stig, direction: :satisfies)
+    }
+  end
+
+  # Array form for backward compatibility — ordered by DISA_EXPORT_HEADERS
   def csv_attributes
-    [
-      nist_control_family,
-      ident,
-      version,
-      "#{component.prefix}-#{rule_id}",
-      srg_rule.title, # original srg title
-      title,
-      srg_rule.disa_rule_descriptions.first&.vuln_discussion, # original srg vuln discussion
-      disa_rule_descriptions.first&.vuln_discussion,
-      status,
-      srg_rule.checks.first&.content, # original SRG check content
-      export_checktext,
-      srg_rule.fixtext, # original SRG fix text
-      export_fixtext,
-      SEVERITIES_MAP[rule_severity] || rule_severity,
-      disa_rule_descriptions.first&.mitigations,
-      artifact_description,
-      status_justification,
-      vendor_comments,
-      satisfaction_text(format: :stig, direction: :satisfies)
-    ]
+    csv_attributes_hash.values_at(*ExportConstants::DISA_EXPORT_HEADERS)
   end
 
   def displayed_name
