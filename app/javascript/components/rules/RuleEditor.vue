@@ -1,23 +1,23 @@
 <template>
   <div>
+    <!-- Actions Toolbar (above tabs — visible on all tabs) -->
+    <RuleActionsToolbar
+      :rule="rule"
+      :effective-permissions="effectivePermissions"
+      :read-only="readOnly"
+      @clone="$emit('clone')"
+      @delete="$emit('delete')"
+      @save="$emit('save', $event)"
+      @comment="$emit('comment', $event)"
+      @open-review-modal="$emit('open-review-modal')"
+      @open-related-modal="$emit('open-related-modal')"
+      @lock="$emit('lock', $event)"
+      @unlock="$emit('unlock', $event)"
+      @toggle-panel="$emit('toggle-panel', $event)"
+    />
+
     <b-tabs>
       <b-tab title="Documentation" class="pt-3" active>
-        <!-- Actions Toolbar (always visible, buttons disabled when read-only) -->
-        <RuleActionsToolbar
-          :rule="rule"
-          :effective-permissions="effectivePermissions"
-          :read-only="readOnly"
-          @clone="$emit('clone')"
-          @delete="$emit('delete')"
-          @save="$emit('save', $event)"
-          @comment="$emit('comment', $event)"
-          @open-review-modal="$emit('open-review-modal')"
-          @open-related-modal="$emit('open-related-modal')"
-          @lock="$emit('lock', $event)"
-          @unlock="$emit('unlock', $event)"
-          @toggle-panel="$emit('toggle-panel', $event)"
-        />
-
         <!-- Advanced Fields Toggle (always visible) -->
         <div class="mb-3" data-testid="advanced-fields-toggle">
           <b-form-checkbox

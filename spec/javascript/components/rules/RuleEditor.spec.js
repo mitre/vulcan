@@ -352,4 +352,26 @@ describe("RuleEditor", () => {
       expect(form.props("advancedMode")).toBe(true);
     });
   });
+
+  // ─── B6 Regression: Actions toolbar visible on all tabs ───
+  // REQUIREMENT: The Actions/Info toolbar (Save, Clone, Delete, Lock,
+  // History, Reviews, etc.) must be visible on ALL tabs, not just
+  // Documentation. Users must be able to save from the Test Script tab.
+  describe("B6: Actions toolbar visible on all tabs", () => {
+    it("renders RuleActionsToolbar outside of b-tabs", () => {
+      wrapper = createWrapper();
+      const toolbar = wrapper.findComponent({ name: "RuleActionsToolbar" });
+      const tabs = wrapper.findComponent({ name: "BTabs" });
+
+      expect(toolbar.exists()).toBe(true);
+      expect(tabs.exists()).toBe(true);
+
+      // Toolbar should NOT be a descendant of any b-tab
+      const tabPanels = wrapper.findAllComponents({ name: "BTab" });
+      for (const tab of tabPanels.wrappers) {
+        const toolbarInTab = tab.findComponent({ name: "RuleActionsToolbar" });
+        expect(toolbarInTab.exists()).toBe(false);
+      }
+    });
+  });
 });
