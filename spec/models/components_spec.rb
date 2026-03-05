@@ -772,4 +772,28 @@ RSpec.describe Component do
       orphan.destroy!
     end
   end
+
+  # ─── B8 Regression: Duplicated component rules_count ─────
+  # REQUIREMENT: When a component is duplicated, the new component's
+  # rules_count must equal the actual number of rules, NOT accumulate
+  # from the original's counter_cache value + new rule inserts.
+  describe '#duplicate rules_count (B8 regression)' do
+    it 'duplicated component has correct rules_count after save' do
+      original = shared_component
+      original_count = original.rules.where(deleted_at: nil).count
+      expect(original_count).to be > 0
+
+      dup = original.duplicate(new_version: 99, new_release: 99)
+      dup.save!
+      dup.reload
+
+      # Without counter reset, rules_count may be double the actual count
+      actual_count = dup.rules.where(deleted_at: nil).count
+      expect(dup.rules_count).to eq(actual_count),
+                                 "rules_count (#{dup.rules_count}) should equal actual count (#{actual_count}), " \
+                                 "not #{original_count * 2} (counter_cache accumulation bug)"
+
+      dup.destroy!
+    end
+  end
 end

@@ -18,7 +18,7 @@
       @ok="createComponent"
     >
       <!-- Searchable projects -->
-      <b-form @submit="createComponent()">
+      <b-form @submit.prevent>
         <input
           id="NewProjectAuthenticityToken"
           type="hidden"
@@ -395,9 +395,11 @@ export default {
       this.security_requirements_guide_id = srg.id;
     },
     createComponent: function (bvModalEvt) {
+      // Prevent double submissions (B7 fix)
+      if (this.loading) return;
       this.loading = true;
       let failed = false;
-      bvModalEvt.preventDefault();
+      if (bvModalEvt) bvModalEvt.preventDefault();
 
       // Guard before POST
       if (!this.prefix && !this.spreadsheet_import) {

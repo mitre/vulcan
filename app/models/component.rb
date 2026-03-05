@@ -19,6 +19,11 @@ class Component < ApplicationRecord
     # Don't set rules_count - it will be recalculated after save
 
     customize(lambda { |original_component, new_component|
+      # Reset counter_cache to 0 — amoeba copies the original's count, and
+      # Rails counter_cache callbacks will increment for each duplicated rule,
+      # resulting in double-counting (B8 bug fix).
+      new_component.rules_count = 0
+
       # There is unfortunately no way to do this at a lower level since the new component isn't
       # accessible until amoeba is processing at this level
       new_component.additional_questions.each do |question|
