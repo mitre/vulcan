@@ -335,55 +335,74 @@ class Component < ApplicationRecord
     copied_component
   end
 
+  # Copy audit history and reviews from the original component's rules to the
+  # duplicated component's rules. Uses bulk SQL (4 queries total) instead of
+  # per-rule queries (4 * N rules) for dramatically better performance.
   def duplicate_reviews_and_history(component_id)
     return unless component_id
 
+    orig = Component.find(component_id)
     conn = ActiveRecord::Base.connection
 
-    Component.find(component_id).rules.each do |orig_rule|
-      new_rule = rules.find { |r| r.rule_id == orig_rule.rule_id }
-      next if new_rule.nil?
-
-      # Preserve original timestamps on duplicated rules
-      conn.exec_update(
-        self.class.sanitize_sql_array([
-                                        'UPDATE base_rules SET created_at = ?, updated_at = ? WHERE id = ?',
-                                        orig_rule.created_at, orig_rule.updated_at, new_rule.id
-                                      ])
-      )
-
-      # Remove auto-generated audits from the duplication save
-      conn.exec_delete(
-        self.class.sanitize_sql_array([
-                                        'DELETE FROM audits WHERE auditable_type = ? AND auditable_id = ?',
-                                        'BaseRule', new_rule.id
-                                      ])
-      )
-
-      # Copy original rule's audit history to the new rule
-      conn.exec_insert(
-        self.class.sanitize_sql_array([
-                                        "INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, user_id, user_type,
-                               username, action, audited_changes, version, comment, remote_address, request_uuid,
-                               created_at, audited_user_id, audited_username)
-           SELECT ?, auditable_type, associated_id, associated_type, user_id, user_type, username,
-                  action, audited_changes, version, comment, remote_address, request_uuid, created_at,
-                  audited_user_id, audited_username
-           FROM audits WHERE auditable_type = ? AND auditable_id = ?",
-                                        new_rule.id, 'BaseRule', orig_rule.id
-                                      ])
-      )
-
-      # Copy reviews from original rule
-      conn.exec_insert(
-        self.class.sanitize_sql_array([
-                                        'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
-           SELECT user_id, ?, action, comment, created_at, updated_at
-           FROM reviews WHERE rule_id = ?',
-                                        new_rule.id, orig_rule.id
-                                      ])
-      )
+    # Build rule_id → new rule id mapping (matched by rule_id field)
+    new_rules_by_rule_id = rules.index_by(&:rule_id)
+    id_map = orig.rules.filter_map do |orig_rule|
+      new_rule = new_rules_by_rule_id[orig_rule.rule_id]
+      [orig_rule.id, new_rule.id] if new_rule
     end
+    return if id_map.empty?
+
+    new_ids = id_map.map(&:last)
+
+    # Create a temporary mapping table for bulk operations
+    # VALUES (orig_id, new_id), ... used as a join source
+    values = id_map.map { |o, n| "(#{o}, #{n})" }.join(', ')
+    mapping_cte = "rule_map AS (SELECT * FROM (VALUES #{values}) AS t(orig_id, new_id))"
+
+    # 1. Preserve original timestamps on duplicated rules
+    conn.exec_update(<<~SQL.squish)
+      WITH #{mapping_cte}
+      UPDATE base_rules
+      SET created_at = orig.created_at, updated_at = orig.updated_at
+      FROM rule_map
+      JOIN base_rules orig ON orig.id = rule_map.orig_id
+      WHERE base_rules.id = rule_map.new_id
+    SQL
+
+    # 2. Remove auto-generated audits from the duplication save
+    conn.exec_delete(<<~SQL.squish)
+      DELETE FROM audits
+      WHERE auditable_type = 'BaseRule'
+        AND auditable_id IN (#{new_ids.join(', ')})
+    SQL
+
+    # 3. Copy original audit history to new rules (bulk INSERT...SELECT with mapping)
+    conn.exec_insert(<<~SQL.squish)
+      WITH #{mapping_cte}
+      INSERT INTO audits (
+        auditable_id, auditable_type, associated_id, associated_type,
+        user_id, user_type, username, action, audited_changes, version,
+        comment, remote_address, request_uuid, created_at,
+        audited_user_id, audited_username
+      )
+      SELECT
+        rule_map.new_id, a.auditable_type, a.associated_id, a.associated_type,
+        a.user_id, a.user_type, a.username, a.action, a.audited_changes, a.version,
+        a.comment, a.remote_address, a.request_uuid, a.created_at,
+        a.audited_user_id, a.audited_username
+      FROM audits a
+      JOIN rule_map ON a.auditable_id = rule_map.orig_id
+      WHERE a.auditable_type = 'BaseRule'
+    SQL
+
+    # 4. Copy reviews from original rules (bulk INSERT...SELECT with mapping)
+    conn.exec_insert(<<~SQL.squish)
+      WITH #{mapping_cte}
+      INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
+      SELECT r.user_id, rule_map.new_id, r.action, r.comment, r.created_at, r.updated_at
+      FROM reviews r
+      JOIN rule_map ON r.rule_id = rule_map.orig_id
+    SQL
   end
 
   def create_rule_satisfactions
