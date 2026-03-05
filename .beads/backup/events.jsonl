@@ -146,3 +146,28 @@
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:58:30Z","event_type":"closed","id":148,"issue_id":"vulcan-clean-t941","new_value":"Fixed: parallel_sync.rake was running parallel:prepare in CI. Added ENV[CI] guard. CI green.","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-02T22:58:30Z","event_type":"closed","id":149,"issue_id":"vulcan-clean-di76","new_value":"Committed curated CHANGELOG.md with 110 entries (f721229)","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:42Z","event_type":"created","id":150,"issue_id":"vulcan-clean-7jiq","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:47Z","event_type":"created","id":151,"issue_id":"vulcan-clean-7gt3","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:49Z","event_type":"created","id":152,"issue_id":"vulcan-clean-8bhy","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:49Z","event_type":"created","id":153,"issue_id":"vulcan-clean-31gc","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:50Z","event_type":"created","id":154,"issue_id":"vulcan-clean-qi4s","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:51Z","event_type":"created","id":155,"issue_id":"vulcan-clean-u6wd","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:51Z","event_type":"created","id":156,"issue_id":"vulcan-clean-m3hn","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:52Z","event_type":"created","id":157,"issue_id":"vulcan-clean-lee8","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:53Z","event_type":"created","id":158,"issue_id":"vulcan-clean-ygpe","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:54Z","event_type":"created","id":159,"issue_id":"vulcan-clean-rj1h","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:54Z","event_type":"created","id":160,"issue_id":"vulcan-clean-s1e4","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:55Z","event_type":"created","id":161,"issue_id":"vulcan-clean-dgds","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:56Z","event_type":"created","id":162,"issue_id":"vulcan-clean-6d6z","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:56Z","event_type":"created","id":163,"issue_id":"vulcan-clean-lqo3","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:57Z","event_type":"created","id":164,"issue_id":"vulcan-clean-mgsm","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:57Z","event_type":"created","id":165,"issue_id":"vulcan-clean-8xtt","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:58Z","event_type":"created","id":166,"issue_id":"vulcan-clean-3xhc","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:32:59Z","event_type":"created","id":167,"issue_id":"vulcan-clean-gqn7","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:00Z","event_type":"created","id":168,"issue_id":"vulcan-clean-gyua","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:00Z","event_type":"created","id":169,"issue_id":"vulcan-clean-h29g","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:01Z","event_type":"created","id":170,"issue_id":"vulcan-clean-u949","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:01Z","event_type":"created","id":171,"issue_id":"vulcan-clean-mbl7","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:02Z","event_type":"created","id":172,"issue_id":"vulcan-clean-jts2","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:03Z","event_type":"created","id":173,"issue_id":"vulcan-clean-9bhi","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:06Z","event_type":"created","id":174,"issue_id":"vulcan-clean-i6a5","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T09:33:08Z","event_type":"created","id":175,"issue_id":"vulcan-clean-ylyl","new_value":"","old_value":""}
