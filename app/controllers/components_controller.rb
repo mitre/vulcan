@@ -78,28 +78,38 @@ class ComponentsController < ApplicationController
     # When importing from an existing spreadsheet, some errors are set before
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
-    if component.errors.empty? && component.save
-      component.admin_name = component_create_params[:admin_name].presence || current_user.name
-      component.admin_email = component_create_params[:admin_email].presence || current_user.email
-      component.duplicate_reviews_and_history(component_create_params[:id])
-      component.create_rule_satisfactions if component_create_params[:file]
-      component.rules_count = component.rules.where(deleted_at: nil).size
-      if component_create_params[:slack_channel_id].present?
-        component.component_metadata_attributes = { data: {
-          'Slack Channel ID' => component_create_params[:slack_channel_id]
-        } }
+    # Suppress auditing during initial save of duplicated components —
+    # original audit history is copied in bulk by duplicate_reviews_and_history.
+    # This avoids creating 200+ redundant audit records per rule.
+    is_duplicate = component_create_params[:duplicate] || component_create_params[:copy_component]
+    Audited.auditing_enabled = false if is_duplicate
+    begin
+      if component.errors.empty? && component.save
+        Audited.auditing_enabled = true
+        component.admin_name = component_create_params[:admin_name].presence || current_user.name
+        component.admin_email = component_create_params[:admin_email].presence || current_user.email
+        component.duplicate_reviews_and_history(component_create_params[:id])
+        component.create_rule_satisfactions if component_create_params[:file]
+        component.rules_count = component.rules.where(deleted_at: nil).size
+        if component_create_params[:slack_channel_id].present?
+          component.component_metadata_attributes = { data: {
+            'Slack Channel ID' => component_create_params[:slack_channel_id]
+          } }
+        end
+        component.save
+        send_slack_notification(:create_component, component) if Settings.slack.enabled
+        render json: { toast: 'Successfully added component to project.' }
+      else
+        render json: {
+          toast: {
+            title: 'Could not add component to project.',
+            message: component.errors.full_messages,
+            variant: 'danger'
+          }
+        }, status: :unprocessable_entity
       end
-      component.save
-      send_slack_notification(:create_component, component) if Settings.slack.enabled
-      render json: { toast: 'Successfully added component to project.' }
-    else
-      render json: {
-        toast: {
-          title: 'Could not add component to project.',
-          message: component.errors.full_messages,
-          variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+    ensure
+      Audited.auditing_enabled = true
     end
   end
 

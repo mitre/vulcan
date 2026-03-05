@@ -807,5 +807,28 @@ RSpec.describe Component do
 
       dup.destroy!
     end
+
+    it 'auditing can be suppressed during save for performance' do
+      original = shared_component
+      dup = original.duplicate(new_version: 97, new_release: 97)
+
+      # Controller suppresses auditing during dup save — verify the
+      # mechanism works at model level
+      Audited.auditing_enabled = false
+      begin
+        dup.save!
+      ensure
+        Audited.auditing_enabled = true
+      end
+
+      rule_audits = Audited::Audit.where(
+        auditable_type: 'BaseRule',
+        auditable_id: dup.rules.pluck(:id)
+      ).count
+      expect(rule_audits).to eq(0),
+                             "Expected 0 rule audits with auditing disabled, got #{rule_audits}"
+
+      dup.destroy!
+    end
   end
 end
