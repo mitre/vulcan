@@ -181,3 +181,5 @@
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T20:16:44Z","event_type":"closed","id":183,"issue_id":"vulcan-clean-6d6z","new_value":"Refactored: export uses named hash, DISA column order follows official Table 8-1","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T20:26:40Z","event_type":"closed","id":184,"issue_id":"vulcan-clean-s1e4","new_value":"Fixed: refresh:activity event triggers sidepanel re-fetch after rule save","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T20:26:48Z","event_type":"closed","id":185,"issue_id":"vulcan-clean-s1e4","new_value":"Fixed: refresh:activity event triggers sidepanel re-fetch","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-04T20:26:56Z","event_type":"closed","id":186,"issue_id":"vulcan-clean-8bhy","new_value":"Not reproducible: section locks work correctly per Playwright test","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T16:50:50Z","event_type":"closed","id":187,"issue_id":"vulcan-clean-mgsm","new_value":"Fixed: moved toolbar above b-tabs, visible on all tabs","old_value":""}
