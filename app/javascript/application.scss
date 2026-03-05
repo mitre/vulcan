@@ -3,6 +3,9 @@
 
 // Bootstrap Icons are included via the IconsPlugin in Vue
 // No need to import separate icon CSS files
+// Font Awesome 4 is served from public/css/ and public/fonts/ (see layout)
+// to avoid esbuild hash / Propshaft digest mismatch on font files.
+// CSP blocks EasyMDE's CDN auto-download, so we bundle locally.
 
 .clickable {
   cursor: pointer;

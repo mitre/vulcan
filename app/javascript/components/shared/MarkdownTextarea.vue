@@ -134,6 +134,7 @@ export default {
           element: this.$refs.textarea,
           initialValue: this.value || "",
           placeholder: this.placeholder || "Write markdown here...",
+          autoDownloadFontAwesome: false, // FA 4 bundled locally via application.scss
           spellChecker: false,
           status: false,
           minHeight: this.minHeight,
