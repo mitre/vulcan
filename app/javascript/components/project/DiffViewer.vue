@@ -41,6 +41,31 @@
             <b-input-group-text class="rounded-0">Base</b-input-group-text>
           </b-input-group-prepend>
           <b-form-select
+            id="baseComponent"
+            v-model="baseComponent"
+            class="form-select-sm"
+            @change="updateCompareList"
+          >
+            <option
+              v-for="(selectOption, indexOpt) in project.components"
+              :key="indexOpt"
+              :value="selectOption"
+            >
+              {{ selectOption.name }}
+              {{
+                selectOption.version || selectOption.release
+                  ? `(${[
+                      selectOption.version ? `Version ${selectOption.version}` : "",
+                      selectOption.release ? `Release ${selectOption.release}` : "",
+                    ].join(", ")})`
+                  : ""
+              }}
+            </option>
+          </b-form-select>
+          <b-input-group-prepend>
+            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
+          </b-input-group-prepend>
+          <b-form-select
             id="diffComponent"
             v-model="diffComponent"
             class="form-select-sm"
@@ -65,29 +90,17 @@
             </option>
           </b-form-select>
           <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
+            <b-input-group-text class="rounded-0">Theme</b-input-group-text>
           </b-input-group-prepend>
           <b-form-select
-            id="baseComponent"
-            v-model="baseComponent"
+            id="diffTheme"
             class="form-select-sm"
-            @change="updateCompareList"
+            :value="monacoEditorOptions.theme"
+            @change="updateTheme"
           >
-            <option
-              v-for="(selectOption, indexOpt) in project.components"
-              :key="indexOpt"
-              :value="selectOption"
-            >
-              {{ selectOption.name }}
-              {{
-                selectOption.version || selectOption.release
-                  ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
-                  : ""
-              }}
-            </option>
+            <option value="vs">Visual Studio</option>
+            <option value="vs-dark">Visual Studio Dark</option>
+            <option value="hc-black">High Contrast Dark</option>
           </b-form-select>
           <b-button
             size="sm"
@@ -99,12 +112,13 @@
         </b-input-group>
         <MonacoEditor
           v-if="diffControl || baseControl"
-          :key="selectedRuleId"
+          :key="`${selectedRuleId}-${editorKey}`"
           :diff-editor="true"
           :original="diffControl"
           :value="baseControl"
           :options="monacoEditorOptions"
           :language="monacoEditorOptions.language"
+          :theme="monacoEditorOptions.theme"
           class="editor"
         />
       </b-col>
@@ -261,6 +275,11 @@ export default {
     },
     updateSettings: function (setting, value) {
       this.monacoEditorOptions[setting] = value;
+      this.editorKey += 1;
+    },
+    updateTheme: function (value) {
+      this.monacoEditorOptions.theme = value;
+      localStorage.setItem("monacoEditorTheme", value);
       this.editorKey += 1;
     },
     handleScroll: function () {

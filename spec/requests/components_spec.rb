@@ -206,4 +206,66 @@ RSpec.describe 'Components' do
       expect(ids).not_to include(unreleased_component.id)
     end
   end
+
+  # REQUIREMENT: Diff viewer needs to find other components based on the same SRG.
+  # The query uses DISTINCT + ORDER BY, which requires ORDER BY columns in SELECT list.
+  describe 'GET /components/:id/search/based_on_same_srg' do
+    it 'returns components based on the same SRG without 500 error' do
+      get "/components/#{component.id}/search/based_on_same_srg",
+          headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success).or have_http_status(:not_found)
+      # Should never be a 500
+      expect(response).not_to have_http_status(:internal_server_error)
+    end
+  end
+
+  describe 'GET /components/:id/compare/:diff_id' do
+    it 'returns diff data for two components' do
+      # Create a second component on the same SRG for comparison
+      other_component = create(:component, project: project)
+
+      get "/components/#{component.id}/compare/#{other_component.id}",
+          headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+    end
+  end
+
+  # REQUIREMENT: Activity panel (B5) needs a dedicated histories endpoint
+  # so the frontend can re-fetch after rule saves without full page reload.
+  describe 'GET /components/:id/histories' do
+    it 'requires authentication' do
+      sign_out user
+      get "/components/#{component.id}/histories",
+          headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:unauthorized)
+        .or redirect_to(new_user_session_path)
+    end
+
+    it 'returns an array of formatted audit entries' do
+      # Create a change to generate an audit
+      rule = component.rules.first
+      rule.update!(title: 'Updated for history test', audit_comment: 'Test history')
+
+      get "/components/#{component.id}/histories",
+          headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      expect(json).to be_an(Array)
+      expect(json.length).to be > 0
+      # Each entry should have the VulcanAudit.format structure
+      entry = json.first
+      expect(entry).to have_key('action')
+      expect(entry).to have_key('audited_changes')
+      expect(entry).to have_key('created_at')
+    end
+
+    it 'returns 404 for non-existent component' do
+      get '/components/999999/histories',
+          headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:not_found)
+    end
+  end
 end

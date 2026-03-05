@@ -11,7 +11,7 @@ class ComponentsController < ApplicationController
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update]
-  before_action :set_component_basic, only: %i[find based_on_same_srg]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories]
   before_action :set_project, only: %i[show create history]
   before_action :set_component_permissions, only: %i[show]
   before_action :set_rule, only: %i[show]
@@ -238,6 +238,12 @@ class ComponentsController < ApplicationController
     end
   end
 
+  def histories
+    return head :not_found unless @component
+
+    render json: @component.histories(50)
+  end
+
   def based_on_same_srg
     return head :not_found unless @component&.based_on
 
@@ -253,7 +259,7 @@ class ComponentsController < ApplicationController
                           .order(:project_id)
                           .joins(:project)
                           .select('components.id, components.name, components.version, components.prefix, ' \
-                                  'components.release, projects.name AS project_name')
+                                  'components.release, components.project_id, projects.name AS project_name')
                           .map(&:attributes)
   end
 
