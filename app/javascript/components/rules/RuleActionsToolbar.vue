@@ -39,7 +39,7 @@
         <b-button
           variant="outline-info"
           size="sm"
-          href="https://public.cyber.mil/stigs/vendor-process/"
+          href="https://vulcan.mitre.org/disa-process/"
           target="_blank"
           rel="noopener noreferrer"
         >
