@@ -213,18 +213,23 @@ describe("RuleEditor", () => {
       expect(wrapper.emitted("toggle-advanced-fields")).toBeFalsy();
     });
 
-    it("resets checkbox state when confirmation is canceled", async () => {
+    it("checkbox stays off when confirmation is canceled (B4 fix)", async () => {
       wrapper = createWrapper({ advanced_fields: false });
-      // Simulate checkbox being clicked (which sets localAdvancedFields to true)
-      wrapper.vm.localAdvancedFields = true;
+      // Checkbox click triggers onAdvancedFieldsToggle but does NOT
+      // toggle localAdvancedFields — only the modal opens
       wrapper.vm.onAdvancedFieldsToggle(true);
       await wrapper.vm.$nextTick();
 
-      // Cancel should reset local state back to prop value
+      // localAdvancedFields should still be false (not toggled yet)
+      expect(wrapper.vm.localAdvancedFields).toBe(false);
+      expect(wrapper.vm.showConfirmModal).toBe(true);
+
+      // Cancel keeps it false
       wrapper.vm.cancelEnableAdvanced();
       await wrapper.vm.$nextTick();
 
       expect(wrapper.vm.localAdvancedFields).toBe(false);
+      expect(wrapper.vm.showConfirmModal).toBe(false);
     });
 
     it("emits toggle-advanced-fields immediately when disabling (no confirmation needed)", async () => {

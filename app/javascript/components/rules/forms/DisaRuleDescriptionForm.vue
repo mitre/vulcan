@@ -521,7 +521,8 @@ export default {
     tooltips: function () {
       return {
         documentable:
-          "Indicates whether this requirement should be documented in the STIG checklist",
+          "DISA XCCDF metadata: indicates whether this finding should appear in the STIG checklist results. " +
+          "When checked, assessors must document their finding for this requirement during evaluation.",
         vuln_discussion: "Discuss, in detail, the rationale for this control's vulnerability",
         false_positives: "List any likely false-positives associated with evaluating this control",
         false_negatives: "List any likely false-negatives associated with evaluating this control",

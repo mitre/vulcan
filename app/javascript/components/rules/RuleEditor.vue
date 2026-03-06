@@ -131,21 +131,25 @@ export default {
   methods: {
     onAdvancedFieldsToggle(newValue) {
       if (newValue) {
-        // Enabling: show confirmation dialog (checkbox already toggled visually)
+        // Enabling: v-model already toggled to true — reset immediately
+        // and show confirmation. Only set true after user confirms.
+        this.$nextTick(() => {
+          this.localAdvancedFields = false;
+        });
         this.showConfirmModal = true;
       } else {
-        // Disabling: emit immediately (no confirmation needed)
+        // Disabling: apply immediately (no confirmation needed)
         this.$emit("toggle-advanced-fields", false);
       }
     },
     confirmEnableAdvanced() {
       this.showConfirmModal = false;
+      this.localAdvancedFields = true;
       this.$emit("toggle-advanced-fields", true);
     },
     cancelEnableAdvanced() {
       this.showConfirmModal = false;
-      // Reset checkbox to match prop (user canceled, so revert visual state)
-      this.localAdvancedFields = this.advanced_fields;
+      // Checkbox stays off — user canceled
     },
   },
 };

@@ -36,6 +36,15 @@
           wrapper-class="d-inline-block"
           @comment="$emit('comment', $event)"
         />
+        <b-button
+          variant="outline-info"
+          size="sm"
+          href="https://public.cyber.mil/stigs/vendor-process/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <b-icon icon="question-circle" /> DISA Guide
+        </b-button>
       </b-button-group>
     </div>
 
