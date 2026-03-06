@@ -142,7 +142,7 @@ describe("NewComponentModal", () => {
         },
         stubs: {
           "b-modal": ModalStub,
-          VueSimpleSuggest: true,
+          VueMultiselect: true,
         },
       });
     };
@@ -218,7 +218,7 @@ describe("NewComponentModal", () => {
         },
         stubs: {
           "b-modal": ModalStub,
-          VueSimpleSuggest: true,
+          VueMultiselect: true,
         },
       });
     };
@@ -299,7 +299,7 @@ describe("NewComponentModal", () => {
       wrapper = mount(NewComponentModal, {
         localVue,
         propsData: { ...defaultProps, spreadsheet_import: false },
-        stubs: { "b-modal": ModalStub, VueSimpleSuggest: true },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
       });
       await wrapper.setData({ file: mockFile });
       await new Promise((r) => setTimeout(r, 10));
@@ -325,6 +325,53 @@ describe("NewComponentModal", () => {
       // Clear the file
       await wrapper.setData({ file: null });
       expect(wrapper.vm.srgAutoDetected).toBe(false);
+    });
+  });
+
+  // ─── B7: Double-click prevention + modal close behavior ───
+  // REQUIREMENTS:
+  // - Modal should NOT close when validation fails (missing fields)
+  // - Modal SHOULD close when validation passes (let @ok default behavior work)
+  // - Double submissions prevented by loading guard
+  // - Progress toast shown while request processes
+  describe("createComponent modal behavior", () => {
+    it("prevents double submissions via loading guard", () => {
+      wrapper = createWrapper();
+      wrapper.vm.loading = true;
+
+      const mockEvent = { preventDefault: vi.fn() };
+      wrapper.vm.createComponent(mockEvent);
+
+      // Should return immediately without calling preventDefault
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it("calls preventDefault on validation failure to keep modal open", () => {
+      wrapper = createWrapper();
+      // No name, no SRG — validation should fail
+      wrapper.vm.name = "";
+      wrapper.vm.security_requirements_guide_id = null;
+
+      const mockEvent = { preventDefault: vi.fn() };
+      wrapper.vm.createComponent(mockEvent);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(wrapper.vm.loading).toBe(false);
+    });
+
+    it("does NOT call preventDefault when validation passes (modal closes naturally)", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.name = "Test Component";
+      wrapper.vm.prefix = "TST-01";
+      wrapper.vm.security_requirements_guide_id = 1;
+      wrapper.vm.component_to_duplicate = 1;
+
+      const mockEvent = { preventDefault: vi.fn() };
+      wrapper.vm.createComponent(mockEvent);
+
+      // preventDefault should NOT be called — modal closes via default @ok
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+      expect(wrapper.vm.loading).toBe(true);
     });
   });
 });

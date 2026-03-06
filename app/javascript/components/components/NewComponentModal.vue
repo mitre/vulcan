@@ -29,35 +29,31 @@
           <b-col>
             <!-- Select a SRG -->
             <b-form-group v-if="copy_component" label="Select an existing Project to copy from">
-              <vue-simple-suggest
-                ref="projectSearch"
-                :value="project.name"
-                :list="projects"
-                display-attribute="name"
-                value-attribute="id"
+              <vue-multiselect
+                v-model="selectedProjectObj"
+                :options="projects"
+                label="name"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 placeholder="Search for an existing Project..."
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
-                @select="setSelectedProject($refs.projectSearch.selected)"
+                @input="setSelectedProject($event)"
               />
             </b-form-group>
 
             <!-- Select a Component -->
             <b-form-group v-if="copy_component" label="Select an existing Component to copy from">
-              <vue-simple-suggest
+              <vue-multiselect
                 :key="componentKey"
-                ref="componentSearch"
-                :list="components"
-                display-attribute="displayed"
-                value-attribute="id"
-                placeholder="Search for an existing Component..."
+                v-model="selectedComponentObj"
+                :options="components"
+                label="displayed"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 :disabled="!selected_project_id"
-                :filter-by-query="true"
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
-                @select="setSelectedComponent($refs.componentSearch.selected)"
+                placeholder="Search for an existing Component..."
+                @input="setSelectedComponent($event)"
               />
             </b-form-group>
 
@@ -66,19 +62,16 @@
               v-if="predetermined_security_requirements_guide_id == null"
               label="Select a Security Requirements Guide"
             >
-              <vue-simple-suggest
-                ref="srgSearch"
-                :value="security_requirements_guide_displayed"
-                :list="copy_component ? displayedSrgs : srgs"
-                display-attribute="displayed"
-                value-attribute="id"
-                placeholder="Search for an SRG..."
-                :filter-by-query="copy_component ? false : true"
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
+              <vue-multiselect
+                v-model="selectedSrgObj"
+                :options="copy_component ? displayedSrgs : srgs"
+                label="displayed"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 :disabled="detecting"
-                @select="setSelectedSrg($refs.srgSearch.selected)"
+                placeholder="Search for an SRG..."
+                @input="setSelectedSrg($event)"
               />
               <small v-if="detecting" class="text-muted">
                 <b-spinner small type="grow" /> Detecting SRG from spreadsheet...
@@ -154,17 +147,15 @@
               label="Select the Point of Contact"
               description="If no user selected, the PoC will be set to the user creating the component"
             >
-              <vue-simple-suggest
-                ref="userSearch"
-                :list="potentialPocs"
-                display-attribute="name"
-                value-attribute="email"
+              <vue-multiselect
+                v-model="selectedPocObj"
+                :options="potentialPocs"
+                label="name"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 placeholder="Search for eligible PoC..."
-                :filter-by-query="true"
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
-                @select="setComponentPoc($refs.userSearch.selected)"
+                @input="setComponentPoc($event)"
               />
             </b-form-group>
             <!-- Slack Channel ID -->
@@ -190,13 +181,13 @@ import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
+import VueMultiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 
 export default {
   name: "NewComponentModal",
   components: {
-    VueSimpleSuggest,
+    VueMultiselect,
   },
   mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
   props: {
@@ -264,6 +255,10 @@ export default {
       potentialPocs: this.project ? this.project.users : [],
       admin_name: "",
       admin_email: "",
+      selectedProjectObj: null,
+      selectedComponentObj: null,
+      selectedSrgObj: null,
+      selectedPocObj: null,
     };
   },
   computed: {
@@ -350,6 +345,7 @@ export default {
       this.$refs["AddComponentModal"].show();
     },
     setComponentPoc: function (user) {
+      if (!user) return;
       this.admin_email = user.email;
       this.admin_name = user.name;
     },
@@ -365,6 +361,7 @@ export default {
       });
     },
     setSelectedProject: function (project) {
+      if (!project) return;
       if (!this.selected_project_id || this.selected_project_id !== project.id) {
         this.selected_component_id = null;
         this.security_requirements_guide_id = null;
@@ -377,6 +374,7 @@ export default {
       this.selected_project_id = project.id;
     },
     setSelectedComponent: function (component) {
+      if (!component) return;
       this.selected_component_id = component.id;
       this.security_requirements_guide_id = component.security_requirements_guide_id;
       this.security_requirements_guide_displayed = this.srgs.find(
@@ -392,6 +390,7 @@ export default {
       this.displayedSrgs = this.srgs.filter((srg) => srg.title === component.based_on_title);
     },
     setSelectedSrg: function (srg) {
+      if (!srg) return;
       this.security_requirements_guide_id = srg.id;
     },
     createComponent: function (bvModalEvt) {
@@ -399,18 +398,8 @@ export default {
       if (this.loading) return;
       this.loading = true;
       let failed = false;
-      if (bvModalEvt) bvModalEvt.preventDefault();
 
-      // Show progress feedback for potentially slow operations
-      this.$bvToast.toast("Creating component — this may take a moment for large SRGs...", {
-        title: "Working",
-        variant: "info",
-        solid: true,
-        noAutoHide: true,
-        id: "create-component-progress",
-      });
-
-      // Guard before POST
+      // Guard before POST — preventDefault keeps modal open on validation errors
       if (!this.prefix && !this.spreadsheet_import) {
         this.$bvToast.toast("Please enter a prefix", {
           title: "Error",
@@ -444,10 +433,20 @@ export default {
         failed = true;
       }
       if (failed) {
+        // Keep modal open on validation errors
+        if (bvModalEvt) bvModalEvt.preventDefault();
         this.loading = false;
-        this.$bvToast.hide("create-component-progress");
         return;
       }
+
+      // Modal closes naturally (no preventDefault) — show background progress
+      this.$bvToast.toast("Creating component — this may take a moment for large SRGs...", {
+        title: "Creating Component",
+        variant: "info",
+        solid: true,
+        noAutoHide: true,
+        id: "create-component-progress",
+      });
 
       let formData = new FormData();
       formData.append(
@@ -507,7 +506,6 @@ export default {
     },
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);
-      this.$refs["AddComponentModal"].hide();
       this.$emit("projectUpdated");
     },
   },

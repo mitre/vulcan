@@ -7,7 +7,7 @@ import NewMembership from "@/components/memberships/NewMembership.vue";
  * NewMembership Component Requirements:
  *
  * 1. USER SEARCH:
- *    - Shows search input (VueSimpleSuggest) when no user selected
+ *    - Shows search input (VueMultiselect) when no user selected
  *    - Shows alert with user name/email when user selected
  *    - Dismissing alert clears selected user
  *
@@ -55,9 +55,10 @@ describe("NewMembership", () => {
         ...props,
       },
       stubs: {
-        VueSimpleSuggest: {
-          template: '<input class="vue-simple-suggest-stub" />',
-          props: ["list", "filterByQuery", "displayAttribute", "placeholder", "styles"],
+        VueMultiselect: {
+          template: '<div class="vue-multiselect-stub"><input /></div>',
+          props: ["options", "label", "trackBy", "placeholder", "searchable"],
+          model: { prop: "value", event: "input" },
         },
       },
     });
@@ -75,12 +76,12 @@ describe("NewMembership", () => {
   describe("user search and selection", () => {
     it("shows search input when no user is selected", () => {
       wrapper = createWrapper();
-      expect(wrapper.find(".vue-simple-suggest-stub").exists()).toBe(true);
+      expect(wrapper.find(".vue-multiselect-stub").exists()).toBe(true);
     });
 
     it("hides search input when a user is selected", () => {
       wrapper = createWrapper({ selected_member: availableMembers[0] });
-      expect(wrapper.find(".vue-simple-suggest-stub").exists()).toBe(false);
+      expect(wrapper.find(".vue-multiselect-stub").exists()).toBe(false);
     });
 
     it("shows alert with user name and email when user is selected", () => {

@@ -258,6 +258,9 @@ class Component < ApplicationRecord
     rules.where(locked: false).empty?
   end
 
+  # Duplicate this component. The returned component has auditing suppressed
+  # on its rules — call duplicate_reviews_and_history after save to copy
+  # the original's audit trail instead.
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
                 new_title: nil, new_description: nil, new_project_id: nil, new_srg_id: nil)
     copied_component = amoeba_dup
