@@ -188,3 +188,5 @@
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T20:03:46Z","event_type":"closed","id":190,"issue_id":"vulcan-clean-m3hn","new_value":"Fixed: checkbox stays off until confirmed, no flicker","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T20:42:55Z","event_type":"closed","id":191,"issue_id":"vulcan-clean-ylyl","new_value":"Fixed: lock proceeds with warning, skips NYD/incomplete rules","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T21:20:16Z","event_type":"created","id":192,"issue_id":"vulcan-clean-bu3w","new_value":"","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T22:07:12Z","event_type":"closed","id":193,"issue_id":"vulcan-clean-gqn7","new_value":"Fixed: metadata JSON searchable via CAST+ILIKE in global search","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T22:07:21Z","event_type":"closed","id":194,"issue_id":"vulcan-clean-lee8","new_value":"Added DISA Guide button to Info toolbar","old_value":""}
