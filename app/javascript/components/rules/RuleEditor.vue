@@ -19,19 +19,39 @@
     <b-tabs>
       <b-tab title="Documentation" class="pt-3" active>
         <!-- Advanced Fields Toggle (always visible) -->
-        <div class="mb-3" data-testid="advanced-fields-toggle">
-          <b-form-checkbox
-            v-model="localAdvancedFields"
-            name="advanced-fields-toggle"
-            class="d-inline-block font-weight-bold"
-            switch
-            @change="onAdvancedFieldsToggle"
-          >
-            Advanced Fields
-          </b-form-checkbox>
-          <small class="text-muted d-block" data-testid="advanced-fields-helper">
-            Most users <strong>do not need</strong> to modify advanced fields.
-          </small>
+        <div class="mb-3 d-flex align-items-center justify-content-between">
+          <div data-testid="advanced-fields-toggle">
+            <b-form-checkbox
+              v-model="localAdvancedFields"
+              name="advanced-fields-toggle"
+              class="d-inline-block"
+              switch
+              size="sm"
+              @change="onAdvancedFieldsToggle"
+            >
+              <small class="font-weight-bold">Advanced Fields</small>
+            </b-form-checkbox>
+            <small class="text-muted d-block ml-4" data-testid="advanced-fields-helper">
+              Most users <strong>do not need</strong> to modify advanced fields.
+            </small>
+          </div>
+          <div data-testid="autosave-toggle" class="text-right">
+            <b-form-checkbox
+              :checked="autosaveEnabled"
+              :disabled="autosaveDisabledReason !== null"
+              switch
+              size="sm"
+              @change="$emit('toggle-autosave')"
+            >
+              <small :class="autosaveColorClass"> Auto-save {{ autosaveLabel }} </small>
+            </b-form-checkbox>
+            <small
+              v-if="autosaveDirty && autosaveEnabled && !autosaveDisabledReason"
+              class="text-warning d-block"
+            >
+              Unsaved changes...
+            </small>
+          </div>
         </div>
 
         <!-- Confirmation Modal for enabling advanced fields -->
@@ -115,12 +135,39 @@ export default {
       type: Array,
       default: () => [],
     },
+    autosaveEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    autosaveDirty: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: function () {
     return {
       showConfirmModal: false,
       localAdvancedFields: this.advanced_fields,
     };
+  },
+  computed: {
+    autosaveDisabledReason() {
+      if (this.readOnly) return "view";
+      if (this.rule.locked) return "locked";
+      if (this.rule.review_requestor_id) return "review";
+      return null;
+    },
+    autosaveLabel() {
+      const reason = this.autosaveDisabledReason;
+      if (reason === "locked") return "(locked)";
+      if (reason === "review") return "(under review)";
+      if (reason === "view") return "OFF";
+      return this.autosaveEnabled ? "ON" : "OFF";
+    },
+    autosaveColorClass() {
+      if (this.autosaveDisabledReason) return "text-muted";
+      return this.autosaveEnabled ? "text-success font-weight-bold" : "text-muted";
+    },
   },
   watch: {
     // Sync prop changes to local state (e.g., after API update)

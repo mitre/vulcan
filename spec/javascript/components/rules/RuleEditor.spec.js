@@ -358,6 +358,73 @@ describe("RuleEditor", () => {
     });
   });
 
+  // ─── F3: Autosave toggle UX states ──────────────────────
+  // REQUIREMENTS:
+  // - Editable + OFF: gray "Auto-save OFF", no notice
+  // - Editable + ON + clean: green "Auto-save ON", no notice
+  // - Editable + ON + dirty: green "Auto-save ON", "Unsaved changes..."
+  // - Locked: disabled, gray "Auto-save (locked)", no notice
+  // - Under review: disabled, gray "Auto-save (under review)", no notice
+  // - View mode: disabled, gray "Auto-save OFF", no notice
+  describe("F3: Autosave toggle UX", () => {
+    it("shows OFF in gray when disabled", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.autosaveLabel).toBe("OFF");
+      expect(wrapper.vm.autosaveColorClass).toBe("text-muted");
+    });
+
+    it("shows ON in green when enabled on editable rule", () => {
+      wrapper = createWrapper({ autosaveEnabled: true });
+      expect(wrapper.vm.autosaveLabel).toBe("ON");
+      expect(wrapper.vm.autosaveColorClass).toBe("text-success font-weight-bold");
+    });
+
+    it("shows (locked) in gray when rule is locked", () => {
+      wrapper = createWrapper({
+        rule: { ...defaultRule, locked: true },
+        autosaveEnabled: true,
+      });
+      expect(wrapper.vm.autosaveLabel).toBe("(locked)");
+      expect(wrapper.vm.autosaveColorClass).toBe("text-muted");
+      expect(wrapper.vm.autosaveDisabledReason).toBe("locked");
+    });
+
+    it("shows (under review) in gray when rule is under review", () => {
+      wrapper = createWrapper({
+        rule: { ...defaultRule, review_requestor_id: 42 },
+        autosaveEnabled: true,
+      });
+      expect(wrapper.vm.autosaveLabel).toBe("(under review)");
+      expect(wrapper.vm.autosaveDisabledReason).toBe("review");
+    });
+
+    it("shows OFF in gray when in view mode", () => {
+      wrapper = createWrapper({ readOnly: true, autosaveEnabled: true });
+      expect(wrapper.vm.autosaveLabel).toBe("OFF");
+      expect(wrapper.vm.autosaveDisabledReason).toBe("view");
+    });
+
+    it("hides unsaved changes notice when rule is locked", () => {
+      wrapper = createWrapper({
+        rule: { ...defaultRule, locked: true },
+        autosaveEnabled: true,
+        autosaveDirty: true,
+      });
+      const notice = wrapper.find("[data-testid='autosave-toggle'] .text-warning");
+      expect(notice.exists()).toBe(false);
+    });
+
+    it("shows unsaved changes when editable and dirty", () => {
+      wrapper = createWrapper({
+        autosaveEnabled: true,
+        autosaveDirty: true,
+      });
+      const notice = wrapper.find("[data-testid='autosave-toggle'] .text-warning");
+      expect(notice.exists()).toBe(true);
+      expect(notice.text()).toContain("Unsaved changes");
+    });
+  });
+
   // ─── B6 Regression: Actions toolbar visible on all tabs ───
   // REQUIREMENT: The Actions/Info toolbar (Save, Clone, Delete, Lock,
   // History, Reviews, etc.) must be visible on ALL tabs, not just

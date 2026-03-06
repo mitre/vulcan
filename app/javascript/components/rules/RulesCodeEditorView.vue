@@ -181,6 +181,8 @@
           :effective-permissions="effectivePermissions"
           :advanced_fields="localAdvancedFields"
           :additional_questions="component.additional_questions"
+          :autosave-enabled="autosaveEnabled"
+          :autosave-dirty="autosaveDirty"
           @clone="$bvModal.show('duplicate-rule-modal')"
           @delete="$bvModal.show('delete-rule-modal')"
           @save="saveRule($event)"
@@ -192,6 +194,7 @@
           @toggle-panel="togglePanel"
           @toggle-advanced-fields="toggleAdvancedFields"
           @toggle-section-lock="toggleSectionLock"
+          @toggle-autosave="toggleAutosave"
         />
       </template>
     </template>
@@ -227,6 +230,7 @@ import MembersModal from "../components/MembersModal.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
+import { useRuleAutosave } from "../../composables/useRuleAutosave";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
@@ -312,6 +316,9 @@ export default {
 
     const { activePanel, togglePanel, openPanel, closePanel, isPanelActive } = useSidebar();
 
+    // Autosave (F3)
+    const autosave = useRuleAutosave(selectedRule, { componentId });
+
     // Backward compatibility: handleRuleSelected/handleRuleDeselected aliases
     const handleRuleSelected = selectRule;
     const handleRuleDeselected = deselectRule;
@@ -392,6 +399,14 @@ export default {
       openPanel,
       closePanel,
       isPanelActive,
+
+      // Autosave (F3)
+      autosaveEnabled: autosave.enabled,
+      autosaveDirty: autosave.isDirty,
+      toggleAutosave: autosave.toggle,
+      markAutosaveDirty: autosave.markDirty,
+      resetAutosaveTimer: autosave.resetTimer,
+      destroyAutosave: autosave.destroy,
     };
   },
   data() {
@@ -446,11 +461,15 @@ export default {
       }, 1);
     }
     this.updateShowSRGIdChecked();
+    // F3: Mark autosave dirty when any rule field changes
+    this.$root.$on("update:rule", this.markAutosaveDirty);
   },
   beforeDestroy() {
     if (this.showSRGIdCheckedInterval) {
       clearInterval(this.showSRGIdCheckedInterval);
     }
+    this.$root.$off("update:rule", this.markAutosaveDirty);
+    this.destroyAutosave();
   },
   methods: {
     selectedCountLabel,
@@ -490,6 +509,8 @@ export default {
     saveRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
+      // Reset autosave timer — manual save takes priority
+      this.resetAutosaveTimer();
       const payload = {
         rule: {
           ...rule,
