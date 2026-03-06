@@ -357,55 +357,47 @@ class Component < ApplicationRecord
 
     new_ids = id_map.map(&:last)
 
-    # Create a temporary mapping table for bulk operations
-    # VALUES (orig_id, new_id), ... used as a join source
-    values = id_map.map { |o, n| "(#{o}, #{n})" }.join(', ')
-    mapping_cte = "rule_map AS (SELECT * FROM (VALUES #{values}) AS t(orig_id, new_id))"
+    # Create a temporary mapping table for bulk operations.
+    # Values are integer PKs from ActiveRecord — safe for interpolation.
+    # Cast to Integer explicitly to satisfy Brakeman's SQL injection scanner.
+    safe_values = id_map.map { |o, n| "(#{Integer(o)}, #{Integer(n)})" }.join(', ')
+    mapping_cte = "rule_map AS (SELECT * FROM (VALUES #{safe_values}) AS t(orig_id, new_id))"
+    safe_new_ids = new_ids.map { |id| Integer(id) }.join(', ')
 
     # 1. Preserve original timestamps on duplicated rules
-    conn.exec_update(<<~SQL.squish)
-      WITH #{mapping_cte}
-      UPDATE base_rules
-      SET created_at = orig.created_at, updated_at = orig.updated_at
-      FROM rule_map
-      JOIN base_rules orig ON orig.id = rule_map.orig_id
-      WHERE base_rules.id = rule_map.new_id
-    SQL
+    conn.exec_update(
+      "WITH #{mapping_cte} UPDATE base_rules " \
+      'SET created_at = orig.created_at, updated_at = orig.updated_at ' \
+      'FROM rule_map JOIN base_rules orig ON orig.id = rule_map.orig_id ' \
+      'WHERE base_rules.id = rule_map.new_id'
+    )
 
     # 2. Remove auto-generated audits from the duplication save
-    conn.exec_delete(<<~SQL.squish)
-      DELETE FROM audits
-      WHERE auditable_type = 'BaseRule'
-        AND auditable_id IN (#{new_ids.join(', ')})
-    SQL
+    conn.exec_delete(
+      "DELETE FROM audits WHERE auditable_type = 'BaseRule' " \
+      "AND auditable_id IN (#{safe_new_ids})"
+    )
 
-    # 3. Copy original audit history to new rules (bulk INSERT...SELECT with mapping)
-    conn.exec_insert(<<~SQL.squish)
-      WITH #{mapping_cte}
-      INSERT INTO audits (
-        auditable_id, auditable_type, associated_id, associated_type,
-        user_id, user_type, username, action, audited_changes, version,
-        comment, remote_address, request_uuid, created_at,
-        audited_user_id, audited_username
-      )
-      SELECT
-        rule_map.new_id, a.auditable_type, a.associated_id, a.associated_type,
-        a.user_id, a.user_type, a.username, a.action, a.audited_changes, a.version,
-        a.comment, a.remote_address, a.request_uuid, a.created_at,
-        a.audited_user_id, a.audited_username
-      FROM audits a
-      JOIN rule_map ON a.auditable_id = rule_map.orig_id
-      WHERE a.auditable_type = 'BaseRule'
-    SQL
+    # 3. Copy original audit history to new rules
+    conn.exec_insert(
+      "WITH #{mapping_cte} " \
+      'INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, ' \
+      'user_id, user_type, username, action, audited_changes, version, ' \
+      'comment, remote_address, request_uuid, created_at, audited_user_id, audited_username) ' \
+      'SELECT rule_map.new_id, a.auditable_type, a.associated_id, a.associated_type, ' \
+      'a.user_id, a.user_type, a.username, a.action, a.audited_changes, a.version, ' \
+      'a.comment, a.remote_address, a.request_uuid, a.created_at, ' \
+      'a.audited_user_id, a.audited_username FROM audits a ' \
+      "JOIN rule_map ON a.auditable_id = rule_map.orig_id WHERE a.auditable_type = 'BaseRule'"
+    )
 
-    # 4. Copy reviews from original rules (bulk INSERT...SELECT with mapping)
-    conn.exec_insert(<<~SQL.squish)
-      WITH #{mapping_cte}
-      INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
-      SELECT r.user_id, rule_map.new_id, r.action, r.comment, r.created_at, r.updated_at
-      FROM reviews r
-      JOIN rule_map ON r.rule_id = rule_map.orig_id
-    SQL
+    # 4. Copy reviews from original rules
+    conn.exec_insert(
+      "WITH #{mapping_cte} " \
+      'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at) ' \
+      'SELECT r.user_id, rule_map.new_id, r.action, r.comment, r.created_at, r.updated_at ' \
+      'FROM reviews r JOIN rule_map ON r.rule_id = rule_map.orig_id'
+    )
   end
 
   def create_rule_satisfactions
