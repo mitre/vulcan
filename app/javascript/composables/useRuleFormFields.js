@@ -155,7 +155,7 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   function fieldStateClass(fieldName) {
     const r = rule.value;
     if (isFieldLocked(fieldName)) return "field-state--section-locked";
-    if (r.review_requestor_id) return "field-state--under-review";
+    // C2: under-review uses form-level disable, not per-field highlighting
     if (r.locked) return "field-state--whole-locked";
     return "";
   }
@@ -167,7 +167,8 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
     if (r.locked_fields && Object.keys(r.locked_fields).length > 0 && !r.locked) {
       states.push("section-locked");
     }
-    if (r.review_requestor_id) states.push("under-review");
+    // C2: under-review no longer highlights per-field — form is just disabled
+    // and the "Under Review" badge in UnifiedRuleForm handles the visual indicator
     if (r.locked) states.push("whole-locked");
     return states;
   });

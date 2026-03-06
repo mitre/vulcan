@@ -1051,10 +1051,11 @@ describe("useRuleFormFields", () => {
       expect(fieldStateClass("title")).toBe("field-state--section-locked");
     });
 
-    it("returns under-review class when rule is under review", () => {
+    // C2: Under review grays out entire form (disabled) — no per-field highlight
+    it("returns empty class when rule is under review (form disabled instead)", () => {
       const rule = ref(makeRule({ review_requestor_id: 42 }));
       const { fieldStateClass } = useRuleFormFields(rule, ref(false));
-      expect(fieldStateClass("title")).toBe("field-state--under-review");
+      expect(fieldStateClass("title")).toBe("");
     });
 
     it("returns whole-locked class when rule is whole-locked", () => {
@@ -1063,7 +1064,7 @@ describe("useRuleFormFields", () => {
       expect(fieldStateClass("title")).toBe("field-state--whole-locked");
     });
 
-    it("section-locked takes priority over under-review for locked fields", () => {
+    it("section-locked still shows when also under review", () => {
       const rule = ref(
         makeRule({
           locked_fields: { Title: true },
@@ -1071,10 +1072,10 @@ describe("useRuleFormFields", () => {
         }),
       );
       const { fieldStateClass } = useRuleFormFields(rule, ref(false));
-      // Section-locked field shows section-locked (higher priority)
+      // Section-locked field still shows section-locked
       expect(fieldStateClass("title")).toBe("field-state--section-locked");
-      // Non-locked field shows under-review
-      expect(fieldStateClass("fixtext")).toBe("field-state--under-review");
+      // Non-locked field has no per-field class (form is just disabled)
+      expect(fieldStateClass("fixtext")).toBe("");
     });
 
     it("whole-locked overrides section-locked (section lock hidden)", () => {
@@ -1104,10 +1105,11 @@ describe("useRuleFormFields", () => {
       expect(activeFieldStates.value).toContain("section-locked");
     });
 
-    it("includes under-review when rule is under review", () => {
+    // C2: under-review no longer in activeFieldStates — badge handles it
+    it("does not include under-review (form disabled instead)", () => {
       const rule = ref(makeRule({ review_requestor_id: 42 }));
       const { activeFieldStates } = useRuleFormFields(rule, ref(false));
-      expect(activeFieldStates.value).toContain("under-review");
+      expect(activeFieldStates.value).not.toContain("under-review");
     });
 
     it("includes whole-locked when rule is locked", () => {
