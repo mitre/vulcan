@@ -48,43 +48,58 @@ class ReviewsController < ApplicationController
 
   def lock_controls
     unlocked = @component.rules.where(locked: false)
-    doesnotmeet_unlocked = unlocked.includes(:disa_rule_descriptions).where(status: 'Applicable - Does Not Meet',
-                                                                            disa_rule_descriptions: { mitigations: [
-                                                                              nil, ''
-                                                                            ] }).distinct.order(:rule_id)
-    inherentlymeet_unlocked = unlocked.where(status: 'Applicable - Inherently Meets',
-                                             artifact_description: [nil,
-                                                                    '']).order(:rule_id)
-    filtered_unlocked = unlocked.where(status: 'Not Yet Determined')
 
-    satisfied_rule_ids = RuleSatisfaction.where(rule_id: filtered_unlocked).pluck(:rule_id)
-    filtered_unlocked = filtered_unlocked.where.not(id: satisfied_rule_ids).order(:rule_id)
+    # Identify rules that can't be locked due to incomplete data (B10: warn but proceed)
+    skipped_ids = Set.new
+    warnings = []
 
-    if filtered_unlocked.any? || doesnotmeet_unlocked.any? || inherentlymeet_unlocked.any?
-      doesnotmeet_controls = doesnotmeet_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
-      if doesnotmeet_controls.present?
-        doesnotmeet_msg = 'The following controls are Applicable - Does Not Meet'
-        doesnotmeet_msg += " with no mitigations: #{doesnotmeet_controls}"
-      end
-      inherentlymeet_controls = inherentlymeet_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
-      if inherentlymeet_controls.present?
-        inherentlymeet_msg = 'The following controls are Applicable - Inherently Meets'
-        inherentlymeet_msg += " with no Artifact Description: #{inherentlymeet_controls}"
-      end
-      not_determined_controls = filtered_unlocked.map { |r| "#{@component[:prefix]}-#{r['rule_id']}" }.join(', ')
-      not_determined_msg = "The following controls are 'Not Yet Determined': #{not_determined_controls}" if not_determined_controls.present?
+    # NYD rules without satisfactions
+    nyd_rules = unlocked.where(status: 'Not Yet Determined')
+    satisfied_ids = RuleSatisfaction.where(rule_id: nyd_rules).pluck(:rule_id)
+    nyd_skipped = nyd_rules.where.not(id: satisfied_ids).order(:rule_id)
+    if nyd_skipped.any?
+      skipped_ids.merge(nyd_skipped.pluck(:id))
+      names = nyd_skipped.map(&:displayed_name).join(', ')
+      warnings << "Not Yet Determined (skipped): #{names}"
+    end
+
+    # ADNM without mitigations
+    adnm_skipped = unlocked.includes(:disa_rule_descriptions)
+                           .where(status: 'Applicable - Does Not Meet',
+                                  disa_rule_descriptions: { mitigations: [nil, ''] })
+                           .distinct.order(:rule_id)
+    if adnm_skipped.any?
+      skipped_ids.merge(adnm_skipped.pluck(:id))
+      names = adnm_skipped.map(&:displayed_name).join(', ')
+      warnings << "Does Not Meet without mitigations (skipped): #{names}"
+    end
+
+    # AIM without artifact description
+    aim_skipped = unlocked.where(status: 'Applicable - Inherently Meets',
+                                 artifact_description: [nil, '']).order(:rule_id)
+    if aim_skipped.any?
+      skipped_ids.merge(aim_skipped.pluck(:id))
+      names = aim_skipped.map(&:displayed_name).join(', ')
+      warnings << "Inherently Meets without artifact (skipped): #{names}"
+    end
+
+    # Lock only the valid rules
+    lockable = unlocked.where.not(id: skipped_ids.to_a)
+
+    if lockable.empty? && skipped_ids.any?
       render json: {
         toast: {
-          title: 'Could not lock controls.',
-          message: "#{not_determined_msg}\n #{doesnotmeet_msg}\n #{inherentlymeet_msg}",
-          variant: 'danger'
+          title: 'No controls could be locked.',
+          message: warnings.join("\n"),
+          variant: 'warning'
         }
       }, status: :unprocessable_entity
       return
     end
 
+    locked_names = []
     Review.transaction do
-      unlocked.each do |rule|
+      lockable.each do |rule|
         review = Review.new(review_params.merge({ user: current_user, rule: rule }))
         next if review.save
 
@@ -95,14 +110,20 @@ class ReviewsController < ApplicationController
             variant: 'danger'
           }
         }, status: :unprocessable_entity
+        raise ActiveRecord::Rollback
       end
+      locked_names = lockable.map(&:displayed_name)
     end
+
+    title = "Locked #{locked_names.size} #{'control'.pluralize(locked_names.size)}."
+    message = "Locked: #{locked_names.join(', ')}"
+    message += "\n\n#{warnings.join("\n")}" if warnings.any?
 
     render json: {
       toast: {
-        title: "Successfully locked #{unlocked.size} #{'control'.pluralize(unlocked.size)}.",
-        message: "The following controls were locked: #{unlocked.map(&:displayed_name).join(', ')}",
-        variant: 'success'
+        title: title,
+        message: message,
+        variant: warnings.any? ? 'warning' : 'success'
       }
     }
   end
