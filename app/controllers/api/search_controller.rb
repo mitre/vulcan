@@ -67,9 +67,16 @@ module Api
       # Get components from user's available projects
       project_ids = current_user.available_projects.ids
 
-      Component.where(project_id: project_ids)
-               .where(*build_ilike_conditions(%w[name prefix]))
-               .includes(:project)
+      # Build conditions: search name, prefix, AND metadata JSON values (F2)
+      name_prefix_conds = build_ilike_conditions(%w[components.name components.prefix])
+      metadata_cond = build_metadata_ilike_condition
+
+      Component.left_joins(:component_metadata)
+               .where(project_id: project_ids)
+               .where("(#{name_prefix_conds[0]}) OR (#{metadata_cond[0]})",
+                      *name_prefix_conds[1..], *metadata_cond[1..])
+               .includes(:project, :component_metadata)
+               .distinct
                .limit(limit)
                .map do |component|
         {
@@ -78,7 +85,8 @@ module Api
           version: component.version,
           release: component.release,
           project_id: component.project_id,
-          project_name: component.project&.name
+          project_name: component.project&.name,
+          metadata: component.component_metadata&.data
         }
       end
     end
@@ -277,6 +285,22 @@ module Api
     # - User input goes through sanitize_sql_like() then into ? placeholders
     # - The generated SQL uses parameterized queries: "name ILIKE ?" with bind values
     #
+    # Search metadata JSON values by casting to text and using ILIKE
+    def build_metadata_ilike_condition
+      conditions = []
+      values = []
+
+      @search_terms.each do |term|
+        sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
+        conditions << 'CAST(component_metadata.data AS text) ILIKE ?'
+        values << "%#{sanitized_term}%"
+      end
+
+      return ['1=0'] if conditions.empty?
+
+      [conditions.join(' OR ')] + values
+    end
+
     def build_ilike_conditions(columns)
       conditions = []
       values = []

@@ -586,4 +586,32 @@ RSpec.describe 'Api::Search' do
       end
     end
   end
+
+  # F2: Search by metadata tags
+  describe 'metadata tag search' do
+    before do
+      sign_in user
+      Membership.find_or_create_by!(user: user, membership: project1, role: 'viewer')
+      # Add metadata to component1
+      component1.create_component_metadata!(data: { 'environment' => 'production', 'team' => 'security-ops' })
+    end
+
+    it 'finds components by metadata value' do
+      get search_path, params: { q: 'production' }
+
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      component_ids = json['components'].pluck('id')
+      expect(component_ids).to include(component1.id)
+    end
+
+    it 'finds components by metadata key' do
+      get search_path, params: { q: 'security-ops' }
+
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      component_ids = json['components'].pluck('id')
+      expect(component_ids).to include(component1.id)
+    end
+  end
 end
