@@ -185,3 +185,4 @@
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T16:50:50Z","event_type":"closed","id":187,"issue_id":"vulcan-clean-mgsm","new_value":"Fixed: moved toolbar above b-tabs, visible on all tabs","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T17:04:26Z","event_type":"closed","id":188,"issue_id":"vulcan-clean-gyua","new_value":"Fixed: loading guard prevents double submission","old_value":""}
 {"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T17:04:37Z","event_type":"closed","id":189,"issue_id":"vulcan-clean-jts2","new_value":"Fixed: reset rules_count to 0 in amoeba block","old_value":""}
+{"actor":"Aaron Lippold","comment":null,"created_at":"2026-03-05T20:03:46Z","event_type":"closed","id":190,"issue_id":"vulcan-clean-m3hn","new_value":"Fixed: checkbox stays off until confirmed, no flicker","old_value":""}
