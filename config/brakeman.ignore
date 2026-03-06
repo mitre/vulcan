@@ -15,6 +15,10 @@
     {
       "fingerprint": "e3022938a2983ce21a1353d0258ec15035becb12d873e64398e25e9c4f87d5c7",
       "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
+    },
+    {
+      "fingerprint": "79355d36a8176b1d8128e298e0962a0fc42253f080325bc8b858d5c7ec369a51",
+      "note": "False positive: search terms sanitized via sanitize_sql_like in build_ilike_conditions"
     }
   ],
   "updated": "2026-03-05",
