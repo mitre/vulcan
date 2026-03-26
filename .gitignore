@@ -92,3 +92,8 @@ node_modules
 *SESSION*.md
 session.md
 recovery-prompt.md
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
