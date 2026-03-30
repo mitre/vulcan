@@ -430,17 +430,17 @@ class ProjectsController < ApplicationController
   end
 
   def project_params
-    params.expect(
-      project: [:name,
-                :description,
-                :visibility,
-                { project_metadata_attributes: { data: {} } }]
+    # Rails 8: params.expect raises 400 if structure doesn't match exactly.
+    # Use require.permit so updates with partial keys don't blow up.
+    params.require(:project).permit(
+      :name, :description, :visibility,
+      project_metadata_attributes: { data: {} }
     )
   end
 
   def check_permission_to_update
-    condition = project_params[:project_metadata_attributes]&.dig('data', 'Slack Channel ID').present? ||
-                project_params[:visibility].present?
+    slack_id = params.dig(:project, :project_metadata_attributes, :data, 'Slack Channel ID')
+    condition = slack_id.present? || params.dig(:project, :visibility).present?
     authorize_admin_project if condition
   end
 

@@ -7,6 +7,12 @@
 // to avoid esbuild hash / Propshaft digest mismatch on font files.
 // CSP blocks EasyMDE's CDN auto-download, so we bundle locally.
 
+// Prevent layout shift when b-sidebar backdrop adds overflow:hidden to body.
+// scrollbar-gutter reserves the scrollbar space so content doesn't jump.
+html {
+  scrollbar-gutter: stable;
+}
+
 .clickable {
   cursor: pointer;
 }

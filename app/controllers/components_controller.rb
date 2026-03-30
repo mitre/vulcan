@@ -184,8 +184,9 @@ class ComponentsController < ApplicationController
             filename: "#{@component.project.name}-#{@component.prefix}.csv"
           )
         when :inspec
+          export_mode = params[:mode]&.to_sym || :published_stig
           perform_export(
-            exportable: @component, mode: :published_stig, format: :inspec,
+            exportable: @component, mode: export_mode, format: :inspec,
             filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
           )
         when :xccdf
@@ -581,25 +582,21 @@ class ComponentsController < ApplicationController
   end
 
   def check_permission_to_update_slackchannel
-    return if component_update_params[:component_metadata_attributes]&.dig('data', 'Slack Channel ID').blank?
+    slack_id = params.dig(:component, :component_metadata_attributes, :data, 'Slack Channel ID')
+    return if slack_id.blank?
 
     authorize_admin_component
   end
 
   def component_update_params
-    params.expect(
-      component: [:released,
-                  :name,
-                  :version,
-                  :release,
-                  :title,
-                  :prefix,
-                  :description,
-                  :admin_name,
-                  :admin_email,
-                  :advanced_fields,
-                  { additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
-                    component_metadata_attributes: { data: {} } }]
+    # Rails 8: params.expect raises 400 if structure doesn't match exactly.
+    # Use require.permit for nested array attributes (additional_questions_attributes)
+    # which params.expect doesn't handle well — same pattern as rules_controller.rb.
+    params.require(:component).permit(
+      :released, :name, :version, :release, :title, :prefix,
+      :description, :admin_name, :admin_email, :advanced_fields,
+      additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
+      component_metadata_attributes: { data: {} }
     )
   end
 
@@ -611,24 +608,10 @@ class ComponentsController < ApplicationController
   end
 
   def component_create_params
-    params.expect(
-      component: [:id,
-                  :duplicate,
-                  :copy_component,
-                  :component_id,
-                  :project_id,
-                  :security_requirements_guide_id,
-                  :name,
-                  :prefix,
-                  :version,
-                  :release,
-                  :title,
-                  :description,
-                  :admin_name,
-                  :admin_email,
-                  :file,
-                  :slack_channel_id,
-                  { file: {} }]
+    params.require(:component).permit(
+      :id, :duplicate, :copy_component, :component_id, :project_id,
+      :security_requirements_guide_id, :name, :prefix, :version, :release,
+      :title, :description, :admin_name, :admin_email, :file, :slack_channel_id
     )
   end
 end

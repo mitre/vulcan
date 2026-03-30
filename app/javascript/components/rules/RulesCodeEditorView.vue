@@ -661,8 +661,11 @@ export default {
       axios
         .get(`/components/${this.component.id}.json`)
         .then((response) => {
-          // Update component properties in-place for Vue reactivity
-          Object.assign(this.component, response.data);
+          // Use $set for each key to ensure Vue 2 reactivity detects changes
+          // (Object.assign can miss nested object replacements)
+          Object.keys(response.data).forEach((key) => {
+            this.$set(this.component, key, response.data[key]);
+          });
         })
         .catch(this.alertOrNotifyResponse);
     },

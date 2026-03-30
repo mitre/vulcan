@@ -4,7 +4,7 @@
 
     <RulesCodeEditorView
       :project="project"
-      :component="component"
+      :component="reactiveComponent"
       :rules="reactiveRules"
       :statuses="statuses"
       :effective-permissions="effective_permissions"
@@ -59,16 +59,17 @@ export default {
   data: function () {
     return {
       reactiveRules: _.cloneDeep(this.rules).sort(this.compareRules),
+      reactiveComponent: _.cloneDeep(this.component),
     };
   },
   computed: {
     breadcrumbs: function () {
       // Build component name with version (e.g., "Test 2 V1R1")
-      let componentText = this.component.name;
-      if (this.component.version || this.component.release) {
+      let componentText = this.reactiveComponent.name;
+      if (this.reactiveComponent.version || this.reactiveComponent.release) {
         componentText += " ";
-        if (this.component.version) componentText += `V${this.component.version}`;
-        if (this.component.release) componentText += `R${this.component.release}`;
+        if (this.reactiveComponent.version) componentText += `V${this.reactiveComponent.version}`;
+        if (this.reactiveComponent.release) componentText += `R${this.reactiveComponent.release}`;
       }
       return [
         {
@@ -81,7 +82,7 @@ export default {
         },
         {
           text: componentText,
-          href: "/components/" + this.component.id,
+          href: "/components/" + this.reactiveComponent.id,
         },
         {
           text: "Edit",
@@ -223,7 +224,7 @@ export default {
      */
     createRule: function (rule, successCallback = null) {
       axios
-        .post(`/components/${this.component.id}/rules`, { rule: rule })
+        .post(`/components/${this.reactiveComponent.id}/rules`, { rule: rule })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.ruleFetchSuccess(response);
