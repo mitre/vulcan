@@ -27,5 +27,5 @@
   border-left: 3px solid #6c757d;
   padding-left: 0.75rem;
   border-radius: 0.25rem;
-  background-color: rgba(108, 117, 125, 0.04);
+  /* No background — Bootstrap :disabled styling is sufficient */
 }

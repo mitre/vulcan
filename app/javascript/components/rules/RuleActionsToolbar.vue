@@ -3,7 +3,7 @@
     <!-- Row 1: Info/Reference (read-only panels and viewing) -->
     <div class="toolbar-row">
       <span class="toolbar-label">Info</span>
-      <b-button-group size="sm">
+      <div class="toolbar-btn-group">
         <b-button variant="outline-secondary" size="sm" @click="$emit('open-related-modal')">
           <b-icon icon="link-45deg" /> Related
         </b-button>
@@ -33,19 +33,18 @@
           button-variant="outline-secondary"
           button-size="sm"
           :button-disabled="false"
-          wrapper-class="d-inline-block"
+          wrapper-class="d-inline-flex"
           @comment="$emit('comment', $event)"
         />
         <b-button
           variant="outline-info"
           size="sm"
-          href="https://vulcan.mitre.org/disa-process/"
+          href="/disa-guide"
           target="_blank"
-          rel="noopener noreferrer"
         >
           <b-icon icon="question-circle" /> DISA Guide
         </b-button>
-      </b-button-group>
+      </div>
     </div>
 
     <hr class="toolbar-divider" />
@@ -53,7 +52,7 @@
     <!-- Row 2: Actions/Maintenance (state-changing operations) -->
     <div class="toolbar-row">
       <span class="toolbar-label">Actions</span>
-      <b-button-group size="sm">
+      <div class="toolbar-btn-group">
         <b-button
           variant="outline-primary"
           size="sm"
@@ -71,15 +70,15 @@
           button-variant="outline-success"
           button-size="sm"
           :button-disabled="isReadOnly"
-          wrapper-class="d-inline-block"
+          wrapper-class="d-inline-flex"
           @comment="$emit('save', $event)"
         />
         <b-button variant="outline-info" :disabled="readOnly" @click="$emit('clone')">
           <b-icon icon="files" /> Clone
         </b-button>
-      </b-button-group>
+      </div>
       <!-- Destructive/admin actions separated with gap -->
-      <b-button-group v-if="effectivePermissions === 'admin'" size="sm" class="ml-3">
+      <div v-if="effectivePermissions === 'admin'" class="toolbar-btn-group ml-3">
         <b-button variant="outline-danger" :disabled="isReadOnly" @click="$emit('delete')">
           <b-icon icon="trash" /> Delete
         </b-button>
@@ -93,7 +92,7 @@
           button-variant="outline-warning"
           button-size="sm"
           :button-disabled="readOnly"
-          wrapper-class="d-inline-block"
+          wrapper-class="d-inline-flex"
           @comment="$emit('unlock', $event)"
         />
         <CommentModal
@@ -106,10 +105,10 @@
           button-variant="outline-dark"
           button-size="sm"
           :button-disabled="readOnly || isUnderReview"
-          wrapper-class="d-inline-block"
+          wrapper-class="d-inline-flex"
           @comment="$emit('lock', $event)"
         />
-      </b-button-group>
+      </div>
     </div>
   </div>
 </template>
@@ -160,6 +159,9 @@ export default {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 /* Each row: flex with label + button groups */
@@ -184,6 +186,13 @@ export default {
   margin: 0.25rem 0;
   border: 0;
   border-top: 1px solid #dee2e6;
+}
+
+/* Individual rounded buttons with consistent spacing */
+.toolbar-btn-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
 /* Disabled buttons should be clearly grayed out */

@@ -10,7 +10,7 @@ class RulesController < ApplicationController
   before_action :set_project_permissions, only: %i[index]
   before_action :authorize_viewer_component, only: %i[index show related_rules]
   before_action :authorize_author_component, only: %i[create update revert]
-  before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_admin_project, only: %i[destroy]
   before_action :authorize_section_lock, only: %i[section_locks bulk_section_locks]
   before_action :authorize_logged_in, only: %i[search]
 
@@ -86,20 +86,22 @@ class RulesController < ApplicationController
   end
 
   def destroy
-    if @rule.update(deleted_at: Time.zone.now)
-      @rule.additional_answers.destroy_all
-      @rule.reviews.destroy_all
-      @rule.satisfied_by.destroy_all
-      render json: { toast: 'Successfully deleted control.' }
-    else
-      render json: {
-        toast: {
-          title: 'Could not delete control.',
-          message: @rule.errors.full_messages,
-          variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+    warnings = []
+    warnings << 'This control was locked.' if @rule.locked
+    warnings << 'This control was under review.' if @rule.review_requestor_id.present?
+
+    @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
+    @rule.additional_answers.destroy_all
+    @rule.reviews.destroy_all
+    @rule.satisfied_by.destroy_all
+
+    if warnings.any?
+      Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}")
     end
+
+    message = 'Successfully deleted control.'
+    message += " Warning: #{warnings.join(' ')}" if warnings.any?
+    render json: { toast: message }
   end
 
   def revert

@@ -79,6 +79,12 @@
           @ok="$root.$emit('delete:rule', selectedRule.id)"
         >
           <p class="my-2">{{ msg.deleteConfirmMessage }}</p>
+          <b-alert v-if="selectedRule.locked" show variant="warning" class="mt-2">
+            This control is currently <strong>locked</strong>. Deleting it will remove the lock and all associated data.
+          </b-alert>
+          <b-alert v-if="selectedRule.review_requestor_id" show variant="warning" class="mt-2">
+            This control is currently <strong>under review</strong>. Deleting it will cancel the review.
+          </b-alert>
           <template #modal-footer="{ cancel, ok }">
             <b-button @click="cancel()">Cancel</b-button>
             <b-button variant="danger" @click="ok()">{{ msg.deleteConfirmButton }}</b-button>
@@ -317,7 +323,8 @@ export default {
     const { activePanel, togglePanel, openPanel, closePanel, isPanelActive } = useSidebar();
 
     // Autosave (F3)
-    const autosave = useRuleAutosave(selectedRule, { componentId });
+    const autosaveOptions = { componentId, onAutoSave: null };
+    const autosave = useRuleAutosave(selectedRule, autosaveOptions);
 
     // Backward compatibility: handleRuleSelected/handleRuleDeselected aliases
     const handleRuleSelected = selectRule;
@@ -407,6 +414,7 @@ export default {
       markAutosaveDirty: autosave.markDirty,
       resetAutosaveTimer: autosave.resetTimer,
       destroyAutosave: autosave.destroy,
+      autosaveOptions,
     };
   },
   data() {
@@ -455,6 +463,10 @@ export default {
     },
   },
   mounted() {
+    // Wire autosave callback to refresh rule history after auto-save
+    this.autosaveOptions.onAutoSave = (ruleId) => {
+      this.$root.$emit("refresh:rule", ruleId);
+    };
     if (this.selectedRuleId) {
       setTimeout(() => {
         this.$root.$emit("refresh:rule", this.selectedRuleId);

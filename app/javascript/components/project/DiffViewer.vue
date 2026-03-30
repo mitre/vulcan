@@ -38,7 +38,7 @@
       <b-col md="10">
         <b-input-group size="sm" class="mb-2">
           <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Base</b-input-group-text>
+            <b-input-group-text class="rounded-0">Base (older)</b-input-group-text>
           </b-input-group-prepend>
           <b-form-select
             id="baseComponent"
@@ -63,7 +63,7 @@
             </option>
           </b-form-select>
           <b-input-group-prepend>
-            <b-input-group-text class="rounded-0">Compare</b-input-group-text>
+            <b-input-group-text class="rounded-0">Compare (newer)</b-input-group-text>
           </b-input-group-prepend>
           <b-form-select
             id="diffComponent"
@@ -104,7 +104,6 @@
           </b-form-select>
           <b-button
             size="sm"
-            squared
             @click="updateSettings('renderSideBySide', !monacoEditorOptions.renderSideBySide)"
           >
             {{ monacoEditorOptions.renderSideBySide ? "Inline View" : "Side-By-Side View" }}

@@ -114,6 +114,15 @@ RSpec.describe 'Rules' do
     end
   end
 
+  describe 'inspec_control_body auto-population' do
+    it 'seeds inspec_control_body with a stub describe block on rule creation' do
+      rule = component.rules.first
+      expect(rule.inspec_control_body).to be_present
+      expect(rule.inspec_control_body).to include('describe file')
+      expect(rule.inspec_control_body).to include('should be_directory')
+    end
+  end
+
   describe 'PUT /rules/:id' do
     context 'when updating nested attributes' do
       it 'updates check content (check text)' do
@@ -247,6 +256,88 @@ RSpec.describe 'Rules' do
         rule.reload
         # Either the existing check is updated OR a new one is created
         expect(rule.checks.pluck(:content)).to include(new_content)
+      end
+    end
+  end
+
+  describe 'DELETE /rules/:id' do
+    context 'as project admin' do
+      it 'soft-deletes the rule' do
+        rule_id = rule.id
+        delete "/rules/#{rule_id}"
+
+        expect(response).to have_http_status(:success)
+        expect(Rule.unscoped.find(rule_id).deleted_at).not_to be_nil
+      end
+
+      it 'soft-deletes a locked rule with warning' do
+        rule.update_columns(locked: true)
+        delete "/rules/#{rule.id}"
+
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+        expect(json['toast']).to include('Warning')
+        expect(json['toast']).to include('locked')
+      end
+
+      it 'soft-deletes a rule under review with warning' do
+        rule.update_columns(review_requestor_id: user.id)
+        delete "/rules/#{rule.id}"
+
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+        expect(json['toast']).to include('Warning')
+        expect(json['toast']).to include('under review')
+      end
+
+      it 'cleans up associated records' do
+        Review.create!(user: user, rule: rule, action: 'comment', comment: 'test')
+        expect(rule.reviews.count).to eq(1)
+
+        delete "/rules/#{rule.id}"
+
+        expect(response).to have_http_status(:success)
+        expect(Review.where(rule_id: rule.id).count).to eq(0)
+      end
+
+      it 'excludes deleted rule from default scope' do
+        rule_id = rule.id
+        delete "/rules/#{rule_id}"
+
+        expect(Rule.find_by(id: rule_id)).to be_nil
+        expect(Rule.unscoped.find(rule_id)).not_to be_nil
+      end
+    end
+
+    context 'as component admin (non-project-admin)' do
+      let_it_be(:component_admin) { create(:user) }
+
+      before do
+        Membership.where(user: user, membership: project).destroy_all
+        sign_in component_admin
+        Membership.create!(user: component_admin, membership: component, role: 'admin')
+      end
+
+      it 'rejects deletion' do
+        delete "/rules/#{rule.id}"
+
+        expect(response).to have_http_status(:forbidden).or have_http_status(:redirect)
+      end
+    end
+
+    context 'as non-admin' do
+      let_it_be(:viewer) { create(:user) }
+
+      before do
+        Membership.where(user: user, membership: project).destroy_all
+        sign_in viewer
+        Membership.create!(user: viewer, membership: project, role: 'viewer')
+      end
+
+      it 'rejects deletion' do
+        delete "/rules/#{rule.id}"
+
+        expect(response).to have_http_status(:forbidden).or have_http_status(:redirect)
       end
     end
   end

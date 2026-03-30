@@ -29,7 +29,7 @@
       </b-button>
 
       <!-- Release Button (with tooltip for disabled state) -->
-      <span v-if="canRelease" v-b-tooltip.hover :title="releaseComponentTooltip">
+      <span v-if="canRelease" v-b-tooltip.hover :title="releaseComponentTooltip" class="mr-2">
         <b-button variant="outline-success" size="sm" :disabled="!isReleasable" @click="onRelease">
           <b-icon icon="patch-check" /> Release
         </b-button>
