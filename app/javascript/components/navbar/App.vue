@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-navbar toggleable="lg" type="dark" variant="dark">
+    <b-navbar toggleable="xl" type="dark" variant="dark">
       <b-navbar-brand id="heading" href="/">
         <b-icon icon="broadcast" aria-hidden="true" />
         VULCAN
@@ -11,7 +11,7 @@
       <b-navbar-toggle target="nav-collapse" />
 
       <b-collapse id="nav-collapse" is-nav>
-        <div class="d-flex w-100 justify-content-lg-center text-lg-center">
+        <div class="d-flex w-100 justify-content-xl-center text-xl-center">
           <b-navbar-nav>
             <div v-for="item in navigation" :key="item.name">
               <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
@@ -19,7 +19,7 @@
           </b-navbar-nav>
         </div>
 
-        <div v-if="signed_in" class="d-flex justify-content-between right-container">
+        <div v-if="signed_in" class="d-flex flex-column flex-xl-row align-items-xl-center w-100 mt-2 mt-xl-0 right-container">
           <GlobalSearch />
           <!-- Notification Dropdown -->
           <!-- Right aligned nav items -->
