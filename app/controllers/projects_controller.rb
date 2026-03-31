@@ -223,7 +223,7 @@ class ProjectsController < ApplicationController
           )
         when :inspec
           perform_export(
-            exportable: @project, mode: :published_stig, format: :inspec,
+            exportable: @project, mode: export_mode || :published_stig, format: :inspec,
             component_ids: resolve_component_ids,
             zip_filename: "#{@project.name}_inspec.zip"
           )

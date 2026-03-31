@@ -78,9 +78,7 @@
           </div>
 
           <!-- Admin Actions -->
-          <div v-if="actionable && component.id" class="d-flex align-items-center">
-            <!-- All action buttons in one group -->
-            <b-button-group size="sm">
+          <div v-if="actionable && component.id" class="d-flex align-items-center flex-wrap" style="gap: 0.25rem;">
               <LockControlsModal
                 v-if="role_gte_to(effectivePermissions, 'reviewer')"
                 :component_id="component.id"
@@ -146,7 +144,6 @@
               >
                 <b-icon icon="trash" font-scale="0.9" /> Delete
               </b-button>
-            </b-button-group>
           </div>
         </div>
       </div>

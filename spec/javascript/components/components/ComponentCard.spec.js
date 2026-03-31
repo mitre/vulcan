@@ -237,11 +237,11 @@ describe("ComponentCard", () => {
       expect(wrapper.text()).not.toContain("Delete");
     });
 
-    it("action buttons are in a button group for visual consistency", () => {
+    it("action buttons are in a flex container for visual consistency", () => {
       wrapper = createWrapper({ effectivePermissions: "admin" });
-      // Actions should be in a button group like panel buttons
-      const buttonGroup = wrapper.find(".btn-group, .btn-toolbar");
-      expect(buttonGroup.exists()).toBe(true);
+      // Actions should be in a flex container with gap for consistent spacing
+      const actionsContainer = wrapper.find(".d-flex.align-items-center.flex-wrap");
+      expect(actionsContainer.exists()).toBe(true);
     });
   });
 
