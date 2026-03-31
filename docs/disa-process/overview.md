@@ -21,7 +21,7 @@ The vendor submits a **Vendor STIG Intent Form** to DISA (`disa.stig_spt@mail.mi
 
 DISA reviews internally and notifies the vendor whether to proceed.
 
-**Source:** U_Vendor_STIG_Intent_Form.pdf
+**Source:** [U_Vendor_STIG_Intent_Form.pdf](attachments/U_Vendor_STIG_Intent_Form.pdf)
 
 ### Step 1: STIG Applicability Questionnaire
 
@@ -34,7 +34,7 @@ A single product may require multiple SRGs. For example, a web application runni
 
 Each SRG becomes a separate **Component** in Vulcan.
 
-**Source:** STIG_Questionnaire-Released-Nov-2017.pdf (V4.3)
+**Source:** STIG_Questionnaire-Released-Nov-2017.pdf (V4.3) — available from [DISA Vendor Process page](https://public.cyber.mil/stigs/) (requires CAC)
 
 ### Stage 1: SRG Template (2 weeks)
 
@@ -67,7 +67,7 @@ After the vendor completes development:
    - **Public STIG**: Only Applicable - Configurable rules (published on Cyber Exchange)
    - **Confidential package (CUI)**: NA, AIM, ADNM rules with compliance report (available to Authorizing Officials upon request)
 
-**Source:** U_Vendor_STIG_Process_Guide_V4R1_20220815.pdf, Sections 3 and 5-6
+**Source:** U_Vendor_STIG_Process_Guide_V4R1_20220815.pdf, Sections 3 and 5-6 — available from [DISA Vendor Process page](https://public.cyber.mil/stigs/) (requires CAC)
 
 ## Rule Statuses
 

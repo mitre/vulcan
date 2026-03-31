@@ -1,0 +1,16 @@
+.container-fluid.py-4
+  .row
+    .col-md-3
+      .card
+        .card-header
+          %h5.mb-0 DISA Process Guide
+        .list-group.list-group-flush
+          - @pages.each do |slug, title|
+            = link_to title, disa_guide_path(page: slug), class: "list-group-item list-group-item-action #{'active' if slug == @current_page}"
+
+    .col-md-9
+      .card
+        .card-header
+          %h4.mb-0= @page_title
+        .card-body.disa-guide-content
+          = @html_content.html_safe

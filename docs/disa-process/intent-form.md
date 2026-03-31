@@ -13,7 +13,7 @@ The Intent Form is the first step in the DISA STIG process. It formally notifies
 - **When:** Before any other STIG development activity
 - **Outcome:** DISA reviews internally and notifies vendor whether to proceed
 
-**Source:** U_Vendor_STIG_Intent_Form.pdf
+**Source:** [U_Vendor_STIG_Intent_Form.pdf](attachments/U_Vendor_STIG_Intent_Form.pdf)
 
 ### Form Fields
 
@@ -82,7 +82,7 @@ The Questionnaire determines which SRGs, STIGs, checklists, and SCAP benchmarks 
 - **When:** After DISA approves the Intent Form
 - **Outcome:** DISA determines the complete set of applicable SRGs
 
-**Source:** STIG_Questionnaire-Released-Nov-2017.pdf (V4.3)
+**Source:** STIG_Questionnaire-Released-Nov-2017.pdf (V4.3) — available from [DISA Vendor Process page](https://public.cyber.mil/stigs/) (requires CAC)
 
 ### Sections
 

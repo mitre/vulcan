@@ -8,6 +8,10 @@ Rails.application.routes.draw do
   # Provides /health_check, /health_check/database, /health_check/migrations etc.
   health_check_routes
 
+  # In-app DISA process guidance (works in airgapped environments)
+  get '/disa-guide/attachments/:filename', to: 'disa_guide#attachment', as: :disa_guide_attachment, constraints: { filename: /[^\/]+/ }
+  get '/disa-guide(/:page)', to: 'disa_guide#show', as: :disa_guide
+
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
     registrations: 'users/registrations',
