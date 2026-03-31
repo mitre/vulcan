@@ -476,12 +476,18 @@ export default {
     this.updateShowSRGIdChecked();
     // F3: Mark autosave dirty when any rule field changes
     this.$root.$on("update:rule", this.markAutosaveDirty);
+    this.$root.$on("update:check", this.markAutosaveDirty);
+    this.$root.$on("update:description", this.markAutosaveDirty);
+    this.$root.$on("update:disaDescription", this.markAutosaveDirty);
   },
   beforeDestroy() {
     if (this.showSRGIdCheckedInterval) {
       clearInterval(this.showSRGIdCheckedInterval);
     }
     this.$root.$off("update:rule", this.markAutosaveDirty);
+    this.$root.$off("update:check", this.markAutosaveDirty);
+    this.$root.$off("update:description", this.markAutosaveDirty);
+    this.$root.$off("update:disaDescription", this.markAutosaveDirty);
     this.destroyAutosave();
   },
   methods: {
