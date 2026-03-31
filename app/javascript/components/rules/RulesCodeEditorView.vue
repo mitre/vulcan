@@ -60,6 +60,7 @@
         :component="component"
         :effective-permissions="effectivePermissions"
         :available-roles="availableRoles"
+        @memberships-updated="refreshComponent"
       />
 
       <template v-if="selectedRule">

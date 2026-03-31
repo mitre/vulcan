@@ -77,6 +77,7 @@
           :component="component"
           :effective-permissions="effective_permissions"
           :available-roles="available_roles"
+          @memberships-updated="refreshComponent"
         />
 
         <!-- Related Rules Modal -->

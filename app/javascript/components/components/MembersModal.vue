@@ -277,7 +277,7 @@ export default {
         });
         this.resetAddForm();
         this.$bvModal.hide(this.addMemberModalId);
-        this.$emit("membershipsUpdated");
+        this.$emit("memberships-updated");
       } catch (error) {
         const message = error.response?.data?.toast?.message || "Could not add member.";
         this.alert(message, "danger");
@@ -288,7 +288,7 @@ export default {
         await axios.put(`/memberships/${member.id}.json`, {
           membership: { role: member.role },
         });
-        this.$emit("membershipsUpdated");
+        this.$emit("memberships-updated");
       } catch (error) {
         const message = error.response?.data?.toast?.message || "Could not update role.";
         this.alert(message, "danger");
@@ -304,7 +304,7 @@ export default {
       try {
         await axios.delete(`/memberships/${this.memberToRemove.id}.json`);
         this.memberToRemove = null;
-        this.$emit("membershipsUpdated");
+        this.$emit("memberships-updated");
       } catch (error) {
         const message = error.response?.data?.toast?.message || "Could not remove member.";
         this.alert(message, "danger");
