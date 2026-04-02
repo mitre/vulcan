@@ -43,10 +43,10 @@ class DisaGuideController < ApplicationController
   end
 
   def attachment
-    filename = params[:filename]
+    filename = File.basename(params[:filename].to_s)
     file_path = GUIDE_DIR.join('attachments', filename)
 
-    unless file_path.exist? && file_path.to_s.start_with?(GUIDE_DIR.join('attachments').to_s)
+    unless file_path.exist?
       render plain: 'Attachment not found', status: :not_found
       return
     end

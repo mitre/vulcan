@@ -20,7 +20,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find]
+  before_action :authorize_component_access, only: %i[show export find histories]
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]

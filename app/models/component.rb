@@ -481,6 +481,8 @@ class Component < ApplicationRecord
       reload
       # Reset counter cache after bulk import since callbacks are bypassed
       Component.reset_counters(id, :rules)
+      # Seed inspec_control_body for imported rules (after_create callback is bypassed by bulk import)
+      rules.where(inspec_control_body: nil).update_all(inspec_control_body: Rule::INSPEC_STUB_BODY) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
     else
       errors.add(:base, 'Some rules failed to import successfully for the component.')
     end
