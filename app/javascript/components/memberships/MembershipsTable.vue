@@ -107,20 +107,15 @@
 
       <!-- Column template for Role -->
       <template v-if="editable" #cell(role)="data">
-        <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
-          <input type="hidden" name="_method" value="put" />
-          <input type="hidden" name="authenticity_token" :value="authenticityToken" />
-          <select
-            v-model="data.item.role"
-            class="form-control"
-            name="membership[role]"
-            @change="roleChanged($event, data.item)"
-          >
-            <option v-for="available_role in available_roles" :key="available_role">
-              {{ available_role }}
-            </option>
-          </select>
-        </form>
+        <select
+          v-model="data.item.role"
+          class="form-control"
+          @change="roleChanged($event, data.item)"
+        >
+          <option v-for="available_role in available_roles" :key="available_role">
+            {{ available_role }}
+          </option>
+        </select>
       </template>
 
       <template v-else #cell(role)="data">
@@ -132,12 +127,11 @@
         <b-button
           class="projectMemberDeleteButton"
           variant="danger"
-          data-confirm="Are you sure you want to remove this user from the project?"
-          data-method="delete"
-          :href="formAction(data.item)"
-          rel="nofollow"
+          :disabled="removingId === data.item.id"
+          @click="removeMember(data.item)"
         >
-          <b-icon icon="trash" aria-hidden="true" />
+          <b-spinner v-if="removingId === data.item.id" small class="mr-1" />
+          <b-icon v-else icon="trash" aria-hidden="true" />
           Remove
         </b-button>
       </template>
@@ -213,6 +207,7 @@ export default {
       selectedMember: null,
       access_request_id: null,
       rejectingId: null,
+      removingId: null,
       localAccessRequests: [...this.access_requests],
       fields: [
         { key: "name", label: "User", sortable: true },
@@ -259,17 +254,28 @@ export default {
     getAccessRequestId: function (member) {
       return this.localAccessRequests.find((request) => request.user_id === member.id).id;
     },
-    // Automatically submit the form when a user selects a form option
-    roleChanged: function (_event, project_member) {
-      document.getElementById(this.formId(project_member)).submit();
+    async roleChanged(_event, project_member) {
+      try {
+        const response = await axios.put(`/memberships/${project_member.id}.json`, {
+          membership: { role: project_member.role },
+        });
+        this.alertOrNotifyResponse(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    // Generator for a unique form id for the user role dropdown
-    formId: function (project_member) {
-      return "ProjectMember-" + project_member.id;
-    },
-    // Path to POST/DELETE to when updating/deleting a user
-    formAction: function (project_member) {
-      return `/memberships/${project_member.id}`;
+    async removeMember(project_member) {
+      if (!confirm("Are you sure you want to remove this user?")) return;
+      this.removingId = project_member.id;
+      try {
+        const response = await axios.delete(`/memberships/${project_member.id}.json`);
+        this.alertOrNotifyResponse(response);
+        this.$emit("memberRemoved", project_member);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.removingId = null;
+      }
     },
     async rejectRequest(member) {
       const requestId = this.getAccessRequestId(member);
