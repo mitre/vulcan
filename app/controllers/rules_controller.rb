@@ -90,14 +90,14 @@ class RulesController < ApplicationController
     warnings << 'This control was locked.' if @rule.locked
     warnings << 'This control was under review.' if @rule.review_requestor_id.present?
 
+    # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
     @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
+    # rubocop:enable Rails/SkipsModelValidations
     @rule.additional_answers.destroy_all
     @rule.reviews.destroy_all
     @rule.satisfied_by.destroy_all
 
-    if warnings.any?
-      Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}")
-    end
+    Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}") if warnings.any?
 
     message = 'Successfully deleted control.'
     message += " Warning: #{warnings.join(' ')}" if warnings.any?

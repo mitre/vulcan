@@ -430,12 +430,12 @@ class ProjectsController < ApplicationController
   end
 
   def project_params
-    # Rails 8: params.expect raises 400 if structure doesn't match exactly.
-    # Use require.permit so updates with partial keys don't blow up.
+    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks partial param payloads
     params.require(:project).permit(
       :name, :description, :visibility,
       project_metadata_attributes: { data: {} }
     )
+    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def check_permission_to_update

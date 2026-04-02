@@ -33,7 +33,7 @@ class DisaGuideController < ApplicationController
     markdown_content = file_path.read
     # Rewrite relative attachment links to use the download route
     markdown_content = markdown_content.gsub(
-      /\[([^\]]+)\]\(attachments\/([^)]+)\)/,
+      %r{\[([^\]]+)\]\(attachments/([^)]+)\)},
       '[\1](/disa-guide/attachments/\2)'
     )
     @html_content = Commonmarker.to_html(markdown_content, options: { render: { unsafe: true } })

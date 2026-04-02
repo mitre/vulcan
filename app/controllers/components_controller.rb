@@ -589,15 +589,14 @@ class ComponentsController < ApplicationController
   end
 
   def component_update_params
-    # Rails 8: params.expect raises 400 if structure doesn't match exactly.
-    # Use require.permit for nested array attributes (additional_questions_attributes)
-    # which params.expect doesn't handle well — same pattern as rules_controller.rb.
+    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks nested array attributes (issue #692)
     params.require(:component).permit(
       :released, :name, :version, :release, :title, :prefix,
       :description, :admin_name, :admin_email, :advanced_fields,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
       component_metadata_attributes: { data: {} }
     )
+    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def validate_component_upload
@@ -608,10 +607,12 @@ class ComponentsController < ApplicationController
   end
 
   def component_create_params
+    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks nested array attributes (issue #692)
     params.require(:component).permit(
       :id, :duplicate, :copy_component, :component_id, :project_id,
       :security_requirements_guide_id, :name, :prefix, :version, :release,
       :title, :description, :admin_name, :admin_email, :file, :slack_channel_id
     )
+    # rubocop:enable Rails/StrongParametersExpect
   end
 end

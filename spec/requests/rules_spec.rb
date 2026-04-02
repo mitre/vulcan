@@ -81,7 +81,6 @@ RSpec.describe 'Rules' do
         # Verify the all_users key is present in the component JSON
         expect(response.body).to include('&quot;all_users&quot;')
       end
-
     end
   end
 
@@ -246,7 +245,7 @@ RSpec.describe 'Rules' do
         delete "/rules/#{rule.id}"
 
         expect(response).to have_http_status(:success)
-        json = JSON.parse(response.body)
+        json = response.parsed_body
         expect(json['toast']).to include('Warning')
         expect(json['toast']).to include('locked')
       end
@@ -256,7 +255,7 @@ RSpec.describe 'Rules' do
         delete "/rules/#{rule.id}"
 
         expect(response).to have_http_status(:success)
-        json = JSON.parse(response.body)
+        json = response.parsed_body
         expect(json['toast']).to include('Warning')
         expect(json['toast']).to include('under review')
       end
