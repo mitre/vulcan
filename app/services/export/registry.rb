@@ -9,7 +9,7 @@ module Export
     # Valid combinations matrix — only these pairs are allowed.
     # Keys are mode symbols, values are arrays of format symbols.
     COMBINATIONS = {
-      working_copy: %i[csv excel],
+      working_copy: %i[csv excel inspec],
       vendor_submission: %i[excel],
       published_stig: %i[xccdf inspec],
       backup: %i[json_archive]

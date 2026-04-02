@@ -87,6 +87,38 @@ describe("ProjectsTable", () => {
   });
 
   // ==========================================
+  // DESCRIPTION TRUNCATION
+  // Requirement: toggle link only shown when description > 75 chars
+  // ==========================================
+  describe("description truncation", () => {
+    it("does not show toggle link for short descriptions", () => {
+      const shortDescProjects = [
+        { ...sampleProjects[0], description: "Short desc" },
+      ];
+      wrapper = createWrapper({ projects: shortDescProjects });
+      const descCell = wrapper.find("td:nth-child(2)");
+      expect(descCell.find("a").exists()).toBe(false);
+    });
+
+    it("shows toggle link for descriptions longer than 75 characters", () => {
+      const longDesc = "A".repeat(80);
+      const longDescProjects = [{ ...sampleProjects[0], description: longDesc }];
+      wrapper = createWrapper({ projects: longDescProjects });
+      const links = wrapper.findAll("a").filter((w) => w.text().includes("..."));
+      expect(links.length).toBeGreaterThan(0);
+    });
+
+    it("does not show toggle link when description is null", () => {
+      const nullDescProjects = [
+        { ...sampleProjects[0], description: null },
+      ];
+      wrapper = createWrapper({ projects: nullDescProjects });
+      const links = wrapper.findAll("a").filter((w) => w.text().includes("...") || w.text().includes("read less"));
+      expect(links.length).toBe(0);
+    });
+  });
+
+  // ==========================================
   // DELETE BUTTON VISIBILITY
   // Requirement: visible when site admin OR project admin
   // Backend: authorize_admin_project checks User#can_admin_project?

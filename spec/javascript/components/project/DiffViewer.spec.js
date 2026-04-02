@@ -45,8 +45,8 @@ describe("DiffViewer", () => {
       wrapper = createWrapper();
       const labels = wrapper.findAll(".rounded-0");
       const labelTexts = labels.wrappers.map((w) => w.text());
-      const baseIdx = labelTexts.indexOf("Base");
-      const compareIdx = labelTexts.indexOf("Compare");
+      const baseIdx = labelTexts.indexOf("Base (older)");
+      const compareIdx = labelTexts.indexOf("Compare (newer)");
 
       expect(baseIdx).toBeGreaterThanOrEqual(0);
       expect(compareIdx).toBeGreaterThanOrEqual(0);

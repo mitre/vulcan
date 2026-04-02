@@ -62,7 +62,7 @@ describe("RuleEditor", () => {
   describe("tab labels", () => {
     // C10: "Test Script" tab - title should be exact
     // REQUIREMENT: Tab clearly labels the InSpec test code section (not "InSpec Control Body" which is implementation detail)
-    // b-tabs component with multiple tabs: Documentation, Test Script, InSpec Control (Read-Only)
+    // b-tabs component with multiple tabs: Documentation, Test Script, Generated Control (Read-Only)
     it("renders with tab component structure (b-tabs)", () => {
       wrapper = createWrapper();
       // Verify the component uses b-tabs for tab navigation

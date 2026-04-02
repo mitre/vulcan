@@ -92,7 +92,10 @@
 
       <template #cell(description)="data">
         {{ truncate(data.item.description, data.item.id) }}
-        <b-link v-if="data.item.description" @click="toggleTruncate(data.item.id)">
+        <b-link
+          v-if="data.item.description && data.item.description.length > 75"
+          @click="toggleTruncate(data.item.id)"
+        >
           {{ truncated[data.item.id] ? "..." : "read less" }}
         </b-link>
       </template>

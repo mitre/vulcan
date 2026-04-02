@@ -95,7 +95,7 @@
       <b-tab title="Test Script" lazy>
         <InspecControlEditor :rule="rule" field="inspec_control_body" :read-only="readOnly" />
       </b-tab>
-      <b-tab title="InSpec Control (Read-Only)" lazy>
+      <b-tab title="Generated Control (Read-Only)" lazy>
         <InspecControlEditor :rule="rule" field="inspec_control_file" :read-only="true" />
       </b-tab>
     </b-tabs>

@@ -25,7 +25,7 @@ export const EXPORT_MODES = {
 
 // Mode → allowed formats (mirrors Export::Registry::COMBINATIONS)
 export const MODE_FORMAT_MATRIX = {
-  working_copy: ["csv", "excel"],
+  working_copy: ["csv", "excel", "inspec"],
   vendor_submission: ["excel"],
   published_stig: ["xccdf", "inspec"],
   backup: ["json_archive"],

@@ -704,14 +704,14 @@ describe("ExportModal", () => {
   // FORMAT ENABLE/DISABLE BY MODE
   // ==========================================
   describe("format compatibility by mode", () => {
-    it("enables csv and excel for working_copy mode", async () => {
+    it("enables csv, excel, and inspec for working_copy mode", async () => {
       wrapper = createWrapper({ availableModes: allModes });
       wrapper.vm.selectedMode = "working_copy";
       await wrapper.vm.$nextTick();
       expect(wrapper.vm.isFormatEnabled("csv")).toBe(true);
       expect(wrapper.vm.isFormatEnabled("excel")).toBe(true);
       expect(wrapper.vm.isFormatEnabled("xccdf")).toBe(false);
-      expect(wrapper.vm.isFormatEnabled("inspec")).toBe(false);
+      expect(wrapper.vm.isFormatEnabled("inspec")).toBe(true);
     });
 
     it("enables only excel for vendor_submission mode", async () => {
