@@ -168,4 +168,43 @@ describe("useRuleAutosave", () => {
       expect(axios.put).not.toHaveBeenCalled();
     });
   });
+
+  describe("onAutoSave callback", () => {
+    it("invokes onAutoSave callback after successful autosave", async () => {
+      const onAutoSave = vi.fn();
+      const callbackAutosave = useRuleAutosave(rule, {
+        componentId: 1,
+        onAutoSave,
+      });
+
+      callbackAutosave.toggle(); // enable
+      callbackAutosave.markDirty();
+
+      await vi.advanceTimersByTimeAsync(6000);
+      // flush microtasks for the axios .then()
+      await vi.waitFor(() => {
+        expect(onAutoSave).toHaveBeenCalledWith(1);
+      });
+    });
+
+    it("does NOT invoke onAutoSave callback on failed autosave", async () => {
+      axios.put.mockRejectedValueOnce(new Error("Network error"));
+      const onAutoSave = vi.fn();
+      const callbackAutosave = useRuleAutosave(rule, {
+        componentId: 1,
+        onAutoSave,
+      });
+
+      callbackAutosave.toggle();
+      callbackAutosave.markDirty();
+
+      await vi.advanceTimersByTimeAsync(6000);
+      // Give time for the rejected promise .catch() to settle
+      await vi.waitFor(() => {
+        expect(axios.put).toHaveBeenCalled();
+      });
+
+      expect(onAutoSave).not.toHaveBeenCalled();
+    });
+  });
 });

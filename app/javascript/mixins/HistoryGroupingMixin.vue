@@ -1,18 +1,18 @@
 <script>
-// This mixins is to group histories components by name, created_at and comments.
+// This mixin groups history entries by name, timestamp, and comment.
+// Audits from the same save (Rule + RuleDescription) are grouped together
+// by rounding timestamps to the nearest 5-second window.
 export default {
   methods: {
-    roundToNearestMinute(dateString) {
-      const date = new Date(dateString);
-      date.setSeconds(0);
-      date.setMilliseconds(0);
-      return date.toISOString();
+    roundToNearestInterval(dateString, intervalMs = 5000) {
+      const ms = new Date(dateString).getTime();
+      return new Date(Math.round(ms / intervalMs) * intervalMs).toISOString();
     },
     groupHistories(histories) {
       const grouped = {};
 
       histories.forEach((history) => {
-        const roundedCreatedAt = this.roundToNearestMinute(history.created_at);
+        const roundedCreatedAt = this.roundToNearestInterval(history.created_at);
         const key = `${history.name}-${roundedCreatedAt}-${history.comment}`;
         if (!grouped[key]) {
           grouped[key] = {

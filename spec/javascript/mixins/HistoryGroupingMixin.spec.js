@@ -8,7 +8,7 @@ import HistoryGroupingMixin from "@/mixins/HistoryGroupingMixin.vue";
  *
  * REQUIREMENTS:
  *
- * 1. roundToNearestMinute(dateString):
+ * 1. roundToNearestInterval(dateString):
  *    - Takes a date string, returns ISO string with seconds and milliseconds zeroed
  *    - Used to group edits that happen within the same minute
  *
@@ -32,21 +32,22 @@ function createWrapper() {
 
 describe("HistoryGroupingMixin", () => {
   // ==========================================
-  // roundToNearestMinute
+  // roundToNearestInterval
   // ==========================================
-  describe("roundToNearestMinute", () => {
-    it("zeroes seconds and milliseconds", () => {
+  describe("roundToNearestInterval", () => {
+    it("rounds to nearest 5-second interval", () => {
       const wrapper = createWrapper();
-      const result = wrapper.vm.roundToNearestMinute("2025-06-15T10:30:45.123Z");
+      const result = wrapper.vm.roundToNearestInterval("2025-06-15T10:30:47.123Z");
       const date = new Date(result);
 
-      expect(date.getSeconds()).toBe(0);
-      expect(date.getMilliseconds()).toBe(0);
+      // 47.123s rounds to 45s (nearest 5s boundary)
+      expect(date.getUTCSeconds()).toBe(45);
+      expect(date.getUTCMilliseconds()).toBe(0);
     });
 
     it("preserves year, month, day, hour, and minute", () => {
       const wrapper = createWrapper();
-      const result = wrapper.vm.roundToNearestMinute("2025-06-15T10:30:45.123Z");
+      const result = wrapper.vm.roundToNearestInterval("2025-06-15T10:30:42.000Z");
       const date = new Date(result);
 
       expect(date.getUTCFullYear()).toBe(2025);
@@ -58,20 +59,26 @@ describe("HistoryGroupingMixin", () => {
 
     it("returns a valid ISO string", () => {
       const wrapper = createWrapper();
-      const result = wrapper.vm.roundToNearestMinute("2025-01-01T00:00:59.999Z");
+      const result = wrapper.vm.roundToNearestInterval("2025-01-01T00:00:59.999Z");
 
       // Should be parseable and end with Z
       expect(new Date(result).toISOString()).toBe(result);
     });
 
-    it("handles date with zero seconds (no change needed)", () => {
+    it("groups timestamps within same 5s window", () => {
       const wrapper = createWrapper();
-      const input = "2025-06-15T10:30:00.000Z";
-      const result = wrapper.vm.roundToNearestMinute(input);
-      const date = new Date(result);
+      const a = wrapper.vm.roundToNearestInterval("2025-06-15T10:30:01.000Z");
+      const b = wrapper.vm.roundToNearestInterval("2025-06-15T10:30:02.000Z");
 
-      expect(date.getSeconds()).toBe(0);
-      expect(date.getMilliseconds()).toBe(0);
+      expect(a).toBe(b);
+    });
+
+    it("separates timestamps in different 5s windows", () => {
+      const wrapper = createWrapper();
+      const a = wrapper.vm.roundToNearestInterval("2025-06-15T10:30:01.000Z");
+      const b = wrapper.vm.roundToNearestInterval("2025-06-15T10:30:08.000Z");
+
+      expect(a).not.toBe(b);
     });
   });
 
@@ -79,11 +86,11 @@ describe("HistoryGroupingMixin", () => {
   // groupHistories — SAME GROUP
   // ==========================================
   describe("groupHistories — entries in same group", () => {
-    it("groups entries with same name, same minute, and same comment", () => {
+    it("groups entries with same name, within 5s, and same comment", () => {
       const wrapper = createWrapper();
       const histories = [
-        { name: "Alice", created_at: "2025-06-15T10:30:10Z", comment: "Updated title" },
-        { name: "Alice", created_at: "2025-06-15T10:30:45Z", comment: "Updated title" },
+        { name: "Alice", created_at: "2025-06-15T10:30:01Z", comment: "Updated title" },
+        { name: "Alice", created_at: "2025-06-15T10:30:02Z", comment: "Updated title" },
       ];
 
       const groups = wrapper.vm.groupHistories(histories);
@@ -95,8 +102,8 @@ describe("HistoryGroupingMixin", () => {
     it("uses first entry as the group history reference", () => {
       const wrapper = createWrapper();
       const histories = [
-        { name: "Alice", created_at: "2025-06-15T10:30:10Z", comment: "Edit" },
-        { name: "Alice", created_at: "2025-06-15T10:30:45Z", comment: "Edit" },
+        { name: "Alice", created_at: "2025-06-15T10:30:01Z", comment: "Edit" },
+        { name: "Alice", created_at: "2025-06-15T10:30:02Z", comment: "Edit" },
       ];
 
       const groups = wrapper.vm.groupHistories(histories);
@@ -106,10 +113,10 @@ describe("HistoryGroupingMixin", () => {
 
     it("constructs group id from name-roundedTime-comment", () => {
       const wrapper = createWrapper();
-      const histories = [{ name: "Alice", created_at: "2025-06-15T10:30:10Z", comment: "Edit" }];
+      const histories = [{ name: "Alice", created_at: "2025-06-15T10:30:01Z", comment: "Edit" }];
 
       const groups = wrapper.vm.groupHistories(histories);
-      const roundedTime = wrapper.vm.roundToNearestMinute("2025-06-15T10:30:10Z");
+      const roundedTime = wrapper.vm.roundToNearestInterval("2025-06-15T10:30:01Z");
 
       expect(groups[0].id).toBe(`Alice-${roundedTime}-Edit`);
     });
@@ -143,11 +150,11 @@ describe("HistoryGroupingMixin", () => {
       expect(groups).toHaveLength(2);
     });
 
-    it("separates entries from different minutes", () => {
+    it("separates entries from different time windows", () => {
       const wrapper = createWrapper();
       const histories = [
+        { name: "Alice", created_at: "2025-06-15T10:30:01Z", comment: "Edit" },
         { name: "Alice", created_at: "2025-06-15T10:30:10Z", comment: "Edit" },
-        { name: "Alice", created_at: "2025-06-15T10:31:10Z", comment: "Edit" },
       ];
 
       const groups = wrapper.vm.groupHistories(histories);
@@ -180,10 +187,10 @@ describe("HistoryGroupingMixin", () => {
     it("handles multiple groups with different sizes", () => {
       const wrapper = createWrapper();
       const histories = [
-        { name: "Alice", created_at: "2025-06-15T10:30:10Z", comment: "Edit" },
-        { name: "Alice", created_at: "2025-06-15T10:30:45Z", comment: "Edit" },
-        { name: "Alice", created_at: "2025-06-15T10:30:55Z", comment: "Edit" },
-        { name: "Bob", created_at: "2025-06-15T10:30:10Z", comment: "Review" },
+        { name: "Alice", created_at: "2025-06-15T10:30:01.000Z", comment: "Edit" },
+        { name: "Alice", created_at: "2025-06-15T10:30:01.500Z", comment: "Edit" },
+        { name: "Alice", created_at: "2025-06-15T10:30:02.000Z", comment: "Edit" },
+        { name: "Bob", created_at: "2025-06-15T10:30:01.000Z", comment: "Review" },
       ];
 
       const groups = wrapper.vm.groupHistories(histories);
@@ -199,13 +206,13 @@ describe("HistoryGroupingMixin", () => {
     it("handles null comment in grouping key", () => {
       const wrapper = createWrapper();
       const histories = [
-        { name: "Alice", created_at: "2025-06-15T10:30:10Z", comment: null },
-        { name: "Alice", created_at: "2025-06-15T10:30:45Z", comment: null },
+        { name: "Alice", created_at: "2025-06-15T10:30:01Z", comment: null },
+        { name: "Alice", created_at: "2025-06-15T10:30:02Z", comment: null },
       ];
 
       const groups = wrapper.vm.groupHistories(histories);
 
-      // Both have same name, same minute, same comment (null) — should group together
+      // Both have same name, same 5s window, same comment (null) — should group together
       expect(groups).toHaveLength(1);
       expect(groups[0].histories).toHaveLength(2);
     });

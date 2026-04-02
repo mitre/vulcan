@@ -75,6 +75,7 @@ export function useRuleAutosave(rule, options = {}) {
       })
       .then(() => {
         isDirty.value = false;
+        if (options.onAutoSave) options.onAutoSave(r.id);
       })
       .catch(() => {
         // Silently fail — autosave is best-effort
