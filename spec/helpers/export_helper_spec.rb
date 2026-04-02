@@ -156,4 +156,47 @@ RSpec.describe ExportHelper do
       expect(entries.sort).to eq expected_names.sort
     end
   end
+
+  describe '#inspec_helper — Not Yet Determined stubs' do
+    let(:helper_instance) { Object.new.extend(ExportHelper) }
+
+    it 'includes Applicable - Configurable rules with full inspec_control_file' do
+      ac_rule = component.rules.find { |r| r.status == 'Applicable - Configurable' }
+      skip 'No Applicable - Configurable rules in test component' unless ac_rule
+
+      zip_data = helper_instance.export_inspec(component).string
+      Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
+        control_entry = zip.find_entry("controls/#{component.prefix}-#{ac_rule.rule_id}.rb")
+        expect(control_entry).not_to be_nil
+        content = control_entry.get_input_stream.read
+        expect(content).to eq(ac_rule.inspec_control_file)
+      end
+    end
+
+    it 'includes Not Yet Determined rules as stub controls' do
+      nyd_rule = component.rules.find { |r| r.status == 'Not Yet Determined' }
+      skip 'No Not Yet Determined rules in test component' unless nyd_rule
+
+      zip_data = helper_instance.export_inspec(component).string
+      Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
+        control_entry = zip.find_entry("controls/#{component.prefix}-#{nyd_rule.rule_id}.rb")
+        expect(control_entry).not_to be_nil
+        content = control_entry.get_input_stream.read
+        expect(content).to include("# TODO: Status is 'Not Yet Determined'")
+        expect(content).to include('impact 0.0')
+        expect(content).to include("tag status: 'Not Yet Determined'")
+      end
+    end
+
+    it 'excludes Not Applicable rules from InSpec export' do
+      na_rule = component.rules.find { |r| r.status == 'Not Applicable' }
+      skip 'No Not Applicable rules in test component' unless na_rule
+
+      zip_data = helper_instance.export_inspec(component).string
+      Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
+        control_entry = zip.find_entry("controls/#{component.prefix}-#{na_rule.rule_id}.rb")
+        expect(control_entry).to be_nil
+      end
+    end
+  end
 end
