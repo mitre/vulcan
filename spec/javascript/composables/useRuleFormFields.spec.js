@@ -1058,10 +1058,10 @@ describe("useRuleFormFields", () => {
       expect(fieldStateClass("title")).toBe("");
     });
 
-    it("returns whole-locked class when rule is whole-locked", () => {
+    it("returns no class when rule is whole-locked (C3: disabled styling is sufficient)", () => {
       const rule = ref(makeRule({ locked: true }));
       const { fieldStateClass } = useRuleFormFields(rule, ref(false));
-      expect(fieldStateClass("title")).toBe("field-state--whole-locked");
+      expect(fieldStateClass("title")).toBe("");
     });
 
     it("section-locked still shows when also under review", () => {
@@ -1078,11 +1078,10 @@ describe("useRuleFormFields", () => {
       expect(fieldStateClass("fixtext")).toBe("");
     });
 
-    it("whole-locked overrides section-locked (section lock hidden)", () => {
+    it("whole-locked returns no class even with section locks (C3)", () => {
       const rule = ref(makeRule({ locked: true, locked_fields: { Title: true } }));
       const { fieldStateClass } = useRuleFormFields(rule, ref(false));
-      // isFieldLocked returns false when whole-locked, so whole-locked class applies
-      expect(fieldStateClass("title")).toBe("field-state--whole-locked");
+      expect(fieldStateClass("title")).toBe("");
     });
 
     it("returns empty for unlocked sections when others are locked", () => {
@@ -1112,17 +1111,17 @@ describe("useRuleFormFields", () => {
       expect(activeFieldStates.value).not.toContain("under-review");
     });
 
-    it("includes whole-locked when rule is locked", () => {
+    it("does not include whole-locked in legend (C3: no per-field indicator)", () => {
       const rule = ref(makeRule({ locked: true }));
       const { activeFieldStates } = useRuleFormFields(rule, ref(false));
-      expect(activeFieldStates.value).toContain("whole-locked");
+      expect(activeFieldStates.value).not.toContain("whole-locked");
     });
 
-    it("does not include section-locked when whole-locked", () => {
+    it("does not include section-locked or whole-locked when whole-locked", () => {
       const rule = ref(makeRule({ locked: true, locked_fields: { Title: true } }));
       const { activeFieldStates } = useRuleFormFields(rule, ref(false));
       expect(activeFieldStates.value).not.toContain("section-locked");
-      expect(activeFieldStates.value).toContain("whole-locked");
+      expect(activeFieldStates.value).not.toContain("whole-locked");
     });
   });
 
