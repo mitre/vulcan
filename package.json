@@ -69,6 +69,7 @@
     "loader-utils": ">=1.4.1",
     "json5": ">=1.0.2",
     "postcss": ">=8.4.31",
-    "brace-expansion": ">=1.1.12"
+    "brace-expansion": ">=1.1.12",
+    "axios": "<=1.14.0"
   }
 }
