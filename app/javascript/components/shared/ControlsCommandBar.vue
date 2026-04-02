@@ -23,11 +23,6 @@
         <b-icon icon="eye" /> View
       </b-button>
 
-      <!-- Members Button -->
-      <b-button variant="outline-secondary" size="sm" class="mr-2" @click="onOpenMembers">
-        <b-icon icon="people" /> Members
-      </b-button>
-
       <!-- Release Button (with tooltip for disabled state) -->
       <span v-if="canRelease" v-b-tooltip.hover :title="releaseComponentTooltip" class="mr-2">
         <b-button variant="outline-success" size="sm" :disabled="!isReleasable" @click="onRelease">
@@ -205,9 +200,6 @@ export default {
     },
     onRelease() {
       this.$emit("release");
-    },
-    onOpenMembers() {
-      this.$emit("open-members");
     },
     onTogglePanel(panel) {
       this.$emit("toggle-panel", panel);

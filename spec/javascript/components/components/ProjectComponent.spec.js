@@ -134,10 +134,6 @@ describe("ProjectComponent", () => {
       expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
     });
 
-    it("renders MembersModal", () => {
-      wrapper = createWrapper();
-      expect(wrapper.findComponent({ name: "MembersModal" }).exists()).toBe(true);
-    });
   });
 
   describe("useRuleSelection composable integration", () => {

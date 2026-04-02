@@ -190,29 +190,6 @@ describe("ControlsCommandBar", () => {
     });
   });
 
-  describe("Members button (moved to right side)", () => {
-    it("always shows Members button", () => {
-      wrapper = createWrapper({ effectivePermissions: "viewer" });
-      expect(wrapper.text()).toContain("Members");
-    });
-
-    it("Members button is on the right side (not in left action group)", () => {
-      wrapper = createWrapper();
-      // Members should NOT be in the left b-button-group (which contains Edit/View)
-      // This is a visual/layout test - implementation will move it to right side
-      expect(wrapper.text()).toContain("Members");
-    });
-
-    it("emits open-members event when clicked", async () => {
-      wrapper = createWrapper();
-      const membersButton = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Members"));
-      await membersButton.trigger("click");
-      expect(wrapper.emitted("open-members")).toBeTruthy();
-    });
-  });
-
   // Advanced Fields toggle moved to RuleEditor (per-component setting)
 
   describe("Release button (moved to right side)", () => {

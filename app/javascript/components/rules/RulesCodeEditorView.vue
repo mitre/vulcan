@@ -55,13 +55,6 @@
 
     <!-- Modals -->
     <template #modals>
-      <!-- Members Modal -->
-      <MembersModal
-        :component="component"
-        :effective-permissions="effectivePermissions"
-        :available-roles="availableRoles"
-        @memberships-updated="refreshComponent"
-      />
 
       <template v-if="selectedRule">
         <NewRuleModalForm
@@ -233,7 +226,6 @@ import RelatedRulesModal from "./RelatedRulesModal.vue";
 import RuleReviewModal from "./RuleReviewModal.vue";
 import RuleFilterBar from "./RuleFilterBar.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
-import MembersModal from "../components/MembersModal.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
@@ -256,7 +248,6 @@ export default {
     RuleReviewModal,
     RuleFilterBar,
     ControlsCommandBar,
-    MembersModal,
     ControlsPageLayout,
     NewRuleModalForm,
     Multiselect,

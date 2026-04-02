@@ -72,14 +72,6 @@
 
       <!-- Modals -->
       <template #modals>
-        <!-- Members Modal -->
-        <MembersModal
-          :component="component"
-          :effective-permissions="effective_permissions"
-          :available-roles="available_roles"
-          @memberships-updated="refreshComponent"
-        />
-
         <!-- Related Rules Modal -->
         <RelatedRulesModal
           v-if="selectedRule"
@@ -126,7 +118,6 @@ import RuleNavigator from "../rules/RuleNavigator.vue";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
-import MembersModal from "./MembersModal.vue";
 
 export default {
   name: "ProjectComponent",
@@ -138,7 +129,6 @@ export default {
     RuleEditor,
     RelatedRulesModal,
     ControlsSidepanels,
-    MembersModal,
   },
   mixins: [
     DateFormatMixinVue,
