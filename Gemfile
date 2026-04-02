@@ -91,6 +91,9 @@ gem 'ox'
 
 gem 'rubyzip'
 
+# Markdown rendering for in-app DISA guide
+gem 'commonmarker'
+
 # Rate limiting and request throttling
 gem 'rack-attack'
 

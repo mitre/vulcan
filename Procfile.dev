@@ -1,2 +1,2 @@
-web: bundle exec rails s -p ${PORT:-3000}
+web: ruby bin/dev
 js: yarn build:watch
