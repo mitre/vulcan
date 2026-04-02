@@ -55,7 +55,6 @@
 
     <!-- Modals -->
     <template #modals>
-
       <template v-if="selectedRule">
         <NewRuleModalForm
           :title="msg.cloneTitle"
@@ -74,10 +73,12 @@
         >
           <p class="my-2">{{ msg.deleteConfirmMessage }}</p>
           <b-alert v-if="selectedRule.locked" show variant="warning" class="mt-2">
-            This control is currently <strong>locked</strong>. Deleting it will remove the lock and all associated data.
+            This control is currently <strong>locked</strong>. Deleting it will remove the lock and
+            all associated data.
           </b-alert>
           <b-alert v-if="selectedRule.review_requestor_id" show variant="warning" class="mt-2">
-            This control is currently <strong>under review</strong>. Deleting it will cancel the review.
+            This control is currently <strong>under review</strong>. Deleting it will cancel the
+            review.
           </b-alert>
           <template #modal-footer="{ cancel, ok }">
             <b-button @click="cancel()">Cancel</b-button>

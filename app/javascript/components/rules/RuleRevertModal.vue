@@ -1,11 +1,7 @@
 <template>
   <div>
     <!-- Phase 1: Button to open Change Details modal -->
-    <b-button
-      variant="link"
-      :class="buttonClass"
-      @click="showDetailsModal = true"
-    >
+    <b-button variant="link" :class="buttonClass" @click="showDetailsModal = true">
       {{ buttonText }}
     </b-button>
 
@@ -84,7 +80,6 @@
         <b-button size="sm" @click="clearSelectedRows">Clear selected</b-button>
       </template>
 
-
       <!-- Revert confirmation section -->
       <template v-if="showRevertConfirm">
         <hr />
@@ -135,11 +130,7 @@ import { MESSAGE_LABELS } from "../../constants/terminology";
 
 export default {
   name: "RuleRevertModal",
-  mixins: [
-    AlertMixinVue,
-    DateFormatMixinVue,
-    HumanizedTypesMixInVue,
-  ],
+  mixins: [AlertMixinVue, DateFormatMixinVue, HumanizedTypesMixInVue],
   props: {
     rule: {
       type: Object,

@@ -78,72 +78,76 @@
           </div>
 
           <!-- Admin Actions -->
-          <div v-if="actionable && component.id" class="d-flex align-items-center flex-wrap" style="gap: 0.25rem;">
-              <LockControlsModal
-                v-if="role_gte_to(effectivePermissions, 'reviewer')"
-                :component_id="component.id"
-                @projectUpdated="$emit('projectUpdated')"
-              >
-                <template #opener>
-                  <b-button
-                    v-b-tooltip.hover
-                    variant="outline-warning"
-                    size="sm"
-                    title="Lock all rules in this component"
-                  >
-                    <b-icon icon="lock" font-scale="0.9" /> Lock
-                  </b-button>
-                </template>
-              </LockControlsModal>
-
-              <NewComponentModal
-                v-if="effectivePermissions == 'admin'"
-                :component_to_duplicate="component.id"
-                :project_id="component.project_id"
-                :predetermined_prefix="component.prefix"
-                :predetermined_security_requirements_guide_id="
-                  component.security_requirements_guide_id
-                "
-                :show-opener="true"
-                @projectUpdated="$emit('projectUpdated')"
-              >
-                <template #opener>
-                  <b-button
-                    v-b-tooltip.hover
-                    variant="outline-info"
-                    size="sm"
-                    title="Create a duplicate of this component"
-                  >
-                    <b-icon icon="files" font-scale="0.9" /> Duplicate
-                  </b-button>
-                </template>
-              </NewComponentModal>
-
-              <span
-                v-if="effectivePermissions == 'admin' && !component.released"
-                v-b-tooltip.hover
-                :title="releaseComponentTooltip"
-              >
+          <div
+            v-if="actionable && component.id"
+            class="d-flex align-items-center flex-wrap"
+            style="gap: 0.25rem"
+          >
+            <LockControlsModal
+              v-if="role_gte_to(effectivePermissions, 'reviewer')"
+              :component_id="component.id"
+              @projectUpdated="$emit('projectUpdated')"
+            >
+              <template #opener>
                 <b-button
-                  variant="outline-success"
+                  v-b-tooltip.hover
+                  variant="outline-warning"
                   size="sm"
-                  :disabled="!component.releasable"
-                  @click="confirmComponentRelease"
+                  title="Lock all rules in this component"
                 >
-                  <b-icon icon="patch-check" font-scale="0.9" /> Release
+                  <b-icon icon="lock" font-scale="0.9" /> Lock
                 </b-button>
-              </span>
+              </template>
+            </LockControlsModal>
 
+            <NewComponentModal
+              v-if="effectivePermissions == 'admin'"
+              :component_to_duplicate="component.id"
+              :project_id="component.project_id"
+              :predetermined_prefix="component.prefix"
+              :predetermined_security_requirements_guide_id="
+                component.security_requirements_guide_id
+              "
+              :show-opener="true"
+              @projectUpdated="$emit('projectUpdated')"
+            >
+              <template #opener>
+                <b-button
+                  v-b-tooltip.hover
+                  variant="outline-info"
+                  size="sm"
+                  title="Create a duplicate of this component"
+                >
+                  <b-icon icon="files" font-scale="0.9" /> Duplicate
+                </b-button>
+              </template>
+            </NewComponentModal>
+
+            <span
+              v-if="effectivePermissions == 'admin' && !component.released"
+              v-b-tooltip.hover
+              :title="releaseComponentTooltip"
+            >
               <b-button
-                v-if="effectivePermissions == 'admin'"
-                v-b-tooltip.hover
-                variant="outline-danger"
+                variant="outline-success"
                 size="sm"
-                title="Remove this component from the project"
-                @click="showDeleteConfirmation = !showDeleteConfirmation"
+                :disabled="!component.releasable"
+                @click="confirmComponentRelease"
               >
-                <b-icon icon="trash" font-scale="0.9" /> Delete
+                <b-icon icon="patch-check" font-scale="0.9" /> Release
               </b-button>
+            </span>
+
+            <b-button
+              v-if="effectivePermissions == 'admin'"
+              v-b-tooltip.hover
+              variant="outline-danger"
+              size="sm"
+              title="Remove this component from the project"
+              @click="showDeleteConfirmation = !showDeleteConfirmation"
+            >
+              <b-icon icon="trash" font-scale="0.9" /> Delete
+            </b-button>
           </div>
         </div>
       </div>

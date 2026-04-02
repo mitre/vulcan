@@ -19,7 +19,10 @@
           </b-navbar-nav>
         </div>
 
-        <div v-if="signed_in" class="d-flex flex-column flex-xl-row align-items-xl-center w-100 mt-2 mt-xl-0 right-container">
+        <div
+          v-if="signed_in"
+          class="d-flex flex-column flex-xl-row align-items-xl-center w-100 mt-2 mt-xl-0 right-container"
+        >
           <GlobalSearch />
           <!-- Notification Dropdown -->
           <!-- Right aligned nav items -->

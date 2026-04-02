@@ -36,12 +36,7 @@
           wrapper-class="d-inline-flex"
           @comment="$emit('comment', $event)"
         />
-        <b-button
-          variant="outline-info"
-          size="sm"
-          href="/disa-guide"
-          target="_blank"
-        >
+        <b-button variant="outline-info" size="sm" href="/disa-guide" target="_blank">
           <b-icon icon="question-circle" /> DISA Guide
         </b-button>
       </div>
