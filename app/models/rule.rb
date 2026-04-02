@@ -97,9 +97,9 @@ class Rule < BaseRule
 
   before_validation :set_rule_id
   before_save :apply_audit_comment, :sort_ident
+  after_create :seed_inspec_control_body
   before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
-  after_create :seed_inspec_control_body
   after_save :update_component_rules_count, :update_inspec_code
 
   validates_with RuleSatisfactionValidator
@@ -110,6 +110,12 @@ class Rule < BaseRule
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
   default_scope { where(deleted_at: nil) }
+
+  INSPEC_STUB_BODY = <<~RUBY
+    # describe file('/tmp') do
+    #   it { should be_directory }
+    # end
+  RUBY
 
   @single_rule_clone = false
 
@@ -433,16 +439,12 @@ class Rule < BaseRule
     self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') if rule_id.blank?
   end
 
-  INSPEC_STUB_BODY = <<~RUBY.freeze
-    # describe file('/tmp') do
-    #   it { should be_directory }
-    # end
-  RUBY
-
   def seed_inspec_control_body
     return if inspec_control_body.present?
 
+    # rubocop:disable Rails/SkipsModelValidations -- avoid retriggering callbacks on create
     update_column(:inspec_control_body, INSPEC_STUB_BODY)
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   ##
