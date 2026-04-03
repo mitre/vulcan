@@ -76,8 +76,8 @@ RSpec.describe Export::Registry do
   end
 
   describe '.formats_for' do
-    it 'returns [:csv, :excel] for working_copy' do
-      expect(described_class.formats_for(:working_copy)).to contain_exactly(:csv, :excel)
+    it 'returns [:csv, :excel, :inspec] for working_copy' do
+      expect(described_class.formats_for(:working_copy)).to contain_exactly(:csv, :excel, :inspec)
     end
 
     it 'returns empty array for unknown mode' do
