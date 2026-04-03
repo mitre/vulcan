@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../lib/vulcan/version'
+
 # Health check configuration for Kubernetes probes and monitoring
 # Provides /health_check endpoints with comprehensive checks
 #
@@ -54,7 +56,6 @@ HealthCheck.setup do |config|
   config.max_age = 30
 
   # Success/failure messages — include version for deployment verification
-  require_relative '../../lib/vulcan/version'
   config.success = "ok (vulcan #{Vulcan::VERSION})"
   config.failure = 'service unavailable'
 end

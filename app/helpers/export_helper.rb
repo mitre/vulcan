@@ -26,7 +26,8 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
   # Named field keys for DISA export content modification.
   # Used with csv_attributes_hash to avoid fragile positional indices.
-  DISA_MODIFIABLE_FIELDS = ['Check', 'Fix', 'Status Justification', 'Mitigation', 'Artifact Description'].freeze
+  FIELD_ARTIFACT_DESCRIPTION = 'Artifact Description'
+  DISA_MODIFIABLE_FIELDS = ['Check', 'Fix', 'Status Justification', 'Mitigation', FIELD_ARTIFACT_DESCRIPTION].freeze
 
   def export_excel(project, component_ids, is_disa_export)
     components_to_export = project.components.where(id: component_ids.split(','))
@@ -82,7 +83,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
   # and blanks fields that should be empty per status.
   def apply_disa_content_rules!(attrs, status)
     # Replace check/fix with DISA boilerplate for non-AC/non-NYD statuses
-    if status != 'Applicable - Configurable' && status != 'Not Yet Determined'
+    if status != RuleConstants::STATUS_APPLICABLE_CONFIGURABLE && status != 'Not Yet Determined'
       texts = get_check_and_fix_text(status)
       if texts
         attrs['Check'] = texts['check_text']
@@ -92,15 +93,18 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
     # Blank fields per DISA Process Guide field requirements
     case status
-    when 'Applicable - Configurable'
+    when RuleConstants::STATUS_APPLICABLE_CONFIGURABLE
       attrs['Status Justification'] = nil
       attrs['Mitigation'] = nil
-      attrs['Artifact Description'] = nil
+      attrs[FIELD_ARTIFACT_DESCRIPTION] = nil
     when 'Applicable - Inherently Meets'
       attrs['Mitigation'] = nil
     when 'Not Applicable'
       attrs['Mitigation'] = nil
-      attrs['Artifact Description'] = nil
+      attrs[FIELD_ARTIFACT_DESCRIPTION] = nil
+    else # rubocop:disable Style/EmptyElse -- SonarCloud requires default clause
+      # No field blanking required for other statuses (e.g., Does Not Meet, Not Yet Determined)
+      nil
     end
   end
 
@@ -163,7 +167,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
       control_path = "#{dir}controls/#{component[:prefix]}-#{rule[:rule_id]}.rb"
 
-      if rule[:status] == 'Applicable - Configurable'
+      if rule[:status] == RuleConstants::STATUS_APPLICABLE_CONFIGURABLE
         zio.put_next_entry(control_path)
         zio.write rule.inspec_control_file
       elsif rule[:status] == 'Not Yet Determined'
@@ -244,7 +248,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     groups = {}
     component.rules.each do |rule|
       # Rules are filtered here to prevent n + 1 query
-      next unless rule[:status] == 'Applicable - Configurable'
+      next unless rule[:status] == RuleConstants::STATUS_APPLICABLE_CONFIGURABLE
       next if rule.satisfied_by.present?
 
       group = Ox::Element.new('Group')

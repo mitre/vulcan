@@ -60,7 +60,7 @@ export function useRuleAutosave(rule, options = {}) {
 
   function performAutoSave() {
     const r = rule.value;
-    if (!r || !r.id) return;
+    if (!r?.id) return;
     if (!enabled.value) return;
     if (!isDirty.value) return;
     if (r.locked) return;

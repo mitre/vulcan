@@ -149,14 +149,23 @@ puts "Created #{Stig.count} STIGs"
 # ---------------------------------------------------------------- #
 # Helper: find or create a component with all required attributes  #
 # ---------------------------------------------------------------- #
-def seed_component(project:, name:, title:, prefix:, based_on:, version: 1, release: 1, **attrs)
-  raise "seed_component: based_on (SRG) is nil for '#{name}' — check SRG seed files" unless based_on
+def seed_component(**opts)
+  project  = opts.fetch(:project)
+  name     = opts.fetch(:name)
+  title    = opts.fetch(:title)
+  prefix   = opts.fetch(:prefix)
+  based_on = opts.fetch(:based_on)
+  version  = opts.fetch(:version, 1)
+  release  = opts.fetch(:release, 1)
+
+  raise ArgumentError, "seed_component: based_on (SRG) is nil for '#{name}' — check SRG seed files" unless based_on
 
   c = Component.find_or_initialize_by(project: project, name: name, version: version, release: release)
   c.title = title
   c.prefix = prefix
   c.based_on = based_on
-  attrs.each { |k, v| c.send(:"#{k}=", v) }
+  extra_keys = opts.keys - %i[project name title prefix based_on version release]
+  extra_keys.each { |k| c.send(:"#{k}=", opts[k]) }
   c.save!
   c
 end

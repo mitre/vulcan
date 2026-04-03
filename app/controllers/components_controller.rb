@@ -8,6 +8,7 @@ class ComponentsController < ApplicationController
   include UploadValidatable
 
   EXPORT_ERROR_TITLE = 'Export error'
+  NO_FILE_PROVIDED = 'No file provided'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update]
@@ -129,7 +130,7 @@ class ComponentsController < ApplicationController
 
   def destroy
     ActiveRecord::Base.transaction do
-      rule_ids = Rule.unscoped.where(component_id: @component.id).pluck(:id)
+      rule_ids = Rule.unscoped.where(component_id: @component.id).ids
 
       if rule_ids.any?
         # Bulk-delete dependent records first (avoid N+1 destroy callbacks)
@@ -271,7 +272,7 @@ class ComponentsController < ApplicationController
     return head :not_found unless @component&.based_on
 
     srg_title = @component.based_on.title
-    accessible_project_ids = current_user.available_projects.pluck(:id)
+    accessible_project_ids = current_user.available_projects.ids
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
                           .where(project_id: accessible_project_ids)
@@ -345,7 +346,7 @@ class ComponentsController < ApplicationController
   def detect_srg
     file = params[:file]
     unless file
-      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
       return
     end
 
@@ -375,7 +376,7 @@ class ComponentsController < ApplicationController
   def preview_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
       return
     end
 
@@ -390,7 +391,7 @@ class ComponentsController < ApplicationController
   def apply_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
       return
     end
 

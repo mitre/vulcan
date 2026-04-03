@@ -200,7 +200,7 @@ export default {
         // Sign-out may return a redirect (302) which axios treats as an error.
         // Either way, navigate to the root to complete sign-out.
       }
-      window.location.assign("/");
+      globalThis.location.assign("/");
     },
     checkUpdateAvailable() {
       if (!this.latestRelease || this.latestRelease.trim() === "") return false;

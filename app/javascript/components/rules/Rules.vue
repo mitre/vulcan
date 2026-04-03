@@ -20,8 +20,6 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
-import _ from "lodash";
-
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
@@ -58,8 +56,8 @@ export default {
   },
   data: function () {
     return {
-      reactiveRules: _.cloneDeep(this.rules).sort(this.compareRules),
-      reactiveComponent: _.cloneDeep(this.component),
+      reactiveRules: structuredClone(this.rules).sort(this.compareRules),
+      reactiveComponent: structuredClone(this.component),
     };
   },
   computed: {

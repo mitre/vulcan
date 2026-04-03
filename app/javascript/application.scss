@@ -9,9 +9,7 @@
 
 // Prevent layout shift when b-sidebar backdrop adds overflow:hidden to body.
 // scrollbar-gutter reserves the scrollbar space so content doesn't jump.
-html {
-  scrollbar-gutter: stable;
-}
+// Responsive typography base size is also set here.
 
 .clickable {
   cursor: pointer;
@@ -48,6 +46,7 @@ html {
 
 // Responsive typography
 html {
+  scrollbar-gutter: stable;
   font-size: 0.8rem;
 }
 

@@ -58,7 +58,7 @@ class ReviewsController < ApplicationController
     satisfied_ids = RuleSatisfaction.where(rule_id: nyd_rules).pluck(:rule_id)
     nyd_skipped = nyd_rules.where.not(id: satisfied_ids).order(:rule_id)
     if nyd_skipped.any?
-      skipped_ids.merge(nyd_skipped.pluck(:id))
+      skipped_ids.merge(nyd_skipped.ids)
       names = nyd_skipped.map(&:displayed_name).join(', ')
       warnings << "Not Yet Determined (skipped): #{names}"
     end
@@ -69,7 +69,7 @@ class ReviewsController < ApplicationController
                                   disa_rule_descriptions: { mitigations: [nil, ''] })
                            .distinct.order(:rule_id)
     if adnm_skipped.any?
-      skipped_ids.merge(adnm_skipped.pluck(:id))
+      skipped_ids.merge(adnm_skipped.ids)
       names = adnm_skipped.map(&:displayed_name).join(', ')
       warnings << "Does Not Meet without mitigations (skipped): #{names}"
     end
@@ -78,7 +78,7 @@ class ReviewsController < ApplicationController
     aim_skipped = unlocked.where(status: 'Applicable - Inherently Meets',
                                  artifact_description: [nil, '']).order(:rule_id)
     if aim_skipped.any?
-      skipped_ids.merge(aim_skipped.pluck(:id))
+      skipped_ids.merge(aim_skipped.ids)
       names = aim_skipped.map(&:displayed_name).join(', ')
       warnings << "Inherently Meets without artifact (skipped): #{names}"
     end
