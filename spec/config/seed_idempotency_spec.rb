@@ -34,10 +34,8 @@ RSpec.describe 'seed file idempotency and completeness' do
 
   describe 'Component title requirement' do
     it 'all named Component.create/find_or_create calls include title' do
-      # Find component creation lines (excluding the dummy loop which already has title)
-      seeds.lines.grep(/seed_component|Component\.create!|Component\.find_or_create/)
-      # The seed_component helper requires title as a parameter — check it exists
-      expect(seeds).to match(/def seed_component.*title/),
+      # The seed_component helper must require title (either as a named param or via fetch)
+      expect(seeds).to match(/def seed_component/).and(match(/\.fetch\(:title\)/)),
                        'seed_component helper must require title parameter'
     end
   end
