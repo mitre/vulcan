@@ -254,13 +254,15 @@ export default {
     getAccessRequestId: function (member) {
       return this.localAccessRequests.find((request) => request.user_id === member.id).id;
     },
-    async roleChanged(_event, project_member) {
+    async roleChanged(event, project_member) {
+      const previousRole = event?.target?.dataset?.previousValue || project_member.role;
       try {
         const response = await axios.put(`/memberships/${project_member.id}.json`, {
           membership: { role: project_member.role },
         });
         this.alertOrNotifyResponse(response);
       } catch (error) {
+        project_member.role = previousRole;
         this.alertOrNotifyResponse(error);
       }
     },
@@ -283,7 +285,7 @@ export default {
 
       try {
         const response = await axios.delete(
-          `/projects/${this.membership_id}/project_access_requests/${requestId}`,
+          `/projects/${this.membership_id}/project_access_requests/${requestId}.json`,
         );
         this.alertOrNotifyResponse(response);
         this.localAccessRequests = this.localAccessRequests.filter((r) => r.id !== requestId);

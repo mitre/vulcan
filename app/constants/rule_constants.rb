@@ -10,7 +10,7 @@ module RuleConstants
     'Not Applicable'
   ].freeze
 
-  STATUS_APPLICABLE_CONFIGURABLE = STATUSES[1]
+  STATUS_APPLICABLE_CONFIGURABLE = 'Applicable - Configurable'
 
   SEVERITIES_MAP = {
     'low' => 'CAT III',

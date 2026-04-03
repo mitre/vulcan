@@ -128,6 +128,7 @@ export default {
             const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
 
             // Add to satisfied_by array (rule is satisfied by satisfiedByRule)
+            if (!rule.satisfied_by) rule.satisfied_by = [];
             if (!rule.satisfied_by.some((r) => r.id === satisfied_by_rule_id)) {
               rule.satisfied_by.push({
                 id: satisfiedByRule.id,
@@ -138,6 +139,7 @@ export default {
             }
 
             // Add to satisfies array (satisfiedByRule satisfies rule)
+            if (!satisfiedByRule.satisfies) satisfiedByRule.satisfies = [];
             if (!satisfiedByRule.satisfies.some((r) => r.id === rule_id)) {
               satisfiedByRule.satisfies.push({
                 id: rule.id,

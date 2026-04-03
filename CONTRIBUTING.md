@@ -202,7 +202,7 @@ We use ESLint and Prettier:
 # Check and fix JavaScript
 yarn lint
 
-# Format code
+# Lint code
 yarn lint
 ```
 

@@ -36,7 +36,8 @@ class DisaGuideController < ApplicationController
       %r{\[([^\]]+)\]\(attachments/([^)]+)\)},
       '[\1](/disa-guide/attachments/\2)'
     )
-    @html_content = Commonmarker.to_html(markdown_content, options: { render: { unsafe: true } })
+    rendered_html = Commonmarker.to_html(markdown_content, options: { render: { unsafe: true } })
+    @html_content = ActionController::Base.helpers.sanitize(rendered_html)
     @current_page = page
     @pages = PAGES
     @page_title = PAGES[page]

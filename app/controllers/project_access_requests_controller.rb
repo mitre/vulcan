@@ -24,7 +24,7 @@ class ProjectAccessRequestsController < ApplicationController
     if @access_request.destroy
       if current_user.can_admin_project?(@access_request.project)
         send_smtp_notification(UserMailer, 'reject_access', @access_request.user, @access_request.project) if Settings.smtp.enabled
-        toast = "Sucessfully denied #{@access_request.user.name}'s request to access project."
+        toast = "Successfully denied #{@access_request.user.name}'s request to access project."
       else
         toast = "Your request to access #{@access_request.project.name} has been cancelled."
       end

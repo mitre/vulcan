@@ -151,14 +151,9 @@ class ReviewsController < ApplicationController
       end
       next if fields == old_fields
 
-      rule.update!(locked_fields: fields)
       action_word = locked ? 'Locked' : 'Unlocked'
-      rule.audits.create!(
-        action: 'update',
-        audited_changes: { 'locked_fields' => [old_fields, fields] },
-        user: current_user,
-        comment: comment.presence || "#{action_word} sections: #{sections.join(', ')}"
-      )
+      rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
+      rule.update!(locked_fields: fields)
       count += 1
     end
 

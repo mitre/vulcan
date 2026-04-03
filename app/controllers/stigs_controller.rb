@@ -16,7 +16,7 @@ class StigsController < ApplicationController
 
   def show
     # Eager load associations for performance (set_stig loads basic STIG)
-    @stig = Stig.includes(stig_rules: %i[disa_rule_descriptions checks]).find_by(id: params[:id])
+    @stig = Stig.includes(stig_rules: %i[disa_rule_descriptions checks]).find(params[:id])
 
     respond_to do |format|
       format.html { @stig_json = @stig.to_json(methods: %i[stig_rules]) }
