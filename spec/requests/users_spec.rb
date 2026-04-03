@@ -343,7 +343,8 @@ RSpec.describe 'Users' do
 
         post "/users/#{target_user.id}/send_password_reset", headers: json_headers
 
-        expect(response).to have_http_status(:ok)
+        expect(response).to have_http_status(:ok),
+                            "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
         expect(json['toast']).to include('Password reset')
         expect(json['toast']).to include(target_user.email)
@@ -427,7 +428,8 @@ RSpec.describe 'Users' do
              params: { user: { password: compliant_password } }.to_json,
              headers: json_headers
 
-        expect(response).to have_http_status(:ok)
+        expect(response).to have_http_status(:ok),
+                            "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
         expect(json['toast']).to include(target_user.email)
 

@@ -150,6 +150,10 @@ class UsersController < ApplicationController
 
     @user.send_reset_password_instructions
     render json: { toast: "Password reset email sent to #{@user.email}." }
+  rescue StandardError => e
+    render json: {
+      toast: { title: 'Could not send password reset.', message: [e.message], variant: 'danger' }
+    }, status: :internal_server_error
   end
 
   # Generate a reset token and return the URL without sending email (no SMTP needed)
@@ -206,6 +210,10 @@ class UsersController < ApplicationController
         toast: { title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger' }
       }, status: :unprocessable_entity
     end
+  rescue StandardError => e
+    render json: {
+      toast: { title: 'Could not set password.', message: [e.message], variant: 'danger' }
+    }, status: :internal_server_error
   end
 
   private
