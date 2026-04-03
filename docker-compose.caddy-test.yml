@@ -1,5 +1,5 @@
 # Temporary test overlay — enables Caddy proxy
-# Usage: docker compose -f docker-compose.prod.yml -f docker-compose.caddy-test.yml up -d
+# Usage: docker compose -f docker-compose.yml -f docker-compose.caddy-test.yml up -d
 
 services:
   web:

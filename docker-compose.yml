@@ -1,31 +1,137 @@
-# Development Docker Compose (default)
-# Runs PostgreSQL with sensible defaults for local development.
+# Vulcan Docker Compose (default — production deployment)
 #
-# Usage:
-#   docker compose up -d
-#   bin/rails db:prepare
-#   foreman start -f Procfile.dev
+# ============================================================================
+# Quick Start (HTTP — local testing only):
+# ============================================================================
+#   ./setup-docker-secrets.sh       # Generate .env with secrets
+#   docker compose up               # Start Vulcan
+#   Open http://localhost:3000
+#   Register first user — they become admin automatically
 #
-# Production: use docker-compose.prod.yml instead.
-name: vulcan-v2x
+# ============================================================================
+# Production with SSL (choose Caddy OR nginx):
+# ============================================================================
+#   1. ./setup-docker-secrets.sh
+#   2. Edit .env: set RAILS_FORCE_SSL=true
+#   3. Uncomment ONE of the proxy profiles below (caddy or nginx)
+#   4. Copy and edit the matching config file:
+#      - Caddy:  cp Caddyfile.example Caddyfile    (edit domain)
+#      - nginx:  cp nginx.conf.example nginx.conf   (edit domain + certs)
+#   5. docker compose --profile caddy up -d
+#      OR: docker compose --profile nginx up -d
+#
+# With a proxy, web only listens internally (expose: 3000, no host port).
+# The proxy handles SSL termination and forwards X-Forwarded-Proto: https.
+#
+# For local development: use docker-compose.dev.yml (or bin/setup).
+#
+# Database setup (db:prepare) runs automatically on container start via
+# the docker-entrypoint script. Admin bootstrap hooks into db:prepare.
 
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - vulcan_dbdata:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
-    volumes:
-      - vulcan_dev_dbdata:/var/lib/postgresql/data
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  #ggignore
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_postgres_production}
+    expose:
+      - "5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 5
 
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      # Database connection (deployment-specific)
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-vulcan_postgres_production}  #ggignore
+      NODE_ENV: production
+    # .env file provides secrets (SECRET_KEY_BASE, CIPHER_PASSWORD, POSTGRES_PASSWORD, etc.)
+    # and optional config overrides (RAILS_FORCE_SSL, VULCAN_ENABLE_OIDC, etc.)
+    # Generate with: ./setup-docker-secrets.sh
+    env_file:
+      - path: .env
+    restart: unless-stopped
+    # When using a proxy, comment out "ports" and uncomment "expose" instead:
+    ports:
+      - "3000:3000"
+    # expose:
+    #   - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==========================================================================
+  # OPTION A: Caddy reverse proxy (auto-HTTPS, zero cert config)
+  # ==========================================================================
+  # Uncomment to enable. Set RAILS_FORCE_SSL=true in .env.
+  # Copy Caddyfile.example to Caddyfile and edit your domain.
+  #
+  # For local testing: use "vulcan.localhost" (browsers auto-trust *.localhost)
+  # For production:    use your real domain (Caddy auto-provisions Let's Encrypt)
+  #
+  # caddy:
+  #   image: caddy:2-alpine
+  #   profiles: ["caddy"]
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "443:443/udp"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #     # Corporate/custom CA certs (same certs/ dir used by the web container)
+  #     # - ./certs:/usr/local/share/ca-certificates/custom:ro
+  #   depends_on:
+  #     web:
+  #       condition: service_healthy
+
+  # ==========================================================================
+  # OPTION B: nginx reverse proxy (manual cert management)
+  # ==========================================================================
+  # Uncomment to enable. Set RAILS_FORCE_SSL=true in .env.
+  # Copy nginx.conf.example to nginx.conf and edit your domain.
+  # Place your SSL certs in config/nginx/certs/ (or use mkcert for local dev).
+  #
+  # For local testing with mkcert:
+  #   brew install mkcert && mkcert -install
+  #   mkdir -p config/nginx/certs
+  #   mkcert -cert-file config/nginx/certs/cert.pem -key-file config/nginx/certs/key.pem vulcan.localhost
+  #
+  # nginx:
+  #   image: nginx:alpine
+  #   profiles: ["nginx"]
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - ./config/nginx/certs:/etc/nginx/certs:ro
+  #     # Corporate/custom CA certs (same certs/ dir used by the web container)
+  #     # - ./certs:/usr/local/share/ca-certificates/custom:ro
+  #   depends_on:
+  #     web:
+  #       condition: service_healthy
+
 volumes:
-  vulcan_dev_dbdata:
+  vulcan_dbdata:
+  # caddy_data:
+  # caddy_config:

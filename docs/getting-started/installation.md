@@ -24,7 +24,7 @@ Given that Vulcan requires at least a database service, we use Docker Compose.
 
 1. Install Docker
 2. Download vulcan by running `git clone https://github.com/mitre/vulcan.git`.
-3. Navigate to the base folder where `docker-compose.prod.yml` is located
+3. Navigate to the base folder where `docker-compose.yml` is located
 4. Run the following commands in a terminal window from the vulcan source directory:
    1. `./setup-docker-secrets.sh`
    2. `docker compose up -d`

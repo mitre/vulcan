@@ -53,7 +53,7 @@ yarn install
 
 ```bash
 # Start PostgreSQL container
-docker compose up db -d
+docker compose -f docker-compose.dev.yml up db -d
 
 # Wait for healthy status
 docker compose ps db   # should show "healthy"
@@ -451,7 +451,7 @@ Use Docker for PostgreSQL while running Rails natively for faster iteration:
 
 ```bash
 # Start PostgreSQL only
-docker compose up db -d
+docker compose -f docker-compose.dev.yml up db -d
 
 # Verify healthy
 docker compose ps db
@@ -473,7 +473,7 @@ foreman start -f Procfile.dev
 ./setup-docker-secrets.sh
 
 # Build and start everything
-docker compose -f docker-compose.prod.yml up --build
+docker compose up --build
 
 # Database setup runs automatically via docker-entrypoint
 # First user becomes admin when VULCAN_FIRST_USER_ADMIN=true (default in Docker)
@@ -493,10 +493,10 @@ DATABASE_GSSENCMODE=disable
 
 ### Docker Tips
 
-1. Use `docker compose up db -d` (database-only) for fastest development cycle
+1. Use `docker compose -f docker-compose.dev.yml up db -d` (database-only) for fastest development cycle
 2. Use `.dockerignore` for faster builds (excludes docs/, downloads/, coverage/)
 3. Production image uses multi-stage build with jemalloc (~596MB)
-4. `docker-compose.prod.yml` supports Caddy or nginx reverse proxy profiles
+4. `docker-compose.yml` supports Caddy or nginx reverse proxy profiles
 
 ## Performance Optimization
 

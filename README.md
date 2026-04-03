@@ -39,11 +39,11 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 docker pull mitre/vulcan:v2.3.1
 
 # Or use docker compose for a complete setup
-wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.prod.yml
+wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
 wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
 chmod +x setup-docker-secrets.sh
 ./setup-docker-secrets.sh
-docker compose -f docker-compose.prod.yml up
+docker compose up
 ```
 
 The first user to register becomes admin automatically.
@@ -191,7 +191,7 @@ bundle exec bundler-audit
 
 4. **Start the application**:
    ```bash
-   docker compose -f docker-compose.prod.yml up -d
+   docker compose up -d
    ```
 
 5. **Database setup** is automatic — `db:prepare` runs on container start via the Docker entrypoint. No manual step needed.

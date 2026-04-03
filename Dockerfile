@@ -28,29 +28,29 @@ FROM docker.io/library/ruby:${RUBY_VERSION}-slim AS base
 WORKDIR /rails
 
 # Install base packages including jemalloc for better memory management
+# libvips removed — image_processing gem is commented out and ActiveStorage
+# is not used for file attachments. postgresql-client kept for db:prepare.
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
       ca-certificates \
       curl \
       libjemalloc2 \
       libpq5 \
-      libvips42 \
       libyaml-0-2 \
       postgresql-client && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-# Install custom SSL certificates if provided
+# Install custom SSL certificates if provided (single layer)
 COPY certs/ /usr/local/share/ca-certificates/custom/
-WORKDIR /usr/local/share/ca-certificates/custom
-RUN for cert in ./*.pem ./*.cer; do \
+RUN cd /usr/local/share/ca-certificates/custom && \
+    for cert in ./*.pem ./*.cer; do \
       [ -f "$cert" ] && mv "$cert" "${cert%.*}.crt" || true; \
     done && \
     if ls ./*.crt 2>/dev/null | grep -q .; then \
       update-ca-certificates; \
     fi && \
-    rm -rf /usr/local/share/ca-certificates/custom/README.md
-WORKDIR /rails
+    rm -f /usr/local/share/ca-certificates/custom/README.md
 
 # Common environment for all stages
 ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
@@ -108,16 +108,27 @@ RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
 # Copy application code
 COPY . .
 
-# Precompile bootsnap code for faster boot times
-RUN bundle exec bootsnap precompile app/ lib/
-
-# Precompile Rails assets
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
-
-# Remove dev/test files, node_modules, and source maps to reduce image size
-# Note: app/assets/ can be deleted - assets:precompile copies to public/assets/
-RUN rm -rf node_modules tmp/cache app/assets vendor/assets spec test .git && \
-    find public/assets -name '*.map' -delete 2>/dev/null || true
+RUN bundle exec bootsnap precompile app/ lib/ && \
+    SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
+    rm -rf \
+    node_modules \
+    tmp/cache \
+    app/assets \
+    vendor/assets \
+    spec \
+    test \
+    .git \
+    docs \
+    .node-version \
+    .nvmrc \
+    .browserslistrc \
+    yarn.lock \
+    package.json \
+    esbuild.config.js && \
+    find public/assets -name '*.map' -delete 2>/dev/null || true && \
+    # Strip gem build artifacts and cached .o/.so files
+    rm -rf "${BUNDLE_PATH}"/ruby/*/cache && \
+    find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true
 
 # =============================================================================
 # DEVELOPMENT STAGE - Full development environment
@@ -174,16 +185,17 @@ ENV RAILS_ENV="production" \
     RAILS_LOG_TO_STDOUT="true" \
     RAILS_SERVE_STATIC_FILES="true"
 
-# Create non-root user before COPY --chown (avoids extra chown layer)
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
-
-# Copy built artifacts from build stage with correct ownership and read-only permissions
+# Copy built artifacts from build stage
 COPY --from=build /usr/local/bundle /usr/local/bundle
-COPY --from=build --chown=rails:rails --chmod=755 /rails /rails
+COPY --from=build --chmod=755 /rails /rails
 
-# Ensure writable directories exist
-RUN mkdir -p db log storage tmp
+# Create non-root user, writable dirs, and strip bundle artifacts in one layer
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails db log storage tmp && \
+    rm -rf "${BUNDLE_PATH}"/ruby/*/cache \
+           "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 
 USER 1000:1000
 

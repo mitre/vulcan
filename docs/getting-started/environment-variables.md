@@ -342,12 +342,12 @@ In production, set these as actual environment variables through your deployment
 
 When using Docker, you can set environment variables in:
 - `.env` file (created by `setup-docker-secrets.sh`)
-- `docker-compose.prod.yml` using the `environment:` section
+- `docker-compose.yml` using the `environment:` section
 - Container runtime with `-e` flags
 
 **For Container Deployments** (Docker, ECS, Kubernetes):
 ```yaml
-# docker-compose.prod.yml
+# docker-compose.yml
 environment:
   RAILS_LOG_TO_STDOUT: "true"
   STRUCTURED_LOGGING: "true"  # Enable JSON logging for CloudWatch/monitoring

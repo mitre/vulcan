@@ -24,11 +24,11 @@ Before installing, you can try Vulcan directly:
 docker pull mitre/vulcan:latest
 
 # Or use docker compose for a complete setup
-wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.prod.yml
+wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
 wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
 chmod +x setup-docker-secrets.sh
 ./setup-docker-secrets.sh
-docker compose -f docker-compose.prod.yml up
+docker compose up
 ```
 
 ### 2. Access Vulcan

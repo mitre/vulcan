@@ -28,7 +28,7 @@ FileUtils.chdir APP_ROOT do
   system! "yarn build"
 
   puts "\n== Starting development database =="
-  system "docker compose up db -d"
+  system "docker compose -f docker-compose.dev.yml up db -d"
 
   # Wait for PostgreSQL to be ready
   pgport = ENV.fetch("DATABASE_PORT", "5432")
