@@ -21,7 +21,7 @@ gem 'jbuilder', '~> 2.7'
 # Use HAML instead of ERB
 gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
-gem 'devise', '~> 4.9'
+gem 'devise', '~> 5.0'
 # PBKDF2-SHA512 password hashing for FIPS 140-2 compliance
 gem 'devise-encryptable'
 # Session limiting (AC-10), session tracking, and server-side session store
