@@ -14,3 +14,5 @@ secret:
   ignored_matches:
     - name: rroemhild/test-openldap public default LDAP admin password
       match: GoodNewsEveryone
+    - name: Dev seed admin default password (overridable via VULCAN_SEED_ADMIN_PASSWORD)
+      match: 12qwaszx!@QWASZX

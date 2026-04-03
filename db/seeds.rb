@@ -20,8 +20,9 @@ unless Rails.env.local? || ENV['VULCAN_SEED_DEMO_DATA'] == 'true'
   return
 end
 
-# DoD-compliant demo password: 16 chars, 2+ uppercase, 2+ lowercase, 2+ digits, 2+ special
-DEMO_PASSWORD = '12qwaszx!@QWASZX'
+# Demo admin password from env var, with a default for local dev convenience.
+# In deployed demo instances, set VULCAN_SEED_ADMIN_PASSWORD to override.
+DEMO_PASSWORD = ENV.fetch('VULCAN_SEED_ADMIN_PASSWORD', '12qwaszx!@QWASZX')
 
 # Create demo admin only if no admin exists yet (admin:bootstrap may have already created one)
 unless User.exists?(admin: true)
@@ -29,7 +30,7 @@ unless User.exists?(admin: true)
   admin = User.new(name: 'Demo Admin', email: 'admin@example.com', password: DEMO_PASSWORD, admin: true)
   admin.skip_confirmation!
   admin.save!
-  puts "  Demo admin created (password: #{DEMO_PASSWORD})"
+  puts "  Demo admin created (password from #{ENV.key?('VULCAN_SEED_ADMIN_PASSWORD') ? 'VULCAN_SEED_ADMIN_PASSWORD env var' : 'default'})"
 end
 
 puts "Populating database for demo use:\n\n"
