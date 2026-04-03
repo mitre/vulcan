@@ -1,7 +1,15 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import MembershipsTable from "@/components/memberships/MembershipsTable.vue";
+
+vi.mock("axios", () => ({
+  default: {
+    put: vi.fn(() => Promise.resolve({ data: { toast: "Updated" } })),
+    delete: vi.fn(() => Promise.resolve({ data: { toast: "Removed" } })),
+    defaults: { headers: { common: {} } },
+  },
+}));
 
 /**
  * MembershipsTable Component Requirements:
@@ -80,6 +88,7 @@ describe("MembershipsTable", () => {
     if (wrapper) {
       wrapper.destroy();
     }
+    vi.restoreAllMocks();
   });
 
   // ==========================================
@@ -333,6 +342,64 @@ describe("MembershipsTable", () => {
     it("starts on page 1", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.currentPage).toBe(1);
+    });
+  });
+
+  // ==========================================
+  // AJAX ROLE CHANGE (B4)
+  // ==========================================
+  describe("AJAX role change", () => {
+    it("sends PUT request with new role", async () => {
+      const axios = (await import("axios")).default;
+      wrapper = createWrapper({ editable: true });
+      const member = { id: 1, role: "reviewer" };
+
+      await wrapper.vm.roleChanged({}, member);
+
+      expect(axios.put).toHaveBeenCalledWith("/memberships/1.json", {
+        membership: { role: "reviewer" },
+      });
+    });
+  });
+
+  // ==========================================
+  // AJAX REMOVE MEMBER (B4)
+  // ==========================================
+  describe("AJAX remove member", () => {
+    it("sends DELETE request and emits memberRemoved", async () => {
+      const axios = (await import("axios")).default;
+      // Mock confirm to return true
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      wrapper = createWrapper({ editable: true });
+      const member = { id: 2, name: "Bob", email: "bob@example.com" };
+
+      await wrapper.vm.removeMember(member);
+
+      expect(axios.delete).toHaveBeenCalledWith("/memberships/2.json");
+      expect(wrapper.emitted("memberRemoved")).toBeTruthy();
+      expect(wrapper.emitted("memberRemoved")[0][0]).toEqual(member);
+    });
+
+    it("does not send DELETE when confirm is cancelled", async () => {
+      const axios = (await import("axios")).default;
+      axios.delete.mockClear();
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      wrapper = createWrapper({ editable: true });
+
+      await wrapper.vm.removeMember({ id: 2 });
+
+      expect(axios.delete).not.toHaveBeenCalled();
+    });
+
+    it("sets removingId during request", async () => {
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      wrapper = createWrapper({ editable: true });
+
+      const promise = wrapper.vm.removeMember({ id: 3 });
+      expect(wrapper.vm.removingId).toBe(3);
+
+      await promise;
+      expect(wrapper.vm.removingId).toBe(null);
     });
   });
 });
