@@ -131,29 +131,32 @@ RSpec.describe ExportHelper do
   describe '#export_inspec_project' do
     let(:zip_data) { export_inspec_project(project).string }
 
-    it 'creates a zip file containing all components of a project in YAML format' do
+    it 'creates a zip file containing inspec.yml for each component' do
       entries = zip_entries(zip_data)
-      expect(entries.size).to eq project.components.size
+      yml_entries = entries.select { |e| e.end_with?('inspec.yml') }
+      expect(yml_entries.size).to eq project.components.size
 
-      # ensure files are valid yaml
+      # ensure inspec.yml files are valid yaml
       Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
-        zip.each do |yml|
+        zip.each do |entry|
+          next unless entry.name.end_with?('inspec.yml')
+
           content = nil
-          yml.get_input_stream { |io| content = io.read }
+          entry.get_input_stream { |io| content = io.read }
           expect { YAML.parse(content) }.not_to raise_error
         end
       end
     end
 
-    it 'creates a zip file containing yaml files with correct name format' do
+    it 'creates inspec.yml files with correct name format' do
       expected_names = project.components.map do |comp|
         version = comp.version ? "V#{comp.version}" : ''
         release = comp.release ? "R#{comp.release}" : ''
 
         "#{comp.name.tr(' ', '-')}-#{version}#{release}-stig-baseline/inspec.yml"
       end
-      entries = zip_entries(zip_data)
-      expect(entries.sort).to eq expected_names.sort
+      yml_entries = zip_entries(zip_data).select { |e| e.end_with?('inspec.yml') }
+      expect(yml_entries.sort).to eq expected_names.sort
     end
   end
 
@@ -164,7 +167,7 @@ RSpec.describe ExportHelper do
       ac_rule = component.rules.find { |r| r.status == 'Applicable - Configurable' }
       skip 'No Applicable - Configurable rules in test component' unless ac_rule
 
-      zip_data = helper_instance.export_inspec(component).string
+      zip_data = helper_instance.export_inspec_component(component).string
       Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
         control_entry = zip.find_entry("controls/#{component.prefix}-#{ac_rule.rule_id}.rb")
         expect(control_entry).not_to be_nil
@@ -177,7 +180,7 @@ RSpec.describe ExportHelper do
       nyd_rule = component.rules.find { |r| r.status == 'Not Yet Determined' }
       skip 'No Not Yet Determined rules in test component' unless nyd_rule
 
-      zip_data = helper_instance.export_inspec(component).string
+      zip_data = helper_instance.export_inspec_component(component).string
       Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
         control_entry = zip.find_entry("controls/#{component.prefix}-#{nyd_rule.rule_id}.rb")
         expect(control_entry).not_to be_nil
@@ -192,7 +195,7 @@ RSpec.describe ExportHelper do
       na_rule = component.rules.find { |r| r.status == 'Not Applicable' }
       skip 'No Not Applicable rules in test component' unless na_rule
 
-      zip_data = helper_instance.export_inspec(component).string
+      zip_data = helper_instance.export_inspec_component(component).string
       Zip::File.open_buffer(StringIO.new(zip_data)) do |zip|
         control_entry = zip.find_entry("controls/#{component.prefix}-#{na_rule.rule_id}.rb")
         expect(control_entry).to be_nil
