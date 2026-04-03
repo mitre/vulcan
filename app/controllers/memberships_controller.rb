@@ -6,22 +6,9 @@
 class MembershipsController < ApplicationController
   before_action :set_membership, only: %i[update destroy]
   before_action :authorize_admin_membership, only: %i[update destroy]
+  before_action :authorize_membership_create, only: %i[create]
 
   def create
-    # Ensure the current_user has permissions on the Project or component
-    project_or_component = if membership_create_params[:membership_type] == 'Project'
-                             Project.find_by(id: membership_create_params[:membership_id])
-                           else
-                             Component.find_by(id: membership_create_params[:membership_id])
-                           end
-
-    unless current_user.admin || current_user.effective_permissions(project_or_component) == 'admin'
-      raise(
-        NotAuthorizedError,
-        "You are not authorized to manage permissions on this #{membership_create_params[:membership_type]}"
-      )
-    end
-
     filtered_params = membership_create_params.except(:access_request_id)
     membership = Membership.new(filtered_params)
     if membership.save
@@ -34,10 +21,27 @@ class MembershipsController < ApplicationController
       when 'Component'
         send_membership_notification(:create_component_membership, membership)
       end
-      redirect_to membership.membership
+
+      respond_to do |format|
+        format.html { redirect_to membership.membership }
+        format.json { render json: { toast: 'Successfully created membership.' } }
+      end
     else
-      flash.alert = "Unable to create membership. #{membership.errors.full_messages}"
-      redirect_back(fallback_location: root_path)
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to create membership. #{membership.errors.full_messages}"
+          redirect_back(fallback_location: root_path)
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not create membership.',
+              message: membership.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
   end
 
@@ -79,7 +83,6 @@ class MembershipsController < ApplicationController
 
   def destroy
     if @membership.destroy
-      flash.notice = 'Successfully removed membership.'
       send_smtp_notification(UserMailer, 'remove_membership', current_user, @membership) if Settings.smtp.enabled
       case @membership.membership_type
       when 'Project'
@@ -87,10 +90,31 @@ class MembershipsController < ApplicationController
       when 'Component'
         send_membership_notification(:remove_component_membership, @membership)
       end
+
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully removed membership.'
+          redirect_to @membership.membership
+        end
+        format.json { render json: { toast: 'Successfully removed membership.' } }
+      end
     else
-      flash.alert = "Unable to remove membership. #{@membership.errors.full_messages}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to remove membership. #{@membership.errors.full_messages}"
+          redirect_to @membership.membership
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not remove membership.',
+              message: @membership.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to @membership.membership
   end
 
   private
@@ -109,6 +133,21 @@ class MembershipsController < ApplicationController
     raise(
       NotAuthorizedError,
       "You are not authorized to manage permissions on this #{@membership.membership_type}"
+    )
+  end
+
+  def authorize_membership_create
+    project_or_component = if membership_create_params[:membership_type] == 'Project'
+                             Project.find_by(id: membership_create_params[:membership_id])
+                           else
+                             Component.find_by(id: membership_create_params[:membership_id])
+                           end
+
+    return if current_user.admin || current_user.effective_permissions(project_or_component) == 'admin'
+
+    raise(
+      NotAuthorizedError,
+      "You are not authorized to manage permissions on this #{membership_create_params[:membership_type]}"
     )
   end
 

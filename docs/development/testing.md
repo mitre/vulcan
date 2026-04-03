@@ -9,15 +9,16 @@ Comprehensive guide for testing Vulcan application code, including unit tests, i
 - **FactoryBot** - Test data factories
 - **SimpleCov** - Code coverage reporting
 - **DatabaseCleaner** - Test database management
-- **VCR** - HTTP interaction recording
 
 ## Running Tests
 
 ### Quick Commands
 
 ```bash
-# Run all tests
-bundle exec rspec
+# Run all tests — use one of these (caps at 8 processors for stability)
+rake spec:parallel                    # Rake task (recommended)
+bin/parallel_rspec spec/              # Binstub alternative
+bundle exec parallel_rspec spec/      # Direct (uses all CPUs — may be flaky)
 
 # Run specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -25,11 +26,11 @@ bundle exec rspec spec/models/user_spec.rb
 # Run specific test by line number
 bundle exec rspec spec/models/user_spec.rb:42
 
-# Run tests with coverage
-COVERAGE=true bundle exec rspec
+# Run frontend tests
+yarn test:unit
 
-# Run tests in parallel
-PARALLEL_WORKERS=4 bundle exec rspec
+# Run tests with coverage
+COVERAGE=true rake spec:parallel
 
 # Run only failed tests
 bundle exec rspec --only-failures
@@ -37,6 +38,11 @@ bundle exec rspec --only-failures
 # Run tests matching pattern
 bundle exec rspec -e "should validate presence"
 ```
+
+> **Why 8 processors?** On 10-core machines, running 10 parallel rspec processes
+> plus PostgreSQL causes CPU contention that produces flaky failures. The
+> `rake spec:parallel` task and `bin/parallel_rspec` binstub cap at 8, leaving
+> headroom for the database and OS.
 
 ### Test Types
 
@@ -170,14 +176,14 @@ RSpec.describe 'User Login', type: :system do
     driven_by(:selenium_chrome_headless)
   end
 
-  let(:user) { create(:user, password: 'password123') }
+  let(:user) { create(:user, password: 'S3cure!#Pass001') }
 
   scenario 'successful login' do
     visit root_path
     click_link 'Sign In'
-    
+
     fill_in 'Email', with: user.email
-    fill_in 'Password', with: 'password123'
+    fill_in 'Password', with: 'S3cure!#Pass001'
     click_button 'Log in'
     
     expect(page).to have_content('Signed in successfully')
@@ -256,7 +262,7 @@ describe('ProjectCard', () => {
 FactoryBot.define do
   factory :user do
     sequence(:email) { |n| "user#{n}@example.com" }
-    password { 'password123' }
+    password { 'S3cure!#Pass001' }
     first_name { Faker::Name.first_name }
     last_name { Faker::Name.last_name }
     confirmed_at { Time.now }
@@ -319,11 +325,55 @@ end
 ```yaml
 # config/database.yml
 test:
-  adapter: postgresql
-  database: vulcan_test
-  pool: 5
-  timeout: 5000
+  <<: *default
+  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
 ```
+
+`TEST_ENV_NUMBER` is set automatically by `parallel_tests` — each worker gets a suffix (blank, 2, 3, ..., N) creating databases `vulcan_vue_test`, `vulcan_vue_test2`, etc.
+
+`DB_SUFFIX` is optional, used for worktree isolation (e.g., `_v2` → `vulcan_vue_test_v2`).
+
+### Initial Setup (One-Time)
+
+```bash
+# 1. Ensure PostgreSQL is running (Docker or local)
+docker compose up db -d
+
+# 2. Create all parallel test databases
+bundle exec rake parallel:create
+
+# 3. Migrate the primary test database
+bin/rails db:migrate RAILS_ENV=test
+
+# 4. Load schema into all parallel databases
+bundle exec rake parallel:load_schema
+```
+
+### After Schema Changes
+
+When you add new migrations, parallel databases are **auto-synced**:
+
+```bash
+# This automatically runs parallel:prepare after migrating
+bin/rails db:migrate
+
+# Manual sync if needed
+bundle exec rake parallel:prepare
+```
+
+> The `lib/tasks/parallel_sync.rake` hook runs `parallel:prepare` automatically
+> after `db:migrate`, `db:reset`, and `db:schema:load`. You should never need
+> to sync manually unless something goes wrong.
+
+### Key Rake Tasks
+
+| Task | Purpose |
+|---|---|
+| `parallel:create` | Create parallel test databases |
+| `parallel:load_schema` | Load `db/schema.rb` into all parallel databases |
+| `parallel:prepare` | Dump + load schema (requires migrated primary DB) |
+| `parallel:migrate` | Run pending migrations on all parallel databases |
+| `parallel:drop` | Drop all parallel test databases |
 
 ### Database Cleaner Setup
 
@@ -402,30 +452,6 @@ describe 'ExternalService' do
 end
 ```
 
-### VCR for HTTP Requests
-
-```ruby
-# spec/support/vcr.rb
-VCR.configure do |config|
-  config.cassette_library_dir = 'spec/fixtures/vcr_cassettes'
-  config.hook_into :webmock
-  config.ignore_localhost = true
-  config.configure_rspec_metadata!
-  
-  # Filter sensitive data
-  config.filter_sensitive_data('<API_KEY>') { ENV['EXTERNAL_API_KEY'] }
-end
-
-# Usage in tests
-describe 'GitHub Integration', vcr: true do
-  it 'fetches user data' do
-    # First run records the interaction
-    # Subsequent runs use the cassette
-    user = GitHubService.fetch_user('octocat')
-    expect(user.login).to eq('octocat')
-  end
-end
-```
 
 ## Performance Testing
 
@@ -446,26 +472,6 @@ describe 'Performance' do
 end
 ```
 
-### N+1 Query Detection
-
-```ruby
-# Gemfile
-group :test do
-  gem 'bullet'
-end
-
-# spec/rails_helper.rb
-if Bullet.enable?
-  config.before(:each) do
-    Bullet.start_request
-  end
-
-  config.after(:each) do
-    Bullet.perform_out_of_channel_notifications if Bullet.notification?
-    Bullet.end_request
-  end
-end
-```
 
 ## CI/CD Testing
 
@@ -482,7 +488,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:14
+        image: postgres:18
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -497,13 +503,13 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3.9
+          ruby-version: 3.4.8
           bundler-cache: true
       
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       
       - name: Install dependencies
@@ -522,8 +528,8 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
           COVERAGE: true
-        run: bundle exec rspec
-      
+        run: bundle exec parallel_rspec spec/
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -547,6 +553,22 @@ jobs:
 3. **Avoid dependencies** between tests
 4. **Clean state** between tests
 5. **Meaningful test data** that reflects real usage
+
+### XCCDF Seed Data
+
+DISA STIG and SRG XCCDF XML files live in `db/seeds/` — this is the single source of truth used by both seeds and test factories:
+
+```
+db/seeds/
+├── srgs/          # Security Requirements Guides (GPOS, Web Server, Container, Database)
+└── stigs/         # STIGs (RHEL 9, Windows Server 2025, PostgreSQL, ASD)
+```
+
+- **Seeds** (`db/seeds.rb`) load all files from these directories to populate demo/review app databases
+- **Factories** (`spec/factories/`) reference specific files for the `xml` column on Stig and SRG records
+- **Model specs** that need to parse real XCCDF also reference these files directly
+
+To update seed data, download new XCCDF ZIP files from [DISA STIG Library](https://public.cyber.mil/stigs/downloads/), extract the `*-xccdf.xml` file, and replace the corresponding file in `db/seeds/srgs/` or `db/seeds/stigs/`. Then update any hardcoded assertions in specs (e.g., rule counts) if the data changed.
 
 ### Test Performance
 

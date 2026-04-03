@@ -1,7 +1,6 @@
 # Vulcan
 
-[![Run Test Suite](https://github.com/mitre/vulcan/actions/workflows/run-tests.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/run-tests.yml)
-[![Docker Hub Push](https://github.com/mitre/vulcan/actions/workflows/push-to-docker.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/push-to-docker.yml)
+[![CI](https://github.com/mitre/vulcan/actions/workflows/ci.yml/badge.svg)](https://github.com/mitre/vulcan/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Latest Release](https://img.shields.io/github/v/release/mitre/vulcan)](https://github.com/mitre/vulcan/releases/latest)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mitre/vulcan)](https://hub.docker.com/r/mitre/vulcan)
@@ -33,23 +32,21 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 
 ## 🚀 Quick Start
 
-### Latest Release: [v2.2.1](https://github.com/mitre/vulcan/releases/tag/v2.2.1)
+### Latest Release: [v2.3.1](https://github.com/mitre/vulcan/releases/tag/v2.3.1)
 
 ```bash
 # Pull the latest Docker image
-docker pull mitre/vulcan:v2.2.1
+docker pull mitre/vulcan:v2.3.1
 
-# Or use docker-compose for a complete setup
+# Or use docker compose for a complete setup
 wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
 wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
 chmod +x setup-docker-secrets.sh
 ./setup-docker-secrets.sh
-docker-compose up
+docker compose up
 ```
 
-Default credentials for testing:
-- **Email**: admin@example.com
-- **Password**: 1234567ab!
+The first user to register becomes admin automatically.
 
 For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
@@ -84,18 +81,19 @@ yarn dev      # Start dev server
 ## 🛠️ Technology Stack
 
 ### Core Framework
-- **Ruby 3.3.9** with **Rails 8.0.2.1**
+- **Ruby 3.4.8** with **Rails 8.0.2.1**
 - **PostgreSQL 12+** database
-- **Node.js 22 LTS** for JavaScript runtime
+- **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
-- **Vue 2.6.11** (14 separate instances for different pages)
-- **Bootstrap 4.4.1** with Bootstrap-Vue 2.13.0
+- **Vue 2.7.16** (14 separate instances for different pages)
+- **Bootstrap 4.6.2** with Bootstrap-Vue 2.13.0
 - **Turbolinks 5.2.0** for navigation optimization
 - **esbuild** for JavaScript bundling (replaced Webpacker)
 
 ### Testing & Quality
-- **RSpec** for Ruby testing (190+ tests)
+- **RSpec** for Ruby testing (1600+ backend tests)
+- **Vitest** for Vue component testing (1900+ frontend tests)
 - **ESLint** & **Prettier** for JavaScript linting
 - **RuboCop** for Ruby style enforcement
 - **Brakeman** for security scanning
@@ -111,9 +109,9 @@ yarn dev      # Start dev server
 
 ### Prerequisites
 
-- Ruby 3.3.9 (use rbenv or rvm)
+- Ruby 3.4.8 (use rbenv or rvm)
 - PostgreSQL 12+
-- Node.js 22 LTS
+- Node.js 24 LTS
 - Yarn package manager
 
 ### Local Installation
@@ -148,11 +146,19 @@ Access the application at `http://localhost:3000`
 ### Running Tests
 
 ```bash
-# Run all tests
-bundle exec rspec
+# Run full backend suite (parallel — 3-4x faster than serial)
+bundle exec parallel_rspec spec/
 
 # Run specific test file
 bundle exec rspec spec/models/user_spec.rb
+
+# Run frontend tests
+yarn test:unit
+
+# IMPORTANT: After running db:migrate, sync all parallel test databases.
+# Parallel tests use separate databases (one per CPU core). New migrations
+# only apply to the primary test DB — parallel:prepare propagates to all.
+bundle exec rake parallel:prepare
 
 # Run linters
 bundle exec rubocop --autocorrect-all
@@ -185,13 +191,10 @@ bundle exec bundler-audit
 
 4. **Start the application**:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
-5. **Initialize database** (first time only):
-   ```bash
-   docker-compose run --rm web bundle exec rake db:create db:schema:load db:migrate
-   ```
+5. **Database setup** is automatic — `db:prepare` runs on container start via the Docker entrypoint. No manual step needed.
 
 ### Docker Image Features
 

@@ -1,0 +1,8 @@
+- content_for :assets do
+  = javascript_include_tag 'srg'
+  = stylesheet_link_tag 'project_component'
+
+#srg
+  %srg{                                    |
+    'v-bind:srg': @srg_json                |
+  }

@@ -1,0 +1,18 @@
+# GitGuardian Configuration
+# https://docs.gitguardian.com/ggshield-docs/configuration
+version: 2
+
+secret:
+  # Exclude backup/archive files from scanning
+  ignored_paths:
+    - '**/*.backup'
+    - 'archive/**'
+
+  # Known non-secret test credentials
+  # GoodNewsEveryone is the documented public default password for rroemhild/test-openldap
+  # See: https://github.com/rroemhild/docker-test-openldap
+  ignored_matches:
+    - name: rroemhild/test-openldap public default LDAP admin password
+      match: GoodNewsEveryone
+    - name: Dev seed admin default password (overridable via VULCAN_SEED_ADMIN_PASSWORD)
+      match: 12qwaszx!@QWASZX

@@ -7,15 +7,16 @@
             <b-input-group-prepend>
               <b-input-group-text><b-icon icon="search" aria-hidden="true" /></b-input-group-text>
             </b-input-group-prepend>
-            <vue-simple-suggest
-              ref="userSearch"
-              v-model="search"
-              :list="available_members"
-              :filter-by-query="true"
-              display-attribute="email"
+            <vue-multiselect
+              v-model="multiSelectUser"
+              :options="available_members"
+              label="email"
+              track-by="id"
+              :searchable="true"
+              :allow-empty="true"
               placeholder="Search for a user by email..."
-              :styles="userSearchStyles"
-              @select="setSelectedUser($refs.userSearch.selected)"
+              class="flex-grow-1"
+              @input="setSelectedUser($event)"
             />
           </b-input-group>
         </template>
@@ -122,14 +123,15 @@
 </template>
 
 <script>
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
+import VueMultiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 import capitalize from "lodash/capitalize";
+import { ROLE_DESCRIPTIONS } from "../../constants/terminology";
 
 export default {
   name: "NewMembership",
   components: {
-    VueSimpleSuggest,
+    VueMultiselect,
   },
   props: {
     membership_type: {
@@ -160,21 +162,10 @@ export default {
   data: function () {
     return {
       search: "",
+      multiSelectUser: null,
       selectedUser: this.selected_member,
       selectedRole: null,
-      roleDescriptions: [
-        "Read only access to the Project or Component",
-        "Edit, comment, and mark Controls as requiring review. Cannot sign-off or approve changes to a Control. Great for individual contributors.",
-        "Author and approve changes to a Control.",
-        "Full control of a Project or Component. Lock Controls, revert controls, and manage members.",
-      ],
-      userSearchStyles: {
-        vueSimpleSuggest: "userSearchVueSimpleSuggest",
-        inputWrapper: "",
-        defaultInput: "",
-        suggestions: "",
-        suggestItem: "",
-      },
+      roleDescriptions: ROLE_DESCRIPTIONS,
     };
   },
   computed: {
@@ -223,10 +214,6 @@ export default {
 
 .role-description {
   line-height: 1;
-}
-
-.userSearchVueSimpleSuggest {
-  flex: 1;
 }
 
 .role-description {

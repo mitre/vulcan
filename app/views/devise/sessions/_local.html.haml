@@ -6,15 +6,14 @@
   .form-group
     = f.label :password
     %br/
-    = f.password_field :password, class: "form-control", title: "This field is required.", autocomplete: "current-password", required: "true"
+    %password-field{name: "user[password]", id: "user_password", autocomplete: "current-password", ":required" => "true", title: "This field is required."}
     = hidden_field_tag :active_tab, 'local'
-  .form-group
-    - if devise_mapping.rememberable?
-      .remember-me
-      = f.check_box :remember_me
-      = f.label :remember_me
+  .form-group.d-flex.justify-content-between.align-items-center
+    - if devise_mapping.rememberable? && Settings.local_login.remember_me_enabled
+      .remember-me.form-check
+        = f.check_box :remember_me, class: "form-check-input"
+        = f.label :remember_me, class: "form-check-label"
     - if devise_mapping.recoverable?
-      .float-right
-        = link_to "Forgot your password?", new_password_path(resource_name)
+      = link_to "Forgot your password?", new_password_path(resource_name)
   .actions
     = f.submit "Sign in", class: 'btn btn-success btn-block'

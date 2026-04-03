@@ -2,21 +2,14 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
-    <h1>
-      {{ component.name }}
-      <span v-if="component.version">V{{ component.version }}</span>
-      <span v-if="component.release">R{{ component.release }}</span> - Controls
-    </h1>
-
     <RulesCodeEditorView
       :project="project"
-      :component="component"
+      :component="reactiveComponent"
       :rules="reactiveRules"
       :statuses="statuses"
-      :severities="severities"
-      :severities_map="severities_map"
       :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
+      :available-roles="available_roles"
     />
   </div>
 </template>
@@ -27,8 +20,6 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
-import _ from "lodash";
-
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
@@ -58,22 +49,26 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
+    available_roles: {
       type: Array,
-      required: true,
-    },
-    severities_map: {
-      type: Object,
       required: true,
     },
   },
   data: function () {
     return {
-      reactiveRules: _.cloneDeep(this.rules).sort(this.compareRules),
+      reactiveRules: structuredClone(this.rules).sort(this.compareRules),
+      reactiveComponent: structuredClone(this.component),
     };
   },
   computed: {
     breadcrumbs: function () {
+      // Build component name with version (e.g., "Test 2 V1R1")
+      let componentText = this.reactiveComponent.name;
+      if (this.reactiveComponent.version || this.reactiveComponent.release) {
+        componentText += " ";
+        if (this.reactiveComponent.version) componentText += `V${this.reactiveComponent.version}`;
+        if (this.reactiveComponent.release) componentText += `R${this.reactiveComponent.release}`;
+      }
       return [
         {
           text: "Projects",
@@ -84,11 +79,11 @@ export default {
           href: "/projects/" + this.project.id,
         },
         {
-          text: this.component.name,
-          href: "/components/" + this.component.id,
+          text: componentText,
+          href: "/components/" + this.reactiveComponent.id,
         },
         {
-          text: "Controls",
+          text: "Edit",
           active: true,
         },
       ];
@@ -111,14 +106,48 @@ export default {
   methods: {
     /**
      * Event handler for @addSatisfied:rule
+     *
+     * Updates relationship arrays locally to preserve unsaved changes.
+     * Previously called refreshRule() which overwrote local changes with server data.
      */
     addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          this.refreshRule(rule_id);
-          this.refreshRule(satisfied_by_rule_id);
+
+          // Update relationships locally instead of full refresh
+          // This preserves any unsaved local changes (status, title, etc.)
+          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+          const satisfiedByIndex = this.reactiveRules.findIndex(
+            (r) => r.id == satisfied_by_rule_id,
+          );
+
+          if (ruleIndex >= 0 && satisfiedByIndex >= 0) {
+            const rule = this.reactiveRules[ruleIndex];
+            const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
+
+            // Add to satisfied_by array (rule is satisfied by satisfiedByRule)
+            if (!rule.satisfied_by) rule.satisfied_by = [];
+            if (!rule.satisfied_by.some((r) => r.id === satisfied_by_rule_id)) {
+              rule.satisfied_by.push({
+                id: satisfiedByRule.id,
+                rule_id: satisfiedByRule.rule_id,
+                srg_id: satisfiedByRule.srg_id,
+                fixtext: satisfiedByRule.fixtext,
+              });
+            }
+
+            // Add to satisfies array (satisfiedByRule satisfies rule)
+            if (!satisfiedByRule.satisfies) satisfiedByRule.satisfies = [];
+            if (!satisfiedByRule.satisfies.some((r) => r.id === rule_id)) {
+              satisfiedByRule.satisfies.push({
+                id: rule.id,
+                rule_id: rule.rule_id,
+                srg_id: rule.srg_id,
+              });
+            }
+          }
 
           if (successCallback) {
             try {
@@ -130,14 +159,34 @@ export default {
     },
     /**
      * Event handler for @removeSatisfied:rule
+     *
+     * Updates relationship arrays locally to preserve unsaved changes.
+     * Previously called refreshRule() which overwrote local changes with server data.
      */
     removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
       axios
         .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          this.refreshRule(rule_id);
-          this.refreshRule(satisfied_by_rule_id);
+
+          // Update relationships locally instead of full refresh
+          // This preserves any unsaved local changes (status, title, etc.)
+          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+          const satisfiedByIndex = this.reactiveRules.findIndex(
+            (r) => r.id == satisfied_by_rule_id,
+          );
+
+          if (ruleIndex >= 0) {
+            const rule = this.reactiveRules[ruleIndex];
+            // Remove from satisfied_by array
+            rule.satisfied_by = rule.satisfied_by.filter((r) => r.id !== satisfied_by_rule_id);
+          }
+
+          if (satisfiedByIndex >= 0) {
+            const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
+            // Remove from satisfies array
+            satisfiedByRule.satisfies = satisfiedByRule.satisfies.filter((r) => r.id !== rule_id);
+          }
 
           if (successCallback) {
             try {
@@ -175,7 +224,7 @@ export default {
      */
     createRule: function (rule, successCallback = null) {
       axios
-        .post(`/components/${this.component.id}/rules`, { rule: rule })
+        .post(`/components/${this.reactiveComponent.id}/rules`, { rule: rule })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.ruleFetchSuccess(response);
@@ -337,6 +386,8 @@ export default {
 
       if (updated == "all") {
         this.reactiveRules.splice(ruleIndex, 1, response.data);
+        // Notify sidepanels to refresh activity/reviews (B5 reactivity fix)
+        this.$root.$emit("refresh:activity");
       } else if (updated == "comments") {
         this.reactiveRules[ruleIndex].comments.push(...response.data.comments);
       }

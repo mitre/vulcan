@@ -1,39 +1,62 @@
+# Development Docker Compose — database + optional containerized dev server.
+# Used by bin/setup to start PostgreSQL for native Rails development.
+#
+# Usage (via setup script — recommended):
+#   bin/setup
+#
+# Usage (database only — manual):
+#   docker compose -f docker-compose.dev.yml up db -d
+#   bin/rails db:prepare
+#   foreman start -f Procfile.dev
+#
+# Usage (full containerized dev):
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# For deployment: use docker-compose.yml (the default).
+name: vulcan
+
 services:
   db:
-    image: postgres:12-alpine
+    image: postgres:18-alpine
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: vulcan_vue_development
-      # Additional databases (vulcan_vue_test) will be created by Rails setup
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
     volumes:
       - vulcan_dev_dbdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
-  # Optional: Add web service for development containers
-  # Uncomment if you want to run the full app in Docker for development
-  # web:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile  # Uses the regular Dockerfile for dev
-  #   environment:
-  #     DATABASE_URL: postgres://postgres:postgres@db/vulcan_vue_development
-  #     RAILS_ENV: development
-  #     NODE_ENV: development
-  #   volumes:
-  #     - .:/app  # Mount source code for live reloading
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   command: foreman start -f Procfile.dev
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
+      RAILS_ENV: development
+      VULCAN_FIRST_USER_ADMIN: "true"
+      VULCAN_ENABLE_LOCAL_LOGIN: "true"
+      VULCAN_ENABLE_USER_REGISTRATION: "true"
+    ports:
+      - "${VULCAN_PORT:-3000}:3000"
+    volumes:
+      - .:/rails
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      bash -c "bin/rails db:prepare && foreman start -f Procfile.dev"
 
 volumes:
   vulcan_dev_dbdata:

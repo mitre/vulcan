@@ -6,11 +6,10 @@ This guide walks through setting up a local Vulcan development environment.
 
 ### Required Software
 
-- **Ruby 3.3.9** (use rbenv or rvm for version management)
-- **Node.js 22 LTS** and **Yarn** package manager
-- **PostgreSQL 12+** database server
+- **Ruby 3.4.8** (use rbenv or rvm for version management)
+- **Node.js 24 LTS** and **Yarn** package manager
+- **PostgreSQL 18** database server
 - **Git** version control
-- **Redis** (optional, for caching)
 
 ### Recommended Tools
 
@@ -50,15 +49,54 @@ yarn install
 
 ### 3. Database Setup
 
+#### Option A: Docker PostgreSQL (Recommended)
+
 ```bash
-# Create database
-rails db:create
+# Start PostgreSQL container
+docker compose -f docker-compose.dev.yml up db -d
 
-# Run migrations
-rails db:migrate
+# Wait for healthy status
+docker compose ps db   # should show "healthy"
 
-# Seed development data (optional)
-rails db:seed
+# Create and migrate development database
+bin/rails db:prepare
+
+# Seed development data (optional — creates demo users, projects, SRGs, STIGs)
+bin/rails db:seed
+```
+
+#### Option B: Local PostgreSQL
+
+```bash
+# macOS
+brew install postgresql@18
+brew services start postgresql@18
+
+# Create and migrate
+bin/rails db:prepare
+bin/rails db:seed
+```
+
+#### Setting Up Parallel Test Databases
+
+`parallel_rspec` uses one database per CPU core. Set them up once after initial database creation:
+
+```bash
+# 1. Create parallel test databases (vulcan_vue_test, vulcan_vue_test2, ..., vulcan_vue_testN)
+bundle exec rake parallel:create
+
+# 2. Migrate the primary test database (loads schema_migrations)
+bin/rails db:migrate RAILS_ENV=test
+
+# 3. Load schema into all parallel test databases
+bundle exec rake parallel:load_schema
+```
+
+After schema changes (new migrations), re-sync parallel databases:
+
+```bash
+bin/rails db:migrate RAILS_ENV=test
+bundle exec rake parallel:load_schema
 ```
 
 ### 4. Start Development Server
@@ -93,8 +131,8 @@ echo 'eval "$(rbenv init -)"' >> ~/.bashrc
 git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 
 # Install Ruby
-rbenv install 3.3.9
-rbenv local 3.3.9
+rbenv install 3.4.8
+rbenv local 3.4.8
 ```
 
 #### Using rvm
@@ -104,12 +142,12 @@ rbenv local 3.3.9
 \curl -sSL https://get.rvm.io | bash -s stable
 
 # Install Ruby
-rvm install 3.3.9
-rvm use 3.3.9
+rvm install 3.4.8
+rvm use 3.4.8
 
 # Create gemset (optional)
 rvm gemset create vulcan
-rvm use 3.3.9@vulcan
+rvm use 3.4.8@vulcan
 ```
 
 ### Database Configuration
@@ -118,8 +156,8 @@ rvm use 3.3.9@vulcan
 
 ```bash
 # macOS
-brew install postgresql@14
-brew services start postgresql@14
+brew install postgresql@18
+brew services start postgresql@18
 
 # Ubuntu/Debian
 sudo apt-get install postgresql postgresql-contrib
@@ -131,30 +169,34 @@ createuser -d vulcan_dev
 
 #### Database Configuration File
 
-Create `config/database.yml`:
+The project's `config/database.yml` supports `DB_SUFFIX` for worktree isolation:
 
 ```yaml
-default: &default
-  adapter: postgresql
-  encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  timeout: 5000
-
 development:
-  <<: *default
-  database: vulcan_development
-  username: vulcan_dev
-  password: <%= ENV['DATABASE_PASSWORD'] %>
-  host: localhost
-  port: 5432
+  database: vulcan_vue_development<%= ENV['DB_SUFFIX'] %>
 
 test:
-  <<: *default
-  database: vulcan_test
-  username: vulcan_dev
-  password: <%= ENV['DATABASE_PASSWORD'] %>
-  host: localhost
-  port: 5432
+  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
+```
+
+#### Worktree Database Isolation
+
+When working with multiple git worktrees (e.g., v2.x and v3.x branches), set `DB_SUFFIX` in each worktree's `.env` to prevent migration conflicts:
+
+```bash
+# v2.x worktree
+DB_SUFFIX=_v2    # → vulcan_vue_development_v2
+
+# v3.x worktree
+DB_SUFFIX=_v3    # → vulcan_vue_development_v3
+```
+
+To set up a new worktree database, clone from the existing one:
+
+```bash
+# Clone the development database for a new worktree
+docker exec <postgres-container> psql -U postgres -c \
+  "CREATE DATABASE vulcan_vue_development_v2 WITH TEMPLATE vulcan_vue_development OWNER postgres;"
 ```
 
 ### Environment Variables
@@ -176,7 +218,7 @@ VULCAN_CONTACT_EMAIL=dev@localhost  # Also used as default SMTP username when SM
 # Authentication (optional)
 VULCAN_ENABLE_USER_REGISTRATION=true
 VULCAN_ENABLE_LOCAL_LOGIN=true
-VULCAN_SESSION_TIMEOUT=60
+VULCAN_SESSION_TIMEOUT=1h    # Accepts: 30s, 15m, 1h, or plain numbers
 
 # Development features
 RAILS_LOG_LEVEL=debug
@@ -195,14 +237,14 @@ rails console
 
 User.create!(
   email: 'admin@example.com',
-  password: 'password123',
+  password: 'S3cure!#Pass001',
   admin: true,
   confirmed_at: Time.now
 )
 
 User.create!(
   email: 'user@example.com',
-  password: 'password123',
+  password: 'S3cure!#Pass001',
   confirmed_at: Time.now
 )
 ```
@@ -213,11 +255,13 @@ User.create!(
    - Go to GitHub Settings > Developer settings > OAuth Apps
    - Set callback URL: `http://localhost:3000/users/auth/github/callback`
 
-2. Add to `.env.development`:
-```bash
-VULCAN_ENABLE_GITHUB_AUTH=true
-VULCAN_GITHUB_APP_ID=your_client_id
-VULCAN_GITHUB_APP_SECRET=your_client_secret
+2. Add to `config/vulcan.yml` under the `providers` key:
+```yaml
+providers:
+  - { name: 'github',
+      app_id: 'your_client_id',
+      app_secret: 'your_client_secret',
+      args: { scope: 'user:email' } }
 ```
 
 ## Development Workflow
@@ -263,11 +307,11 @@ yarn lint:ci
 
 #### Run All Tests
 ```bash
-# Ruby tests
-bundle exec rspec
+# Ruby tests (use parallel_rspec for full suite — 3-4x faster)
+bundle exec parallel_rspec spec/
 
 # JavaScript tests
-yarn test
+yarn test:unit
 
 # Specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -339,7 +383,7 @@ Recommended extensions:
 
 ### RubyMine
 
-1. Set Ruby SDK to 3.3.9
+1. Set Ruby SDK to 3.4.8
 2. Configure Rails project
 3. Enable RuboCop inspection
 4. Set JavaScript version to ES6+
@@ -401,40 +445,64 @@ rails server -p 3001
 
 ## Docker Development
 
-### Using Docker Compose
+### Database-Only (Recommended for Local Dev)
+
+Use Docker for PostgreSQL while running Rails natively for faster iteration:
 
 ```bash
-# Build containers
-docker-compose build
+# Start PostgreSQL only
+docker compose -f docker-compose.dev.yml up db -d
 
-# Start services
-docker-compose up
+# Verify healthy
+docker compose ps db
 
-# Run migrations
-docker-compose run web rails db:create db:migrate
+# Set up databases (dev + parallel test)
+bin/rails db:prepare
+bundle exec rake parallel:create
+bin/rails db:migrate RAILS_ENV=test
+bundle exec rake parallel:load_schema
 
-# Access container
-docker-compose exec web bash
+# Run Rails natively
+foreman start -f Procfile.dev
 ```
 
-### Docker Development Tips
+### Full Docker Stack (Production-Like Testing)
 
-1. Use volumes for code hot-reload
-2. Separate services for web, db, redis
-3. Use .dockerignore for faster builds
-4. Override configs with docker-compose.override.yml
+```bash
+# Generate secrets
+./setup-docker-secrets.sh
+
+# Build and start everything
+docker compose up --build
+
+# Database setup runs automatically via docker-entrypoint
+# First user becomes admin when VULCAN_FIRST_USER_ADMIN=true (default in Docker)
+```
+
+### Multi-Project Setup
+
+When running multiple MITRE projects simultaneously, assign unique ports to avoid conflicts. See `docs/development/port-registry.md` for port assignments.
+
+```bash
+# Example .env for vulcan-v2.x alongside other projects
+DATABASE_PORT=5435
+POSTGRES_PORT=5435
+PORT=3000
+DATABASE_GSSENCMODE=disable
+```
+
+### Docker Tips
+
+1. Use `docker compose -f docker-compose.dev.yml up db -d` (database-only) for fastest development cycle
+2. Use `.dockerignore` for faster builds (excludes docs/, downloads/, coverage/)
+3. Production image uses multi-stage build with jemalloc (~596MB)
+4. `docker-compose.yml` supports Caddy or nginx reverse proxy profiles
 
 ## Performance Optimization
 
 ### Development Speed
 
-1. **Spring** (Rails 7 and below):
-```bash
-spring stop
-spring status
-```
-
-2. **Bootsnap** (enabled by default):
+1. **Bootsnap** (enabled by default):
 ```ruby
 # config/boot.rb
 require 'bootsnap/setup'
@@ -442,7 +510,7 @@ require 'bootsnap/setup'
 
 3. **Parallel Testing**:
 ```bash
-PARALLEL_WORKERS=4 bundle exec rspec
+bundle exec parallel_rspec spec/
 ```
 
 ### Database Performance
@@ -542,7 +610,7 @@ rails generate migration AddAdminToUsers admin:boolean
 10.times do |i|
   User.create!(
     email: "user#{i}@example.com",
-    password: 'password123'
+    password: '1qaz!QAZ1qaz!QAZ'
   )
 end
 ```

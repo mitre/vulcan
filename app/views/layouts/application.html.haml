@@ -8,6 +8,8 @@
     = csp_meta_tag
     = stylesheet_link_tag 'application', 'data-turbolinks-track': 'reload'
     = stylesheet_link_tag 'bootstrap-vue', 'data-turbolinks-track': 'reload'
+    %link{ rel: 'stylesheet', href: '/css/font-awesome.min.css' }/
+    %link{ rel: 'stylesheet', href: '/css/codicon-local.css' }/
     = javascript_include_tag 'application', 'data-turbolinks-track': 'reload'
     = javascript_include_tag 'navbar', 'data-turbolinks-track': 'reload'
     = javascript_include_tag 'toaster', 'data-turbolinks-track': 'reload'
@@ -15,7 +17,10 @@
     / CSS customizations can be added here if needed
 
     = yield :assets
-  %body
+  %body{ class: (Settings.banner.enabled && Settings.banner.text.present?) ? 'has-classification-banner' : nil }
+    - if Settings.banner.enabled && Settings.banner.text.present?
+      .classification-banner{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }
+        = Settings.banner.text
     #navbar
       %navbar{
         'v-bind:navigation': @navigation.to_json,
@@ -23,7 +28,10 @@
         'v-bind:users_path': (current_user&.admin ? users_path : '').to_json,
         'v-bind:profile_path': edit_user_registration_path.to_json,
         'v-bind:sign_out_path': destroy_user_session_path.to_json,
-        'v-bind:access_requests': @access_requests.to_json
+        'v-bind:access_requests': @access_requests.to_json,
+        'v-bind:locked_users': @locked_users.to_json,
+        'v-bind:consent_config': Settings.consent.to_h.merge(required: consent_required?).to_json,
+        'v-bind:app_version': Vulcan::VERSION.to_json
       }
     #Toaster
       %toaster{
@@ -32,3 +40,6 @@
       }
     .pt-3.container-fluid{"data-behavior" => "vue"}
       = yield
+    - if Settings.banner.enabled && Settings.banner.text.present?
+      .classification-banner.classification-banner--bottom{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }
+        = Settings.banner.text

@@ -6,6 +6,8 @@ class Component < ApplicationRecord
   include ImportConstants
   include ExportConstants
   include ActionView::Helpers::TextHelper
+  include SeverityCounts
+  include XccdfParseable
 
   attr_accessor :skip_import_srg_rules
 
@@ -17,6 +19,11 @@ class Component < ApplicationRecord
     # Don't set rules_count - it will be recalculated after save
 
     customize(lambda { |original_component, new_component|
+      # Reset counter_cache to 0 — amoeba copies the original's count, and
+      # Rails counter_cache callbacks will increment for each duplicated rule,
+      # resulting in double-counting (B8 bug fix).
+      new_component.rules_count = 0
+
       # There is unfortunately no way to do this at a lower level since the new component isn't
       # accessible until amoeba is processing at this level
       new_component.additional_questions.each do |question|
@@ -39,7 +46,9 @@ class Component < ApplicationRecord
     })
   end
 
-  audited except: %i[id admin_name admin_email rules_count memberships_count created_at updated_at], max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited except: %i[id admin_name admin_email rules_count memberships_count]
   has_associated_audits
 
   belongs_to :project, inverse_of: :components
@@ -65,7 +74,14 @@ class Component < ApplicationRecord
 
   validates_with PrefixValidator
 
-  validates :prefix, presence: true
+  validates :name, :prefix, :title, presence: true
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_COMPONENT_*)
+  validates :name, length: { maximum: ->(_r) { Settings.input_limits.component_name } }
+  validates :prefix, length: { maximum: ->(_r) { Settings.input_limits.component_prefix } }
+  validates :title, length: { maximum: ->(_r) { Settings.input_limits.component_title } }
+  validates :description, length: { maximum: ->(_r) { Settings.input_limits.component_description } }
+  validates :admin_name, :admin_email,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,
@@ -73,41 +89,44 @@ class Component < ApplicationRecord
 
   def as_json(options = {})
     methods = (options[:methods] || []) + %i[releasable additional_questions]
+    # SeverityCounts concern already adds severity_counts via its as_json
     super(options.merge(methods: methods)).merge(
       {
-        based_on_title: based_on.title,
-        based_on_version: based_on.version
+        based_on_title: based_on&.title,
+        based_on_version: based_on&.version,
+        status_counts: status_counts
       }
     )
+  end
+
+  # Returns a hash of rule counts grouped by status.
+  # Used by the frontend export modal to warn about NYD-only components.
+  def status_counts
+    counts = rules.where(deleted_at: nil).group(:status).count
+    {
+      not_yet_determined: counts['Not Yet Determined'] || 0,
+      applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
+      applicable_inherently_meets: counts['Applicable - Inherently Meets'] || 0,
+      applicable_does_not_meet: counts['Applicable - Does Not Meet'] || 0,
+      not_applicable: counts['Not Applicable'] || 0
+    }
   end
 
   # Fill out component based on spreadsheet
   def from_spreadsheet(spreadsheet)
     self.skip_import_srg_rules = true
-    # Parse the spreadsheet and extract data from the first sheet. Include headers so data is of the form
-    # {VulDiscussion: 'Value', SRG ID: 'Value', etc...}
-    parsed = Roo::Spreadsheet.open(spreadsheet).sheet(0).parse(headers: true).drop(1)
-    file_headers = parsed.first.keys
-    # Since the component isn't saved yet, calling `based_on` here returns the wrong information
-    srg_rules = SecurityRequirementsGuide.find(security_requirements_guide_id).srg_rules
 
-    missing_headers = REQUIRED_MAPPING_CONSTANTS.values - file_headers
-    unless missing_headers.empty?
-      errors.add(:base, "The following required headers were missing #{missing_headers.join(', ')}")
+    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    if result.key?(:error)
+      errors.add(:base, result[:error])
       return
     end
 
-    spreadsheet_srg_ids = parsed.pluck(IMPORT_MAPPING[:srg_id])
+    parsed = result[:rows]
+    file_headers = result[:file_headers]
+    srg_rules = result[:srg_rules]
     database_srg_ids = srg_rules.map(&:version)
-
-    missing_from_srg = spreadsheet_srg_ids - database_srg_ids
-    unless missing_from_srg.empty?
-      errors.add(:base, 'The following required SRG IDs were missing from the selected SRG ' \
-                        "#{truncate(missing_from_srg.join(', '), length: 300)}. " \
-                        'Please remove these rows or select a different SRG and try again.')
-      return
-    end
-
+    spreadsheet_srg_ids = parsed.pluck(IMPORT_MAPPING[:srg_id])
     missing_from_spreadsheet = database_srg_ids - spreadsheet_srg_ids
 
     # Missing rows from the spreadsheet should still be present in the database
@@ -139,6 +158,12 @@ class Component < ApplicationRecord
       r.artifact_description = row[IMPORT_MAPPING[:artifact_description]]
       r.status_justification = row[IMPORT_MAPPING[:status_justification]]
       r.vendor_comments = row[IMPORT_MAPPING[:vendor_comments]]
+      # Append satisfaction column data so create_rule_satisfactions can parse and create records.
+      # The text will be stripped after parsing — vendor_comments stays clean.
+      if row[IMPORT_MAPPING[:satisfies]].present?
+        satisfaction_line = "Satisfies: #{row[IMPORT_MAPPING[:satisfies]]}"
+        r.vendor_comments = [r.vendor_comments, satisfaction_line].compact_blank.join('. ')
+      end
       # Get status with the case ignored. If none is found then fall back to the default status
       status_index = STATUSES.find_index { |item| item.casecmp(row[IMPORT_MAPPING[:status]])&.zero? }
       r.status = status_index ? STATUSES[status_index] : STATUSES[0]
@@ -233,6 +258,9 @@ class Component < ApplicationRecord
     rules.where(locked: false).empty?
   end
 
+  # Duplicate this component. The returned component has auditing suppressed
+  # on its rules — call duplicate_reviews_and_history after save to copy
+  # the original's audit trail instead.
   def duplicate(new_name: nil, new_prefix: nil, new_version: nil, new_release: nil,
                 new_title: nil, new_description: nil, new_project_id: nil, new_srg_id: nil)
     copied_component = amoeba_dup
@@ -266,7 +294,7 @@ class Component < ApplicationRecord
       new_srg_rule = new_srg_rules[copied_rule[:version]]
 
       # delete rules that are no longer present - calling destroy here will also persist new_component in the DB
-      copied_rule.destroy! if new_srg_rule.blank? && copied_rule.status != 'Applicable - Configurable'
+      copied_rule.destroy! if new_srg_rule.blank? && copied_rule.status != STATUS_APPLICABLE_CONFIGURABLE
 
       # skip if not in new SRG (leave old SRG rule references on it) - only for "non-Configurable" rules
       next if new_srg_rule.blank?
@@ -279,7 +307,7 @@ class Component < ApplicationRecord
       copied_rule.srg_rule = new_srg_rule
 
       # don't touch the "Applicable - Configurable" rules, leave original content in place (title,check,fix,discussion)
-      next if copied_rule.status == 'Applicable - Configurable'
+      next if copied_rule.status == STATUS_APPLICABLE_CONFIGURABLE
 
       # Update fields for "non-Configurable" - reset to new SRG rule info for title, check, fix, discussion
       copied_rule.title = new_srg_rule.title
@@ -310,58 +338,115 @@ class Component < ApplicationRecord
     copied_component
   end
 
+  # Copy audit history and reviews from the original component's rules to the
+  # duplicated component's rules. Uses bulk SQL (4 queries total) instead of
+  # per-rule queries (4 * N rules) for dramatically better performance.
   def duplicate_reviews_and_history(component_id)
     return unless component_id
 
-    Component.find(component_id).rules.each do |orig_rule|
-      new_rule = rules.find { |r| r.rule_id == orig_rule.rule_id }
-      next if new_rule.nil?
+    orig = Component.find(component_id)
+    conn = ActiveRecord::Base.connection
 
-      ActiveRecord::Base.connection.exec_query(
-        'UPDATE base_rules SET created_at = ?, updated_at = ? WHERE id = ?',
-        'SQL',
-        [[nil, orig_rule.created_at], [nil, orig_rule.updated_at], [nil, new_rule.id]]
-      )
-
-      ActiveRecord::Base.connection.exec_query(
-        'DELETE FROM audits WHERE auditable_type = ? AND auditable_id = ?',
-        'SQL',
-        [[nil, 'BaseRule'], [nil, new_rule.id]]
-      )
-
-      ActiveRecord::Base.connection.exec_query(
-        "INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, user_id, user_type,
-                             username, action, audited_changes, version, comment, remote_address, request_uuid,
-                             created_at, audited_user_id, audited_username)
-         SELECT ?, auditable_type, associated_id, associated_type, user_id, user_type, username,
-                action, audited_changes, version, comment, remote_address, request_uuid, created_at,
-                audited_user_id, audited_username
-         FROM audits WHERE auditable_type = ? AND auditable_id = ?",
-        'SQL',
-        [[nil, new_rule.id], [nil, 'BaseRule'], [nil, orig_rule.id]]
-      )
-
-      ActiveRecord::Base.connection.exec_query(
-        'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at)
-         SELECT user_id, ?, action, comment, created_at, updated_at
-         FROM reviews WHERE rule_id = ?',
-        'SQL',
-        [[nil, new_rule.id], [nil, orig_rule.id]]
-      )
+    # Build rule_id → new rule id mapping (matched by rule_id field)
+    new_rules_by_rule_id = rules.index_by(&:rule_id)
+    id_map = orig.rules.filter_map do |orig_rule|
+      new_rule = new_rules_by_rule_id[orig_rule.rule_id]
+      [orig_rule.id, new_rule.id] if new_rule
     end
+    return if id_map.empty?
+
+    new_ids = id_map.map(&:last)
+
+    # Create a temporary mapping table for bulk operations.
+    # Values are integer PKs from ActiveRecord — safe for interpolation.
+    # Cast to Integer explicitly to satisfy Brakeman's SQL injection scanner.
+    safe_values = id_map.map { |o, n| "(#{Integer(o)}, #{Integer(n)})" }.join(', ')
+    mapping_cte = "rule_map AS (SELECT * FROM (VALUES #{safe_values}) AS t(orig_id, new_id))"
+    safe_new_ids = new_ids.map { |id| Integer(id) }.join(', ')
+
+    # 1. Preserve original timestamps on duplicated rules
+    conn.exec_update(
+      "WITH #{mapping_cte} UPDATE base_rules " \
+      'SET created_at = orig.created_at, updated_at = orig.updated_at ' \
+      'FROM rule_map JOIN base_rules orig ON orig.id = rule_map.orig_id ' \
+      'WHERE base_rules.id = rule_map.new_id'
+    )
+
+    # 2. Remove auto-generated audits from the duplication save
+    conn.exec_delete(
+      "DELETE FROM audits WHERE auditable_type = 'BaseRule' " \
+      "AND auditable_id IN (#{safe_new_ids})"
+    )
+
+    # 3. Copy original audit history to new rules
+    conn.exec_insert(
+      "WITH #{mapping_cte} " \
+      'INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, ' \
+      'user_id, user_type, username, action, audited_changes, version, ' \
+      'comment, remote_address, request_uuid, created_at, audited_user_id, audited_username) ' \
+      'SELECT rule_map.new_id, a.auditable_type, a.associated_id, a.associated_type, ' \
+      'a.user_id, a.user_type, a.username, a.action, a.audited_changes, a.version, ' \
+      'a.comment, a.remote_address, a.request_uuid, a.created_at, ' \
+      'a.audited_user_id, a.audited_username FROM audits a ' \
+      "JOIN rule_map ON a.auditable_id = rule_map.orig_id WHERE a.auditable_type = 'BaseRule'"
+    )
+
+    # 4. Copy reviews from original rules
+    conn.exec_insert(
+      "WITH #{mapping_cte} " \
+      'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at) ' \
+      'SELECT r.user_id, rule_map.new_id, r.action, r.comment, r.created_at, r.updated_at ' \
+      'FROM reviews r JOIN rule_map ON r.rule_id = rule_map.orig_id'
+    )
   end
 
   def create_rule_satisfactions
-    rules.where('vendor_comments LIKE ?', '%Satisfied By: %').find_each do |rule|
-      vc = rule.vendor_comments.gsub('Satisfied By: ', '').delete('.').strip.split(/[,\s]+/).uniq
-      vc.each do |sb|
-        sb_rule_id = sb.strip.split('-').last
-        sb_rule = rules.find_by(rule_id: sb_rule_id)
-        next if sb_rule.nil?
+    # Build lookup maps for identifier resolution
+    # SRG IDs (SRG-OS-000480-GPOS-00227) → rule via srg_rule.version
+    srg_version_map = rules.includes(:srg_rule).each_with_object({}) do |rule, map|
+      map[rule.srg_rule.version] = rule if rule.srg_rule&.version.present?
+    end
+    # STIG IDs (PREFIX-000123) → rule via rule_id
+    rule_id_map = rules.index_by(&:rule_id)
 
-        rule.satisfied_by << sb_rule
-        # Save the rule to trigger callbacks (update inspec)
-        sb_rule.save
+    rules.includes(:disa_rule_descriptions, :srg_rule).find_each do |rule|
+      # Check both sources for satisfaction text (vendor_comments and vuln_discussion)
+      sources = []
+      sources << { text: rule.vendor_comments, origin: :vendor_comments } if rule.vendor_comments.present?
+      rule.disa_rule_descriptions.each do |desc|
+        sources << { text: desc.vuln_discussion, origin: :vuln_discussion, record: desc } if desc.vuln_discussion.present?
+      end
+
+      sources.each do |source|
+        parsed = parse_satisfaction_text(source[:text])
+        next unless parsed
+
+        parsed[:identifiers].each do |identifier|
+          target_rule = resolve_satisfaction_identifier(identifier, rule_id_map, srg_version_map)
+          next if target_rule.nil? || target_rule.id == rule.id
+
+          begin
+            if parsed[:direction] == 'satisfied by'
+              rule.satisfied_by << target_rule unless rule.satisfied_by.include?(target_rule)
+            else
+              rule.satisfies << target_rule unless rule.satisfies.include?(target_rule)
+            end
+            target_rule.save
+          rescue ActiveRecord::RecordNotUnique
+            # Relationship already exists — skip
+          end
+        end
+
+        # Strip satisfaction text from source — structured data is the source of truth
+        clean = source[:text].sub(Rule::SATISFACTION_STRIP_PATTERN, '').strip
+        case source[:origin]
+        when :vendor_comments
+          rule.update_column(:vendor_comments, clean.presence) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
+        when :vuln_discussion
+          source[:record].update_column(:vuln_discussion, clean.presence) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
+        else
+          raise ArgumentError, "Unknown satisfaction origin: #{source[:origin]}"
+        end
       end
     end
   end
@@ -396,6 +481,8 @@ class Component < ApplicationRecord
       reload
       # Reset counter cache after bulk import since callbacks are bypassed
       Component.reset_counters(id, :rules)
+      # Seed inspec_control_body for imported rules (after_create callback is bypassed by bulk import)
+      rules.where(inspec_control_body: nil).update_all(inspec_control_body: Rule::INSPEC_STUB_BODY) # rubocop:disable Rails/SkipsModelValidations -- intentional: bulk import, skip callbacks
     else
       errors.add(:base, 'Some rules failed to import successfully for the component.')
     end
@@ -458,7 +545,226 @@ class Component < ApplicationRecord
     end
   end
 
+  # Preview changes from a spreadsheet without saving.
+  # Returns a hash with :updated, :unchanged, :skipped_locked, :warnings keys,
+  # or { error: "message" } on validation failure.
+  def update_from_spreadsheet(spreadsheet, _user = nil)
+    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    return { error: result[:error] } if result.key?(:error)
+
+    build_update_comparison(result[:rows])
+  end
+
+  # Apply changes from a spreadsheet to the database.
+  # Returns { success: true, count: N } or { error: "message" }.
+  def apply_spreadsheet_update(spreadsheet, _user = nil)
+    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    return { error: result[:error] } if result.key?(:error)
+
+    loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
+                                    srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    rule_by_rule_id = loaded_rules.index_by(&:rule_id)
+    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    updated_count = 0
+
+    ActiveRecord::Base.transaction do
+      result[:rows].each do |row|
+        rule = find_rule_for_row(row, rule_by_rule_id, rule_by_srg_id)
+        next unless rule
+        next unless rule.row_editable?
+
+        changes = compute_rule_changes(rule, row)
+        # Filter out section-locked fields
+        changes.select! { |field, _| rule.field_editable?(field) }
+        next if changes.empty?
+
+        apply_rule_changes(rule, row, changes)
+        updated_count += 1
+      end
+    end
+
+    create_rule_satisfactions if updated_count.positive?
+    { success: true, count: updated_count }
+  end
+
   private
+
+  # Parse satisfaction text from any source string.
+  # Returns { direction: "satisfies"|"satisfied by", identifiers: [...] } or nil.
+  def parse_satisfaction_text(text)
+    return nil if text.blank?
+
+    # Postel's Law: Be liberal in what we accept.
+    satisfaction_pattern = /\b(satisfi(?:ed\s+by|es))\s*:\s*/i
+    match = text.match(satisfaction_pattern)
+    return nil unless match
+
+    direction = match[1].strip.downcase
+    list_text = text[match.end(0)..].sub(/\.\s*\z/, '').strip
+    identifiers = list_text.split(/[,;\s]+/).map(&:strip).reject(&:empty?).uniq
+
+    { direction: direction, identifiers: identifiers }
+  end
+
+  # Resolve a satisfaction identifier to a rule.
+  # Supports both STIG IDs (PREFIX-000123) and SRG IDs (SRG-OS-000480-GPOS-00227).
+  def resolve_satisfaction_identifier(identifier, rule_id_map, srg_version_map)
+    # Try SRG ID first (exact match on srg_rule.version)
+    return srg_version_map[identifier] if srg_version_map.key?(identifier)
+
+    # Fall back to STIG ID (extract numeric part after last hyphen)
+    target_rule_id = identifier.split('-').last
+    rule_id_map[target_rule_id]
+  end
+
+  # Build a comparison of spreadsheet rows vs current rule data.
+  # Match by STIG ID (unique per rule) to handle multiple rules sharing the same SRG ID.
+  def build_update_comparison(rows)
+    loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
+                                    srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    # Build lookup by rule_id (numeric portion of STIG ID)
+    rule_by_rule_id = loaded_rules.index_by(&:rule_id)
+    # Also build SRG ID lookup for rows without STIG ID
+    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    result = { updated: [], unchanged: [], skipped_locked: [], warnings: [] }
+
+    rows.each do |row|
+      srg_id = row[IMPORT_MAPPING[:srg_id]]
+      rule = find_rule_for_row(row, rule_by_rule_id, rule_by_srg_id)
+
+      unless rule
+        result[:warnings] << "SRG ID #{srg_id} not found in component"
+        next
+      end
+
+      # Whole-row skip: inherited or whole-locked
+      unless rule.row_editable?
+        reason = rule.satisfied_by.any? ? 'inherited' : 'locked'
+        result[:skipped_locked] << { rule_id: rule.rule_id, srg_id: srg_id, reason: reason }
+        next
+      end
+
+      changes = compute_rule_changes(rule, row)
+
+      # Filter out changes to section-locked fields
+      skipped_fields = changes.keys.reject { |field| rule.field_editable?(field) }
+      skipped_fields.each { |f| changes.delete(f) }
+
+      if changes.empty? && skipped_fields.empty?
+        result[:unchanged] << { rule_id: rule.rule_id, srg_id: srg_id, reason: 'no changes' }
+      elsif changes.empty? && skipped_fields.any?
+        result[:skipped_locked] << { rule_id: rule.rule_id, srg_id: srg_id,
+                                     reason: 'section locked', skipped_fields: skipped_fields }
+      elsif skipped_fields.any?
+        # Some fields changed, some were locked — report both
+        result[:updated] << { rule_id: rule.rule_id, srg_id: srg_id, changes: changes }
+        result[:skipped_locked] << { rule_id: rule.rule_id, srg_id: srg_id,
+                                     reason: 'section locked', skipped_fields: skipped_fields }
+      else
+        result[:updated] << { rule_id: rule.rule_id, srg_id: srg_id, changes: changes }
+      end
+    end
+
+    result
+  end
+
+  # Find the matching rule for a spreadsheet row.
+  # Prefer STIG ID match (unique per rule) over SRG ID (can be shared).
+  def find_rule_for_row(row, rule_by_rule_id, rule_by_srg_id)
+    stig_id = row[IMPORT_MAPPING[:stig_id]]
+    if stig_id.present?
+      # Extract numeric rule_id from STIG ID (e.g., "RNDT-00-000063" → "000063")
+      numeric_id = stig_id.sub(prefix, '').delete('^0-9')
+      return rule_by_rule_id[numeric_id] if rule_by_rule_id.key?(numeric_id)
+    end
+
+    # Fall back to SRG ID match
+    srg_id = row[IMPORT_MAPPING[:srg_id]]
+    rule_by_srg_id[srg_id]
+  end
+
+  # Compare a rule's current fields against a spreadsheet row.
+  # Returns a hash of { field_sym => { from: old, to: new } } for changed fields.
+  # Uses the same values as csv_export to ensure idempotent round-trip.
+  def compute_rule_changes(rule, row)
+    changes = {}
+
+    # Build the "current exported values" map matching csv_attributes column order.
+    # csv_attributes: [IA Control, CCI, SRGID, STIGID, SRG Req, Requirement,
+    #   SRG VulDiscussion, VulDiscussion, Status, SRG Check, Check,
+    #   SRG Fix, Fix, Severity, Mitigation, Artifact Description,
+    #   Status Justification, Vendor Comments, Satisfies]
+    csv_attrs = rule.csv_attributes
+    current = {
+      title: csv_attrs[5],                    # Requirement
+      vuln_discussion: csv_attrs[7],          # VulDiscussion
+      status: csv_attrs[8],                   # Status
+      check_content: csv_attrs[10],           # Check (export_checktext)
+      fixtext: csv_attrs[12],                 # Fix (export_fixtext)
+      rule_severity: csv_attrs[13],           # Severity (CAT I/II/III format)
+      artifact_description: csv_attrs[15],    # Artifact Description
+      status_justification: csv_attrs[16]     # Status Justification
+    }
+
+    # Compare simple text fields
+    %i[title vuln_discussion artifact_description status_justification].each do |field|
+      import_key = IMPORT_MAPPING[field]
+      new_val = row[import_key].to_s.strip
+      old_val = current[field].to_s.strip
+      changes[field] = { from: old_val, to: new_val } if old_val != new_val
+    end
+
+    # Check content and fixtext
+    %i[check_content fixtext].each do |field|
+      import_key = IMPORT_MAPPING[field]
+      new_val = row[import_key].to_s.strip
+      old_val = current[field].to_s.strip
+      changes[field] = { from: old_val, to: new_val } if old_val != new_val
+    end
+
+    # Status (case-insensitive mapping)
+    new_status_raw = row[IMPORT_MAPPING[:status]]
+    if new_status_raw.present?
+      status_index = STATUSES.find_index { |s| s.casecmp(new_status_raw)&.zero? }
+      new_status = status_index ? STATUSES[status_index] : nil
+      changes[:status] = { from: current[:status], to: new_status } if new_status && new_status != current[:status]
+    end
+
+    # Severity (CAT I/II/III → high/medium/low for storage, but compare in display format)
+    new_severity_raw = row[IMPORT_MAPPING[:rule_severity]]
+    if new_severity_raw.present? && (new_severity_raw.strip.upcase != current[:rule_severity].to_s.strip.upcase)
+      new_severity = SEVERITIES_MAP.invert[new_severity_raw.upcase]
+      changes[:rule_severity] = { from: rule.rule_severity, to: new_severity } if new_severity
+    end
+
+    changes
+  end
+
+  # Apply computed changes to a rule from a spreadsheet row.
+  def apply_rule_changes(rule, row, changes)
+    # Direct fields
+    rule.title = changes[:title][:to] if changes[:title]
+    rule.fixtext = changes[:fixtext][:to] if changes[:fixtext]
+    rule.status = changes[:status][:to] if changes[:status]
+    rule.rule_severity = changes[:rule_severity][:to] if changes[:rule_severity]
+    rule.status_justification = changes[:status_justification][:to] if changes[:status_justification]
+    rule.artifact_description = changes[:artifact_description][:to] if changes[:artifact_description]
+
+    # Nested: vuln_discussion
+    rule.disa_rule_descriptions.first&.update!(vuln_discussion: changes[:vuln_discussion][:to]) if changes[:vuln_discussion]
+
+    # Nested: check content
+    rule.checks.first&.update!(content: changes[:check_content][:to]) if changes[:check_content]
+
+    # Vendor comments / satisfaction text
+    rule.vendor_comments = row[IMPORT_MAPPING[:vendor_comments]] if row[IMPORT_MAPPING[:vendor_comments]].present?
+    if row[IMPORT_MAPPING[:satisfies]].present?
+      satisfaction_line = "Satisfies: #{row[IMPORT_MAPPING[:satisfies]]}"
+      rule.vendor_comments = [rule.vendor_comments, satisfaction_line].compact_blank.join('. ')
+    end
+
+    rule.save! if rule.changed?
+  end
 
   def import_srg_rules
     # We assume that we will automatically add the SRG rules within the transaction of the inital creation

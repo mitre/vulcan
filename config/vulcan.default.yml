@@ -8,7 +8,7 @@
 # Any changes to this file will requre a restart of the Vulcan service.
 
 defaults: &defaults
-  welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || nil %>
+  welcome_text: <%= ENV['VULCAN_WELCOME_TEXT'] || 'Welcome to Vulcan' %>
   contact_email: <%= ENV['VULCAN_CONTACT_EMAIL']%>
   app_url: <%= ENV['VULCAN_APP_URL'] || nil %>
   smtp:
@@ -26,9 +26,19 @@ defaults: &defaults
   local_login:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCAL_LOGIN']) != false %>
     email_confirmation: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION']) || false %>
-    session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 60 %>
+    # Accepts: plain seconds (900), or with suffix: 30s, 15m, 1h
+    # Default: 3600 (1 hour). DoD standard is typically 900 (15 min).
+    session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 3600 %>
+    remember_me_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_REMEMBER_ME']) != false %>
+    # Accepts: plain seconds (28800), or with suffix: 8h, 480m
+    # Default: 28800 (8 hours). Set to 0 to disable remember me entirely.
+    remember_me_duration: <%= ENV['VULCAN_REMEMBER_ME_DURATION'] || 28800 %>
   user_registration:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
+  admin_bootstrap:
+    # When true, the first user to register/login becomes an admin (if no admins exist)
+    # This makes Docker deployments functional immediately without manual setup
+    first_user_admin: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_FIRST_USER_ADMIN']) != false %>
   project:
     create_permission_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_PROJECT_CREATE_PERMISSION_ENABLED']) != false %>
   ldap:
@@ -45,7 +55,6 @@ defaults: &defaults
         base: <%= ENV['VULCAN_LDAP_BASE'] %>
   oidc:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_OIDC']) || false %>
-    discovery: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_DISCOVERY']) || true %>
     strategy: :openid_connect
     title: <%= ENV['VULCAN_OIDC_PROVIDER_TITLE'] || 'OIDC Provider' %>
     args:
@@ -56,7 +65,7 @@ defaults: &defaults
       - :profile
       uid_field: 'sub'
       response_type: :code
-      discovery: true
+      discovery: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_OIDC_DISCOVERY']) != false %>
       issuer: <%= ENV['VULCAN_OIDC_ISSUER_URL'] %>
       client_auth_method: :secret
       client_signing_alg: <%= ENV['VULCAN_OIDC_CLIENT_SIGNING_ALG']&.to_sym || :RS256 %>
@@ -75,6 +84,54 @@ defaults: &defaults
         userinfo_endpoint: <%= ENV['VULCAN_OIDC_USERINFO_URL'] %>
         jwks_uri: <%= ENV['VULCAN_OIDC_JWKS_URI'] %>
         post_logout_redirect_uri: '/'
+  banner:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_BANNER_ENABLED']) || false %>
+    text: <%= ENV['VULCAN_BANNER_TEXT'] || '' %>
+    background_color: <%= ENV.fetch('VULCAN_BANNER_BACKGROUND_COLOR', '#007a33') %>
+    text_color: <%= ENV.fetch('VULCAN_BANNER_TEXT_COLOR', '#ffffff') %>
+  consent:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_CONSENT_ENABLED']) || false %>
+    version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1') %>
+    title: <%= ENV.fetch('VULCAN_CONSENT_TITLE', 'Terms of Use') %>
+    content: <%= ENV['VULCAN_CONSENT_CONTENT'] || '' %>
+    ttl: <%= ENV.fetch('VULCAN_CONSENT_TTL', '0') %>
+  session_limits:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_SESSION_LIMITS_ENABLED', 'true')) != false %>
+    max_sessions: <%= ENV.fetch('VULCAN_MAX_CONCURRENT_SESSIONS', '1').to_i %>
+  lockout:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_LOCKOUT_ENABLED', 'true')) != false %>
+    maximum_attempts: <%= ENV.fetch('VULCAN_LOCKOUT_MAX_ATTEMPTS', '3').to_i %>
+    unlock_in_minutes: <%= ENV.fetch('VULCAN_LOCKOUT_UNLOCK_IN_MINUTES', '15').to_i %>
+    unlock_strategy: <%= ENV.fetch('VULCAN_LOCKOUT_UNLOCK_STRATEGY', 'both') %>
+    last_attempt_warning: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING', 'true')) != false %>
+  password:
+    min_length: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LENGTH', '15') %>
+    min_uppercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_UPPERCASE', '2') %>
+    min_lowercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LOWERCASE', '2') %>
+    min_number: <%= ENV.fetch('VULCAN_PASSWORD_MIN_NUMBER', '2') %>
+    min_special: <%= ENV.fetch('VULCAN_PASSWORD_MIN_SPECIAL', '2') %>
+  input_limits:
+    # Maximum lengths for text fields, grouped by category.
+    # Based on analysis of real DISA STIG/SRG data (1,785 rules across 8 benchmarks).
+    # Admins can tune via environment variables per deployment.
+    short_string: <%= ENV.fetch('VULCAN_LIMIT_SHORT_STRING', '255').to_i %>
+    ident: <%= ENV.fetch('VULCAN_LIMIT_IDENT', '2048').to_i %>
+    title: <%= ENV.fetch('VULCAN_LIMIT_TITLE', '500').to_i %>
+    medium_text: <%= ENV.fetch('VULCAN_LIMIT_MEDIUM_TEXT', '1000').to_i %>
+    long_text: <%= ENV.fetch('VULCAN_LIMIT_LONG_TEXT', '10000').to_i %>
+    inspec_code: <%= ENV.fetch('VULCAN_LIMIT_INSPEC_CODE', '50000').to_i %>
+    component_name: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_NAME', '255').to_i %>
+    component_prefix: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_PREFIX', '10').to_i %>
+    component_title: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_TITLE', '500').to_i %>
+    component_description: <%= ENV.fetch('VULCAN_LIMIT_COMPONENT_DESCRIPTION', '5000').to_i %>
+    project_name: <%= ENV.fetch('VULCAN_LIMIT_PROJECT_NAME', '255').to_i %>
+    project_description: <%= ENV.fetch('VULCAN_LIMIT_PROJECT_DESCRIPTION', '5000').to_i %>
+    user_name: <%= ENV.fetch('VULCAN_LIMIT_USER_NAME', '255').to_i %>
+    user_email: <%= ENV.fetch('VULCAN_LIMIT_USER_EMAIL', '255').to_i %>
+    review_comment: <%= ENV.fetch('VULCAN_LIMIT_REVIEW_COMMENT', '10000').to_i %>
+    benchmark_name: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_NAME', '500').to_i %>
+    benchmark_title: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_TITLE', '500').to_i %>
+    benchmark_description: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_DESCRIPTION', '10000').to_i %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>

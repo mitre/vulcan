@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddSrgIdAndVulnIdAndLegacyIdsToBaseRules < ActiveRecord::Migration[6.1]
   def change
     add_column :base_rules, :srg_id, :string

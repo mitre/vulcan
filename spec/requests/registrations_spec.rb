@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'User Registrations', type: :request do
+RSpec.describe 'User Registrations' do
   include LoginHelpers
   include ActiveJob::TestHelper
 
@@ -174,11 +174,11 @@ RSpec.describe 'User Registrations', type: :request do
       }
 
       expect(response).to have_http_status(:redirect)
-      # Check that confirmation email was sent for email change
-      expect(ActionMailer::Base.deliveries.count).to eq(1)
-      confirmation_email = ActionMailer::Base.deliveries.last
+      # Devise sends: confirmation email + email-changed notification + password-changed notification
+      expect(ActionMailer::Base.deliveries.count).to eq(3)
+      confirmation_email = ActionMailer::Base.deliveries.find { |e| e.subject.include?('Confirmation') }
+      expect(confirmation_email).to be_present
       expect(confirmation_email.to).to include(new_user_data.email)
-      expect(confirmation_email.subject).to include('Confirmation')
 
       existing_user.reload.confirm
 
@@ -231,6 +231,107 @@ RSpec.describe 'User Registrations', type: :request do
 
       expect(response).to have_http_status(:redirect)
       expect(ldap_user.reload.name).to eq(user1.name)
+    end
+  end
+
+  # First-user-admin via callback with advisory lock for race condition protection
+  describe 'first user admin promotion' do
+    context 'when VULCAN_FIRST_USER_ADMIN is true and no admins exist' do
+      before do
+        stub_local_login_setting(enabled: true)
+        stub_admin_bootstrap_setting(first_user_admin: true)
+        # Ensure no admin users exist
+        User.where(admin: true).destroy_all
+      end
+
+      it 'promotes the first registered user to admin' do
+        post '/users', params: {
+          user: {
+            name: user1.name,
+            email: user1.email,
+            password: user1.password,
+            password_confirmation: user1.password
+          }
+        }
+
+        created_user = User.find_by(email: user1.email)
+        expect(created_user).to be_present
+        expect(created_user.admin).to be true
+      end
+
+      it 'does not promote subsequent users to admin' do
+        # First user via registration - should become admin
+        first_user_email = "first-#{SecureRandom.hex(4)}@example.com"
+        first_user_data = build(:user, email: first_user_email)
+        expect do
+          post '/users', params: {
+            user: {
+              name: first_user_data.name,
+              email: first_user_email,
+              password: first_user_data.password,
+              password_confirmation: first_user_data.password
+            }
+          }
+        end.to change(User, :count).by(1)
+        first_user = User.find_by(email: first_user_email)
+        expect(first_user).to be_present
+        expect(first_user.admin).to be true
+
+        # Second user created directly (simulates another registration)
+        # The callback behavior is the same regardless of how user is created
+        second_user = create(:user, admin: false)
+        # Reload to get latest state - callback should NOT have promoted them
+        second_user.reload
+        expect(second_user.admin).to be false
+      end
+    end
+
+    context 'when VULCAN_FIRST_USER_ADMIN is true but admins already exist' do
+      let!(:existing_admin) { create(:user, admin: true) } # -- side effect: prevents first-user-admin promotion
+
+      before do
+        stub_local_login_setting(enabled: true)
+        stub_admin_bootstrap_setting(first_user_admin: true)
+      end
+
+      it 'does not promote new users to admin' do
+        post '/users', params: {
+          user: {
+            name: user1.name,
+            email: user1.email,
+            password: user1.password,
+            password_confirmation: user1.password
+          }
+        }
+
+        created_user = User.find_by(email: user1.email)
+        expect(created_user).to be_present
+        expect(created_user.admin).to be false
+      end
+    end
+
+    context 'when VULCAN_FIRST_USER_ADMIN is false' do
+      before do
+        stub_local_login_setting(enabled: true)
+        stub_admin_bootstrap_setting(first_user_admin: false)
+        # Ensure no admin users exist
+        User.where(admin: true).destroy_all
+      end
+
+      it 'does not promote first user to admin even when no admins exist' do
+        post '/users', params: {
+          user: {
+            name: user1.name,
+            email: user1.email,
+            password: user1.password,
+            password_confirmation: user1.password
+          }
+        }
+
+        created_user = User.find_by(email: user1.email)
+        expect(created_user).to be_present
+        expect(created_user.admin).to be false
+      end
     end
   end
 end

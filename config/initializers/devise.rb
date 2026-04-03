@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require Rails.root.join('app/lib/timeout_parser')
+
 # Use this hook to configure devise mailer, warden hooks and so forth.
 # Many of these configuration options can be set straight in your model.
 Devise.setup do |config|
@@ -66,7 +68,7 @@ Devise.setup do |config|
   # It will change confirmation, password recovery and other workflows
   # to behave the same regardless if the e-mail provided was right or wrong.
   # Does not affect registerable.
-  # config.paranoid = true
+  config.paranoid = true
 
   # By default Devise will store the user in session. You can skip storage for
   # particular strategies by setting this option.
@@ -99,10 +101,10 @@ Devise.setup do |config|
   config.stretches = Rails.env.test? ? 1 : 11
 
   # Send a notification to the original email when the user's email is changed.
-  # config.send_email_changed_notification = false
+  config.send_email_changed_notification = true
 
   # Send a notification email when the user's password is changed.
-  # config.send_password_change_notification = false
+  config.send_password_change_notification = true
 
   # ==> Configuration for :confirmable
   # A period that the user is allowed to access the website even without
@@ -134,7 +136,13 @@ Devise.setup do |config|
 
   # ==> Configuration for :rememberable
   # The time the user will be remembered without asking for credentials again.
-  # config.remember_for = 2.weeks
+  # Configured via VULCAN_ENABLE_REMEMBER_ME and VULCAN_REMEMBER_ME_DURATION env vars.
+  # Default: 8 hours. When disabled, remember_for = 0 hides the checkbox via Devise.
+  config.remember_for = if Settings.local_login.remember_me_enabled
+                          TimeoutParser.parse(Settings.local_login.remember_me_duration).seconds
+                        else
+                          0
+                        end
 
   # Invalidates all the remember me tokens when the user signs out.
   config.expire_all_remember_me_on_sign_out = true
@@ -142,13 +150,17 @@ Devise.setup do |config|
   # If true, extends the user's remember period when remembered via cookie.
   # config.extend_remember_period = false
 
-  # Options to be passed to the created cookie. For instance, you can set
-  # secure: true in order to force SSL only cookies.
-  # config.rememberable_options = {}
+  # Options to be passed to the created cookie.
+  # NOTE: No `secure:` flag — ActionDispatch::SSL handles this automatically
+  # when config.force_ssl = true (see session_store.rb for full explanation).
+  config.rememberable_options = {
+    httponly: true,
+    same_site: :lax
+  }
 
   # ==> Configuration for :validatable
   # Range for password length.
-  config.password_length = 6..128
+  config.password_length = Settings.password.min_length.to_i..128
 
   # Email regex used to validate email formats. It simply asserts that
   # one (and only one) @ exists in the given string. This is mainly
@@ -157,34 +169,40 @@ Devise.setup do |config|
 
   # ==> Configuration for :timeoutable
   # The time you want to timeout the user session without activity. After this
-  # time the user will be asked for credentials again. Default is 30 minutes.
-  config.timeout_in = Settings.local_login.session_timeout.minutes
+  # time the user will be asked for credentials again.
+  # Accepts: plain seconds (900), or with suffix: 30s, 15m, 1h
+  # Default: 3600 (1 hour). DoD standard is typically 900 (15 min).
+  config.timeout_in = TimeoutParser.parse(Settings.local_login.session_timeout).seconds
 
   # ==> Configuration for :lockable
-  # Defines which strategy will be used to lock an account.
-  # :failed_attempts = Locks an account after a number of failed attempts to sign in.
-  # :none            = No lock strategy. You should handle locking by yourself.
-  # config.lock_strategy = :failed_attempts
+  # STIG AC-07: Lock after N consecutive invalid logon attempts.
+  # Configured via VULCAN_LOCKOUT_* environment variables.
+  # Defaults: 3 attempts, 15 min unlock, strategy: both (email + time).
+  config.lock_strategy = :failed_attempts
+  config.unlock_keys = [:email]
+  if Settings.lockout&.enabled
+    # In test environment, use :time strategy to avoid SMTP dependency.
+    # Devise sends unlock instructions email with :both/:email strategies,
+    # which fails in CI where no SMTP server is available.
+    config.unlock_strategy = Rails.env.test? ? :time : Settings.lockout.unlock_strategy.to_sym
+    config.maximum_attempts = Settings.lockout.maximum_attempts
+    config.unlock_in = Settings.lockout.unlock_in_minutes.minutes
+    config.last_attempt_warning = Settings.lockout.last_attempt_warning
+  else
+    # Effectively disable lockout while keeping the module loaded
+    config.maximum_attempts = 1_000_000
+    config.unlock_strategy = :time
+    config.unlock_in = 1.minute
+  end
 
-  # Defines which key will be used when locking and unlocking an account
-  # config.unlock_keys = [:email]
-
-  # Defines which strategy will be used to unlock an account.
-  # :email = Sends an unlock link to the user email
-  # :time  = Re-enables login after a certain amount of time (see :unlock_in below)
-  # :both  = Enables both strategies
-  # :none  = No unlock strategy. You should handle unlocking by yourself.
-  # config.unlock_strategy = :both
-
-  # Number of authentication tries before locking an account if lock_strategy
-  # is failed attempts.
-  # config.maximum_attempts = 20
-
-  # Time interval to unlock the account if :time is enabled as unlock_strategy.
-  # config.unlock_in = 1.hour
-
-  # Warn on the last attempt before the account is locked.
-  # config.last_attempt_warning = true
+  # ==> Configuration for :session_limitable + :session_traceable (AC-10)
+  # Enforces per-user concurrent session limits via devise-security.
+  # session_traceable tracks individual sessions in the session_histories table.
+  # When max_active_sessions is exceeded, the oldest session is evicted.
+  # The :session_limitable module is conditionally skipped in the User model
+  # based on Settings.session_limits.enabled.
+  config.max_active_sessions = Settings.session_limits&.max_sessions || 1
+  config.session_ip_verification = false # Behind reverse proxy, client IPs vary
 
   # ==> Configuration for :recoverable
   #
@@ -194,11 +212,11 @@ Devise.setup do |config|
   # Time interval you can reset your password with a reset password key.
   # Don't put a too small interval or your users won't have the time to
   # change their passwords.
-  config.reset_password_within = 6.hours
+  config.reset_password_within = 2.hours
 
   # When set to false, does not sign a user in automatically after their password is
   # reset. Defaults to true, so a user is signed in automatically after a reset.
-  # config.sign_in_after_reset_password = true
+  config.sign_in_after_reset_password = false
 
   # ==> Configuration for :encryptable
   # Allow you to use another hashing or encryption algorithm besides bcrypt (default).
@@ -208,7 +226,7 @@ Devise.setup do |config|
   # stretches to 10, and copy REST_AUTH_SITE_KEY to pepper).
   #
   # Require the `devise-encryptable` gem when using anything other than bcrypt
-  # config.encryptor = :sha512
+  config.encryptor = :pbkdf2_sha512
 
   # ==> Scopes configuration
   # Turn scoped views on. Before rendering "sessions/new", it will first check for
@@ -236,7 +254,7 @@ Devise.setup do |config|
   # config.navigational_formats = ['*/*', :html]
 
   # The default HTTP method used to sign out a resource. Default is :delete.
-  config.sign_out_via = :get
+  config.sign_out_via = :delete
 
   # ==> OmniAuth
   # Add a new OmniAuth provider. Check the wiki for more information on setting

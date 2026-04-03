@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddInspecCodeToRules < ActiveRecord::Migration[6.1]
   def up
     add_column :base_rules, :inspec_control_body, :text

@@ -10,7 +10,7 @@ For organizations requiring immediate compliance, apply these essential settings
 
 ```bash
 # Core Security Settings
-export VULCAN_SESSION_TIMEOUT=10               # Set to 10 minutes (STIG requirement - default is 60)
+export VULCAN_SESSION_TIMEOUT=10m              # 10 minutes (STIG requirement - default is 1h)
 export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. By accessing this system, you agree to comply with all organizational security policies. All activities are monitored and logged."
 export RAILS_FORCE_SSL=true                    # Force HTTPS
 export RAILS_ENV=production                    # Production mode
@@ -86,38 +86,69 @@ graph TD
 
 **Configuration:**
 ```bash
-# STIG Requirements (value is in minutes)
-VULCAN_SESSION_TIMEOUT=10      # Required: 10 min for admin, 15 min for users
-                               # Default: 60 minutes if not set
+# STIG Requirements — accepts suffixes (10m, 900s) or plain numbers
+VULCAN_SESSION_TIMEOUT=10m     # Required: 10 min for admin, 15 min for users
+                               # Default: 1h (1 hour) if not set
                                # Note: Single timeout for all user types
+                               # Formats: 30s, 15m, 1h, or plain (900 = seconds)
 ```
 
 ⚠️ **Known Gaps:**
-- Session limit per user (Issue #634) - In development
 - Logout confirmation message (Issue #635) - In development
 
 #### System Use Notification (AC-08)
 
-**What's Required:** Display approved banner before system access
+**What's Required:** Display approved system use notification before granting access. Retain the notification until users acknowledge the usage conditions and take explicit action to log on.
+
+**Control Intent:** AC-8 targets the *logon interface* — the authentication event, not every HTTP request. Per the NIST SP 800-53 Rev 5 discussion: *"System use notifications can be implemented using messages or warning banners displayed before individuals log in to systems. System use notifications are used only for access via logon interfaces with human users."* The obligation is satisfied once per authentication session. Page refreshes, navigation, and tab switching within an active session do not require re-display.
 
 **How Vulcan Implements It:**
-- Customizable banner via `VULCAN_WELCOME_TEXT`
-- Displayed on login page before authentication
-- Must be acknowledged to proceed
 
-**Example Banner:**
+Vulcan provides three complementary mechanisms:
+
+1. **Welcome Text** — Customizable text on the login page via `VULCAN_WELCOME_TEXT`
+2. **Classification Banner** — Persistent top/bottom banner on every page showing system sensitivity level (e.g., UNCLASSIFIED, CUI). Configured via `VULCAN_BANNER_ENABLED`, `VULCAN_BANNER_TEXT`, `VULCAN_BANNER_BACKGROUND_COLOR`, `VULCAN_BANNER_TEXT_COLOR`. Server-rendered (works without JavaScript).
+3. **Consent Modal** — Blocks access until user acknowledges terms of use. Supports Markdown content. Acknowledgment is tracked server-side in the Rails session (not browser localStorage), tying consent to the authentication lifecycle per AC-8. Configured via `VULCAN_CONSENT_ENABLED`, `VULCAN_CONSENT_VERSION`, `VULCAN_CONSENT_TITLE`, `VULCAN_CONSENT_CONTENT`, `VULCAN_CONSENT_TTL`.
+
+**Consent Flow (AC-8 a/b):**
+
+1. User navigates to login page → consent modal blocks all interaction
+2. User reads notice and clicks "I Agree" → `POST /consent/acknowledge` stores timestamp in Rails session (server-side)
+3. User submits login credentials → Devise authenticates and resets session (fixation protection) → Vulcan preserves consent timestamp across the reset
+4. User accesses app → `consent_required?` returns false → no modal
+5. On logout, session timeout, or browser close → session cleared → consent required again on next visit
+
+**Per-session acknowledgment is the standard government implementation pattern.** Hard refreshes and page navigation within an active session do not re-trigger the modal because the Rails session (and the consent timestamp within it) persists across requests. The modal only re-appears when the session itself ends.
+
+::: tip Configurable TTL
+`VULCAN_CONSENT_TTL=0` (default) means per-session — consent expires when the session ends. Organizations requiring less frequent prompting can set a duration (e.g., `24h`, `8h`, `30m`). Per-session is the DoD-compliant default.
+:::
+
+**Configuration:**
 ```bash
-export VULCAN_WELCOME_TEXT="
-╔══════════════════════════════════════════════════════════════╗
-║                    AUTHORIZED USE ONLY                       ║
-║                                                              ║
-║ This U.S. Government system is for authorized use only.     ║
-║ By accessing this system, you consent to monitoring and     ║
-║ recording of all activities. Unauthorized use is prohibited ║
-║ and subject to criminal and civil penalties.                ║
-╚══════════════════════════════════════════════════════════════╝
-"
+# Classification Banner (visible on every page)
+export VULCAN_BANNER_ENABLED=true
+export VULCAN_BANNER_TEXT="UNCLASSIFIED"
+export VULCAN_BANNER_BACKGROUND_COLOR="#007a33"
+export VULCAN_BANNER_TEXT_COLOR="#ffffff"
+
+# Consent Modal (must acknowledge before use)
+export VULCAN_CONSENT_ENABLED=true
+export VULCAN_CONSENT_VERSION=1
+export VULCAN_CONSENT_TITLE="Terms of Use"
+export VULCAN_CONSENT_CONTENT="By using this system you agree to the **acceptable use policy**."
+export VULCAN_CONSENT_TTL=0    # 0 = per-session (DoD default)
+
+# Welcome Text (login page)
+export VULCAN_WELCOME_TEXT="AUTHORIZED USE ONLY. All activities are monitored."
 ```
+
+See [Configuration](/getting-started/configuration) for full details including color codes for standard classification levels.
+
+**References:**
+- [NIST SP 800-53 Rev 5 — AC-8](https://csf.tools/reference/sp800-53/r5/ac/ac-8/) — Full control text and discussion
+- [NIST Cybersecurity & Privacy Reference Tool (CPRT)](https://csrc.nist.gov/projects/cprt) — Authoritative control catalog
+- [DISA ASD STIG V-222434 / V-222435 / V-222436](https://public.cyber.mil/stigs/) — Application Security and Development STIG checks for AC-8 a, b, and c
 
 ### 📝 Audit & Accountability (AU)
 
@@ -201,6 +232,37 @@ oidc:
   name_field: "name"
 ```
 
+#### Password Complexity (IA-05)
+
+**What's Required:** Enforce password complexity meeting organizational standards
+
+**How Vulcan Implements It:**
+- Configurable count-based validator: minimum length, uppercase, lowercase, numbers, special characters
+- Default policy follows DoD "2222" standard: 15 chars, 2 of each character type
+- Real-time checklist in the UI shows compliance as user types
+- OmniAuth users (OIDC, LDAP, GitHub) skip complexity validation — their passwords are managed externally
+- All thresholds configurable via environment variables
+
+**Configuration:**
+```bash
+export VULCAN_PASSWORD_MIN_LENGTH=15       # Default: 15
+export VULCAN_PASSWORD_MIN_UPPERCASE=2     # Default: 2
+export VULCAN_PASSWORD_MIN_LOWERCASE=2     # Default: 2
+export VULCAN_PASSWORD_MIN_NUMBER=2        # Default: 2
+export VULCAN_PASSWORD_MIN_SPECIAL=2       # Default: 2
+```
+
+See [Configure Password Policy](/getting-started/configuration#configure-password-policy) for details.
+
+#### Admin Account Protection (AC-06)
+
+**What's Required:** Prevent unauthorized privilege escalation and ensure admin continuity
+
+**How Vulcan Implements It:**
+- **Last-admin protection**: The system prevents demoting or deleting the only admin user, ensuring at least one administrator always exists
+- **Admin bootstrap**: Three methods to create the initial admin account (env vars, first-user-admin, rake task)
+- **SMTP-aware password tools**: When SMTP is unavailable, admins can generate reset links or set passwords directly — email-dependent forms show a "contact your admin" message instead of silently failing
+
 ### 🛡️ System & Communications Protection (SC)
 
 #### TLS Configuration
@@ -247,6 +309,23 @@ server {
 }
 ```
 
+#### Input Security Hardening (SI-10)
+
+**What's Required:** Check validity of information inputs
+
+**How Vulcan Implements It:**
+
+| Protection | Implementation | Scope |
+|-----------|---------------|-------|
+| **XXE Prevention** | `NONET` flag on all XML parsers (Nokogiri + HappyMapper) | XCCDF uploads |
+| **File Size Limits** | `before_action` validation: 50 MB XML, 100 MB ZIP, 50 MB spreadsheet | All uploads |
+| **Content-Type Validation** | File extension whitelist per endpoint (.xml, .zip, .xlsx/.csv) | All uploads |
+| **Rate Limiting** | rack-attack: 5 login attempts/min/IP, 10 uploads/min/IP | Login + uploads |
+| **Input Length Limits** | ActiveRecord validations on Project/Component metadata fields | Database writes |
+
+**Configuration:**
+Rate limiting is enabled by default. Thresholds can be adjusted in `config/initializers/rack_attack.rb`.
+
 ## Deployment Configurations
 
 ### Production Deployment Checklist
@@ -288,7 +367,7 @@ server {
 
 ```dockerfile
 # Secure Dockerfile Example
-FROM ruby:3.3.9-slim AS production
+FROM ruby:3.4.8-slim AS production
 
 # Security: Run as non-root user
 RUN groupadd -r app && useradd -r -g app app
@@ -498,27 +577,35 @@ end
 
 | Control | Gap | Workaround | Target Resolution |
 |---------|-----|------------|-------------------|
-| AC-10 | No session limits per user | Monitor via SIEM | Q1 2025 (Issue #634) |
 | AC-12(02) | No logout confirmation | Check audit logs | Q1 2025 (Issue #635) |
 | AU-05 | No built-in log overflow handling | External log rotation | Use log management system |
 
 ### Security Roadmap
 
-**Q4 2024:**
+**Completed (v2.3.1):**
 - ✅ OIDC auto-discovery
 - ✅ Enhanced audit logging
 - ✅ Container security hardening
+- ✅ Classification banner and consent modal
+- ✅ Password complexity policy (DoD 2222)
+- ✅ Admin user management with last-admin protection
+- ✅ SMTP-aware Devise views (no silent failures)
+- ✅ Deny-by-default authorization safety net
+- ✅ Account lockout (Devise `:lockable`, AC-07 compliance, admin unlock UI)
+- ✅ XXE prevention (NOENT→NONET in XML parsers, HappyMapper NONET patch)
+- ✅ Upload validation (file size limits + content-type checks on all endpoints)
+- ✅ Rate limiting (rack-attack: login throttling, upload throttling)
+- ✅ Input length limits on project and component metadata
+- ✅ Per-section rule field locking
 
-**Q1 2025:**
-- ⏳ Session limits per user
-- ⏳ Logout confirmation
-- ⏳ FIPS 140-2 cryptography mode
-- ⏳ Built-in MFA for local accounts
+- ✅ Session limits per user (configurable `max_active_sessions`, session history tracking)
+- ✅ Logout confirmation (Devise flash notice via Toaster component)
+- ✅ Devise hardening (paranoid mode, DELETE logout, cookie security, change notifications)
+- ✅ PBKDF2-SHA512 password hashing (FIPS 140-2 compliant, transparent bcrypt migration)
 
-**Q2 2025:**
-- 📋 Zero Trust architecture support
+**Planned:**
+- 📋 Built-in MFA for local accounts
 - 📋 Enhanced RBAC with custom roles
-- 📋 Automated compliance reporting
 
 ## Configuration Verification & Cross-References
 
@@ -535,10 +622,21 @@ This table provides direct links to the Vulcan source code that implements each 
 | **OIDC** | Auto-Discovery | [`config/initializers/oidc_startup_validation.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/oidc_startup_validation.rb) | ✅ Implemented |
 | **LDAP** | Configuration | [`config/vulcan.default.yml:35-44`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L35) | ✅ Implemented |
 | **Authorization** | RBAC | [`app/controllers/application_controller.rb:16-22`](https://github.com/mitre/vulcan/blob/master/app/controllers/application_controller.rb#L16) | ✅ Implemented |
-| **Session Limits** | Per-User Limits | [Issue #634](https://github.com/mitre/vulcan/issues/634) | 🚧 In Development |
-| **Logout Message** | Confirmation | [Issue #635](https://github.com/mitre/vulcan/issues/635) | 🚧 In Development |
-| **Session Timeout Default** | 10 min default | [Issue #685](https://github.com/mitre/vulcan/issues/685) | 📋 Planned |
-| **CSRF Documentation** | Explicit validation | [Issue #686](https://github.com/mitre/vulcan/issues/686) | 📋 Planned |
+| **Classification Banner** | System Sensitivity | [`config/vulcan.default.yml`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml)<br>[`app/views/layouts/application.html.haml`](https://github.com/mitre/vulcan/blob/master/app/views/layouts/application.html.haml) | ✅ Implemented |
+| **Consent Modal** | Terms Acknowledgement | [`app/javascript/components/navbar/ConsentModal.vue`](https://github.com/mitre/vulcan/blob/master/app/javascript/components/navbar/ConsentModal.vue) | ✅ Implemented |
+| **Password Complexity** | DoD 2222 Policy | [`app/models/concerns/password_complexity_validator.rb`](https://github.com/mitre/vulcan/blob/master/app/models/concerns/password_complexity_validator.rb) | ✅ Implemented |
+| **Last-Admin Protection** | Prevent Lockout | [`app/controllers/users_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/users_controller.rb) | ✅ Implemented |
+| **Admin User Management** | Create/Edit/Delete | [`app/controllers/users_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/users_controller.rb) | ✅ Implemented |
+| **Account Lockout** | AC-07 Compliance | [`app/models/user.rb`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb)<br>[`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
+| **Upload Validation** | File Size + Content-Type | [`app/controllers/concerns/upload_validatable.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/concerns/upload_validatable.rb) | ✅ Implemented |
+| **Rate Limiting** | Login + Upload Throttling | [`config/initializers/rack_attack.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/rack_attack.rb) | ✅ Implemented |
+| **XXE Prevention** | XML Parser Hardening | [`app/models/disa_rule_description.rb`](https://github.com/mitre/vulcan/blob/master/app/models/disa_rule_description.rb)<br>[`config/initializers/nokogiri_security.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/nokogiri_security.rb) | ✅ Implemented |
+| **Section Locking** | Per-Field Rule Locks | [`app/controllers/rules_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/rules_controller.rb) | ✅ Implemented |
+| **Session Limits** | Per-User Limits (AC-10) | [`app/models/user.rb`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb)<br>[`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
+| **Session History** | Login Audit Trail | [`db/migrate/..._create_session_histories.rb`](https://github.com/mitre/vulcan/blob/master/db/migrate/) | ✅ Implemented |
+| **Logout Message** | Confirmation (AC-12) | [`app/controllers/sessions_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/sessions_controller.rb) | ✅ Implemented |
+| **Paranoid Mode** | Account Enumeration Prevention | [`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
+| **Cookie Security** | Secure + HttpOnly + SameSite | [`config/initializers/session_store.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/session_store.rb)<br>[`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented |
 
 ### Configuration Clarifications
 
@@ -546,7 +644,7 @@ Based on source code analysis, the following clarifications apply:
 
 | Configuration | Documentation States | Actual Implementation | Action Required |
 |--------------|---------------------|----------------------|-----------------|
-| **Session Timeout** | 10 minutes required | Defaults to 60 minutes | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` |
+| **Session Timeout** | 10 minutes required | Defaults to 1 hour | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` (or `600`) |
 | **Admin Timeout** | Separate timeout | Uses same timeout | ℹ️ No separate admin timeout available |
 | **CSRF Protection** | Enabled | Rails default (enabled) | ✅ No action needed |
 | **Strong Parameters** | Required | Rails default (enabled) | ✅ No action needed |
@@ -560,7 +658,6 @@ The following improvements are tracked as GitHub issues:
 |----------|-------|-------------|--------|
 | **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | v2.3.0 |
 | **High** | [#635](https://github.com/mitre/vulcan/issues/635) | Add logout confirmation message | v2.3.0 |
-| **Medium** | [#634](https://github.com/mitre/vulcan/issues/634) | Implement per-user session limits | v2.3.0 |
 | **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v2.3.0 |
 
 These improvements will be addressed as part of the Vue 3 migration and Turbolinks removal work in v2.3.0.
@@ -587,9 +684,9 @@ Available in `/docs/compliance/`:
 
 ---
 
-**Document Version:** 2.3.0  
-**Last Updated:** December 2024  
-**Classification:** UNCLASSIFIED  
+**Document Version:** 2.3.1
+**Last Updated:** February 2026
+**Classification:** UNCLASSIFIED
 **Distribution:** Public Release
 
 *This document is maintained as part of the Vulcan project and updated with each security-relevant release.*

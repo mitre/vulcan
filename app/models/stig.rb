@@ -2,6 +2,10 @@
 
 # Stig Model
 class Stig < ApplicationRecord
+  include SeverityCounts
+  include XccdfParseable
+  include BenchmarkCsvExport
+
   has_many :stig_rules, dependent: :destroy
 
   validates :stig_id, :title, :name, :version, :xml, presence: true
@@ -9,6 +13,12 @@ class Stig < ApplicationRecord
     scope: :version,
     message: 'ID has already been taken'
   }
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_*)
+  validates :stig_id, :version,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }
+  validates :title, length: { maximum: ->(_r) { Settings.input_limits.benchmark_title } }
+  validates :name, length: { maximum: ->(_r) { Settings.input_limits.benchmark_name } }
+  validates :description, length: { maximum: ->(_r) { Settings.input_limits.benchmark_description } }, allow_nil: true
 
   after_create :import_stig_rules
   # STIG parameter is the entire parsed benchmark
@@ -26,8 +36,10 @@ class Stig < ApplicationRecord
              benchmark_date: benchmark_date)
   end
 
-  def parsed_benchmark
-    Xccdf::Benchmark.parse(xml)
+  ##
+  # Override for SeverityCounts and BenchmarkCsvExport - specify rules association
+  def rules_association
+    stig_rules
   end
 
   private
@@ -40,7 +52,9 @@ class Stig < ApplicationRecord
     if failures.empty?
       reload
     else
-      errors.add(:base, 'Some rules failed to import successfully for the SRG.')
+      detail = failures.first(3).map { |r| "#{r.rule_id}: #{r.errors.full_messages.join(', ')}" }.join('; ')
+      detail += " (and #{failures.size - 3} more)" if failures.size > 3
+      errors.add(:base, "#{failures.size} rules failed to import: #{detail}")
       raise ActiveRecord::Rollback
     end
   end

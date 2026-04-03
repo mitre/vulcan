@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-for="group in shownGroupedHistories" :key="group.id">
+    <div v-for="group in groupedHistories" :key="group.id">
       <p class="ml-2 mb-0 mt-2">
         <strong>{{ group.history.name }}</strong>
       </p>
@@ -36,7 +36,6 @@
                 :component="component"
                 :history="history"
                 :statuses="statuses"
-                :severities="severities"
               />
             </template>
             <template v-else>
@@ -57,22 +56,6 @@
           </p>
         </template>
       </div>
-    </div>
-    <div class="d-flex justify-content-center align-items-center mt-2">
-      <p
-        v-if="numShownHistories < groupedHistories.length"
-        class="text-primary clickable"
-        @click="numShownHistories += 2"
-      >
-        show more
-      </p>
-      <p
-        v-if="numShownHistories > 2 && groupedHistories.length > 2"
-        class="ml-4 text-primary clickable"
-        @click="numShownHistories -= 2"
-      >
-        show less
-      </p>
     </div>
   </div>
 </template>
@@ -100,10 +83,6 @@ export default {
       type: Array,
       required: false,
     },
-    severities: {
-      type: Array,
-      required: false,
-    },
     revertable: {
       type: Boolean,
       default: true,
@@ -117,17 +96,9 @@ export default {
       required: false,
     },
   },
-  data: function () {
-    return {
-      numShownHistories: 2,
-    };
-  },
   computed: {
     groupedHistories() {
       return this.groupHistories(this.histories);
-    },
-    shownGroupedHistories() {
-      return this.groupedHistories.slice(0, this.numShownHistories);
     },
   },
   methods: {
@@ -146,14 +117,32 @@ export default {
         return "Created";
       }
     },
-    computeUpdateText: function (changes, abbreviated) {
+    computeUpdateText: function (changes) {
       if (changes.field == "admin") {
         return `was ${changes.new_value ? "promoted to" : "demoted from"} admin`;
+      } else if (changes.field == "locked_at") {
+        return `account was ${changes.new_value ? "locked" : "unlocked"}`;
+      } else if (changes.field == "locked_fields") {
+        return this.computeLockedFieldsText(changes);
       } else {
         return `${changes.field} was updated from ${this.prettifyObjects(
           changes.prev_value,
         )} to ${this.prettifyObjects(changes.new_value)}`;
       }
+    },
+    computeLockedFieldsText: function (changes) {
+      const prev = changes.prev_value || {};
+      const next = changes.new_value || {};
+      const prevKeys = typeof prev === "object" ? Object.keys(prev) : [];
+      const nextKeys = typeof next === "object" ? Object.keys(next) : [];
+      const locked = nextKeys.filter((k) => !prevKeys.includes(k));
+      const unlocked = prevKeys.filter((k) => !nextKeys.includes(k));
+      const parts = [];
+      if (locked.length > 0) parts.push(`locked: ${locked.join(", ")}`);
+      if (unlocked.length > 0) parts.push(`unlocked: ${unlocked.join(", ")}`);
+      return parts.length > 0
+        ? `section locks updated (${parts.join("; ")})`
+        : "section locks updated";
     },
     prettifyObjects: function (value) {
       if (typeof value === "object") {

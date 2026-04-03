@@ -5,19 +5,75 @@ require 'inspec/objects'
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < BaseRule
+  include PgSearch::Model
+
   attr_accessor :skip_update_inspec_code
+
+  # pg_search scope for full-text search across searchable columns
+  # Weighted by importance: title (A), fixtext (B), vendor_comments/status_justification (C), artifact_description (D)
+  pg_search_scope :search_content,
+                  against: {
+                    title: 'A',                    # Highest weight
+                    fixtext: 'B',                  # High weight
+                    vendor_comments: 'C',          # Medium weight
+                    status_justification: 'C',
+                    artifact_description: 'D'      # Lower weight
+                  },
+                  associated_against: {
+                    checks: :content,
+                    disa_rule_descriptions: %i[vuln_discussion mitigations]
+                  },
+                  using: {
+                    tsearch: {
+                      prefix: true,           # Enable partial word matching
+                      dictionary: 'english',  # Stemming (finds "systems" when searching "system")
+                      any_word: false         # Require ALL words in multi-word queries
+                    },
+                    trigram: {
+                      threshold: 0.2          # Fuzzy matching (typo tolerance)
+                    }
+                  },
+                  ranked_by: ':tsearch + (0.5 * :trigram)' # Prioritize exact matches, but allow fuzzy
+
+  ##
+  # Phrase search using PostgreSQL's websearch_to_tsquery
+  # Supports Google-like syntax: "exact phrase", -excluded, OR
+  #
+  # @param query [String] the search query with optional quoted phrases
+  # @return [ActiveRecord::Relation] matching rules
+  #
+  scope :search_phrase, lambda { |query|
+    return none if query.blank?
+
+    # Build tsvector from searchable columns
+    # Use table_name (base_rules) instead of hardcoded name due to STI
+    tsvector_sql = <<~SQL.squish
+      setweight(to_tsvector('english', coalesce(#{table_name}.title, '')), 'A') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.fixtext, '')), 'B') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.vendor_comments, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.status_justification, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(#{table_name}.artifact_description, '')), 'D')
+    SQL
+
+    where("(#{tsvector_sql}) @@ websearch_to_tsquery('english', ?)", query)
+      .order(Arel.sql("ts_rank((#{tsvector_sql}), websearch_to_tsquery('english', #{connection.quote(query)})) DESC"))
+  }
 
   amoeba do
     # Using set review_requestor_id: nil does not work as expected, must use nullify
     nullify :review_requestor_id
     set locked: false
+    customize(lambda { |_original, copy|
+      copy.locked_fields = {}
+    })
 
     include_association :additional_answers, if: :single_rule_clone?
   end
 
-  audited except: %i[component_id review_requestor_id created_at updated_at locked inspec_control_file],
-          max_audits: 1000,
-          associated_with: :component
+  include VulcanAuditable
+
+  vulcan_audited except: %i[component_id review_requestor_id inspec_control_file],
+                 associated_with: :component
   has_associated_audits
 
   belongs_to :component, counter_cache: true
@@ -41,6 +97,7 @@ class Rule < BaseRule
 
   before_validation :set_rule_id
   before_save :apply_audit_comment, :sort_ident
+  after_create :seed_inspec_control_body
   before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
   after_save :update_component_rules_count, :update_inspec_code
@@ -49,9 +106,16 @@ class Rule < BaseRule
   validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
+  validate :locked_fields_must_be_valid_sections
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
   default_scope { where(deleted_at: nil) }
+
+  INSPEC_STUB_BODY = <<~RUBY
+    # describe file('/tmp') do
+    #   it { should be_directory }
+    # end
+  RUBY
 
   @single_rule_clone = false
 
@@ -89,17 +153,22 @@ class Rule < BaseRule
       result = result.merge(
         {
           reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-          srg_rule_attributes: srg_rule.as_json.except('id', 'locked', 'created_at', 'updated_at', 'status',
-                                                       'status_justification', 'artifact_description',
-                                                       'vendor_comments', 'review_requestor_id',
-                                                       'component_id', 'changes_requested', 'srg_rule_id',
-                                                       'security_requirements_guide_id'),
-          satisfies: satisfies.as_json(only: %i[id rule_id], skip_merge: true),
-          satisfied_by: satisfied_by.as_json(only: %i[id fixtext rule_id], skip_merge: true),
+          'srg_id' => srg_rule&.version,
+          srg_rule_attributes: srg_rule&.as_json&.except('id', 'locked', 'created_at', 'updated_at', 'status',
+                                                         'status_justification', 'artifact_description',
+                                                         'vendor_comments', 'review_requestor_id',
+                                                         'component_id', 'changes_requested', 'srg_rule_id',
+                                                         'security_requirements_guide_id'),
+          satisfies: satisfies.map do |s|
+            { id: s.id, rule_id: s.rule_id, srg_id: s.srg_rule&.version }
+          end,
+          satisfied_by: satisfied_by.map do |s|
+            { id: s.id, rule_id: s.rule_id, fixtext: s.fixtext, srg_id: s.srg_rule&.version }
+          end,
           additional_answers_attributes: additional_answers.as_json.map do |c|
             c.except('rule_id', 'created_at', 'updated_at')
           end,
-          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule.security_requirements_guide_id).version }
+          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule&.security_requirements_guide_id)&.version }
         }
       )
     end
@@ -129,23 +198,23 @@ class Rule < BaseRule
 
       fields.each do |field|
         # The only field we can revert on AdditionalAnswers is answer
-        field = 'answer' if audit.auditable_type.eql?('AdditionalAnswer')
+        revert_field = audit.auditable_type.eql?('AdditionalAnswer') ? 'answer' : field
 
-        raise(RuleRevertError, "Field to revert (#{field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(field)
+        raise(RuleRevertError, "Field to revert (#{revert_field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(revert_field)
 
         # The audited change can either be an array `[prev_val, new_val]`
         # or just the `val`
-        value = if audit.audited_changes[field].is_a?(Array)
-                  audit.audited_changes[field][0]
+        value = if audit.audited_changes[revert_field].is_a?(Array)
+                  audit.audited_changes[revert_field][0]
                 else
-                  audit.audited_changes[field]
+                  audit.audited_changes[revert_field]
                 end
 
         # Special case for AdditionalAnswer since it stores in the 'answer' field always
         if audit.auditable_type.eql?('AdditionalAnswer')
           record.answer = value
         else
-          record[field] = value
+          record[revert_field] = value
         end
       end
       record.audit_comment = audit_comment if record.changed?
@@ -172,27 +241,35 @@ class Rule < BaseRule
     end
   end
 
+  # Returns export data as a hash keyed by DISA header name.
+  # Used by export_helper to build rows in header order without fragile positional indices.
+  def csv_attributes_hash
+    {
+      'IA Control' => nist_control_family,
+      'CCI' => ident,
+      'SRGID' => version,
+      'STIGID' => "#{component.prefix}-#{rule_id}",
+      'SRG Requirement' => srg_rule.title,
+      'Requirement' => title,
+      'SRG VulDiscussion' => srg_rule.disa_rule_descriptions.first&.vuln_discussion,
+      'VulDiscussion' => disa_rule_descriptions.first&.vuln_discussion,
+      'Status' => status,
+      'SRG Check' => srg_rule.checks.first&.content,
+      'Check' => export_checktext,
+      'SRG Fix' => srg_rule.fixtext,
+      'Fix' => export_fixtext,
+      'Severity' => SEVERITIES_MAP[rule_severity] || rule_severity,
+      'Mitigation' => disa_rule_descriptions.first&.mitigations,
+      'Artifact Description' => artifact_description,
+      'Status Justification' => status_justification,
+      'Vendor Comments' => vendor_comments,
+      'Satisfies' => satisfaction_text(format: :stig, direction: :satisfies)
+    }
+  end
+
+  # Array form for backward compatibility — ordered by DISA_EXPORT_HEADERS
   def csv_attributes
-    [
-      nist_control_family,
-      ident,
-      version,
-      "#{component.prefix}-#{rule_id}",
-      srg_rule.title, # original srg title
-      title,
-      srg_rule.disa_rule_descriptions.first&.vuln_discussion, # original srg vuln discussion
-      disa_rule_descriptions.first&.vuln_discussion,
-      status,
-      srg_rule.checks.first&.content, # original SRG check content
-      export_checktext,
-      srg_rule.fixtext, # original SRG fix text
-      export_fixtext,
-      SEVERITIES_MAP[rule_severity] || rule_severity,
-      disa_rule_descriptions.first&.mitigations,
-      artifact_description,
-      status_justification,
-      vendor_comments_with_satisfactions
-    ]
+    csv_attributes_hash.values_at(*ExportConstants::DISA_EXPORT_HEADERS)
   end
 
   def displayed_name
@@ -215,7 +292,7 @@ class Rule < BaseRule
     control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
     control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
     control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.pluck(:version).sort)) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).filter_map { |r| r.srg_rule&.version }.uniq.sort)) if satisfies.present?
     control.add_tag(Inspec::Object::Tag.new('gid', "V-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('rid', "SV-#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
@@ -242,7 +319,72 @@ class Rule < BaseRule
     }
   end
 
+  # DRY satisfaction text generation — ONE method for all consumers.
+  # format: :srg (full SRG IDs for XCCDF/InSpec) or :stig (prefix-rule_id for CSV)
+  # direction: :satisfies or :satisfied_by
+  # Strip satisfaction keywords and their data, preserving the user's original text.
+  # Does NOT consume preceding punctuation — the user's sentence ending stays intact.
+  SATISFACTION_STRIP_PATTERN = /\s*\b(Satisfi(?:ed\s+By|es))\s*:.*$/im
+
+  def satisfaction_text(format: :srg, direction: :satisfies)
+    relations = direction == :satisfies ? satisfies : satisfied_by
+    return nil if relations.blank?
+
+    label = direction == :satisfies ? 'Satisfies' : 'Satisfied By'
+    ids = case format
+          when :srg
+            relations.filter_map { |r| r.srg_rule&.version }
+          when :stig
+            relations.map { |r| "#{component.prefix}-#{r.rule_id}" }
+          else
+            raise ArgumentError, "Unknown satisfaction format: #{format}"
+          end
+
+    "#{label}: #{ids.uniq.sort.join(', ')}"
+  end
+
+  # Clean vendor comments for export — strips stale satisfaction text,
+  # appends fresh generated text from the rule_satisfactions table.
+  def export_vendor_comments
+    parts = []
+    clean = vendor_comments&.sub(SATISFACTION_STRIP_PATTERN, '')&.strip
+    parts << clean if clean.present?
+    parts << satisfaction_text(format: :stig, direction: :satisfied_by)
+    parts << satisfaction_text(format: :stig, direction: :satisfies)
+    parts.compact.join('. ')
+  end
+
+  # Is the entire row editable? False if inherited or whole-locked.
+  def row_editable?
+    return false if satisfied_by.any?
+    return false if locked?
+
+    true
+  end
+
+  # Is a specific field editable on this rule?
+  # Checks: inherited → whole lock → section lock.
+  def field_editable?(field_key)
+    field_sym = field_key.to_sym
+    section = RuleConstants::FIELD_TO_SECTION[field_sym]
+    raise ArgumentError, "Unknown field for editability check: #{field_key}" unless section
+
+    return false unless row_editable?
+    return false if (locked_fields || {}).key?(section)
+
+    true
+  end
+
   private
+
+  def locked_fields_must_be_valid_sections
+    return if locked_fields.blank?
+
+    invalid = locked_fields.keys - LOCKABLE_SECTION_NAMES
+    return if invalid.empty?
+
+    errors.add(:locked_fields, "contains invalid section names: #{invalid.join(', ')}")
+  end
 
   def sort_ident
     self.ident = ident.to_s.split(/, */).uniq.sort.join(', ')
@@ -265,22 +407,11 @@ class Rule < BaseRule
   end
 
   def export_fixtext
-    satisfied_by.size.positive? ? satisfied_by.first.fixtext : fixtext
+    satisfied_by.size.positive? ? satisfied_by.order(:id).first.fixtext : fixtext
   end
 
   def export_checktext
-    satisfied_by.size.positive? ? satisfied_by.first.checks.first&.content : checks.first&.content
-  end
-
-  def vendor_comments_with_satisfactions
-    comments = []
-    comments << vendor_comments if vendor_comments.present?
-
-    comments << "Satisfied By: #{satisfied_by.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}." if satisfied_by.present?
-
-    comments << "Satisfies: #{satisfies.map { |r| "#{component.prefix}-#{r.rule_id}" }.join(', ')}." if satisfies.present?
-
-    comments.join('. ')
+    satisfied_by.size.positive? ? satisfied_by.order(:id).first.checks.first&.content : checks.first&.content
   end
 
   def cannot_be_locked_and_under_review
@@ -306,6 +437,14 @@ class Rule < BaseRule
 
   def set_rule_id
     self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') if rule_id.blank?
+  end
+
+  def seed_inspec_control_body
+    return if inspec_control_body.present?
+
+    # rubocop:disable Rails/SkipsModelValidations -- avoid retriggering callbacks on create
+    update_column(:inspec_control_body, INSPEC_STUB_BODY)
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   ##

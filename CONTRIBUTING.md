@@ -100,7 +100,7 @@ Please include:
 
 2. **Write tests**:
    - Add RSpec tests for Ruby code
-   - Ensure all tests pass: `bundle exec rspec`
+   - Ensure all tests pass: `rake spec:parallel`
    - Maintain or improve code coverage
 
 3. **Update documentation**:
@@ -111,7 +111,7 @@ Please include:
 
 4. **Commit your changes**:
    ```bash
-   git add .
+   git add <specific-files>
    git commit -m "feat: add amazing feature
 
    - Detailed description of what changed
@@ -156,13 +156,13 @@ Please include:
 
 ```bash
 # Run all tests
-bundle exec rspec
+rake spec:parallel
 
 # Run specific test file
-bundle exec rspec spec/models/user_spec.rb
+rake spec:parallel spec/models/user_spec.rb
 
 # Run tests with coverage
-COVERAGE=true bundle exec rspec
+COVERAGE=true rake spec:parallel
 ```
 
 ### Writing Tests
@@ -202,8 +202,8 @@ We use ESLint and Prettier:
 # Check and fix JavaScript
 yarn lint
 
-# Format code
-yarn format
+# Lint code
+yarn lint
 ```
 
 Key conventions:

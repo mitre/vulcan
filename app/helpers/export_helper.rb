@@ -24,19 +24,18 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     }
   }.freeze
 
-  CSV_ATTRIBUTE_MAP = {
-    export_checktext: 11,
-    export_fixtext: 13,
-    status_justification: 14,
-    mitigation: 15,
-    artifact_description: 16
-  }.freeze
+  # Named field keys for DISA export content modification.
+  # Used with csv_attributes_hash to avoid fragile positional indices.
+  FIELD_ARTIFACT_DESCRIPTION = 'Artifact Description'
+  DISA_MODIFIABLE_FIELDS = ['Check', 'Fix', 'Status Justification', 'Mitigation', FIELD_ARTIFACT_DESCRIPTION].freeze
 
   def export_excel(project, component_ids, is_disa_export)
     components_to_export = project.components.where(id: component_ids.split(','))
-    # One file for all data types, each data type in a different tab
-    workbook = FastExcel.open(constant_memory: true)
-    # components_to_export = components_type == 'all' ? project.components : project.components.where(released: true)
+    package = Axlsx::Package.new
+    package.use_shared_strings = true
+
+    wrap_style = package.workbook.styles.add_style(alignment: { wrap_text: true })
+
     components_to_export.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers, :satisfies, :satisfied_by, {
@@ -46,51 +45,32 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
       name_ending = "-V#{component[:version]}R#{component[:release]}-#{component[:id]}"
       # excel worksheet name has a limit of 31 characters
       worksheet_name = component[:name].gsub(/\s+/, '').first(31 - name_ending.length) + name_ending
-      worksheet = workbook.add_worksheet(worksheet_name)
-      worksheet.auto_width = true
-      if is_disa_export
-        worksheet.append_row(ExportConstants::DISA_EXPORT_HEADERS)
-      else
-        worksheet.append_row(ExportConstants::EXPORT_HEADERS)
-      end
-      last_row_num = 0
-      component.rules.order(:version, :rule_id).each do |rule|
-        # fast_excel unfortunately does not provide a method to modify the @last_row_number class variable
-        # so it needs to be manually kept track of
-        csv_attributes = is_disa_export ? rule.csv_attributes : rule.csv_attributes.append(rule.inspec_control_body)
-        if is_disa_export
-          if rule.status != 'Applicable - Configurable' && rule.status != 'Not Yet Determined'
-            check_text, fix_text = get_check_and_fix_text(rule.status).values_at('check_text', 'fix_text')
-            csv_attributes[CSV_ATTRIBUTE_MAP[:export_checktext]] = check_text
-            csv_attributes[CSV_ATTRIBUTE_MAP[:export_fixtext]] = fix_text
-          end
-          # For "Applicable - Configurable" controls remove any text
-          # in the "Status Justification", "Mitigation",and "Artifact Description" fields for the export.
-          # For "Applicable - Inherently Meets" and "Not Applicable" controls.
-          # remove any text in the "Mitigation" field for the export.
-          case rule.status
-          when 'Applicable - Configurable'
-            csv_attributes[CSV_ATTRIBUTE_MAP[:status_justification]] = nil
-            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-            csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
-          when 'Applicable - Inherently Meets'
-            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-          when 'Not Applicable'
-            csv_attributes[CSV_ATTRIBUTE_MAP[:mitigation]] = nil
-            csv_attributes[CSV_ATTRIBUTE_MAP[:artifact_description]] = nil
-          end
-        end
+      headers = is_disa_export ? ExportConstants::DISA_EXPORT_HEADERS : ExportConstants::EXPORT_HEADERS
 
-        last_row_num += 1
-        csv_attributes.each_with_index do |value, col_index|
-          worksheet.write_string(last_row_num, col_index, value.to_s, nil)
+      package.workbook.add_worksheet(name: worksheet_name) do |ws|
+        ws.add_row(headers, types: Array.new(headers.size, :string))
+
+        component.rules.order(:version, :rule_id).each do |rule|
+          attrs = rule.csv_attributes_hash
+
+          if is_disa_export
+            apply_disa_content_rules!(attrs, rule.status)
+            row = attrs.values_at(*headers)
+          else
+            row = attrs.values_at(*ExportConstants::DISA_EXPORT_HEADERS)
+            row << rule.inspec_control_body
+          end
+
+          ws.add_row(
+            row.map(&:to_s),
+            types: Array.new(row.size, :string),
+            style: wrap_style
+          )
         end
       end
     end
 
-    workbook.close if workbook.is_open
-
-    workbook
+    package
   end
 
   def get_check_and_fix_text(status)
@@ -98,10 +78,41 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     DISA_STATUS_TEXTS[status]
   end
 
-  def export_xccdf_project(project)
+  # Apply DISA content rules to a csv_attributes_hash.
+  # Replaces check/fix with boilerplate for non-AC statuses,
+  # and blanks fields that should be empty per status.
+  def apply_disa_content_rules!(attrs, status)
+    # Replace check/fix with DISA boilerplate for non-AC/non-NYD statuses
+    if status != RuleConstants::STATUS_APPLICABLE_CONFIGURABLE && status != 'Not Yet Determined'
+      texts = get_check_and_fix_text(status)
+      if texts
+        attrs['Check'] = texts['check_text']
+        attrs['Fix'] = texts['fix_text']
+      end
+    end
+
+    # Blank fields per DISA Process Guide field requirements
+    case status
+    when RuleConstants::STATUS_APPLICABLE_CONFIGURABLE
+      attrs['Status Justification'] = nil
+      attrs['Mitigation'] = nil
+      attrs[FIELD_ARTIFACT_DESCRIPTION] = nil
+    when 'Applicable - Inherently Meets'
+      attrs['Mitigation'] = nil
+    when 'Not Applicable'
+      attrs['Mitigation'] = nil
+      attrs[FIELD_ARTIFACT_DESCRIPTION] = nil
+    else # rubocop:disable Style/EmptyElse -- SonarCloud requires default clause
+      # No field blanking required for other statuses (e.g., Does Not Meet, Not Yet Determined)
+      nil
+    end
+  end
+
+  def export_xccdf_project(project, component_ids: nil)
+    scope = component_ids ? project.components.where(id: component_ids) : project.components
     Zip::OutputStream.write_buffer do |zio|
-      project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).find_each do |component|
+      scope.eager_load(rules: %i[disa_rule_descriptions checks
+                                 satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
         title = component[:title] || "#{component[:name]} STIG Readiness Guide"
@@ -116,10 +127,11 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     end
   end
 
-  def export_inspec_project(project)
+  def export_inspec_project(project, component_ids: nil)
+    scope = component_ids ? project.components.where(id: component_ids) : project.components
     Zip::OutputStream.write_buffer do |zio|
-      project.components.eager_load(rules: %i[disa_rule_descriptions checks
-                                              satisfies satisfied_by]).find_each do |component|
+      scope.eager_load(rules: %i[disa_rule_descriptions checks
+                                 satisfies satisfied_by]).find_each do |component|
         version = component[:version] ? "V#{component[:version]}" : ''
         release = component[:release] ? "R#{component[:release]}" : ''
         dir = "#{component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline/"
@@ -151,13 +163,31 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     }
     zio.write YAML.dump(inspec_yml)
     component.rules.each do |rule|
-      # Rules are filtered here to prevent n + 1 query
-      next unless rule[:status] == 'Applicable - Configurable'
       next if rule.satisfied_by.present?
 
-      zio.put_next_entry("#{dir}controls/#{component[:prefix]}-#{rule[:rule_id]}.rb")
-      zio.write rule.inspec_control_file
+      control_path = "#{dir}controls/#{component[:prefix]}-#{rule[:rule_id]}.rb"
+
+      if rule[:status] == RuleConstants::STATUS_APPLICABLE_CONFIGURABLE
+        zio.put_next_entry(control_path)
+        zio.write rule.inspec_control_file
+      elsif rule[:status] == 'Not Yet Determined'
+        zio.put_next_entry(control_path)
+        zio.write generate_nyd_stub_control(component, rule)
+      end
+      # Other statuses (NA, Satisfied By, Inherently Meets, Does Not Meet) excluded
     end
+  end
+
+  def generate_nyd_stub_control(component, rule)
+    <<~RUBY
+      # TODO: Status is 'Not Yet Determined' — this control requires review.
+      control '#{component[:prefix]}-#{rule[:rule_id]}' do
+        impact 0.0
+        title '#{rule[:title].to_s.gsub("'", "\\\\'")}'
+        desc 'Not Yet Determined — stub control generated by Vulcan.'
+        tag status: 'Not Yet Determined'
+      end
+    RUBY
   end
 
   def xccdf_helper(component)
@@ -218,7 +248,7 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     groups = {}
     component.rules.each do |rule|
       # Rules are filtered here to prevent n + 1 query
-      next unless rule[:status] == 'Applicable - Configurable'
+      next unless rule[:status] == RuleConstants::STATUS_APPLICABLE_CONFIGURABLE
       next if rule.satisfied_by.present?
 
       group = Ox::Element.new('Group')
@@ -251,13 +281,13 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
 
       desc_str = []
       vuln_discussion = drd[:vuln_discussion]
-      vuln_discussion << "\n\nSatisfies: #{rule.satisfies.map(&:version).join(', ')}" if rule.satisfies.present?
+      vuln_discussion << "\n\n#{rule.satisfaction_text(format: :srg)}" if rule.satisfies.present?
       desc_str << ox_el_helper_ascii_str('VulnDiscussion', vuln_discussion)
       desc_str << ox_el_helper_ascii_str('FalsePositives', drd[:false_positives])
       desc_str << ox_el_helper_ascii_str('FalseNegatives', drd[:false_negatives])
       desc_str << ox_el_helper_ascii_str('Documentable', drd[:documentable])
       desc_str << ox_el_helper_ascii_str('Mitigations', drd[:mitigations])
-      desc_str << ox_el_helper_ascii_str('SecurityOverrideGuidance', drd[:severity_override_guidance])
+      desc_str << ox_el_helper_ascii_str('SeverityOverrideGuidance', drd[:severity_override_guidance])
       desc_str << ox_el_helper_ascii_str('PotentialImpacts', drd[:potential_impacts])
       desc_str << ox_el_helper_ascii_str('ThirdPartyTools', drd[:third_party_tools])
       desc_str << ox_el_helper_ascii_str('MitigationControl', drd[:mitigation_control])

@@ -50,19 +50,16 @@
         </b-form-group>
         <!-- Select PoC -->
         <b-form-group label="Select the Point of Contact">
-          <vue-simple-suggest
+          <vue-multiselect
             :key="`componentKey-${component.id}`"
-            ref="userSearch"
-            :value="admin_name"
-            :list="potentialPocs"
-            display-attribute="name"
-            value-attribute="email"
+            v-model="selectedPoc"
+            :options="potentialPocs"
+            label="name"
+            track-by="id"
+            :searchable="true"
+            :allow-empty="true"
             placeholder="Search for eligible PoC..."
-            :filter-by-query="true"
-            :min-length="0"
-            :max-suggestions="0"
-            :number="0"
-            @select="setComponentPoc($refs.userSearch.selected)"
+            @input="setComponentPoc($event)"
           />
         </b-form-group>
         <!-- Allow the enter button to submit the form -->
@@ -76,12 +73,12 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
+import VueMultiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 
 export default {
   name: "UpdateComponentDetailsModal",
-  components: { VueSimpleSuggest },
+  components: { VueMultiselect },
   mixins: [AlertMixinVue, FormMixinVue],
   props: {
     component: {
@@ -98,6 +95,7 @@ export default {
       description: this.component.description,
       prefix: this.component.prefix,
       potentialPocs: this.component.all_users,
+      selectedPoc: null,
       admin_name: this.component.admin_name,
       admin_email: this.component.admin_email,
     };
@@ -118,8 +116,10 @@ export default {
       this.$refs["updateComponentDetailsModal"].show();
     },
     setComponentPoc: function (user) {
-      this.admin_email = user.email;
-      this.admin_name = user.name;
+      if (user) {
+        this.admin_email = user.email;
+        this.admin_name = user.name;
+      }
     },
     updateComponentDetails: function () {
       this.$refs["updateComponentDetailsModal"].hide();

@@ -3,6 +3,10 @@
 # SecurityRequirementsGuides (abbreviated SRGs) are XCCDF documents that contain a
 # benchmark that describes how to evaluate generic IT systems.
 class SecurityRequirementsGuide < ApplicationRecord
+  include SeverityCounts
+  include XccdfParseable
+  include BenchmarkCsvExport
+
   has_many :components, dependent: :restrict_with_error
   has_many :srg_rules, dependent: :destroy
 
@@ -13,6 +17,11 @@ class SecurityRequirementsGuide < ApplicationRecord
     scope: :version,
     message: ' ID has already been taken'
   }
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_*)
+  validates :srg_id, :version,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }
+  validates :title, length: { maximum: ->(_r) { Settings.input_limits.benchmark_title } }
+  validates :name, length: { maximum: ->(_r) { Settings.input_limits.benchmark_name } }, allow_nil: true
 
   # Since an SRG is top-level, the parameter is the entire parsed benchmark
   def self.from_mapping(benchmark_mapping)
@@ -68,11 +77,23 @@ class SecurityRequirementsGuide < ApplicationRecord
     "#{title} #{version}"
   end
 
-  def parsed_benchmark
-    @parsed_benchmark ||= Xccdf::Benchmark.parse(xml)
+  ##
+  # Override for SeverityCounts and BenchmarkCsvExport - specify rules association
+  def rules_association
+    srg_rules
   end
 
-  attr_writer :parsed_benchmark
+  ##
+  # Override for BenchmarkCsvExport - provide default columns
+  def default_columns
+    ExportConstants::SRG_CSV_DEFAULT_COLUMNS
+  end
+
+  ##
+  # Override for BenchmarkCsvExport - provide header overrides
+  def header_overrides
+    ExportConstants::SRG_CSV_HEADER_OVERRIDES
+  end
 
   private
 
@@ -84,7 +105,9 @@ class SecurityRequirementsGuide < ApplicationRecord
     if failures.empty?
       reload
     else
-      errors.add(:base, 'Some rules failed to import successfully for the SRG.')
+      detail = failures.first(3).map { |r| "#{r.rule_id}: #{r.errors.full_messages.join(', ')}" }.join('; ')
+      detail += " (and #{failures.size - 3} more)" if failures.size > 3
+      errors.add(:base, "#{failures.size} rules failed to import: #{detail}")
       raise ActiveRecord::Rollback
     end
   end

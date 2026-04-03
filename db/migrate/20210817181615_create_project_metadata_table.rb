@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateProjectMetadataTable < ActiveRecord::Migration[6.1]
   def change
     create_table :project_metadata do |t|

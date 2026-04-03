@@ -31,10 +31,21 @@ export default defineConfig({
     nav: [
       { text: "Home", link: "/" },
       { text: "Getting Started", link: "/getting-started/quick-start" },
-      { text: "User Guide", link: "https://mitre.github.io/saf-training/courses/guidance/" },
+      {
+        text: "User Guide",
+        items: [
+          { text: "Overview", link: "/user-guide/overview" },
+          { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
+          { text: "User Management", link: "/user-guide/user-management" },
+          { text: "Section Locks", link: "/user-guide/section-locks" },
+          { text: "Data Management", link: "/user-guide/data-management/" },
+          { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
+        ],
+      },
       {
         text: "Deployment",
         items: [
+          { text: "Overview", link: "/deployment/" },
           { text: "Docker", link: "/deployment/docker" },
           { text: "Kubernetes", link: "/deployment/kubernetes" },
           { text: "Heroku", link: "/deployment/heroku" },
@@ -50,11 +61,21 @@ export default defineConfig({
         ],
       },
       {
+        text: "DISA Process",
+        items: [
+          { text: "Overview", link: "/disa-process/overview" },
+          { text: "Field Requirements", link: "/disa-process/field-requirements" },
+          { text: "Export Requirements", link: "/disa-process/export-requirements" },
+          { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
+        ],
+      },
+      {
         text: "Development",
         items: [
           { text: "Setup", link: "/development/setup" },
           { text: "Documentation", link: "/development/documentation" },
           { text: "Architecture", link: "/development/architecture" },
+          { text: "Authorization", link: "/development/authorization" },
           { text: "Testing", link: "/development/testing" },
           { text: "Release Process", link: "/development/release-process" },
           { text: "Contributing", link: "/CONTRIBUTING.md" },
@@ -90,9 +111,10 @@ export default defineConfig({
         ],
       },
       {
-        text: "v2.2.1",
+        text: "v2.3.1",
         items: [
-          { text: "Release Notes", link: "/release-notes/v2.2.1" },
+          { text: "Release Notes", link: "/release-notes/v2.3.1" },
+          { text: "v2.2.1", link: "/release-notes/v2.2.1" },
           { text: "v2.2.0", link: "/release-notes/v2.2.0" },
           { text: "All Releases", link: "/release-notes/" },
         ],
@@ -109,6 +131,26 @@ export default defineConfig({
             { text: "Installation", link: "/getting-started/installation" },
             { text: "Configuration", link: "/getting-started/configuration" },
             { text: "Environment Variables", link: "/getting-started/environment-variables" },
+            { text: "Troubleshooting", link: "/getting-started/troubleshooting" },
+          ],
+        },
+      ],
+      "/user-guide/": [
+        {
+          text: "User Guide",
+          items: [
+            { text: "Overview", link: "/user-guide/overview" },
+            { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
+            { text: "User Management", link: "/user-guide/user-management" },
+            { text: "Section Locks", link: "/user-guide/section-locks" },
+          ],
+        },
+        {
+          text: "Data Management",
+          items: [
+            { text: "Overview", link: "/user-guide/data-management/" },
+            { text: "Import & Export", link: "/user-guide/data-management/import-export" },
+            { text: "Backup & Restore", link: "/user-guide/data-management/backup-restore" },
           ],
         },
       ],
@@ -116,6 +158,7 @@ export default defineConfig({
         {
           text: "Deployment Options",
           items: [
+            { text: "Overview", link: "/deployment/" },
             { text: "Docker", link: "/deployment/docker" },
             { text: "Bare Metal", link: "/deployment/bare-metal" },
             { text: "Heroku", link: "/deployment/heroku" },
@@ -131,6 +174,17 @@ export default defineConfig({
           ],
         },
       ],
+      "/disa-process/": [
+        {
+          text: "DISA STIG Process",
+          items: [
+            { text: "Overview", link: "/disa-process/overview" },
+            { text: "Field Requirements by Status", link: "/disa-process/field-requirements" },
+            { text: "Export Requirements", link: "/disa-process/export-requirements" },
+            { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
+          ],
+        },
+      ],
       "/development/": [
         {
           text: "Development",
@@ -138,9 +192,10 @@ export default defineConfig({
             { text: "Development Setup", link: "/development/setup" },
             { text: "Documentation Guide", link: "/development/documentation" },
             { text: "Architecture", link: "/development/architecture" },
+            { text: "Authorization", link: "/development/authorization" },
+            { text: "Section Locks", link: "/development/section-locks" },
             { text: "Testing", link: "/development/testing" },
             { text: "Release Process", link: "/development/release-process" },
-            { text: "Vue 3 Migration", link: "/development/vue3-migration" },
           ],
         },
         {

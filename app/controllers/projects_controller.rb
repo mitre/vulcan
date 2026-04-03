@@ -4,16 +4,21 @@
 # Controller for application projects.
 #
 class ProjectsController < ApplicationController
-  include ExportHelper
+  include Exportable
   include ProjectMemberConstants
+  include UploadValidatable
 
-  before_action :set_project, only: %i[show update destroy export]
+  IMPORT_ERROR_TITLE = 'Import error'
+
+  before_action :set_project, only: %i[show update destroy export import_backup histories]
   before_action :set_project_permissions, only: %i[show]
-  before_action :authorize_admin_project, only: %i[update destroy]
-  before_action :authorize_viewer_project, only: %i[show]
-  before_action :authorize_logged_in, only: %i[index new search]
-  before_action :authorize_admin_or_create_permission_enabled, only: %i[create]
+  before_action :authorize_admin_project, only: %i[update destroy import_backup]
+  before_action :authorize_viewer_project, only: %i[show export histories]
+  before_action :authorize_logged_in, only: %i[index search]
+  before_action :authorize_admin_or_create_permission_enabled, only: %i[create create_from_backup]
   before_action :check_permission_to_update, only: %i[update]
+  before_action -> { validate_upload(:file, max_size: 100.megabytes, allowed_types: %w[.zip]) },
+                only: %i[import_backup create_from_backup]
 
   def index
     @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])
@@ -61,7 +66,11 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def new; end
+  def histories
+    return head :not_found unless @project
+
+    render json: @project.histories(50)
+  end
 
   def create
     project = Project.new(
@@ -84,7 +93,7 @@ class ProjectsController < ApplicationController
       respond_to do |format|
         format.html do
           flash.alert = "Unable to create project. #{project.errors.full_messages}"
-          redirect_to action: 'new'
+          redirect_to action: 'index'
         end
         format.json do
           render json: {
@@ -125,26 +134,48 @@ class ProjectsController < ApplicationController
   def destroy
     if @project.destroy
       send_slack_notification(:remove_project, @project) if Settings.slack.enabled
-      flash.notice = 'Successfully removed project.'
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Successfully removed project.'
+          redirect_to action: 'index'
+        end
+        format.json { render json: { toast: 'Successfully removed project.' } }
+      end
     else
-      flash.alert = "Unable to remove project. #{@project.errors.full_messages}"
+      respond_to do |format|
+        format.html do
+          flash.alert = "Unable to remove project. #{@project.errors.full_messages}"
+          redirect_to action: 'index'
+        end
+        format.json do
+          render json: {
+            toast: {
+              title: 'Could not remove project.',
+              message: @project.errors.full_messages,
+              variant: 'danger'
+            }
+          }, status: :unprocessable_entity
+        end
+      end
     end
-    redirect_to action: 'index'
   end
 
   def export
-    # Using class variable @@components_to_export here to save params[:component_ids] value in memory,
-    # because format.html below triggers a redirect to this same action controller
-    # causing to lose the :component_ids param.
-
-    # rubocop:disable Style/ClassVars
-    @@components_to_export = params[:component_ids] || @@components_to_export
-    # rubocop:enable Style/ClassVars
+    # Stash component_ids in session so it survives the format.html redirect
+    # back to this action (which loses query params). Session is per-user,
+    # unlike the old @@class_variable which was shared across all threads.
+    session[:components_to_export] = params[:component_ids] if params[:component_ids].present?
 
     export_type = params[:type]&.to_sym
+    export_mode = params[:mode]&.to_sym
 
-    # Other export types will be included in the future
-    unless %i[disa_excel excel xccdf inspec].include?(export_type)
+    # Legacy support: disa_excel → vendor_submission + excel
+    if export_type == :disa_excel
+      export_type = :excel
+      export_mode = :vendor_submission
+    end
+
+    unless %i[csv excel xccdf inspec json_archive].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -158,18 +189,51 @@ class ProjectsController < ApplicationController
     respond_to do |format|
       format.html do
         case export_type
-        when :disa_excel
-          is_disa_export = true
-          workbook = export_excel(@project, @@components_to_export, is_disa_export)
-          send_data workbook.read_string, filename: "#{@project.name}_DISA.xlsx"
+        when :csv
+          component_ids = resolve_component_ids
+          components = component_ids ? @project.components.where(id: component_ids) : @project.components
+          csv_mode_options = export_mode_options
+          if components.size == 1
+            perform_export(
+              exportable: components.first, mode: :working_copy, format: :csv,
+              filename: "#{@project.name}-#{components.first.prefix}.csv",
+              mode_options: csv_mode_options
+            )
+          else
+            perform_export(
+              exportable: components.to_a, mode: :working_copy, format: :csv,
+              zip_filename: "#{@project.name}.zip",
+              mode_options: csv_mode_options
+            )
+          end
         when :excel
-          is_disa_export = false
-          workbook = export_excel(@project, @@components_to_export, is_disa_export)
-          send_data workbook.read_string, filename: "#{@project.name}.xlsx"
+          mode = export_mode || :working_copy
+          filename = mode == :vendor_submission ? "#{@project.name}_DISA.xlsx" : "#{@project.name}.xlsx"
+          perform_export(
+            exportable: @project, mode: mode, format: :excel,
+            component_ids: resolve_component_ids,
+            filename: filename,
+            mode_options: export_mode_options
+          )
         when :xccdf
-          send_data export_xccdf_project(@project).string, filename: "#{@project.name}.zip"
+          perform_export(
+            exportable: @project, mode: export_mode || :published_stig, format: :xccdf,
+            component_ids: resolve_component_ids,
+            zip_filename: "#{@project.name}.zip"
+          )
         when :inspec
-          send_data export_inspec_project(@project).string, filename: "#{@project.name}_inspec.zip"
+          perform_export(
+            exportable: @project, mode: export_mode || :published_stig, format: :inspec,
+            component_ids: resolve_component_ids,
+            zip_filename: "#{@project.name}_inspec.zip"
+          )
+        when :json_archive
+          perform_export(
+            exportable: @project, mode: :backup, format: :json_archive,
+            component_ids: resolve_component_ids,
+            zip_filename: "vulcan-backup-#{@project.name}-#{Date.current}.zip",
+            formatter_options: { include_srg: params[:include_srg] == 'true' }
+          )
         end
       end
       # JSON responses are just used to validate ahead of time that this
@@ -178,7 +242,184 @@ class ProjectsController < ApplicationController
     end
   end
 
+  def import_backup
+    file = params[:file]
+    unless file
+      render json: {
+        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
+      }, status: :bad_request
+      return
+    end
+
+    dry_run = params[:dry_run] == 'true'
+    include_reviews = params[:include_reviews] != 'false'
+    include_memberships = params[:include_memberships] == 'true'
+    component_filter = nil
+    if params[:component_filter].present?
+      begin
+        component_filter = JSON.parse(params[:component_filter])
+      rescue JSON::ParserError
+        render json: { toast: { title: 'Invalid request', message: 'component_filter must be valid JSON', variant: 'danger' } },
+               status: :bad_request
+        return
+      end
+    end
+
+    result = Import::JsonArchiveImporter.new(
+      zip_file: file,
+      project: @project,
+      dry_run: dry_run,
+      include_reviews: include_reviews,
+      include_memberships: include_memberships,
+      component_filter: component_filter
+    ).call
+
+    if result.success?
+      render json: {
+        toast: dry_run ? 'Dry run complete. No records were created.' : 'Backup restored successfully.',
+        summary: result.summary,
+        warnings: result.warnings
+      }
+    else
+      render json: {
+        toast: {
+          title: 'Import failed',
+          message: result.errors.join('; '),
+          variant: 'danger'
+        },
+        warnings: result.warnings
+      }, status: :unprocessable_entity
+    end
+  end
+
+  def create_from_backup
+    file = params[:file]
+    unless file
+      render json: {
+        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
+      }, status: :bad_request
+      return
+    end
+
+    dry_run = params[:dry_run] == 'true'
+    include_reviews = params[:include_reviews] != 'false'
+    include_memberships = params[:include_memberships] == 'true'
+    project_name = params[:project_name].presence
+    project_description = params[:project_description].presence || ''
+    project_visibility = Project.visibilities.key?(params[:project_visibility]) ? params[:project_visibility] : 'discoverable'
+
+    if dry_run
+      perform_create_from_backup_dry_run(file, include_reviews, include_memberships)
+    else
+      perform_create_from_backup(file, include_reviews, include_memberships,
+                                 project_name, project_description, project_visibility)
+    end
+  end
+
   private
+
+  def perform_create_from_backup_dry_run(file, include_reviews, include_memberships)
+    project_defaults = extract_project_defaults(file)
+
+    # Dry-run no longer writes to DB — use unsaved project (no conflicts possible for new project)
+    temp_project = Project.new(name: 'Preview')
+
+    result = Import::JsonArchiveImporter.new(
+      zip_file: file,
+      project: temp_project,
+      dry_run: true,
+      include_reviews: include_reviews,
+      include_memberships: include_memberships
+    ).call
+
+    if result.success?
+      render json: {
+        summary: result.summary,
+        warnings: result.warnings,
+        project_defaults: project_defaults
+      }
+    else
+      render json: {
+        toast: {
+          title: 'Preview failed',
+          message: result.errors.join('; '),
+          variant: 'danger'
+        },
+        warnings: result.warnings,
+        project_defaults: project_defaults
+      }, status: :unprocessable_entity
+    end
+  end
+
+  def perform_create_from_backup(file, include_reviews, include_memberships,
+                                 project_name, project_description, project_visibility)
+    unless project_name
+      render json: {
+        toast: { title: IMPORT_ERROR_TITLE, message: 'Project name is required', variant: 'danger' }
+      }, status: :unprocessable_entity
+      return
+    end
+
+    project = nil
+    result = nil
+
+    ActiveRecord::Base.transaction do
+      project = Project.create!(
+        name: project_name,
+        description: project_description,
+        visibility: project_visibility,
+        memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
+      )
+
+      result = Import::JsonArchiveImporter.new(
+        zip_file: file,
+        project: project,
+        dry_run: false,
+        include_reviews: include_reviews,
+        include_memberships: include_memberships
+      ).call
+
+      raise ActiveRecord::Rollback unless result.success?
+    end
+
+    if result&.success?
+      render json: {
+        redirect_url: project_path(project),
+        summary: result.summary,
+        toast: 'Project created from backup successfully.'
+      }
+    else
+      render json: {
+        toast: {
+          title: 'Import failed',
+          message: result&.errors&.join('; ') || 'Unknown error',
+          variant: 'danger'
+        },
+        warnings: result&.warnings || []
+      }, status: :unprocessable_entity
+    end
+  end
+
+  def extract_project_defaults(file)
+    file_data = file.respond_to?(:read) ? file.read : file
+    file.rewind if file.respond_to?(:rewind)
+
+    defaults = { name: 'Restored Project', description: '', visibility: 'discoverable' }
+
+    Zip::File.open_buffer(file_data) do |zip|
+      project_entry = zip.find_entry('project.json')
+      if project_entry
+        project_json = JSON.parse(zip.read('project.json'))
+        defaults[:name] = project_json['name'] if project_json['name'].present?
+        defaults[:description] = project_json['description'] if project_json['description'].present?
+        defaults[:visibility] = project_json['visibility'] if project_json['visibility'].present?
+      end
+    end
+
+    defaults
+  rescue Zip::Error, JSON::ParserError
+    defaults
+  end
 
   def set_project
     @project = Project.find(params[:id])
@@ -189,18 +430,33 @@ class ProjectsController < ApplicationController
   end
 
   def project_params
-    params.expect(
-      project: [:name,
-                :description,
-                :visibility,
-                { project_metadata_attributes: { data: {} } }]
+    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks partial param payloads
+    params.require(:project).permit(
+      :name, :description, :visibility,
+      project_metadata_attributes: { data: {} }
     )
+    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def check_permission_to_update
-    condition = project_params[:project_metadata_attributes]&.dig('data', 'Slack Channel ID').present? ||
-                project_params[:visibility].present?
+    slack_id = params.dig(:project, :project_metadata_attributes, :data, 'Slack Channel ID')
+    condition = slack_id.present? || params.dig(:project, :visibility).present?
     authorize_admin_project if condition
+  end
+
+  # Parse session[:components_to_export] from comma-separated string to integer array.
+  # Returns nil if not set (exports all components).
+  def export_mode_options
+    options = {}
+    options[:exclude_satisfied_by] = true if params[:exclude_satisfied_by] == 'true'
+    options
+  end
+
+  def resolve_component_ids
+    value = session.delete(:components_to_export)
+    return nil if value.blank?
+
+    value.split(',').map(&:to_i)
   end
 
   def project_name_changed?(current_project_name)

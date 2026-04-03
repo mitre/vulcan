@@ -14,7 +14,28 @@ $VERBOSE = original_verbose
 # Prevent database truncation if the environment is production
 abort('The Rails environment is running in production mode!') if Rails.env.production?
 require 'rspec/rails'
+require 'test_prof/recipes/rspec/let_it_be'
 # Add additional requires below this line. Rails is not loaded until this point!
+
+# Check that JavaScript assets are built before running tests
+# This prevents confusing failures where views can't find JS files
+assets_dir = Rails.root.join('app/assets/builds')
+unless assets_dir.exist? && assets_dir.glob('*.js').any?
+  abort <<~ERROR
+    \e[31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ERROR: JavaScript assets not built!
+
+    Tests require compiled JavaScript assets. Please run:
+
+        yarn install --frozen-lockfile && yarn build
+
+    Or run the full setup:
+
+        bin/setup --skip-server
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m
+  ERROR
+end
 
 # Rails 8 lazy loading fix - ensure Devise routes are loaded for tests
 Rails.application.reload_routes!
@@ -53,40 +74,55 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
-  config.fixture_paths = [Rails.root.join('spec', 'fixtures', 'fixtures').to_s]
+  config.fixture_paths = [Rails.root.join('spec/fixtures').to_s]
 
-  # If you're not using ActiveRecord, or you'd prefer not to run each of your
-  # examples within a transaction, remove the following line or assign false
-  # instead of true.
-  config.use_transactional_fixtures = false
+  # Use Rails transactional fixtures (wraps each example in a SAVEPOINT).
+  # Required for test-prof's let_it_be/before_all to work correctly.
+  # DatabaseCleaner is only used for JS/system specs that need a separate DB connection.
+  config.use_transactional_fixtures = true
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 
-  # Configure database cleaner
+  # Clean DB once at suite start. Use :deletion (not :truncation) to avoid
+  # PostgreSQL AccessExclusiveLock deadlocks in parallel_rspec.
+  # See: https://github.com/grosser/parallel_tests/issues/301
   config.before(:suite) do
-    DatabaseCleaner.clean_with(:truncation)
+    DatabaseCleaner.clean_with(:deletion)
   end
 
   config.before do
-    DatabaseCleaner.strategy = :transaction
     ActionMailer::Base.deliveries.clear
+    # Reset rack-attack cache to prevent 429s from bleeding between tests
+    Rack::Attack.reset! if defined?(Rack::Attack)
   end
 
-  config.before(:each, :js) do
-    DatabaseCleaner.strategy = :truncation
+  # System specs and JS-tagged specs use a separate browser thread that can't
+  # see the test transaction. Switch to deletion strategy for these.
+  %i[js truncation].each do |tag|
+    config.before(:each, tag) do
+      self.use_transactional_tests = false
+      DatabaseCleaner.strategy = :deletion
+      DatabaseCleaner.start
+    end
+
+    config.after(:each, tag) do
+      DatabaseCleaner.clean
+      self.use_transactional_tests = true
+    end
   end
 
-  config.before(:each, :truncation) do
-    DatabaseCleaner.strategy = :truncation
-  end
-
-  config.before do
+  # System specs (type: :system) also need DatabaseCleaner — browser process
+  # runs in a separate thread and can't see the test transaction.
+  config.before(:each, type: :system) do
+    self.use_transactional_tests = false
+    DatabaseCleaner.strategy = :deletion
     DatabaseCleaner.start
   end
 
-  config.after do
+  config.after(:each, type: :system) do
     DatabaseCleaner.clean
+    self.use_transactional_tests = true
   end
 
   # RSpec Rails can automatically mix in different behaviours to your tests
@@ -120,4 +156,11 @@ RSpec.configure do |config|
   end
 
   config.include StubConfiguration
+end
+
+Shoulda::Matchers.configure do |config|
+  config.integrate do |with|
+    with.test_framework :rspec
+    with.library :rails
+  end
 end

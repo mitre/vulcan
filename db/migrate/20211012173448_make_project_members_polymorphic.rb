@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class MakeProjectMembersPolymorphic < ActiveRecord::Migration[6.1]
   def change
     # Remove this uniqueness index because it needs to be replaced later in the migration

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ComponentsBasedOnSrgInsteadOfProjects < ActiveRecord::Migration[6.1]
   def change
     # Since components now have rules instead of projects,

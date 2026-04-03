@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-XML_FILE = File.read('./spec/fixtures/files/U_Web_Server_V2R3_Manual-xccdf.xml')
+XML_FILE = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
 
 FactoryBot.define do
   factory :security_requirements_guide do
-    srg_id { FFaker::Name.name.underscore }
-    title { FFaker::Name.name }
-    version { "V#{rand(0..9)}R#{rand(0..9)}" }
+    sequence(:srg_id) { |n| "SRG-TEST-#{n.to_s.rjust(6, '0')}" }
+    title { "Test Security Requirements Guide #{srg_id}" }
+    sequence(:version) { |n| "V#{(n / 10) + 1}R#{(n % 10) + 1}" }
     xml { XML_FILE }
     release_date { Time.zone.today }
   end

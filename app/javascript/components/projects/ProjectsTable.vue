@@ -1,5 +1,17 @@
 <template>
   <div>
+    <!-- Delete Confirmation Modal -->
+    <ConfirmDeleteModal
+      v-model="showDeleteModal"
+      :item-name="projectToDelete ? projectToDelete.name : ''"
+      item-type="project"
+      :is-deleting="isDeleting"
+      warning-message="This will permanently delete the project and all related data."
+      deleting-message="Removing project and all components..."
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
+
     <!-- Table information -->
     <p>
       <b>Project Count:</b> <b-badge variant="info">{{ projectCount }}</b-badge>
@@ -41,19 +53,19 @@
         <b-form-checkbox v-model="filter.myProjectsToggled" size="lg" class="ml-3" switch>
           <small>Show My Projects</small>
           <b-icon
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="'Projects I am a member of'"
             icon="info-circle"
             aria-hidden="true"
-            title="Projects I am a member of"
           />
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.discoverableToggled" size="lg" class="ml-3" switch>
           <small>Show Discoverable Projects</small>
           <b-icon
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="
+              'Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project'
+            "
             icon="info-circle"
             aria-hidden="true"
-            title="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
           />
         </b-form-checkbox>
       </div>
@@ -68,6 +80,7 @@
       :fields="fields"
       :per-page="perPage"
       :current-page="currentPage"
+      sort-by="name"
       sort-icon-left
     >
       <template #cell(name)="data">
@@ -79,7 +92,10 @@
 
       <template #cell(description)="data">
         {{ truncate(data.item.description, data.item.id) }}
-        <b-link v-if="data.item.description" @click="toggleTruncate(data.item.id)">
+        <b-link
+          v-if="data.item.description && data.item.description.length > 75"
+          @click="toggleTruncate(data.item.id)"
+        >
           {{ truncated[data.item.id] ? "..." : "read less" }}
         </b-link>
       </template>
@@ -90,7 +106,7 @@
 
       <template #cell(actions)="data">
         <UpdateProjectDetailsModal
-          v-if="is_vulcan_admin || data.item.admin"
+          v-if="canAdminProject(data.item)"
           :project="data.item"
           :is_project_table="true"
           class="floatright"
@@ -119,14 +135,12 @@
             Cancel Access Request
           </b-button>
         </span>
-        <span v-if="is_vulcan_admin">
+        <span v-if="canAdminProject(data.item)">
           <b-button
             class="px-2 m-2"
             variant="danger"
-            :data-confirm="getLabel(data.item, 'remove project')"
-            data-method="delete"
-            :href="destroyAction(data.item)"
-            rel="nofollow"
+            data-testid="remove-project-btn"
+            @click="openDeleteModal(data.item)"
           >
             <b-icon icon="trash" aria-hidden="true" />
             Remove
@@ -146,13 +160,17 @@
 </template>
 
 <script>
+import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
+import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+import { useDeleteConfirmation } from "../../composables";
 
 export default {
   name: "ProjectsTable",
-  components: { UpdateProjectDetailsModal },
-  mixins: [DateFormatMixinVue],
+  components: { UpdateProjectDetailsModal, ConfirmDeleteModal },
+  mixins: [DateFormatMixinVue, AlertMixinVue],
   props: {
     projects: {
       type: Array,
@@ -163,6 +181,25 @@ export default {
       required: true,
       default: false,
     },
+  },
+  setup() {
+    const {
+      showModal: showDeleteModal,
+      itemToDelete: projectToDelete,
+      isDeleting,
+      openModal: openDeleteModal,
+      cancel: cancelDelete,
+      confirm: confirmDeleteAction,
+    } = useDeleteConfirmation();
+
+    return {
+      showDeleteModal,
+      projectToDelete,
+      isDeleting,
+      openDeleteModal,
+      cancelDelete,
+      confirmDeleteAction,
+    };
   },
   data: function () {
     return {
@@ -201,7 +238,9 @@ export default {
         projects = this.projects.filter((project) => project.is_member);
       }
       let downcaseSearch = this.search.toLowerCase();
-      return projects.filter((project) => project.name.toLowerCase().includes(downcaseSearch));
+      return projects.filter((project) =>
+        (project.name || "").toLowerCase().includes(downcaseSearch),
+      );
     },
     // Used by b-pagination to know how many total rows there are
     rows: function () {
@@ -266,6 +305,11 @@ export default {
     });
   },
   methods: {
+    // Whether the current user can admin a project (site admin OR project admin).
+    // Matches backend authorize_admin_project (User#can_admin_project?).
+    canAdminProject(project) {
+      return this.is_vulcan_admin || project.admin;
+    },
     // Path to POST/DELETE to when updating/deleting a project
     formAction: function (project) {
       return `/projects/${project.id}`;
@@ -300,6 +344,18 @@ export default {
     },
     refreshProjects: function () {
       this.$emit("projectUpdated");
+    },
+    async confirmDelete() {
+      const { success, error } = await this.confirmDeleteAction(async (project) => {
+        const response = await axios.delete(`/projects/${project.id}.json`);
+        this.alertOrNotifyResponse(response);
+      });
+
+      if (success) {
+        this.$emit("projectUpdated");
+      } else if (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     toggleTruncate: function (id) {
       this.$set(this.truncated, id, !this.truncated[id]);

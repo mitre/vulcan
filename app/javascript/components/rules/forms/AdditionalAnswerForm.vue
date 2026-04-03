@@ -84,7 +84,7 @@ export default {
         this.validurl = true;
       }
 
-      let all_answers = this.rule.additional_answers_attributes;
+      let all_answers = this.rule.additional_answers_attributes || [];
       let index = all_answers.findIndex((answer) => answer.additional_question_id === question_id);
       if (index !== -1) {
         all_answers[index].answer = event;
@@ -95,7 +95,7 @@ export default {
       this.$root.$emit("update:rule", { ...this.rule, additional_answers_attributes: all_answers });
     },
     findAnswerText: function (question_id) {
-      return this.rule.additional_answers_attributes.find(
+      return (this.rule.additional_answers_attributes || []).find(
         (element) => element.additional_question_id == question_id,
       )?.answer;
     },

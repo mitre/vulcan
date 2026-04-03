@@ -21,145 +21,16 @@
           ref="ruleSearch"
           type="text"
           class="form-control"
-          placeholder="Search controls..."
+          :placeholder="navLabels.searchPlaceholder"
           @input="searchUpdated($event.target.value)"
         />
       </div>
 
-      <!-- Filter by rule status -->
-      <b-form-group class="mt-3" label="Filter by Control Status">
-        <b-form-checkbox
-          id="acFilterChecked-filter"
-          v-model="filters.acFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="acFilterChecked-filter"
-        >
-          <span class="d-flex flex-column align-items-center">
-            <span
-              ><strong>({{ ruleStatusCounts.ac }})</strong> Applicable - Configurable
-            </span>
-            <small v-if="ruleStatusCounts.acsb" class="text-info"
-              >{{ ruleStatusCounts.acsb }} Satisfied by other
-            </small>
-          </span>
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="aimFilterChecked-filter"
-          v-model="filters.aimFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="aimFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.aim }})</strong> Applicable - Inherently Meets
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="adnmFilterChecked-filter"
-          v-model="filters.adnmFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="adnmFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.adnm }})</strong> Applicable - Does Not Meet
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="naFilterChecked-filter"
-          v-model="filters.naFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="naFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.na }})</strong> Not Applicable
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="nydFilterChecked-filter"
-          v-model="filters.nydFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="nydFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.nyd }})</strong> Not Yet Determined
-        </b-form-checkbox>
-      </b-form-group>
-
-      <!-- Filter by review status -->
-      <b-form-group class="mt-3" label="Filter by Review Status">
-        <b-form-checkbox
-          id="nurFilterChecked-filter"
-          v-model="filters.nurFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="nurFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.nur }})</strong> Not Under Review
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="urFilterChecked-filter"
-          v-model="filters.urFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="urFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.ur }})</strong> Under Review
-        </b-form-checkbox>
-
-        <b-form-checkbox
-          id="lckFilterChecked-filter"
-          v-model="filters.lckFilterChecked"
-          size="sm"
-          class="mb-1 unselectable"
-          name="lckFilterChecked-filter"
-        >
-          <strong>({{ ruleStatusCounts.lck }})</strong> Locked
-        </b-form-checkbox>
-      </b-form-group>
-
-      <!-- Toggle display -->
-      <b-form-group class="mt-3" label="Toggle Display">
-        <!-- Nest satisfied controls -->
-        <b-form-checkbox
-          id="nestSatisfiedRulesChecked"
-          v-model="filters.nestSatisfiedRulesChecked"
-          class="mb-1 unselectable"
-          switch
-          name="nestSatisfiedRulesChecked-fitler"
-        >
-          Nest Satisfied Controls
-        </b-form-checkbox>
-
-        <!-- Toggle STIG ID/SRG ID -->
-        <b-form-checkbox
-          id="showSRGIdChecked"
-          v-model="filters.showSRGIdChecked"
-          class="mb-1 unselectable"
-          switch
-          name="showSRGIdChecked-fitler"
-        >
-          Show SRG ID
-        </b-form-checkbox>
-
-        <!-- Toggle Sort by SRG ID -->
-        <b-form-checkbox
-          id="sortBySRGIdChecked"
-          v-model="filters.sortBySRGIdChecked"
-          class="mb-1 unselectable"
-          switch
-          name="sortBySRGIdChecked-fitler"
-        >
-          Sort by SRG ID
-        </b-form-checkbox>
-      </b-form-group>
-
       <hr class="mt-2 mb-2" />
 
-      <!-- Currently opened controls -->
+      <!-- Currently opened rules -->
       <p class="mt-0 mb-1 d-flex justify-content-between align-items-center spacing-responsive">
-        <strong>Open Controls</strong>
+        <strong>{{ navLabels.openRules }}</strong>
         <template v-if="openRuleIds.length > 0">
           <span class="clickable text-primary" @click="rulesDeselected(openRules)">
             <b-icon icon="x" class="clickable" />
@@ -168,7 +39,7 @@
         </template>
       </p>
       <div v-if="openRules.length === 0">
-        <em>No controls selected</em>
+        <em>{{ navLabels.noRulesSelected }}</em>
       </div>
       <div v-else>
         <div
@@ -180,7 +51,9 @@
         >
           <span>
             <b-icon icon="x" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
-            <span v-if="filters.showSRGIdChecked">{{ rule.version }}</span>
+            <span v-if="filters.showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
+              {{ truncateId(rule.srg_id) }}
+            </span>
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </span>
           <span>
@@ -225,9 +98,9 @@
 
       <hr class="mt-2 mb-2" />
 
-      <!-- All project controls -->
+      <!-- All project rules -->
       <p class="mt-0 mb-0 d-flex justify-content-between align-items-center spacing-responsive">
-        <strong>All Controls</strong>
+        <strong>{{ navLabels.allRules }}</strong>
         <template v-if="!readOnly">
           <span v-b-modal.create-rule-modal class="text-primary clickable">
             <b-icon v-b-modal.create-rule-modal icon="plus" /> add
@@ -237,7 +110,7 @@
 
       <!-- New rule modal -->
       <NewRuleModalForm
-        title="Create New Control"
+        :title="navLabels.createNew"
         :for-duplicate="false"
         id-prefix="create"
         @ruleSelected="ruleSelected($event)"
@@ -251,12 +124,33 @@
           @click="ruleSelected(rule)"
         >
           <span>
-            <span v-if="filters.showSRGIdChecked">
-              {{ rule.version }}
+            <!-- Expand/collapse toggle for parents with children -->
+            <template v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
+              <b-icon
+                :icon="isParentExpanded(rule.id) ? 'chevron-down' : 'chevron-right'"
+                class="tree-toggle mr-1"
+                @click="toggleParentExpanded(rule.id, $event)"
+              />
+            </template>
+            <!-- Spacer for leaf nodes to align with parents that have chevrons -->
+            <template v-else-if="filters.nestSatisfiedRulesChecked && hasParentRules">
+              <span class="tree-toggle-spacer" />
+            </template>
+            <span v-if="filters.showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
+              {{ truncateId(rule.srg_id) }}
             </span>
             <span v-else>
               {{ formatRuleId(rule.rule_id) }}
             </span>
+            <!-- Child count badge for collapsed parents -->
+            <b-badge
+              v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+              variant="secondary"
+              pill
+              class="ml-1 child-count"
+            >
+              {{ rule.satisfies.length }}
+            </b-badge>
           </span>
           <span>
             <i
@@ -297,21 +191,24 @@
             />
           </span>
         </div>
-        <div v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0">
+        <div
+          v-if="filters.nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+          v-show="isParentExpanded(rule.id)"
+          class="nested-children"
+        >
           <div
             v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
             :key="satisfies.id"
             :class="ruleRowClass(satisfies)"
-            class="d-flex justify-content-between text-responsive"
+            class="d-flex justify-content-between text-responsive child-row"
             @click="ruleSelected(satisfies)"
           >
             <span>
               <b-icon icon="chevron-right" />
-              <span v-if="filters.showSRGIdChecked">
-                {{ satisfies.version }}
-              </span>
-              <span v-else>
-                {{ formatRuleId(satisfies.rule_id) }}
+              <!-- Nested satisfaction children ALWAYS show SRG IDs (no toggle) -->
+              <!-- WHY: These represent SRG requirements, semantically SRG data not STIG rules -->
+              <span v-b-tooltip.hover :title="satisfies.srg_id">
+                {{ truncateId(satisfies.srg_id) }}
               </span>
             </span>
             <span>
@@ -357,6 +254,9 @@ import _ from "lodash";
 import axios from "axios";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import { getDefaultFilters } from "../../composables/useRuleFilters";
+import { NAVIGATOR_LABELS } from "../../constants/terminology";
+import { truncateId } from "../../utils/idFormatter";
 export default {
   name: "RuleNavigator",
   components: { FindAndReplace, NewRuleModalForm },
@@ -389,28 +289,36 @@ export default {
       type: Boolean,
       default: false,
     },
+    externalFilters: {
+      type: Object,
+      default: null,
+    },
   },
   data: function () {
     return {
+      navLabels: NAVIGATOR_LABELS,
       rule_form_rule_id: "",
-      sidebarOffset: 0, // How far the sidebar is from the top of the screen
-      filters: {
-        search: "",
-        acFilterChecked: true, // Applicable - Configurable
-        aimFilterChecked: true, // Applicable - Inherently Meets
-        adnmFilterChecked: true, // Applicable - Does Not Meet
-        naFilterChecked: true, // Not Applicable
-        nydFilterChecked: true, // Not Yet Determined
-        nurFilterChecked: true, // Not under review
-        urFilterChecked: true, // Under review
-        lckFilterChecked: true, // Locked
-        nestSatisfiedRulesChecked: false, // Nests Satisfied Rules
-        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
-        sortBySRGIdChecked: false, // Sort by SRG ID
-      },
+      sidebarOffset: 0,
+      expandedParents: new Set(), // Track which parent rules are expanded
+      localFilters: getDefaultFilters(),
+      truncateId, // Expose utility for template
     };
   },
   computed: {
+    filters: {
+      get() {
+        return this.externalFilters || this.localFilters;
+      },
+      set(value) {
+        // Only allow setting if using local filters (no external filters provided)
+        if (!this.externalFilters) {
+          this.localFilters = value;
+        }
+      },
+    },
+    hasParentRules() {
+      return this.filteredRules.some((r) => r.satisfies && r.satisfies.length > 0);
+    },
     sidebarStyle: function () {
       return {
         "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
@@ -495,11 +403,33 @@ export default {
     },
   },
   mounted: function () {
-    // Persist `filters` across page loads
+    // Restore status/review filters from localStorage, but keep display defaults
     if (localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`)) {
       try {
-        this.filters = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
-        this.$refs.ruleSearch.value = this.filters.search;
+        const saved = JSON.parse(localStorage.getItem(`ruleNavigatorFilters-${this.componentId}`));
+        // Restore all user-set filter preferences
+        const restorableKeys = [
+          "search",
+          "acFilterChecked",
+          "aimFilterChecked",
+          "adnmFilterChecked",
+          "naFilterChecked",
+          "nydFilterChecked",
+          "nurFilterChecked",
+          "urFilterChecked",
+          "lckFilterChecked",
+          "showSRGIdChecked",
+          "sortBySRGIdChecked",
+          "nestSatisfiedRulesChecked",
+        ];
+        restorableKeys.forEach((key) => {
+          if (key in saved) {
+            this.filters[key] = saved[key];
+          }
+        });
+        if (this.$refs.ruleSearch) {
+          this.$refs.ruleSearch.value = this.filters.search;
+        }
       } catch (e) {
         localStorage.removeItem(`ruleNavigatorFilters-${this.componentId}`);
       }
@@ -511,6 +441,23 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
+    // Collapsible tree methods
+    isParentExpanded(ruleId) {
+      return this.expandedParents.has(ruleId);
+    },
+    toggleParentExpanded(ruleId, event) {
+      // Prevent selecting the rule when clicking the expand/collapse toggle
+      if (event) {
+        event.stopPropagation();
+      }
+      if (this.expandedParents.has(ruleId)) {
+        this.expandedParents.delete(ruleId);
+      } else {
+        this.expandedParents.add(ruleId);
+      }
+      // Force reactivity update since Set changes aren't tracked
+      this.expandedParents = new Set(this.expandedParents);
+    },
     searchUpdated: _.debounce(function (newSearch) {
       this.filters.search = newSearch;
     }, 500),
@@ -577,7 +524,7 @@ export default {
         sortedRules.sort((a, b) => a.version.localeCompare(b.version));
       }
 
-      return sortedRules.filter((rule) => {
+      let filteredRules = sortedRules.filter((rule) => {
         return (
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
@@ -585,6 +532,16 @@ export default {
           (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
         );
       });
+
+      // When nesting is enabled, sort parents (rules that satisfy others) before leaves
+      // This creates a logical tree structure in the UI
+      if (this.filters.nestSatisfiedRulesChecked) {
+        const parents = filteredRules.filter((rule) => rule.satisfies.length > 0);
+        const leaves = filteredRules.filter((rule) => rule.satisfies.length === 0);
+        filteredRules = [...parents, ...leaves];
+      }
+
+      return filteredRules;
     },
     sortAlsoSatisfies: function (rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
@@ -665,20 +622,7 @@ export default {
     // Helper to clear all filters
     clearFilters: function () {
       this.$refs.ruleSearch.value = "";
-      this.filters = {
-        search: "",
-        acFilterChecked: true, // Applicable - Configurable
-        aimFilterChecked: true, // Applicable - Inherently Meets
-        adnmFilterChecked: true, // Applicable - Does Not Meet
-        naFilterChecked: true, // Not Applicable
-        nydFilterChecked: true, // Not Yet Determined
-        nurFilterChecked: true, // Not under review
-        urFilterChecked: true, // Under review
-        lckFilterChecked: true, // Locked
-        nestSatisfiedRulesChecked: false, // Nests satisfied rules
-        showSRGIdChecked: false, // Show SRG ID instead of STIG ID
-        sortBySRGIdChecked: false, // Sort by SRG ID
-      };
+      this.filters = getDefaultFilters();
     },
     handleScroll: function () {
       this.$nextTick(() => {
@@ -745,6 +689,31 @@ export default {
   overflow-y: auto;
 }
 
+/* Mobile: limit sidebar height so main content is visible below */
+@media (max-width: 767.98px) {
+  #scrolling-sidebar {
+    max-height: 40vh !important;
+  }
+}
+
+.filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.15rem 0;
+}
+
+.filter-toggle {
+  flex: 1;
+}
+
+.filter-count {
+  font-size: 0.85em;
+  color: #6c757d;
+  min-width: 40px;
+  text-align: right;
+}
+
 @media (min-width: 1200px) {
   .text-responsive {
     font-size: 1em;
@@ -753,5 +722,39 @@ export default {
   .spacing-responsive {
     letter-spacing: 0.01em;
   }
+}
+
+/* Collapsible tree styles */
+.tree-toggle {
+  cursor: pointer;
+  color: #6c757d;
+  transition: transform 0.15s ease;
+}
+
+.tree-toggle:hover {
+  color: #007bff;
+}
+
+/* Spacer for leaf nodes to align text with parent nodes */
+.tree-toggle-spacer {
+  display: inline-block;
+  width: 1em;
+  margin-right: 0.25rem;
+}
+
+.nested-children {
+  margin-left: 1rem;
+  border-left: 1px solid #dee2e6;
+  padding-left: 0.5rem;
+}
+
+.child-row {
+  font-size: 0.9em;
+  color: #495057;
+}
+
+.child-count {
+  font-size: 0.75em;
+  font-weight: normal;
 }
 </style>

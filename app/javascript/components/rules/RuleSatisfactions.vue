@@ -1,51 +1,57 @@
 <template>
   <div>
+    <!-- Also Satisfies section (shown when not satisfied by another rule) -->
     <div v-if="rule.satisfied_by && rule.satisfied_by.length === 0">
-      <!-- Collapsable header -->
-      <div class="d-flex justify-content-between align-items-center text-responsive">
-        <div class="clickable" @click="showAlsoSatisfies = !showAlsoSatisfies">
-          <h2 class="m-0 d-inline-block">Also Satisfies</h2>
-          <b-badge v-if="rule.satisfies" pill class="ml-1 superVerticalAlign">{{
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <strong>Also Satisfies</strong>
+          <b-badge v-if="rule.satisfies" pill variant="info" class="ml-1">{{
             rule.satisfies.length
           }}</b-badge>
-
-          <b-icon v-if="showAlsoSatisfies" icon="chevron-down" />
-          <b-icon v-if="!showAlsoSatisfies" icon="chevron-up" />
         </div>
-        <div
-          v-if="!readOnly && rule.status === 'Applicable - Configurable'"
+        <b-button
+          v-if="rule.status === 'Applicable - Configurable'"
           v-b-modal.also-satisfies-modal
-          v-b-tooltip.hover
-          title="Merge requirement"
-          class="text-primary clickable mr-2"
+          size="sm"
+          variant="outline-primary"
+          :disabled="readOnly"
         >
           <b-icon icon="plus" /> Add
-        </div>
+        </b-button>
+      </div>
+      <p v-if="readOnly" class="text-muted small mb-2">
+        <em>Edit mode required to modify</em>
+      </p>
+
+      <div
+        v-for="satisfies in rule.satisfies"
+        :key="satisfies.id"
+        :class="ruleRowClass(satisfies)"
+        class="d-flex justify-content-between align-items-center"
+      >
+        <span
+          v-b-tooltip.hover
+          :title="satisfies.srg_id"
+          class="clickable"
+          @click="ruleSelected(satisfies)"
+        >
+          {{ truncateId(satisfies.srg_id) }}
+        </span>
+        <b-button
+          v-b-modal.unmark-satisfies-modal
+          size="sm"
+          variant="outline-danger"
+          class="ml-2"
+          :disabled="readOnly"
+          @click="satisfies_rule = satisfies"
+        >
+          Remove
+        </b-button>
       </div>
 
-      <!-- All rules also satisfied -->
-      <b-collapse id="collapse-satisfies" v-model="showAlsoSatisfies">
-        <div
-          v-for="satisfies in rule.satisfies"
-          :key="satisfies.id"
-          :class="ruleRowClass(satisfies)"
-        >
-          <!-- The modal "also-satisfies-modal" is in RuleEditorHeader.vue -->
-          <span
-            v-if="!readOnly"
-            v-b-modal.unmark-satisfies-modal
-            v-b-tooltip.hover
-            title="Unmerge requirement"
-            aria-hidden="true"
-            @click="satisfies_rule = satisfies"
-          >
-            <b-icon icon="x" class="closeRuleButton" />
-          </span>
-          <span @click="ruleSelected(satisfies)">
-            {{ formatRuleForDisplay(satisfies) }}
-          </span>
-        </div>
-      </b-collapse>
+      <p v-if="rule.satisfies.length === 0" class="text-muted small">
+        No other controls satisfied by this one.
+      </p>
 
       <b-modal
         id="unmark-satisfies-modal"
@@ -54,47 +60,53 @@
         @ok="$root.$emit('removeSatisfied:rule', satisfies_rule.id, rule.id)"
       >
         <p>
-          Are you sure this control no longer satisfies {{ formatRuleForDisplay(satisfies_rule) }}?
+          Are you sure this control no longer satisfies
+          <strong v-b-tooltip.hover :title="satisfies_rule && satisfies_rule.srg_id">
+            {{ truncateId(satisfies_rule && satisfies_rule.srg_id) }} </strong
+          >?
         </p>
         <template #modal-footer="{ cancel, ok }">
-          <!-- Emulate built in modal footer ok and cancel button actions -->
-          <b-button @click="cancel()"> Cancel </b-button>
-          <b-button variant="info" @click="ok()"> OK </b-button>
+          <b-button @click="cancel()">Cancel</b-button>
+          <b-button variant="danger" @click="ok()">Remove</b-button>
         </template>
       </b-modal>
     </div>
 
+    <!-- Satisfied By section (shown when this rule is satisfied by another) -->
     <div v-if="rule.satisfied_by && rule.satisfied_by.length > 0">
-      <!-- Collapsable header -->
-      <div class="clickable" @click="showSatisfiedBy = !showSatisfiedBy">
-        <h2 class="m-0 d-inline-block">Satisfied By</h2>
-        <b-badge v-if="rule.satisfied_by" pill class="ml-1 superVerticalAlign">{{
-          rule.satisfied_by.length
-        }}</b-badge>
-
-        <b-icon v-if="showSatisfiedBy" icon="chevron-down" />
-        <b-icon v-if="!showSatisfiedBy" icon="chevron-up" />
+      <div class="mb-2">
+        <strong>Satisfied By</strong>
+        <b-badge pill variant="info" class="ml-1">{{ rule.satisfied_by.length }}</b-badge>
       </div>
+      <p v-if="readOnly" class="text-muted small mb-2">
+        <em>Edit mode required to modify</em>
+      </p>
 
-      <!-- All rules also satisfied -->
-      <b-collapse id="collapse-satisfied-by" v-model="showSatisfiedBy">
-        <div
-          v-for="satisfied_by in rule.satisfied_by"
-          :key="satisfied_by.id"
-          :class="ruleRowClass(satisfied_by)"
+      <div
+        v-for="satisfied_by in rule.satisfied_by"
+        :key="satisfied_by.id"
+        :class="ruleRowClass(satisfied_by)"
+        class="d-flex justify-content-between align-items-center"
+      >
+        <span
+          v-b-tooltip.hover
+          :title="satisfied_by.srg_id"
+          class="clickable"
+          @click="ruleSelected(satisfied_by)"
         >
-          <b-icon
-            v-if="!readOnly"
-            v-b-modal.unmark-satisfied-by-modal
-            icon="x"
-            aria-hidden="true"
-            @click="satisfied_by_rule = satisfied_by"
-          />
-          <span @click="ruleSelected(satisfied_by)">
-            {{ formatRuleForDisplay(satisfied_by) }}
-          </span>
-        </div>
-      </b-collapse>
+          {{ truncateId(satisfied_by.srg_id) }}
+        </span>
+        <b-button
+          v-b-modal.unmark-satisfied-by-modal
+          size="sm"
+          variant="outline-danger"
+          class="ml-2"
+          :disabled="readOnly"
+          @click="satisfied_by_rule = satisfied_by"
+        >
+          Remove
+        </b-button>
+      </div>
 
       <b-modal
         id="unmark-satisfied-by-modal"
@@ -104,12 +116,13 @@
       >
         <p>
           Are you sure this control is no longer satisfied by
-          {{ formatRuleForDisplay(satisfied_by_rule) }}
+          <strong v-b-tooltip.hover :title="satisfied_by_rule && satisfied_by_rule.srg_id">
+            {{ truncateId(satisfied_by_rule && satisfied_by_rule.srg_id) }} </strong
+          >?
         </p>
         <template #modal-footer="{ cancel, ok }">
-          <!-- Emulate built in modal footer ok and cancel button actions -->
-          <b-button @click="cancel()"> Cancel </b-button>
-          <b-button variant="info" @click="ok()"> OK </b-button>
+          <b-button @click="cancel()">Cancel</b-button>
+          <b-button variant="danger" @click="ok()">Remove</b-button>
         </template>
       </b-modal>
     </div>
@@ -117,6 +130,8 @@
 </template>
 
 <script>
+import { truncateId } from "../../utils/idFormatter";
+
 //
 // Expect component to emit `ruleSelected` event when
 // a rule is selected from the list. This event means that
@@ -151,28 +166,21 @@ export default {
   },
   data: function () {
     return {
-      showAlsoSatisfies: true,
-      showSatisfiedBy: true,
       satisfies_rule: null,
       satisfied_by_rule: null,
+      truncateId, // Expose utility for template
     };
   },
   methods: {
-    // Event handler for when a rule is selected
     ruleSelected: function (rule) {
       if (!rule.histories) {
         this.$root.$emit("refresh:rule", rule.id);
       }
       this.$emit("ruleSelected", rule.id);
     },
-    formatRuleForDisplay: function (rule) {
-      return `${this.projectPrefix}-${rule?.rule_id} // ${rule?.version}`;
-    },
-    // Dynamically set the class of each rule row
     ruleRowClass: function (rule) {
       return {
         ruleRow: true,
-        clickable: true,
         selectedRuleRow: this.selectedRuleId == rule.id,
       };
     },
@@ -203,5 +211,12 @@ export default {
 .closeRuleButton:hover {
   border: 1px solid red;
   border-radius: 0.2em;
+}
+
+/* Disabled button styling */
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>

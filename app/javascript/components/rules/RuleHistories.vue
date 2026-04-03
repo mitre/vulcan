@@ -1,26 +1,17 @@
 <template>
   <div>
-    <!-- Collapsable header -->
-    <div class="clickable" @click="showHistories = !showHistories">
-      <h2 class="m-0 d-inline-block">Revision History</h2>
-      <b-badge v-if="rule.histories" pill class="ml-1 superVerticalAlign">{{
+    <div class="mb-2">
+      <strong>Revision History</strong>
+      <b-badge v-if="rule.histories" pill variant="info" class="ml-1">{{
         groupedRuleHistories.length
       }}</b-badge>
-
-      <b-icon v-if="showHistories" icon="chevron-down" />
-      <b-icon v-if="!showHistories" icon="chevron-up" />
     </div>
 
-    <!-- All histories -->
-    <b-collapse id="collapse-histories" v-model="showHistories">
-      <History
-        :histories="rule.histories"
-        :component="component"
-        :rule="rule"
-        :statuses="statuses"
-        :severities="severities"
-      />
-    </b-collapse>
+    <History :histories="rule.histories" :component="component" :rule="rule" :statuses="statuses" />
+
+    <p v-if="!rule.histories || rule.histories.length === 0" class="text-muted small">
+      No revision history yet.
+    </p>
   </div>
 </template>
 
@@ -43,19 +34,13 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: Array,
-      required: true,
-    },
     component: {
       type: Object,
       required: true,
     },
   },
   data: function () {
-    return {
-      showHistories: true,
-    };
+    return {};
   },
   computed: {
     groupedRuleHistories() {

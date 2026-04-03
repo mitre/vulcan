@@ -34,6 +34,23 @@ class BaseRule < ApplicationRecord
     message: "is not an acceptable value, acceptable values are: '#{SEVERITIES.compact_blank.join("', '")}'"
   }
 
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_*)
+  validates :rule_id, :rule_weight, :version, :ident_system,
+            :fixtext_fixref, :fix_id, :srg_id, :vuln_id, :legacy_ids,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
+  validates :ident,
+            length: { maximum: ->(_r) { Settings.input_limits.ident } }, allow_nil: true
+  validates :title,
+            length: { maximum: ->(_r) { Settings.input_limits.title } }, allow_nil: true
+  validates :status_justification,
+            length: { maximum: ->(_r) { Settings.input_limits.medium_text } }, allow_nil: true
+  validates :fixtext, :artifact_description, :vendor_comments,
+            length: { maximum: ->(_r) { Settings.input_limits.long_text } }, allow_nil: true
+  validates :inspec_control_body, :inspec_control_file,
+            length: { maximum: ->(_r) { Settings.input_limits.inspec_code } }, allow_nil: true
+  validates :inspec_control_body_lang, :inspec_control_file_lang,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
+
   # In all cases of has_many, it is very unlikely (based on past releases of SRGs
   # that there will be multiple of these fields. Just take the first one.
   # Extend the model if required
@@ -83,6 +100,32 @@ class BaseRule < ApplicationRecord
     ccis = ident.to_s.split(/, */)
     ia_controls = ccis.map { |cci| CCI_TO_NIST_CONSTANT[cci.to_sym] }
     ia_controls.uniq.join(', ')
+  end
+
+  # Returns the value for a given CSV column key
+  # Used by Stig#csv_export and SecurityRequirementsGuide#csv_export
+  def csv_value_for(column_key)
+    case column_key
+    when :rule_id then rule_id.to_s
+    when :version then version.to_s
+    when :srg_id then (respond_to?(:srg_id) ? srg_id : self[:srg_id]).to_s
+    when :vuln_id then (respond_to?(:vuln_id) ? vuln_id : self[:vuln_id]).to_s
+    when :rule_severity then rule_severity.to_s
+    when :rule_weight then rule_weight.to_s
+    when :title then title.to_s
+    when :fixtext then fixtext.to_s
+    when :ident then ident.to_s
+    when :legacy_ids then legacy_ids.to_s
+    when :status then status.to_s
+    when :nist_control_family then nist_control_family
+    when :vuln_discussion then disa_rule_descriptions.first&.vuln_discussion.to_s
+    when :check_content then checks.first&.content.to_s
+    when :mitigations then disa_rule_descriptions.first&.mitigations.to_s
+    when :severity_override_guidance then disa_rule_descriptions.first&.severity_override_guidance.to_s
+    when :false_positives then disa_rule_descriptions.first&.false_positives.to_s
+    when :false_negatives then disa_rule_descriptions.first&.false_negatives.to_s
+    else ''
+    end
   end
 
   private

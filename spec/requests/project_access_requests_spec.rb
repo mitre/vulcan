@@ -2,14 +2,18 @@
 
 require 'rails_helper'
 
-RSpec.describe 'ProjectAccessRequests', type: :request do
+RSpec.describe 'ProjectAccessRequests' do
+  # Create admin first to prevent first-user-admin callback from promoting test users
+  # NOTE: let! must be defined BEFORE the before block so its implicit before hook
+  # runs first, ensuring existing_admin is created before user
+  let!(:existing_admin) { create(:user, admin: true) } # -- side effect: prevents first-user-admin promotion
+  let(:project) { create(:project) }
+  let(:user) { create(:user) }
+
   before do
     Rails.application.reload_routes!
     sign_in user
   end
-
-  let(:project) { create(:project) }
-  let(:user) { create(:user) }
 
   describe 'POST /projects/:project_id/project_access_requests' do
     it 'creates a new ProjectAccessRequest' do

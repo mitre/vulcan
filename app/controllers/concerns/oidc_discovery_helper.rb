@@ -296,7 +296,7 @@ module OidcDiscoveryHelper
   def fetch_oidc_endpoint(endpoint_name, fallback_url = nil)
     return fallback_url unless Settings.oidc.discovery
 
-    issuer_url = Settings.oidc.args.issuer || ENV.fetch('VULCAN_OIDC_ISSUER_URL', nil)
+    issuer_url = Settings.oidc.args.issuer
     return fallback_url unless issuer_url
 
     discovery = fetch_oidc_discovery_document(issuer_url)
@@ -313,7 +313,7 @@ module OidcDiscoveryHelper
     }.merge(details)
 
     # Use structured logging if available, otherwise readable format
-    if ENV['STRUCTURED_LOGGING'].present?
+    if ENV.fetch('STRUCTURED_LOGGING', nil).present?
       Rails.logger.info log_data.to_json
     else
       message = "OIDC Discovery [#{event_type.upcase}] #{issuer}"

@@ -2,7 +2,4 @@
   = javascript_include_tag 'users'
 
 #users
-  %Users{                                   |
-    'v-bind:users': @users.to_json,        |
-    'v-bind:histories': @histories.to_json |
-  }
+  %Users{ 'v-bind:users' => @users.as_json(only: %i[id name email provider admin last_sign_in_at failed_attempts locked_at]).to_json, 'v-bind:histories' => @histories.to_json, 'v-bind:smtp-enabled' => Settings.smtp.enabled.to_json, 'v-bind:password-policy' => Settings.password.to_json, 'v-bind:lockout-enabled' => Settings.lockout.enabled.to_json }

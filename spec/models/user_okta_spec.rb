@@ -2,15 +2,15 @@
 
 require 'rails_helper'
 
-RSpec.describe User, type: :model do
+RSpec.describe User do
   OKTA_UID = 'okta-uid-12345' # rubocop:disable Lint/ConstantDefinitionInBlock
   include LoginHelpers
 
   describe '.from_omniauth with OIDC/OKTA' do
-    context 'when an existing user logs in with OKTA for the first time' do
+    context 'when a local user tries to log in with OKTA' do
       let(:existing_user) { create(:user, email: 'test@example.com', provider: nil, uid: nil) }
 
-      it 'updates the existing user with OKTA provider and uid' do
+      it 'blocks provider hijacking with ProviderConflictError' do
         auth = OmniAuth::AuthHash.new({
                                         provider: 'oidc',
                                         uid: 'okta-uid-12345',
@@ -23,11 +23,11 @@ RSpec.describe User, type: :model do
                                         }
                                       })
 
-        expect { described_class.from_omniauth(auth) }.not_to change(described_class, :count)
+        expect { described_class.from_omniauth(auth) }.to raise_error(User::ProviderConflictError)
 
         existing_user.reload
-        expect(existing_user.provider).to eq('oidc')
-        expect(existing_user.uid).to eq('okta-uid-12345')
+        expect(existing_user.provider).to be_nil
+        expect(existing_user.uid).to be_nil
       end
     end
 

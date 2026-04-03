@@ -4,8 +4,16 @@ require 'rexml/document'
 
 # Rule DisaRuleDescription class
 class DisaRuleDescription < ApplicationRecord
-  audited associated_with: :base_rule, on: %i[update], except: %i[base_rule_id], max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited associated_with: :base_rule, on: %i[update], except: %i[base_rule_id]
   belongs_to :base_rule
+
+  # Length limits — configurable via Settings.input_limits (env var: VULCAN_LIMIT_LONG_TEXT)
+  validates :vuln_discussion, :false_positives, :false_negatives, :mitigations,
+            :severity_override_guidance, :potential_impacts, :third_party_tools,
+            :mitigation_control, :responsibility, :ia_controls, :poam,
+            length: { maximum: ->(_r) { Settings.input_limits.long_text } }, allow_nil: true
 
   # Because from_mappings take advantage of accepts_nested_attributes, these methods
   # must return Hashes instead of an actual object to be properly created and associated
@@ -26,7 +34,7 @@ class DisaRuleDescription < ApplicationRecord
     begin
       # Customize the Nokogiri parser options to attempt to recover from syntax errors while
       # also disabling character entity parsing.
-      options = Nokogiri::XML::ParseOptions::RECOVER | Nokogiri::XML::ParseOptions::NOENT
+      options = Nokogiri::XML::ParseOptions::RECOVER | Nokogiri::XML::ParseOptions::NONET
       # Parse the XML with custom options
       doc = Nokogiri::XML(disa_rule_description_mapping, nil, nil, options)
       # Convert the Nokogiri document to a Ruby Hash

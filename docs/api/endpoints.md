@@ -2,7 +2,7 @@
 
 ## Overview
 
-Vulcan provides JSON API endpoints for programmatic access to projects, components, STIGs, and SRGs. All endpoints require authentication.
+Vulcan provides JSON API endpoints for programmatic access to projects, components, STIGs, and SRGs. Most endpoints require authentication. Public endpoints (`/api/version`, `/health_check`) are noted below.
 
 ## Authentication
 
@@ -15,6 +15,49 @@ https://your-vulcan-instance.com
 ```
 
 ## Endpoints
+
+### Version
+
+#### Get Application Version
+```http
+GET /api/version
+```
+
+Returns application metadata. **No authentication required** — used by monitoring tools, deployment verification, and the frontend.
+
+**Response:**
+```json
+{
+  "name": "Vulcan",
+  "version": "2.3.1",
+  "rails": "8.0.4",
+  "ruby": "3.4.8",
+  "environment": "production"
+}
+```
+
+### Health Check
+
+#### Readiness Probe
+```http
+GET /health_check
+```
+
+Returns `ok (vulcan 2.3.1)` when database is connected. **No authentication required.**
+
+#### Database Check
+```http
+GET /health_check/database
+```
+
+Returns `ok (vulcan 2.3.1)` when database is reachable.
+
+#### Liveness Probe
+```http
+GET /up
+```
+
+Rails 8 built-in liveness probe. Returns 200 with no body. **No authentication required.**
 
 ### Projects
 
@@ -72,10 +115,10 @@ Returns details for a specific component.
 
 #### Create Component
 ```http
-POST /components.json
+POST /projects/:project_id/components.json
 ```
 
-Creates a new component.
+Creates a new component within a project.
 
 #### Update Component
 ```http
@@ -162,23 +205,32 @@ Uploads a new SRG file (admin only).
 
 ## Response Format
 
-All JSON responses follow this structure:
+JSON responses use flat structures (no wrapper object):
 
 ### Success Response
 ```json
 {
-  "data": {
-    // Response data
-  },
-  "status": "success"
+  "id": 1,
+  "name": "Example Project",
+  "description": "..."
 }
 ```
 
 ### Error Response
 ```json
 {
-  "error": "Error message",
-  "status": "error"
+  "error": "Not found"
+}
+```
+
+### Toast Response (from mutation actions)
+```json
+{
+  "toast": {
+    "title": "Error",
+    "message": "Validation failed",
+    "variant": "danger"
+  }
 }
 ```
 
@@ -201,9 +253,9 @@ GET /rules.json?status=open
 
 ## Rate Limiting
 
-API requests are limited to:
-- 100 requests per minute for authenticated users
-- 10 requests per minute for unauthenticated requests
+Rate limiting is enforced via rack-attack:
+- Login attempts: 5 per minute per IP, 5 per minute per email
+- File uploads: 10 per minute per IP
 
 ## Examples
 

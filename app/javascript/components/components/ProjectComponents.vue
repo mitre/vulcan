@@ -1,49 +1,55 @@
 <template>
   <div>
-    <h1>Released Components</h1>
+    <b-breadcrumb :items="breadcrumbs" />
+
+    <!-- Command Bar -->
+    <BaseCommandBar>
+      <template #left>
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          data-testid="download-btn"
+          @click="openExportModal"
+        >
+          <b-icon icon="download" /> Download
+        </b-button>
+      </template>
+      <template #right>
+        <!-- No panels for list page -->
+      </template>
+    </BaseCommandBar>
 
     <p>
       <b>Component Count:</b> <span>{{ components.length }}</span>
     </p>
 
-    <!-- Component search -->
-    <div class="row">
-      <div class="col-6">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text">
-              <b-icon icon="search" aria-hidden="true" />
-            </div>
-          </div>
-          <input
-            id="componentSearch"
-            v-model="search"
-            type="text"
-            class="form-control"
-            placeholder="Search components..."
-          />
-        </div>
-      </div>
-    </div>
+    <SecurityRequirementsGuidesTable :srgs="components" :is_vulcan_admin="false" type="Component" />
 
-    <br />
-
-    <b-row cols="1" cols-sm="1" cols-md="1" cols-lg="2">
-      <b-col v-for="component in sortedFilteredComponents()" :key="component.id">
-        <ComponentCard :component="component" :actionable="false" />
-      </b-col>
-    </b-row>
+    <!-- Export Modal -->
+    <ExportModal
+      v-model="showExportModal"
+      :components="components"
+      @export="handleExport"
+      @cancel="showExportModal = false"
+    />
   </div>
 </template>
 
 <script>
-import ComponentCard from "./ComponentCard.vue";
+import axios from "axios";
+import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable.vue";
+import BaseCommandBar from "../shared/BaseCommandBar.vue";
+import ExportModal from "../shared/ExportModal.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
   name: "Projectcomponent",
   components: {
-    ComponentCard,
+    SecurityRequirementsGuidesTable,
+    BaseCommandBar,
+    ExportModal,
   },
+  mixins: [AlertMixinVue],
   props: {
     components: {
       type: Array,
@@ -52,19 +58,31 @@ export default {
   },
   data: function () {
     return {
-      search: "",
+      showExportModal: false,
     };
   },
+  computed: {
+    breadcrumbs() {
+      return [{ text: "Released Components", active: true }];
+    },
+  },
   methods: {
-    sortedFilteredComponents() {
-      let downcaseSearch = this.search.toLowerCase();
-      let filteredComponents = this.components.filter((component) =>
-        component.name.toLowerCase().includes(downcaseSearch),
-      );
-
-      return filteredComponents.sort((c_1, c_2) => {
-        return c_1.name.toLowerCase().localeCompare(c_2.name.toLowerCase());
-      });
+    openExportModal() {
+      this.showExportModal = true;
+    },
+    handleExport({ type, componentIds }) {
+      this.downloadExport(type, componentIds);
+    },
+    downloadExport(type, componentIds) {
+      // Export released components via bulk_export route
+      const idsParam = componentIds.join(",");
+      const url = `/components/bulk_export/${type}?component_ids=${idsParam}`;
+      axios
+        .get(url)
+        .then(() => {
+          window.open(url);
+        })
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };

@@ -1,2 +1,32 @@
 #!/usr/bin/env ruby
+require "socket"
+
+def port_in_use?(port)
+  # Check both IPv4 and IPv6 — Puma binds both by default
+  %w[127.0.0.1 ::1].each do |addr|
+    TCPSocket.new(addr, port).close
+    return true
+  rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, Errno::EAFNOSUPPORT
+    next
+  end
+  false
+end
+
+def find_available_port(start = 3000, max_attempts = 100)
+  start.upto(start + max_attempts - 1) do |port|
+    return port unless port_in_use?(port)
+  end
+  raise "No available port found in range #{start}-#{start + max_attempts - 1}"
+end
+
+unless ARGV.any? { |arg| arg.start_with?("-p") || arg.start_with?("--port") }
+  preferred = ENV.fetch("PORT", "3000").to_i
+  port = find_available_port(preferred)
+  if port != preferred
+    puts "Port #{preferred} in use — starting on port #{port}"
+  end
+  ENV["PORT"] = port.to_s
+  ARGV.unshift("-p", port.to_s)
+end
+
 exec "./bin/rails", "server", *ARGV

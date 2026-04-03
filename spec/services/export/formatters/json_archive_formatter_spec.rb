@@ -1,0 +1,268 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+# ==========================================================================
+# REQUIREMENT: JsonArchiveFormatter produces a ZIP archive containing
+# JSON files that preserve 100% of the component/rule object graph.
+# Single-component exports have flat structure; multi-component exports
+# have subdirectories under components/.
+# ==========================================================================
+RSpec.describe Export::Formatters::JsonArchiveFormatter do
+  subject(:formatter) { described_class.new }
+
+  let(:manifest_file) { 'manifest.json' }
+  let(:component_file) { 'component.json' }
+  let(:project_file) { 'project.json' }
+
+  describe 'interface' do
+    it { expect(formatter.component_based?).to be true }
+    it { expect(formatter.batch_generate?).to be true }
+    it { expect(formatter.content_type).to eq('application/zip') }
+    it { expect(formatter.file_extension).to eq('-backup.zip') }
+  end
+
+  describe '#generate_from_component' do
+    subject(:data) { formatter.generate_from_component(component: component, rules: rules) }
+
+    let_it_be(:component) { create(:component) }
+    let(:rules) { component.rules }
+
+    it 'returns binary zip data' do
+      expect(data).to be_a(String)
+      expect(data.encoding).to eq(Encoding::ASCII_8BIT)
+    end
+
+    it 'produces a valid zip archive' do
+      entries = zip_entries(data)
+      expect(entries).not_to be_empty
+    end
+
+    it 'contains manifest.json at root' do
+      expect(zip_entries(data)).to include(manifest_file)
+    end
+
+    it 'contains component.json' do
+      expect(zip_entries(data)).to include(component_file)
+    end
+
+    it 'contains rules.json' do
+      expect(zip_entries(data)).to include('rules.json')
+    end
+
+    it 'contains satisfactions.json' do
+      expect(zip_entries(data)).to include('satisfactions.json')
+    end
+
+    it 'contains reviews.json' do
+      expect(zip_entries(data)).to include('reviews.json')
+    end
+
+    describe 'manifest.json contents' do
+      subject(:manifest) { JSON.parse(zip_read(data, manifest_file)) }
+
+      it 'has backup_format_version' do
+        expect(manifest['backup_format_version']).to eq('1.0')
+      end
+
+      it 'has exported_at timestamp' do
+        expect(manifest['exported_at']).to match(/\A\d{4}-\d{2}-\d{2}T/)
+      end
+
+      it 'has components array with manifest entry' do
+        expect(manifest['components']).to be_an(Array)
+        expect(manifest['components'].size).to eq(1)
+        expect(manifest['components'].first['name']).to eq(component.name)
+      end
+
+      it 'includes SRG dependency in component manifest' do
+        entry = manifest['components'].first
+        expect(entry['srg_id']).to eq(component.based_on.srg_id)
+        expect(entry['srg_title']).to eq(component.based_on.title)
+      end
+    end
+
+    describe 'component.json contents' do
+      subject(:comp_json) { JSON.parse(zip_read(data, component_file)) }
+
+      it 'preserves component name' do
+        expect(comp_json['name']).to eq(component.name)
+      end
+
+      it 'preserves component prefix' do
+        expect(comp_json['prefix']).to eq(component.prefix)
+      end
+
+      it 'includes based_on SRG reference' do
+        expect(comp_json['based_on']).to be_a(Hash)
+        expect(comp_json['based_on']['srg_id']).to eq(component.based_on.srg_id)
+      end
+    end
+
+    describe 'rules.json contents' do
+      subject(:rules_json) { JSON.parse(zip_read(data, 'rules.json')) }
+
+      it 'includes all rules' do
+        expect(rules_json.size).to eq(component.rules.size)
+      end
+
+      it 'each rule has rule_id' do
+        rules_json.each do |rule|
+          expect(rule['rule_id']).to be_present
+        end
+      end
+
+      it 'each rule has status' do
+        rules_json.each do |rule|
+          expect(rule['status']).to be_present
+        end
+      end
+
+      it 'includes nested disa_rule_descriptions' do
+        expect(rules_json.first['disa_rule_descriptions']).to be_an(Array)
+      end
+
+      it 'includes nested checks' do
+        expect(rules_json.first['checks']).to be_an(Array)
+      end
+    end
+  end
+
+  describe '#generate_batch' do
+    subject(:data) { formatter.generate_batch(component_rule_pairs: pairs) }
+
+    let_it_be(:first_component) { create(:component) }
+    let_it_be(:second_component) { create(:component, project: first_component.project) }
+    let(:pairs) do
+      [first_component, second_component].map do |c|
+        { component: c, rules: c.rules }
+      end
+    end
+
+    it 'returns binary zip data' do
+      expect(data).to be_a(String)
+    end
+
+    it 'contains manifest.json with both components' do
+      manifest = JSON.parse(zip_read(data, manifest_file))
+      expect(manifest['components'].size).to eq(2)
+    end
+
+    it 'contains project.json' do
+      expect(zip_entries(data)).to include(project_file)
+    end
+
+    it 'has subdirectories for each component' do
+      entries = zip_entries(data)
+      component_dirs = entries.select { |e| e.start_with?('components/') && e.include?(component_file) }
+      expect(component_dirs.size).to eq(2)
+    end
+
+    it 'each component directory contains all expected files' do
+      entries = zip_entries(data)
+      [first_component, second_component].each do |comp|
+        dir = component_dir_for(comp)
+        expect(entries).to include("components/#{dir}component.json")
+        expect(entries).to include("components/#{dir}rules.json")
+        expect(entries).to include("components/#{dir}satisfactions.json")
+        expect(entries).to include("components/#{dir}reviews.json")
+      end
+    end
+
+    it 'project.json includes project name' do
+      project_json = JSON.parse(zip_read(data, project_file))
+      expect(project_json['name']).to eq(first_component.project.name)
+    end
+
+    it 'project.json includes project description' do
+      project_json = JSON.parse(zip_read(data, project_file))
+      expect(project_json['description']).to eq(first_component.project.description)
+    end
+
+    it 'project.json includes memberships with email, name, role' do
+      member_user = create(:user)
+      Membership.create!(user: member_user, membership: first_component.project, role: 'author')
+
+      new_data = formatter.generate_batch(component_rule_pairs: pairs)
+      project_json = JSON.parse(zip_read(new_data, project_file))
+
+      expect(project_json['memberships']).to be_an(Array)
+      membership = project_json['memberships'].find { |m| m['email'] == member_user.email }
+      expect(membership).to be_present
+      expect(membership['name']).to eq(member_user.name)
+      expect(membership['role']).to eq('author')
+    end
+
+    it 'project.json excludes component-level memberships' do
+      member_user = create(:user)
+      Membership.create!(user: member_user, membership: first_component.project, role: 'author')
+      Membership.create!(user: member_user, membership: first_component, role: 'admin')
+
+      new_data = formatter.generate_batch(component_rule_pairs: pairs)
+      pj = JSON.parse(zip_read(new_data, project_file))
+      expect(pj['memberships'].size).to eq(1)
+    end
+  end
+
+  describe 'SRG inclusion (include_srg option)' do
+    let_it_be(:component) { create(:component) }
+    let(:pairs) { [{ component: component, rules: component.rules }] }
+
+    context 'when include_srg: true' do
+      subject(:data) { formatter.generate_batch(component_rule_pairs: pairs, include_srg: true) }
+
+      it 'writes srgs/ directory with SRG XML file' do
+        entries = zip_entries(data)
+        srg_files = entries.select { |e| e.start_with?('srgs/') && e.end_with?('.xml') }
+        expect(srg_files.size).to eq(1)
+      end
+
+      it 'SRG XML content matches the original' do
+        srg = SecurityRequirementsGuide.find(component.security_requirements_guide_id)
+        srg_files = zip_entries(data).select { |e| e.start_with?('srgs/') }
+        xml_content = zip_read(data, srg_files.first).force_encoding('UTF-8')
+        expect(xml_content).to eq(srg.xml)
+      end
+
+      it 'manifest.json includes srgs array' do
+        manifest = JSON.parse(zip_read(data, manifest_file))
+        expect(manifest['srgs']).to be_an(Array)
+        expect(manifest['srgs'].size).to eq(1)
+        expect(manifest['srgs'].first['srg_id']).to eq(component.based_on.srg_id)
+      end
+
+      it 'deduplicates SRGs when two components share the same SRG' do
+        srg = SecurityRequirementsGuide.find(component.security_requirements_guide_id)
+        second = create(:component, project: component.project, based_on: srg)
+        two_pairs = [component, second].map { |c| { component: c, rules: c.rules } }
+        two_data = formatter.generate_batch(component_rule_pairs: two_pairs, include_srg: true)
+
+        srg_files = zip_entries(two_data).select { |e| e.start_with?('srgs/') && e.end_with?('.xml') }
+        expect(srg_files.size).to eq(1)
+      end
+    end
+
+    context 'when include_srg: false (default)' do
+      subject(:data) { formatter.generate_batch(component_rule_pairs: pairs) }
+
+      it 'does not include srgs/ directory' do
+        entries = zip_entries(data)
+        srg_files = entries.select { |e| e.start_with?('srgs/') }
+        expect(srg_files).to be_empty
+      end
+
+      it 'manifest.json does not include srgs key' do
+        manifest = JSON.parse(zip_read(data, manifest_file))
+        expect(manifest).not_to have_key('srgs')
+      end
+    end
+  end
+
+  private
+
+  def component_dir_for(component)
+    version = component.version ? "V#{component.version}" : ''
+    release = component.release ? "R#{component.release}" : ''
+    "#{component.name.tr(' ', '-')}-#{version}#{release}/"
+  end
+end

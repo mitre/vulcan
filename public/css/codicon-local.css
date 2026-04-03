@@ -1,0 +1,6 @@
+/* Monaco Editor codicon font — bundled locally because CSP blocks CDN/blob loading */
+@font-face {
+  font-family: "codicon";
+  font-display: block;
+  src: url("/fonts/codicon.ttf") format("truetype");
+}

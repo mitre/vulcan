@@ -3,27 +3,60 @@
     <!-- Modal trigger button -->
     <span @click="showModal()">
       <slot name="opener">
-        <b-button class="px-2 m-2" variant="primary"> Lock Component Controls </b-button>
+        <b-button class="px-2 m-2" variant="primary">{{ msg.lockAllTitle }}</b-button>
       </slot>
     </span>
 
-    <!-- Add component modal -->
+    <!-- Lock rules modal -->
     <b-modal
       ref="LockControlsModal"
-      title="Lock Component Controls"
+      :title="msg.lockAllTitle"
       size="lg"
-      :ok-title="loading ? 'Loading...' : 'Lock Controls'"
-      :ok-disabled="loading"
-      @ok="lockControls"
+      :ok-title="loading ? 'Loading...' : okButtonText"
+      :ok-disabled="loading || (lockMode === 'sections' && selectedSections.length === 0)"
+      @ok="handleOk"
     >
-      <!-- Searchable projects -->
-      <b-form @submit="lockControls()">
+      <b-form @submit.prevent="handleOk">
         <input
           id="NewProjectAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
         />
+
+        <!-- Lock Mode Selection -->
+        <b-form-group label="Lock Mode" class="mb-3">
+          <b-form-radio-group v-model="lockMode" stacked>
+            <b-form-radio value="full" data-testid="lock-mode-full">
+              <strong>Lock all rule fields</strong>
+              <br />
+              <small class="text-muted">
+                Locks all fields on all unlocked rules (existing behavior)
+              </small>
+            </b-form-radio>
+            <b-form-radio value="sections" data-testid="lock-mode-sections">
+              <strong>Lock selection of fields</strong>
+              <br />
+              <small class="text-muted">
+                Lock specific sections across all rules while leaving other sections editable
+              </small>
+            </b-form-radio>
+          </b-form-radio-group>
+        </b-form-group>
+
+        <!-- Section Selection (only visible in sections mode) -->
+        <b-form-group
+          v-if="lockMode === 'sections'"
+          label="Sections to lock"
+          data-testid="section-checkboxes"
+        >
+          <b-form-checkbox-group v-model="selectedSections" stacked>
+            <b-form-checkbox v-for="section in sectionOptions" :key="section" :value="section">
+              {{ section }}
+            </b-form-checkbox>
+          </b-form-checkbox-group>
+        </b-form-group>
+
         <b-row>
           <b-col>
             <!-- Set the comment -->
@@ -46,6 +79,8 @@
 import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { MESSAGE_LABELS } from "../../constants/terminology";
+import { LOCKABLE_SECTIONS } from "../../composables/ruleFieldConfig";
 
 export default {
   name: "LockControlsModal",
@@ -58,39 +93,72 @@ export default {
   },
   data: function () {
     return {
+      msg: MESSAGE_LABELS,
       comment: "",
       loading: false,
+      lockMode: "full",
+      selectedSections: [],
+      sectionOptions: Object.keys(LOCKABLE_SECTIONS),
     };
+  },
+  computed: {
+    okButtonText() {
+      if (this.lockMode === "sections") {
+        return `Lock ${this.selectedSections.length} section(s)`;
+      }
+      return this.msg.lockAllButton;
+    },
   },
   methods: {
     showModal: function () {
       this.comment = "";
+      this.lockMode = "full";
+      this.selectedSections = [];
       this.$refs["LockControlsModal"].show();
     },
-    lockControls: function (bvModalEvt) {
-      this.loading = true;
-      let failed = false;
-      bvModalEvt.preventDefault();
+    handleOk: function (bvModalEvt) {
+      if (bvModalEvt && bvModalEvt.preventDefault) {
+        bvModalEvt.preventDefault();
+      }
 
-      // Guard before POST
       if (!this.comment) {
         this.$bvToast.toast("Please enter a comment", {
           title: "Error",
           variant: "danger",
           solid: true,
         });
-        failed = true;
-      }
-      if (failed) {
-        this.loading = false;
         return;
       }
 
+      if (this.lockMode === "full") {
+        this.lockControls();
+      } else {
+        this.lockSections();
+      }
+    },
+    lockControls: function () {
+      this.loading = true;
       axios
         .post(`/components/${this.component_id}/lock`, {
           review: { action: "lock_control", comment: this.comment },
         })
         .then(this.lockControlsSuccess)
+        .catch(this.alertOrNotifyResponse)
+        .finally(this.completeLoading);
+    },
+    lockSections: function () {
+      this.loading = true;
+      axios
+        .patch(`/components/${this.component_id}/lock_sections`, {
+          sections: this.selectedSections,
+          locked: true,
+          comment: this.comment,
+        })
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          this.$refs["LockControlsModal"].hide();
+          this.$emit("projectUpdated");
+        })
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);
     },

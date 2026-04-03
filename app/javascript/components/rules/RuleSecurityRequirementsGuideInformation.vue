@@ -12,10 +12,9 @@
           <strong>IA Control</strong>
           <b-icon
             v-if="tooltips['nist_control']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['nist_control']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['nist_control']"
           />
         </div>
         <div class="col-8">
@@ -28,10 +27,9 @@
           <strong>CCI</strong>
           <b-icon
             v-if="tooltips['cci']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['cci']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['cci']"
           />
         </div>
         <div class="col-8">
@@ -44,10 +42,9 @@
           <strong>SRG Requirement</strong>
           <b-icon
             v-if="tooltips['srg_requirement']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['srg_requirement']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['srg_requirement']"
           />
         </div>
         <div class="col-8">{{ srg_rule.title }}</div>
@@ -58,10 +55,9 @@
           <strong>SRG Vulnerability Discussion</strong>
           <b-icon
             v-if="tooltips['srg_vuln_discussion']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['srg_vuln_discussion']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['srg_vuln_discussion']"
           />
         </div>
         <div class="col-8">{{ srg_rule.disa_rule_descriptions_attributes[0].vuln_discussion }}</div>
@@ -72,10 +68,9 @@
           <strong>SRG Check Text</strong>
           <b-icon
             v-if="tooltips['srg_check_text']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['srg_check_text']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['srg_check_text']"
           />
         </div>
         <div class="col-8">{{ srg_rule.checks_attributes[0].content }}</div>
@@ -86,10 +81,9 @@
           <strong>SRG Fix Text</strong>
           <b-icon
             v-if="tooltips['srg_fix_text']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['srg_fix_text']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['srg_fix_text']"
           />
         </div>
         <div class="col-8">{{ srg_rule.fixtext }}</div>
@@ -100,10 +94,9 @@
           <strong>SRG ID</strong>
           <b-icon
             v-if="tooltips['srg_id']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['srg_id']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['srg_id']"
           />
         </div>
         <div class="col-8">{{ srg_rule.version }}</div>
@@ -113,10 +106,9 @@
           <strong>SRG Version</strong>
           <b-icon
             v-if="tooltips['srg_version']"
-            v-b-tooltip.hover.html
+            v-b-tooltip.hover.html="tooltips['srg_version']"
             icon="info-circle"
             aria-hidden="true"
-            :title="tooltips['srg_version']"
           />
         </div>
         <div class="col-8">{{ srg_info.version }}</div>

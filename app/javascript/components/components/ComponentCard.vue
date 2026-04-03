@@ -1,13 +1,19 @@
 <template>
-  <b-overlay :show="showDeleteConfirmation" class="m-3" :opacity="0.95">
+  <b-overlay :show="showDeleteConfirmation || isDeleting" class="m-3" :opacity="0.95">
     <!-- Overlay content -->
     <template #overlay>
-      <div class="text-center">
+      <!-- Deleting in progress -->
+      <div v-if="isDeleting" class="text-center">
+        <b-spinner variant="danger" class="mb-2" />
+        <p class="mb-0">Removing component...</p>
+      </div>
+      <!-- Confirmation prompt -->
+      <div v-else class="text-center">
         <p>Are you sure you want to remove this component from the project?</p>
         <b-button variant="outline-secondary" @click="showDeleteConfirmation = false">
           Cancel
         </b-button>
-        <b-button variant="danger" @click="$emit('deleteComponent', component.id)">Remove</b-button>
+        <b-button variant="danger" @click="confirmDelete">Remove</b-button>
       </div>
     </template>
 
@@ -36,7 +42,7 @@
           <div class="text-right">
             <b-badge v-if="component.rules_count > 0" variant="info" pill class="px-3 py-2">
               <b-icon icon="shield-check" class="mr-1" />
-              {{ component.rules_count }} Control{{ component.rules_count !== 1 ? "s" : "" }}
+              {{ ruleCountLabel(component.rules_count) }}
               <span v-if="component.component_id" class="ml-1">(Overlaid)</span>
             </b-badge>
             <b-badge v-else variant="secondary" pill class="px-3 py-2">
@@ -65,99 +71,83 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <!-- Primary Action Button -->
-            <b-button
-              :href="`/components/${component.id}`"
-              variant="primary"
-              size="sm"
-              class="mr-2"
-            >
+            <b-button :href="`/components/${component.id}`" variant="primary" size="sm">
               <b-icon icon="box-arrow-up-right" class="mr-1" />
               Open Component
             </b-button>
-
-            <!-- Export Dropdown -->
-            <b-dropdown size="sm" variant="outline-secondary" text="Export">
-              <b-dropdown-item @click="downloadExport('csv')">
-                <b-icon icon="file-earmark-text" class="mr-2" />CSV
-              </b-dropdown-item>
-              <b-dropdown-item @click="downloadExport('inspec')">
-                <b-icon icon="shield-check" class="mr-2" />InSpec
-              </b-dropdown-item>
-              <b-dropdown-item @click="downloadExport('xccdf')">
-                <b-icon icon="file-earmark-code" class="mr-2" />XCCDF
-              </b-dropdown-item>
-            </b-dropdown>
           </div>
 
           <!-- Admin Actions -->
-          <div v-if="actionable && component.id" class="d-flex align-items-center">
-            <!-- All action buttons in one group -->
-            <div class="btn-toolbar">
-              <LockControlsModal
-                v-if="role_gte_to(effectivePermissions, 'reviewer')"
-                :component_id="component.id"
-                @projectUpdated="$emit('projectUpdated')"
-              >
-                <template #opener>
-                  <b-button
-                    v-b-tooltip.hover
-                    variant="outline-warning"
-                    title="Lock all controls"
-                    size="sm"
-                    class="mr-1"
-                  >
-                    <b-icon icon="lock" />
-                  </b-button>
-                </template>
-              </LockControlsModal>
+          <div
+            v-if="actionable && component.id"
+            class="d-flex align-items-center flex-wrap"
+            style="gap: 0.25rem"
+          >
+            <LockControlsModal
+              v-if="role_gte_to(effectivePermissions, 'reviewer')"
+              :component_id="component.id"
+              @projectUpdated="$emit('projectUpdated')"
+            >
+              <template #opener>
+                <b-button
+                  v-b-tooltip.hover
+                  variant="outline-warning"
+                  size="sm"
+                  title="Lock all rules in this component"
+                >
+                  <b-icon icon="lock" font-scale="0.9" /> Lock
+                </b-button>
+              </template>
+            </LockControlsModal>
 
-              <NewComponentModal
-                v-if="effectivePermissions == 'admin'"
-                :component_to_duplicate="component.id"
-                :project_id="component.project_id"
-                :predetermined_prefix="component.prefix"
-                :predetermined_security_requirements_guide_id="
-                  component.security_requirements_guide_id
-                "
-                @projectUpdated="$emit('projectUpdated')"
-              >
-                <template #opener>
-                  <b-button
-                    v-b-tooltip.hover
-                    variant="outline-info"
-                    title="Duplicate component"
-                    size="sm"
-                    class="mr-1"
-                  >
-                    <b-icon icon="files" />
-                  </b-button>
-                </template>
-              </NewComponentModal>
+            <NewComponentModal
+              v-if="effectivePermissions == 'admin'"
+              :component_to_duplicate="component.id"
+              :project_id="component.project_id"
+              :predetermined_prefix="component.prefix"
+              :predetermined_security_requirements_guide_id="
+                component.security_requirements_guide_id
+              "
+              :show-opener="true"
+              @projectUpdated="$emit('projectUpdated')"
+            >
+              <template #opener>
+                <b-button
+                  v-b-tooltip.hover
+                  variant="outline-info"
+                  size="sm"
+                  title="Create a duplicate of this component"
+                >
+                  <b-icon icon="files" font-scale="0.9" /> Duplicate
+                </b-button>
+              </template>
+            </NewComponentModal>
 
+            <span
+              v-if="effectivePermissions == 'admin' && !component.released"
+              v-b-tooltip.hover
+              :title="releaseComponentTooltip"
+            >
               <b-button
-                v-if="effectivePermissions == 'admin' && !component.released"
-                v-b-tooltip.hover
                 variant="outline-success"
-                :disabled="!component.releasable"
-                :title="releaseComponentTooltip"
                 size="sm"
-                class="mr-1"
+                :disabled="!component.releasable"
                 @click="confirmComponentRelease"
               >
-                <b-icon icon="tag" />
+                <b-icon icon="patch-check" font-scale="0.9" /> Release
               </b-button>
+            </span>
 
-              <b-button
-                v-if="effectivePermissions == 'admin'"
-                v-b-tooltip.hover
-                variant="outline-danger"
-                title="Remove from project"
-                size="sm"
-                @click="showDeleteConfirmation = !showDeleteConfirmation"
-              >
-                <b-icon icon="trash" />
-              </b-button>
-            </div>
+            <b-button
+              v-if="effectivePermissions == 'admin'"
+              v-b-tooltip.hover
+              variant="outline-danger"
+              size="sm"
+              title="Remove this component from the project"
+              @click="showDeleteConfirmation = !showDeleteConfirmation"
+            >
+              <b-icon icon="trash" font-scale="0.9" /> Delete
+            </b-button>
           </div>
         </div>
       </div>
@@ -166,13 +156,13 @@
 </template>
 
 <script>
-import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
+import { ruleCountLabel } from "../../constants/terminology";
 
 export default {
   name: "ComponentCard",
@@ -199,6 +189,7 @@ export default {
   data: function () {
     return {
       showDeleteConfirmation: false,
+      isDeleting: false,
     };
   },
   computed: {
@@ -215,15 +206,14 @@ export default {
     },
   },
   methods: {
-    downloadExport: function (type) {
-      axios
-        .get(`/components/${this.component.id}/export/${type}`)
-        .then((_res) => {
-          // Once it is validated that there is content to download, prompt
-          // the user to save the file
-          window.open(`/components/${this.component.id}/export/${type}`);
-        })
-        .catch(this.alertOrNotifyResponse);
+    ruleCountLabel,
+    confirmDelete() {
+      this.isDeleting = true;
+      this.$emit("deleteComponent", this.component.id);
+    },
+    resetDelete() {
+      this.isDeleting = false;
+      this.showDeleteConfirmation = false;
     },
   },
 };

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class RulesBelongToComponentsNotProjects < ActiveRecord::Migration[6.1]
   def change
     # Rules should no longer belong to projects

@@ -1,0 +1,30 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "2a6440064ea6554a727a0e6a6ea5f989c043b5e89946800cd2d04ba1dbe6b46d",
+      "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
+    },
+    {
+      "fingerprint": "5d1e37897edf8c6bd1ff2f6d4ba6f0afedd200699be379d79ca4ed5dce861d23",
+      "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
+    },
+    {
+      "fingerprint": "78b2692e1d3ab3af96119da920f3e7ee28159008e81c02460d0a476097a4037a",
+      "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
+    },
+    {
+      "fingerprint": "e3022938a2983ce21a1353d0258ec15035becb12d873e64398e25e9c4f87d5c7",
+      "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
+    },
+    {
+      "fingerprint": "79355d36a8176b1d8128e298e0962a0fc42253f080325bc8b858d5c7ec369a51",
+      "note": "False positive: search terms sanitized via sanitize_sql_like in build_ilike_conditions"
+    },
+    {
+      "fingerprint": "d6f5de8057188556c6d5c117546394a482caa88436622c512ceb21a3a1e2e184",
+      "note": "False positive: File.basename strips path traversal; only serves files from fixed attachments directory"
+    }
+  ],
+  "updated": "2026-04-02",
+  "brakeman_version": "7.1.0"
+}

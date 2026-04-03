@@ -16,15 +16,12 @@
       Provide your slack's user ID (e.g. U123456) if you would like to receive slack notifications
   .form-group
     = f.label :password
-    - if @minimum_password_length
-      %em
-        (#{@minimum_password_length} characters minimum)
     %br/
-    = f.password_field :password, class: "form-control", title: "This field is required.", autocomplete: "new-password", required: "true"
+    %password-field{name: "user[password]", id: "user_password", autocomplete: "new-password", ":required" => "true", title: "This field is required.", ":policy" => Settings.password.to_json, "v-model" => "registerPassword"}
   .form-group
     = f.label :password_confirmation
     %br/
-    = f.password_field :password_confirmation, class: "form-control", title: "This field is required.", autocomplete: "new-password", required: "true"
+    %password-field{name: "user[password_confirmation]", id: "user_password_confirmation", autocomplete: "new-password", ":required" => "true", title: "This field is required.", ":must-match" => "registerPassword"}
     = hidden_field_tag :active_tab, 'registration'
   .actions
     = f.submit "Sign Up", class: 'btn btn-success btn-block'

@@ -1,15 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div>
-    <a
-      v-b-modal.related-rules-modal
-      v-b-tooltip.hover.html
-      class="m"
-      title="Rules in other components or STIGs that have the same SRG ID"
-    >
-      <h3>View Related Rules</h3>
-    </a>
-
+    <!-- Modal triggered by button group in RulesCodeEditorView -->
     <b-modal
       id="related-rules-modal"
       ref="modal"
@@ -46,18 +38,15 @@
             Vulcan Components
           </b-form-checkbox>
         </div>
-        <vue-simple-suggest
+        <vue-multiselect
           :key="rule.id"
-          v-model="selectedParent"
-          :list="filteredParents"
-          display-attribute="name"
-          value-attribute="name"
-          type="search"
+          v-model="selectedParentObj"
+          :options="filteredParents"
+          label="name"
+          track-by="name"
+          :searchable="true"
+          :allow-empty="true"
           placeholder="Search STIG/Component by name ..."
-          :filter-by-query="true"
-          :min-length="0"
-          :max-suggestions="0"
-          :number="0"
         />
         <small class="text-info">
           {{ results }} Related Rules {{ selectedParent ? `in ${selectedParent}` : "" }}
@@ -259,11 +248,12 @@
 </template>
 <script>
 import axios from "axios";
-import VueSimpleSuggest from "vue-simple-suggest";
+import VueMultiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 export default {
   name: "RelatedRulesModal",
   components: {
-    VueSimpleSuggest,
+    VueMultiselect,
   },
   props: {
     rule: {
@@ -284,7 +274,7 @@ export default {
       relatedRules: [],
       relatedRulesParents: [],
       filteredRules: [],
-      selectedParent: "",
+      selectedParentObj: null,
       keywordSearch: "",
       keywordList: [],
       results: 0,
@@ -298,6 +288,9 @@ export default {
     };
   },
   computed: {
+    selectedParent() {
+      return this.selectedParentObj ? this.selectedParentObj.name : "";
+    },
     filteredGroupedRules: function () {
       const parentsNames = this.filteredParents.map((parent) => parent.name);
       // Filter by STIG / Component
@@ -400,7 +393,7 @@ export default {
       this.allFieldsSelected = true;
       this.indeterminate = false;
       this.fields = this.controlFields;
-      this.selectedParent = "";
+      this.selectedParentObj = null;
       this.keywordSearch = "";
       this.keywordList = [];
       this.toggleAllCollapses(false);

@@ -1,0 +1,94 @@
+# Core Search Abbreviations
+# Maintained by MITRE, updated with each Vulcan release
+# Users can override or add to these via Admin UI
+#
+# Format: ABBREVIATION: "Full Expansion Text"
+# Matching is case-insensitive
+
+abbreviations:
+  # Linux Distributions
+  RHEL: "Red Hat Enterprise Linux"
+  SLES: "SUSE Linux Enterprise Server"
+  OL: "Oracle Linux"
+  RHCOS: "Red Hat CoreOS"
+  UBI: "Universal Base Image"
+  FCOS: "Fedora CoreOS"
+
+  # Container/Cloud Platforms
+  K8s: "Kubernetes"
+  OCP: "OpenShift Container Platform"
+  EKS: "Elastic Kubernetes Service"
+  AKS: "Azure Kubernetes Service"
+  GKE: "Google Kubernetes Engine"
+  ECS: "Elastic Container Service"
+  ROSA: "Red Hat OpenShift Service on AWS"
+  ARO: "Azure Red Hat OpenShift"
+
+  # Windows
+  Win: "Windows"
+  WinSrv: "Windows Server"
+
+  # Databases
+  MSSQL: "Microsoft SQL Server"
+  PG: "PostgreSQL"
+  MySQL: "MySQL"
+  MariaDB: "MariaDB"
+
+  # Network/Security Appliances
+  FW: "Firewall"
+  IDS: "Intrusion Detection System"
+  IPS: "Intrusion Prevention System"
+  WAF: "Web Application Firewall"
+  VPN: "Virtual Private Network"
+  LB: "Load Balancer"
+
+  # Security Tools/Concepts
+  SIEM: "Security Information and Event Management"
+  SOAR: "Security Orchestration Automation and Response"
+  EDR: "Endpoint Detection and Response"
+  XDR: "Extended Detection and Response"
+  PAM: "Privileged Access Management"
+  IAM: "Identity and Access Management"
+  MFA: "Multi-Factor Authentication"
+  SSO: "Single Sign-On"
+
+  # DISA/DoD Terminology
+  STIG: "Security Technical Implementation Guide"
+  SRG: "Security Requirements Guide"
+  CCI: "Control Correlation Identifier"
+  SCAP: "Security Content Automation Protocol"
+  XCCDF: "Extensible Configuration Checklist Description Format"
+  OVAL: "Open Vulnerability and Assessment Language"
+  CAT: "Category"
+  IA: "Information Assurance"
+  ATO: "Authority to Operate"
+  RMF: "Risk Management Framework"
+  POAM: "Plan of Action and Milestones"
+
+  # Compliance Frameworks
+  NIST: "National Institute of Standards and Technology"
+  FISMA: "Federal Information Security Management Act"
+  FedRAMP: "Federal Risk and Authorization Management Program"
+  HIPAA: "Health Insurance Portability and Accountability Act"
+  PCI: "Payment Card Industry"
+  SOC: "System and Organization Controls"
+  CIS: "Center for Internet Security"
+
+  # Infrastructure
+  VM: "Virtual Machine"
+  HV: "Hypervisor"
+  SAN: "Storage Area Network"
+  NAS: "Network Attached Storage"
+  DNS: "Domain Name System"
+  DHCP: "Dynamic Host Configuration Protocol"
+  NTP: "Network Time Protocol"
+  LDAP: "Lightweight Directory Access Protocol"
+  AD: "Active Directory"
+
+  # Protocols/Services
+  SSH: "Secure Shell"
+  TLS: "Transport Layer Security"
+  SSL: "Secure Sockets Layer"
+  HTTPS: "Hypertext Transfer Protocol Secure"
+  SFTP: "SSH File Transfer Protocol"
+  SNMP: "Simple Network Management Protocol"

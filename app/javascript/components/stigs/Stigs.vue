@@ -1,25 +1,55 @@
 <template>
   <div>
-    <b-row>
-      <b-col md="10">
-        <h1>
-          Security Technical Implementation Guides
-          <b-badge variant="secondary">{{ stigs.length }}</b-badge>
-        </h1>
-        <h6 class="card-subtitle text-muted mb-2">Published STIGs</h6>
-      </b-col>
-      <b-col v-if="is_vulcan_admin" md="2" class="align-self-center">
-        <b-button href="#" class="float-right" @click="showUploadComponent = !showUploadComponent">
-          <b-icon icon="cloud-upload" aria-hidden="true" />
-          Upload STIG
+    <b-breadcrumb :items="breadcrumbs" />
+
+    <!-- Command Bar -->
+    <BaseCommandBar>
+      <template #left>
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          data-testid="download-btn"
+          @click="openExportModal"
+        >
+          <b-icon icon="download" /> Download
         </b-button>
-      </b-col>
-    </b-row>
+        <b-button
+          v-if="is_vulcan_admin"
+          variant="primary"
+          size="sm"
+          class="ml-2"
+          data-testid="upload-stig-btn"
+          @click="openUploadModal"
+        >
+          <b-icon icon="cloud-upload" /> Upload STIG
+        </b-button>
+      </template>
+      <template #right>
+        <!-- No panels for list page -->
+      </template>
+    </BaseCommandBar>
+
+    <p>
+      <b>STIG Count:</b> <b-badge variant="secondary">{{ stigs.length }}</b-badge>
+    </p>
+
     <SecurityRequirementsGuidesTable :srgs="stigs" :is_vulcan_admin="is_vulcan_admin" type="STIG" />
+
     <SecurityRequirementsGuidesUpload
       v-model="showUploadComponent"
       post_path="/stigs"
       @uploaded="loadStigs"
+    />
+
+    <!-- Export Modal -->
+    <ExportModal
+      v-model="showExportModal"
+      :components="stigs"
+      :formats="['xccdf', 'csv']"
+      :column-definitions="csvColumns"
+      title="Export STIGs"
+      @export="handleExport"
+      @cancel="showExportModal = false"
     />
   </div>
 </template>
@@ -27,12 +57,20 @@
 <script>
 import axios from "axios";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable";
 import SecurityRequirementsGuidesUpload from "../security_requirements_guides/SecurityRequirementsGuidesUpload";
+import ExportModal from "../shared/ExportModal.vue";
+import { STIG_CSV_COLUMNS } from "../../constants/csvColumns";
 
 export default {
   name: "Stigs",
-  components: { SecurityRequirementsGuidesTable, SecurityRequirementsGuidesUpload },
+  components: {
+    BaseCommandBar,
+    SecurityRequirementsGuidesTable,
+    SecurityRequirementsGuidesUpload,
+    ExportModal,
+  },
   mixins: [AlertMixinVue],
   props: {
     givenstigs: {
@@ -47,13 +85,36 @@ export default {
   data: function () {
     return {
       showUploadComponent: false,
+      showExportModal: false,
       stigs: [],
+      csvColumns: STIG_CSV_COLUMNS,
     };
+  },
+  computed: {
+    breadcrumbs() {
+      return [{ text: "STIGs", active: true }];
+    },
   },
   mounted: function () {
     this.stigs = this.givenstigs;
   },
   methods: {
+    openUploadModal() {
+      this.showUploadComponent = true;
+    },
+    openExportModal() {
+      this.showExportModal = true;
+    },
+    handleExport({ type, componentIds, columns }) {
+      // For now, export each selected STIG individually (bulk export not yet implemented)
+      componentIds.forEach((id) => {
+        let url = `/stigs/${id}/export/${type}`;
+        if (columns && columns.length > 0) {
+          url += `?columns=${columns.join(",")}`;
+        }
+        window.open(url);
+      });
+    },
     loadStigs: function () {
       axios
         .get("/stigs")

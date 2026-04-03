@@ -8,6 +8,27 @@ class ApplicationController < ActionController::Base
 
   before_action :setup_navigation, :authenticate_user!
   before_action :check_access_request_notifications
+  before_action :check_locked_user_notifications
+
+  # AC-8: Determines if the current user must acknowledge consent.
+  # Returns true when consent is enabled and the session has no valid acknowledgment.
+  def consent_required?
+    return false unless Settings.consent&.enabled
+
+    acknowledged_at = session[:consent_acknowledged_at]
+    return true if acknowledged_at.blank?
+
+    ttl = Settings.consent.respond_to?(:ttl) ? Settings.consent.ttl : nil
+    return false if ttl.blank? || ttl.to_s == '0'
+
+    parsed = Time.zone.parse(acknowledged_at)
+    return true unless parsed # nil from unparseable string → re-prompt
+
+    parsed + parse_duration(ttl) < Time.current
+  rescue ArgumentError
+    true # corrupted timestamp → re-prompt
+  end
+  helper_method :consent_required?
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
@@ -90,10 +111,12 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
-  def send_slack_notification(notification_type, object, *args)
+  # NOTE: Anonymous rest args (*) is valid Ruby 3.2+ syntax for argument forwarding.
+  # RuboCop Style/ArgumentsForwarding enforces this form. Not a syntax error.
+  def send_slack_notification(notification_type, object, *)
     channels = find_slack_channel(object, notification_type)
     channels.each do |channel|
-      send_notification(channel, slack_notification_params(notification_type, object, *args))
+      send_notification(channel, slack_notification_params(notification_type, object, *))
     end
   end
 
@@ -129,6 +152,17 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  # Parses duration strings like "1h", "30m", "24h", "3600" into seconds.
+  def parse_duration(value)
+    str = value.to_s.strip
+    case str
+    when /\A(\d+)h\z/i then ::Regexp.last_match(1).to_i.hours
+    when /\A(\d+)m\z/i then ::Regexp.last_match(1).to_i.minutes
+    when /\A(\d+)s?\z/ then ::Regexp.last_match(1).to_i.seconds
+    else 0.seconds
+    end
+  end
 
   # Determine the slack channel(s) and user id to which the slack notification should be sent.
   def find_slack_channel(object, notification_type)
@@ -241,5 +275,15 @@ class ApplicationController < ActionController::Base
       @access_requests << project.access_requests.eager_load(:user, :project).as_json(methods: %i[user project]) if current_user.can_admin_project?(project)
     end
     @access_requests.flatten!
+  end
+
+  def check_locked_user_notifications
+    @locked_users = []
+    return unless user_signed_in? && current_user.admin? && Settings.lockout&.enabled
+
+    @locked_users = User.where.not(locked_at: nil)
+                        .limit(100)
+                        .select(:id, :name, :email)
+                        .as_json(only: %i[id name email])
   end
 end

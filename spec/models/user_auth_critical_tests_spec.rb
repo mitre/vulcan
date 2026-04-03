@@ -2,16 +2,16 @@
 
 require 'rails_helper'
 
-RSpec.describe User, type: :model do
+RSpec.describe User do
   include LoginHelpers
 
   describe '.from_omniauth - Critical Edge Cases' do
     describe 'case sensitivity fix verification' do
       it 'finds existing user regardless of email case' do
-        # Create user with lowercase email
-        create(:user, email: 'user@example.com')
+        # Create user with oidc provider to match auth
+        create(:user, email: 'user@example.com', provider: 'oidc', uid: 'oidc-1')
 
-        # Login with uppercase email
+        # Login with uppercase email — same provider
         auth = mock_omniauth_response(build(:user, email: 'USER@EXAMPLE.COM'), provider: 'oidc')
 
         expect { User.from_omniauth(auth) }.not_to change(User, :count)
@@ -21,7 +21,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'handles mixed case variations consistently' do
-        create(:user, email: 'test@domain.com')
+        create(:user, email: 'test@domain.com', provider: 'oidc', uid: 'oidc-2')
 
         test_cases = ['Test@Domain.com', 'TEST@DOMAIN.COM', 'test@DOMAIN.com']
 
@@ -64,32 +64,57 @@ RSpec.describe User, type: :model do
       end
     end
 
-    describe 'provider switching logging' do
-      it 'logs when user switches from LDAP to OIDC' do
-        user = create(:user, email: 'test@example.com', provider: 'ldap', uid: 'ldap123')
+    describe 'provider conflict protection' do
+      it 'blocks login when existing local user tries to auth via OIDC' do
+        create(:user, email: 'admin@example.com', provider: nil, uid: nil)
 
-        auth = mock_omniauth_response(build(:user, email: user.email), provider: 'oidc')
-        auth.uid = 'oidc456'
+        auth = mock_omniauth_response(build(:user, email: 'admin@example.com'), provider: 'oidc')
+        auth.uid = 'oidc-123'
 
-        expect(Rails.logger).to receive(:warn).with(/switching authentication provider from 'ldap' to 'oidc'/)
-        expect(Rails.logger).to receive(:info).with(/Previous UID: ldap123, New UID: oidc456/)
-        allow(Rails.logger).to receive(:info) # Allow other info logs
-
-        result_user = User.from_omniauth(auth)
-        expect(result_user.id).to eq(user.id)
-        expect(result_user.provider).to eq('oidc')
-        expect(result_user.uid).to eq('oidc456')
+        expect { User.from_omniauth(auth) }.to raise_error(User::ProviderConflictError, /already exists.*local/)
       end
 
-      it 'does not log when provider stays the same' do
-        user = create(:user, email: 'test@example.com', provider: 'oidc', uid: 'old_uid')
+      it 'blocks login when LDAP user tries to auth via OIDC' do
+        create(:user, email: 'test@example.com', provider: 'ldap', uid: 'ldap-123')
+
+        auth = mock_omniauth_response(build(:user, email: 'test@example.com'), provider: 'oidc')
+        auth.uid = 'oidc-456'
+
+        expect { User.from_omniauth(auth) }.to raise_error(User::ProviderConflictError, /already exists.*ldap/)
+      end
+
+      it 'does not modify provider/uid on existing user' do
+        user = create(:user, email: 'admin@example.com', provider: 'ldap', uid: 'ldap-orig')
+
+        auth = mock_omniauth_response(build(:user, email: 'admin@example.com'), provider: 'oidc')
+        auth.uid = 'oidc-new'
+
+        expect { User.from_omniauth(auth) }.to raise_error(User::ProviderConflictError)
+
+        user.reload
+        expect(user.provider).to eq('ldap')
+        expect(user.uid).to eq('ldap-orig')
+      end
+
+      it 'allows login when provider matches (same provider re-auth)' do
+        user = create(:user, email: 'test@example.com', provider: 'oidc', uid: 'old-uid')
 
         auth = mock_omniauth_response(build(:user, email: user.email), provider: 'oidc')
-        auth.uid = 'new_uid'
+        auth.uid = 'new-uid'
 
-        expect(Rails.logger).not_to receive(:warn).with(/switching authentication provider/)
+        result = User.from_omniauth(auth)
+        expect(result.id).to eq(user.id)
+        expect(result.uid).to eq('new-uid')
+      end
 
-        User.from_omniauth(auth)
+      it 'allows new user creation via any provider' do
+        auth = mock_omniauth_response(build(:user, email: 'brand-new@example.com'), provider: 'oidc')
+        auth.uid = 'oidc-new'
+
+        expect { User.from_omniauth(auth) }.to change(User, :count).by(1)
+        user = User.find_by(email: 'brand-new@example.com')
+        expect(user.provider).to eq('oidc')
+        expect(user.uid).to eq('oidc-new')
       end
     end
 
@@ -127,8 +152,9 @@ RSpec.describe User, type: :model do
       it 'uses full-length Devise token for new users' do
         auth = mock_omniauth_response(build(:user, email: 'new@example.com'), provider: 'oidc')
 
-        # Mock to verify full token is used
-        expect(Devise).to receive(:friendly_token).with(no_args).and_call_original
+        # Verify Devise.friendly_token is called (at least once for password,
+        # devise-encryptable also calls it for password_salt generation)
+        expect(Devise).to receive(:friendly_token).with(no_args).at_least(:once).and_call_original
 
         user = User.from_omniauth(auth)
         expect(user.password).to be_present
@@ -136,7 +162,8 @@ RSpec.describe User, type: :model do
       end
 
       it 'does not change password for existing users' do
-        existing_user = create(:user, email: 'test@example.com', password: 'original_password')
+        existing_user = create(:user, email: 'test@example.com', password: 'original_password',
+                                      provider: 'oidc', uid: 'oidc-pw')
         original_encrypted = existing_user.encrypted_password
 
         auth = mock_omniauth_response(build(:user, email: existing_user.email), provider: 'oidc')
@@ -149,7 +176,8 @@ RSpec.describe User, type: :model do
 
     describe 'name preservation' do
       it 'preserves existing user names' do
-        existing_user = create(:user, email: 'test@example.com', name: 'Original Name')
+        existing_user = create(:user, email: 'test@example.com', name: 'Original Name',
+                                      provider: 'oidc', uid: 'oidc-name')
 
         auth = mock_omniauth_response(build(:user, email: existing_user.email), provider: 'oidc')
         auth.info.name = 'New Name From Provider'

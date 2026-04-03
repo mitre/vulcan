@@ -1,40 +1,101 @@
 <template>
   <div>
+    <!-- Actions Toolbar (above tabs — visible on all tabs) -->
+    <RuleActionsToolbar
+      :rule="rule"
+      :effective-permissions="effectivePermissions"
+      :read-only="readOnly"
+      @clone="$emit('clone')"
+      @delete="$emit('delete')"
+      @save="$emit('save', $event)"
+      @comment="$emit('comment', $event)"
+      @open-review-modal="$emit('open-review-modal')"
+      @open-related-modal="$emit('open-related-modal')"
+      @lock="$emit('lock', $event)"
+      @unlock="$emit('unlock', $event)"
+      @toggle-panel="$emit('toggle-panel', $event)"
+    />
+
     <b-tabs>
       <b-tab title="Documentation" class="pt-3" active>
-        <div v-if="advanced_fields" class="mb-3 font-weight-bold">
-          <b-form-checkbox
-            v-model="advancedEditor"
-            name="editor-selector-check-button"
-            class="d-inline-block"
-            switch
-          >
-            Advanced Fields
-          </b-form-checkbox>
+        <!-- Advanced Fields Toggle (always visible) -->
+        <div class="mb-3 d-flex align-items-center justify-content-between">
+          <div data-testid="advanced-fields-toggle">
+            <b-form-checkbox
+              v-model="localAdvancedFields"
+              name="advanced-fields-toggle"
+              class="d-inline-block"
+              switch
+              size="sm"
+              @change="onAdvancedFieldsToggle"
+            >
+              <small class="font-weight-bold">Advanced Fields</small>
+            </b-form-checkbox>
+            <small class="text-muted d-block ml-4" data-testid="advanced-fields-helper">
+              Most users <strong>do not need</strong> to modify advanced fields.
+            </small>
+          </div>
+          <div data-testid="autosave-toggle" class="text-right">
+            <b-form-checkbox
+              :checked="autosaveEnabled"
+              :disabled="autosaveDisabledReason !== null"
+              switch
+              size="sm"
+              @change="$emit('toggle-autosave')"
+            >
+              <small :class="autosaveColorClass"> Auto-save {{ autosaveLabel }} </small>
+            </b-form-checkbox>
+            <small
+              v-if="autosaveDirty && autosaveEnabled && !autosaveDisabledReason"
+              class="text-warning d-block"
+            >
+              Unsaved changes...
+            </small>
+          </div>
         </div>
 
-        <AdvancedRuleForm
-          v-if="advancedEditor"
-          :rule="rule"
-          :statuses="statuses"
-          :severities="severities"
-          :read-only="readOnly"
-          :additional_questions="additional_questions"
-        />
+        <!-- Confirmation Modal for enabling advanced fields -->
+        <b-modal
+          v-model="showConfirmModal"
+          title="Enable Advanced Fields?"
+          data-testid="advanced-fields-confirm-modal"
+          @ok="confirmEnableAdvanced"
+          @cancel="cancelEnableAdvanced"
+          @close="cancelEnableAdvanced"
+        >
+          <p>
+            Advanced fields provide additional control over rule metadata. Most users do not need to
+            modify these fields.
+          </p>
+          <p class="mb-0">Are you sure you want to enable advanced fields?</p>
+          <template #modal-footer="{ ok, cancel }">
+            <b-button
+              variant="secondary"
+              data-testid="advanced-fields-cancel-btn"
+              @click="cancel()"
+            >
+              Cancel
+            </b-button>
+            <b-button variant="primary" data-testid="advanced-fields-confirm-btn" @click="ok()">
+              Enable Advanced Fields
+            </b-button>
+          </template>
+        </b-modal>
 
-        <BasicRuleForm
-          v-else
+        <UnifiedRuleForm
           :rule="rule"
           :statuses="statuses"
-          :severities_map="severities_map"
           :read-only="readOnly"
+          :advanced-mode="localAdvancedFields"
           :additional_questions="additional_questions"
+          :effective-permissions="effectivePermissions"
+          @toggle-section-lock="$emit('toggle-section-lock', $event)"
         />
       </b-tab>
-      <b-tab title="InSpec Control Body" lazy>
+      <b-tab title="Test Script" lazy>
         <InspecControlEditor :rule="rule" field="inspec_control_body" :read-only="readOnly" />
       </b-tab>
-      <b-tab title="InSpec Control (Read-Only)" lazy>
+      <b-tab title="Generated Control (Read-Only)" lazy>
         <InspecControlEditor :rule="rule" field="inspec_control_file" :read-only="true" />
       </b-tab>
     </b-tabs>
@@ -42,13 +103,13 @@
 </template>
 
 <script>
-import BasicRuleForm from "./forms/BasicRuleForm.vue";
-import AdvancedRuleForm from "./forms/AdvancedRuleForm.vue";
+import UnifiedRuleForm from "./forms/UnifiedRuleForm.vue";
 import InspecControlEditor from "./InspecControlEditor.vue";
+import RuleActionsToolbar from "./RuleActionsToolbar.vue";
 
 export default {
   name: "RuleEditor",
-  components: { BasicRuleForm, AdvancedRuleForm, InspecControlEditor },
+  components: { UnifiedRuleForm, InspecControlEditor, RuleActionsToolbar },
   props: {
     rule: {
       type: Object,
@@ -58,17 +119,13 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: Array,
-      required: true,
-    },
-    severities_map: {
-      type: Object,
-      required: true,
-    },
     readOnly: {
       type: Boolean,
       default: false,
+    },
+    effectivePermissions: {
+      type: String,
+      default: "",
     },
     advanced_fields: {
       type: Boolean,
@@ -78,26 +135,69 @@ export default {
       type: Array,
       default: () => [],
     },
+    autosaveEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    autosaveDirty: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: function () {
     return {
-      advancedEditor: false,
+      showConfirmModal: false,
+      localAdvancedFields: this.advanced_fields,
     };
   },
-  watch: {
-    advancedEditor: function (_) {
-      localStorage.setItem("advancedEditor", JSON.stringify(this.advancedEditor));
+  computed: {
+    autosaveDisabledReason() {
+      if (this.readOnly) return "view";
+      if (this.rule.locked) return "locked";
+      if (this.rule.review_requestor_id) return "review";
+      return null;
+    },
+    autosaveLabel() {
+      const reason = this.autosaveDisabledReason;
+      if (reason === "locked") return "(locked)";
+      if (reason === "review") return "(under review)";
+      if (reason === "view") return "OFF";
+      return this.autosaveEnabled ? "ON" : "OFF";
+    },
+    autosaveColorClass() {
+      if (this.autosaveDisabledReason) return "text-muted";
+      return this.autosaveEnabled ? "text-success font-weight-bold" : "text-muted";
     },
   },
-  mounted: function () {
-    // Persist `advancedEditor` across page loads
-    if (localStorage.getItem("advancedEditor")) {
-      try {
-        this.advancedEditor = JSON.parse(localStorage.getItem("advancedEditor"));
-      } catch (e) {
-        localStorage.removeItem("advancedEditor");
+  watch: {
+    // Sync prop changes to local state (e.g., after API update)
+    advanced_fields(newVal) {
+      this.localAdvancedFields = newVal;
+    },
+  },
+  methods: {
+    onAdvancedFieldsToggle(newValue) {
+      if (newValue) {
+        // Enabling: v-model already toggled to true — reset immediately
+        // and show confirmation. Only set true after user confirms.
+        this.$nextTick(() => {
+          this.localAdvancedFields = false;
+        });
+        this.showConfirmModal = true;
+      } else {
+        // Disabling: apply immediately (no confirmation needed)
+        this.$emit("toggle-advanced-fields", false);
       }
-    }
+    },
+    confirmEnableAdvanced() {
+      this.showConfirmModal = false;
+      this.localAdvancedFields = true;
+      this.$emit("toggle-advanced-fields", true);
+    },
+    cancelEnableAdvanced() {
+      this.showConfirmModal = false;
+      // Checkbox stays off — user canceled
+    },
   },
 };
 </script>

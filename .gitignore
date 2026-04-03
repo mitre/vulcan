@@ -58,11 +58,14 @@ dev_output.log
 # Ignore local development files
 CLAUDE.md
 .claude/
+downloads/
 *.backup
 *_backup/
 *-backup/
 benchmark-tmp/
 vulcan-wiki-local/
+.playwright-mcp/
+AGENT-STATUS/
 
 # Ruby version management
 .ruby-gemset
@@ -73,3 +76,4 @@ vulcan-wiki-local/
 !/certs/.gitkeep
 /app/assets/builds/*
 !/app/assets/builds/.keep
+.beads/recovery-context.md

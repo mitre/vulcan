@@ -1,7 +1,7 @@
 <template>
   <div>
-    <!-- Modal trigger button -->
-    <b-button class="px-2 m-2" variant="primary" @click="showModal()">
+    <!-- Modal trigger button (opt-in via showButton prop) -->
+    <b-button v-if="showButton" class="px-2 m-2" variant="primary" @click="showModal()">
       Import a Released Component
     </b-button>
 
@@ -30,16 +30,15 @@
                   <b-icon icon="search" aria-hidden="true" />
                 </b-input-group-text>
               </b-input-group-prepend>
-              <vue-simple-suggest
-                ref="componentSearch"
-                v-model="search"
-                :list="addDisplayNameToComponents(available_components)"
-                :filter-by-query="true"
-                value-attribute="id"
-                display-attribute="displayed"
+              <vue-multiselect
+                v-model="selectedComponent"
+                :options="addDisplayNameToComponents(available_components)"
+                label="displayed"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 placeholder="Search for a component by name..."
-                :styles="projectSearchStyles"
-                @select="setSelectedComponent($refs.componentSearch.selected)"
+                class="flex-grow-1"
               />
             </b-input-group>
 
@@ -66,27 +65,20 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
 import ComponentCard from "../components/ComponentCard.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
+import VueMultiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 
 function initialState() {
   return {
     selectedComponent: null,
     search: "",
-    projectSearchStyles: {
-      vueSimpleSuggest: "flex1",
-      inputWrapper: "",
-      defaultInput: "",
-      suggestions: "",
-      suggestItem: "",
-    },
   };
 }
 
 export default {
   name: "AddComponentModal",
   components: {
-    VueSimpleSuggest,
+    VueMultiselect,
     ComponentCard,
   },
   mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
@@ -98,6 +90,10 @@ export default {
     available_components: {
       type: Array,
       required: true,
+    },
+    showButton: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {

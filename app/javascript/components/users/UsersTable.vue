@@ -20,6 +20,7 @@
             type="text"
             class="form-control"
             placeholder="Search users by name or email..."
+            aria-label="Search users"
           />
         </div>
       </div>
@@ -49,33 +50,37 @@
 
       <!-- Column template for Role -->
       <template #cell(role)="data">
-        <form :id="formId(data.item)" :action="formAction(data.item)" method="post">
-          <input type="hidden" name="_method" value="put" />
-          <input type="hidden" name="authenticity_token" :value="authenticityToken" />
-          <select
-            v-model="data.item.admin"
-            class="form-control"
-            name="user[admin]"
-            @change="adminStatusChanged($event, data.item)"
-          >
-            <option value="false">user</option>
-            <option value="true">admin</option>
-          </select>
-        </form>
+        <b-badge :variant="data.item.admin ? 'danger' : 'secondary'">
+          {{ data.item.admin ? "Admin" : "User" }}
+        </b-badge>
+        <b-badge v-if="lockoutEnabled && data.item.locked_at" variant="warning" class="ml-1">
+          Locked
+        </b-badge>
+      </template>
+
+      <!-- Column template for Last Sign In -->
+      <template #cell(last_sign_in_at)="data">
+        {{ formatDate(data.item.last_sign_in_at) }}
       </template>
 
       <!-- Column template for Actions -->
       <template #cell(actions)="data">
         <b-button
-          class="float-right"
-          variant="danger"
-          data-confirm="Are you sure you want to permanently remove this user?"
-          data-method="delete"
-          :href="formAction(data.item)"
-          rel="nofollow"
+          size="sm"
+          variant="outline-secondary"
+          class="mr-1"
+          :aria-label="'Edit ' + data.item.name"
+          @click="$emit('edit-user', data.item)"
+        >
+          <b-icon icon="pencil" aria-hidden="true" />
+        </b-button>
+        <b-button
+          size="sm"
+          variant="outline-danger"
+          :aria-label="'Remove ' + data.item.name"
+          @click="confirmDelete(data.item)"
         >
           <b-icon icon="trash" aria-hidden="true" />
-          Remove
         </b-button>
       </template>
     </b-table>
@@ -87,18 +92,37 @@
       :per-page="perPage"
       aria-controls="users-table"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmDeleteModal
+      v-model="showDeleteModal"
+      :item-name="userToDelete ? userToDelete.email : ''"
+      item-type="user"
+      :is-deleting="isDeleting"
+      warning-message="This action cannot be undone. All user data will be permanently removed."
+      @confirm="handleDelete"
+    />
   </div>
 </template>
 
 <script>
+import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+
 export default {
   name: "UsersTable",
-  mixins: [FormMixinVue],
+  components: { ConfirmDeleteModal },
+  mixins: [FormMixinVue, AlertMixinVue],
   props: {
     users: {
       type: Array,
       required: true,
+    },
+    lockoutEnabled: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {
@@ -106,49 +130,66 @@ export default {
       search: "",
       perPage: 10,
       currentPage: 1,
+      showDeleteModal: false,
+      userToDelete: null,
+      isDeleting: false,
       fields: [
-        { key: "name", label: "User" },
-        { key: "provider", label: "Type" },
-        "role",
+        { key: "name", label: "User", sortable: true },
+        { key: "provider", label: "Type", sortable: true },
+        { key: "role", label: "Role", sortable: true },
+        { key: "last_sign_in_at", label: "Last Sign In", sortable: true },
         { key: "actions", label: "" },
       ],
     };
   },
   computed: {
-    // Search users based on name and email
     searchedUsers: function () {
       let downcaseSearch = this.search.toLowerCase();
       return this.users.filter(
         (user) =>
-          user.email.toLowerCase().includes(downcaseSearch) ||
-          user.name.toLowerCase().includes(downcaseSearch),
+          (user.email || "").toLowerCase().includes(downcaseSearch) ||
+          (user.name || "").toLowerCase().includes(downcaseSearch),
       );
     },
-    // Used by b-pagination to know how many total rows there are
     rows: function () {
       return this.searchedUsers.length;
     },
-    // Total number of users in the system
     userCount: function () {
       return this.users.length;
     },
   },
   methods: {
-    // Automatically submit the form when a user selects a form option
-    adminStatusChanged: function (event, user) {
-      document.getElementById(this.formId(user)).submit();
-    },
-    // The text that should appear in the 'Type' column
     typeColumn: function (user) {
       return user.provider === null ? "Local User" : user.provider.toUpperCase() + " User";
     },
-    // Generator for a unique form id for the user role dropdown
-    formId: function (user) {
-      return "User-" + user.id;
+    formatDate(dateStr) {
+      if (!dateStr) return "Never";
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
     },
-    // Path to POST/DELETE to when updating/deleting a user
-    formAction: function (user) {
-      return "/users/" + user.id;
+    confirmDelete(user) {
+      this.userToDelete = user;
+      this.showDeleteModal = true;
+    },
+    async handleDelete() {
+      if (!this.userToDelete) return;
+      this.isDeleting = true;
+
+      try {
+        const response = await axios.delete(`/users/${this.userToDelete.id}`);
+        this.alertOrNotifyResponse(response);
+        this.$emit("user-deleted", this.userToDelete);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.isDeleting = false;
+        this.showDeleteModal = false;
+        this.userToDelete = null;
+      }
     },
   },
 };

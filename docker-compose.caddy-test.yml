@@ -1,0 +1,27 @@
+# Temporary test overlay — enables Caddy proxy
+# Usage: docker compose -f docker-compose.yml -f docker-compose.caddy-test.yml up -d
+
+services:
+  web:
+    ports: !reset []
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "9080:80"
+      - "9443:443"
+      - "9443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

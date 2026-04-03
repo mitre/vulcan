@@ -1,7 +1,7 @@
 <template>
   <span>
-    <!-- Modal trigger button -->
-    <span @click="showModal()">
+    <!-- Modal trigger button (only if showOpener prop is true) -->
+    <span v-if="showOpener" @click="showModal()">
       <slot name="opener">
         <b-button class="px-2 m-2" variant="primary"> {{ buttonText }} </b-button>
       </slot>
@@ -18,7 +18,7 @@
       @ok="createComponent"
     >
       <!-- Searchable projects -->
-      <b-form @submit="createComponent()">
+      <b-form @submit.prevent>
         <input
           id="NewProjectAuthenticityToken"
           type="hidden"
@@ -29,35 +29,31 @@
           <b-col>
             <!-- Select a SRG -->
             <b-form-group v-if="copy_component" label="Select an existing Project to copy from">
-              <vue-simple-suggest
-                ref="projectSearch"
-                :value="project.name"
-                :list="projects"
-                display-attribute="name"
-                value-attribute="id"
+              <vue-multiselect
+                v-model="selectedProjectObj"
+                :options="projects"
+                label="name"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 placeholder="Search for an existing Project..."
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
-                @select="setSelectedProject($refs.projectSearch.selected)"
+                @input="setSelectedProject($event)"
               />
             </b-form-group>
 
             <!-- Select a Component -->
             <b-form-group v-if="copy_component" label="Select an existing Component to copy from">
-              <vue-simple-suggest
+              <vue-multiselect
                 :key="componentKey"
-                ref="componentSearch"
-                :list="components"
-                display-attribute="displayed"
-                value-attribute="id"
-                placeholder="Search for an existing Component..."
+                v-model="selectedComponentObj"
+                :options="components"
+                label="displayed"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 :disabled="!selected_project_id"
-                :filter-by-query="true"
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
-                @select="setSelectedComponent($refs.componentSearch.selected)"
+                placeholder="Search for an existing Component..."
+                @input="setSelectedComponent($event)"
               />
             </b-form-group>
 
@@ -66,19 +62,23 @@
               v-if="predetermined_security_requirements_guide_id == null"
               label="Select a Security Requirements Guide"
             >
-              <vue-simple-suggest
-                ref="srgSearch"
-                :value="security_requirements_guide_displayed"
-                :list="copy_component ? displayedSrgs : srgs"
-                display-attribute="displayed"
-                value-attribute="id"
+              <vue-multiselect
+                v-model="selectedSrgObj"
+                :options="copy_component ? displayedSrgs : srgs"
+                label="displayed"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
+                :disabled="detecting"
                 placeholder="Search for an SRG..."
-                :filter-by-query="copy_component ? false : true"
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
-                @select="setSelectedSrg($refs.srgSearch.selected)"
+                @input="setSelectedSrg($event)"
               />
+              <small v-if="detecting" class="text-muted">
+                <b-spinner small type="grow" /> Detecting SRG from spreadsheet...
+              </small>
+              <small v-else-if="srgAutoDetected" class="text-success">
+                <i class="bi-check-circle" /> SRG auto-detected from spreadsheet
+              </small>
             </b-form-group>
             <!-- Name the component -->
             <b-form-group label="Name">
@@ -112,7 +112,7 @@
                 v-model="file"
                 placeholder="Choose or drop a filled out SRG Spreadsheet here..."
                 drop-placeholder="Drop SRG Spreadsheet here..."
-                accept="appliction/xlsx, application/xls"
+                accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
               />
             </b-form-group>
             <!-- Set the prefix -->
@@ -147,17 +147,15 @@
               label="Select the Point of Contact"
               description="If no user selected, the PoC will be set to the user creating the component"
             >
-              <vue-simple-suggest
-                ref="userSearch"
-                :list="potentialPocs"
-                display-attribute="name"
-                value-attribute="email"
+              <vue-multiselect
+                v-model="selectedPocObj"
+                :options="potentialPocs"
+                label="name"
+                track-by="id"
+                :searchable="true"
+                :allow-empty="true"
                 placeholder="Search for eligible PoC..."
-                :filter-by-query="true"
-                :min-length="0"
-                :max-suggestions="0"
-                :number="0"
-                @select="setComponentPoc($refs.userSearch.selected)"
+                @input="setComponentPoc($event)"
               />
             </b-form-group>
             <!-- Slack Channel ID -->
@@ -183,13 +181,13 @@ import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
+import VueMultiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 
 export default {
   name: "NewComponentModal",
   components: {
-    VueSimpleSuggest,
+    VueMultiselect,
   },
   mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
   props: {
@@ -223,6 +221,10 @@ export default {
       required: false,
       default: null,
     },
+    showOpener: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: function () {
     return {
@@ -247,10 +249,16 @@ export default {
       srgs: [],
       displayedSrgs: [],
       file: null,
+      detecting: false,
+      srgAutoDetected: false,
       componentKey: 0,
       potentialPocs: this.project ? this.project.users : [],
       admin_name: "",
       admin_email: "",
+      selectedProjectObj: null,
+      selectedComponentObj: null,
+      selectedSrgObj: null,
+      selectedPocObj: null,
     };
   },
   computed: {
@@ -280,7 +288,39 @@ export default {
       }
     },
   },
+  watch: {
+    file: function (newFile) {
+      if (newFile && this.spreadsheet_import) {
+        this.detectSrg(newFile);
+      } else {
+        this.srgAutoDetected = false;
+      }
+    },
+  },
   methods: {
+    detectSrg: function (file) {
+      this.detecting = true;
+      this.srgAutoDetected = false;
+      let formData = new FormData();
+      formData.append("file", file);
+      axios
+        .post("/components/detect_srg", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((response) => {
+          const detected = response.data;
+          this.security_requirements_guide_id = detected.id;
+          this.security_requirements_guide_displayed = `${detected.title} (${detected.version})`;
+          this.srgAutoDetected = true;
+        })
+        .catch(() => {
+          // Detection failed — user picks manually, no error needed
+          this.srgAutoDetected = false;
+        })
+        .finally(() => {
+          this.detecting = false;
+        });
+    },
     showModal: function () {
       this.selected_project_id = this.project_id;
       this.selected_component_id = null;
@@ -299,9 +339,13 @@ export default {
         ? this.addDisplayNameToComponents(this.project.components)
         : [];
       this.displayedSrgs = [];
+      this.file = null;
+      this.detecting = false;
+      this.srgAutoDetected = false;
       this.$refs["AddComponentModal"].show();
     },
     setComponentPoc: function (user) {
+      if (!user) return;
       this.admin_email = user.email;
       this.admin_name = user.name;
     },
@@ -317,6 +361,7 @@ export default {
       });
     },
     setSelectedProject: function (project) {
+      if (!project) return;
       if (!this.selected_project_id || this.selected_project_id !== project.id) {
         this.selected_component_id = null;
         this.security_requirements_guide_id = null;
@@ -329,6 +374,7 @@ export default {
       this.selected_project_id = project.id;
     },
     setSelectedComponent: function (component) {
+      if (!component) return;
       this.selected_component_id = component.id;
       this.security_requirements_guide_id = component.security_requirements_guide_id;
       this.security_requirements_guide_displayed = this.srgs.find(
@@ -344,14 +390,16 @@ export default {
       this.displayedSrgs = this.srgs.filter((srg) => srg.title === component.based_on_title);
     },
     setSelectedSrg: function (srg) {
+      if (!srg) return;
       this.security_requirements_guide_id = srg.id;
     },
     createComponent: function (bvModalEvt) {
+      // Prevent double submissions (B7 fix)
+      if (this.loading) return;
       this.loading = true;
       let failed = false;
-      bvModalEvt.preventDefault();
 
-      // Guard before POST
+      // Guard before POST — preventDefault keeps modal open on validation errors
       if (!this.prefix && !this.spreadsheet_import) {
         this.$bvToast.toast("Please enter a prefix", {
           title: "Error",
@@ -385,9 +433,20 @@ export default {
         failed = true;
       }
       if (failed) {
+        // Keep modal open on validation errors
+        if (bvModalEvt) bvModalEvt.preventDefault();
         this.loading = false;
         return;
       }
+
+      // Modal closes naturally (no preventDefault) — show background progress
+      this.$bvToast.toast("Creating component — this may take a moment for large SRGs...", {
+        title: "Creating Component",
+        variant: "info",
+        solid: true,
+        noAutoHide: true,
+        id: "create-component-progress",
+      });
 
       let formData = new FormData();
       formData.append(
@@ -443,10 +502,10 @@ export default {
     },
     completeLoading: function () {
       this.loading = false;
+      this.$bvToast.hide("create-component-progress");
     },
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);
-      this.$refs["AddComponentModal"].hide();
       this.$emit("projectUpdated");
     },
   },

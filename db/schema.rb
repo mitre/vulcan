@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
   # These are extensions that must be enabled in order to support this database
-  enable_extension "plpgsql"
+  enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "additional_answers", force: :cascade do |t|
     t.bigint "rule_id", null: false
@@ -94,12 +95,16 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
     t.string "srg_id"
     t.string "vuln_id"
     t.string "legacy_ids"
+    t.jsonb "locked_fields", default: {}
+    t.index ["component_id", "deleted_at", "rule_severity"], name: "index_base_rules_on_component_deleted_severity"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
+    t.index ["security_requirements_guide_id", "type", "rule_severity"], name: "index_base_rules_on_srg_type_severity"
     t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
     t.index ["srg_rule_id"], name: "index_base_rules_on_srg_rule_id"
+    t.index ["stig_id", "type", "rule_severity"], name: "index_base_rules_on_stig_type_severity"
     t.index ["stig_id"], name: "index_base_rules_on_stig_id"
     t.index ["stig_rule_id"], name: "index_base_rules_on_stig_rule_id"
   end
@@ -142,6 +147,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
     t.string "title"
     t.text "description"
     t.index ["component_id"], name: "index_components_on_component_id"
+    t.index ["name"], name: "index_components_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
+    t.index ["prefix"], name: "index_components_on_prefix_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["project_id"], name: "index_components_on_project_id"
   end
 
@@ -205,6 +212,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
     t.string "admin_email"
     t.integer "visibility", default: 1
     t.string "description"
+    t.index ["name"], name: "index_projects_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
   create_table "references", force: :cascade do |t|
@@ -254,6 +262,18 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
     t.index ["satisfied_by_rule_id", "rule_id"], name: "index_rule_satisfactions_on_satisfied_by_rule_id_and_rule_id", unique: true
   end
 
+  create_table "search_abbreviations", force: :cascade do |t|
+    t.string "abbreviation", null: false
+    t.string "expansion", null: false
+    t.boolean "active", default: true, null: false
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["abbreviation"], name: "index_search_abbreviations_on_abbreviation", unique: true
+    t.index ["active"], name: "index_search_abbreviations_on_active"
+    t.index ["created_by_id"], name: "index_search_abbreviations_on_created_by_id"
+  end
+
   create_table "security_requirements_guides", force: :cascade do |t|
     t.string "srg_id", null: false
     t.string "title", null: false
@@ -263,15 +283,35 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
     t.datetime "updated_at", null: false
     t.date "release_date"
     t.string "name"
+    t.index ["name"], name: "index_srgs_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
+    t.index ["title"], name: "index_srgs_on_title_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
-  create_table "settings", force: :cascade do |t|
-    t.string "var", null: false
-    t.text "value"
+  create_table "session_histories", force: :cascade do |t|
+    t.string "token", null: false
+    t.inet "ip_address"
+    t.string "user_agent"
+    t.datetime "last_accessed_at", null: false
+    t.boolean "active", default: true, null: false
+    t.string "owner_type", null: false
+    t.bigint "owner_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["var"], name: "index_settings_on_var", unique: true
+    t.index ["active"], name: "index_session_histories_on_active"
+    t.index ["ip_address"], name: "index_session_histories_on_ip_address"
+    t.index ["last_accessed_at"], name: "index_session_histories_on_last_accessed_at"
+    t.index ["owner_type", "owner_id"], name: "index_session_histories_on_owner"
+    t.index ["token"], name: "index_session_histories_on_token", unique: true
+  end
+
+  create_table "sessions", force: :cascade do |t|
+    t.string "session_id", null: false
+    t.text "data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["session_id"], name: "index_sessions_on_session_id", unique: true
+    t.index ["updated_at"], name: "index_sessions_on_updated_at"
   end
 
   create_table "stigs", force: :cascade do |t|
@@ -284,7 +324,9 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name", null: false
+    t.index ["name"], name: "index_stigs_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["stig_id", "version"], name: "stigs_stig_id_version_index", unique: true
+    t.index ["title"], name: "index_stigs_on_title_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
   create_table "users", force: :cascade do |t|
@@ -309,10 +351,16 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
     t.string "unconfirmed_email"
     t.boolean "admin", default: false
     t.string "slack_user_id"
+    t.string "password_salt"
+    t.string "unique_session_id"
+    t.integer "failed_attempts", default: 0, null: false
+    t.string "unlock_token"
+    t.datetime "locked_at"
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true, where: "((provider IS NOT NULL) AND (uid IS NOT NULL))"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["unlock_token"], name: "index_users_on_unlock_token", unique: true
   end
 
   add_foreign_key "additional_answers", "additional_questions"
@@ -327,4 +375,5 @@ ActiveRecord::Schema[7.0].define(version: 2025_08_13_154605) do
   add_foreign_key "memberships", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
+  add_foreign_key "search_abbreviations", "users", column: "created_by_id"
 end

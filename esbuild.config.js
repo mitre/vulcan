@@ -13,12 +13,14 @@ const entryPoints = {
   project: "app/javascript/packs/project.js",
   project_components: "app/javascript/packs/project_components.js",
   project_component: "app/javascript/packs/project_component.js",
+  released_component: "app/javascript/packs/released_component.js",
   rules: "app/javascript/packs/rules.js",
   security_requirements_guides: "app/javascript/packs/security_requirements_guides.js",
+  srg: "app/javascript/packs/srg.js",
   stig: "app/javascript/packs/stig.js",
   stigs: "app/javascript/packs/stigs.js",
   users: "app/javascript/packs/users.js",
-  new_project: "app/javascript/packs/new_project.js",
+  user_profile: "app/javascript/packs/user_profile.js",
 };
 
 // Check if we're in watch mode

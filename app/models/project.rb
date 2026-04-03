@@ -6,7 +6,10 @@ class Project < ApplicationRecord
 
   enum :visibility, { discoverable: 0, hidden: 1 }
 
-  audited except: %i[id admin_name admin_email memberships_count created_at updated_at], max_audits: 1000
+  include VulcanAuditable
+
+  vulcan_audited except: %i[id admin_name admin_email memberships_count]
+  has_associated_audits
 
   has_many :memberships, -> { includes :user }, as: :membership, inverse_of: :membership, dependent: :destroy
   has_many :users, through: :memberships
@@ -16,7 +19,11 @@ class Project < ApplicationRecord
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :memberships
 
-  validates :name, presence: true
+  # Length limits — configurable via Settings.input_limits (env vars: VULCAN_LIMIT_PROJECT_*)
+  validates :name, presence: true, length: { maximum: ->(_r) { Settings.input_limits.project_name } }
+  validates :description, length: { maximum: ->(_r) { Settings.input_limits.project_description } }
+  validates :admin_name, :admin_email,
+            length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
 
   scope :alphabetical, -> { order(:name) }
 

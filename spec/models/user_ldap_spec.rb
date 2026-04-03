@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe User, type: :model do
+RSpec.describe User do
   describe '.from_omniauth with LDAP' do
     # Use unique email addresses to avoid conflicts with other tests
     let(:ldap_uid) { 'zoidberg_ldap_test' }
@@ -82,11 +82,24 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context 'when updating an existing LDAP user' do
+    context 'when a local user tries to log in via LDAP' do
       let!(:existing_user) { create(:user, email: ldap_email, provider: nil, uid: nil) }
       let(:auth_hash) { build_auth_hash(email_location: :info) }
 
-      it 'updates the provider and uid' do
+      it 'blocks provider hijacking with ProviderConflictError' do
+        expect { User.from_omniauth(auth_hash) }.to raise_error(User::ProviderConflictError)
+
+        existing_user.reload
+        expect(existing_user.provider).to be_nil
+        expect(existing_user.uid).to be_nil
+      end
+    end
+
+    context 'when an existing LDAP user logs in again' do
+      let!(:existing_user) { create(:user, email: ldap_email, provider: 'ldap', uid: ldap_uid) }
+      let(:auth_hash) { build_auth_hash(email_location: :info) }
+
+      it 'finds the existing user without creating duplicates' do
         expect { User.from_omniauth(auth_hash) }.not_to change(User, :count)
 
         existing_user.reload

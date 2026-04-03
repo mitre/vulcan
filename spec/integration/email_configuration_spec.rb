@@ -2,13 +2,15 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Email Configuration Integration - Core Validation', type: :request do
+RSpec.describe 'Email Configuration Integration - Core Validation' do
   # Simple integration tests that validate our email configuration fixes work
   # Focus on configuration validation rather than complex email rendering
 
+  SMTP_INITIALIZER_PATH = 'config/initializers/smtp_settings.rb' # rubocop:disable Lint/ConstantDefinitionInBlock
+
   # Helper methods to eliminate code duplication
   def reload_smtp_settings
-    load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
+    load Rails.root.join(SMTP_INITIALIZER_PATH)
   end
 
   def setup_production_smtp(smtp_settings, contact_email)
@@ -91,7 +93,7 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
                                                                 'user_name' => 'apikey' # Explicit username provided
                                                               })
 
-        load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
+        load Rails.root.join(SMTP_INITIALIZER_PATH)
 
         # Should preserve explicit username, not override with contact_email
         expect(ActionMailer::Base.smtp_settings[:user_name]).to eq('apikey')
@@ -162,7 +164,7 @@ RSpec.describe 'Email Configuration Integration - Core Validation', type: :reque
         ActionMailer::Base.smtp_settings = {}
 
         # Load initializer
-        load Rails.root.join('config', 'initializers', 'smtp_settings.rb')
+        load Rails.root.join(SMTP_INITIALIZER_PATH)
 
         # Non-production environments should not get SMTP settings
         expect(ActionMailer::Base.smtp_settings).to be_empty,

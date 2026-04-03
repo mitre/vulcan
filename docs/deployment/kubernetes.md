@@ -99,7 +99,7 @@ data:
       local_login:
         enabled: true
         email_confirmation: false
-        session_timeout: 60
+        session_timeout: "1h"  # Accepts: 30s, 15m, 1h, or plain seconds (900)
       
       user_registration:
         enabled: true
@@ -145,7 +145,7 @@ spec:
       automountServiceAccountToken: false  # Security best practice
       containers:
       - name: vulcan-web
-        image: mitre/vulcan:v2.2.1
+        image: mitre/vulcan:v2.3.1
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -204,8 +204,30 @@ spec:
         - name: VULCAN_APP_URL
           value: "https://vulcan.example.com"
         - name: VULCAN_SESSION_TIMEOUT
-          value: "10"
+          value: "15m"    # DoD: 15m for users, 10m for admin
         
+        # Classification Banner (DoD deployments)
+        # - name: VULCAN_BANNER_ENABLED
+        #   value: "true"
+        # - name: VULCAN_BANNER_TEXT
+        #   value: "UNCLASSIFIED"
+        # - name: VULCAN_BANNER_BACKGROUND_COLOR
+        #   value: "#007a33"
+        # - name: VULCAN_BANNER_TEXT_COLOR
+        #   value: "#ffffff"
+
+        # Consent/Terms of Use Modal
+        # - name: VULCAN_CONSENT_ENABLED
+        #   value: "true"
+        # - name: VULCAN_CONSENT_VERSION
+        #   value: "1"
+        # - name: VULCAN_CONSENT_TITLE
+        #   value: "Acceptable Use Policy"
+        # - name: VULCAN_CONSENT_CONTENT
+        #   value: "By using this system you agree to the **acceptable use policy**."
+        # - name: VULCAN_CONSENT_TTL
+        #   value: "0"    # 0 = per-session (DoD default), or e.g. 24h, 12h
+
         # LDAP Configuration (if using)
         - name: VULCAN_ENABLE_LDAP
           value: "true"
@@ -243,17 +265,18 @@ spec:
               key: oidc-client-secret
         
         # Health Checks
+        # /up = fast liveness (no DB), /health_check = readiness (DB check)
         livenessProbe:
           httpGet:
-            path: /health
+            path: /up
             port: 3000
-          initialDelaySeconds: 60
+          initialDelaySeconds: 10
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
+            path: /health_check
             port: 3000
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -261,7 +284,7 @@ spec:
           successThreshold: 1
         startupProbe:
           httpGet:
-            path: /health
+            path: /up
             port: 3000
           initialDelaySeconds: 0
           periodSeconds: 10
@@ -402,7 +425,7 @@ spec:
         spec:
           containers:
           - name: postgres-backup
-            image: postgres:15
+            image: postgres:18
             env:
             - name: PGPASSWORD
               valueFrom:
@@ -460,23 +483,16 @@ spec:
 
 ## Monitoring
 
-### Prometheus Metrics
-
-Add annotations for Prometheus scraping:
-
-```yaml
-metadata:
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "3000"
-    prometheus.io/path: "/metrics"
-```
-
 ### Health Checks
 
-Vulcan provides health endpoints:
-- `/health` - Basic health check
-- `/readiness` - Database connectivity check
+Vulcan provides health endpoints for Kubernetes probes:
+
+| Endpoint | Purpose | Use For |
+|----------|---------|---------|
+| `/up` | Liveness probe (process alive, no DB check) | `livenessProbe` |
+| `/health_check` | Readiness probe (database connected) | `readinessProbe` |
+| `/health_check/database` | Database connectivity only | Custom checks |
+| `/health_check/migrations` | Pending migrations status | CI/CD pipelines |
 
 ## Security Best Practices
 

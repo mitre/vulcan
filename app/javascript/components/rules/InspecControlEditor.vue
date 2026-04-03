@@ -27,7 +27,7 @@
           {{ option.label }}
         </option>
       </b-form-select>
-      <b-button size="sm" squared @click="copyText">
+      <b-button size="sm" @click="copyText">
         Copy
         <b-icon icon="clipboard-check" aria-hidden="true" />
       </b-button>

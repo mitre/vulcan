@@ -57,19 +57,19 @@ git clone https://github.com/mitre/vulcan.git
 cd vulcan
 
 # Generate secure configuration
-./.github/setup-docker-secrets.sh
+./setup-docker-secrets.sh
 
 # Start the application stack
-docker-compose -f .github/docker-compose.yml up
+docker compose up
 ```
 
 ## Latest Release
 
 ::: info Current Version
-**v2.2.1** - Released August 16, 2025
+**v2.3.1** - Released February 2026
 
-Security patch release addressing critical vulnerability fixes.
-[View Release Notes →](/release-notes/v2.2.1)
+DISA process documentation, SRG ID display, export improvements, and DRY refactors.
+[View Release Notes →](/release-notes/v2.3.1)
 :::
 
 ## Why Vulcan?
@@ -88,16 +88,15 @@ Vulcan bridges the gap between security requirements and practical implementatio
   <div class="tech-section">
     <h3>Backend</h3>
     <ul>
-      <li>Ruby 3.3.9 with Rails 8.0.2.1</li>
-      <li>PostgreSQL 12+</li>
-      <li>Redis for caching</li>
+      <li>Ruby 3.4.8 with Rails 8.0.2.1</li>
+      <li>PostgreSQL 18</li>
     </ul>
   </div>
   <div class="tech-section">
     <h3>Frontend</h3>
     <ul>
-      <li>Vue 2.6.11</li>
-      <li>Bootstrap 4.4.1</li>
+      <li>Vue 2.7.16</li>
+      <li>Bootstrap 4.6.2</li>
       <li>Turbolinks 5.2.0</li>
     </ul>
   </div>

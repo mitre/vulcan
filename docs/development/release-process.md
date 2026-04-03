@@ -1,100 +1,234 @@
-# Create and Publish a Vulcan Release
+# Vulcan Release Process
+
+## Overview
+
+Releases are tag-triggered. Push a semver tag to master and the automation handles the rest:
+
+1. `release.yml` fires on the tag, runs git-cliff to generate a changelog, creates the GitHub Release
+2. `ci.yml` fires on `release: [published]`, runs the full test suite, then builds and pushes multi-arch Docker images
+
+You do not manually create draft releases, write changelog entries, or push Docker images.
+
+## CI/CD Workflow Files
+
+| File | Purpose |
+|------|---------|
+| `ci.yml` | Lint, test (frontend + backend shards), SonarCloud, Docker release on publish |
+| `release.yml` | Tag-triggered: generate changelog via git-cliff, create GitHub Release, commit CHANGELOG.md |
+| `docs.yml` | Deploy VitePress documentation to GitHub Pages |
+| `dependabot.yml` | Auto-approve and merge Dependabot PRs |
 
 ## Prerequisites
 
-- Ensure you have the necessary permissions to publish a release on the Vulcan repository.
-- Familiarize yourself with the project's automated workflows.
+- Push access to the Vulcan repository (to push tags)
+- All work merged to master via PRs with conventional commit messages
+- CI passing on master
 
-## Create a new release
-A draft release is automatically created every 14 days by the `create-draft-release.yml` workflow. The workflow also create a new tag by increasing the patch number of the previous release tag. The source code (zip & tar.gz) are also provided in the assets.
+## Conventional Commits
 
+git-cliff reads commit messages to build the changelog. Every commit merged to master should follow the [Conventional Commits](https://www.conventionalcommits.org) format:
 
-We will need to edit and review the draft release to add the release notes and adjust the version tag as needed.
-### Review the Draft Release
+```
+<type>[optional scope]: <description>
 
-1. Navigate to the main page of the Vulcan repository.
-2. To the right of the list of files, click Releases.
+Examples:
+feat: add OIDC provider support
+fix: correct rule export when description is blank
+refactor: extract XCCDF parser into dedicated class
+test: add request specs for component export
+docs: document AC-8 consent TTL configuration
+chore: update Ruby to 3.4.8
+```
 
-<img width="848" alt="Screenshot 2023-03-28 at 3 27 02 PM" src="https://user-images.githubusercontent.com/46642178/228362808-0f86c58d-ae6e-4ab0-8c92-e6c2dc1728b2.png">
+### How commit types map to changelog sections
 
----
+| Commit prefix | Changelog section |
+|---------------|------------------|
+| `feat:` | Added |
+| `fix:` | Fixed |
+| `refactor:`, `perf:` | Changed |
+| `test:` | Tests |
+| `doc:`, `docs:` | Documentation |
+| `chore:` | Maintenance |
+| `style:`, `ci:` | (skipped — not shown in changelog) |
+| commit body contains `security` | Security |
 
-3. At the top of the page, click on the edit button on the latest draft release. If there's no draft release, create one by clicking on `Draft a new release`
+Commits that do not follow conventional format are filtered out of the changelog entirely (`filter_unconventional = true` in `cliff.toml`).
 
-<img width="1296" alt="Screenshot 2023-03-28 at 3 30 32 PM" src="https://user-images.githubusercontent.com/46642178/228362763-180f999b-2dc8-42f6-9f96-706cc8dde6c3.png">
+### Semver guidance
 
----
+Choose the version bump based on what is in the release:
 
-4. Click on "Generate release notes" above the description field on the right to automatically generate release notes. The notes are generated based on the pull requests since the last release.
-5. Manually review the release notes, making sure the changes are well-categorized and accurate.
-6. Update the release version tag as needed, following the Semantic Versioning principle (major, minor, or patch). This should be based on the changes included in the release. In general, we will bump the patch number if changes only include dependencies update and bugs fixes. Bump the minor number if changes include new features, and the major number if changes include breaking changes that may break existing functionalities.
+- **Patch** (v2.3.x): bug fixes, dependency updates, maintenance
+- **Minor** (v2.x.0): new user-facing features
+- **Major** (vX.0.0): breaking changes — discuss with the team first
 
-> You are encouraged to discuss major changes with the team before proceeding.
+## Step-by-Step Release Process
 
-### Update Necessary Files
+### 1. Confirm master is ready
 
-1. On your vulcan local environment:
+```bash
+git checkout master
+git pull origin master
+```
 
-      a. Checkout to the master branch `git checkout master` if not already on master.
+Verify CI is green on master in the [Actions tab](https://github.com/mitre/vulcan/actions).
 
-      b. Ensure that your local master branch is up to date with `origin/master` by running `git pull`
+### 2. Update the VERSION file
 
- 2. Update the necessary files:
+The VERSION file is the single source of truth. Edit it directly:
 
-      a. Update `VERSION` file with the new version number.
-      
-      b. Update `package.json` file: update the `version` field in this file with the new version number
+```bash
+# Example: bumping from v2.3.1 to v2.3.2
+echo "v2.3.2" > VERSION
+```
 
-      c. Update `README.md` file: update the `Latest Release` section by updating the version number to the new one
+Sync the version to `package.json`:
 
-      <img width="1010" alt="Screenshot 2023-10-02 at 2 27 30 PM" src="https://github.com/mitre/vulcan/assets/46642178/70e7f830-490e-4a70-9881-36cca43918a4">
-      
+```bash
+bundle exec rake version:sync
+```
 
-      d. Update the `CHANGELOG.md` file: This is done using the `github_changelog_generator` gem.
+Commit and push:
 
-      - Install the gem locally: `gem install github_changelog_generator`
+```bash
+git add VERSION package.json
+git commit -m "chore: bump version to v2.3.2"
+git push origin master
+```
 
-      - Edit the generator param file `.github_changelog_generator`: change the `future-release` param to the new release number.
+Wait for CI to pass on that commit before tagging.
 
-      - Because GitHub only allows 50 unauthenticated requests per hour, it's better to run the generator script with authentication by using a token. If you do not already have a valid GitHub token, follow these [instructions](https://github.com/github-changelog-generator/github-changelog-generator#github-token) to generate one.
+### 3. Tag and push
 
-      - Run the following command to generate the new changelog: `github_changelog_generator --token <your-40-digit-token>`
+```bash
+git tag v2.3.2
+git push origin v2.3.2
+```
 
- 3. Commit and Push the Changes:
+That push triggers everything. No further manual steps are required.
 
-      ```bash
-        git add .
-        git commit -s -m "<The New Release Version Number (e.g. v2.1.4)>"
-        git push
-      ```
+### 4. What happens automatically
 
-The draft release creation also trigger the test to run and the build and push of the docker image (`run-tests.yml` and `push-to-docker.yml` workflows).
+**`release.yml`** (triggered by the tag push):
 
-However, additional verification needs to be done before publishing the release.
+1. Checks out full history (`fetch-depth: 0`)
+2. Runs git-cliff with `--latest --strip header` to generate the changelog for this release only
+3. Creates a GitHub Release with the generated changelog as the body
+4. Runs git-cliff again for the full CHANGELOG.md
+5. Commits `CHANGELOG.md` back to master via `github-actions[bot]`
 
-### Test and Deployment Verifications
+**`ci.yml`** (triggered by `release: [published]`):
 
-#### Step 1: Verify the Test Suite and Docker Image Build
+1. Runs the full lint + frontend + backend test suite
+2. If all jobs pass, runs `docker-release`:
+   - Logs in to DockerHub
+   - Uses Docker Build Cloud (`mitre/mitre-builder`) for native multi-arch builds
+   - Builds `linux/amd64` and `linux/arm64` images
+   - Pushes `mitre/vulcan:v2.3.2` and `mitre/vulcan:latest` to DockerHub
+   - Generates SBOM (SPDX format) and submits to GitHub dependency graph
 
-1. Go to the GitHub Actions tab in the Vulcan repository.
-2. Check that the test suite and Docker image build workflows have run successfully after the draft release was created.
-3. If the workflows have failed, review the logs, resolve the issues, and push the fixes to the repository.
-4. If any fixes are pushed to the repository, make sure to regenerate the release notes and the assets to capture the update.
-5. Pull the latest vulcan docker image `mitre/vulcan:latest` and run it with `docker compose`.
+### 5. Verify the release
 
->> Ensure you have setup your docker secrets with ./setup-docker-secrets.sh. Also replace `build: .` with `image: mitre/vulcan:latest` in the `docker-compose.yml`. You can also build the image locally and test it. Just make sure to pull the most up to date code from the master branch.
+1. Check [Actions](https://github.com/mitre/vulcan/actions) — `release.yml` and `ci.yml` runs should both be green
+2. Check [Releases](https://github.com/mitre/vulcan/releases) — new release should exist with changelog populated
+3. Check [DockerHub](https://hub.docker.com/r/mitre/vulcan/tags) — new version tag and `latest` should be present
+4. Pull and smoke-test the image:
 
-6. If any issues, address them and repeat the testing process.
+```bash
+docker pull mitre/vulcan:v2.3.2
 
-#### Step 2: Verify the Staging Deployment
+# Quick sanity check — should print the version and exit
+docker run --rm mitre/vulcan:v2.3.2 bundle exec rails runner "puts Vulcan::VERSION"
+```
 
-1. The master branch is automatically deployed to the staging environment on heroku. Go to <https://github.com/mitre/vulcan/deployments/activity_log?environment=mitre-vulcan-staging>, and ensure that the deployment completed successfully.
-2. Test the app thoroughly, ensuring that all features work as expected and there are no bugs.
-3. Address any issues found in the staging deployment and repeat the testing process.
+## How Version Files Stay in Sync
 
-## Publish the Release
+| File | How it's updated |
+|------|-----------------|
+| `VERSION` | **You update this manually** before tagging |
+| `package.json` | Run `bundle exec rake version:sync` after editing VERSION |
+| `lib/vulcan/version.rb` | Reads VERSION at load time — no editing needed |
+| `CHANGELOG.md` | git-cliff commits this automatically after each tag push |
 
-1. Once all checks have been completed and are successful, go back to the draft release, click on the edit button, then click on "Publish release" to publish the new Vulcan release.
+`lib/vulcan/version.rb` strips the `v` prefix from VERSION so it can be used as a clean Ruby constant (`Vulcan::VERSION # => "2.3.2"`).
 
+## Hotfix / Emergency Release
 
-With these steps completed, you have successfully published a new Vulcan release.
+For a critical fix that must go out without waiting for pending work:
+
+```bash
+# Start from the last release tag
+git checkout v2.3.1
+git checkout -b hotfix/v2.3.2
+
+# Make the fix
+# ... edit files ...
+git add <files>
+git commit -m "fix: correct critical issue in rule export"
+
+# Update VERSION
+echo "v2.3.2" > VERSION
+bundle exec rake version:sync
+git add VERSION package.json
+git commit -m "chore: bump version to v2.3.2"
+
+# Push the branch and open a PR to master
+git push origin hotfix/v2.3.2
+# Merge the PR to master after review
+
+# Then tag from master
+git checkout master
+git pull origin master
+git tag v2.3.2
+git push origin v2.3.2
+```
+
+This follows the same tag-triggered flow. There is no separate hotfix workflow.
+
+## Docker Image Details
+
+- **Registry**: [hub.docker.com/r/mitre/vulcan](https://hub.docker.com/r/mitre/vulcan)
+- **Architectures**: `linux/amd64`, `linux/arm64` (built natively via Docker Build Cloud)
+- **Tags**: `v2.3.2` (immutable) and `latest` (updated on each release)
+- **Base**: Ruby 3.4.8 on Debian Bookworm with jemalloc
+
+## Troubleshooting
+
+**The release.yml run failed — no GitHub Release was created.**
+
+Check the Actions log. Common causes:
+- Malformed `cliff.toml` (TOML syntax error)
+- `GITHUB_TOKEN` permissions — the workflow requires `contents: write`
+
+If the release was not created, delete the tag, fix the issue, and re-push:
+
+```bash
+git tag -d v2.3.2
+git push origin :refs/tags/v2.3.2
+# fix the issue, then:
+git tag v2.3.2
+git push origin v2.3.2
+```
+
+**The GitHub Release was created but Docker images were not pushed.**
+
+The `docker-release` job in `ci.yml` only runs when a release is published. If tests fail, Docker is skipped. Fix the test failures on master, then:
+
+- You cannot re-trigger docker-release automatically without publishing a new release
+- Either publish a patch release with the fix, or manually publish the Docker image using the Dockerfile
+
+**`CHANGELOG.md` has a merge conflict after the bot commit.**
+
+git-cliff pushes to master directly from the tag workflow. If another commit landed on master simultaneously, the push may fail. The changelog content is still in the GitHub Release body. Re-run `git-cliff` locally to regenerate:
+
+```bash
+# Install git-cliff if needed
+brew install git-cliff
+
+# Regenerate full changelog
+git-cliff --config cliff.toml --output CHANGELOG.md
+git add CHANGELOG.md
+git commit -m "docs: regenerate CHANGELOG.md"
+git push origin master
+```

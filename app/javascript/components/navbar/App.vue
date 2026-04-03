@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-navbar toggleable="lg" type="dark" variant="dark">
+    <b-navbar toggleable="xl" type="dark" variant="dark">
       <b-navbar-brand id="heading" href="/">
         <b-icon icon="broadcast" aria-hidden="true" />
         VULCAN
@@ -11,7 +11,7 @@
       <b-navbar-toggle target="nav-collapse" />
 
       <b-collapse id="nav-collapse" is-nav>
-        <div class="d-flex w-100 justify-content-lg-center text-lg-center">
+        <div class="d-flex w-100 justify-content-xl-center text-xl-center">
           <b-navbar-nav>
             <div v-for="item in navigation" :key="item.name">
               <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
@@ -19,8 +19,11 @@
           </b-navbar-nav>
         </div>
 
-        <div v-if="signed_in" class="d-flex justify-content-between right-container">
-          <SrgIdSearch />
+        <div
+          v-if="signed_in"
+          class="d-flex flex-column flex-xl-row align-items-xl-center w-100 mt-2 mt-xl-0 right-container"
+        >
+          <GlobalSearch />
           <!-- Notification Dropdown -->
           <!-- Right aligned nav items -->
           <b-navbar-nav class="ml-auto">
@@ -28,22 +31,30 @@
               <template #button-content>
                 <b-icon icon="bell" aria-hidden="true" />
                 <b-badge
-                  v-if="access_requests.length"
+                  v-if="notificationCount"
                   variant="danger"
                   class="rounded-pill position-absolute top-0 start-100 translate-middle"
                   style="top: 0; right: 0"
                 >
-                  {{ access_requests.length }}
+                  {{ notificationCount }}
                 </b-badge>
               </template>
               <b-dropdown-item
-                v-for="(access_request, index) in access_requests"
-                :key="index"
+                v-for="(access_request, index) in localAccessRequests"
+                :key="'ar-' + index"
                 :href="`/projects/${access_request.project_id}`"
               >
                 {{
                   `${access_request.user.name} has requested access to project ${access_request.project.name}`
                 }}
+              </b-dropdown-item>
+              <b-dropdown-item
+                v-for="locked_user in localLockedUsers"
+                :key="'lu-' + locked_user.id"
+                :href="`/users?unlock=${locked_user.id}`"
+              >
+                <b-icon icon="lock" class="mr-1 text-warning" />
+                {{ locked_user.name }} ({{ locked_user.email }}) account is locked
               </b-dropdown-item>
             </b-nav-item-dropdown>
             <b-nav-item-dropdown right>
@@ -52,7 +63,7 @@
               </template>
               <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
               <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
-              <b-dropdown-item :href="sign_out_path">Sign Out</b-dropdown-item>
+              <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
             </b-nav-item-dropdown>
           </b-navbar-nav>
         </div>
@@ -67,18 +78,23 @@
     >
       New version: Vulcan {{ latestRelease }} is now available!!
     </b-alert>
+    <ConsentModal v-if="consent_config && consent_config.enabled" :config="consent_config" />
   </div>
 </template>
 
 <script>
+import axios from "axios";
 import semver from "semver";
+import FormMixinVue from "../../mixins/FormMixin.vue";
 import NavbarItem from "./NavbarItem.vue";
-import SrgIdSearch from "./SrgIdSearch.vue";
-import { version } from "../../../../package.json";
+import GlobalSearch from "./GlobalSearch.vue";
+import ConsentModal from "../shared/ConsentModal.vue";
+import { EVENTS, listen } from "../../utils/notificationEvents";
 
 export default {
   name: "Navbar",
-  components: { NavbarItem, SrgIdSearch },
+  components: { NavbarItem, GlobalSearch, ConsentModal },
+  mixins: [FormMixinVue],
   props: {
     navigation: {
       type: Array,
@@ -105,18 +121,64 @@ export default {
       required: false,
       default: () => [],
     },
+    locked_users: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
+    consent_config: {
+      type: Object,
+      required: false,
+      default: () => null,
+    },
+    app_version: {
+      type: String,
+      required: false,
+      default: "0.0.0",
+    },
   },
   data() {
     return {
       latestRelease: "",
-      currentVersion: version,
+      currentVersion: this.app_version,
       updateAvailable: false,
+      localLockedUsers: [...this.locked_users],
+      localAccessRequests: [...this.access_requests],
+      cleanupLockout: null,
+      cleanupAccessRequest: null,
     };
+  },
+  computed: {
+    notificationCount() {
+      return this.localAccessRequests.length + this.localLockedUsers.length;
+    },
   },
   mounted() {
     this.fetchLatestRelease();
+    this.cleanupLockout = listen(EVENTS.LOCKOUT_CHANGED, this.onLockoutChanged);
+    this.cleanupAccessRequest = listen(EVENTS.ACCESS_REQUEST_CHANGED, this.onAccessRequestChanged);
+  },
+  beforeDestroy() {
+    if (this.cleanupLockout) this.cleanupLockout();
+    if (this.cleanupAccessRequest) this.cleanupAccessRequest();
   },
   methods: {
+    onLockoutChanged(event) {
+      const { action, user } = event.detail;
+      if (action === "locked") {
+        if (!this.localLockedUsers.some((u) => u.id === user.id)) {
+          this.localLockedUsers.push({ id: user.id, name: user.name, email: user.email });
+        }
+      } else if (action === "unlocked") {
+        this.localLockedUsers = this.localLockedUsers.filter((u) => u.id !== user.id);
+      }
+    },
+    onAccessRequestChanged(event) {
+      const { action, id } = event.detail;
+      if (action === "resolved") {
+        this.localAccessRequests = this.localAccessRequests.filter((r) => r.id !== id);
+      }
+    },
     fetchLatestRelease() {
       const owner = "mitre";
       const repo = "vulcan";
@@ -130,6 +192,15 @@ export default {
         .catch((error) => {
           this.latestRelease = "";
         });
+    },
+    async signOut() {
+      try {
+        await axios.delete(this.sign_out_path);
+      } catch {
+        // Sign-out may return a redirect (302) which axios treats as an error.
+        // Either way, navigate to the root to complete sign-out.
+      }
+      globalThis.location.assign("/");
     },
     checkUpdateAvailable() {
       if (!this.latestRelease || this.latestRelease.trim() === "") return false;

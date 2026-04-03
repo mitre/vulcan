@@ -18,8 +18,23 @@ module ImportConstants
     vendor_comments: 'Vendor Comments',
     mitigation: 'Mitigation',
     inspec_control_body: 'InSpec Control Body',
-    ident: 'CCI'
+    ident: 'CCI',
+    satisfies: 'Satisfies'
   }.freeze
 
   IMPORT_MAPPING = REQUIRED_MAPPING_CONSTANTS.merge(OPTIONAL_MAPPING_CONSTANTS)
+
+  # Postel's Law: Be liberal in what we accept.
+  # Accept both standard DISA import headers AND benchmark CSV export headers.
+  # Maps benchmark export header names to their DISA import equivalents.
+  HEADER_ALIASES = {
+    'STIG ID' => 'STIGID',
+    'SRG ID' => 'SRGID',
+    'Title' => 'Requirement',
+    'Description' => 'VulDiscussion',
+    'Vuln Discussion' => 'VulDiscussion',
+    'Mitigations' => 'Mitigation',
+    'Check Content' => 'Check',
+    'Fix Text' => 'Fix'
+  }.freeze
 end

@@ -1,0 +1,253 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/dependabot.yml'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/dependabot.yml'
+  release:
+    types: [published]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
+jobs:
+  # ─── LINT + SECURITY ─────────────────────────────────────
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - name: RuboCop
+        run: bundle exec rubocop --parallel
+      - name: ESLint
+        run: yarn lint:ci
+      - name: Brakeman
+        run: bundle exec brakeman -q --no-pager
+      - name: Bundle Audit
+        run: bundle exec bundler-audit check --update
+
+  # ─── FRONTEND TESTS + COVERAGE ───────────────────────────
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - name: Vitest with coverage
+        run: yarn test:unit --coverage
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-frontend
+          path: coverage/js
+          retention-days: 5
+
+  # ─── BACKEND TESTS + COVERAGE (6 shards) ─────────────────
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        ci_node_index: [1, 2, 3, 4, 5, 6]
+
+    services:
+      db:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: vulcan_vue_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: "--nosync"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 500ms
+          --health-timeout 3s
+          --health-retries 20
+      ldap:
+        image: rroemhild/test-openldap
+        ports:
+          - 10389:10389
+
+    env:
+      # Application config (read by database.yml)
+      DATABASE_HOST: localhost
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # libpq vars (read by pg_isready, psql CLI tools)
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      RAILS_ENV: test
+      RUBY_YJIT_ENABLE: "1"
+      CI: "true"
+      # OIDC Testing — VULCAN_OIDC_* is the primary source;
+      # spec/support/okta_test_config.rb falls back to these
+      VULCAN_ENABLE_OIDC: "true"
+      VULCAN_OIDC_DISCOVERY: "true"
+      VULCAN_OIDC_ISSUER_URL: ${{ secrets.OKTA_TEST_ISSUER }}
+      VULCAN_OIDC_CLIENT_ID: ${{ secrets.OKTA_TEST_CLIENT_ID }}
+      VULCAN_OIDC_CLIENT_SECRET: ${{ secrets.OKTA_TEST_CLIENT_SECRET }}
+      # LDAP Testing (rroemhild/test-openldap public defaults)
+      VULCAN_ENABLE_LDAP: "true"
+      VULCAN_LDAP_HOST: localhost
+      VULCAN_LDAP_ATTRIBUTE: mail
+      VULCAN_LDAP_BIND_DN: "cn=admin,dc=planetexpress,dc=com"
+      VULCAN_LDAP_BASE: "ou=people,dc=planetexpress,dc=com"
+      VULCAN_LDAP_PORT: "10389"
+      VULCAN_LDAP_ADMIN_PASS: GoodNewsEveryone
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - name: Install system dependencies
+        run: sudo apt-get -yqq install libpq-dev
+
+      - name: Cache JS build
+        uses: actions/cache@v4
+        id: js-cache
+        with:
+          path: app/assets/builds
+          key: js-build-${{ hashFiles('app/javascript/**', 'yarn.lock', 'esbuild.config.js', 'package.json') }}
+      - name: Build JavaScript assets
+        if: steps.js-cache.outputs.cache-hit != 'true'
+        run: yarn build
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+
+      - name: Run backend tests (shard ${{ matrix.ci_node_index }}/6)
+        run: |
+          bundle exec parallel_rspec \
+            -n 6 \
+            --only-group ${{ matrix.ci_node_index }} \
+            spec/
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-shard-${{ matrix.ci_node_index }}
+          path: coverage
+          retention-days: 5
+
+  # ─── GATE — single required status check for branch protection ───
+  ci-gate:
+    needs: [lint, frontend, backend]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Check all jobs passed
+        run: |
+          results='${{ toJSON(needs.*.result) }}'
+          if echo "$results" | grep -qE '"(failure|cancelled|skipped)"'; then
+            echo "::error::One or more CI jobs failed, were cancelled, or were skipped"
+            exit 1
+          fi
+          echo "All CI jobs passed"
+
+  # ─── DOCKER RELEASE (release only, multi-arch via Build Cloud) ───
+  docker-release:
+    needs: [lint, frontend, backend]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write   # Required for anchore/sbom-action dependency-snapshot submission
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Set up Docker Buildx (Build Cloud)
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: cloud
+          endpoint: "mitre/mitre-builder"
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: mitre/vulcan
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: SBOM scan and dependency submission
+        uses: anchore/sbom-action@v0
+        with:
+          image: mitre/vulcan:${{ github.event.release.tag_name }}
+          artifact-name: image.spdx.json
+          dependency-snapshot: true

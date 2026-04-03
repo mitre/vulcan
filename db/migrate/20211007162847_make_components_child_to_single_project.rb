@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class MakeComponentsChildToSingleProject < ActiveRecord::Migration[6.1]
   def change
     remove_index :components, name: :index_components_on_child_project_id

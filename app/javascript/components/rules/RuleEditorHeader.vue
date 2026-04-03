@@ -16,10 +16,11 @@
         </h2>
       </div>
       <p v-if="!readOnly && rule.locked" class="text-danger font-weight-bold">
-        This control is locked and must first be unlocked if changes or deletion are required.
+        This {{ term.singular.toLowerCase() }} is locked and must first be unlocked if changes or
+        deletion are required.
       </p>
       <p v-if="!readOnly && rule.review_requestor_id" class="text-danger font-weight-bold">
-        This control is under review and cannot be edited at this time.
+        This {{ term.singular.toLowerCase() }} is under review and cannot be edited at this time.
       </p>
 
       <div v-if="!readOnly">
@@ -34,14 +35,14 @@
         <!-- Action Buttons -->
         <!-- Clone rule modal -->
         <NewRuleModalForm
-          :title="'Clone Control'"
+          :title="msg.cloneTitle"
           :id-prefix="'duplicate'"
           :for-duplicate="true"
           :selected-rule-id="rule.id"
           :selected-rule-text="`${projectPrefix}-${rule.rule_id}`"
           @ruleSelected="$emit('ruleSelected', $event.id)"
         />
-        <b-button v-b-modal.duplicate-rule-modal variant="info">Clone Control</b-button>
+        <b-button v-b-modal.duplicate-rule-modal variant="info">{{ msg.cloneTitle }}</b-button>
 
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
@@ -49,16 +50,12 @@
             v-if="effectivePermissions == 'admin'"
             v-b-tooltip.hover
             class="d-inline-block"
-            title="Cannot delete a control that is locked or under review"
+            :title="msg.cannotDeleteLocked"
           >
-            <b-button variant="danger" disabled>Delete Control</b-button>
+            <b-button variant="danger" disabled>{{ msg.deleteTitle }}</b-button>
           </span>
-          <span
-            v-b-tooltip.hover
-            class="d-inline-block"
-            title="Cannot save a control that is locked or under review."
-          >
-            <b-button variant="success" disabled>Save Control</b-button>
+          <span v-b-tooltip.hover class="d-inline-block" :title="msg.cannotSaveLocked">
+            <b-button variant="success" disabled>{{ msg.saveTitle }}</b-button>
           </span>
         </template>
         <template v-else>
@@ -68,15 +65,15 @@
             v-b-modal.delete-rule-modal
             variant="danger"
           >
-            Delete Control
+            {{ msg.deleteTitle }}
           </b-button>
 
           <!-- Save rule -->
           <CommentModal
-            title="Save Control"
-            message="Provide a comment that summarizes your changes to this control."
+            :title="msg.saveTitle"
+            :message="msg.saveMessage"
             :require-non-empty="true"
-            button-text="Save Control"
+            :button-text="msg.saveTitle"
             button-variant="success"
             :button-disabled="false"
             wrapper-class="d-inline-block"
@@ -87,7 +84,7 @@
         <!-- Comment -->
         <CommentModal
           title="Comment"
-          message="Submit general feedback on the control"
+          :message="msg.commentMessage"
           :require-non-empty="true"
           button-text="Comment"
           button-variant="secondary"
@@ -165,45 +162,16 @@
 
         <b-modal
           id="delete-rule-modal"
-          title="Delete Control"
+          :title="msg.deleteTitle"
           centered
           @ok="$root.$emit('delete:rule', rule.id)"
         >
-          <p class="my-2">
-            Are you sure you want to delete this control?<br />This cannot be undone.
-          </p>
+          <p class="my-2">{{ msg.deleteConfirmMessage }}</p>
 
           <template #modal-footer="{ cancel, ok }">
             <!-- Emulate built in modal footer ok and cancel button actions -->
             <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="danger" @click="ok()"> Permanently Delete Control </b-button>
-          </template>
-        </b-modal>
-        <b-modal
-          id="also-satisfies-modal"
-          title="Also Satisfies"
-          centered
-          @ok="$root.$emit('addSatisfied:rule', satisfies_rule_id, rule.id)"
-        >
-          <b-form-group label="Select a control that this one satisfies:">
-            <vue-simple-suggest
-              :key="`componentKey-${rules[0].component_id}`"
-              ref="controlSearch"
-              :list="filteredSelectRules"
-              display-attribute="text"
-              value-attribute="value"
-              placeholder="Search for eligible control..."
-              :filter-by-query="true"
-              :min-length="0"
-              :max-suggestions="0"
-              :number="0"
-              @select="satisfies_rule_id = $refs.controlSearch.selected.value"
-            />
-          </b-form-group>
-          <template #modal-footer="{ cancel, ok }">
-            <!-- Emulate built in modal footer ok and cancel button actions -->
-            <b-button @click="cancel()"> Cancel </b-button>
-            <b-button variant="info" @click="ok()"> OK </b-button>
+            <b-button variant="danger" @click="ok()">{{ msg.deleteConfirmButton }}</b-button>
           </template>
         </b-modal>
       </div>
@@ -218,12 +186,11 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
-import VueSimpleSuggest from "vue-simple-suggest";
-import "vue-simple-suggest/dist/styles.css";
+import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants/terminology";
 
 export default {
   name: "RuleEditorHeader",
-  components: { CommentModal, NewRuleModalForm, VueSimpleSuggest },
+  components: { CommentModal, NewRuleModalForm },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
@@ -253,9 +220,9 @@ export default {
   },
   data: function () {
     return {
-      showSRGIdChecked: localStorage.getItem(`showSRGIdChecked-${this.rules[0].component_id}`),
-      filteredSelectRules: [],
-      satisfies_rule_id: null,
+      term: RULE_TERM,
+      msg: MESSAGE_LABELS,
+      reviewLabels: REVIEW_ACTION_LABELS,
       selectedReviewAction: null,
       showReviewPane: false,
       reviewComment: "",
@@ -275,6 +242,7 @@ export default {
       const isReviewer = !this.readOnly && this.effectivePermissions == "reviewer";
       const isRequestor = !this.readOnly && this.currentUserId == this.rule.review_requestor_id;
       const isUnderReview = this.rule.review_requestor_id != null;
+      const labels = this.reviewLabels;
 
       return [
         // should only be able to request review if
@@ -282,12 +250,12 @@ export default {
         // - not currently locked
         {
           value: "request_review",
-          name: "Request Review",
-          description: "control will not be editable during the review process",
+          name: labels.requestReview.name,
+          description: labels.requestReview.description,
           disabledTooltip: isUnderReview
-            ? "Control is already under review"
+            ? labels.requestReview.alreadyUnderReview
             : this.rule.locked
-              ? "Control is currently locked"
+              ? labels.requestReview.isLocked
               : null,
         },
 
@@ -296,12 +264,12 @@ export default {
         // - OR current user originally requested the review
         {
           value: "revoke_review_request",
-          name: "Revoke Review Request",
-          description: "revoke your request for review - control will be editable again",
+          name: labels.revokeReview.name,
+          description: labels.revokeReview.description,
           disabledTooltip: !(isAdmin || isRequestor)
-            ? "Only an admin or the review requestor can revoke the current review request"
+            ? labels.revokeReview.notAllowed
             : !isUnderReview
-              ? "Control is not currently under review"
+              ? labels.revokeReview.notUnderReview
               : null,
         },
 
@@ -310,12 +278,12 @@ export default {
         // - control is currently under review
         {
           value: "request_changes",
-          name: "Request Changes",
-          description: "request changes on the control - control will be editable again",
+          name: labels.requestChanges.name,
+          description: labels.requestChanges.description,
           disabledTooltip: !(isAdmin || isReviewer)
-            ? "Only an admin or reviewer can request changes"
+            ? labels.requestChanges.notAllowed
             : !isUnderReview
-              ? "Control is not currently under review"
+              ? labels.requestChanges.notUnderReview
               : null,
         },
 
@@ -324,93 +292,56 @@ export default {
         // - control is currently under review
         {
           value: "approve",
-          name: "Approve",
-          description: "approve the control - control will become locked",
+          name: labels.approve.name,
+          description: labels.approve.description,
           disabledTooltip: !(isAdmin || isReviewer)
-            ? "Only an admin or reviewer can approve"
+            ? labels.approve.notAllowed
             : !isUnderReview
-              ? "Control is not currently under review"
+              ? labels.approve.notUnderReview
               : null,
         },
 
-        // should only be able to lock control if
+        // should only be able to lock rule if
         // - current user is admin
-        // - control is not under review
-        // - control is not locked
+        // - rule is not under review
+        // - rule is not locked
         {
           value: "lock_control",
-          name: "Lock Control",
-          description: "skip the review process - control will be immediately locked",
+          name: labels.lock.name,
+          description: labels.lock.description,
           disabledTooltip: !isAdmin
-            ? "Only an admin can directly lock a control"
+            ? labels.lock.notAllowed
             : isUnderReview
-              ? "Cannot lock a control that is currently under review"
+              ? labels.lock.underReview
               : this.rule.locked
-                ? "Cannot lock a control that is already locked"
+                ? labels.lock.alreadyLocked
                 : this.rule.status === "Applicable - Does Not Meet" &&
                     this.rule.disa_rule_descriptions_attributes[0].mitigations.length === 0
-                  ? "Cannot lock control: Mitigation is required for Applicable - Does Not Meet"
+                  ? labels.lock.mitigationRequired
                   : this.rule.status === "Applicable - Inherently Meets" &&
                       (this.rule.artifact_description === null ||
                         this.rule.artifact_description.length === 0)
-                    ? "Cannot lock control: Artifact Description is required for Applicable - Inherently Meets"
+                    ? labels.lock.artifactRequired
                     : null,
         },
 
-        // should only be able to unlock a control if
+        // should only be able to unlock a rule if
         // - current user is admin
-        // - control is locked
+        // - rule is locked
         {
           value: "unlock_control",
-          name: "Unlock Control",
-          description: "unlock the control - control will be editable again",
+          name: labels.unlock.name,
+          description: labels.unlock.description,
           disabledTooltip: !isAdmin
-            ? "Only an admin can unlock a control"
+            ? labels.unlock.notAllowed
             : !this.rule.locked
-              ? "Cannot unlock a control that is not locked"
+              ? labels.unlock.notLocked
               : null,
         },
       ];
     },
   },
-  watch: {
-    rule: function (_) {
-      this.filterRules();
-    },
-  },
-  mounted: function () {
-    this.updateShowSRGIdChecked();
-  },
-  beforeUnmount: function () {
-    clearInterval(this.showSRGIdCheckedInterval);
-  },
   methods: {
-    updateShowSRGIdChecked: function () {
-      const componentId = this.rules[0].component_id;
-      this.showSRGIdCheckedInterval = setInterval(() => {
-        const newValue = localStorage.getItem(`showSRGIdChecked-${componentId}`);
-        if (newValue !== this.showSRGIdChecked) {
-          this.showSRGIdChecked = newValue;
-          this.filterRules();
-        }
-      }, 1000);
-    },
-    filterRules: function () {
-      this.filteredSelectRules = this.rules
-        .filter((r) => {
-          return (
-            r.id !== this.rule.id &&
-            r.satisfies.length === 0 &&
-            !this.rule.satisfies.some((s) => s.id === r.id)
-          );
-        })
-        .map((r) => {
-          return {
-            value: r.id,
-            text: JSON.parse(this.showSRGIdChecked) ? r.version : this.formatRuleId(r.rule_id),
-          };
-        });
-    },
     saveRule(comment) {
       const payload = {
         rule: {

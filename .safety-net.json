@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/kenryu42/claude-code-safety-net/main/assets/cc-safety-net.schema.json",
+  "version": 1,
+  "rules": [
+    {
+      "name": "block-rm-all",
+      "command": "rm",
+      "block_args": ["-f", "--force", "-r", "--recursive", "-rf", "-fr"],
+      "reason": "NEVER delete files without explicit user permission. Ask user to run rm themselves."
+    },
+    {
+      "name": "block-git-rm",
+      "command": "git",
+      "subcommand": "rm",
+      "block_args": ["-f", "--force", "-r", "--recursive", "--cached"],
+      "reason": "NEVER remove tracked files. Ask user to run git rm themselves."
+    },
+    {
+      "name": "block-git-clean",
+      "command": "git",
+      "subcommand": "clean",
+      "block_args": ["-f", "--force", "-d", "-x"],
+      "reason": "NEVER clean untracked files. Ask user to run git clean themselves."
+    },
+    {
+      "name": "block-git-checkout-dot",
+      "command": "git",
+      "subcommand": "checkout",
+      "block_args": [".", "--", "-f", "--force"],
+      "reason": "NEVER discard changes with checkout. Ask user to do it themselves."
+    },
+    {
+      "name": "block-git-reset-hard",
+      "command": "git",
+      "subcommand": "reset",
+      "block_args": ["--hard"],
+      "reason": "NEVER reset --hard. Ask user to do it themselves."
+    }
+  ]
+}

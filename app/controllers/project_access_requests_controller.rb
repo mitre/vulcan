@@ -4,6 +4,9 @@
 # Controller for managing request to access a specific project.
 #
 class ProjectAccessRequestsController < ApplicationController
+  before_action :authorize_logged_in, only: %i[create]
+  before_action :set_and_authorize_access_request, only: %i[destroy]
+
   def create
     @project = Project.find(params[:project_id])
     @access_request = ProjectAccessRequest.new(user: current_user, project: @project)
@@ -18,26 +21,39 @@ class ProjectAccessRequestsController < ApplicationController
   end
 
   def destroy
-    @access_request = ProjectAccessRequest.find(params[:id])
-
-    # Authorization check: Users can only delete their own requests or must be project admin
-    unless @access_request.user == current_user || current_user.can_admin_project?(@access_request.project)
-      flash.alert = 'You are not authorized to delete this access request.'
-      redirect_back(fallback_location: root_path)
-      return
-    end
-
     if @access_request.destroy
       if current_user.can_admin_project?(@access_request.project)
         send_smtp_notification(UserMailer, 'reject_access', @access_request.user, @access_request.project) if Settings.smtp.enabled
-        flash.notice = "Sucessfully denied #{@access_request.user.name}'s request to access project."
+        toast = "Successfully denied #{@access_request.user.name}'s request to access project."
       else
-        flash.notice = "Your request to access #{@access_request.project.name} has been cancelled."
+        toast = "Your request to access #{@access_request.project.name} has been cancelled."
+      end
+
+      respond_to do |format|
+        format.html do
+          flash.notice = toast
+          redirect_back(fallback_location: root_path)
+        end
+        format.json { render json: { toast: toast, id: @access_request.id } }
       end
     else
-      flash.alert = @access_request.errors.full_messages.to_sentence
+      respond_to do |format|
+        format.html do
+          flash.alert = @access_request.errors.full_messages.to_sentence
+          redirect_back(fallback_location: root_path)
+        end
+        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_entity }
+      end
     end
+  end
 
-    redirect_back(fallback_location: root_path)
+  private
+
+  def set_and_authorize_access_request
+    @access_request = ProjectAccessRequest.find(params[:id])
+
+    return if @access_request.user == current_user || current_user.can_admin_project?(@access_request.project)
+
+    raise(NotAuthorizedError, 'You are not authorized to delete this access request.')
   end
 end

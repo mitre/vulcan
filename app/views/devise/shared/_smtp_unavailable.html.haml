@@ -1,0 +1,10 @@
+-# Shown on email-dependent pages when SMTP is not configured.
+-# Usage: = render 'devise/shared/smtp_unavailable', action_description: 'reset your password'
+%b-alert{show: "", variant: "warning"}
+  %b-icon.mr-1{icon: "exclamation-triangle"}
+  %strong Email delivery is not configured.
+%p.mt-3
+  This feature requires email delivery, which is not available on this instance.
+%p
+  To #{action_description}, contact your Vulcan administrator. They can assist you
+  directly from the user management page.

@@ -1,138 +1,94 @@
 <template>
   <div v-if="check._destroy != true">
     <!-- system -->
-    <b-form-group
-      v-if="fields.displayed.includes('system')"
-      :id="`ruleEditor-check-system-group-${mod}`"
+    <RuleFormGroup
+      v-slot="{ inputId, isDisabled }"
+      v-bind="formGroupProps"
+      field-name="system"
+      label="System"
+      :tooltip="tooltips['system']"
+      id-prefix="ruleEditor-check"
     >
-      <label :for="`ruleEditor-check-system-${mod}`">
-        System
-        <b-icon
-          v-if="tooltips['system']"
-          v-b-tooltip.hover.html
-          icon="info-circle"
-          aria-hidden="true"
-          :title="tooltips['system']"
-        />
-      </label>
       <b-form-input
-        :id="`ruleEditor-check-system-${mod}`"
+        :id="inputId"
         :value="check.system"
-        :class="inputClass('system')"
+        :input-class="inputClass('system')"
         placeholder=""
-        :disabled="disabled || fields.disabled.includes('system')"
+        :disabled="isDisabled"
         @input="$root.$emit('update:check', rule, { ...check, system: $event }, index)"
       />
-      <b-form-valid-feedback v-if="hasValidFeedback('system')">
-        {{ validFeedback["system"] }}
-      </b-form-valid-feedback>
-      <b-form-invalid-feedback v-if="hasInvalidFeedback('system')">
-        {{ invalidFeedback["system"] }}
-      </b-form-invalid-feedback>
-    </b-form-group>
+    </RuleFormGroup>
 
     <!-- content_ref_name -->
-    <b-form-group
-      v-if="fields.displayed.includes('content_ref_name')"
-      :id="`ruleEditor-check-content_ref_name-group-${mod}`"
+    <RuleFormGroup
+      v-slot="{ inputId, isDisabled }"
+      v-bind="formGroupProps"
+      field-name="content_ref_name"
+      label="Reference Name"
+      :tooltip="tooltips['content_ref_name']"
+      id-prefix="ruleEditor-check"
     >
-      <label :for="`ruleEditor-check-content_ref_name-${mod}`">
-        Reference Name
-        <b-icon
-          v-if="tooltips['content_ref_name']"
-          v-b-tooltip.hover.html
-          icon="info-circle"
-          aria-hidden="true"
-          :title="tooltips['content_ref_name']"
-        />
-      </label>
       <b-form-input
-        :id="`ruleEditor-check-content_ref_name-${mod}`"
+        :id="inputId"
         :value="check.content_ref_name"
-        :class="inputClass('content_ref_name')"
+        :input-class="inputClass('content_ref_name')"
         placeholder=""
-        :disabled="disabled || fields.disabled.includes('content_ref_name')"
+        :disabled="isDisabled"
         @input="$root.$emit('update:check', rule, { ...check, content_ref_name: $event }, index)"
       />
-      <b-form-valid-feedback v-if="hasValidFeedback('content_ref_name')">
-        {{ validFeedback["content_ref_name"] }}
-      </b-form-valid-feedback>
-      <b-form-invalid-feedback v-if="hasInvalidFeedback('content_ref_name')">
-        {{ invalidFeedback["content_ref_name"] }}
-      </b-form-invalid-feedback>
-    </b-form-group>
+    </RuleFormGroup>
 
     <!-- content_ref_href -->
-    <b-form-group
-      v-if="fields.displayed.includes('content_ref_href')"
-      :id="`ruleEditor-check-content_ref_href-group-${mod}`"
+    <RuleFormGroup
+      v-slot="{ inputId, isDisabled }"
+      v-bind="formGroupProps"
+      field-name="content_ref_href"
+      label="Reference Link"
+      :tooltip="tooltips['content_ref_href']"
+      id-prefix="ruleEditor-check"
     >
-      <label :for="`ruleEditor-check-content_ref_href-${mod}`">
-        Reference Link
-        <b-icon
-          v-if="tooltips['content_ref_href']"
-          v-b-tooltip.hover.html
-          icon="info-circle"
-          aria-hidden="true"
-          :title="tooltips['content_ref_href']"
-        />
-      </label>
       <b-form-input
-        :id="`ruleEditor-check-content_ref_href-${mod}`"
+        :id="inputId"
         :value="check.content_ref_href"
-        :class="inputClass('content_ref_href')"
+        :input-class="inputClass('content_ref_href')"
         placeholder=""
-        :disabled="disabled || fields.disabled.includes('content_ref_href')"
+        :disabled="isDisabled"
         @input="$root.$emit('update:check', rule, { ...check, content_ref_href: $event }, index)"
       />
-      <b-form-valid-feedback v-if="hasValidFeedback('content_ref_href')">
-        {{ validFeedback["content_ref_href"] }}
-      </b-form-valid-feedback>
-      <b-form-invalid-feedback v-if="hasInvalidFeedback('content_ref_href')">
-        {{ invalidFeedback["content_ref_href"] }}
-      </b-form-invalid-feedback>
-    </b-form-group>
+    </RuleFormGroup>
 
     <!-- content -->
-    <b-form-group
-      v-if="fields.displayed.includes('content')"
-      :id="`ruleEditor-check-content-group-${mod}`"
+    <RuleFormGroup
+      v-slot="{ inputId, isDisabled }"
+      v-bind="formGroupProps"
+      field-name="content"
+      label="Check"
+      :tooltip="tooltips['content']"
+      id-prefix="ruleEditor-check"
+      @toggle-section-lock="$emit('toggle-section-lock', $event)"
     >
-      <label :for="`ruleEditor-check-content-${mod}`">
-        Check
-        <b-icon
-          v-if="tooltips['content']"
-          v-b-tooltip.hover.html
-          icon="info-circle"
-          aria-hidden="true"
-          :title="tooltips['content']"
-        />
-      </label>
-      <b-form-textarea
-        :id="`ruleEditor-check-content-${mod}`"
+      <MarkdownTextarea
+        :id="inputId"
         :value="check.content"
-        :class="inputClass('content')"
+        :input-class="inputClass('content')"
         placeholder=""
-        :disabled="disabled || fields.disabled.includes('content')"
+        :disabled="isDisabled"
         rows="1"
         max-rows="99"
         @input="$root.$emit('update:check', rule, { ...check, content: $event }, index)"
       />
-      <b-form-valid-feedback v-if="hasValidFeedback('content')">
-        {{ validFeedback["content"] }}
-      </b-form-valid-feedback>
-      <b-form-invalid-feedback v-if="hasInvalidFeedback('content')">
-        {{ invalidFeedback["content"] }}
-      </b-form-invalid-feedback>
-    </b-form-group>
+    </RuleFormGroup>
   </div>
 </template>
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
+import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 
 export default {
   name: "CheckForm",
+  components: { MarkdownTextarea, RuleFormGroup },
   mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {
@@ -147,6 +103,22 @@ export default {
       type: Boolean,
       required: true,
     },
+    lockedSections: {
+      type: Object,
+      default: () => ({}),
+    },
+    canManageSectionLocks: {
+      type: Boolean,
+      default: false,
+    },
+    showSectionLocks: {
+      type: Boolean,
+      default: false,
+    },
+    fieldStateClassFn: {
+      type: Function,
+      default: () => () => "",
+    },
     fields: {
       type: Object,
       default: () => {
@@ -157,34 +129,48 @@ export default {
       },
     },
   },
-  data: function () {
-    return {
-      mod: Math.floor(Math.random() * 1000),
-    };
-  },
   computed: {
     check: function () {
-      return (
+      const targetRule =
         this.rule.satisfied_by && this.rule.satisfied_by.length > 0
           ? this.rule.satisfied_by[0]
-          : this.rule
-      ).checks_attributes[0];
+          : this.rule;
+
+      return targetRule && targetRule.checks_attributes && targetRule.checks_attributes.length > 0
+        ? targetRule.checks_attributes[0]
+        : {};
     },
     tooltips: function () {
+      // Rules with satisfied_by behave like Applicable - Configurable
+      // Note: satisfied_by may be undefined for STIG rules, so we check for its existence first
+      const isConfigurable =
+        (this.rule.satisfied_by && this.rule.satisfied_by.length > 0) ||
+        this.rule.status === "Applicable - Configurable";
       return {
         system: null,
         content_ref_name: null,
         content_ref_href: null,
-        content:
-          this.rule.status === "Applicable - Configurable"
-            ? "Describe how to validate that the remediation has been properly implemented"
-            : [
-                  "Applicable - Does Not Meet",
-                  "Applicable - Inherently Meets",
-                  "Not Applicable",
-                ].includes(this.rule.status)
-              ? null
-              : "Describe how to check for the presence of the vulnerability",
+        content: isConfigurable
+          ? "Describe how to validate that the remediation has been properly implemented"
+          : [
+                "Applicable - Does Not Meet",
+                "Applicable - Inherently Meets",
+                "Not Applicable",
+              ].includes(this.rule.status)
+            ? null
+            : "Describe how to check for the presence of the vulnerability",
+      };
+    },
+    formGroupProps() {
+      return {
+        fields: this.fields,
+        fieldStateClassFn: this.fieldStateClassFn,
+        disabled: this.disabled,
+        lockedSections: this.lockedSections,
+        canManageSectionLocks: this.canManageSectionLocks,
+        showSectionLocks: this.showSectionLocks,
+        validFeedback: this.validFeedback || {},
+        invalidFeedback: this.invalidFeedback || {},
       };
     },
   },

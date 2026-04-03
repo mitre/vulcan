@@ -1,363 +1,138 @@
 <template>
   <div>
     <b-breadcrumb :items="breadcrumbs" />
-    <b-row class="align-items-center">
-      <b-col md="8">
-        <h1>
-          {{ component.name }}
-          <b-icon v-if="component.released" icon="patch-check" aria-hidden="true" />
-        </h1>
-      </b-col>
-      <b-col md="4" class="text-muted text-md-right">
-        <p v-if="lastAudit" class="text-muted mb-1">
-          <template v-if="lastAudit.created_at">
-            Last update on {{ friendlyDateTime(lastAudit.created_at) }}
-          </template>
-          <template v-if="lastAudit.user_id"> by {{ lastAudit.user_id }} </template>
-        </p>
-        <p class="mb-1">
-          <span v-if="component.admin_name">
-            {{ component.admin_name }}
-            {{ component.admin_email ? `(${component.admin_email})` : "" }}
-          </span>
-          <em v-else>No Component Admin</em>
-        </p>
-      </b-col>
-    </b-row>
 
-    <b-row>
-      <b-col :md="tabsColumns" class="border-right">
-        <!-- Tab view for project information -->
-        <b-tabs v-model="componentTabIndex" content-class="mt-3" justified>
-          <!-- Component rules -->
-          <b-tab :title="`Controls (${component.rules.length})`">
-            <b-button
-              v-if="role_gte_to(effective_permissions, 'author')"
-              class="m-2"
-              variant="primary"
-              :href="`/components/${component.id}/controls`"
-            >
-              Edit Component Controls
-            </b-button>
-            <span v-b-tooltip.hover :title="releaseComponentTooltip">
-              <b-button
-                v-if="role_gte_to(effective_permissions, 'admin')"
-                class="m-2"
-                variant="success"
-                :disabled="!component.releasable"
-                @click="confirmComponentRelease"
-              >
-                Release Component
-              </b-button>
-            </span>
+    <ControlsPageLayout
+      :has-selected-rule="!!selectedRule"
+      :show-command-bar="true"
+      :show-filter-bar="true"
+      :sidebar-width="2"
+      :empty-state-message="msg.selectRule"
+    >
+      <!-- Command Bar -->
+      <template #command-bar>
+        <ControlsCommandBar
+          :component="component"
+          :selected-rule="selectedRule"
+          :effective-permissions="effective_permissions"
+          :active-panel="activePanel"
+          :read-only="true"
+          @release="confirmComponentRelease"
+          @open-members="$bvModal.show(`members-modal-${component.id}`)"
+          @toggle-panel="togglePanel"
+          @spreadsheet-updated="refreshComponent"
+        />
+      </template>
 
-            <b-form-checkbox
-              v-if="role_gte_to(effective_permissions, 'admin')"
-              v-model="component.advanced_fields"
-              name="editor-selector-check-button"
-              class="m-2 d-inline-block"
-              switch
-              @change="toggleAdvancedFields"
-            >
-              Advanced Fields Enabled
-            </b-form-checkbox>
+      <!-- Filter Bar (Review panel disabled in view mode) -->
+      <template #filter-bar>
+        <RuleFilterBar
+          :filters="filters"
+          :counts="counts"
+          :show-status="true"
+          :show-review="true"
+          :show-display="true"
+          :disabled-review="true"
+          @update:filter="updateFilter"
+        />
+      </template>
 
-            <div class="m-3" />
+      <!-- Left Sidebar -->
+      <template #left-sidebar>
+        <RuleNavigator
+          :component-id="component.id"
+          :rules="rules"
+          :selected-rule-id="selectedRuleId"
+          :effective-permissions="effective_permissions"
+          :project-prefix="component.prefix"
+          :read-only="true"
+          :open-rule-ids="openRuleIds"
+          :external-filters="filters"
+          @ruleSelected="handleRuleSelected"
+          @ruleDeselected="handleRuleDeselected"
+        />
+      </template>
 
-            <RulesReadOnlyView
-              :effective-permissions="effective_permissions"
-              :current-user-id="current_user_id"
-              :component="component"
-              :rules="rules"
-              :statuses="statuses"
-              :severities="severities"
-              :severities_map="severities_map"
-              :component-selected-rule-id="componentSelectedRuleId"
-              @ruleSelected="updateSelectedRule"
-            />
-          </b-tab>
+      <!-- Main Content -->
+      <template #main-content>
+        <template v-if="selectedRule">
+          <RuleEditor
+            :rule="selectedRule"
+            :statuses="statuses"
+            :read-only="true"
+            :effective-permissions="effective_permissions"
+            :advanced_fields="localAdvancedFields"
+            :additional_questions="component.additional_questions"
+            @open-related-modal="$bvModal.show('related-rules-modal')"
+            @toggle-panel="togglePanel"
+            @toggle-advanced-fields="toggleAdvancedFields"
+          />
+        </template>
+      </template>
 
-          <!-- Members -->
-          <b-tab
-            v-if="effective_permissions"
-            :title="`Members (${
-              component.memberships_count + component.inherited_memberships.length
-            })`"
-          >
-            <MembershipsTable
-              :editable="role_gte_to(effective_permissions, 'admin')"
-              :membership_type="'Component'"
-              :membership_id="component.id"
-              :memberships="component.memberships"
-              :memberships_count="component.memberships_count"
-              :available_members="component.available_members"
-              :available_roles="available_roles"
-            />
-            <hr />
+      <!-- Modals -->
+      <template #modals>
+        <!-- Related Rules Modal -->
+        <RelatedRulesModal
+          v-if="selectedRule"
+          :read-only="true"
+          :rule="selectedRule"
+          :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
+        />
+      </template>
 
-            <MembershipsTable
-              :editable="false"
-              :membership_type="'Component'"
-              :membership_id="component.id"
-              :memberships="component.inherited_memberships"
-              :memberships_count="component.inherited_memberships.length"
-              :header_text="'Inherited Members from Project'"
-            />
-          </b-tab>
-        </b-tabs>
-      </b-col>
-      <b-col v-if="effective_permissions" md="3">
-        <hr />
-        <div v-if="!selectedRule.id" class="component-data">
-          <b-row class="pb-2">
-            <b-col>
-              <div class="clickable" @click="showDetails = !showDetails">
-                <h5 class="m-0 d-inline-block">Component Details</h5>
-                <b-icon v-if="showDetails" icon="chevron-down" />
-                <b-icon v-if="!showDetails" icon="chevron-up" />
-              </div>
-              <b-collapse id="collapse-metadata" v-model="showDetails">
-                <div v-if="component.name">
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>Name: </strong>{{ component.name }}
-                  </p>
-                </div>
-                <div v-if="component.version">
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>Version: </strong>{{ component.version }}
-                  </p>
-                </div>
-                <div v-if="component.release">
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>Release: </strong>{{ component.release }}
-                  </p>
-                </div>
-                <div>
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>Title: </strong>{{ component.title }}
-                  </p>
-                </div>
-                <div>
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>Description: </strong>{{ component.description }}
-                  </p>
-                </div>
-                <div>
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>PoC Name: </strong>{{ component.admin_name }}
-                  </p>
-                </div>
-                <div>
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>PoC Email: </strong>{{ component.admin_email }}
-                  </p>
-                </div>
-                <UpdateComponentDetailsModal
-                  v-if="role_gte_to(effective_permissions, 'admin')"
-                  :component="component"
-                  @componentUpdated="refreshComponent"
-                />
-              </b-collapse>
-            </b-col>
-          </b-row>
-          <b-row class="pb-2">
-            <b-col>
-              <div class="clickable" @click="showMetadata = !showMetadata">
-                <h5 class="m-0 d-inline-block">Component Metadata</h5>
-                <b-icon v-if="showMetadata" icon="chevron-down" />
-                <b-icon v-if="!showMetadata" icon="chevron-up" />
-              </div>
-              <b-collapse id="collapse-metadata" v-model="showMetadata">
-                <small
-                  v-if="
-                    role_gte_to(effective_permissions, 'admin') &&
-                    (!component.metadata || !component.metadata.hasOwnProperty('Slack Channel ID'))
-                  "
-                  class="text-muted"
-                >
-                  For slack notification, you can add a metadata with key `Slack Channel ID` and the
-                  value will be the slack channel ID (e.g. C12345) or name (e.g. #general) you wish
-                  to notify.
-                </small>
-                <div v-for="(value, propertyName) in component.metadata" :key="propertyName">
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>{{ propertyName }}: </strong>{{ value }}
-                  </p>
-                </div>
-                <UpdateMetadataModal
-                  v-if="role_gte_to(effective_permissions, 'author')"
-                  :component="component"
-                  @componentUpdated="refreshComponent"
-                />
-              </b-collapse>
-            </b-col>
-          </b-row>
-          <b-row class="pb-2">
-            <b-col>
-              <div class="clickable" @click="showAdditionalQuestions = !showAdditionalQuestions">
-                <h5 class="m-0 d-inline-block">Component Additional Questions</h5>
-                <b-icon v-if="showAdditionalQuestions" icon="chevron-down" />
-                <b-icon v-if="!showAdditionalQuestions" icon="chevron-up" />
-              </div>
-              <b-collapse id="collapse-metadata" v-model="showAdditionalQuestions">
-                <div
-                  v-for="value in component.additional_questions"
-                  :key="value.id + value.question_type + value.name"
-                >
-                  <p v-linkified class="ml-2 mb-0 mt-2">
-                    <strong>{{ value.name }}: </strong>
-                    <template v-if="value.question_type === 'dropdown'">
-                      Options: {{ value.options.join(", ") }}
-                    </template>
-                    <template v-if="value.question_type === 'url'"> URL </template>
-                    <template v-else> Freeform Text </template>
-                  </p>
-                </div>
-                <AddQuestionsModal
-                  v-if="role_gte_to(effective_permissions, 'author')"
-                  :component="component"
-                  @componentUpdated="refreshComponent"
-                />
-              </b-collapse>
-            </b-col>
-          </b-row>
-          <b-row class="pb-2">
-            <b-col>
-              <div class="clickable" @click="showHistory = !showHistory">
-                <h5 class="m-0 d-inline-block">Component History</h5>
-                <b-icon v-if="showHistory" icon="chevron-down" />
-                <b-icon v-if="!showHistory" icon="chevron-up" />
-              </div>
-              <b-collapse id="collapse-metadata" v-model="showHistory">
-                <History
-                  :histories="component.histories"
-                  :revertable="false"
-                  abbreviate-type="BaseRule"
-                />
-              </b-collapse>
-            </b-col>
-          </b-row>
-          <b-row class="pb-2">
-            <b-col>
-              <div class="clickable" @click="showReviews = !showReviews">
-                <h5 class="m-0 d-inline-block">Component Reviews</h5>
-                <b-icon v-if="showReviews" icon="chevron-down" />
-                <b-icon v-if="!showReviews" icon="chevron-up" />
-              </div>
-              <b-collapse id="collapse-metadata" v-model="showReviews">
-                <div v-for="review in shownReviews" :key="review.id">
-                  <p class="ml-2 mb-0 mt-2">
-                    <strong>
-                      {{ review.displayed_rule_name }}
-                    </strong>
-                  </p>
-                  <p class="ml-2 mb-0 mt-0">
-                    <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
-                  </p>
-                  <p class="ml-2 mb-0">
-                    <small>{{ friendlyDateTime(review.created_at) }}</small>
-                  </p>
-                  <p class="ml-3 mb-2 white-space-pre-wrap">{{ review.comment }}</p>
-                </div>
-                <div class="d-flex justify-content-center align-items-center">
-                  <p
-                    v-if="numShownReviews < component.reviews.length"
-                    class="text-primary clickable"
-                    @click="numShownReviews += 2"
-                  >
-                    show older reviews...
-                  </p>
-                  <p
-                    v-if="numShownReviews > 2 && component.reviews.length > 2"
-                    class="ml-4 text-primary clickable"
-                    @click="numShownReviews -= 2"
-                  >
-                    hide older reviews...
-                  </p>
-                </div>
-              </b-collapse>
-            </b-col>
-          </b-row>
-        </div>
-        <div class="rule-data">
-          <b-row>
-            <b-col>
-              <!-- Related Rules modal-->
-              <RelatedRulesModal
-                v-if="Object.keys(selectedRule).length"
-                :read-only="true"
-                :rule="selectedRule"
-                :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
-              />
-              <hr class="mt-0" />
-              <RuleSatisfactions
-                :component="component"
-                :rule="selectedRule"
-                :selected-rule-id="selectedRule.id"
-                :project-prefix="component.prefix"
-                :read-only="true"
-                @ruleSelected="handleRuleSelected($event)"
-              />
-              <br />
-              <div v-if="selectedRule.reviews">
-                <RuleReviews :rule="selectedRule" />
-                <br />
-              </div>
-              <div v-if="selectedRule.histories">
-                <RuleHistories
-                  :rule="selectedRule"
-                  :component="component"
-                  :statuses="statuses"
-                  :severities="severities"
-                />
-                <br />
-              </div>
-            </b-col>
-          </b-row>
-        </div>
-      </b-col>
-    </b-row>
+      <!-- Right Panels (Slideovers) - Using shared component -->
+      <template #right-panels>
+        <ControlsSidepanels
+          :component="component"
+          :selected-rule="selectedRule"
+          :selected-rule-id="selectedRuleId"
+          :active-panel="activePanel"
+          :effective-permissions="effective_permissions"
+          :current-user-id="current_user_id"
+          :statuses="statuses"
+          :read-only="true"
+          @close-panel="closePanel"
+          @component-updated="refreshComponent"
+          @rule-selected="handleRuleSelected"
+        />
+      </template>
+    </ControlsPageLayout>
   </div>
 </template>
 
 <script>
-import _ from "lodash";
+import { computed } from "vue";
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
-import History from "../shared/History.vue";
-import RulesReadOnlyView from "../rules/RulesReadOnlyView.vue";
-import RuleReviews from "../rules/RuleReviews.vue";
-import RuleHistories from "../rules/RuleHistories.vue";
-import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
+import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
+import { MESSAGE_LABELS } from "../../constants/terminology";
+import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
+import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
+import RuleFilterBar from "../rules/RuleFilterBar.vue";
+import RuleNavigator from "../rules/RuleNavigator.vue";
+import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
-import MembershipsTable from "../memberships/MembershipsTable.vue";
-import UpdateComponentDetailsModal from "./UpdateComponentDetailsModal.vue";
-import UpdateMetadataModal from "./UpdateMetadataModal.vue";
-import AddQuestionsModal from "./AddQuestionsModal.vue";
+import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 
 export default {
-  name: "Projectcomponent",
+  name: "ProjectComponent",
   components: {
-    History,
-    RulesReadOnlyView,
-    MembershipsTable,
-    UpdateComponentDetailsModal,
-    UpdateMetadataModal,
-    AddQuestionsModal,
-    RuleReviews,
-    RuleHistories,
-    RuleSatisfactions,
+    ControlsPageLayout,
+    ControlsCommandBar,
+    RuleFilterBar,
+    RuleNavigator,
+    RuleEditor,
     RelatedRulesModal,
+    ControlsSidepanels,
   },
   mixins: [
     DateFormatMixinVue,
     AlertMixinVue,
-    FormMixinVue,
     RoleComparisonMixin,
     ConfirmComponentReleaseMixin,
     SortRulesMixin,
@@ -387,53 +162,70 @@ export default {
       type: Array,
       required: true,
     },
-    severities: {
-      type: Array,
-      required: true,
-    },
-    severities_map: {
-      type: Object,
-      required: true,
-    },
     available_roles: {
       type: Array,
       required: true,
     },
   },
-  data: function () {
+  setup(props) {
+    // Use computed to derive rules reactively — toRef on a plain object is not reactive in Vue 2.7
+    const componentId = props.initialComponentState.id;
+    const rulesRef = computed(() => props.initialComponentState.rules || []);
+
+    // Use composables
+    const { selectedRuleId, openRuleIds, selectedRule, selectRule, deselectRule } =
+      useRuleSelection(rulesRef, componentId, { autoSelectFirst: true });
+
+    const { filters, counts, setFilter } = useRuleFilters(rulesRef, componentId);
+
+    const { activePanel, togglePanel, closePanel } = useSidebar();
+
+    // Backward compatibility aliases
+    const handleRuleSelected = selectRule;
+    const handleRuleDeselected = deselectRule;
+
+    // Filter update with localStorage persistence
+    const updateFilter = (filterName, value) => {
+      setFilter(filterName, value);
+      localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
+      localStorage.setItem(`showSRGIdChecked-${componentId}`, filters.value.showSRGIdChecked);
+    };
+
     return {
-      numShownReviews: 2,
-      selectedRule: {},
-      showDetails: true,
-      showMetadata: true,
-      showHistory: true,
-      showAdditionalQuestions: true,
-      showReviews: true,
+      selectedRuleId,
+      openRuleIds,
+      selectedRule,
+      selectRule,
+      deselectRule,
+      handleRuleSelected,
+      handleRuleDeselected,
+      filters,
+      counts,
+      updateFilter,
+      activePanel,
+      togglePanel,
+      closePanel,
+    };
+  },
+  data() {
+    return {
       component: this.initialComponentState,
-      componentTabIndex: 0,
-      componentSelectedRuleId: null,
-      actionDescriptions: {
-        comment: "Commented",
-        request_review: "Requested Review",
-        revoke_review_request: "Revoked Request for Review",
-        request_changes: "Requested Changes",
-        approve: "Approved",
-        lock_control: "Locked",
-        unlock_control: "Unlocked",
-      },
+      localAdvancedFields: this.initialComponentState.advanced_fields,
+      msg: MESSAGE_LABELS,
     };
   },
   computed: {
-    shownReviews: function () {
-      return this.component.reviews.slice(0, this.numShownReviews);
-    },
-    rules: function () {
+    rules() {
       return [...this.component.rules].sort(this.compareRules);
     },
-    lastAudit: function () {
-      return this.component.histories?.slice(0, 1)?.pop();
-    },
-    breadcrumbs: function () {
+    breadcrumbs() {
+      // Build component name with version (e.g., "Test 2 V1R1")
+      let componentText = this.component.name;
+      if (this.component.version || this.component.release) {
+        componentText += " ";
+        if (this.component.version) componentText += `V${this.component.version}`;
+        if (this.component.release) componentText += `R${this.component.release}`;
+      }
       return [
         {
           text: "Projects",
@@ -444,106 +236,59 @@ export default {
           href: `/projects/${this.project.id}`,
         },
         {
-          text: this.component.name,
+          text: componentText,
           active: true,
         },
       ];
     },
-    tabsColumns: function () {
-      if (this.effective_permissions) {
-        return "9";
-      }
-      return "12";
+    componentPanels() {
+      return ["details", "metadata", "questions", "comp-history", "comp-reviews"];
     },
-    releaseComponentTooltip: function () {
-      if (this.component.released) {
-        return "Component has already been released";
-      }
-
-      if (this.component.releasable) {
-        return "";
-      }
-
-      return "All rules must be locked to release a component";
+    rulePanels() {
+      return ["satisfies", "rule-reviews", "rule-history"];
     },
   },
-  watch: {
-    componentTabIndex: function (_) {
-      localStorage.setItem(
-        `componentTabIndex-${this.component.id}`,
-        JSON.stringify(this.componentTabIndex),
-      );
-    },
-  },
-  mounted: function () {
-    // Persist `currentTab` across page loads
-    if (localStorage.getItem(`componentTabIndex-${this.component.id}`)) {
-      try {
-        this.$nextTick(
-          () =>
-            (this.componentTabIndex = JSON.parse(
-              localStorage.getItem(`componentTabIndex-${this.component.id}`),
-            )),
-        );
-      } catch (e) {
-        localStorage.removeItem(`componentTabIndex-${this.component.id}`);
-      }
-    }
-    // Set selectedRule to the queried rule if present
-    if (this.queriedRule.id) {
-      this.selectedRule = this.queriedRule;
-      this.componentSelectedRuleId = this.selectedRule.id;
+  mounted() {
+    // Handle deep linking to specific rule
+    if (this.queriedRule && this.queriedRule.id) {
+      this.selectRule(this.queriedRule.id);
       window.history.pushState({}, "", `/components/${this.component.id}`);
     }
   },
   methods: {
-    refreshComponent: function () {
-      axios.get(`/components/${this.component.id}`).then((response) => {
-        this.component = response.data;
-        location.reload();
-      });
+    refreshComponent() {
+      axios
+        .get(`/components/${this.component.id}.json`)
+        .then((response) => {
+          // Update component properties in-place for Vue reactivity
+          Object.assign(this.component, response.data);
+        })
+        .catch((error) => {
+          this.alertOrNotifyResponse(error);
+        });
     },
-    toggleAdvancedFields: function (advanced_fields) {
-      if (
-        confirm(
-          `Are you sure you want to ${advanced_fields ? "enable" : "disable"} advanced fields?`,
-        )
-      ) {
-        let payload = {
-          component: {
-            advanced_fields: advanced_fields,
-          },
-        };
-        axios
-          .patch(`/components/${this.component.id}`, payload)
-          .then(this.addComponentSuccess)
-          .catch(this.alertOrNotifyResponse);
-      } else {
-        this.component.advanced_fields = !advanced_fields;
-      }
-    },
-    updateSelectedRule: function (rule) {
-      if (this.queriedRule.id) {
-        return;
-      }
-      if (rule) {
-        axios
-          .get(`/rules/${rule.id}`)
-          .then((response) => {
-            this.selectedRule = response.data;
-            this.componentSelectedRuleId = this.selectedRule.id;
-          })
-          .catch(this.alertOrNotifyResponse);
-      } else {
-        this.selectedRule = {};
-        this.componentSelectedRuleId = null;
-      }
-    },
-    handleRuleSelected: function (ruleId) {
-      this.componentSelectedRuleId = ruleId;
+    toggleAdvancedFields(advanced_fields) {
+      // Confirmation is now handled in RuleEditor component
+      const payload = {
+        component: {
+          advanced_fields: advanced_fields,
+        },
+      };
+      axios
+        .patch(`/components/${this.component.id}`, payload)
+        .then((response) => {
+          this.alertOrNotifyResponse(response);
+          // Update local data property (not prop) for proper reactivity through slots
+          this.localAdvancedFields = advanced_fields;
+        })
+        .catch(this.alertOrNotifyResponse);
     },
   },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.white-space-pre-wrap {
+  white-space: pre-wrap;
+}
+</style>

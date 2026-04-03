@@ -3,7 +3,9 @@
 # A Member is the has_many: :through Model that stores information
 # about a User's membership of a Project
 class Membership < ApplicationRecord
-  audited except: %i[id created_at updated_at], max_audits: 1000, associated_with: :membership
+  include VulcanAuditable
+
+  vulcan_audited except: %i[id], associated_with: :membership
 
   include ProjectMemberConstants
 
@@ -72,8 +74,9 @@ class Membership < ApplicationRecord
   # This is because permissions are inherited from the project, and having
   # equal or lesser permissions will have no effect.
   def cannot_have_equal_or_lesser_component_permissions
-    # Break early if this is a project permission
+    # Break early if this is a project permission or if association is missing
     return if membership_type == 'Project'
+    return unless membership
 
     # See if the user has permissions on the project
     project_membership_role = Membership.find_by(

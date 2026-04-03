@@ -3,6 +3,13 @@
 
 // Bootstrap Icons are included via the IconsPlugin in Vue
 // No need to import separate icon CSS files
+// Font Awesome 4 is served from public/css/ and public/fonts/ (see layout)
+// to avoid esbuild hash / Propshaft digest mismatch on font files.
+// CSP blocks EasyMDE's CDN auto-download, so we bundle locally.
+
+// Prevent layout shift when b-sidebar backdrop adds overflow:hidden to body.
+// scrollbar-gutter reserves the scrollbar space so content doesn't jump.
+// Responsive typography base size is also set here.
 
 .clickable {
   cursor: pointer;
@@ -39,6 +46,7 @@
 
 // Responsive typography
 html {
+  scrollbar-gutter: stable;
   font-size: 0.8rem;
 }
 
@@ -57,5 +65,47 @@ html {
 @include media-breakpoint-up(lg) {
   html {
     font-size: 1rem;
+  }
+}
+
+// Classification banner (DoD standard colors set via inline style from Settings)
+// Classification banner height variable — used for body padding offset
+$banner-height: 20px;
+
+.classification-banner {
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 2px 0;
+  letter-spacing: 0.5px;
+  z-index: 1031; // Above navbar (1030) but below sidebars (1040) and modals (1050)
+  position: relative;
+  height: $banner-height;
+
+  &--bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+// Offset body padding when fixed bottom banner is present
+body.has-classification-banner {
+  padding-bottom: $banner-height + 4px;
+}
+
+// Breadcrumbs as section headers
+.breadcrumb {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+
+  .breadcrumb-item {
+    font-size: 1.5rem;
+
+    &.active {
+      font-weight: 700;
+    }
   }
 }

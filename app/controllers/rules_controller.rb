@@ -4,13 +4,14 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
-  before_action :set_rule, only: %i[show update destroy revert related_rules]
-  before_action :set_component, only: %i[index show create update revert]
-  before_action :set_project, only: %i[index show create update revert]
+  before_action :set_rule, only: %i[show update destroy revert related_rules section_locks bulk_section_locks]
+  before_action :set_component, only: %i[index show create update revert related_rules section_locks bulk_section_locks]
+  before_action :set_project, only: %i[index show create update revert related_rules section_locks bulk_section_locks]
   before_action :set_project_permissions, only: %i[index]
-  before_action :authorize_viewer_component, only: %i[index show]
+  before_action :authorize_viewer_component, only: %i[index show related_rules]
   before_action :authorize_author_component, only: %i[create update revert]
-  before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_admin_project, only: %i[destroy]
+  before_action :authorize_section_lock, only: %i[section_locks bulk_section_locks]
   before_action :authorize_logged_in, only: %i[search]
 
   def index
@@ -85,20 +86,22 @@ class RulesController < ApplicationController
   end
 
   def destroy
-    if @rule.update(deleted_at: Time.zone.now)
-      @rule.additional_answers.destroy_all
-      @rule.reviews.destroy_all
-      @rule.satisfied_by.destroy_all
-      render json: { toast: 'Successfully deleted control.' }
-    else
-      render json: {
-        toast: {
-          title: 'Could not delete control.',
-          message: @rule.errors.full_messages,
-          variant: 'danger'
-        }
-      }, status: :unprocessable_entity
-    end
+    warnings = []
+    warnings << 'This control was locked.' if @rule.locked
+    warnings << 'This control was under review.' if @rule.review_requestor_id.present?
+
+    # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
+    @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
+    # rubocop:enable Rails/SkipsModelValidations
+    @rule.additional_answers.destroy_all
+    @rule.reviews.destroy_all
+    @rule.satisfied_by.destroy_all
+
+    Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}") if warnings.any?
+
+    message = 'Successfully deleted control.'
+    message += " Warning: #{warnings.join(' ')}" if warnings.any?
+    render json: { toast: message }
   end
 
   def revert
@@ -116,7 +119,57 @@ class RulesController < ApplicationController
     }, status: :unprocessable_entity
   end
 
+  def section_locks
+    section = params[:section]
+    locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
+    comment = params[:comment]
+
+    return render json: { error: "Invalid section: #{section}" }, status: :unprocessable_entity unless RuleConstants::LOCKABLE_SECTION_NAMES.include?(section)
+
+    fields = @rule.locked_fields.dup
+    if locked
+      fields[section] = true
+    else
+      fields.delete(section)
+    end
+
+    @rule.audit_comment = comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
+    @rule.update!(locked_fields: fields)
+
+    render json: { rule: @rule.as_json, toast: "#{section} #{locked ? 'locked' : 'unlocked'}" }
+  end
+
+  def bulk_section_locks
+    sections = Array(params[:sections])
+    locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
+    comment = params[:comment]
+
+    invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
+    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
+
+    fields = @rule.locked_fields.dup
+    sections.each do |section|
+      if locked
+        fields[section] = true
+      else
+        fields.delete(section)
+      end
+    end
+
+    action_word = locked ? 'Locked' : 'Unlocked'
+    @rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
+    @rule.update!(locked_fields: fields)
+
+    render json: { rule: @rule.as_json, toast: "#{action_word} #{sections.size} sections" }
+  end
+
   private
+
+  def authorize_section_lock
+    return if current_user&.can_review_component?(@component)
+
+    raise(NotAuthorizedError, 'You are not authorized to manage section locks on this component')
+  end
 
   def create_or_duplicate
     if authorize_author_project.nil? && rule_create_params[:duplicate]
@@ -146,20 +199,25 @@ class RulesController < ApplicationController
   end
 
   def rule_update_params
-    params.expect(
-      rule: [:status, :status_justification, :artifact_description, :vendor_comments,
-             :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
-             :fix_id, :fixtext_fixref, :audit_comment, :inspec_control_body, :inspec_control_file,
-             :inspec_control_body_lang, :inspec_control_file_lang,
-             { checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
-               rule_descriptions_attributes: %i[id description _destroy],
-               additional_answers_attributes: %i[id additional_question_id answer],
-               disa_rule_descriptions_attributes: %i[
-                 id vuln_discussion false_positives false_negatives documentable mitigations_available
-                 mitigations poam_available poam severity_override_guidance potential_impacts
-                 third_party_tools mitigation_control responsibility ia_controls _destroy
-               ] }]
+    # Rails 8: Use require.permit for nested array attributes (checks_attributes, etc.)
+    # params.expect doesn't handle nested arrays well - causes them to be filtered out
+    # See: https://github.com/mitre/vulcan/issues/692
+    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks nested attributes (issue #692)
+    params.require(:rule).permit(
+      :status, :status_justification, :artifact_description, :vendor_comments,
+      :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
+      :fix_id, :fixtext_fixref, :audit_comment, :inspec_control_body, :inspec_control_file,
+      :inspec_control_body_lang, :inspec_control_file_lang,
+      checks_attributes: %i[id system content_ref_name content_ref_href content _destroy],
+      rule_descriptions_attributes: %i[id description _destroy],
+      additional_answers_attributes: %i[id additional_question_id answer],
+      disa_rule_descriptions_attributes: %i[
+        id vuln_discussion false_positives false_negatives documentable mitigations_available
+        mitigations poam_available poam severity_override_guidance potential_impacts
+        third_party_tools mitigation_control responsibility ia_controls _destroy
+      ]
     )
+    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def manage_lock_params

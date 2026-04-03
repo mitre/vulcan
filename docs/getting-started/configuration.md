@@ -14,6 +14,121 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - [Configure LDAP:](#configure-ldap)
 - [Configure OIDC:](#configure-oidc)
 - [Configure Slack:](#configure-slack)
+- [Configure Classification Banner:](#configure-classification-banner) Display colored classification/sensitivity banner
+- [Configure Consent Modal:](#configure-consent-modal) Terms-of-use modal that blocks access until acknowledged
+- [Configure Session Limits:](#configure-session-limits) Per-user concurrent session limits (STIG AC-10)
+- [Configure Account Lockout:](#configure-account-lockout) Lock accounts after failed login attempts (STIG AC-07)
+- [Configure Password Policy:](#configure-password-policy) Password complexity requirements (DoD 2222 default)
+
+## Configuration Precedence
+
+Settings are resolved in this order (first match wins):
+
+1. **Environment variables** — `VULCAN_*` env vars set in `.env`, Dockerfile, app.json, or shell
+2. **`config/vulcan.yml`** — Optional per-instance override (copy from `vulcan.default.yml`)
+3. **`config/vulcan.default.yml`** — ERB template that reads env vars with fallback defaults
+4. **`config/initializers/0_settings.rb`** — Ensures all keys exist with sensible defaults
+
+`vulcan.default.yml` is the single source of truth. All other config sources either feed env vars into it or ensure keys exist when no YAML value is present.
+
+## Default Configuration by Deployment Type
+
+Each deployment type ships sensible defaults. Dev-friendly deployments enable local login, registration, and open project creation. Production deployments lock down authentication to external providers.
+
+### Settings Matrix
+
+| Setting | Dev / Docker / Review | Production | Env Var |
+|---------|:---------------------:|:----------:|---------|
+| Local login | **true** | false | `VULCAN_ENABLE_LOCAL_LOGIN` |
+| User registration | **true** | false | `VULCAN_ENABLE_USER_REGISTRATION` |
+| Project create (any user) | **true** | **true** | `VULCAN_PROJECT_CREATE_PERMISSION_ENABLED` |
+| First user becomes admin | **true** | false | `VULCAN_FIRST_USER_ADMIN` |
+| OIDC | false | **true** | `VULCAN_ENABLE_OIDC` |
+| LDAP | false | false | `VULCAN_ENABLE_LDAP` |
+| SMTP | false | **true** | `VULCAN_ENABLE_SMTP` |
+| Slack | false | false | `VULCAN_ENABLE_SLACK_COMMS` |
+| Classification banner | false | varies | `VULCAN_BANNER_ENABLED` |
+| Consent modal | false | varies | `VULCAN_CONSENT_ENABLED` |
+| Account lockout | **enabled** | **enabled** | `VULCAN_LOCKOUT_ENABLED` |
+| Lockout attempts | 3 | 3 | `VULCAN_LOCKOUT_MAX_ATTEMPTS` |
+| Password min length | 15 | 15 | `VULCAN_PASSWORD_MIN_LENGTH` |
+| Password complexity (2222) | **enabled** | **enabled** | `VULCAN_PASSWORD_MIN_*` |
+
+**Bold** = enabled for that deployment type.
+
+### Where Defaults Are Set
+
+| Deployment Type | Config Source | Notes |
+|-----------------|-------------|-------|
+| Local dev (`foreman start`) | `.env` (copy from `.env.example`) | Open defaults for easy onboarding |
+| Docker quickstart (`docker compose up`) | `Dockerfile` ENV + `vulcan.default.yml` | Matches dev defaults |
+| Heroku review app | `app.json` env overrides | Matches dev defaults |
+| Heroku production | Manual config via Heroku dashboard | Use `.env.production.example` as reference |
+| Bare metal production | `.env` (copy from `.env.production.example`) | Hardened: OIDC enabled, local login disabled |
+| No env vars at all | `vulcan.default.yml` + `0_settings.rb` | Defaults to dev-friendly (local login enabled) |
+
+### What You Must Provide
+
+#### Development (local Rails or Docker quickstart)
+
+**Required** — nothing beyond what ships in `.env.example`. Copy it and go:
+
+```bash
+cp .env.example .env
+bundle exec rails db:prepare
+foreman start -f Procfile.dev
+```
+
+Defaults give you: local login, registration, first-user-becomes-admin, no SMTP, no OIDC. The seed password is `1qaz!QAZ1qaz!QAZ`.
+
+#### Production Deployment
+
+**Required** (you must set these — no usable defaults):
+
+| Variable | Why | How to generate |
+|----------|-----|-----------------|
+| `SECRET_KEY_BASE` | Rails session encryption | `openssl rand -hex 64` |
+| `CIPHER_PASSWORD` | Data encryption at rest | `openssl rand -hex 64` |
+| `CIPHER_SALT` | Data encryption salt | `openssl rand -hex 64` |
+| `POSTGRES_PASSWORD` | Database access | `openssl rand -hex 33` |
+| `VULCAN_APP_URL` | Email links, OIDC callbacks | Your domain (e.g., `https://vulcan.example.com`) |
+
+**Required** — at least one auth provider:
+
+| Provider | Key Variables |
+|----------|--------------|
+| OIDC (recommended) | `VULCAN_ENABLE_OIDC=true`, `VULCAN_OIDC_ISSUER_URL`, `VULCAN_OIDC_CLIENT_ID`, `VULCAN_OIDC_CLIENT_SECRET` |
+| LDAP | `VULCAN_ENABLE_LDAP=true`, `VULCAN_LDAP_HOST`, `VULCAN_LDAP_BASE`, `VULCAN_LDAP_BIND_DN`, `VULCAN_LDAP_ADMIN_PASS` |
+| Local login | `VULCAN_ENABLE_LOCAL_LOGIN=true` (not recommended for production) |
+
+**Strongly recommended for production**:
+
+| Variable | Default | Production Value | Why |
+|----------|---------|-----------------|-----|
+| `VULCAN_ENABLE_LOCAL_LOGIN` | true | **false** | External auth is more secure |
+| `VULCAN_ENABLE_USER_REGISTRATION` | true | **false** | Users provisioned via OIDC/LDAP |
+| `VULCAN_FIRST_USER_ADMIN` | true | **false** | Use `VULCAN_ADMIN_EMAIL` instead |
+| `VULCAN_SESSION_TIMEOUT` | 1h | **15m** | DoD standard (STIG AC-12) |
+| `VULCAN_ENABLE_REMEMBER_ME` | true | **false** | Disable for high-security environments |
+| `VULCAN_ENABLE_SMTP` | false | **true** | Enables email notifications and unlock |
+| `RAILS_FORCE_SSL` | true | **true** | Keep default |
+
+**Optional** (sensible defaults work out of the box):
+
+- Session limits — enabled by default, STIG AC-10 compliant (one session per user)
+- Account lockout — enabled by default, STIG AC-07 compliant
+- Password policy — DoD 2222 defaults (15 chars, 2 of each type)
+- Classification banner — disabled by default, set if required
+- Consent modal — disabled by default, set if required
+
+Use `./setup-docker-secrets.sh` to generate all required secrets automatically, or copy `.env.production.example` and fill in your values.
+
+### Design Principles
+
+- **Opt-in services** (LDAP, OIDC, SMTP, Slack) default to `false` — they require external infrastructure
+- **Core functionality** (local login, registration, project creation) defaults to `true` — a fresh install should work immediately
+- **Production hardening** is explicit — operators configure OIDC/LDAP and disable local login deliberately
+- **No surprises** — every deployment type documents its defaults; the "no env vars" path produces a working system
 
 ## Configure Welcome Text and Contact Email:
 
@@ -37,9 +152,9 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 
 ## Configure Local Login
 
-- **enabled:** Allows for users to be able to log in as a local user instead of using ldap. `(ENV: VULCAN_ENABEL_LOCAL_LOGIN)(default: true)`
+- **enabled:** Allows for users to be able to log in as a local user instead of using ldap. `(ENV: VULCAN_ENABLE_LOCAL_LOGIN)(default: true)`
 - **email_confirmation:** Turns on email confirmation for local registration. `(ENV: VULCAN_ENABLE_EMAIL_CONFIRMATION)(default: false)`
-- **session_timeout:** Automatically logs user out after a period of time of inactivity in minutes. `(ENV: VULCAN_SESSION_TIMEOUT)(default: 60)`
+- **session_timeout:** Automatically logs user out after a period of inactivity. Accepts explicit suffixes (`30s`, `15m`, `1h`) or plain numbers where 1-9 = hours, 10-299 = minutes, 300+ = seconds. DoD standard is 900 seconds (15 minutes). `(ENV: VULCAN_SESSION_TIMEOUT)(default: 1h)`
 
 ## Configure User Registration
 - **enabled:** Allows users to register themselves on the Vulcan app. `(ENV: VULCAN_ENABLE_USER_REGISTRATION)(default: true)`
@@ -49,11 +164,11 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 
 ## Configure LDAP
 
-- **enabled:** `(ENV: ENABLE_LDAP)(default: false)`
+- **enabled:** `(ENV: VULCAN_ENABLE_LDAP)(default: false)`
 - **servers:**
   - **main:**
     - **host:** `(ENV: VULCAN_LDAP_HOST)(default: localhost)`
-    - **port:** Port which the LDAP server communicates through `(ENV: VULCAN_LDAP_POST)(default: 389)`
+    - **port:** Port which the LDAP server communicates through `(ENV: VULCAN_LDAP_PORT)(default: 389)`
     - **title:** `(ENV: VULCAN_LDAP_TITLE)(default: LDAP)`
     - **uid:** Attribute for the username `(ENV: VULCAN_LDAP_ATTRIBUTE)(default: uid)`
     - **encryption:** `(ENV: VULCAN_LDAP_ENCRYPTION)(default: plain)`
@@ -67,8 +182,8 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **strategy:** :openid_connect `Omniauth Strategy for working with OIDC providers`
 - **title:** : Description or Title for the OIDC Provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
 - **args:** 
-  - **name:** Name of the OIDC provider `(ENV: VULCAN_OIDC_PROVIDER_TITLE)`
-  - **scope:** Which OpenID scope to include (:openid is always required) `default: [:openid]`
+  - **name:** Strategy name (hardcoded as `:oidc` — not configurable)
+  - **scope:** OpenID scopes requested `default: [:openid, :email, :profile]`
   - **uid_field:** The field of the user info response to be used as a unique id
   - **response_type:** Which OAuth2 response type to use with the authorization request `default: [:code]`
   - **issuer:** Root url for the authorization server `(ENV: VULCAN_OIDC_ISSUER_URL)`
@@ -94,9 +209,207 @@ Vulcan can be set up in a few different ways. It can be done by having a vulcan.
 - **api_token:** Slack Authentication token bearing required scopes.`(ENV: VULCAN_SLACK_API_TOKEN)`
 - **channel_id:**  Slack Channel, private group, or IM channel to send message to. Can be an encoded ID, or a name. `(ENV: VULCAN_SLACK_CHANNEL_ID)`
 
+## Configure Classification Banner
+
+Display a colored banner at the top and bottom of every page. Commonly used for DoD classification markings or environment identification (e.g., STAGING, TRAINING).
+
+- **enabled:** Show the banner on every page. `(ENV: VULCAN_BANNER_ENABLED)(default: false)`
+- **text:** Plain text displayed in the banner — no formatting applied. `(ENV: VULCAN_BANNER_TEXT)(default: "")`
+- **background_color:** Banner background color as a hex value. `(ENV: VULCAN_BANNER_BACKGROUND_COLOR)(default: #007a33)`
+- **text_color:** Banner text color as a hex value. `(ENV: VULCAN_BANNER_TEXT_COLOR)(default: #ffffff)`
+
+### DoD Standard Colors
+
+| Classification | Background | Text |
+|---------------|------------|------|
+| UNCLASSIFIED | `#007a33` | `#ffffff` |
+| CUI | `#502b85` | `#ffffff` |
+| CONFIDENTIAL | `#0033a0` | `#ffffff` |
+| SECRET | `#c8102e` | `#ffffff` |
+| TOP SECRET | `#ff671f` | `#ffffff` |
+| TS/SCI | `#f7ea48` | `#000000` |
+
+### Example
+
+```bash
+VULCAN_BANNER_ENABLED=true
+VULCAN_BANNER_TEXT=UNCLASSIFIED
+VULCAN_BANNER_BACKGROUND_COLOR=#007a33
+VULCAN_BANNER_TEXT_COLOR=#ffffff
+```
+
+## Configure Consent Modal
+
+Display a blocking consent/terms-of-use modal that users must acknowledge before accessing the application. Acknowledgment is tracked server-side in the Rails session (AC-8 compliant). On logout, session timeout, or browser close, the consent state is cleared and the modal re-appears. Incrementing the version re-prompts all users — useful when policies change.
+
+- **enabled:** Show the consent modal on page load. `(ENV: VULCAN_CONSENT_ENABLED)(default: false)`
+- **version:** Version identifier for the consent terms. Increment this value to force all users to re-acknowledge. `(ENV: VULCAN_CONSENT_VERSION)(default: 1)`
+- **title:** Modal dialog title. `(ENV: VULCAN_CONSENT_TITLE)(default: Terms of Use)`
+- **content:** Modal body content. Supports **Markdown** formatting including headings, bold, italics, numbered/bulleted lists, links, and blockquotes. HTML is sanitized for security. `(ENV: VULCAN_CONSENT_CONTENT)(default: "")`
+- **ttl:** How long consent acknowledgment remains valid within a session. `0` = per-session, re-prompt every login (DoD default). Accepts durations like `24h`, `12h`, `30m`. `(ENV: VULCAN_CONSENT_TTL)(default: 0)`
+
+### Example
+
+```bash
+VULCAN_CONSENT_ENABLED=true
+VULCAN_CONSENT_VERSION=1
+VULCAN_CONSENT_TITLE=Acceptable Use Policy
+VULCAN_CONSENT_CONTENT="## Terms of Use
+
+By accessing this system you agree to the following:
+
+1. **Authorized use only** — this system is for official use
+2. **Activity is monitored** — all actions may be logged
+3. **No expectation of privacy** — on this government system
+
+> Contact your administrator with questions."
+VULCAN_CONSENT_TTL=0
+```
+
+::: tip Version-Based Re-prompting
+When you update your terms, increment `VULCAN_CONSENT_VERSION` (e.g., from `1` to `2`). All users will see the modal again on their next login, regardless of prior acknowledgment.
+:::
+
+::: tip Consent TTL (AC-8)
+`VULCAN_CONSENT_TTL=0` (default) requires consent every session — DoD compliant. Set to `24h` or `12h` for less strict environments where re-prompting on every login is not required.
+:::
+
+## Configure Session Limits
+
+STIG AC-10 compliant per-user concurrent session limits. When a user exceeds the configured maximum number of active sessions, the oldest session is evicted and that user is redirected to the login page.
+
+Uses `devise-security` `:session_limitable` and `:session_traceable` with `activerecord-session_store` for server-side session tracking. Each login creates a `SessionHistory` record with token, IP, and user agent for audit purposes.
+
+- **enabled:** Enable per-user session limits. `(ENV: VULCAN_SESSION_LIMITS_ENABLED)(default: true)`
+- **max_sessions:** Maximum concurrent sessions per user. `(ENV: VULCAN_MAX_CONCURRENT_SESSIONS)(default: 1)`
+
+### Example: Strict (default — one session per user)
+
+```bash
+VULCAN_SESSION_LIMITS_ENABLED=true
+VULCAN_MAX_CONCURRENT_SESSIONS=1
+```
+
+### Example: Allow 3 concurrent sessions
+
+```bash
+VULCAN_SESSION_LIMITS_ENABLED=true
+VULCAN_MAX_CONCURRENT_SESSIONS=3
+```
+
+### Example: Disabled for Development
+
+```bash
+VULCAN_SESSION_LIMITS_ENABLED=false
+```
+
+::: tip
+Session limits work alongside session timeout (VULCAN_SESSION_TIMEOUT) and account lockout (VULCAN_LOCKOUT_ENABLED) for defense in depth. Session history records are retained for audit trail purposes even after sessions expire.
+:::
+
+## Configure Account Lockout
+
+STIG AC-07 compliant account lockout. Locks accounts after consecutive failed login attempts and provides multiple unlock methods.
+
+- **enabled:** Enable account lockout. `(ENV: VULCAN_LOCKOUT_ENABLED)(default: true)`
+- **maximum_attempts:** Number of failed attempts before the account is locked. `(ENV: VULCAN_LOCKOUT_MAX_ATTEMPTS)(default: 3)`
+- **unlock_in_minutes:** Minutes before a locked account automatically unlocks. `(ENV: VULCAN_LOCKOUT_UNLOCK_IN_MINUTES)(default: 15)`
+- **unlock_strategy:** How locked accounts can be unlocked. `(ENV: VULCAN_LOCKOUT_UNLOCK_STRATEGY)(default: both)`
+  - `email` — sends an unlock link (requires SMTP)
+  - `time` — auto-unlocks after the configured minutes
+  - `both` — either method works (recommended)
+- **last_attempt_warning:** Show a warning on the last attempt before lock. `(ENV: VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING)(default: true)`
+
+### Admin Unlock
+
+Administrators can manually unlock any account from the Users page (`/users`). Click the edit (pencil) icon on a locked user to see the unlock button. Admin unlock works regardless of SMTP configuration.
+
+### Example: STIG AC-07 (default)
+
+```bash
+VULCAN_LOCKOUT_ENABLED=true
+VULCAN_LOCKOUT_MAX_ATTEMPTS=3
+VULCAN_LOCKOUT_UNLOCK_IN_MINUTES=15
+VULCAN_LOCKOUT_UNLOCK_STRATEGY=both
+VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING=true
+```
+
+### Example: Disabled for Development
+
+```bash
+VULCAN_LOCKOUT_ENABLED=false
+```
+
+::: tip
+When SMTP is not configured, the `both` strategy ensures locked accounts still auto-unlock via the time-based method. Administrators can also unlock accounts manually from the Users page at any time.
+:::
+
+## Configure Password Policy
+
+Configurable password complexity enforcement. Defaults are DoD-aligned ("2222" policy: 15 characters minimum, 2 uppercase, 2 lowercase, 2 numbers, 2 special characters). Set any count to `0` to disable that requirement.
+
+Validation is enforced both server-side (Rails model validation) and client-side (real-time checklist on registration, password reset, and profile pages).
+
+- **min_length:** Minimum total password length. `(ENV: VULCAN_PASSWORD_MIN_LENGTH)(default: 15)`
+- **min_uppercase:** Minimum uppercase letters required. `(ENV: VULCAN_PASSWORD_MIN_UPPERCASE)(default: 2)`
+- **min_lowercase:** Minimum lowercase letters required. `(ENV: VULCAN_PASSWORD_MIN_LOWERCASE)(default: 2)`
+- **min_number:** Minimum digits required. `(ENV: VULCAN_PASSWORD_MIN_NUMBER)(default: 2)`
+- **min_special:** Minimum special characters required. `(ENV: VULCAN_PASSWORD_MIN_SPECIAL)(default: 2)`
+
+### Example: DoD Standard (default)
+
+```bash
+VULCAN_PASSWORD_MIN_LENGTH=15
+VULCAN_PASSWORD_MIN_UPPERCASE=2
+VULCAN_PASSWORD_MIN_LOWERCASE=2
+VULCAN_PASSWORD_MIN_NUMBER=2
+VULCAN_PASSWORD_MIN_SPECIAL=2
+```
+
+### Example: Relaxed Development
+
+```bash
+VULCAN_PASSWORD_MIN_LENGTH=8
+VULCAN_PASSWORD_MIN_UPPERCASE=0
+VULCAN_PASSWORD_MIN_LOWERCASE=0
+VULCAN_PASSWORD_MIN_NUMBER=0
+VULCAN_PASSWORD_MIN_SPECIAL=0
+```
+
+::: tip OmniAuth Users
+Password complexity is only validated for local (email/password) accounts. OmniAuth users (OIDC, LDAP, GitHub) use random token passwords and skip complexity validation.
+:::
+
+## Configure Input Length Limits
+
+Configurable maximum lengths for all text input fields. Defaults are based on analysis of real DISA STIG/SRG data (1,785 rules across 8 benchmarks). Limits are grouped by category — each env var controls a category of related fields.
+
+See [Input Length Limits](../development/input-length-limits.md) for the complete field-to-setting mapping.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VULCAN_LIMIT_SHORT_STRING` | IDs, version strings, reference fields | `255` |
+| `VULCAN_LIMIT_IDENT` | Comma-joined CCI list | `2048` |
+| `VULCAN_LIMIT_TITLE` | Rule titles | `500` |
+| `VULCAN_LIMIT_MEDIUM_TEXT` | Status justification, brief text | `1000` |
+| `VULCAN_LIMIT_LONG_TEXT` | Descriptions, check content, fixtext | `10000` |
+| `VULCAN_LIMIT_INSPEC_CODE` | InSpec control bodies | `50000` |
+| `VULCAN_LIMIT_COMPONENT_NAME` | Component name | `255` |
+| `VULCAN_LIMIT_COMPONENT_PREFIX` | STIG ID prefix | `10` |
+| `VULCAN_LIMIT_COMPONENT_TITLE` | Component title | `500` |
+| `VULCAN_LIMIT_COMPONENT_DESCRIPTION` | Component description | `5000` |
+| `VULCAN_LIMIT_PROJECT_NAME` | Project name | `255` |
+| `VULCAN_LIMIT_PROJECT_DESCRIPTION` | Project description | `5000` |
+| `VULCAN_LIMIT_USER_NAME` | User display name | `255` |
+| `VULCAN_LIMIT_USER_EMAIL` | User email address | `255` |
+| `VULCAN_LIMIT_REVIEW_COMMENT` | Review comments | `10000` |
+| `VULCAN_LIMIT_BENCHMARK_NAME` | SRG/STIG display name | `500` |
+| `VULCAN_LIMIT_BENCHMARK_TITLE` | SRG/STIG title | `500` |
+| `VULCAN_LIMIT_BENCHMARK_DESCRIPTION` | STIG description | `10000` |
+
 ## Example Vulcan.yml
 
-```
+```yaml
 defaults: &defaults
   welcome_text:
   contact_email:
@@ -116,6 +429,15 @@ defaults: &defaults
   local_login:
     enabled:
     email_confirmation:
+    session_timeout:
+    remember_me_enabled:
+    remember_me_duration:
+  user_registration:
+    enabled:
+  admin_bootstrap:
+    first_user_admin:
+  project:
+    create_permission_enabled:
   ldap:
     enabled:
     servers:
@@ -129,18 +451,20 @@ defaults: &defaults
         password:
         base:
   oidc:
-    enabled: 
+    enabled:
+    discovery:
     strategy:
     title:
     args:
-      name: 
+      name:
       scope:
-      uid_field: 
+      uid_field:
       response_type:
-      issuer: 
+      issuer:
       client_auth_method:
       client_signing_alg:
       nonce:
+      prompt:
       client_options:
         port:
         scheme:
@@ -153,6 +477,50 @@ defaults: &defaults
         userinfo_endpoint:
         jwks_uri:
         post_logout_redirect_uri:
+  banner:
+    enabled:
+    text:
+    background_color:
+    text_color:
+  consent:
+    enabled:
+    version:
+    title:
+    content:
+  session_limits:
+    enabled:
+    max_sessions:
+  lockout:
+    enabled:
+    maximum_attempts:
+    unlock_in_minutes:
+    unlock_strategy:
+    last_attempt_warning:
+  password:
+    min_length:
+    min_uppercase:
+    min_lowercase:
+    min_number:
+    min_special:
+  input_limits:
+    short_string:
+    ident:
+    title:
+    medium_text:
+    long_text:
+    inspec_code:
+    component_name:
+    component_prefix:
+    component_title:
+    component_description:
+    project_name:
+    project_description:
+    user_name:
+    user_email:
+    review_comment:
+    benchmark_name:
+    benchmark_title:
+    benchmark_description:
   slack:
     enabled:
     api_token:

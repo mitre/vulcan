@@ -14,7 +14,7 @@ Vulcan uses [VitePress](https://vitepress.dev/) for documentation, which provide
 
 **The documentation has its own `package.json` separate from the main application.** This temporary separation exists because:
 
-- **Main Application**: Uses Vue 2.6.11 + Bootstrap 4
+- **Main Application**: Uses Vue 2.7.16 + Bootstrap 4
 - **Documentation**: Uses VitePress with Vue 3
 
 This will be consolidated once the main application migrates to Vue 3.
