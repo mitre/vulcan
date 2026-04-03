@@ -61,9 +61,10 @@ services:
     env_file:
       - path: .env
     restart: unless-stopped
+    # Override host port: VULCAN_PORT=3001 docker compose up
     # When using a proxy, comment out "ports" and uncomment "expose" instead:
     ports:
-      - "3000:3000"
+      - "${VULCAN_PORT:-3000}:3000"
     # expose:
     #   - "3000"
     depends_on:

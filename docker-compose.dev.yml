@@ -49,7 +49,7 @@ services:
       VULCAN_ENABLE_LOCAL_LOGIN: "true"
       VULCAN_ENABLE_USER_REGISTRATION: "true"
     ports:
-      - "3000:3000"
+      - "${VULCAN_PORT:-3000}:3000"
     volumes:
       - .:/rails
     depends_on:
