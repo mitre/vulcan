@@ -178,9 +178,9 @@ ENV RAILS_ENV="production" \
 RUN groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
 
-# Copy built artifacts from build stage with correct ownership
+# Copy built artifacts from build stage with correct ownership and read-only permissions
 COPY --from=build /usr/local/bundle /usr/local/bundle
-COPY --from=build --chown=rails:rails /rails /rails
+COPY --from=build --chown=rails:rails --chmod=755 /rails /rails
 
 # Ensure writable directories exist
 RUN mkdir -p db log storage tmp
