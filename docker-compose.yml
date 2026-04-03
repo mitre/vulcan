@@ -55,6 +55,8 @@ services:
       # Database connection (deployment-specific)
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-vulcan_postgres_production}  #ggignore
       NODE_ENV: production
+      # Default to HTTP — enable SSL via proxy profiles (caddy/nginx) and set to true
+      RAILS_FORCE_SSL: "${RAILS_FORCE_SSL:-false}"
     # .env file provides secrets (SECRET_KEY_BASE, CIPHER_PASSWORD, POSTGRES_PASSWORD, etc.)
     # and optional config overrides (RAILS_FORCE_SSL, VULCAN_ENABLE_OIDC, etc.)
     # Generate with: ./setup-docker-secrets.sh
