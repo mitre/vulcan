@@ -85,11 +85,18 @@ RSpec.describe 'Rules' do
   end
 
   describe 'inspec_control_body auto-population' do
-    it 'seeds inspec_control_body with a stub describe block on rule creation' do
-      rule = component.rules.first
-      expect(rule.inspec_control_body).to be_present
-      expect(rule.inspec_control_body).to include('describe file')
-      expect(rule.inspec_control_body).to include('should be_directory')
+    it 'seeds inspec_control_body with a stub describe block on individual rule creation' do
+      # Bulk imports (component factory) skip callbacks; test individual create
+      new_rule = Rule.create!(
+        component: component,
+        srg_rule: component.rules.first.srg_rule,
+        rule_id: '999999',
+        status: 'Not Yet Determined',
+        rule_severity: 'medium'
+      )
+      expect(new_rule.inspec_control_body).to be_present
+      expect(new_rule.inspec_control_body).to include('describe file')
+      expect(new_rule.inspec_control_body).to include('should be_directory')
     end
   end
 
