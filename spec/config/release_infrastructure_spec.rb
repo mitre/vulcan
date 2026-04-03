@@ -3,28 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe 'release infrastructure' do
-  # REQUIREMENT: The release process must be automated via release-please.
+  # Releases are created manually via the GitHub UI.
   # Version must be consistent across all sources. Docker builds trigger
   # on published GitHub releases (handled by ci.yml).
-
-  describe 'release workflow' do
-    let(:workflow) { Rails.root.join('.github/workflows/release.yml').read }
-
-    it 'triggers on semver tag push' do
-      expect(workflow).to match(/push:.*tags:.*v\[0-9\]/m),
-                          'release workflow must trigger on v* tag push'
-    end
-
-    it 'uses git-cliff for changelog generation' do
-      expect(workflow).to include('git-cliff-action'),
-                          'release workflow must use git-cliff for Keep a Changelog format'
-    end
-
-    it 'creates a GitHub Release' do
-      expect(workflow).to match(/action-gh-release|createRelease/),
-                          'release workflow must create a GitHub Release'
-    end
-  end
 
   describe 'changelog configuration' do
     it 'cliff.toml exists with Keep a Changelog sections' do
