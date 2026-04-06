@@ -42,6 +42,29 @@ RSpec.describe 'Users' do
 
       put "/users/#{target_user.id}", params: valid_params
     end
+
+    it 'does NOT send slack notification when only name changes (71q.1)' do
+      allow(Settings.slack).to receive(:enabled).and_return(true)
+      expect_any_instance_of(UsersController).not_to receive(:send_slack_notification)
+
+      put "/users/#{target_user.id}", params: { user: { name: 'New Name' } }
+    end
+
+    it 'does NOT send slack notification when only email changes (71q.1)' do
+      allow(Settings.slack).to receive(:enabled).and_return(true)
+      expect_any_instance_of(UsersController).not_to receive(:send_slack_notification)
+
+      put "/users/#{target_user.id}", params: { user: { email: 'newemail@example.com' } }
+    end
+
+    it 'sends demotion notification when admin flag removed (71q.1)' do
+      target_user.update!(admin: true)
+      allow(Settings.slack).to receive(:enabled).and_return(true)
+      expect_any_instance_of(UsersController).to receive(:send_slack_notification)
+        .with(:remove_vulcan_admin, target_user)
+
+      put "/users/#{target_user.id}", params: { user: { admin: false } }
+    end
   end
 
   describe 'PUT /users/:id JSON format with admin user' do

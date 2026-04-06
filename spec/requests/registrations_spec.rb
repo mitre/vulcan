@@ -334,4 +334,45 @@ RSpec.describe 'User Registrations' do
       end
     end
   end
+
+  describe 'GET /users/edit (profile page)' do
+    let(:user) { create(:user) }
+
+    before { sign_in user }
+
+    it 'loads profile page successfully' do
+      get '/users/edit'
+      expect(response).to have_http_status(:success)
+    end
+
+    context 'audit history filtering (71q.2)' do
+      it 'only returns audits where user_type is User' do
+        # Create a legitimate audit for this user
+        user.update!(name: 'Updated Name')
+
+        # Insert a rogue audit with matching user_id but wrong user_type
+        # (simulates a background job or system actor sharing the same numeric ID)
+        # Use raw SQL to bypass ActiveRecord's polymorphic constantization
+        Audited::Audit.insert!({
+                                 auditable_id: user.id,
+                                 auditable_type: 'User',
+                                 action: 'update',
+                                 user_id: user.id,
+                                 user_type: 'NonUserActor',
+                                 audited_changes: { 'name' => %w[Old Rogue] }.to_json,
+                                 version: 99,
+                                 created_at: Time.current
+                               })
+
+        get '/users/edit'
+        expect(response).to have_http_status(:success)
+
+        # The rogue audit should NOT appear in the histories
+        # (the controller filters on user_type: 'User')
+        body = response.body
+        expect(body).to include('Updated Name')
+        expect(body).not_to include('Rogue')
+      end
+    end
+  end
 end
