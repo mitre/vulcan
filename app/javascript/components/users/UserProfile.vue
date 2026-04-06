@@ -26,10 +26,32 @@
     </BaseCommandBar>
 
     <b-alert show :variant="isProviderManaged ? 'info' : 'success'" class="mb-3">
-      <b-icon icon="shield-check" /> Authenticated via <strong>{{ authProvider }}</strong>
-      <span v-if="isProviderManaged">
-        - Some settings are managed externally and cannot be changed here.</span
-      >
+      <b-icon icon="shield-check" /> Signed in via
+      <strong>{{ currentSessionMethod }}</strong>
+      <span v-if="linkedProvider && sessionAuthMethod === 'local'">
+        &middot; Account also linked to <strong>{{ linkedProvider }}</strong>
+        <b-button
+          data-test="unlink-identity-button"
+          size="sm"
+          variant="outline-danger"
+          class="ml-2"
+          @click="openUnlinkIdentity"
+        >
+          <b-icon icon="link-45deg" /> Unlink
+        </b-button>
+      </span>
+      <span v-else-if="linkedProvider">
+        &middot; Some settings are managed by your identity provider and cannot be changed here.
+        <b-button
+          data-test="unlink-identity-button"
+          size="sm"
+          variant="outline-danger"
+          class="ml-2"
+          @click="openUnlinkIdentity"
+        >
+          <b-icon icon="link-45deg" /> Unlink {{ linkedProvider }}
+        </b-button>
+      </span>
     </b-alert>
 
     <b-alert v-if="isPendingConfirmation" show variant="warning" class="mb-3">
@@ -145,6 +167,36 @@
       </div>
     </b-sidebar>
 
+    <!-- Unlink Identity Confirmation Modal -->
+    <b-modal
+      id="unlink-identity-modal"
+      v-model="showUnlinkModal"
+      title="Unlink External Identity"
+      :ok-disabled="isUnlinking"
+      ok-title="Unlink"
+      ok-variant="danger"
+      cancel-title="Cancel"
+      @ok.prevent="submitUnlink"
+      @hidden="resetUnlinkForm"
+    >
+      <p>
+        You are about to unlink <strong>{{ linkedProvider }}</strong> from your account. After
+        unlinking, you can only sign in with your email and password.
+      </p>
+      <p class="text-muted small">
+        Enter your current password to confirm you can still access this account.
+      </p>
+      <b-form-group label="Current Password" label-for="unlink-current-password">
+        <b-form-input
+          id="unlink-current-password"
+          v-model="unlinkForm.current_password"
+          type="password"
+          autocomplete="current-password"
+          :disabled="isUnlinking"
+        />
+      </b-form-group>
+    </b-modal>
+
     <!-- Delete Account Confirmation Modal -->
     <ConfirmDeleteModal
       v-model="showDeleteModal"
@@ -186,6 +238,12 @@ export default {
       type: Object,
       default: null,
     },
+    // How the user signed in THIS session: "local", "oidc", "ldap", "github".
+    // Distinct from user.provider which records linked identities.
+    sessionAuthMethod: {
+      type: String,
+      default: "local",
+    },
   },
   setup() {
     const { activePanel, togglePanel, closePanel } = useSidebar();
@@ -201,6 +259,11 @@ export default {
         password_confirmation: "",
         current_password: "",
       },
+      unlinkForm: {
+        current_password: "",
+      },
+      showUnlinkModal: false,
+      isUnlinking: false,
       saving: false,
       showDeleteModal: false,
       isDeleting: false,
@@ -216,10 +279,18 @@ export default {
     isProviderManaged() {
       return !!this.user.provider;
     },
+    // The identity currently linked to this account (nil for local-only accounts).
+    linkedProvider() {
+      if (!this.user.provider) return null;
+      return this.humanizeProvider(this.user.provider);
+    },
+    // How the user signed in during THIS session.
+    currentSessionMethod() {
+      return this.humanizeProvider(this.sessionAuthMethod);
+    },
+    // Retained for backward-compat with existing template code.
     authProvider() {
-      if (!this.user.provider) return "Local";
-      // Capitalize first letter
-      return this.user.provider.charAt(0).toUpperCase() + this.user.provider.slice(1);
+      return this.linkedProvider || "Local";
     },
     isPendingConfirmation() {
       return !!(this.user.unconfirmed_email && this.user.unconfirmed_email.length > 0);
@@ -228,11 +299,23 @@ export default {
       return (panel) => this.activePanel === panel;
     },
     userHistories() {
-      // Filter histories to only show actions by this user
-      return this.histories.filter((h) => h.user_id === this.user.id);
+      // The controller already scopes histories to the current user via
+      // `Audited.audit_class.where(user_id: current_user.id)` in registrations#edit.
+      // No further filtering needed here (VulcanAudit#format does not include user_id).
+      return this.histories;
     },
   },
   methods: {
+    humanizeProvider(provider) {
+      if (!provider) return "Local";
+      const map = {
+        local: "Email and password",
+        oidc: "OIDC (SSO)",
+        ldap: "LDAP",
+        github: "GitHub",
+      };
+      return map[provider.toString().toLowerCase()] || provider;
+    },
     async saveProfile() {
       if (this.saving) return;
 
@@ -272,6 +355,28 @@ export default {
       } catch (error) {
         this.alertOrNotifyResponse(error);
         this.isDeleting = false;
+      }
+    },
+    openUnlinkIdentity() {
+      this.showUnlinkModal = true;
+    },
+    resetUnlinkForm() {
+      this.unlinkForm.current_password = "";
+      this.isUnlinking = false;
+    },
+    async submitUnlink() {
+      if (this.isUnlinking) return;
+      this.isUnlinking = true;
+      try {
+        const response = await axios.post("/users/unlink_identity", {
+          current_password: this.unlinkForm.current_password,
+        });
+        this.alertOrNotifyResponse(response);
+        // Reload so the page reflects the unlinked state (provider nulled out)
+        globalThis.location.reload();
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+        this.isUnlinking = false;
       }
     },
   },
