@@ -375,4 +375,40 @@ RSpec.describe 'User Registrations' do
       end
     end
   end
+
+  describe 'PUT /users (profile update)' do
+    let(:user) { create(:user, password: 'Test1234!@Test1234') }
+
+    before { sign_in user }
+
+    context 'reconfirmation flash message (71q.3)' do
+      it 'shows confirmation-sent flash when email changes' do
+        put '/users', params: {
+          user: {
+            email: 'newemail@example.com',
+            current_password: 'Test1234!@Test1234'
+          }
+        }
+
+        expect(response).to redirect_to(root_path)
+        follow_redirect!
+        # Should mention confirmation/verify, not just "profile updated"
+        expect(flash[:notice]).to match(/confirm|verify|sent/i),
+                                  "Expected flash to mention confirmation, got: #{flash[:notice]}"
+      end
+
+      it 'shows generic profile-updated flash when email does not change' do
+        put '/users', params: {
+          user: {
+            name: 'New Display Name',
+            current_password: 'Test1234!@Test1234'
+          }
+        }
+
+        expect(response).to redirect_to(root_path)
+        follow_redirect!
+        expect(flash[:notice]).to eq('Profile updated successfully.')
+      end
+    end
+  end
 end

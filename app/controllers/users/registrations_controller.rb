@@ -29,18 +29,19 @@ module Users
 
     def update
       self.resource = resource_class.to_adapter.get!(send(:"current_#{resource_name}").to_key)
-      resource.unconfirmed_email if resource.respond_to?(:unconfirmed_email)
+      prev_unconfirmed_email = resource.unconfirmed_email if resource.respond_to?(:unconfirmed_email)
 
       resource_updated = update_resource(resource, account_update_params)
 
       if resource_updated
+        flash_msg = update_flash_message(resource, prev_unconfirmed_email)
         respond_to do |format|
           format.html do
             bypass_sign_in resource, scope: resource_name if sign_in_after_change_password?
-            flash[:notice] = 'Profile updated successfully.'
+            flash[:notice] = flash_msg
             redirect_to after_update_path_for(resource)
           end
-          format.json { render json: { toast: 'Profile updated successfully.' } }
+          format.json { render json: { toast: flash_msg } }
         end
       else
         respond_to do |format|
@@ -117,6 +118,18 @@ module Users
     end
 
     private
+
+    # Devise stock behavior: if the user changed their email and reconfirmation
+    # is required, tell them a confirmation link was sent. Otherwise, generic message.
+    def update_flash_message(resource, prev_unconfirmed_email)
+      if resource.respond_to?(:unconfirmed_email) && resource.unconfirmed_email.present? &&
+         resource.unconfirmed_email != prev_unconfirmed_email
+        "A confirmation link has been sent to #{resource.unconfirmed_email}. " \
+          'Please follow the link to verify your new email address.'
+      else
+        'Profile updated successfully.'
+      end
+    end
 
     def respond_with_error(message, status)
       respond_to do |format|
