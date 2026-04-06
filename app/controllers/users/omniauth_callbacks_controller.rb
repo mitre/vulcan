@@ -5,7 +5,10 @@ module Users
   # that is hit. Currently we don't have any provider-specific code, since
   # both LDAP and Github return data in a similar enough manner.
   class OmniauthCallbacksController < Devise::OmniauthCallbacksController
-    # Comprehensive error handling for various OmniAuth failure scenarios
+    # Error handling for OmniAuth failure scenarios.
+    # Rails checks rescue_from in REVERSE order (last-defined = first-checked).
+    # StandardError must be FIRST so specific subclasses defined after it take priority.
+    rescue_from StandardError, with: :omniauth_generic_error
     rescue_from Rack::OAuth2::Client::Error, with: :oauth_error
     rescue_from OmniAuth::Strategies::OAuth2::CallbackError, with: :omniauth_callback_error
     rescue_from Timeout::Error, with: :omniauth_timeout_error
@@ -13,7 +16,6 @@ module Users
     rescue_from User::ProviderConflictError, with: :omniauth_provider_conflict
     rescue_from ArgumentError, with: :omniauth_validation_error
     rescue_from ActiveRecord::RecordInvalid, with: :omniauth_record_error
-    rescue_from StandardError, with: :omniauth_generic_error
     def all
       auth = request.env['omniauth.auth']
 
@@ -28,6 +30,18 @@ module Users
       end
 
       user = User.from_omniauth(auth)
+
+      # Notify user when their local account was auto-linked to an external provider.
+      # `just_auto_linked?` is set by User.from_omniauth (no extra DB query needed).
+      if user.just_auto_linked?
+        provider_name = auth.provider.to_s == 'oidc' ? (Settings.oidc&.title || 'OIDC') : auth.provider.to_s.upcase
+        flash.notice = "Your account has been linked to #{provider_name}. You can now sign in with either method."
+      end
+
+      # Record the auth method for this session so the profile can distinguish
+      # "Signed in via Okta" from "Signed in via email and password" — this is
+      # distinct from user.provider which records linked identities.
+      session[:auth_method] = auth.provider.to_s.to_sym
 
       # Store ID token in session for OIDC logout
       if auth.credentials&.id_token
@@ -44,7 +58,7 @@ module Users
       should_remember = params[:remember_me] == '1' || omniauth_params['remember_me'] == '1'
       remember_me(user) if should_remember
 
-      flash.notice = I18n.t('devise.sessions.signed_in')
+      flash.notice ||= I18n.t('devise.sessions.signed_in')
       sign_in_and_redirect(user) && return
     end
 
@@ -53,11 +67,14 @@ module Users
     alias oidc all
 
     def oauth_error(exception)
+      # Log full details server-side for debugging.
       Rails.logger.error "OAuth authentication error: #{exception.class} - #{exception.message}"
       Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
 
-      flash.alert = "OAuth error: #{exception.message}"
-      redirect_to root_path
+      # Do NOT include exception.message in the user-facing flash — Rack::OAuth2 errors
+      # can include sensitive details (token hints, client config, redirect URIs).
+      flash.alert = 'Authentication failed. Please try again or contact your administrator.'
+      redirect_to new_user_session_path
     end
 
     def omniauth_callback_error(exception)
@@ -78,7 +95,9 @@ module Users
 
     def omniauth_provider_conflict(exception)
       Rails.logger.warn "Provider conflict: #{exception.message}"
-      flash.alert = exception.message
+      flash.alert = "#{exception.message} " \
+                    'Please sign in using your existing account, ' \
+                    'or contact an administrator to link your accounts.'
       redirect_to new_user_session_path
     end
 

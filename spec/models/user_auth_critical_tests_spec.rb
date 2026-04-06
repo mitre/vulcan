@@ -65,13 +65,15 @@ RSpec.describe User do
     end
 
     describe 'provider conflict protection' do
+      before { allow(Settings).to receive(:auto_link_user).and_return(false) }
+
       it 'blocks login when existing local user tries to auth via OIDC' do
         create(:user, email: 'admin@example.com', provider: nil, uid: nil)
 
         auth = mock_omniauth_response(build(:user, email: 'admin@example.com'), provider: 'oidc')
         auth.uid = 'oidc-123'
 
-        expect { User.from_omniauth(auth) }.to raise_error(User::ProviderConflictError, /already exists.*local/)
+        expect { User.from_omniauth(auth) }.to raise_error(User::ProviderConflictError, /already exists using email and password/)
       end
 
       it 'blocks login when LDAP user tries to auth via OIDC' do
@@ -80,7 +82,7 @@ RSpec.describe User do
         auth = mock_omniauth_response(build(:user, email: 'test@example.com'), provider: 'oidc')
         auth.uid = 'oidc-456'
 
-        expect { User.from_omniauth(auth) }.to raise_error(User::ProviderConflictError, /already exists.*ldap/)
+        expect { User.from_omniauth(auth) }.to raise_error(User::ProviderConflictError, /already exists using LDAP sign-in/)
       end
 
       it 'does not modify provider/uid on existing user' do
@@ -119,17 +121,18 @@ RSpec.describe User do
     end
 
     describe 'database constraint enforcement' do
-      it 'prevents duplicate provider/uid combinations' do
+      it 'finds existing user by provider+uid even when email differs' do
         # Create first user
         auth1 = mock_omniauth_response(build(:user, email: 'user1@example.com'), provider: 'oidc')
         auth1.uid = 'unique123'
-        User.from_omniauth(auth1)
+        user1 = User.from_omniauth(auth1)
 
-        # Try to create second user with same provider/uid but different email
+        # Same provider/uid but different email — should find user1, not create duplicate
         auth2 = mock_omniauth_response(build(:user, email: 'user2@example.com'), provider: 'oidc')
-        auth2.uid = 'unique123' # Same UID
+        auth2.uid = 'unique123'
 
-        expect { User.from_omniauth(auth2) }.to raise_error(ActiveRecord::RecordNotUnique)
+        user2 = User.from_omniauth(auth2)
+        expect(user2.id).to eq(user1.id)
       end
 
       it 'allows same uid for different providers' do

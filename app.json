@@ -82,6 +82,9 @@
         },
         "VULCAN_SEED_DEMO_DATA": {
           "value": "true"
+        },
+        "VULCAN_AUTO_LINK_USER": {
+          "value": "true"
         }
       },
       "scripts": {

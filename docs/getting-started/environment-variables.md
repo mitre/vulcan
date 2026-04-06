@@ -59,6 +59,11 @@ DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
 | `VULCAN_ENABLE_REMEMBER_ME` | Show "Remember Me" checkbox on login forms | `true` | `false` for DoD |
 | `VULCAN_REMEMBER_ME_DURATION` | How long Remember Me keeps session alive. Same format as session timeout. | `8h` | `1d`, `28800` |
 
+### Account Linking
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_AUTO_LINK_USER` | Automatically link external identities (OIDC, LDAP, GitHub) to existing local accounts with the same email. Only enable when all configured identity providers verify email ownership. When `false`, users see a clear error directing them to sign in with their existing method or contact an administrator. | `false` | `true` or `false` |
+
 ### User Registration
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
