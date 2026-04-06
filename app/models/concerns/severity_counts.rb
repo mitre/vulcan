@@ -4,15 +4,14 @@
 # SeverityCounts - Shared concern for models with severity-categorized rules
 #
 # Provides severity aggregation methods for Component, STIG, and SRG models.
-# Each including model must define its own `with_severity_counts` scope
-# due to model-specific SQL conditions.
+# Auto-generates a `with_severity_counts` scope based on model type.
+# Heavy columns (xml, binary) are excluded from the SELECT to prevent
+# memory blowout on index pages.
 #
 # Usage:
 #   class Component < ApplicationRecord
 #     include SeverityCounts
-#
-#     scope :with_severity_counts, -> { ... }  # Model-specific SQL
-#     def rules_association; rules; end         # Define association to query
+#     def rules_association; rules; end  # Define association to query
 #   end
 #
 module SeverityCounts
@@ -29,11 +28,22 @@ module SeverityCounts
     super.merge({ severity_counts: severity_counts_hash })
   end
 
+  # Column types that are never needed on index/list pages and can be
+  # multi-MB per row. Excluding them from `with_severity_counts` prevents
+  # Heroku dyno memory blowout (R14/R15) on endpoints like GET /stigs.
+  # Models without these column types are unaffected (all columns loaded).
+  # Uses ActiveRecord's abstract `type` (not adapter-specific `sql_type`)
+  # so it works across databases (Postgres xml/bytea, MySQL blob, etc.).
+  HEAVY_COLUMN_TYPES = %i[xml binary].freeze
+
   included do
     ##
     # Auto-generate with_severity_counts scope based on model type
     #
-    # Detects model type and creates appropriate SQL subqueries
+    # Detects model type and creates appropriate SQL subqueries.
+    # Automatically excludes heavy columns (xml, binary) from the SELECT
+    # to prevent memory blowout on index pages. Use `Stig.find(id)` (no
+    # scope) when you need the full record including xml for export/download.
     scope :with_severity_counts, lambda {
       table = table_name
       rule_type = "#{name.gsub('SecurityRequirementsGuide', 'Srg')}Rule" # Component->ComponentRule, Stig->StigRule, SRG->SrgRule
@@ -54,8 +64,14 @@ module SeverityCounts
       # Add type filter for STI (not needed for Component since it uses component_id)
       type_condition = name == 'Component' ? '' : "AND base_rules.type = '#{rule_type}' "
 
+      # Select only lightweight columns — exclude xml/binary blobs that can be
+      # multi-MB per row. This is the DRY fix: all models using this concern
+      # automatically benefit without per-controller workarounds.
+      lightweight_cols = columns.reject { |c| HEAVY_COLUMN_TYPES.include?(c.type) }
+                                .map { |c| "#{table}.#{c.name}" }
+
       select(
-        "#{table}.*",
+        *lightweight_cols,
         "(SELECT COUNT(*) FROM base_rules WHERE #{fk_condition} #{type_condition}" \
         "AND base_rules.rule_severity = 'high') AS severity_high_count",
         "(SELECT COUNT(*) FROM base_rules WHERE #{fk_condition} #{type_condition}" \
