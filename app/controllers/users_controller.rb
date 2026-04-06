@@ -68,8 +68,13 @@ class UsersController < ApplicationController
     @user.skip_reconfirmation! if user_update_params[:email].present?
 
     if @user.update(user_update_params)
-      notification_type = @user.admin ? :assign_vulcan_admin : :remove_vulcan_admin
-      send_slack_notification(notification_type, @user) if Settings.slack.enabled
+      # Only notify Slack when the admin flag actually changed. Previously this
+      # fired on every update (e.g. name change, email change), spamming Slack
+      # with "promoted/demoted" messages that weren't accurate.
+      if @user.saved_change_to_admin?
+        notification_type = @user.admin ? :assign_vulcan_admin : :remove_vulcan_admin
+        send_slack_notification(notification_type, @user) if Settings.slack.enabled
+      end
 
       respond_to do |format|
         format.html do

@@ -39,11 +39,17 @@
               />
             </template>
             <template v-else>
-              <div v-for="changes in history.audited_changes" :key="changes.id">
-                <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
-                  {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
-                </p>
-              </div>
+              <!-- When a history entry has a comment (e.g. "Unlinked OIDC identity"),
+                   the comment is already shown at the group level above. Suppress the
+                   raw "field was updated from X to Y" text to avoid duplication and
+                   to keep the activity readable. -->
+              <template v-if="!history.comment">
+                <div v-for="changes in history.audited_changes" :key="changes.id">
+                  <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
+                    {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
+                  </p>
+                </div>
+              </template>
               <p v-if="history.action == 'destroy'" class="ml-3 mb-0 text-danger">
                 {{ userIdentifier(history) }} was {{ computeDeletionText(history) }}
               </p>

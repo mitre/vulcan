@@ -25,6 +25,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
+      # Trust auth for local dev. Corporate VPNs (GlobalProtect, etc.) interfere
+      # with scram-sha-256 challenge-response handshakes through container runtime
+      # port forwarding proxies (OrbStack, Docker Desktop). This is a known issue
+      # with no upstream fix: https://github.com/orbstack/orbstack/issues/2267
+      # Mastodon and GitLab CI use the same approach for dev/CI environments.
+      # Production uses docker-compose.yml which does NOT set this.
+      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - vulcan_dev_dbdata:/var/lib/postgresql/data
     healthcheck:
