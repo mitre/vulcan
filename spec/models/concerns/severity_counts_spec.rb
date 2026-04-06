@@ -178,7 +178,9 @@ RSpec.describe SeverityCounts do
       stig = create(:stig)
       loaded = Stig.with_severity_counts.find(stig.id)
 
-      %w[id stig_id title version benchmark_date name created_at updated_at].each do |col|
+      expected_cols = Stig.columns.reject { |c| SeverityCounts::HEAVY_COLUMN_TYPES.include?(c.type) }
+                          .map(&:name)
+      expected_cols.each do |col|
         expect(loaded.has_attribute?(col)).to be(true), "Expected #{col} to be loaded"
       end
     end
@@ -186,7 +188,10 @@ RSpec.describe SeverityCounts do
     it 'still includes all non-blob columns for SRGs' do
       loaded = SecurityRequirementsGuide.with_severity_counts.find(srg.id)
 
-      %w[id srg_id title version created_at updated_at].each do |col|
+      expected_cols = SecurityRequirementsGuide.columns
+                                               .reject { |c| SeverityCounts::HEAVY_COLUMN_TYPES.include?(c.type) }
+                                               .map(&:name)
+      expected_cols.each do |col|
         expect(loaded.has_attribute?(col)).to be(true), "Expected #{col} to be loaded"
       end
     end

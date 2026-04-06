@@ -4,15 +4,14 @@
 # SeverityCounts - Shared concern for models with severity-categorized rules
 #
 # Provides severity aggregation methods for Component, STIG, and SRG models.
-# Each including model must define its own `with_severity_counts` scope
-# due to model-specific SQL conditions.
+# Auto-generates a `with_severity_counts` scope based on model type.
+# Heavy columns (xml, binary) are excluded from the SELECT to prevent
+# memory blowout on index pages.
 #
 # Usage:
 #   class Component < ApplicationRecord
 #     include SeverityCounts
-#
-#     scope :with_severity_counts, -> { ... }  # Model-specific SQL
-#     def rules_association; rules; end         # Define association to query
+#     def rules_association; rules; end  # Define association to query
 #   end
 #
 module SeverityCounts
@@ -33,7 +32,9 @@ module SeverityCounts
   # multi-MB per row. Excluding them from `with_severity_counts` prevents
   # Heroku dyno memory blowout (R14/R15) on endpoints like GET /stigs.
   # Models without these column types are unaffected (all columns loaded).
-  HEAVY_COLUMN_TYPES = %w[xml binary].freeze
+  # Uses ActiveRecord's abstract `type` (not adapter-specific `sql_type`)
+  # so it works across databases (Postgres xml/bytea, MySQL blob, etc.).
+  HEAVY_COLUMN_TYPES = %i[xml binary].freeze
 
   included do
     ##
@@ -66,7 +67,7 @@ module SeverityCounts
       # Select only lightweight columns — exclude xml/binary blobs that can be
       # multi-MB per row. This is the DRY fix: all models using this concern
       # automatically benefit without per-controller workarounds.
-      lightweight_cols = columns.reject { |c| HEAVY_COLUMN_TYPES.include?(c.sql_type) }
+      lightweight_cols = columns.reject { |c| HEAVY_COLUMN_TYPES.include?(c.type) }
                                 .map { |c| "#{table}.#{c.name}" }
 
       select(
