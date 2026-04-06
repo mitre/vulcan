@@ -94,6 +94,9 @@ module Users
         )
       end
 
+      # NOTE: valid_password? has a hidden side-effect — if the user's password is stored
+      # with bcrypt (legacy), Devise transparently rehashes it to PBKDF2 on successful
+      # verification. This is intentional (transparent migration) but worth knowing.
       return respond_with_error('Incorrect password. Please enter your current password to unlink.', :unprocessable_entity) unless user.valid_password?(params[:current_password].to_s)
 
       previous_provider = user.provider

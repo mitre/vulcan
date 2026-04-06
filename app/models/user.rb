@@ -163,7 +163,9 @@ class User < ApplicationRecord
         # refuse to auto-link. Prevents rogue/misconfigured providers from claiming
         # arbitrary emails to take over local accounts. If the claim is absent,
         # we trust the admin's decision to enable auto_link_user.
-        if auth.info.respond_to?(:email_verified) && auth.info.email_verified == false
+        # Cast to boolean to guard against providers sending "false" (string) instead of false
+        if auth.info.respond_to?(:email_verified) &&
+           ActiveModel::Type::Boolean.new.cast(auth.info.email_verified) == false
           Rails.logger.warn "BLOCKED: Auto-link refused for #{user.email} — #{provider} asserted email not verified"
           raise ProviderConflictError,
                 "Auto-link refused: your #{provider.upcase} provider reports this email is not verified. " \

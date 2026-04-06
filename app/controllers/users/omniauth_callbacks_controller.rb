@@ -69,7 +69,7 @@ module Users
     def oauth_error(exception)
       # Log full details server-side for debugging.
       Rails.logger.error "OAuth authentication error: #{exception.class} - #{exception.message}"
-      Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
+      Rails.logger.error exception.backtrace&.first(10)&.join("\n")
 
       # Do NOT include exception.message in the user-facing flash — Rack::OAuth2 errors
       # can include sensitive details (token hints, client config, redirect URIs).
@@ -79,7 +79,7 @@ module Users
 
     def omniauth_callback_error(exception)
       Rails.logger.error "OmniAuth callback error: #{exception.class} - #{exception.message}"
-      Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
+      Rails.logger.error exception.backtrace&.first(10)&.join("\n")
 
       flash.alert = 'Authentication failed. Please try again or contact your administrator.'
       redirect_to new_user_session_path
@@ -87,7 +87,7 @@ module Users
 
     def omniauth_timeout_error(exception)
       Rails.logger.error "OmniAuth timeout error: #{exception.class} - #{exception.message}"
-      Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
+      Rails.logger.error exception.backtrace&.first(10)&.join("\n")
 
       flash.alert = 'Authentication timed out. Please try again.'
       redirect_to new_user_session_path
@@ -103,7 +103,7 @@ module Users
 
     def omniauth_validation_error(exception)
       Rails.logger.error "OmniAuth validation error: #{exception.class} - #{exception.message}"
-      Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
+      Rails.logger.error exception.backtrace&.first(10)&.join("\n")
 
       flash.alert = "Authentication failed: #{exception.message}"
       redirect_to new_user_session_path
@@ -111,7 +111,7 @@ module Users
 
     def omniauth_record_error(exception)
       Rails.logger.error "OmniAuth database error: #{exception.class} - #{exception.message}"
-      Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
+      Rails.logger.error exception.backtrace&.first(10)&.join("\n")
 
       flash.alert = 'Account creation failed. Please contact your administrator.'
       redirect_to new_user_session_path
@@ -119,7 +119,7 @@ module Users
 
     def omniauth_generic_error(exception)
       Rails.logger.error "Unexpected OmniAuth error: #{exception.class} - #{exception.message}"
-      Rails.logger.debug exception.backtrace.join("\n") if Rails.env.development?
+      Rails.logger.error exception.backtrace&.first(10)&.join("\n")
 
       flash.alert = 'An unexpected error occurred during authentication. Please try again.'
       redirect_to new_user_session_path
