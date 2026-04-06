@@ -10,25 +10,42 @@ RSpec.describe User do
 
     describe 'race condition handling' do
       it 'retries on RecordNotUnique during new user creation' do
-        # Use an email that doesn't exist yet so we hit the "create new user" path
         auth = base_auth
-        auth.info.email = 'brand_new@example.com'
+        auth.info.email = 'brand_new_race@example.com'
 
-        call_count = 0
-        # First save raises RecordNotUnique (race), retry finds the user created by the other process
+        # Pre-create the user as the "other process" would have — with matching provider
+        existing = create(:user, email: 'brand_new_race@example.com', provider: 'oidc', uid: auth.uid)
+
+        save_attempts = 0
+        user_instance = build(:user, email: 'brand_new_race@example.com')
+        allow(User).to receive(:new).and_return(user_instance)
+        allow(user_instance).to receive(:skip_confirmation!)
+        allow(user_instance).to receive(:save!) do
+          save_attempts += 1
+          raise ActiveRecord::RecordNotUnique, 'Duplicate during race' if save_attempts == 1
+        end
+
+        # First find_by returns nil (user doesn't exist yet from our perspective),
+        # save! raises RecordNotUnique, retry find_by finds the existing user
+        find_count = 0
         allow(User).to receive(:find_by).and_wrap_original do |method, *args|
-          call_count += 1
-          if args.first.is_a?(String) && args.first.include?('LOWER') && call_count <= 2
-            nil # First two lookups find nothing (simulating race)
+          find_count += 1
+          # First two lookups (provider+uid, email) return nil to force create path
+          # After retry, the email lookup finds the existing user
+          if find_count <= 2
+            nil
           else
             method.call(*args)
           end
         end
 
-        # The retry mechanism in from_omniauth catches RecordNotUnique and retries
-        # On retry, the user created by the "other process" is found
+        allow(Rails.logger).to receive(:info)
+        allow(Rails.logger).to receive(:debug)
+        allow(Rails.logger).to receive(:warn)
+
         user = User.from_omniauth(auth)
-        expect(user).to be_persisted
+        expect(save_attempts).to eq(1), 'save! should have been called and raised once'
+        expect(user).to eq(existing)
       end
 
       it 'fails after maximum retry attempts' do
