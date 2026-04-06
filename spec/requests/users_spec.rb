@@ -426,6 +426,19 @@ RSpec.describe 'Users' do
         user = User.with_reset_password_token(token)
         expect(user).to eq(target_user)
       end
+
+      it 'succeeds even when user has pre-existing validation failures (71q.4)' do
+        # Simulate a user whose name exceeds current validators (e.g., limit was tightened after creation)
+        target_user.update_columns(name: 'X' * 500)
+
+        post "/users/#{target_user.id}/generate_reset_link", headers: json_headers
+
+        expect(response).to have_http_status(:ok),
+                            "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
+        target_user.reload
+        expect(target_user.reset_password_token).to be_present
+        expect(target_user.reset_password_sent_at).to be_present
+      end
     end
 
     context 'when non-admin' do

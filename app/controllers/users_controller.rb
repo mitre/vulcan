@@ -252,7 +252,12 @@ class UsersController < ApplicationController
 
   def generate_reset_url(user)
     raw, hashed = Devise.token_generator.generate(User, :reset_password_token)
-    user.update!(reset_password_token: hashed, reset_password_sent_at: Time.current)
+    # Skip validations — matches Devise's own save(validate: false) pattern.
+    # Token writes carry no business logic and must not be blocked by unrelated
+    # validation failures on the user record (e.g., tightened name limits).
+    # rubocop:disable Rails/SkipsModelValidations
+    user.update_columns(reset_password_token: hashed, reset_password_sent_at: Time.current)
+    # rubocop:enable Rails/SkipsModelValidations
     edit_user_password_url(reset_password_token: raw)
   end
 end
