@@ -153,4 +153,59 @@ RSpec.describe SeverityCounts do
       expect(json[:severity_counts]).to eq(expected)
     end
   end
+
+  describe 'heavy column exclusion' do
+    # REQUIREMENT: with_severity_counts must NOT load xml/binary columns.
+    # These columns store multi-MB STIG/SRG XML documents. Loading them on
+    # index pages blows Heroku dyno memory (R14/R15) and causes 30s timeouts (H12).
+    # The xml column is only needed for export/download, not for listing.
+
+    it 'excludes xml columns from STIG queries' do
+      stig = create(:stig)
+      loaded = Stig.with_severity_counts.find(stig.id)
+
+      # The record should NOT have the xml attribute loaded
+      expect(loaded.has_attribute?(:xml)).to be false
+    end
+
+    it 'excludes xml columns from SRG queries' do
+      loaded = SecurityRequirementsGuide.with_severity_counts.find(srg.id)
+
+      expect(loaded.has_attribute?(:xml)).to be false
+    end
+
+    it 'still includes all non-blob columns for STIGs' do
+      stig = create(:stig)
+      loaded = Stig.with_severity_counts.find(stig.id)
+
+      %w[id stig_id title version benchmark_date name created_at updated_at].each do |col|
+        expect(loaded.has_attribute?(col)).to be(true), "Expected #{col} to be loaded"
+      end
+    end
+
+    it 'still includes all non-blob columns for SRGs' do
+      loaded = SecurityRequirementsGuide.with_severity_counts.find(srg.id)
+
+      %w[id srg_id title version created_at updated_at].each do |col|
+        expect(loaded.has_attribute?(col)).to be(true), "Expected #{col} to be loaded"
+      end
+    end
+
+    it 'does not affect models without heavy columns (Component)' do
+      loaded = Component.with_severity_counts.find(component.id)
+
+      # Component has no xml column — all columns should be present
+      expect(loaded.has_attribute?(:id)).to be true
+      expect(loaded.has_attribute?(:name)).to be true
+      expect(loaded.has_attribute?(:description)).to be true
+    end
+
+    it 'xml is still loadable via explicit query (for export/download)' do
+      stig = create(:stig)
+
+      # Direct find without scope — loads everything including xml
+      full_stig = Stig.find(stig.id)
+      expect(full_stig.has_attribute?(:xml)).to be true
+    end
+  end
 end

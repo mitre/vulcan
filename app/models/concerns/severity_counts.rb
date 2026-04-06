@@ -29,11 +29,20 @@ module SeverityCounts
     super.merge({ severity_counts: severity_counts_hash })
   end
 
+  # Column types that are never needed on index/list pages and can be
+  # multi-MB per row. Excluding them from `with_severity_counts` prevents
+  # Heroku dyno memory blowout (R14/R15) on endpoints like GET /stigs.
+  # Models without these column types are unaffected (all columns loaded).
+  HEAVY_COLUMN_TYPES = %w[xml binary].freeze
+
   included do
     ##
     # Auto-generate with_severity_counts scope based on model type
     #
-    # Detects model type and creates appropriate SQL subqueries
+    # Detects model type and creates appropriate SQL subqueries.
+    # Automatically excludes heavy columns (xml, binary) from the SELECT
+    # to prevent memory blowout on index pages. Use `Stig.find(id)` (no
+    # scope) when you need the full record including xml for export/download.
     scope :with_severity_counts, lambda {
       table = table_name
       rule_type = "#{name.gsub('SecurityRequirementsGuide', 'Srg')}Rule" # Component->ComponentRule, Stig->StigRule, SRG->SrgRule
@@ -54,8 +63,14 @@ module SeverityCounts
       # Add type filter for STI (not needed for Component since it uses component_id)
       type_condition = name == 'Component' ? '' : "AND base_rules.type = '#{rule_type}' "
 
+      # Select only lightweight columns — exclude xml/binary blobs that can be
+      # multi-MB per row. This is the DRY fix: all models using this concern
+      # automatically benefit without per-controller workarounds.
+      lightweight_cols = columns.reject { |c| HEAVY_COLUMN_TYPES.include?(c.sql_type) }
+                                .map { |c| "#{table}.#{c.name}" }
+
       select(
-        "#{table}.*",
+        *lightweight_cols,
         "(SELECT COUNT(*) FROM base_rules WHERE #{fk_condition} #{type_condition}" \
         "AND base_rules.rule_severity = 'high') AS severity_high_count",
         "(SELECT COUNT(*) FROM base_rules WHERE #{fk_condition} #{type_condition}" \
