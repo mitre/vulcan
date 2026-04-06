@@ -18,6 +18,12 @@ Rails.application.routes.draw do
     sessions: 'sessions'
   }
 
+  # Unlink an external identity (OIDC/LDAP/GitHub) from the current user account.
+  # Requires current password. See Users::RegistrationsController#unlink_identity.
+  devise_scope :user do
+    post '/users/unlink_identity', to: 'users/registrations#unlink_identity', as: :unlink_identity
+  end
+
   resources :users, only: %i[index update destroy] do
     collection do
       post :admin_create

@@ -160,7 +160,7 @@ export default {
   },
   methods: {
     typeColumn: function (user) {
-      return user.provider === null ? "Local User" : user.provider.toUpperCase() + " User";
+      return user.provider ? user.provider.toUpperCase() + " User" : "Local User";
     },
     formatDate(dateStr) {
       if (!dateStr) return "Never";

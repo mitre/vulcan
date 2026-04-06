@@ -68,8 +68,13 @@ class UsersController < ApplicationController
     @user.skip_reconfirmation! if user_update_params[:email].present?
 
     if @user.update(user_update_params)
-      notification_type = @user.admin ? :assign_vulcan_admin : :remove_vulcan_admin
-      send_slack_notification(notification_type, @user) if Settings.slack.enabled
+      # Only notify Slack when the admin flag actually changed. Previously this
+      # fired on every update (e.g. name change, email change), spamming Slack
+      # with "promoted/demoted" messages that weren't accurate.
+      if @user.saved_change_to_admin?
+        notification_type = @user.admin ? :assign_vulcan_admin : :remove_vulcan_admin
+        send_slack_notification(notification_type, @user) if Settings.slack.enabled
+      end
 
       respond_to do |format|
         format.html do
@@ -151,8 +156,9 @@ class UsersController < ApplicationController
     @user.send_reset_password_instructions
     render json: { toast: "Password reset email sent to #{@user.email}." }
   rescue StandardError => e
+    Rails.logger.error "send_password_reset failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not send password reset.', message: [e.message], variant: 'danger' }
+      toast: { title: 'Could not send password reset.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
     }, status: :internal_server_error
   end
 
@@ -211,8 +217,9 @@ class UsersController < ApplicationController
       }, status: :unprocessable_entity
     end
   rescue StandardError => e
+    Rails.logger.error "set_password failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not set password.', message: [e.message], variant: 'danger' }
+      toast: { title: 'Could not set password.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
     }, status: :internal_server_error
   end
 
@@ -247,7 +254,12 @@ class UsersController < ApplicationController
 
   def generate_reset_url(user)
     raw, hashed = Devise.token_generator.generate(User, :reset_password_token)
-    user.update!(reset_password_token: hashed, reset_password_sent_at: Time.current)
+    # Skip validations — matches Devise's own save(validate: false) pattern.
+    # Token writes carry no business logic and must not be blocked by unrelated
+    # validation failures on the user record (e.g., tightened name limits).
+    # rubocop:disable Rails/SkipsModelValidations
+    user.update_columns(reset_password_token: hashed, reset_password_sent_at: Time.current)
+    # rubocop:enable Rails/SkipsModelValidations
     edit_user_password_url(reset_password_token: raw)
   end
 end

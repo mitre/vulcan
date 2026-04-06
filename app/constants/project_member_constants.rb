@@ -6,5 +6,6 @@ module ProjectMemberConstants
   PROJECT_MEMBER_VIEWERS = %w[viewer author reviewer admin].freeze
   PROJECT_MEMBER_AUTHORS = %w[author reviewer admin].freeze
   PROJECT_MEMBER_REVIEWERS = %w[reviewer admin].freeze
-  PROJECT_MEMBER_ADMINS = 'admin'
+  PROJECT_MEMBER_ADMINS = %w[admin].freeze
+  ROLE_ADMIN = 'admin'
 end

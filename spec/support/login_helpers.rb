@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'ostruct'
+
 module LoginHelpers
   def stub_ldap_setting(messages)
     allow(Settings.ldap).to receive_messages(to_settings(messages))

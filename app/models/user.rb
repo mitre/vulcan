@@ -7,6 +7,15 @@ require 'bcrypt'
 class User < ApplicationRecord
   # Raised when an OmniAuth login matches an existing user with a different provider
   class ProviderConflictError < StandardError; end
+
+  # Transient flag set by `from_omniauth` when a local account was auto-linked to
+  # an external provider in the current request. Not persisted — used by the
+  # controller to show a "Your account has been linked" flash message.
+  attr_writer :just_auto_linked
+
+  def just_auto_linked?
+    @just_auto_linked == true
+  end
   # All non-omniauthable Devise modules MUST be in a single call so Devise can
   # properly coordinate their interactions. In particular, :timeoutable must be
   # in the same call as :rememberable so Devise checks remember-me tokens before
@@ -18,7 +27,7 @@ class User < ApplicationRecord
 
   include VulcanAuditable
 
-  vulcan_audited only: %i[admin name email]
+  vulcan_audited only: %i[admin name email provider]
 
   include ProjectMemberConstants
   include PasswordComplexityValidator
@@ -125,35 +134,73 @@ class User < ApplicationRecord
   end
 
   private_class_method def self.create_or_update_user_from_auth(email, auth)
-    # Use downcase to ensure case-insensitive lookup consistent with Devise configuration
-    # This prevents "Email has already been taken" errors when users login with different email casing
-    user = find_or_initialize_by(email: email.downcase)
+    provider = auth.provider.to_s
+    uid = auth.uid.to_s
 
-    # SECURITY: Prevent provider hijacking — don't overwrite an existing account's provider
-    if user.persisted? && user.provider != auth.provider
+    # LOOKUP 1: Exact identity match by provider + uid (most reliable)
+    user = find_by(provider: provider, uid: uid)
+    if user
+      Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{provider}"
+      return user
+    end
+
+    # LOOKUP 2: Email fallback — find existing account with same email
+    user = find_by('LOWER(email) = ?', email.downcase)
+    if user
       existing_provider = user.provider || 'local'
-      Rails.logger.warn "BLOCKED: User #{user.email} attempted login via '#{auth.provider}' " \
+
+      # Same provider, different uid — provider re-issued identity
+      if user.provider.to_s == provider
+        Rails.logger.info "Updating uid for #{user.email}: provider=#{provider}"
+        user.uid = uid
+        user.save!
+        return user
+      end
+
+      # Different provider — check global auto-link setting
+      if existing_provider == 'local' && Settings.auto_link_user
+        # SECURITY: If the provider explicitly asserts the email is NOT verified,
+        # refuse to auto-link. Prevents rogue/misconfigured providers from claiming
+        # arbitrary emails to take over local accounts. If the claim is absent,
+        # we trust the admin's decision to enable auto_link_user.
+        # Cast to boolean to guard against providers sending "false" (string) instead of false
+        if auth.info.respond_to?(:email_verified) &&
+           ActiveModel::Type::Boolean.new.cast(auth.info.email_verified) == false
+          Rails.logger.warn "BLOCKED: Auto-link refused for #{user.email} — #{provider} asserted email not verified"
+          raise ProviderConflictError,
+                "Auto-link refused: your #{provider.upcase} provider reports this email is not verified. " \
+                'Please verify your email with the provider and try again.'
+        end
+
+        Rails.logger.info "AUDIT: Auto-linked local account #{user.email} to #{provider}"
+        user.provider = provider
+        user.uid = uid
+        user.audit_comment = "Linked #{provider.upcase} identity to local account"
+        user.save!
+        user.just_auto_linked = true
+        return user
+      end
+
+      # Block: different provider and auto-link disabled
+      Rails.logger.warn "BLOCKED: User #{user.email} attempted login via '#{provider}' " \
                         "but account exists with provider '#{existing_provider}'"
+      human_provider = existing_provider == 'local' ? 'email and password' : existing_provider.upcase
       raise ProviderConflictError,
-            "An account with email #{user.email} already exists with #{existing_provider} authentication. " \
-            'Please sign in using your original authentication method, or contact an administrator.'
+            "An account with this email already exists using #{human_provider} sign-in."
     end
 
-    if user.new_record?
-      Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{auth.provider}"
-      user.provider = auth.provider
-      user.uid = auth.uid
-      user.name = auth.info.name.presence || "#{auth.provider} user"
-      user.password = Devise.friendly_token
-      user.skip_confirmation!
-    else
-      Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{auth.provider}"
-      # Same provider — safe to update uid (e.g., provider re-issues uid)
-      user.uid = auth.uid
-    end
-
+    # LOOKUP 3: No existing account — create new user
+    Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{provider}"
+    user = new(
+      email: email.downcase,
+      provider: provider,
+      uid: uid,
+      name: auth.info.name.presence || "#{provider} user",
+      password: Devise.friendly_token
+    )
+    user.skip_confirmation!
     user.save!
-    Rails.logger.info "User #{user.email} successfully authenticated via #{auth.provider}"
+    Rails.logger.info "User #{user.email} successfully authenticated via #{provider}"
     user
   end
 
