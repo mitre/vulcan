@@ -81,7 +81,6 @@ gem 'caxlsx'
 # For reading excel files
 gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
-
 # REXML - required explicitly in Ruby 3.0+
 gem 'rexml'
 
