@@ -280,4 +280,33 @@ RSpec.describe 'Stigs' do
       expect(rule).not_to have_key('rule_descriptions_attributes')
     end
   end
+
+  describe 'GET /stigs/:id HTML format (performance)' do
+    # REQUIREMENT: The HTML show page must NOT embed the full xml column
+    # in the page body. Each STIG xml is 5-50MB; serializing it into a
+    # v-bind attribute would blow browser memory and page load time.
+    let(:stig_with_xml) do
+      s = create(:stig)
+      xml_marker = '<?xml version="1.0"?><Benchmark id="UNIQUE_STIG_XML_MARKER_FOR_TEST"/>'
+      s.update_columns(xml: xml_marker)
+      s
+    end
+
+    before { sign_in user }
+
+    it 'does not include the xml column in the HTML page body' do
+      get "/stigs/#{stig_with_xml.id}"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('UNIQUE_STIG_XML_MARKER_FOR_TEST'),
+                                   'HTML page contains the xml column — use except: [:xml] in to_json'
+    end
+
+    it 'still loads the STIG detail page with title' do
+      get "/stigs/#{stig_with_xml.id}"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(stig_with_xml.title)
+    end
+  end
 end

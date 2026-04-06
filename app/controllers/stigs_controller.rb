@@ -19,7 +19,7 @@ class StigsController < ApplicationController
     @stig = Stig.includes(stig_rules: %i[disa_rule_descriptions checks]).find(params[:id])
 
     respond_to do |format|
-      format.html { @stig_json = @stig.to_json(methods: %i[stig_rules]) }
+      format.html { @stig_json = @stig.to_json(methods: %i[stig_rules], except: [:xml]) }
       format.json # Uses show.json.jbuilder (faster than to_json)
     end
   end
