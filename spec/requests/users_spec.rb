@@ -373,6 +373,22 @@ RSpec.describe 'Users' do
         expect(json['toast']).to include(target_user.email)
       end
 
+      it 'does not leak exception message on internal error (71q.5)' do
+        allow(Settings.smtp).to receive(:enabled).and_return(true)
+        allow_any_instance_of(User).to receive(:send_reset_password_instructions)
+          .and_raise(StandardError, 'SMTP server at smtp.internal.corp:587 refused connection')
+
+        post "/users/#{target_user.id}/send_password_reset", headers: json_headers
+
+        expect(response).to have_http_status(:internal_server_error)
+        json = response.parsed_body
+        # Must NOT contain the internal error details
+        expect(json.to_s).not_to include('smtp.internal.corp')
+        expect(json.to_s).not_to include('refused connection')
+        # Should have a generic message
+        expect(json['toast']['title']).to include('Could not')
+      end
+
       it 'returns 422 when SMTP is not configured' do
         allow(Settings.smtp).to receive(:enabled).and_return(false)
 
@@ -472,6 +488,18 @@ RSpec.describe 'Users' do
         # Verify the password actually works
         target_user.reload
         expect(target_user.valid_password?(compliant_password)).to be true
+      end
+
+      it 'rescue block uses generic message, not exception details (71q.5)' do
+        # Verify the rescue block in set_password does NOT interpolate e.message.
+        # (Cannot test via request spec because Rails test mode re-raises exceptions
+        # before the controller rescue runs. Verify via source inspection instead.)
+        source = Rails.root.join('app/controllers/users_controller.rb').read
+        set_password_section = source[/def set_password.*?^  end/m]
+        expect(set_password_section).to include('rescue StandardError')
+        expect(set_password_section).to include('Rails.logger.error')
+        expect(set_password_section).not_to match(/message:.*e\.message/),
+                                            'rescue block must not leak e.message to client'
       end
 
       it 'returns 422 for blank password' do

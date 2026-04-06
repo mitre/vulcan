@@ -156,8 +156,9 @@ class UsersController < ApplicationController
     @user.send_reset_password_instructions
     render json: { toast: "Password reset email sent to #{@user.email}." }
   rescue StandardError => e
+    Rails.logger.error "send_password_reset failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not send password reset.', message: [e.message], variant: 'danger' }
+      toast: { title: 'Could not send password reset.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
     }, status: :internal_server_error
   end
 
@@ -216,8 +217,9 @@ class UsersController < ApplicationController
       }, status: :unprocessable_entity
     end
   rescue StandardError => e
+    Rails.logger.error "set_password failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not set password.', message: [e.message], variant: 'danger' }
+      toast: { title: 'Could not set password.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
     }, status: :internal_server_error
   end
 
