@@ -27,7 +27,7 @@ RSpec.describe VulcanAudit do
       audit = VulcanAudit.new(
         auditable_type: 'BaseRule',
         associated_type: 'Component',
-        auditable_id: rule.id,
+        auditable_id: 999_999_999,
         action: 'destroy'
       )
       audit.send(:find_and_save_associated_rule)
