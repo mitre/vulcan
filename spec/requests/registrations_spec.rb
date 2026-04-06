@@ -376,6 +376,15 @@ RSpec.describe 'User Registrations' do
     end
   end
 
+  describe 'registrations_controller visibility chain (71q.6)' do
+    it 'has no bare public keyword between private and protected' do
+      source = Rails.root.join('app/controllers/users/registrations_controller.rb').read
+      visibility_order = source.scan(/^\s*(private|public|protected)\s*$/).flatten
+      expect(visibility_order).not_to include('public'),
+                                      "Bare 'public' keyword found — creates misleading visibility scope"
+    end
+  end
+
   describe 'PUT /users (profile update)' do
     let(:user) { create(:user, password: 'Test1234!@Test1234') }
 

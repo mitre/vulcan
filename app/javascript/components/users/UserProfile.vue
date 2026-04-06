@@ -288,10 +288,6 @@ export default {
     currentSessionMethod() {
       return this.humanizeProvider(this.sessionAuthMethod);
     },
-    // Retained for backward-compat with existing template code.
-    authProvider() {
-      return this.linkedProvider || "Local";
-    },
     isPendingConfirmation() {
       return !!(this.user.unconfirmed_email && this.user.unconfirmed_email.length > 0);
     },

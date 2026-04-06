@@ -157,6 +157,13 @@ describe("UserProfile", () => {
     });
   });
 
+  describe("dead code removal (71q.7)", () => {
+    it("does not have an authProvider computed property", () => {
+      const wrapper = createWrapper();
+      expect(wrapper.vm.$options.computed).not.toHaveProperty("authProvider");
+    });
+  });
+
   describe("session auth method vs linked provider", () => {
     // The session auth method (HOW they signed in now) is distinct from the
     // linked provider (WHAT identity is attached to the account). A user with
