@@ -44,7 +44,7 @@
                    raw "field was updated from X to Y" text to avoid duplication and
                    to keep the activity readable. -->
               <template v-if="!history.comment">
-                <div v-for="changes in history.audited_changes" :key="changes.id">
+                <div v-for="(changes, idx) in history.audited_changes" :key="changes.field || idx">
                   <p v-if="history.action == 'update'" class="ml-3 mb-0 text-info">
                     {{ userIdentifier(history) }} {{ computeUpdateText(changes) }}
                   </p>
