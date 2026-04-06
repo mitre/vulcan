@@ -168,7 +168,11 @@ class Rule < BaseRule
           additional_answers_attributes: additional_answers.as_json.map do |c|
             c.except('rule_id', 'created_at', 'updated_at')
           end,
-          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule&.security_requirements_guide_id)&.version }
+          # Use the already-loaded association chain instead of a per-rule find_by.
+          # The old code did `SecurityRequirementsGuide.find_by(id:)` which fired
+          # a separate query per rule (N+1) and loaded the full SRG including multi-MB xml.
+          # All rules in a component share the same SRG, so this is always redundant.
+          srg_info: { version: srg_rule&.security_requirements_guide&.version }
         }
       )
     end
