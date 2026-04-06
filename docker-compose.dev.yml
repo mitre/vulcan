@@ -63,7 +63,9 @@ services:
       db:
         condition: service_healthy
     command: >
-      bash -c "bin/rails db:prepare && foreman start -f Procfile.dev"
+      bash -c "rm -f tmp/pids/server.pid &&
+      bin/rails db:prepare && yarn build:watch &
+      bundle exec rails server -b 0.0.0.0 -p 3000"
 
 volumes:
   vulcan_dev_dbdata:
