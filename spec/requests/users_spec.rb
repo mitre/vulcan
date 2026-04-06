@@ -42,6 +42,29 @@ RSpec.describe 'Users' do
 
       put "/users/#{target_user.id}", params: valid_params
     end
+
+    it 'does NOT send slack notification when only name changes (71q.1)' do
+      allow(Settings.slack).to receive(:enabled).and_return(true)
+      expect_any_instance_of(UsersController).not_to receive(:send_slack_notification)
+
+      put "/users/#{target_user.id}", params: { user: { name: 'New Name' } }
+    end
+
+    it 'does NOT send slack notification when only email changes (71q.1)' do
+      allow(Settings.slack).to receive(:enabled).and_return(true)
+      expect_any_instance_of(UsersController).not_to receive(:send_slack_notification)
+
+      put "/users/#{target_user.id}", params: { user: { email: 'newemail@example.com' } }
+    end
+
+    it 'sends demotion notification when admin flag removed (71q.1)' do
+      target_user.update!(admin: true)
+      allow(Settings.slack).to receive(:enabled).and_return(true)
+      expect_any_instance_of(UsersController).to receive(:send_slack_notification)
+        .with(:remove_vulcan_admin, target_user)
+
+      put "/users/#{target_user.id}", params: { user: { admin: false } }
+    end
   end
 
   describe 'PUT /users/:id JSON format with admin user' do
@@ -350,6 +373,22 @@ RSpec.describe 'Users' do
         expect(json['toast']).to include(target_user.email)
       end
 
+      it 'does not leak exception message on internal error (71q.5)' do
+        allow(Settings.smtp).to receive(:enabled).and_return(true)
+        allow_any_instance_of(User).to receive(:send_reset_password_instructions)
+          .and_raise(StandardError, 'SMTP server at smtp.internal.corp:587 refused connection')
+
+        post "/users/#{target_user.id}/send_password_reset", headers: json_headers
+
+        expect(response).to have_http_status(:internal_server_error)
+        json = response.parsed_body
+        # Must NOT contain the internal error details
+        expect(json.to_s).not_to include('smtp.internal.corp')
+        expect(json.to_s).not_to include('refused connection')
+        # Should have a generic message
+        expect(json['toast']['title']).to include('Could not')
+      end
+
       it 'returns 422 when SMTP is not configured' do
         allow(Settings.smtp).to receive(:enabled).and_return(false)
 
@@ -403,6 +442,19 @@ RSpec.describe 'Users' do
         user = User.with_reset_password_token(token)
         expect(user).to eq(target_user)
       end
+
+      it 'succeeds even when user has pre-existing validation failures (71q.4)' do
+        # Simulate a user whose name exceeds current validators (e.g., limit was tightened after creation)
+        target_user.update_columns(name: 'X' * 500)
+
+        post "/users/#{target_user.id}/generate_reset_link", headers: json_headers
+
+        expect(response).to have_http_status(:ok),
+                            "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
+        target_user.reload
+        expect(target_user.reset_password_token).to be_present
+        expect(target_user.reset_password_sent_at).to be_present
+      end
     end
 
     context 'when non-admin' do
@@ -436,6 +488,18 @@ RSpec.describe 'Users' do
         # Verify the password actually works
         target_user.reload
         expect(target_user.valid_password?(compliant_password)).to be true
+      end
+
+      it 'rescue block uses generic message, not exception details (71q.5)' do
+        # Verify the rescue block in set_password does NOT interpolate e.message.
+        # (Cannot test via request spec because Rails test mode re-raises exceptions
+        # before the controller rescue runs. Verify via source inspection instead.)
+        source = Rails.root.join('app/controllers/users_controller.rb').read
+        set_password_section = source[/def set_password.*?^  end/m]
+        expect(set_password_section).to include('rescue StandardError')
+        expect(set_password_section).to include('Rails.logger.error')
+        expect(set_password_section).not_to match(/message:.*e\.message/),
+                                            'rescue block must not leak e.message to client'
       end
 
       it 'returns 422 for blank password' do

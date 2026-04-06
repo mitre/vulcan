@@ -11,6 +11,7 @@ if defined?(ParallelTests)
     Rake::Task[task_name].enhance do
       next unless Rails.env.local?
       next if ENV['CI'] # CI shards each use a single database
+      next if ENV['TEST_ENV_NUMBER'] # Already inside a parallel worker — don't recurse
 
       puts 'Syncing parallel test databases...'
       Rake::Task['parallel:prepare'].invoke

@@ -86,12 +86,30 @@ RSpec.describe User do
       let!(:existing_user) { create(:user, email: ldap_email, provider: nil, uid: nil) }
       let(:auth_hash) { build_auth_hash(email_location: :info) }
 
-      it 'blocks provider hijacking with ProviderConflictError' do
-        expect { User.from_omniauth(auth_hash) }.to raise_error(User::ProviderConflictError)
+      context 'when auto_link_user is disabled (default)' do # rubocop:disable RSpec/NestedGroups
+        before { allow(Settings).to receive(:auto_link_user).and_return(false) }
 
-        existing_user.reload
-        expect(existing_user.provider).to be_nil
-        expect(existing_user.uid).to be_nil
+        it 'blocks with ProviderConflictError and human-readable message' do
+          expect { User.from_omniauth(auth_hash) }.to raise_error(
+            User::ProviderConflictError, /email and password sign-in/
+          )
+
+          existing_user.reload
+          expect(existing_user.provider).to be_nil
+          expect(existing_user.uid).to be_nil
+        end
+      end
+
+      context 'when auto_link_user is enabled' do # rubocop:disable RSpec/NestedGroups
+        before { allow(Settings).to receive(:auto_link_user).and_return(true) }
+
+        it 'links the LDAP identity to the existing local account' do
+          user = User.from_omniauth(auth_hash)
+
+          expect(user.id).to eq(existing_user.id)
+          expect(user.provider).to eq('ldap')
+          expect(user.uid).to eq(ldap_uid)
+        end
       end
     end
 

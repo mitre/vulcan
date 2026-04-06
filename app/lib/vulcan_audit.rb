@@ -40,7 +40,11 @@ class VulcanAudit < Audited::Audit
     return if action == 'destroy'
 
     rule = Rule.find_by(id: auditable_id)
-    self.audited_username = "Control #{rule&.displayed_name}" if rule.present? & rule.component.present?
+    # Use `&&` (short-circuit) not `&` (bitwise). `&` evaluates both sides, so
+    # `rule.component.present?` would blow up on NoMethodError when rule is nil.
+    return unless rule&.component
+
+    self.audited_username = "Control #{rule.displayed_name}"
   end
 
   def format

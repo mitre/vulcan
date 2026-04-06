@@ -334,4 +334,90 @@ RSpec.describe 'User Registrations' do
       end
     end
   end
+
+  describe 'GET /users/edit (profile page)' do
+    let(:user) { create(:user) }
+
+    before { sign_in user }
+
+    it 'loads profile page successfully' do
+      get '/users/edit'
+      expect(response).to have_http_status(:success)
+    end
+
+    context 'audit history filtering (71q.2)' do
+      it 'only returns audits where user_type is User' do
+        # Create a legitimate audit for this user
+        user.update!(name: 'Updated Name')
+
+        # Insert a rogue audit with matching user_id but wrong user_type
+        # (simulates a background job or system actor sharing the same numeric ID)
+        # Use raw SQL to bypass ActiveRecord's polymorphic constantization
+        Audited::Audit.insert!({
+                                 auditable_id: user.id,
+                                 auditable_type: 'User',
+                                 action: 'update',
+                                 user_id: user.id,
+                                 user_type: 'NonUserActor',
+                                 audited_changes: { 'name' => %w[Old Rogue] }.to_json,
+                                 version: 99,
+                                 created_at: Time.current
+                               })
+
+        get '/users/edit'
+        expect(response).to have_http_status(:success)
+
+        # The rogue audit should NOT appear in the histories
+        # (the controller filters on user_type: 'User')
+        body = response.body
+        expect(body).to include('Updated Name')
+        expect(body).not_to include('Rogue')
+      end
+    end
+  end
+
+  describe 'registrations_controller visibility chain (71q.6)' do
+    it 'has no bare public keyword between private and protected' do
+      source = Rails.root.join('app/controllers/users/registrations_controller.rb').read
+      visibility_order = source.scan(/^\s*(private|public|protected)\s*$/).flatten
+      expect(visibility_order).not_to include('public'),
+                                      "Bare 'public' keyword found — creates misleading visibility scope"
+    end
+  end
+
+  describe 'PUT /users (profile update)' do
+    let(:user) { create(:user, password: 'Test1234!@Test1234') }
+
+    before { sign_in user }
+
+    context 'reconfirmation flash message (71q.3)' do
+      it 'shows confirmation-sent flash when email changes' do
+        put '/users', params: {
+          user: {
+            email: 'newemail@example.com',
+            current_password: 'Test1234!@Test1234'
+          }
+        }
+
+        expect(response).to redirect_to(root_path)
+        follow_redirect!
+        # Should mention confirmation/verify, not just "profile updated"
+        expect(flash[:notice]).to match(/confirm|verify|sent/i),
+                                  "Expected flash to mention confirmation, got: #{flash[:notice]}"
+      end
+
+      it 'shows generic profile-updated flash when email does not change' do
+        put '/users', params: {
+          user: {
+            name: 'New Display Name',
+            current_password: 'Test1234!@Test1234'
+          }
+        }
+
+        expect(response).to redirect_to(root_path)
+        follow_redirect!
+        expect(flash[:notice]).to eq('Profile updated successfully.')
+      end
+    end
+  end
 end

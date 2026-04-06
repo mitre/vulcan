@@ -11,10 +11,15 @@ class SessionsController < Devise::SessionsController
   # Devise calls reset_session on login (session fixation protection).
   # We save the consent timestamp before and restore it after so the
   # user doesn't have to acknowledge twice (once on login page, once after).
+  #
+  # We also record session[:auth_method] AFTER super so it survives the reset.
+  # This lets the profile show "Signed in via email and password" vs "Signed in
+  # via Okta" — distinct from user.provider (which tracks linked identities).
   def create
     consent_at = session[:consent_acknowledged_at]
     super
     session[:consent_acknowledged_at] = consent_at if consent_at.present?
+    session[:auth_method] = :local if user_signed_in?
   end
 
   def destroy

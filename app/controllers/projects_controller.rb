@@ -24,7 +24,7 @@ class ProjectsController < ApplicationController
     @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])
     @projects.each do |project|
       project['admin'] = project['memberships'].any? do |m|
-        m['role'] == PROJECT_MEMBER_ADMINS && m['user_id'] == current_user.id
+        PROJECT_MEMBER_ADMINS.include?(m['role']) && m['user_id'] == current_user.id
       end
       project['is_member'] = project['memberships'].any? do |m|
         m['user_id'] == current_user.id
@@ -76,7 +76,7 @@ class ProjectsController < ApplicationController
     project = Project.new(
       name: new_project_params[:name],
       description: new_project_params[:description],
-      memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }],
+      memberships_attributes: [{ user: current_user, role: ROLE_ADMIN }],
       visibility: new_project_params[:visibility]
     )
     project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } } if new_project_params[:slack_channel_id].present?
@@ -368,7 +368,7 @@ class ProjectsController < ApplicationController
         name: project_name,
         description: project_description,
         visibility: project_visibility,
-        memberships_attributes: [{ user: current_user, role: PROJECT_MEMBER_ADMINS }]
+        memberships_attributes: [{ user: current_user, role: ROLE_ADMIN }]
       )
 
       result = Import::JsonArchiveImporter.new(

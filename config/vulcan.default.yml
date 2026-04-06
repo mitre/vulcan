@@ -41,6 +41,12 @@ defaults: &defaults
     first_user_admin: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_FIRST_USER_ADMIN']) != false %>
   project:
     create_permission_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_PROJECT_CREATE_PERMISSION_ENABLED']) != false %>
+  # When true, automatically links an external identity (OIDC, LDAP, GitHub) to an
+  # existing local account with the same email. Only enable when ALL configured
+  # identity providers verify email ownership (e.g., enterprise Okta, corporate LDAP).
+  # When false (default), users see a clear error directing them to sign in with
+  # their existing method or contact an administrator to link accounts.
+  auto_link_user: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_AUTO_LINK_USER']) || false %>
   ldap:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LDAP']) || false %>
     servers:

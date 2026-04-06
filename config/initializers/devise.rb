@@ -262,6 +262,9 @@ Devise.setup do |config|
   # config.omniauth :github, ENV['GITHUB_APP_ID'], ENV['GITHUB_APP_SECRET'],
   #                 scope: 'user,public_repo'
   if Settings.ldap.enabled
+    # Lazy-load omniauth-ldap only when LDAP is enabled (require: false in Gemfile).
+    require 'omniauth-ldap'
+
     # We currently only support one ldap server however we allow them to be
     # passed in as an array so that we have the ability to support multiple
     # servers later without any changes to the YAML syntax.

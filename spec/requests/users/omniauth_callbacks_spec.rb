@@ -75,6 +75,24 @@ RSpec.describe 'Remember Me Functionality' do
     end
   end
 
+  describe 'oauth_error handler security' do
+    # The oauth_error handler catches Rack::OAuth2::Client::Error exceptions.
+    # These exceptions can include sensitive details (token hints, client config,
+    # redirect URIs). The flash message shown to users must NOT include
+    # exception.message directly — only a generic error.
+
+    it 'does not leak exception.message in flash alert' do
+      controller_path = Rails.root.join('app/controllers/users/omniauth_callbacks_controller.rb')
+      code = File.read(controller_path)
+
+      # The oauth_error handler should NOT interpolate exception.message into flash
+      oauth_error_method = code[/def oauth_error.*?(?=\n {4}def |\nend)/m]
+      expect(oauth_error_method).not_to include('flash.alert = "OAuth error: #{exception.message}"'),
+                                        'oauth_error leaks exception.message — use a generic message instead'
+      expect(oauth_error_method).to include('flash.alert ='), 'oauth_error must set flash.alert'
+    end
+  end
+
   describe 'OmniAuth controller remember_me handling' do
     # NOTE: OmniAuth test mode intercepts requests before params reach the controller,
     # making full integration testing difficult. We verify the controller logic is correct

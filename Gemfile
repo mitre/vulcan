@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.4.8'
+ruby '3.4.9'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
@@ -29,10 +29,10 @@ gem 'activerecord-session_store'
 gem 'devise-security', github: 'mitre/devise-security', ref: '9f560ed125c096205ba9434de8feea532ce97b4c'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
-# LDAP Auth
-# GitLab fork with several improvements to original library. For full list of changes
-# see https://github.com/intridea/omniauth-ldap/compare/master...gitlabhq:master
-gem 'gitlab_omniauth-ldap', '~> 2.2.0', require: 'omniauth-ldap'
+# LDAP Auth — original omniauth-ldap (actively maintained, no nkf/kconv dependency).
+# Replaces gitlab_omniauth-ldap which had a dead `require 'kconv'` that triggered
+# Ruby VM crash bugs.ruby-lang.org/issues/21967 on parallel_tests forking.
+gem 'omniauth-ldap', '~> 2.3', require: false
 # Allow users to sign in with GitHub
 gem 'omniauth-github'
 # https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
@@ -80,9 +80,6 @@ gem 'amoeba'
 gem 'caxlsx'
 # For reading excel files
 gem 'ruh-roo', '~> 3.0.0', require: 'roo'
-
-# NKF/kconv - removed from default gems in Ruby 3.4+, needed by gitlab_omniauth-ldap
-gem 'nkf'
 
 # REXML - required explicitly in Ruby 3.0+
 gem 'rexml'

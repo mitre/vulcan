@@ -9,34 +9,61 @@ RSpec.describe User do
     let(:base_auth) { mock_omniauth_response(build(:user, email: 'test@example.com'), provider: 'oidc') }
 
     describe 'race condition handling' do
-      it 'handles concurrent user creation attempts gracefully' do
+      it 'retries on RecordNotUnique during new user creation' do
         auth = base_auth
+        auth.info.email = 'brand_new_race@example.com'
 
-        # Simulate race condition by stubbing find_or_initialize_by to return different instances
-        user1 = build(:user, email: 'test@example.com')
-        user2 = build(:user, email: 'test@example.com')
+        # Pre-create the user as the "other process" would have — with matching provider
+        existing = create(:user, email: 'brand_new_race@example.com', provider: 'oidc', uid: auth.uid)
 
-        allow(User).to receive(:find_or_initialize_by).and_return(user1, user2)
-        allow(user1).to receive(:save!).and_raise(ActiveRecord::RecordNotUnique.new('Duplicate email'))
-        allow(user2).to receive(:save!).and_return(true)
+        save_attempts = 0
+        user_instance = build(:user, email: 'brand_new_race@example.com')
+        allow(User).to receive(:new).and_return(user_instance)
+        allow(user_instance).to receive(:skip_confirmation!)
+        allow(user_instance).to receive(:save!) do
+          save_attempts += 1
+          raise ActiveRecord::RecordNotUnique, 'Duplicate during race' if save_attempts == 1
+        end
 
-        # Should retry and succeed on second attempt
-        expect(Rails.logger).to receive(:warn).with(/Race condition detected/)
+        # First find_by returns nil (user doesn't exist yet from our perspective),
+        # save! raises RecordNotUnique, retry find_by finds the existing user
+        find_count = 0
+        allow(User).to receive(:find_by).and_wrap_original do |method, *args|
+          find_count += 1
+          # First two lookups (provider+uid, email) return nil to force create path
+          # After retry, the email lookup finds the existing user
+          if find_count <= 2
+            nil
+          else
+            method.call(*args)
+          end
+        end
 
-        result = User.from_omniauth(auth)
-        expect(result).to eq(user2)
+        allow(Rails.logger).to receive(:info)
+        allow(Rails.logger).to receive(:debug)
+        allow(Rails.logger).to receive(:warn)
+
+        user = User.from_omniauth(auth)
+        expect(save_attempts).to eq(1), 'save! should have been called and raised once'
+        expect(user).to eq(existing)
       end
 
       it 'fails after maximum retry attempts' do
         auth = base_auth
+        auth.info.email = 'retry_fail@example.com'
 
-        # Simulate persistent race condition
-        user_instance = build(:user, email: 'test@example.com')
-        allow(User).to receive(:find_or_initialize_by).and_return(user_instance)
+        # Stub all lookups to return nil so we always hit the "create" path
+
+        # Stub User.new to return an instance whose save! always raises
+        user_instance = build(:user, email: 'retry_fail@example.com')
+        allow(User).to receive_messages(find_by: nil, new: user_instance)
+        allow(user_instance).to receive(:skip_confirmation!)
         allow(user_instance).to receive(:save!).and_raise(
           ActiveRecord::RecordNotUnique.new('Persistent duplicate')
         )
 
+        allow(Rails.logger).to receive(:info)
+        allow(Rails.logger).to receive(:debug)
         expect(Rails.logger).to receive(:warn).with(/Race condition detected/).at_least(:once)
         expect(Rails.logger).to receive(:error).with(/Failed to create user after \d+ attempts/)
         expect(Rails.logger).to receive(:error).with(%r{Failed to create/update user from OmniAuth})
@@ -187,21 +214,22 @@ RSpec.describe User do
     end
 
     describe 'database constraint enforcement' do
-      it 'prevents duplicate provider/uid combinations' do
+      it 'finds existing user by provider+uid even when email differs' do
         # Create first user
         auth1 = base_auth
         auth1.provider = 'oidc'
         auth1.uid = 'unique123'
         auth1.info.email = 'user1@example.com'
-        User.from_omniauth(auth1)
+        user1 = User.from_omniauth(auth1)
 
-        # Try to create second user with same provider/uid but different email
+        # Same provider/uid but different email — should find user1, not create duplicate
         auth2 = base_auth
         auth2.provider = 'oidc'
-        auth2.uid = 'unique123' # Same UID
-        auth2.info.email = 'user2@example.com' # Different email
+        auth2.uid = 'unique123'
+        auth2.info.email = 'user2@example.com'
 
-        expect { User.from_omniauth(auth2) }.to raise_error(ActiveRecord::RecordNotUnique)
+        user2 = User.from_omniauth(auth2)
+        expect(user2.id).to eq(user1.id)
       end
 
       it 'allows same uid for different providers' do
@@ -236,17 +264,20 @@ RSpec.describe User do
     describe 'transaction rollback behavior' do
       it 'does not create partial user records on failure' do
         auth = base_auth
+        auth.info.email = 'rollback_test@example.com'
+
+        # Stub lookups to return nil so we hit the "create new user" path
 
         # Mock failure during save
-        user_instance = build(:user)
-        allow(User).to receive(:find_or_initialize_by).and_return(user_instance)
+        user_instance = build(:user, email: 'rollback_test@example.com')
+        allow(User).to receive_messages(find_by: nil, new: user_instance)
+        allow(user_instance).to receive(:skip_confirmation!)
         allow(user_instance).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(User.new))
 
         initial_count = User.count
 
         expect { User.from_omniauth(auth) }.to raise_error(ActiveRecord::RecordInvalid)
 
-        # Should not have created any user records
         expect(User.count).to eq(initial_count)
       end
     end
