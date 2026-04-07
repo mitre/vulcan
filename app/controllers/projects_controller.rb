@@ -58,7 +58,7 @@ class ProjectsController < ApplicationController
     @project_json = ProjectBlueprint.render(@project, view: :show)
     respond_to do |format|
       format.html
-      format.json { render json: @project_json }
+      format.json { render body: @project_json, content_type: 'application/json' }
     end
   end
 

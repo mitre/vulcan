@@ -42,7 +42,7 @@ class RulesController < ApplicationController
   end
 
   def show
-    render json: RuleBlueprint.render(@rule, view: :editor)
+    render json: RuleBlueprint.render_as_hash(@rule, view: :editor)
   end
 
   def related_rules
@@ -66,7 +66,7 @@ class RulesController < ApplicationController
     rule = create_or_duplicate
     if rule.save
       render json: { toast: 'Successfully created control.',
-                     data: RuleBlueprint.render(rule, view: :editor) }
+                     data: RuleBlueprint.render_as_hash(rule, view: :editor) }
     else
       render json: {
         toast: {

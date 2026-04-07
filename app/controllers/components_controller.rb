@@ -417,7 +417,7 @@ class ComponentsController < ApplicationController
     )
                  .order(:rule_id)
 
-    render json: RuleBlueprint.render(rules, view: :editor)
+    render json: RuleBlueprint.render_as_hash(rules, view: :editor)
   end
 
   private
