@@ -16,7 +16,8 @@ class RulesController < ApplicationController
 
   def index
     @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-                                         :additional_answers, :satisfies, :satisfied_by,
+                                         :additional_answers,
+                                         { satisfies: :srg_rule, satisfied_by: :srg_rule },
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
     @rules_json = RuleBlueprint.render(@rules, view: :editor)
     @component_json = ComponentBlueprint.render(@component, view: :editor)
@@ -53,7 +54,9 @@ class RulesController < ApplicationController
     stig_rules = StigRule.where(srg_id: srg_id).eager_load(:disa_rule_descriptions, :checks, :stig)
     rules = rules.filter { |r| r.component.all_users.include?(current_user) } unless current_user.admin?
     stig_parents = StigBlueprint.render_as_hash(stig_rules.map(&:stig).uniq, view: :index)
-    component_parents = ComponentBlueprint.render_as_hash(rules.map(&:component).uniq, view: :index)
+    components = rules.map(&:component).uniq
+    ActiveRecord::Associations::Preloader.new(records: components, associations: :project).call
+    component_parents = ComponentBlueprint.render_as_hash(components, view: :related)
     parents = (stig_parents + component_parents)
 
     all_rules = StigRuleBlueprint.render_as_hash(stig_rules) +
@@ -187,8 +190,8 @@ class RulesController < ApplicationController
       new_rule
     elsif authorize_admin_project.nil?
       srg = SecurityRequirementsGuide.find_by(id: @component.security_requirements_guide_id)
-      db_srg_rule = srg.srg_rules.eager_load(:disa_rule_descriptions, :checks, :rule_descriptions)
-                       .find_by(ident: 'CCI-000366')
+      db_srg_rule = srg.srg_rules.eager_load(:disa_rule_descriptions, :checks, :rule_descriptions, :references)
+                       .where('ident LIKE ?', '%CCI-000366%').first
 
       rule = Rule.new(
         component: @component,
@@ -207,6 +210,7 @@ class RulesController < ApplicationController
       )
       rule.disa_rule_descriptions.build(db_srg_rule.disa_rule_descriptions.map { |d| d.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.disa_rule_descriptions&.any?
       rule.checks.build(db_srg_rule.checks.map { |c| c.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.checks&.any?
+      rule.references.build(db_srg_rule.references.map { |r| r.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.references&.any?
       rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(@component.id))
 
       rule

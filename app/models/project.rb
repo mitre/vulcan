@@ -85,6 +85,7 @@ class Project < ApplicationRecord
     reject_component_ids = components.pluck(:id, :component_id).flatten.compact
     # Assumption that released components are publicly available within vulcan
     Component.where(released: true).where.not(id: reject_component_ids)
-             .select(:id, :name, :prefix, :version, :release, :project_id, :security_requirements_guide_id)
+             .select(:id, :name, :prefix, :version, :release, :project_id,
+                     :security_requirements_guide_id, :released, :updated_at)
   end
 end

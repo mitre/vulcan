@@ -33,6 +33,15 @@ class ComponentBlueprint < Blueprinter::Base
     fields :updated_at, :released
   end
 
+  # === Related view: related_rules parents (includes project for display name) ===
+  view :related do
+    fields :updated_at, :released
+
+    field :project do |component, _options|
+      ProjectBlueprint.render_as_hash(component.project)
+    end
+  end
+
   # === Show view: non-member read-only ===
   view :show do
     fields :title, :description, :admin_name, :admin_email, :released, :updated_at
