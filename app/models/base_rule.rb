@@ -79,7 +79,11 @@ class BaseRule < ApplicationRecord
   end
 
   ##
-  # Override `as_json` to include dependent records
+  # DEPRECATED: Use RuleBlueprint / SrgRuleBlueprint / StigRuleBlueprint instead.
+  # Controllers have been migrated to blueprints. This override remains only for:
+  #   - lib/tasks/stig_and_srg_puller.rake (import uses as_json.compact for mass-update)
+  #   - Any third-party callers that may depend on the shape
+  # Remove once all callers are migrated. See epic vulcan-v3.x-0uf (BP-8).
   #
   def as_json(options = {})
     super.merge(

@@ -494,7 +494,7 @@ class ComponentsController < ApplicationController
 
     # If a record for the rule exists, set the instance variable @rule_json to the rule's JSON attribute
     if @rule.present?
-      @rule_json = @rule.to_json
+      @rule_json = RuleBlueprint.render(@rule, view: :editor)
 
       # Else, create an error message and respond to either HTML or JSON requests
     else

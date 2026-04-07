@@ -145,7 +145,8 @@ class Rule < BaseRule
   end
 
   ##
-  # Override `as_json` to include parent SRG information
+  # DEPRECATED: Use RuleBlueprint instead. See BaseRule#as_json deprecation note.
+  # Remains for non-controller callers (rake tasks, backup serializer).
   #
   def as_json(options = {})
     result = super

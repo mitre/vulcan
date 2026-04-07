@@ -18,6 +18,8 @@ class RulesController < ApplicationController
     @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
                                          :additional_answers, :satisfies, :satisfied_by,
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    @rules_json = RuleBlueprint.render(@rules, view: :editor)
+    @component_json = ComponentBlueprint.render(@component, view: :editor)
   end
 
   def search
@@ -40,7 +42,7 @@ class RulesController < ApplicationController
   end
 
   def show
-    render json: @rule.to_json(methods: %i[histories satisfies satisfied_by])
+    render json: RuleBlueprint.render(@rule, view: :editor)
   end
 
   def related_rules
@@ -50,16 +52,21 @@ class RulesController < ApplicationController
     )
     stig_rules = StigRule.where(srg_id: srg_id).eager_load(:disa_rule_descriptions, :checks, :stig)
     rules = rules.filter { |r| r.component.all_users.include?(current_user) } unless current_user.admin?
-    parents = (stig_rules.map(&:stig).as_json + rules.map(&:component).as_json(methods: %i[project])).uniq
+    stig_parents = StigBlueprint.render_as_hash(stig_rules.map(&:stig).uniq, view: :index)
+    component_parents = ComponentBlueprint.render_as_hash(rules.map(&:component).uniq, view: :index)
+    parents = (stig_parents + component_parents)
 
-    render json: { rules: stig_rules + rules, parents: parents }.to_json
+    all_rules = StigRuleBlueprint.render_as_hash(stig_rules) +
+                RuleBlueprint.render_as_hash(rules, view: :editor)
+
+    render json: { rules: all_rules, parents: parents }
   end
 
   def create
     rule = create_or_duplicate
     if rule.save
       render json: { toast: 'Successfully created control.',
-                     data: rule.to_json(methods: %i[histories satisfies satisfied_by]) }
+                     data: RuleBlueprint.render(rule, view: :editor) }
     else
       render json: {
         toast: {
@@ -136,7 +143,7 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
     @rule.update!(locked_fields: fields)
 
-    render json: { rule: @rule.as_json, toast: "#{section} #{locked ? 'locked' : 'unlocked'}" }
+    render json: { rule: RuleBlueprint.render_as_hash(@rule, view: :editor), toast: "#{section} #{locked ? 'locked' : 'unlocked'}" }
   end
 
   def bulk_section_locks
@@ -160,7 +167,7 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
     @rule.update!(locked_fields: fields)
 
-    render json: { rule: @rule.as_json, toast: "#{action_word} #{sections.size} sections" }
+    render json: { rule: RuleBlueprint.render_as_hash(@rule, view: :editor), toast: "#{action_word} #{sections.size} sections" }
   end
 
   private

@@ -22,7 +22,7 @@ class Review < ApplicationRecord
   delegate :name, to: :user
 
   ##
-  # Override `as_json` to include delegated attributes
+  # DEPRECATED: Use ReviewBlueprint instead. Remains for non-controller callers.
   #
   def as_json(options = {})
     super(options.merge(methods: %i[name]))
