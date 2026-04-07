@@ -25,7 +25,7 @@ RSpec.describe 'Leaf Blueprints' do
   describe CheckBlueprint do
     let(:check) { rule.checks.first }
 
-    it 'includes all expected fields' do
+    it 'includes check fields and _destroy flag' do
       json = CheckBlueprint.render_as_hash(check)
 
       expect(json).to have_key(:id)
@@ -37,7 +37,7 @@ RSpec.describe 'Leaf Blueprints' do
       expect(json[:_destroy]).to be false
     end
 
-    it 'excludes timestamps and foreign keys' do
+    it 'excludes check timestamps and base_rule_id' do
       json = CheckBlueprint.render_as_hash(check)
 
       expect(json).not_to have_key(:created_at)
@@ -57,7 +57,7 @@ RSpec.describe 'Leaf Blueprints' do
   describe DisaRuleDescriptionBlueprint do
     let(:drd) { rule.disa_rule_descriptions.first }
 
-    it 'includes all expected fields' do
+    it 'includes DISA description fields and _destroy flag' do
       json = DisaRuleDescriptionBlueprint.render_as_hash(drd)
 
       expect(json).to have_key(:id)
@@ -68,7 +68,7 @@ RSpec.describe 'Leaf Blueprints' do
       expect(json).to have_key(:_destroy)
     end
 
-    it 'excludes timestamps and foreign keys' do
+    it 'excludes DISA description timestamps and base_rule_id' do
       json = DisaRuleDescriptionBlueprint.render_as_hash(drd)
 
       expect(json).not_to have_key(:created_at)
@@ -83,7 +83,7 @@ RSpec.describe 'Leaf Blueprints' do
         RuleDescription.create!(base_rule: rule, description: 'Test description')
     end
 
-    it 'includes all expected fields' do
+    it 'includes rule description fields and _destroy flag' do
       json = RuleDescriptionBlueprint.render_as_hash(rd)
 
       expect(json).to have_key(:id)
@@ -91,7 +91,7 @@ RSpec.describe 'Leaf Blueprints' do
       expect(json).to have_key(:_destroy)
     end
 
-    it 'excludes timestamps and foreign keys' do
+    it 'excludes rule description timestamps and base_rule_id' do
       json = RuleDescriptionBlueprint.render_as_hash(rd)
 
       expect(json).not_to have_key(:created_at)

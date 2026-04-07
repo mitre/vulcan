@@ -34,7 +34,7 @@ RSpec.describe 'Stig and SRG Blueprints' do
         expect(json[:severity_counts]).to have_key(:low)
       end
 
-      it 'does NOT include xml' do
+      it 'excludes xml from index view' do
         expect(json).not_to have_key(:xml)
       end
 
@@ -52,7 +52,7 @@ RSpec.describe 'Stig and SRG Blueprints' do
         end
       end
 
-      it 'does NOT include xml' do
+      it 'excludes xml from show view' do
         expect(json).not_to have_key(:xml)
       end
 
@@ -77,7 +77,7 @@ RSpec.describe 'Stig and SRG Blueprints' do
         expect(json).to have_key(:severity_counts)
       end
 
-      it 'does NOT include xml' do
+      it 'excludes xml from SRG index view' do
         expect(json).not_to have_key(:xml)
       end
     end
@@ -85,7 +85,7 @@ RSpec.describe 'Stig and SRG Blueprints' do
     describe ':show view' do
       let(:json) { SrgBlueprint.render_as_hash(srg, view: :show) }
 
-      it 'does NOT include xml' do
+      it 'excludes xml from SRG show view' do
         expect(json).not_to have_key(:xml)
       end
 

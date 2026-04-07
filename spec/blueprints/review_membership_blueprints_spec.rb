@@ -4,6 +4,10 @@ require 'rails_helper'
 
 RSpec.describe 'Review and Membership Blueprints' do
   let_it_be(:user) { create(:user, name: 'Test Reviewer', email: 'reviewer@test.com') }
+
+  let(:reviewer_name) { user.name }
+  let(:reviewer_email) { user.email }
+
   let_it_be(:project) { create(:project) }
   let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
   let_it_be(:component) { create(:component, project: project, based_on: srg) }
@@ -19,7 +23,7 @@ RSpec.describe 'Review and Membership Blueprints' do
       expect(json[:action]).to eq('comment')
       expect(json[:comment]).to eq('Looks good')
       expect(json[:created_at]).to be_present
-      expect(json[:name]).to eq('Test Reviewer')
+      expect(json[:name]).to eq(reviewer_name)
     end
 
     it 'excludes user_id, rule_id, updated_at (matches Rule#as_json strip pattern)' do
@@ -49,8 +53,8 @@ RSpec.describe 'Review and Membership Blueprints' do
       expect(json[:id]).to eq(membership.id)
       expect(json[:user_id]).to eq(user.id)
       expect(json[:role]).to eq('author')
-      expect(json[:name]).to eq('Test Reviewer')
-      expect(json[:email]).to eq('reviewer@test.com')
+      expect(json[:name]).to eq(reviewer_name)
+      expect(json[:email]).to eq(reviewer_email)
       expect(json[:membership_type]).to eq('Component')
     end
 
@@ -68,8 +72,8 @@ RSpec.describe 'Review and Membership Blueprints' do
 
       expect(json.keys.sort).to eq(%i[email id name])
       expect(json[:id]).to eq(user.id)
-      expect(json[:name]).to eq('Test Reviewer')
-      expect(json[:email]).to eq('reviewer@test.com')
+      expect(json[:name]).to eq(reviewer_name)
+      expect(json[:email]).to eq(reviewer_email)
     end
 
     it 'does NOT include sensitive fields' do
