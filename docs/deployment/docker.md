@@ -70,7 +70,7 @@ docker run -d \
 
 ## Image Details
 
-- **Base**: Ruby 3.4.8 on Debian Bookworm
+- **Base**: Ruby 3.4.9 on Debian Bookworm
 - **Architectures**: linux/amd64, linux/arm64 (multi-arch, built natively via Docker Build Cloud)
 - **Size**: ~1.76GB (73% smaller than v2.1)
 - **Memory**: Uses jemalloc for 20-40% memory reduction

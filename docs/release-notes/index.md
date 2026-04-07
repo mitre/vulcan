@@ -4,9 +4,11 @@ All Vulcan releases with changelogs and migration notes.
 
 ## Current Release
 
-- **[v2.3.1](v2.3.1)** — Per-section rule locking, field state visualization, export modal UX, JSON archive backup/restore
+- **[v2.3.4](v2.3.4)** — Blueprinter JSON serialization, query performance hardening, OIDC fix, auth UX
 
 ## Previous Releases
+
+- **[v2.3.1](v2.3.1)** — Per-section rule locking, field state visualization, export modal UX, JSON archive backup/restore
 
 - **[v2.2.1](v2.2.1)** — Account lockout (STIG AC-07), classification banner, consent modal, password policy, admin user management
 - **[v2.2.0](v2.2.0)** — Rails 8 upgrade, request spec migration, MDI to Bootstrap icons migration

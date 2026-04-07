@@ -367,7 +367,7 @@ Rate limiting is enabled by default. Thresholds can be adjusted in `config/initi
 
 ```dockerfile
 # Secure Dockerfile Example
-FROM ruby:3.4.8-slim AS production
+FROM ruby:3.4.9-slim AS production
 
 # Security: Run as non-root user
 RUN groupadd -r app && useradd -r -g app app

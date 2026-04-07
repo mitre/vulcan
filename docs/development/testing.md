@@ -503,7 +503,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.4.8
+          ruby-version: 3.4.9
           bundler-cache: true
       
       - name: Setup Node
