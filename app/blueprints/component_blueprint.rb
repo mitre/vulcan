@@ -41,6 +41,8 @@ class ComponentBlueprint < Blueprinter::Base
       component.rules
     end
 
+    # Uses Component#reviews method (not ReviewBlueprint) because it returns
+    # pre-formatted hashes with `displayed_rule_name` that ReviewBlueprint lacks.
     field :reviews do |component, _options|
       component.reviews
     end
@@ -71,6 +73,8 @@ class ComponentBlueprint < Blueprinter::Base
       component.rules
     end
 
+    # Uses Component#reviews method (not ReviewBlueprint) because it returns
+    # pre-formatted hashes with `displayed_rule_name` that ReviewBlueprint lacks.
     field :reviews do |component, _options|
       component.reviews
     end

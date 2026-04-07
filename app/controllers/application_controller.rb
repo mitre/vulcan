@@ -275,7 +275,8 @@ class ApplicationController < ActionController::Base
     admin_project_ids = if current_user.admin?
                           Project.pluck(:id)
                         else
-                          Membership.where(user_id: current_user.id, role: 'admin')
+                          Membership.where(user_id: current_user.id, role: 'admin',
+                                           membership_type: 'Project')
                                     .pluck(:membership_id)
                         end
 

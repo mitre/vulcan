@@ -20,8 +20,8 @@ Blueprinter.configure do |config|
   # Use Oj for ~2x faster JSON generation vs stdlib JSON.
   config.generator = Oj
 
-  # Sort fields alphabetically by name for consistent output.
-  # Makes API responses predictable and diffs readable.
+  # Sort fields by definition order (as declared in the blueprint class).
+  # Makes output match the blueprint's declared field order for readability.
   config.sort_fields_by = :definition
 
   # Automatic N+1 prevention: the blueprinter-activerecord extension
