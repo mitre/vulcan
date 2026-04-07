@@ -8,14 +8,21 @@ RSpec.describe 'SMTP Settings Initializer' do
   let(:test_contact_email) { 'support@myapp.com' }
 
   before do
-    # Reset ActionMailer settings
+    # Save and reset ActionMailer settings
+    @original_delivery_method = ActionMailer::Base.delivery_method
+    @original_perform_deliveries = Rails.application.config.action_mailer.perform_deliveries
+    @original_raise_delivery_errors = Rails.application.config.action_mailer.raise_delivery_errors
     ActionMailer::Base.smtp_settings = {}
   end
 
   after do
-    # Restore original environment
+    # Restore original environment and mailer config to prevent test pollution
     allow(Rails).to receive(:env).and_return(original_env)
+    ActionMailer::Base.delivery_method = @original_delivery_method
     ActionMailer::Base.smtp_settings = {}
+    Rails.application.config.action_mailer.delivery_method = @original_delivery_method
+    Rails.application.config.action_mailer.perform_deliveries = @original_perform_deliveries
+    Rails.application.config.action_mailer.raise_delivery_errors = @original_raise_delivery_errors
   end
 
   context 'in production environment' do
