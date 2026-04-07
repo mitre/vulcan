@@ -151,8 +151,8 @@ gem 'slack-ruby-client', '1.0.0'
 # Slack notification formatting
 gem 'slack_block_kit', '0.3.3'
 
-gem "blueprinter", "~> 1.2"
+gem 'blueprinter', '~> 1.2'
 
-gem "blueprinter-activerecord", "~> 1.3"
+gem 'blueprinter-activerecord', '~> 1.3'
 
-gem "oj", "~> 3.16"
+gem 'oj', '~> 3.16'
