@@ -55,20 +55,26 @@ class Project < ApplicationRecord
   # Get a list of Users that are not yet members of this project
   #
   def available_members
-    (User.select(:id, :name, :email) - users.select(:id, :name, :email))
+    User.where.not(id: users.select(:id)).select(:id, :name, :email)
   end
 
   def details
+    status_counts = rules.group(:status).count
+    lock_counts = rules.group(:locked).count
+    review_counts = rules.where(locked: false).group(
+      Arel.sql('CASE WHEN review_requestor_id IS NULL THEN \'nur\' ELSE \'ur\' END')
+    ).count
+
     {
-      ac: rules.where(status: 'Applicable - Configurable').size,
-      aim: rules.where(status: 'Applicable - Inherently Meets').size,
-      adnm: rules.where(status: 'Applicable - Does Not Meet').size,
-      na: rules.where(status: 'Not Applicable').size,
-      nyd: rules.where(status: 'Not Yet Determined').size,
-      nur: rules.where(locked: false).where(review_requestor_id: nil).size,
-      ur: rules.where(locked: false).where.not(review_requestor_id: nil).size,
-      lck: rules.where(locked: true).size,
-      total: rules.size
+      ac: status_counts['Applicable - Configurable'] || 0,
+      aim: status_counts['Applicable - Inherently Meets'] || 0,
+      adnm: status_counts['Applicable - Does Not Meet'] || 0,
+      na: status_counts['Not Applicable'] || 0,
+      nyd: status_counts['Not Yet Determined'] || 0,
+      nur: review_counts['nur'] || 0,
+      ur: review_counts['ur'] || 0,
+      lck: lock_counts[true] || 0,
+      total: status_counts.values.sum
     }
   end
 
@@ -79,5 +85,6 @@ class Project < ApplicationRecord
     reject_component_ids = components.pluck(:id, :component_id).flatten.compact
     # Assumption that released components are publicly available within vulcan
     Component.where(released: true).where.not(id: reject_component_ids)
+             .select(:id, :name, :prefix, :version, :release, :project_id, :security_requirements_guide_id)
   end
 end

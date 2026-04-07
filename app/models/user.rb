@@ -113,7 +113,7 @@ class User < ApplicationRecord
     end
   rescue StandardError => e
     Rails.logger.error "Failed to create/update user from OmniAuth: #{e.message}"
-    Rails.logger.debug e.backtrace.join("\n") if Rails.env.development?
+    Rails.logger.debug e.backtrace.join("\n")
     raise
   end
 

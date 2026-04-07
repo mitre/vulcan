@@ -187,15 +187,27 @@ class RulesController < ApplicationController
       new_rule
     elsif authorize_admin_project.nil?
       srg = SecurityRequirementsGuide.find_by(id: @component.security_requirements_guide_id)
-      srg_rule = srg.parsed_benchmark.rule.find { |r| r.ident.reject(&:legacy).first.ident == 'CCI-000366' }
+      db_srg_rule = srg.srg_rules.eager_load(:disa_rule_descriptions, :checks, :rule_descriptions)
+                       .find_by(ident: 'CCI-000366')
 
-      rule = BaseRule.from_mapping(Rule, srg_rule)
+      rule = Rule.new(
+        component: @component,
+        srg_rule: db_srg_rule,
+        rule_id: (@component.rules.order(:rule_id).pluck(:rule_id).last.to_i + 1).to_s.rjust(6, '0'),
+        status: 'Not Yet Determined',
+        rule_severity: 'unknown',
+        rule_weight: db_srg_rule&.rule_weight || '10.0',
+        version: db_srg_rule&.version,
+        title: db_srg_rule&.title,
+        ident: db_srg_rule&.ident || 'CCI-000366',
+        ident_system: db_srg_rule&.ident_system,
+        fixtext: db_srg_rule&.fixtext,
+        fixtext_fixref: db_srg_rule&.fixtext_fixref,
+        fix_id: db_srg_rule&.fix_id
+      )
+      rule.disa_rule_descriptions.build(db_srg_rule.disa_rule_descriptions.map { |d| d.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.disa_rule_descriptions&.any?
+      rule.checks.build(db_srg_rule.checks.map { |c| c.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.checks&.any?
       rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(@component.id))
-      rule.component = @component
-      rule.srg_rule = srg.srg_rules.find_by(ident: 'CCI-000366')
-      rule.rule_id = (@component.rules.order(:rule_id).pluck(:rule_id).last.to_i + 1)&.to_s&.rjust(6, '0')
-      rule.status = 'Not Yet Determined'
-      rule.rule_severity = 'unknown'
 
       rule
     end

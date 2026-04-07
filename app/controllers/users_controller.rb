@@ -15,6 +15,7 @@ class UsersController < ApplicationController
     @histories = Audited.audit_class.includes(:auditable, :user)
                         .where(auditable_type: 'User')
                         .order(created_at: :desc)
+                        .limit(200)
                         .map(&:format)
   end
 
