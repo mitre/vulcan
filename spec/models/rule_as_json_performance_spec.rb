@@ -28,8 +28,8 @@ RSpec.describe 'Rule#as_json performance' do
 
   describe 'srg_info.version' do
     it 'returns the correct SRG version' do
-      rule = component.rules.first
-      json = rule.as_json
+      rule = component.rules.eager_load(srg_rule: :security_requirements_guide).first
+      json = RuleBlueprint.render_as_hash(rule, view: :editor)
 
       expect(json[:srg_info]).to be_present
       expect(json[:srg_info][:version]).to eq(srg.version)
@@ -83,10 +83,9 @@ RSpec.describe 'Rule#as_json performance' do
 
     it 'handles rules without an srg_rule gracefully' do
       rule = component.rules.first
-      # Simulate a rule with no srg_rule (edge case)
       allow(rule).to receive(:srg_rule).and_return(nil)
 
-      json = rule.as_json
+      json = RuleBlueprint.render_as_hash(rule, view: :editor)
       expect(json[:srg_info]).to eq({ version: nil })
     end
   end

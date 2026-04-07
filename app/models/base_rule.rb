@@ -78,27 +78,8 @@ class BaseRule < ApplicationRecord
     rule
   end
 
-  ##
-  # DEPRECATED: Use RuleBlueprint / SrgRuleBlueprint / StigRuleBlueprint instead.
-  # Controllers have been migrated to blueprints. This override remains only for:
-  #   - lib/tasks/stig_and_srg_puller.rake (import uses as_json.compact for mass-update)
-  #   - Any third-party callers that may depend on the shape
-  # Remove once all callers are migrated. See epic vulcan-v3.x-0uf (BP-8).
-  #
-  def as_json(options = {})
-    super.merge(
-      {
-        rule_descriptions_attributes: rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        disa_rule_descriptions_attributes: disa_rule_descriptions.as_json.map { |o| o.merge({ _destroy: false }) },
-        checks_attributes: checks.as_json.map { |o| o.merge({ _destroy: false }) },
-        nist_control_family: nist_control_family,
-        version: version,
-        locked: locked,
-        review_requestor_id: review_requestor_id,
-        changes_requested: changes_requested
-      }
-    )
-  end
+  # Serialization is handled by RuleBlueprint / SrgRuleBlueprint / StigRuleBlueprint.
+  # See app/blueprints/ for context-specific views (:navigator, :viewer, :editor).
 
   def nist_control_family
     ccis = ident.to_s.split(/, */)

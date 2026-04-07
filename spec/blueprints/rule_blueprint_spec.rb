@@ -23,7 +23,7 @@ RSpec.describe 'RuleBlueprint' do
     component.rules.eager_load(
       :reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
       :additional_answers, { satisfies: :srg_rule }, { satisfied_by: :srg_rule },
-      { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }
+      { srg_rule: %i[disa_rule_descriptions rule_descriptions checks security_requirements_guide] }
     ).first
   end
 

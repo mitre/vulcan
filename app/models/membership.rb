@@ -34,12 +34,8 @@ class Membership < ApplicationRecord
 
   ##
   # Override `as_json` to include additional attributes about the associated user.
-  # DEPRECATED: Use MembershipBlueprint instead. Remains for ProjectsController
-  # and ApplicationController callers that haven't been migrated yet.
-  #
-  def as_json(options = {})
-    super(options.merge(methods: %i[name email]))
-  end
+  # Serialization is handled by MembershipBlueprint.
+  # See app/blueprints/membership_blueprint.rb.
 
   private
 

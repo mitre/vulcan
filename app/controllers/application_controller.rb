@@ -268,13 +268,28 @@ class ApplicationController < ActionController::Base
   def check_access_request_notifications
     @access_requests = []
     return @access_requests unless user_signed_in?
+    return @access_requests if request.format.json? # Skip for API calls — navbar not rendered
 
-    # iterate over the user's projects and check if they are admin
-    # if they are admin on a project, retrieve the access requests if any
-    current_user.available_projects.each do |project|
-      @access_requests << project.access_requests.eager_load(:user, :project).as_json(methods: %i[user project]) if current_user.can_admin_project?(project)
+    # Single query: find all access requests for projects where current user is admin.
+    # Replaces N+1 loop that called can_admin_project? + eager_load per project.
+    admin_project_ids = if current_user.admin?
+                          Project.pluck(:id)
+                        else
+                          Membership.where(user_id: current_user.id, role: 'admin')
+                                    .pluck(:membership_id)
+                        end
+
+    return @access_requests if admin_project_ids.empty?
+
+    @access_requests = ProjectAccessRequest.where(project_id: admin_project_ids)
+                                           .eager_load(:user, :project)
+                                           .map do |ar|
+      {
+        id: ar.id,
+        user: UserBlueprint.render_as_hash(ar.user),
+        project: { id: ar.project.id, name: ar.project.name }
+      }
     end
-    @access_requests.flatten!
   end
 
   def check_locked_user_notifications
