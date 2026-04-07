@@ -89,7 +89,7 @@
           <p class="font-weight-bold mb-2 mt-3">Password Management</p>
 
           <!-- SMTP available: send reset email -->
-          <div v-if="smtpEnabled">
+          <div v-if="smtpEnabled" class="mb-3">
             <b-button
               variant="outline-secondary"
               size="sm"
@@ -103,8 +103,8 @@
             </b-button>
           </div>
 
-          <!-- No SMTP: generate link or set password -->
-          <div v-else>
+          <!-- Always available for admins: generate link or set password -->
+          <div>
             <div class="mb-3">
               <b-button
                 variant="outline-secondary"
