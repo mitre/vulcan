@@ -31,7 +31,7 @@ Returns application metadata. **No authentication required** — used by monitor
   "name": "Vulcan",
   "version": "2.3.1",
   "rails": "8.0.4",
-  "ruby": "3.4.8",
+  "ruby": "3.4.9",
   "environment": "production"
 }
 ```

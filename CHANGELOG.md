@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.3.4] - 2026-04-07
+
+### Added
+
+- Blueprinter JSON serialization framework with 15 blueprint classes and context-specific views (:index, :show, :editor, :navigator, :viewer)
+- blueprinter-activerecord auto-preloader for automatic N+1 prevention
+- Oj fast JSON generator (~2x faster than stdlib)
+- Rule and Review test factories
+- 12 query performance regression tests
+- Session auth method tracking (session[:auth_method]) — distinguishes "signed in via" from "account linked to"
+- Unlink identity feature with password verification
+- VULCAN_AUTO_LINK_USER global setting for automatic provider-to-local account linking
+- Admin password management UI: always show all options regardless of SMTP configuration
+
+### Changed
+
+- All controllers migrated from to_json(methods:[]) to Blueprint.render
+- All model as_json overrides removed (BaseRule, Rule, Review, Membership)
+- Project#details consolidated from 9 COUNT queries to 3 (GROUP BY)
+- Project#available_members uses SQL WHERE NOT IN instead of Ruby set subtraction
+- Project#available_components uses .select() for column filtering
+- Component#reviews uses pluck(:id, :rule_id) instead of loading full rule objects
+- Rule creation uses DB lookup instead of parsing multi-MB XML
+- UsersController audit query bounded with .limit(200)
+- ApplicationController check_access_request_notifications rewritten (N+1 → single query)
+- Replaced gitlab_omniauth-ldap with omniauth-ldap 2.3.3 (removes nkf VM crash)
+- Ruby 3.4.8 → 3.4.9
+- Bumped version to v2.3.4
+
+### Fixed
+
+- OIDC provider conflict: symbol/string comparison bug in User.from_omniauth
+- Provider+uid-first lookup pattern (GitLab pattern) prevents provider hijacking
+- rescue_from ordering: StandardError defined before ProviderConflictError
+- Production /stigs crash (R14/R15 memory, H12 timeout) — SeverityCounts concern auto-excludes xml/binary columns
+- VulcanAudit bitwise & → && fix for nil rule
+- OmniAuth backtrace logging gated on development only — now logs in all environments
+- email_verified OIDC claim hardened with ActiveModel::Type::Boolean.new.cast
+- Polymorphic membership_type filter in access request notifications
+- JSON.parse round-trip eliminated in component show jbuilder (render_as_hash)
+- Slack notification firing on every user update instead of only admin changes
+- Polymorphic audit query missing user_type filter
+- PROJECT_MEMBER_ADMINS normalized from scalar string to array
+- UsersTable typeColumn uses falsy check for undefined provider
+- Exception message no longer leaked to client in rescue blocks
+- update_columns used for password reset token to skip validations
+- Visibility chain (stray public keyword) fixed in registrations controller
+- valid_password? bcrypt→PBKDF2 rehash side-effect documented at unlink call site
+
 ## [v2.3.1] - 2026-03-03
 
 ### Added
@@ -66,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Upgraded Ruby from 3.3.9 to 3.4.8 and Puma to 7.2.0
+- Upgraded Ruby from 3.3.9 to 3.4.9 and Puma to 7.2.0
 - Upgraded Node.js to 24 LTS
 - Upgraded PostgreSQL from 12/16 to 18 across Docker, CI, and documentation
 - Replaced overcommit with lefthook for git hooks; added pre-push checks for RuboCop, ESLint, and Brakeman
@@ -312,6 +361,7 @@ For releases prior to v2.1.6, please see the [GitHub releases page](https://gith
 
 ---
 
+[v2.3.4]: https://github.com/mitre/vulcan/compare/v2.3.1...v2.3.4
 [v2.3.1]: https://github.com/mitre/vulcan/compare/v2.2.0...v2.3.1
 [v2.2.1]: https://github.com/mitre/vulcan/compare/v2.2.0...v2.2.1
 [v2.2.0]: https://github.com/mitre/vulcan/compare/v2.1.9...v2.2.0

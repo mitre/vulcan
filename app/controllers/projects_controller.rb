@@ -21,21 +21,20 @@ class ProjectsController < ApplicationController
                 only: %i[import_backup create_from_backup]
 
   def index
-    @projects = current_user.available_projects.eager_load(:memberships).alphabetical.as_json(methods: %i[memberships])
-    @projects.each do |project|
-      project['admin'] = project['memberships'].any? do |m|
-        PROJECT_MEMBER_ADMINS.include?(m['role']) && m['user_id'] == current_user.id
-      end
-      project['is_member'] = project['memberships'].any? do |m|
-        m['user_id'] == current_user.id
-      end || current_user.admin
-      project['access_request_id'] = current_user.access_requests.find_by(project_id: project['id'])&.id
-    end
+    projects = current_user.available_projects.preload(:memberships).alphabetical.to_a
+    # Batch-load access requests to avoid N+1 per-project find_by
+    project_ids = projects.map(&:id)
+    ar_by_project = current_user.access_requests
+                                .where(project_id: project_ids)
+                                .index_by(&:project_id)
+    @projects = ProjectIndexBlueprint.render_as_hash(
+      projects,
+      current_user: current_user,
+      access_requests_by_project: ar_by_project
+    )
     respond_to do |format|
       format.html
-      format.json do
-        render json: @projects
-      end
+      format.json { render json: @projects }
     end
   end
 
@@ -56,13 +55,10 @@ class ProjectsController < ApplicationController
     # Setting current_user allows `available_components` to be filtered down only to the
     # projects that a user has permissions to access
     @project.current_user = current_user
-    @project_json = @project.to_json(
-      methods: %i[histories memberships metadata components available_components available_members details users
-                  access_requests]
-    )
+    @project_json = ProjectBlueprint.render(@project, view: :show)
     respond_to do |format|
       format.html
-      format.json { render json: @project_json }
+      format.json { render body: @project_json, content_type: 'application/json' }
     end
   end
 

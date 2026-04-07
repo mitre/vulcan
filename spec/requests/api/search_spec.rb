@@ -614,4 +614,49 @@ RSpec.describe 'Api::Search' do
       expect(component_ids).to include(component1.id)
     end
   end
+
+  describe 'performance: xml blob exclusion' do
+    # REQUIREMENT: Search must NOT load multi-MB xml columns from STIGs/SRGs.
+    # The search only needs id, name, title, version, description — not the
+    # full XCCDF XML document. Loading xml on every search keystroke caused
+    # Heroku dyno memory blowout (R14/R15).
+
+    it 'search_stigs does not load the xml column' do
+      sign_in admin_user
+
+      xml_queries = []
+      callback = lambda { |_name, _start, _finish, _id, payload|
+        sql = payload[:sql]
+        # Detect if the query selects all columns (stigs.*) or explicitly includes xml
+        xml_queries << sql if sql.include?('stigs') && (sql.include?('.*') || sql.include?('"xml"'))
+      }
+
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+        get search_path, params: { q: 'STIG' }
+      end
+
+      expect(response).to have_http_status(:success)
+      expect(xml_queries).to be_empty,
+                             "Search loaded stigs.xml or stigs.* — should use .select() to exclude xml:\n#{xml_queries.join("\n")}"
+    end
+
+    it 'search_srgs does not load the xml column' do
+      sign_in admin_user
+
+      xml_queries = []
+      callback = lambda { |_name, _start, _finish, _id, payload|
+        sql = payload[:sql]
+        xml_queries << sql if sql.include?('security_requirements_guides') &&
+                              (sql.include?('.*') || sql.include?('"xml"'))
+      }
+
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+        get search_path, params: { q: 'SRG' }
+      end
+
+      expect(response).to have_http_status(:success)
+      expect(xml_queries).to be_empty,
+                             'Search loaded srgs.xml — should use .select() to exclude xml'
+    end
+  end
 end

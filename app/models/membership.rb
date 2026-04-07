@@ -34,11 +34,8 @@ class Membership < ApplicationRecord
 
   ##
   # Override `as_json` to include additional attributes about the associated user.
-  # This is useful for the ProjectMember.vue component.
-  #
-  def as_json(options = {})
-    super(options.merge(methods: %i[name email]))
-  end
+  # Serialization is handled by MembershipBlueprint.
+  # See app/blueprints/membership_blueprint.rb.
 
   private
 

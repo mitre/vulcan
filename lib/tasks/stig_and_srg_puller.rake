@@ -100,8 +100,9 @@ namespace :stig_and_srg_puller do
               new_rule = new_rules[existing_rule.version]
               next if new_rule.blank?
 
-              rule_attributes = new_rule.as_json.compact
-              rule_attributes.delete(:nist_control_family) # This is not a rule attribute, but a method
+              # Use .attributes instead of .as_json — as_json includes computed fields
+              # (nist_control_family, nested associations) that aren't DB columns.
+              rule_attributes = new_rule.attributes.compact.except('id', 'created_at', 'updated_at')
               existing_rule.update(rule_attributes)
             end
             if existing_object.save

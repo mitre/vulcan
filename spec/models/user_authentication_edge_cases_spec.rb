@@ -72,6 +72,25 @@ RSpec.describe User do
       end
     end
 
+    describe 'backtrace logging in all environments' do
+      it 'logs backtrace at debug level without environment gate' do
+        auth = base_auth
+        auth.info.email = 'error_test@example.com'
+
+        # Force an error after email extraction succeeds but during user create/update
+        allow(User).to receive(:create_or_update_user_from_auth)
+          .and_raise(StandardError, 'simulated failure')
+
+        allow(Rails.logger).to receive(:error)
+        allow(Rails.logger).to receive(:debug)
+
+        expect { User.from_omniauth(auth) }.to raise_error(StandardError, 'simulated failure')
+
+        # Verify backtrace was logged (contains file paths from the stack)
+        expect(Rails.logger).to have_received(:debug).with(a_string_including('.rb:'))
+      end
+    end
+
     describe 'LDAP email array handling' do
       let(:ldap_auth) { mock_omniauth_response(build(:user), provider: 'ldap') }
 

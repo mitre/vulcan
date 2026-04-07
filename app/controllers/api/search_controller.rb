@@ -132,6 +132,7 @@ module Api
     #
     def search_srgs(limit)
       SecurityRequirementsGuide
+        .select(:id, :srg_id, :name, :title, :version)
         .where(*build_ilike_conditions(%w[name title srg_id]))
         .limit(limit)
         .map do |srg|
@@ -151,6 +152,7 @@ module Api
     #
     def search_stigs(limit)
       Stig
+        .select(:id, :stig_id, :name, :title, :version, :description)
         .where(*build_ilike_conditions(%w[name title stig_id description]))
         .limit(limit)
         .map do |stig|

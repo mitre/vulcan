@@ -81,7 +81,7 @@ yarn dev      # Start dev server
 ## 🛠️ Technology Stack
 
 ### Core Framework
-- **Ruby 3.4.8** with **Rails 8.0.2.1**
+- **Ruby 3.4.9** with **Rails 8.0.2.1**
 - **PostgreSQL 12+** database
 - **Node.js 24 LTS** for JavaScript runtime
 
@@ -109,7 +109,7 @@ yarn dev      # Start dev server
 
 ### Prerequisites
 
-- Ruby 3.4.8 (use rbenv or rvm)
+- Ruby 3.4.9 (use rbenv or rvm)
 - PostgreSQL 12+
 - Node.js 24 LTS
 - Yarn package manager

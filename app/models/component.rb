@@ -527,9 +527,9 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    rule_ids = rules.to_h { |r| [r.id, r.displayed_name] }
-    Review.where(rule: rules).order(created_at: :desc).limit(20).as_json.map do |review|
-      review['displayed_rule_name'] = rule_ids[review['rule_id'].to_i]
+    rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+    Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|
+      review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
       review
     end
   end

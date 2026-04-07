@@ -145,36 +145,8 @@ class Rule < BaseRule
   end
 
   ##
-  # Override `as_json` to include parent SRG information
-  #
-  def as_json(options = {})
-    result = super
-    unless options[:skip_merge].eql?(true)
-      result = result.merge(
-        {
-          reviews: reviews.as_json.map { |c| c.except('user_id', 'rule_id', 'updated_at') },
-          'srg_id' => srg_rule&.version,
-          srg_rule_attributes: srg_rule&.as_json&.except('id', 'locked', 'created_at', 'updated_at', 'status',
-                                                         'status_justification', 'artifact_description',
-                                                         'vendor_comments', 'review_requestor_id',
-                                                         'component_id', 'changes_requested', 'srg_rule_id',
-                                                         'security_requirements_guide_id'),
-          satisfies: satisfies.map do |s|
-            { id: s.id, rule_id: s.rule_id, srg_id: s.srg_rule&.version }
-          end,
-          satisfied_by: satisfied_by.map do |s|
-            { id: s.id, rule_id: s.rule_id, fixtext: s.fixtext, srg_id: s.srg_rule&.version }
-          end,
-          additional_answers_attributes: additional_answers.as_json.map do |c|
-            c.except('rule_id', 'created_at', 'updated_at')
-          end,
-          srg_info: { version: SecurityRequirementsGuide.find_by(id: srg_rule&.security_requirements_guide_id)&.version }
-        }
-      )
-    end
-
-    result
-  end
+  # Serialization is handled by RuleBlueprint.
+  # See app/blueprints/rule_blueprint.rb for :navigator, :viewer, :editor views.
 
   ##
   # Revert a specific field on a rule from an audit

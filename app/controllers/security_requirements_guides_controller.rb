@@ -11,16 +11,15 @@ class SecurityRequirementsGuidesController < ApplicationController
 
   def index
     @srgs = SecurityRequirementsGuide.with_severity_counts.order(:srg_id, :version)
-    # Rails automatically renders index.html.haml for HTML, index.json.jbuilder for JSON
+    @srgs_json = SrgBlueprint.render(@srgs, view: :index)
   end
 
   def show
-    # Eager load associations for performance
     @srg = SecurityRequirementsGuide.includes(srg_rules: %i[disa_rule_descriptions checks]).find(params[:id])
 
     respond_to do |format|
-      format.html { @srg_json = @srg.to_json(methods: %i[srg_rules]) }
-      format.json # Uses show.json.jbuilder (faster than to_json)
+      format.html { @srg_json = SrgBlueprint.render(@srg, view: :show) }
+      format.json # Uses show.json.jbuilder
     end
   end
 

@@ -22,11 +22,8 @@ class Review < ApplicationRecord
   delegate :name, to: :user
 
   ##
-  # Override `as_json` to include delegated attributes
-  #
-  def as_json(options = {})
-    super(options.merge(methods: %i[name]))
-  end
+  # Serialization is handled by ReviewBlueprint.
+  # See app/blueprints/review_blueprint.rb.
 
   private
 

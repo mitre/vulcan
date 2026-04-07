@@ -13,7 +13,7 @@ Vulcan is a Rails-based web application designed for creating and managing Secur
 ## Technology Stack
 
 ### Backend
-- **Ruby 3.4.8** - Programming language
+- **Ruby 3.4.9** - Programming language
 - **Rails 8.0.2.1** - Web application framework
 - **PostgreSQL** - Primary database
 
@@ -172,10 +172,10 @@ See [Authorization Architecture](authorization.md) for details.
 ### Container-based
 ```dockerfile
 # Multi-stage build for optimization
-FROM ruby:3.4.8-slim as builder
+FROM ruby:3.4.9-slim as builder
 # Build dependencies and assets
 
-FROM ruby:3.4.8-slim
+FROM ruby:3.4.9-slim
 # Runtime with jemalloc for memory optimization
 ```
 

@@ -21,10 +21,8 @@ if @effective_permissions
   json.all_users @component.all_users
   json.reviews @component.reviews
 
-  # Full rules for editor
-  json.rules @component.rules do |rule|
-    json.merge! rule.as_json # Use full as_json for editor
-  end
+  # Full rules for editor via RuleBlueprint (render_as_hash avoids JSON encode+parse round-trip)
+  json.rules RuleBlueprint.render_as_hash(@component.rules, view: :editor)
 else
   # Non-member viewing released component - lightweight for BenchmarkViewer
   json.extract! @component, :id, :name, :prefix, :version, :release, :updated_at
