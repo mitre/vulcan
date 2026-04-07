@@ -11,16 +11,15 @@ class StigsController < ApplicationController
 
   def index
     @stigs = Stig.with_severity_counts.order(:stig_id, :version)
-    # Rails automatically renders index.html.haml for HTML, index.json.jbuilder for JSON
+    @stigs_json = StigBlueprint.render(@stigs, view: :index)
   end
 
   def show
-    # Eager load associations for performance (set_stig loads basic STIG)
     @stig = Stig.includes(stig_rules: %i[disa_rule_descriptions checks]).find(params[:id])
 
     respond_to do |format|
-      format.html { @stig_json = @stig.to_json(methods: %i[stig_rules], except: [:xml]) }
-      format.json # Uses show.json.jbuilder (faster than to_json)
+      format.html { @stig_json = StigBlueprint.render(@stig, view: :show) }
+      format.json # Uses show.json.jbuilder
     end
   end
 

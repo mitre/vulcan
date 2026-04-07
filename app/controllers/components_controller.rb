@@ -33,7 +33,7 @@ class ComponentsController < ApplicationController
                           .where(released: true)
 
     respond_to do |format|
-      format.html { @components_json = components.to_json }
+      format.html { @components_json = ComponentBlueprint.render(components, view: :index) }
       format.json { @components_json = components } # Jbuilder uses the relation
     end
   end
@@ -60,17 +60,11 @@ class ComponentsController < ApplicationController
   def show
     respond_to do |format|
       format.html do
-        @component_json = if @effective_permissions
-                            @component.to_json(
-                              methods: %i[histories memberships metadata inherited_memberships available_members rules
-                                          reviews admins all_users]
-                            )
-                          else
-                            @component.to_json(methods: %i[rules reviews])
-                          end
+        view = @effective_permissions ? :editor : :show
+        @component_json = ComponentBlueprint.render(@component, view: view)
         @project_json = @component.project.to_json
       end
-      format.json # Uses show.json.jbuilder (faster than to_json)
+      format.json # Uses show.json.jbuilder
     end
   end
 
@@ -423,7 +417,7 @@ class ComponentsController < ApplicationController
     )
                  .order(:rule_id)
 
-    render json: rules
+    render json: RuleBlueprint.render(rules, view: :editor)
   end
 
   private

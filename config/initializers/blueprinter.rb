@@ -12,6 +12,10 @@
 #   ComponentBlueprint.render(component, view: :show)
 #   StigBlueprint.render_as_hash(stigs, view: :index)  # returns hash, no JSON string
 #
+# Explicitly activate Oj Rails compatibility before Blueprinter uses it.
+# Suppresses "Oj::Rails.mimic_JSON was called implicitly" warning.
+Oj.mimic_JSON
+
 Blueprinter.configure do |config|
   # Use Oj for ~2x faster JSON generation vs stdlib JSON.
   config.generator = Oj
