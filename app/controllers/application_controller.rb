@@ -272,19 +272,20 @@ class ApplicationController < ActionController::Base
 
     # Single query: find all access requests for projects where current user is admin.
     # Replaces N+1 loop that called can_admin_project? + eager_load per project.
-    admin_project_ids = if current_user.admin?
-                          Project.pluck(:id)
-                        else
-                          Membership.where(user_id: current_user.id, role: 'admin',
-                                           membership_type: 'Project')
-                                    .pluck(:membership_id)
-                        end
+    pending_requests = if current_user.admin?
+                         # Super admins see all pending requests — no need to pluck project IDs
+                         ProjectAccessRequest.eager_load(:user, :project)
+                       else
+                         admin_project_ids = Membership.where(user_id: current_user.id, role: 'admin',
+                                                              membership_type: 'Project')
+                                                       .pluck(:membership_id)
+                         return @access_requests if admin_project_ids.empty?
 
-    return @access_requests if admin_project_ids.empty?
+                         ProjectAccessRequest.where(project_id: admin_project_ids)
+                                             .eager_load(:user, :project)
+                       end
 
-    @access_requests = ProjectAccessRequest.where(project_id: admin_project_ids)
-                                           .eager_load(:user, :project)
-                                           .map do |ar|
+    @access_requests = pending_requests.map do |ar|
       {
         id: ar.id,
         user: UserBlueprint.render_as_hash(ar.user),
