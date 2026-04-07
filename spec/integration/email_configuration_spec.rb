@@ -24,9 +24,20 @@ RSpec.describe 'Email Configuration Integration - Core Validation' do
     mailer.default_params[:from].call
   end
 
+  before do
+    # Save original mailer config to restore after each test
+    @original_delivery_method = ActionMailer::Base.delivery_method
+    @original_perform_deliveries = Rails.application.config.action_mailer.perform_deliveries
+    @original_raise_delivery_errors = Rails.application.config.action_mailer.raise_delivery_errors
+  end
+
   after do
-    # Reset ActionMailer settings after each test
+    # Restore all mailer config to prevent test pollution
+    ActionMailer::Base.delivery_method = @original_delivery_method
     ActionMailer::Base.smtp_settings = {}
+    Rails.application.config.action_mailer.delivery_method = @original_delivery_method
+    Rails.application.config.action_mailer.perform_deliveries = @original_perform_deliveries
+    Rails.application.config.action_mailer.raise_delivery_errors = @original_raise_delivery_errors
   end
 
   describe 'Production SMTP Configuration Fix (Core Issue Resolution)' do
