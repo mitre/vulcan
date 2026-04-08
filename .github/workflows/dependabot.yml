@@ -13,7 +13,7 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-    - uses: hmarr/auto-approve-action@v4
+    - uses: hmarr/auto-approve-action@f0939ea97e9205ef24d872e76833fa908a770363 # v4
     - name: Enable auto-merge for Dependabot PRs
       run: gh pr merge --auto --squash "$PR_URL"
       env:
