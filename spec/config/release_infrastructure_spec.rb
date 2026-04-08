@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe 'release infrastructure' do
   # Releases are created manually via the GitHub UI.
   # Version must be consistent across all sources. Docker builds trigger
-  # on published GitHub releases (handled by ci.yml).
+  # on published GitHub releases (handled by release.yml).
 
   describe 'changelog configuration' do
     it 'cliff.toml exists with Keep a Changelog sections' do
@@ -29,10 +29,10 @@ RSpec.describe 'release infrastructure' do
   end
 
   describe 'Docker release trigger' do
-    it 'ci.yml triggers docker-release on published releases' do
-      ci = Rails.root.join('.github/workflows/ci.yml').read
-      expect(ci).to match(/release:.*\n.*types:.*published/m),
-                    'ci.yml must trigger on release published events for Docker builds'
+    it 'release.yml triggers docker-release on published releases' do
+      release = Rails.root.join('.github/workflows/release.yml').read
+      expect(release).to match(/release:.*\n.*types:.*published/m),
+                         'release.yml must trigger on release published events for Docker builds'
     end
   end
 
