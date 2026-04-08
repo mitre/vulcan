@@ -19,12 +19,10 @@ on:
       - '.github/workflows/docs.yml'
       - '.github/workflows/release.yml'
       - '.github/workflows/dependabot.yml'
-  release:
-    types: [published]
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'release' }}
+  cancel-in-progress: true
 
 jobs:
   # ─── LINT + SECURITY ─────────────────────────────────────
@@ -34,14 +32,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 1
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@e65c17d16e57e481586a6a5a0282698790062f92 # v1
         with:
           ruby-version: '.ruby-version'
           bundler-cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -62,10 +60,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 1
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -73,7 +71,7 @@ jobs:
       - name: Vitest with coverage
         run: yarn test:unit --coverage
       - name: Upload frontend coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: coverage-frontend
@@ -140,14 +138,14 @@ jobs:
       VULCAN_LDAP_ADMIN_PASS: GoodNewsEveryone
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 1
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@e65c17d16e57e481586a6a5a0282698790062f92 # v1
         with:
           ruby-version: '.ruby-version'
           bundler-cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -156,7 +154,7 @@ jobs:
         run: sudo apt-get -yqq install libpq-dev
 
       - name: Cache JS build
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: js-cache
         with:
           path: app/assets/builds
@@ -178,7 +176,7 @@ jobs:
             spec/
 
       - name: Upload backend coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: coverage-shard-${{ matrix.ci_node_index }}
@@ -202,52 +200,3 @@ jobs:
             exit 1
           fi
           echo "All CI jobs passed"
-
-  # ─── DOCKER RELEASE (release only, multi-arch via Build Cloud) ───
-  docker-release:
-    needs: [lint, frontend, backend]
-    if: github.event_name == 'release'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: write   # Required for anchore/sbom-action dependency-snapshot submission
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PAT }}
-
-      - name: Set up Docker Buildx (Build Cloud)
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: cloud
-          endpoint: "mitre/mitre-builder"
-
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: mitre/vulcan
-          tags: |
-            type=semver,pattern={{version}}
-            type=raw,value=latest
-
-      - name: Build and push multi-arch image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: SBOM scan and dependency submission
-        uses: anchore/sbom-action@v0
-        with:
-          image: mitre/vulcan:${{ github.event.release.tag_name }}
-          artifact-name: image.spdx.json
-          dependency-snapshot: true
