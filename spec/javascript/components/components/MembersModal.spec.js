@@ -248,21 +248,22 @@ describe("MembersModal", () => {
     });
   });
 
-  describe("available members options", () => {
-    it("formats available members for dropdown", () => {
+  describe("server-side member search", () => {
+    it("initializes with empty search results", () => {
       wrapper = createWrapper();
-      const options = wrapper.vm.availableMemberOptions;
-      expect(options.length).toBe(1);
-      expect(options[0].value).toBe(4);
-      expect(options[0].text).toContain("Available User");
-      expect(options[0].text).toContain("available@test.com");
+      expect(wrapper.vm.memberSearchResults).toEqual([]);
+      expect(wrapper.vm.isMemberSearching).toBe(false);
     });
 
-    it("returns empty array when no available members", () => {
-      wrapper = createWrapper({
-        component: { ...defaultProps.component, available_members: null },
-      });
-      expect(wrapper.vm.availableMemberOptions).toEqual([]);
+    it("resets search state on form reset", () => {
+      wrapper = createWrapper();
+      wrapper.vm.memberSearchResults = [{ id: 1, name: "Test", email: "t@t.com" }];
+      wrapper.vm.selectedMemberOption = { id: 1 };
+
+      wrapper.vm.resetAddForm();
+
+      expect(wrapper.vm.memberSearchResults).toEqual([]);
+      expect(wrapper.vm.selectedMemberOption).toBeNull();
     });
   });
 });
