@@ -38,9 +38,8 @@ class ProjectBlueprint < Blueprinter::Base
       project.available_components
     end
 
-    association :available_members, blueprint: UserBlueprint do |project, _options|
-      project.available_members
-    end
+    # available_members removed — now fetched via /api/users/search
+    # to prevent information disclosure of the full user directory
 
     association :users, blueprint: UserBlueprint do |project, _options|
       project.users

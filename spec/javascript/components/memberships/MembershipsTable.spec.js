@@ -56,7 +56,9 @@ describe("MembershipsTable", () => {
     { id: 11, name: "Eve New", email: "eve@example.com" },
   ];
 
-  const accessRequests = [{ id: 100, user_id: 10 }];
+  const accessRequests = [
+    { id: 100, user_id: 10, user: { id: 10, name: "Pending User", email: "pending@example.com" } },
+  ];
 
   const createWrapper = (props = {}) => {
     return mount(MembershipsTable, {
@@ -242,15 +244,14 @@ describe("MembershipsTable", () => {
       expect(wrapper.text()).not.toContain("Pending Access Requests");
     });
 
-    it("pendingProjectMembers filters available_members by access_requests", () => {
+    it("pendingProjectMembers derives user info from access_requests", () => {
       wrapper = createWrapper({
         editable: true,
         access_requests: accessRequests,
-        available_members: availableMembers,
       });
-      // Only Dan (id: 10) has an access request
       expect(wrapper.vm.pendingProjectMembers).toHaveLength(1);
-      expect(wrapper.vm.pendingProjectMembers[0].name).toBe("Dan Pending");
+      expect(wrapper.vm.pendingProjectMembers[0].name).toBe("Pending User");
+      expect(wrapper.vm.pendingProjectMembers[0].email).toBe("pending@example.com");
     });
   });
 

@@ -63,7 +63,7 @@
           />
         </div>
       </div>
-      <div v-if="editable && available_members && available_roles" class="col-6 float-right">
+      <div v-if="editable && available_roles" class="col-6 float-right">
         <b-button v-b-modal.new-project-member variant="primary" size="large" class="float-right">
           New Member
         </b-button>
@@ -230,11 +230,13 @@ export default {
           (pm.name || "").toLowerCase().includes(downcaseSearch),
       );
     },
-    // Users with pending access request
+    // Users with pending access request (derived from access_requests directly)
     pendingProjectMembers: function () {
-      return this.available_members.filter((member) =>
-        this.localAccessRequests.some((request) => request.user_id === member.id),
-      );
+      return this.localAccessRequests.map((request) => ({
+        id: request.user.id,
+        name: request.user.name,
+        email: request.user.email,
+      }));
     },
     // Used by b-pagination to know how many total rows there are
     rows: function () {

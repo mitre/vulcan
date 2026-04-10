@@ -105,10 +105,8 @@ class ComponentBlueprint < Blueprinter::Base
       component.inherited_memberships
     end
 
-    # Available members — uses SQL NOT IN (not Ruby subtraction)
-    association :available_members, blueprint: UserBlueprint do |component, _options|
-      component.available_members
-    end
+    # available_members removed — now fetched via /api/users/search
+    # to prevent information disclosure of the full user directory
 
     # All users with access — compact (id, name, email only)
     association :all_users, blueprint: UserBlueprint do |component, _options|

@@ -16,7 +16,6 @@
         :membership_id="project.id"
         :memberships="project.memberships"
         :memberships_count="project.memberships_count"
-        :available_members="project.available_members"
         :available_roles="availableRoles"
         :access_requests="project.access_requests"
       />
