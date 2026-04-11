@@ -254,7 +254,7 @@ export default {
       this.access_request_id = this.getAccessRequestId(member);
     },
     getAccessRequestId: function (member) {
-      return this.localAccessRequests.find((request) => request.user_id === member.id).id;
+      return this.localAccessRequests.find((request) => request.user.id === member.id).id;
     },
     async roleChanged(event, project_member) {
       const previousRole = event?.target?.dataset?.previousValue || project_member.role;

@@ -3,6 +3,11 @@
 require 'rails_helper'
 
 RSpec.describe 'API User Search' do
+  # Create a site admin FIRST so the after_create :promote_first_user_to_admin
+  # callback (enabled by Settings.admin_bootstrap.first_user_admin) doesn't
+  # silently promote our project-level admin to a site admin and mask the
+  # authorization tests below.
+  let_it_be(:bootstrap_admin) { create(:user, admin: true) }
   let_it_be(:admin) { create(:user, admin: false) }
   let_it_be(:viewer) { create(:user, admin: false) }
   let_it_be(:project) { create(:project) }
@@ -123,7 +128,7 @@ RSpec.describe 'API User Search' do
 
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
-        ids = json['users'].map { |u| u['id'] }
+        ids = json['users'].pluck('id')
         # admin and viewer are members — should find admin
         expect(ids).to include(admin.id)
         # searchable_user is NOT a member — should be excluded
@@ -139,7 +144,7 @@ RSpec.describe 'API User Search' do
         }
 
         json = response.parsed_body
-        ids = json['users'].map { |u| u['id'] }
+        ids = json['users'].pluck('id')
         expect(ids).not_to include(searchable_user.id)
       end
 
@@ -154,6 +159,106 @@ RSpec.describe 'API User Search' do
         }
 
         expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with membership_type=Component (default search, as component admin)' do
+      let_it_be(:component) { create(:component, :skip_rules, project: project) }
+      let_it_be(:component_admin) { create(:user, admin: false) }
+      let_it_be(:component_author) { create(:user, admin: false) }
+
+      before_all do
+        Membership.create!(user: component_admin, membership: component, role: 'admin')
+        Membership.create!(user: component_author, membership: component, role: 'author')
+      end
+
+      before { sign_in component_admin }
+
+      it 'returns matching candidates excluding existing component members' do
+        get '/api/users/search', params: {
+          q: 'Findable',
+          membership_type: 'Component',
+          membership_id: component.id
+        }
+
+        expect(response).to have_http_status(:ok)
+        ids = response.parsed_body['users'].pluck('id')
+        expect(ids).to include(searchable_user.id)
+        expect(ids).not_to include(component_admin.id, component_author.id)
+      end
+
+      it 'excludes project admins from candidates' do
+        # admin (project admin) should be filtered out per Component#available_members rules
+        get '/api/users/search', params: {
+          q: admin.email.split('@').first,
+          membership_type: 'Component',
+          membership_id: component.id
+        }
+
+        ids = response.parsed_body['users'].pluck('id')
+        expect(ids).not_to include(admin.id)
+      end
+
+      it 'returns 403 for non-admins on default search' do
+        sign_in component_author
+        get '/api/users/search', params: {
+          q: 'Findable',
+          membership_type: 'Component',
+          membership_id: component.id
+        }
+
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context 'with membership_type=Component and scope=members' do
+      let_it_be(:component) { create(:component, :skip_rules, project: project) }
+      let_it_be(:component_admin) { create(:user, admin: false) }
+      let_it_be(:component_author) { create(:user, admin: false) }
+
+      before_all do
+        Membership.create!(user: component_admin, membership: component, role: 'admin')
+        Membership.create!(user: component_author, membership: component, role: 'author')
+      end
+
+      before { sign_in component_author }
+
+      it 'returns direct component members matching the query' do
+        get '/api/users/search', params: {
+          q: component_admin.name.split.first,
+          membership_type: 'Component',
+          membership_id: component.id,
+          scope: 'members'
+        }
+
+        expect(response).to have_http_status(:ok)
+        ids = response.parsed_body['users'].pluck('id')
+        expect(ids).to include(component_admin.id)
+      end
+
+      it 'includes inherited project members' do
+        # admin and viewer are project members, inherited via component.all_users
+        get '/api/users/search', params: {
+          q: admin.name.split.first,
+          membership_type: 'Component',
+          membership_id: component.id,
+          scope: 'members'
+        }
+
+        ids = response.parsed_body['users'].pluck('id')
+        expect(ids).to include(admin.id)
+      end
+
+      it 'excludes non-members even if name matches' do
+        get '/api/users/search', params: {
+          q: 'Findable',
+          membership_type: 'Component',
+          membership_id: component.id,
+          scope: 'members'
+        }
+
+        ids = response.parsed_body['users'].pluck('id')
+        expect(ids).not_to include(searchable_user.id)
       end
     end
   end

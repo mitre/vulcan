@@ -62,8 +62,10 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # DisaGuideController serves static documentation to any authenticated user.
   'disa_guide#show' => 'Static docs page — any authenticated user',
   'disa_guide#attachment' => 'Static docs attachment — any authenticated user',
-  # UserSearchController does admin authorization in set_and_authorize_target before_action
-  'api/user_search#index' => 'Admin-only search with custom authorization in before_action'
+  # UserSearchController uses custom authorization in authorize_search before_action:
+  # admin-only for non-member searches; any member for scope=members (PoC selection).
+  'api/user_search#index' => 'Custom authorization in before_action: admin-only for non-member ' \
+                             'searches; any member for scope=members'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

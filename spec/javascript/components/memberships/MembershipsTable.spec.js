@@ -56,8 +56,13 @@ describe("MembershipsTable", () => {
     { id: 11, name: "Eve New", email: "eve@example.com" },
   ];
 
+  // Mirrors the real ProjectBlueprint payload: { id, user, project_id } — no top-level user_id
   const accessRequests = [
-    { id: 100, user_id: 10, user: { id: 10, name: "Pending User", email: "pending@example.com" } },
+    {
+      id: 100,
+      project_id: 1,
+      user: { id: 10, name: "Pending User", email: "pending@example.com" },
+    },
   ];
 
   const createWrapper = (props = {}) => {
