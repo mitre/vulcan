@@ -64,7 +64,18 @@ class ComponentsController < ApplicationController
         @component_json = ComponentBlueprint.render(@component, view: view)
         @project_json = @component.project.to_json
       end
-      format.json # Uses show.json.jbuilder
+      format.json do
+        if @effective_permissions
+          # Editor refresh: use blueprint directly so the refreshComponent() response
+          # shape exactly matches the initial render and nothing drifts (e.g.,
+          # memberships losing their MembershipBlueprint name/email decoration).
+          render json: ComponentBlueprint.render(@component, view: :editor)
+        else
+          # Non-member: jbuilder produces a BenchmarkViewer-specific lightweight
+          # rule shape that the :show blueprint view does not.
+          render :show
+        end
+      end
     end
   end
 
