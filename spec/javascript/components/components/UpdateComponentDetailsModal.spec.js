@@ -26,10 +26,6 @@ describe("UpdateComponentDetailsModal", () => {
           prefix: "TST-01",
           admin_name: "Demo Admin",
           admin_email: "admin@example.com",
-          all_users: [
-            { id: 1, name: "Demo Admin", email: "admin@example.com" },
-            { id: 2, name: "Bob User", email: "bob@example.com" },
-          ],
         },
         ...props,
       },
