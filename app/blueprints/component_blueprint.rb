@@ -108,9 +108,7 @@ class ComponentBlueprint < Blueprinter::Base
     # available_members removed — now fetched via /api/users/search
     # to prevent information disclosure of the full user directory
 
-    # All users with access — compact (id, name, email only)
-    association :all_users, blueprint: UserBlueprint do |component, _options|
-      component.all_users
-    end
+    # all_users removed — PoC dropdown now uses /api/users/search?scope=members
+    # to prevent pre-loading all team members into the DOM
   end
 end

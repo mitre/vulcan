@@ -16,9 +16,7 @@ if @effective_permissions
   json.memberships @component.memberships
   json.metadata @component.metadata
   json.inherited_memberships @component.inherited_memberships
-  json.available_members @component.available_members
   json.admins @component.admins
-  json.all_users @component.all_users
   json.reviews @component.reviews
 
   # Full rules for editor via RuleBlueprint (render_as_hash avoids JSON encode+parse round-trip)

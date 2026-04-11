@@ -109,5 +109,52 @@ RSpec.describe 'API User Search' do
         expect(json['users']).not_to be_empty
       end
     end
+
+    context 'with scope=members' do
+      before { sign_in admin }
+
+      it 'returns only existing project members matching the query' do
+        get '/api/users/search', params: {
+          q: admin.name.split.first,
+          membership_type: 'Project',
+          membership_id: project.id,
+          scope: 'members'
+        }
+
+        expect(response).to have_http_status(:ok)
+        json = response.parsed_body
+        ids = json['users'].map { |u| u['id'] }
+        # admin and viewer are members — should find admin
+        expect(ids).to include(admin.id)
+        # searchable_user is NOT a member — should be excluded
+        expect(ids).not_to include(searchable_user.id)
+      end
+
+      it 'does not return non-members even if name matches' do
+        get '/api/users/search', params: {
+          q: 'Findable',
+          membership_type: 'Project',
+          membership_id: project.id,
+          scope: 'members'
+        }
+
+        json = response.parsed_body
+        ids = json['users'].map { |u| u['id'] }
+        expect(ids).not_to include(searchable_user.id)
+      end
+
+      it 'allows any project member to search members (not just admins)' do
+        sign_in viewer
+
+        get '/api/users/search', params: {
+          q: admin.name.split.first,
+          membership_type: 'Project',
+          membership_id: project.id,
+          scope: 'members'
+        }
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
   end
 end

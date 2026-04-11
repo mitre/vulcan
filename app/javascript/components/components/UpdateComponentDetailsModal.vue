@@ -57,10 +57,16 @@
             label="name"
             track-by="id"
             :searchable="true"
+            :internal-search="false"
+            :loading="isPocSearching"
             :allow-empty="true"
             placeholder="Search for eligible PoC..."
+            @search-change="onPocSearch"
             @input="setComponentPoc($event)"
-          />
+          >
+            <template #option="{ option }"> {{ option.name }} ({{ option.email }}) </template>
+            <template #noResult> No users found </template>
+          </vue-multiselect>
         </b-form-group>
         <!-- Allow the enter button to submit the form -->
         <b-btn type="submit" class="d-none" @click.prevent="updateComponentDetails()" />
@@ -71,6 +77,7 @@
 
 <script>
 import axios from "axios";
+import debounce from "lodash/debounce";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import VueMultiselect from "vue-multiselect";
@@ -94,7 +101,8 @@ export default {
       title: this.component.title,
       description: this.component.description,
       prefix: this.component.prefix,
-      potentialPocs: this.component.all_users,
+      potentialPocs: [],
+      isPocSearching: false,
       selectedPoc: null,
       admin_name: this.component.admin_name,
       admin_email: this.component.admin_email,
@@ -108,13 +116,35 @@ export default {
       this.title = this.component.title;
       this.description = this.component.description;
       this.prefix = this.component.prefix;
-      this.potentialPocs = this.component.all_users;
+      this.potentialPocs = [];
       this.admin_name = this.component.admin_name;
       this.admin_email = this.component.admin_email;
     },
     showModal: function () {
       this.$refs["updateComponentDetailsModal"].show();
     },
+    onPocSearch: debounce(async function (query) {
+      if (!query || query.length < 2) {
+        this.potentialPocs = [];
+        return;
+      }
+      this.isPocSearching = true;
+      try {
+        const { data } = await axios.get("/api/users/search", {
+          params: {
+            q: query,
+            membership_type: "Component",
+            membership_id: this.component.id,
+            scope: "members",
+          },
+        });
+        this.potentialPocs = data.users;
+      } catch {
+        this.potentialPocs = [];
+      } finally {
+        this.isPocSearching = false;
+      }
+    }, 300),
     setComponentPoc: function (user) {
       if (user) {
         this.admin_email = user.email;

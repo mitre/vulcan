@@ -65,6 +65,13 @@ class Project < ApplicationRecord
       .limit(limit)
   end
 
+  def search_members(query, limit: 10)
+    sanitized = ActiveRecord::Base.sanitize_sql_like(query)
+    users.where('users.name ILIKE :q OR users.email ILIKE :q', q: "%#{sanitized}%")
+         .select(:id, :name, :email)
+         .limit(limit)
+  end
+
   def details
     status_counts = rules.group(:status).count
     lock_counts = rules.group(:locked).count
