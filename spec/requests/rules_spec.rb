@@ -73,13 +73,16 @@ RSpec.describe 'Rules' do
         expect(response.body).to include('Security')
       end
 
-      it 'includes all_users in component JSON for UpdateComponentDetailsModal PoC dropdown' do
-        # REQUIREMENT: UpdateComponentDetailsModal needs all_users for PoC selection dropdown
+      it 'does NOT include all_users in component JSON (information disclosure regression guard)' do
+        # SECURITY: all_users used to be pre-loaded into the SSR'd component JSON,
+        # exposing the entire user directory to any project member with edit access.
+        # The PoC dropdown in UpdateComponentDetailsModal now fetches members via
+        # /api/users/search?scope=members on demand. This test guards against the
+        # regression of pre-loading the user directory back into the DOM.
         get "/components/#{component.id}/edit"
 
         expect(response).to have_http_status(:success)
-        # Verify the all_users key is present in the component JSON
-        expect(response.body).to include('&quot;all_users&quot;')
+        expect(response.body).not_to include('&quot;all_users&quot;')
       end
     end
   end

@@ -9,15 +9,21 @@
             </b-input-group-prepend>
             <vue-multiselect
               v-model="multiSelectUser"
-              :options="available_members"
+              :options="searchResults"
               label="email"
               track-by="id"
               :searchable="true"
+              :internal-search="false"
+              :loading="isSearching"
               :allow-empty="true"
-              placeholder="Search for a user by email..."
+              placeholder="Search for a user by name or email..."
               class="flex-grow-1"
+              @search-change="onSearchChange"
               @input="setSelectedUser($event)"
-            />
+            >
+              <template #option="{ option }"> {{ option.name }} ({{ option.email }}) </template>
+              <template #noResult> No users found </template>
+            </vue-multiselect>
           </b-input-group>
         </template>
         <template v-else>
@@ -123,9 +129,11 @@
 </template>
 
 <script>
+import axios from "axios";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import capitalize from "lodash/capitalize";
+import debounce from "lodash/debounce";
 import { ROLE_DESCRIPTIONS } from "../../constants/terminology";
 
 export default {
@@ -144,7 +152,7 @@ export default {
     },
     available_members: {
       type: Array,
-      required: true,
+      default: () => [],
     },
     available_roles: {
       type: Array,
@@ -166,15 +174,13 @@ export default {
       selectedUser: this.selected_member,
       selectedRole: null,
       roleDescriptions: ROLE_DESCRIPTIONS,
+      searchResults: [],
+      isSearching: false,
     };
   },
   computed: {
     authenticityToken: function () {
       return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
-    searchedAvailableMembers: function () {
-      let downcaseSearch = this.search.toLowerCase();
-      return this.available_members.filter((pm) => pm.email.toLowerCase().includes(downcaseSearch));
     },
     isSubmitDisabled: function () {
       return !(this.selectedUser !== null && this.selectedRole !== null);
@@ -194,6 +200,27 @@ export default {
       this.selectedUser = user;
       this.search = "";
     },
+    onSearchChange: debounce(async function (query) {
+      if (!query || query.length < 2) {
+        this.searchResults = [];
+        return;
+      }
+      this.isSearching = true;
+      try {
+        const { data } = await axios.get("/api/users/search", {
+          params: {
+            q: query,
+            membership_type: this.membership_type,
+            membership_id: this.membership_id,
+          },
+        });
+        this.searchResults = data.users;
+      } catch {
+        this.searchResults = [];
+      } finally {
+        this.isSearching = false;
+      }
+    }, 300),
     formAction: function () {
       return `/memberships/`;
     },

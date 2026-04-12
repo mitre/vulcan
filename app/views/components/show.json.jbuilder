@@ -1,57 +1,39 @@
 # frozen_string_literal: true
 
-# Optimized JSON for Component detail view (full editor or BenchmarkViewer)
-# For BenchmarkViewer: Bypasses BaseRule.as_json overhead
-# For full editor: Includes additional data (reviews, memberships, etc.)
+# Lightweight JSON for Component detail view — non-member access (BenchmarkViewer).
+# Bypasses BaseRule.as_json overhead with a custom rule shape that the
+# RuleBlueprint :viewer view does not produce.
+#
+# Editor (project member) refreshes are served by ComponentBlueprint :editor
+# directly from ComponentsController#show — see that action for the rationale.
 
-if @effective_permissions
-  # Project member viewing component - full data for editor
-  json.extract! @component, :id, :name, :prefix, :version, :release, :title, :description,
-                :admin_name, :admin_email, :released, :advanced_fields
-  json.based_on_title @component.based_on.title
-  json.based_on_version @component.based_on.version
-  json.releasable @component.releasable
-  json.additional_questions @component.additional_questions
-  json.histories @component.histories
-  json.memberships @component.memberships
-  json.metadata @component.metadata
-  json.inherited_memberships @component.inherited_memberships
-  json.available_members @component.available_members
-  json.admins @component.admins
-  json.all_users @component.all_users
-  json.reviews @component.reviews
+# Non-member viewing released component - lightweight for BenchmarkViewer
+json.extract! @component, :id, :name, :prefix, :version, :release, :updated_at
+json.based_on_title @component.based_on.title
+json.based_on_version @component.based_on.version
 
-  # Full rules for editor via RuleBlueprint (render_as_hash avoids JSON encode+parse round-trip)
-  json.rules RuleBlueprint.render_as_hash(@component.rules, view: :editor)
-else
-  # Non-member viewing released component - lightweight for BenchmarkViewer
-  json.extract! @component, :id, :name, :prefix, :version, :release, :updated_at
-  json.based_on_title @component.based_on.title
-  json.based_on_version @component.based_on.version
+# Lightweight rules for viewer (same pattern as STIG/SRG)
+json.rules @component.rules, cached: true do |rule|
+  json.extract! rule, :id, :rule_id, :title, :version, :rule_severity, :vuln_id, :legacy_ids, :ident, :nist_control_family, :fixtext, :vendor_comments
+  json.srg_id rule.srg_rule&.version
 
-  # Lightweight rules for viewer (same pattern as STIG/SRG)
-  json.rules @component.rules, cached: true do |rule|
-    json.extract! rule, :id, :rule_id, :title, :version, :rule_severity, :vuln_id, :legacy_ids, :ident, :nist_control_family, :fixtext, :vendor_comments
-    json.srg_id rule.srg_rule&.version
-
-    json.satisfies rule.satisfies do |s|
-      json.extract! s, :id, :rule_id
-      json.srg_id s.srg_rule&.version
-    end
-
-    json.satisfied_by rule.satisfied_by do |s|
-      json.extract! s, :id, :rule_id, :fixtext
-      json.srg_id s.srg_rule&.version
-    end
-
-    json.disa_rule_descriptions_attributes rule.disa_rule_descriptions do |desc|
-      json.extract! desc, :vuln_discussion
-    end
-
-    json.checks_attributes rule.checks do |check|
-      json.extract! check, :content
-    end
+  json.satisfies rule.satisfies do |s|
+    json.extract! s, :id, :rule_id
+    json.srg_id s.srg_rule&.version
   end
 
-  json.reviews @component.reviews
+  json.satisfied_by rule.satisfied_by do |s|
+    json.extract! s, :id, :rule_id, :fixtext
+    json.srg_id s.srg_rule&.version
+  end
+
+  json.disa_rule_descriptions_attributes rule.disa_rule_descriptions do |desc|
+    json.extract! desc, :vuln_discussion
+  end
+
+  json.checks_attributes rule.checks do |check|
+    json.extract! check, :content
+  end
 end
+
+json.reviews @component.reviews

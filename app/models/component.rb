@@ -526,6 +526,24 @@ class Component < ApplicationRecord
     User.where.not(id: exclude_user_ids).select(:id, :name, :email)
   end
 
+  def search_available_members(query, limit: 10)
+    sanitized = ActiveRecord::Base.sanitize_sql_like(query)
+    available_members
+      .where('users.name ILIKE :q OR users.email ILIKE :q', q: "%#{sanitized}%")
+      .limit(limit)
+  end
+
+  # Search across direct + inherited members (matches Component#all_users semantics).
+  # Used by scope=members for PoC selection.
+  def search_members(query, limit: 10)
+    sanitized = ActiveRecord::Base.sanitize_sql_like(query)
+    member_ids = (users.pluck(:id) + project.users.pluck(:id)).uniq
+    User.where(id: member_ids)
+        .where('users.name ILIKE :q OR users.email ILIKE :q', q: "%#{sanitized}%")
+        .select(:id, :name, :email)
+        .limit(limit)
+  end
+
   def reviews
     rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
     Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|

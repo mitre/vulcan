@@ -141,16 +141,22 @@
       @ok="addMember"
       @hidden="resetAddForm"
     >
-      <b-form-group label="Select User" label-for="new-member-select">
-        <b-form-select
-          id="new-member-select"
-          v-model="newMember.userId"
-          :options="availableMemberOptions"
+      <b-form-group label="Search for a user" label-for="new-member-search">
+        <vue-multiselect
+          id="new-member-search"
+          v-model="selectedMemberOption"
+          :options="memberSearchResults"
+          label="email"
+          track-by="id"
+          :searchable="true"
+          :internal-search="false"
+          :loading="isMemberSearching"
+          placeholder="Type a name or email..."
+          @search-change="onMemberSearch"
         >
-          <template #first>
-            <b-form-select-option :value="null" disabled>Choose a user...</b-form-select-option>
-          </template>
-        </b-form-select>
+          <template #option="{ option }"> {{ option.name }} ({{ option.email }}) </template>
+          <template #noResult> No users found </template>
+        </vue-multiselect>
       </b-form-group>
       <b-form-group label="Role" label-for="new-member-role">
         <b-form-select id="new-member-role" v-model="newMember.role" :options="availableRoles" />
@@ -176,11 +182,15 @@
 
 <script>
 import axios from "axios";
+import debounce from "lodash/debounce";
+import VueMultiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
   name: "MembersModal",
+  components: { VueMultiselect },
   mixins: [RoleComparisonMixin, FormMixinVue],
   props: {
     component: {
@@ -205,6 +215,9 @@ export default {
         role: "viewer",
       },
       memberToRemove: null,
+      selectedMemberOption: null,
+      memberSearchResults: [],
+      isMemberSearching: false,
     };
   },
   computed: {
@@ -248,13 +261,6 @@ export default {
           (m.email || "").toLowerCase().includes(search),
       );
     },
-    availableMemberOptions() {
-      if (!this.component.available_members) return [];
-      return this.component.available_members.map((m) => ({
-        value: m.id,
-        text: `${m.name} (${m.email})`,
-      }));
-    },
   },
   methods: {
     showAddMemberModal() {
@@ -262,14 +268,38 @@ export default {
     },
     resetAddForm() {
       this.newMember = { userId: null, role: "viewer" };
+      this.selectedMemberOption = null;
+      this.memberSearchResults = [];
     },
+    onMemberSearch: debounce(async function (query) {
+      if (!query || query.length < 2) {
+        this.memberSearchResults = [];
+        return;
+      }
+      this.isMemberSearching = true;
+      try {
+        const { data } = await axios.get("/api/users/search", {
+          params: {
+            q: query,
+            membership_type: "Component",
+            membership_id: this.component.id,
+          },
+        });
+        this.memberSearchResults = data.users;
+      } catch {
+        this.memberSearchResults = [];
+      } finally {
+        this.isMemberSearching = false;
+      }
+    }, 300),
     async addMember() {
-      if (!this.newMember.userId) return;
+      const userId = this.selectedMemberOption?.id || this.newMember.userId;
+      if (!userId) return;
 
       try {
         await axios.post("/memberships.json", {
           membership: {
-            user_id: this.newMember.userId,
+            user_id: userId,
             role: this.newMember.role,
             membership_type: "Component",
             membership_id: this.component.id,

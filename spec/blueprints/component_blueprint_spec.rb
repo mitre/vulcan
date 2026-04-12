@@ -7,7 +7,12 @@ require 'rails_helper'
 #
 # REQUIREMENT: The :editor view must produce output field-compatible with
 # the current `to_json(methods: %i[histories memberships metadata
-# inherited_memberships available_members rules reviews admins all_users])`.
+# inherited_memberships rules reviews])`.
+#
+# SECURITY: available_members and all_users were removed from the payload
+# to prevent information disclosure of the full user directory. These are
+# now fetched on demand via /api/users/search (and ?scope=members for the
+# PoC dropdown). Tests below assert these fields are NOT present.
 #
 RSpec.describe 'ComponentBlueprint' do
   let_it_be(:admin_user) { create(:user, admin: true) }
@@ -81,14 +86,20 @@ RSpec.describe 'ComponentBlueprint' do
       expect(json).to have_key(:memberships)
       expect(json).to have_key(:metadata)
       expect(json).to have_key(:inherited_memberships)
-      expect(json).to have_key(:available_members)
-      expect(json).to have_key(:all_users)
       expect(json).to have_key(:additional_questions)
     end
 
     it 'does NOT include dead admins field' do
       # Per Vue analysis: no component page Vue consumer reads component.admins
       expect(json).not_to have_key(:admins)
+    end
+
+    it 'does NOT include available_members or all_users (information disclosure regression guard)' do
+      # SECURITY: pre-loading the full user directory into the payload was an
+      # information disclosure issue. The Add Member dropdown and PoC dropdown
+      # now fetch via /api/users/search and /api/users/search?scope=members.
+      expect(json).not_to have_key(:available_members)
+      expect(json).not_to have_key(:all_users)
     end
 
     it 'rules are serialized via RuleBlueprint :editor' do
@@ -107,20 +118,6 @@ RSpec.describe 'ComponentBlueprint' do
         expect(m).to have_key(:name)
         expect(m).to have_key(:email)
         expect(m).to have_key(:role)
-      end
-    end
-
-    it 'available_members only include id, name, email' do
-      if json[:available_members].any?
-        u = json[:available_members].first
-        expect(u.keys.sort).to eq(%i[email id name])
-      end
-    end
-
-    it 'all_users only include id, name, email' do
-      if json[:all_users].any?
-        u = json[:all_users].first
-        expect(u.keys.sort).to eq(%i[email id name])
       end
     end
   end

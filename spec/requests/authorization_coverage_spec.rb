@@ -61,7 +61,11 @@ AUTHENTICATE_ONLY_ACTIONS = {
   'api/search#global' => 'Data-scoped auth via current_user.available_projects',
   # DisaGuideController serves static documentation to any authenticated user.
   'disa_guide#show' => 'Static docs page — any authenticated user',
-  'disa_guide#attachment' => 'Static docs attachment — any authenticated user'
+  'disa_guide#attachment' => 'Static docs attachment — any authenticated user',
+  # UserSearchController uses custom authorization in authorize_search before_action:
+  # admin-only for non-member searches; any member for scope=members (PoC selection).
+  'api/user_search#index' => 'Custom authorization in before_action: admin-only for non-member ' \
+                             'searches; any member for scope=members'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

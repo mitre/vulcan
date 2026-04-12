@@ -141,6 +141,54 @@ RSpec.describe 'Components' do
   end
 
   # ==========================================================================
+  # REQUIREMENT: refreshComponent() in ProjectComponent.vue / RulesCodeEditorView.vue
+  # fetches /components/:id.json and Object.assigns the response into the local
+  # component prop. The response shape MUST match the initial render's
+  # ComponentBlueprint :editor view exactly so refresh doesn't silently degrade
+  # the in-memory shape (e.g., memberships losing name/email decoration, or
+  # admins ghost field appearing only after refresh).
+  # ==========================================================================
+  describe 'GET /components/:id.json (editor refresh contract)' do
+    let(:other_user) { create(:user, name: 'Other Member', email: 'other@example.com') }
+
+    before do
+      Membership.create!(user: other_user, membership: component, role: 'author')
+    end
+
+    it 'matches the ComponentBlueprint :editor view shape exactly' do
+      get "/components/#{component.id}.json"
+      expect(response).to have_http_status(:success)
+
+      json_keys = response.parsed_body.keys.sort
+      blueprint_keys = ComponentBlueprint.render_as_hash(component, view: :editor).keys.map(&:to_s).sort
+
+      expect(json_keys).to eq(blueprint_keys)
+    end
+
+    it 'memberships include name and email (MembershipBlueprint shape)' do
+      get "/components/#{component.id}.json"
+      memberships = response.parsed_body['memberships']
+      member = memberships.find { |m| m['email'] == other_user.email }
+
+      expect(member).to be_present
+      expect(member).to have_key('name')
+      expect(member).to have_key('email')
+      expect(member['name']).to eq(other_user.name)
+    end
+
+    it 'does NOT include admins (regression guard for dead field)' do
+      get "/components/#{component.id}.json"
+      expect(response.parsed_body).not_to have_key('admins')
+    end
+
+    it 'does NOT include available_members or all_users (information disclosure regression guard)' do
+      get "/components/#{component.id}.json"
+      expect(response.parsed_body).not_to have_key('available_members')
+      expect(response.parsed_body).not_to have_key('all_users')
+    end
+  end
+
+  # ==========================================================================
   # REQUIREMENT: Bulk component export must work for released components
   # shown on the ProjectComponents page. The URL pattern must not collide
   # with the single-component export route /components/:id/export/:type.
