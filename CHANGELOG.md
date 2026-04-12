@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.3.5] - 2026-04-11
+
+### Added
+
+- Server-side user search endpoint `GET /api/users/search` with admin authorization
+- `scope=members` parameter for searching within existing project/component members (PoC selection — accessible to any member)
+- `Project#search_available_members` and `Project#search_members` (combine exclusion + ILIKE search)
+- `Component#search_available_members` and `Component#search_members` (mirrors `all_users` semantics for inherited + direct members)
+- Async server-side user search via `vue-multiselect` in `NewMembership`, `MembersModal`, and `UpdateComponentDetailsModal` (debounced 300ms, min 2 characters)
+- Contract tests asserting `/components/:id.json` editor refresh response shape matches `ComponentBlueprint :editor` exactly
+- Regression guards in `ComponentBlueprint` and `rules_spec` asserting `available_members` and `all_users` are not present in serialized payloads (information disclosure regression guard)
+- Dedicated `release.yml` workflow triggered only on release published events
+
+### Changed
+
+- `available_members` and `all_users` removed from `ComponentBlueprint` and `ProjectBlueprint` payloads (no longer pre-loaded into the DOM)
+- `MembershipsTable` derives pending access request user info from `access_requests` directly instead of cross-referencing `available_members`
+- `ComponentsController#show` editor JSON now renders `ComponentBlueprint :editor` directly, eliminating a parallel jbuilder code path that produced a different shape than the initial render
+- `show.json.jbuilder` simplified to non-member only (BenchmarkViewer's lightweight rule shape)
+- Docker release workflow split out of `ci.yml` so test suite no longer reruns on release publish
+- All GitHub Actions pinned to full commit SHAs for supply chain safety
+
+### Fixed
+
+- **Information disclosure**: pre-loaded full user directory removed from project/component pages — admins could previously enumerate every registered user via the page payload
+- **Editor refresh shape drift**: `refreshComponent()` (called by `UpdateComponentDetailsModal`, `UpdateMetadataModal`, `AddQuestionsModal` after save) replaced local `component.memberships` with name/email-less stripped versions, silently breaking `MembersModal` display until full page reload
+- `MembershipsTable.getAccessRequestId` was reading stale `request.user_id` and would crash Accept/Reject after the access_requests payload moved to nested `request.user.{id,name,email}` shape
+- `Component#search_available_members` / `#search_members` were missing entirely (controller dispatched to `@target.search_*` but only `Project` had them), causing `NoMethodError` for any `membership_type=Component` request
+- `first_user_admin` after_create callback was silently promoting test users to site admin in new request specs, masking project-level authorization assertions
+- SBOM tag mismatch (`v2.3.4` vs `2.3.4`) in release workflow
+
+### Security
+
+- The `/api/users/search` endpoint enforces admin-only access for non-member searches and member-only access for `scope=members` searches, preventing unauthorized user enumeration
+
 ## [v2.3.4] - 2026-04-07
 
 ### Added

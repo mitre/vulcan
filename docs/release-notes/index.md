@@ -4,10 +4,11 @@ All Vulcan releases with changelogs and migration notes.
 
 ## Current Release
 
-- **[v2.3.4](v2.3.4)** — Blueprinter JSON serialization, query performance hardening, OIDC fix, auth UX
+- **[v2.3.5](v2.3.5)** — Server-side user search (information disclosure fix), editor refresh shape drift fix, CI/release workflow split
 
 ## Previous Releases
 
+- **[v2.3.4](v2.3.4)** — Blueprinter JSON serialization, query performance hardening, OIDC fix, auth UX
 - **[v2.3.1](v2.3.1)** — Per-section rule locking, field state visualization, export modal UX, JSON archive backup/restore
 
 - **[v2.2.1](v2.2.1)** — Account lockout (STIG AC-07), classification banner, consent modal, password policy, admin user management
