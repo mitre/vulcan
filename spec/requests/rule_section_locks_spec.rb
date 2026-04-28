@@ -143,11 +143,12 @@ RSpec.describe 'Rule section locks API' do
         Membership.create!(user: author, membership: project, role: 'author')
       end
 
-      it 'rejects the request' do
+      it 'rejects the request with a structured 403' do
         patch "/rules/#{rule.id}/section_locks",
               params: { section: 'Title', locked: true },
               headers: { 'Accept' => 'application/json' }
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to have_http_status(:forbidden)
+        expect(response.parsed_body['error']).to eq('permission_denied')
       end
     end
 
@@ -159,11 +160,12 @@ RSpec.describe 'Rule section locks API' do
         Membership.create!(user: viewer, membership: project, role: 'viewer')
       end
 
-      it 'rejects the request' do
+      it 'rejects the request with a structured 403' do
         patch "/rules/#{rule.id}/section_locks",
               params: { section: 'Title', locked: true },
               headers: { 'Accept' => 'application/json' }
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to have_http_status(:forbidden)
+        expect(response.parsed_body['error']).to eq('permission_denied')
       end
     end
   end

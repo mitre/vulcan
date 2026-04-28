@@ -99,19 +99,34 @@ RSpec.describe 'Reviews' do
 
     context 'as a user with no project membership' do
       let_it_be(:outsider) { create(:user) }
+      let_it_be(:project_admin_user) { create(:user) }
 
-      before { sign_in outsider }
+      before do
+        # Set up at least one project admin so the structured 403 response has
+        # something to populate the `admins` array with.
+        create(:membership, user: project_admin_user, membership: project, role: 'admin')
+        sign_in outsider
+      end
 
-      it 'rejects with the not-authorized response from the controller filter' do
+      it 'returns a structured 403 with project admin contacts' do
         expect do
           post "/rules/#{rule.id}/reviews", params: {
             review: { action: 'comment', comment: 'I should not be here' }
           }, as: :json
         end.not_to change(Review, :count)
 
-        # ApplicationController's NotAuthorizedError handler renders 401 for
-        # JSON. B3 will refine this to a structured 403 with admin contacts.
-        expect(response).not_to have_http_status(:ok)
+        expect(response).to have_http_status(:forbidden)
+
+        body = response.parsed_body
+        expect(body['error']).to eq('permission_denied')
+        expect(body['message']).to be_present
+        expect(body['admins']).to be_an(Array)
+        expect(body['admins']).to include(hash_including(
+                                            'name' => project_admin_user.name,
+                                            'email' => project_admin_user.email
+                                          ))
+        # Legacy toast shape kept for AlertMixin backwards compatibility
+        expect(body.dig('toast', 'variant')).to eq('danger')
       end
     end
 

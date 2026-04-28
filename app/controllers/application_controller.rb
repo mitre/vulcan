@@ -30,9 +30,13 @@ class ApplicationController < ActionController::Base
   end
   helper_method :consent_required?
 
-  rescue_from NotAuthorizedError, with: :not_authorized
-
+  # Order matters: ActiveSupport::Rescuable matches handlers via reverse_each,
+  # so the LAST-declared rescue_from is checked first. We want the specific
+  # NotAuthorizedError handler to win over the catch-all StandardError handler,
+  # so NotAuthorizedError must be declared AFTER StandardError.
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
+
+  rescue_from NotAuthorizedError, with: :not_authorized
 
   def set_project_permissions
     @effective_permissions = current_user&.effective_permissions(@project)
@@ -249,15 +253,34 @@ class ApplicationController < ActionController::Base
         redirect_back(fallback_location: root_path)
       end
       format.json do
-        render json: {
-          toast: {
-            title: 'Not Authorized.',
-            message: exception.message,
-            variant: 'danger'
-          }
-        }, status: :unauthorized
+        render json: permission_denied_payload(exception), status: :forbidden
       end
     end
+  end
+
+  # Builds the structured permission-denied JSON body. Includes the project
+  # admin contacts when a project (or component-with-project) is in scope so
+  # the frontend can tell the user exactly who to ask for access. The legacy
+  # `toast` shape is preserved alongside so AlertMixin keeps rendering a
+  # basic toast without changes.
+  def permission_denied_payload(exception)
+    project = permission_denied_project_context
+    admins = project ? project.admins.map { |a| { name: a.name, email: a.email } } : []
+
+    {
+      error: 'permission_denied',
+      message: exception.message,
+      admins: admins,
+      toast: {
+        title: 'Not Authorized.',
+        message: exception.message,
+        variant: 'danger'
+      }
+    }
+  end
+
+  def permission_denied_project_context
+    @project || @component&.project
   end
 
   def setup_navigation
