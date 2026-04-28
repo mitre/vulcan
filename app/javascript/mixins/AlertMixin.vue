@@ -18,6 +18,20 @@ export default {
     //   - 'title', and 'variant' are optional and will default to 'Success' and 'sucess'
     // - If no response is provided -> show 'message' as an alert on the screen
     alertOrNotifyResponse: function (response) {
+      // Structured permission-denied path (Plan B / B3): render a rich toast
+      // with the project admin contacts so the user knows who to ask for access.
+      const errorData = response?.response?.data;
+      if (response?.response?.status === 403 && errorData?.error === "permission_denied") {
+        const admins = Array.isArray(errorData.admins) ? errorData.admins : [];
+        this.$bvToast.toast(this.permissionDeniedBody(errorData.message, admins), {
+          title: "Permission denied",
+          variant: "danger",
+          solid: true,
+          autoHideDelay: 8000,
+        });
+        return;
+      }
+
       let toast = response["data"] && response["data"]["toast"] ? response["data"]["toast"] : null;
       if (
         !toast &&
@@ -71,6 +85,25 @@ export default {
         "div",
         messageArray.map((message) => this.$createElement("p", message)),
       );
+    },
+    // Build a VNode body for a structured permission_denied response.
+    // Renders the message paragraph followed by a "Project administrators:"
+    // section listing each admin as "Name <email>" — so the user knows
+    // exactly who to contact for access.
+    permissionDeniedBody: function (message, admins) {
+      const h = this.$createElement;
+      const children = [h("p", { class: "mb-2" }, message)];
+      if (admins.length > 0) {
+        children.push(h("p", { class: "mb-1 font-weight-bold" }, "Project administrators:"));
+        children.push(
+          h(
+            "ul",
+            { class: "mb-0 pl-3" },
+            admins.map((a) => h("li", `${a.name} <${a.email}>`)),
+          ),
+        );
+      }
+      return h("div", children);
     },
   },
 };
