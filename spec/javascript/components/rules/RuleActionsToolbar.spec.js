@@ -189,6 +189,27 @@ describe("RuleActionsToolbar", () => {
         await btn.trigger("click");
         expect(wrapper.emitted("comment")).toBeTruthy();
       });
+
+      // Plan B: viewers can comment. The Comment button must remain enabled
+      // when readOnly=true (viewer role) — it's the one collaboration action
+      // that doesn't require write permission.
+      it("is enabled even when readOnly=true (viewer scenario)", () => {
+        wrapper = createWrapper({ readOnly: true, effectivePermissions: "viewer" });
+        const commentStub = wrapper
+          .findAll(".comment-modal-stub")
+          .wrappers.find((s) => s.text().includes("Comment") && !s.text().includes("Save"));
+        expect(commentStub).toBeDefined();
+        expect(commentStub.attributes("disabled")).toBeUndefined();
+      });
+
+      it("Save button IS disabled when readOnly=true (viewer scenario)", () => {
+        wrapper = createWrapper({ readOnly: true, effectivePermissions: "viewer" });
+        const saveStub = wrapper
+          .findAll(".comment-modal-stub")
+          .wrappers.find((s) => s.text().includes("Save"));
+        expect(saveStub).toBeDefined();
+        expect(saveStub.attributes("disabled")).toBe("disabled");
+      });
     });
 
     describe("Change Review Status button", () => {
