@@ -6,7 +6,20 @@ class Review < ApplicationRecord
   belongs_to :rule
   has_one :component, through: :rule
 
+  VALID_ACTIONS = %w[
+    comment
+    request_review
+    revoke_review_request
+    request_changes
+    approve
+    lock_control
+    unlock_control
+  ].freeze
+
   validates :comment, :action, presence: true
+  # rubocop:disable Rails/I18nLocaleTexts
+  validates :action, inclusion: { in: VALID_ACTIONS, message: 'is not a recognized review action' }
+  # rubocop:enable Rails/I18nLocaleTexts
   validates :action, length: { maximum: ->(_r) { Settings.input_limits.short_string } }
   validates :comment, length: { maximum: ->(_r) { Settings.input_limits.review_comment } }
 
@@ -126,6 +139,9 @@ class Review < ApplicationRecord
 
   def take_review_action
     case action
+    when 'comment'
+      # No rule-state mutation. The comment text is the entire payload.
+      nil
     when 'request_review'
       set_rule_review_params(requestor_id: user.id, locked: false, changes_requested: false)
     when 'request_changes'
