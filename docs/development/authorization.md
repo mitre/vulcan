@@ -78,7 +78,12 @@ When a user creates a project, they are automatically assigned the **admin** rol
 | View rules | Component viewer+ |
 | Create/update/revert | Component author+ |
 | Delete | Component admin or site admin |
-| Submit review | Component reviewer+ or project author+ |
+| Post a comment review (`action: 'comment'`) | Component viewer+ |
+| Request review / Revoke review request | Component author+ |
+| Approve / Request changes | Component reviewer+ |
+| Lock / Unlock | Component admin or site admin |
+
+**About comments.** Project viewers can post a comment-action review (no rule state change, just text). All other review actions require higher privileges. The controller filter for `POST /rules/:id/reviews` is `authorize_viewer_project`; the per-action role gate lives in the model (`Review#can_approve`, `Review#can_request_changes`, etc.) so a viewer attempting `action: 'approve'` fails validation with 422.
 
 ### Memberships
 
