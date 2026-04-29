@@ -40,7 +40,15 @@ class Review < ApplicationRecord
   validates :action, inclusion: { in: VALID_ACTIONS, message: 'is not a recognized review action' }
   # rubocop:enable Rails/I18nLocaleTexts
   validates :action, length: { maximum: ->(_r) { Settings.input_limits.short_string } }
-  validates :comment, length: { maximum: ->(_r) { Settings.input_limits.review_comment } }
+  # Comment-action reviews are capped at min(Settings.input_limits.review_comment, 4000)
+  # to limit abuse surface for external commenters posting via the public-comment path.
+  # Other action types use the deployment-configured limit unchanged.
+  validates :comment, length: {
+    maximum: lambda { |r|
+      cap = Settings.input_limits.review_comment
+      r.action == 'comment' ? [cap, 4000].min : cap
+    }
+  }
 
   before_create :take_review_action
   validate :validate_project_permissions

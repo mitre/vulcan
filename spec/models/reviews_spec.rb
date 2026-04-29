@@ -419,4 +419,26 @@ RSpec.describe Review do
       end
     end
   end
+
+  context 'comment-action length cap' do
+    it 'rejects a comment-action review longer than 4000 chars' do
+      review = Review.new(action: 'comment', comment: 'x' * 4001, user: @p_viewer, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:comment].join).to match(/too long/i)
+    end
+
+    it 'allows a comment-action review at exactly 4000 chars' do
+      review = Review.new(action: 'comment', comment: 'x' * 4000, user: @p_viewer, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:comment]).to be_empty
+    end
+
+    it 'allows other actions up to the configured input_limits.review_comment' do
+      long_text = 'x' * 4500
+      @p1r1.update(review_requestor: @p_author)
+      review = Review.new(action: 'request_changes', comment: long_text, user: @p_admin, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:comment]).to be_empty
+    end
+  end
 end
