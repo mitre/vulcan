@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import { sectionLabel } from "@/constants/triageVocabulary";
+import { sectionLabel } from "../../constants/triageVocabulary";
 
 export default {
   name: "SectionCommentIcon",

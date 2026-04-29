@@ -12,7 +12,7 @@ import {
   TRIAGE_DISA_LABELS,
   ADJUDICATED_LABEL,
   ADJUDICATED_GLYPH,
-} from "@/constants/triageVocabulary";
+} from "../../constants/triageVocabulary";
 
 export default {
   name: "TriageStatusBadge",

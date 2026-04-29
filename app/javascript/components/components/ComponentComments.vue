@@ -105,11 +105,11 @@
 
 <script>
 import axios from "axios";
-import { TRIAGE_LABELS, SECTION_LABELS } from "@/constants/triageVocabulary";
-import AlertMixin from "@/mixins/AlertMixin.vue";
-import TriageStatusBadge from "@/components/shared/TriageStatusBadge.vue";
-import SectionLabel from "@/components/shared/SectionLabel.vue";
-import CommentTriageModal from "@/components/components/CommentTriageModal.vue";
+import { TRIAGE_LABELS, SECTION_LABELS } from "../../constants/triageVocabulary";
+import AlertMixin from "../../mixins/AlertMixin.vue";
+import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
+import SectionLabel from "../shared/SectionLabel.vue";
+import CommentTriageModal from "./CommentTriageModal.vue";
 
 export default {
   name: "ComponentComments",

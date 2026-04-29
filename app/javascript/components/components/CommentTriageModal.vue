@@ -84,8 +84,8 @@
 
 <script>
 import axios from "axios";
-import AlertMixin from "@/mixins/AlertMixin.vue";
-import SectionLabel from "@/components/shared/SectionLabel.vue";
+import AlertMixin from "../../mixins/AlertMixin.vue";
+import SectionLabel from "../shared/SectionLabel.vue";
 
 // Statuses that auto-set adjudicated_at server-side via the
 // Review#auto_set_adjudicated_for_terminal_statuses callback (Task 06).
