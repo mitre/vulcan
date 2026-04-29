@@ -133,7 +133,6 @@ describe("ProjectComponent", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
     });
-
   });
 
   describe("useRuleSelection composable integration", () => {
@@ -207,9 +206,12 @@ describe("ProjectComponent", () => {
       expect(wrapper.vm.componentPanels).toContain("comp-history");
     });
 
-    it("has comp-reviews slideover", () => {
+    // comp-reviews retired in PR #717 — slideover replaced by the
+    // full-page /components/:id/triage route. The Triage button on
+    // the command bar links there directly.
+    it("does NOT register a comp-reviews slideover panel anymore", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("comp-reviews");
+      expect(wrapper.vm.componentPanels).not.toContain("comp-reviews");
     });
   });
 

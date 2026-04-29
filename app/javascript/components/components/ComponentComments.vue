@@ -144,6 +144,7 @@
 import axios from "axios";
 import { TRIAGE_LABELS, SECTION_LABELS } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
+import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
@@ -152,7 +153,7 @@ import CommentTriageModal from "./CommentTriageModal.vue";
 export default {
   name: "ComponentComments",
   components: { TriageStatusBadge, SectionLabel, CommentTriageModal },
-  mixins: [AlertMixin, RoleComparisonMixin],
+  mixins: [AlertMixin, DateFormatMixin, RoleComparisonMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
     // scope) is required — but not both. The scope prop disambiguates and
@@ -231,17 +232,22 @@ export default {
     this.fetch();
   },
   methods: {
+    // Identifier used for localStorage filter persistence. Disambiguates
+    // component-scope vs project-scope so a user's filter on component 42
+    // doesn't override their filter on project 42 (different IDs, different
+    // namespaces). Implemented as a method (not a computed) so it can be
+    // called from data() during component init, before computeds resolve.
+    scopeKey() {
+      const id = this.scope === "project" ? this.projectId : this.componentId;
+      return `${this.scope}-${id}`;
+    },
     persistKey() {
-      const id =
-        this.scope === "project" ? `project-${this.projectId}` : `component-${this.componentId}`;
-      return `commentTriageFilters-${id}`;
+      return `commentTriageFilters-${this.scopeKey()}`;
     },
     loadPersistedFilters() {
       const fallback = { filterStatus: "pending", filterSection: null, filterText: "" };
       try {
-        const id =
-          this.scope === "project" ? `project-${this.projectId}` : `component-${this.componentId}`;
-        const raw = localStorage.getItem(`commentTriageFilters-${id}`);
+        const raw = localStorage.getItem(this.persistKey());
         if (!raw) return fallback;
         const parsed = JSON.parse(raw);
         return {
@@ -270,10 +276,6 @@ export default {
     truncate(text, n) {
       if (!text) return "";
       return text.length > n ? `${text.slice(0, n)}…` : text;
-    },
-    friendlyDateTime(value) {
-      if (!value) return "";
-      return new Date(value).toLocaleString();
     },
     onFilterChanged() {
       this.page = 1;

@@ -77,19 +77,10 @@ export const SECTION_LABELS = Object.freeze({
 // Inverse of SECTION_LABELS: friendly section display label → XCCDF key.
 // Used by RuleFormGroup to translate `resolvedSection` (which returns a
 // display label) into the XCCDF key that the comments API expects in
-// `section`.
-export const DISPLAY_TO_XCCDF_SECTION = Object.freeze({
-  Title: "title",
-  Severity: "severity",
-  Status: "status",
-  Fix: "fixtext",
-  Check: "check_content",
-  "Vulnerability Discussion": "vuln_discussion",
-  "DISA Metadata": "disa_metadata",
-  "Vendor Comments": "vendor_comments",
-  "Artifact Description": "artifact_description",
-  "XCCDF Metadata": "xccdf_metadata",
-});
+// `section`. Derived from SECTION_LABELS so the two never drift.
+export const DISPLAY_TO_XCCDF_SECTION = Object.freeze(
+  Object.fromEntries(Object.entries(SECTION_LABELS).map(([key, label]) => [label, key])),
+);
 
 // Component comment phase → friendly UI label
 export const COMMENT_PHASE_LABELS = Object.freeze({

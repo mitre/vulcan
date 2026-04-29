@@ -232,13 +232,15 @@ describe("ControlsCommandBar", () => {
   // COMPONENT PANELS
   // ==========================================
   describe("component panel buttons", () => {
-    it("renders all 5 component panel buttons with correct labels from terminology", () => {
+    it("renders the 4 component panel buttons + Triage link from terminology", () => {
       wrapper = createWrapper();
       expect(wrapper.text()).toContain(PANEL_LABELS.details);
       expect(wrapper.text()).toContain(PANEL_LABELS.metadata);
       expect(wrapper.text()).toContain(PANEL_LABELS.questions);
       expect(wrapper.text()).toContain(PANEL_LABELS.compHistory);
-      expect(wrapper.text()).toContain(PANEL_LABELS.compReviews);
+      // compReviews retired in PR #717 — replaced by a Triage link to
+      // the full-page /components/:id/triage route.
+      expect(wrapper.text()).toContain("Triage");
     });
 
     it("component panel buttons are NOT disabled when no rule selected", () => {
