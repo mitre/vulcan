@@ -222,7 +222,7 @@ jobs:
 
       - name: Create CI environment files
         run: |
-          cat <<'EOF' > .env
+          cat <<EOF > .env
           VULCAN_DB_HOST=db
           VULCAN_DB_PORT=5432
           VULCAN_DB_NAME=vulcan_production
@@ -234,6 +234,7 @@ jobs:
           SECRET_KEY_BASE=ci-secret-key-base-for-compose-healthcheck
           VULCAN_ENABLE_OIDC=false
           VULCAN_ENABLE_LDAP=false
+          IMAGE_NAME=${IMAGE_NAME}
           EOF
           cp .env .env.ci
 
