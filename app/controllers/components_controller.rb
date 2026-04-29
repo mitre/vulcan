@@ -134,6 +134,10 @@ class ComponentsController < ApplicationController
   end
 
   def destroy
+    # Render is intentionally OUTSIDE the transaction. Calling render inside
+    # the block was a latent DoubleRenderError trap: if the transaction's
+    # commit phase raised (e.g. deadlock, serialization failure), the rescue
+    # below would call render a second time and surface a 500 to the user.
     ActiveRecord::Base.transaction do
       rule_ids = Rule.unscoped.where(component_id: @component.id).ids
 
@@ -151,8 +155,9 @@ class ComponentsController < ApplicationController
 
       @component.destroy!
       send_slack_notification(:remove_component, @component) if Settings.slack.enabled
-      render json: { toast: 'Successfully removed component from project.' }
     end
+
+    render json: { toast: 'Successfully removed component from project.' }
   rescue StandardError
     render json: {
       toast: {
