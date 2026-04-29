@@ -249,13 +249,23 @@ class ApplicationController < ActionController::Base
     # alert message, or redirect to home and display the alert.
     respond_to do |format|
       format.html do
-        flash.alert = exception.message
+        flash.alert = not_authorized_html_message(exception)
         redirect_back(fallback_location: root_path)
       end
       format.json do
         render json: permission_denied_payload(exception), status: :forbidden
       end
     end
+  end
+
+  # Builds the HTML flash message for an authorization denial. Non-admins get
+  # an appended hint to contact an administrator — the JSON path already
+  # surfaces structured admin contacts via permission_denied_payload, so this
+  # keeps the HTML and JSON paths aligned in user-helpfulness.
+  def not_authorized_html_message(exception)
+    return exception.message if current_user&.admin?
+
+    "#{exception.message} Please contact an administrator if you believe this message is in error."
   end
 
   # Builds the structured permission-denied JSON body. Includes the project
