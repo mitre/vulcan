@@ -2,6 +2,8 @@
 
 This folder is the **executable plan** for shipping the public-comment-review workflow on branch `feat/viewer-comments` (PR #717 against `mitre/vulcan`).
 
+> **🚀 Picking this up cold?** Read [`HANDOFF.md`](./HANDOFF.md) FIRST. It's a one-pager with the current branch state, what's done, what's next, and the prompt to feed your Claude. THIS file is the reference material; HANDOFF is the orientation.
+
 **Design source of truth:** [`design.md`](./design.md) in this folder (a copy of `DESIGN-2026-04-29-public-comment-review.md` at the repo root — kept in-folder so the plan is self-contained for handoff). Read at minimum **§3.1.1** (vocabulary layering principle), **§3.1.2** (canonical label table), and the section relevant to the task you're executing.
 
 **If the root and folder copies drift:** the root copy is authoritative — re-copy it into this folder via `cp ../../../DESIGN-2026-04-29-public-comment-review.md ./design.md`. The plan and the design doc should be reviewed together; if you change one, change the other.
