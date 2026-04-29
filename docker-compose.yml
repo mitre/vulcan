@@ -33,7 +33,7 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     volumes:
-      - vulcan_dbdata:/var/lib/postgresql/data
+      - vulcan_dbdata:/var/lib/postgresql
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  #ggignore
