@@ -115,6 +115,22 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
+  # Wrap a side-effect notification call (Slack, SMTP, in-app) so a failure
+  # does not bubble out and turn a successful state-change action into a 500.
+  # The state change has already committed by the time we notify; from the
+  # user's perspective the operation succeeded, even if downstream messaging
+  # is flaky. The error is logged so ops can still see and triage it.
+  #
+  # Usage:
+  #   safely_notify('remove_project') { send_slack_notification(:remove_project, @project) }
+  def safely_notify(context = nil)
+    yield
+  rescue StandardError => e
+    label = context ? " (#{context})" : ''
+    Rails.logger.warn("Notification failed#{label}: #{e.class}: #{e.message}")
+    nil
+  end
+
   # NOTE: Anonymous rest args (*) is valid Ruby 3.2+ syntax for argument forwarding.
   # RuboCop Style/ArgumentsForwarding enforces this form. Not a syntax error.
   def send_slack_notification(notification_type, object, *)

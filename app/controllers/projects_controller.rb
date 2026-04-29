@@ -129,7 +129,7 @@ class ProjectsController < ApplicationController
 
   def destroy
     if @project.destroy
-      send_slack_notification(:remove_project, @project) if Settings.slack.enabled
+      safely_notify('remove_project') { send_slack_notification(:remove_project, @project) } if Settings.slack.enabled
       respond_to do |format|
         format.html do
           flash.notice = 'Successfully removed project.'

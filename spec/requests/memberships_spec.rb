@@ -56,6 +56,21 @@ RSpec.describe 'Memberships' do
       json = response.parsed_body
       expect(json['toast']['title']).to include('Could not remove')
     end
+
+    it 'still returns success when an in-app membership notification raises' do
+      # safely_notify regression guard: a downstream notification failure
+      # must NOT turn a successful destroy into a 500 — destroy already
+      # committed; the user-facing operation succeeded.
+      allow_any_instance_of(MembershipsController)
+        .to receive(:send_membership_notification)
+        .and_raise(StandardError, 'forced notification failure')
+
+      delete "/memberships/#{target_membership.id}", headers: json_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['toast']).to eq('Successfully removed membership.')
+      expect(Membership.find_by(id: target_membership.id)).to be_nil
+    end
   end
 
   describe 'DELETE /memberships/:id with non-admin member' do
