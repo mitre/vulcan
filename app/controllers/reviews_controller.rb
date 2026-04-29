@@ -117,21 +117,27 @@ class ReviewsController < ApplicationController
     end
 
     locked_names = []
+    save_failure_messages = nil
     Review.transaction do
       lockable.each do |rule|
         review = Review.new(review_params.merge({ user: current_user, rule: rule }))
         next if review.save
 
-        render json: {
-          toast: {
-            title: 'Could not lock controls.',
-            message: review.errors.full_messages,
-            variant: 'danger'
-          }
-        }, status: :unprocessable_entity
+        save_failure_messages = review.errors.full_messages
         raise ActiveRecord::Rollback
       end
       locked_names = lockable.map(&:displayed_name)
+    end
+
+    if save_failure_messages
+      render json: {
+        toast: {
+          title: 'Could not lock controls.',
+          message: save_failure_messages,
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
+      return
     end
 
     title = "Locked #{locked_names.size} #{'control'.pluralize(locked_names.size)}."

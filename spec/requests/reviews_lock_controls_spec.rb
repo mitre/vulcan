@@ -70,5 +70,25 @@ RSpec.describe 'Lock Controls (B10)' do
       expect(body['toast']['variant']).to eq('warning')
       expect(body['toast']['title']).to include('No controls could be locked')
     end
+
+    it 'returns a single 422 toast (no DoubleRenderError) when a Review save fails mid-transaction' do
+      # Force one Review.save inside lock_controls' transaction to fail.
+      # The pre-fix controller called render INSIDE the transaction loop, then
+      # raise ActiveRecord::Rollback (which the transaction swallows), then
+      # fell through to a SECOND render after the transaction — Rails 7+
+      # raises AbstractController::DoubleRenderError on that path.
+      allow_any_instance_of(Review).to receive(:save).and_return(false)
+      allow_any_instance_of(Review).to receive(:errors).and_return(
+        instance_double(ActiveModel::Errors, full_messages: ['forced failure'])
+      )
+
+      post "/components/#{component.id}/lock",
+           params: { review: { action: 'lock_control', comment: 'fail mid-tx' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      body = response.parsed_body
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'title')).to include('Could not lock')
+    end
   end
 end
