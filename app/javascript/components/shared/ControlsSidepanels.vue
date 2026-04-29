@@ -130,33 +130,25 @@
       </div>
     </b-sidebar>
 
-    <!-- Component Reviews -->
+    <!-- Component Comments (PR #717 — replaces the legacy flat review list).
+         Lazy-mounts via v-if so the GET /components/:id/comments fetch only
+         fires when the user opens this panel. -->
     <b-sidebar
       id="sidebar-comp-reviews"
       :title="titles.compReviews"
       right
       shadow
       backdrop
-      width="400px"
+      :width="compReviewsWidth"
       :visible="activePanel === 'comp-reviews'"
       @hidden="$emit('close-panel')"
     >
       <div class="px-3 py-2">
-        <div v-for="review in component.reviews" :key="review.id">
-          <p class="mb-1">
-            <strong>{{ review.displayed_rule_name }}</strong>
-          </p>
-          <p class="mb-1">
-            <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
-          </p>
-          <p class="mb-1">
-            <small class="text-muted">{{ friendlyDateTime(review.created_at) }}</small>
-          </p>
-          <p class="mb-3 white-space-pre-wrap">{{ review.comment }}</p>
-        </div>
-        <div v-if="!component.reviews || component.reviews.length === 0">
-          <p class="text-muted">No reviews yet.</p>
-        </div>
+        <ComponentComments
+          v-if="activePanel === 'comp-reviews'"
+          :component-id="component.id"
+          @jump-to-rule="$emit('select-rule', $event)"
+        />
       </div>
     </b-sidebar>
 
@@ -232,6 +224,7 @@ import RuleReviews from "../rules/RuleReviews.vue";
 import RuleHistories from "../rules/RuleHistories.vue";
 import UpdateComponentDetailsModal from "../components/UpdateComponentDetailsModal.vue";
 import UpdateMetadataModal from "../components/UpdateMetadataModal.vue";
+import ComponentComments from "../components/ComponentComments.vue";
 import AddQuestionsModal from "../components/AddQuestionsModal.vue";
 
 export default {
@@ -244,6 +237,7 @@ export default {
     UpdateComponentDetailsModal,
     UpdateMetadataModal,
     AddQuestionsModal,
+    ComponentComments,
   },
   mixins: [RoleComparisonMixin, DateFormatMixinVue],
   props: {
@@ -305,6 +299,12 @@ export default {
     // Use local histories if available (refreshed via event), otherwise fall back to prop
     displayedHistories() {
       return this.localHistories.length > 0 ? this.localHistories : this.component.histories;
+    },
+    // Component-comments slideover widens on md+ to fit the triage table.
+    // Below md it goes full-width so the table is usable on mobile.
+    compReviewsWidth() {
+      if (typeof window === "undefined") return "700px";
+      return window.innerWidth >= 768 ? "700px" : "100%";
     },
   },
   mounted() {
