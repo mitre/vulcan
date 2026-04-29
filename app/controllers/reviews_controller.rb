@@ -14,7 +14,26 @@ class ReviewsController < ApplicationController
   def create
     review_params_without_component_id = review_params.except('component_id')
     review = Review.new(review_params_without_component_id.merge({ user: current_user, rule: @rule }))
-    if review.save
+
+    # Explicit transaction + StatementInvalid rescue. AR's save-internal
+    # transaction already rolls back take_review_action's rule.save! when an
+    # insert raises, but propagating the raw exception to the client returns
+    # a 500. Wrap + rescue pairs data-integrity protection with graceful
+    # error rendering so the user gets a danger toast and the audit trail
+    # remains in sync.
+    saved = false
+    begin
+      Review.transaction do
+        saved = review.save
+        raise ActiveRecord::Rollback unless saved
+      end
+    rescue ActiveRecord::StatementInvalid => e
+      Rails.logger.error("Review save failed for rule=#{@rule.id} user=#{current_user.id}: #{e.message}")
+      review.errors.add(:base, 'Could not save review due to a database error. Please retry.')
+      saved = false
+    end
+
+    if saved
       if Settings.smtp.enabled
         send_smtp_notification(
           UserMailer,
@@ -182,6 +201,10 @@ class ReviewsController < ApplicationController
   end
 
   def review_params
-    params.expect(review: %i[component_id action comment])
+    # Lifecycle fields (triage_status, triage_set_by_id, adjudicated_at,
+    # adjudicated_by_id, duplicate_of_review_id) are NEVER user-controllable
+    # here — they are set only by the dedicated triage / adjudicate / withdraw
+    # endpoints (Tasks 10/11/12).
+    params.expect(review: %i[component_id action comment section responding_to_review_id])
   end
 end

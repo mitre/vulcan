@@ -153,4 +153,35 @@ RSpec.describe 'Reviews' do
       end
     end
   end
+
+  describe 'POST /rules/:rule_id/reviews — transaction integrity' do
+    let_it_be(:author_user) { create(:user) }
+
+    before do
+      Membership.find_or_create_by!(user: author_user, membership: project) do |m|
+        m.role = 'author'
+      end
+      sign_in author_user
+    end
+
+    # Forces the Review's INSERT to fail AFTER take_review_action's before_create
+    # callback has already run rule.save!. _create_record is called inside the
+    # save chain, after before_create. Without an explicit Review.transaction
+    # in the controller, the rule mutation could leak past a failed insert.
+    it 'rolls back rule mutation and returns 422 toast when the Review insert fails' do
+      allow_any_instance_of(Review).to receive(:_create_record).and_raise(
+        ActiveRecord::StatementInvalid.new('forced')
+      )
+
+      expect do
+        post "/rules/#{rule.id}/reviews", params: {
+          review: { action: 'request_review', comment: 'try', component_id: component.id }
+        }, as: :json
+      end.not_to change(Review, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body.dig('toast', 'variant')).to eq('danger')
+      expect(rule.reload.review_requestor_id).to be_nil
+    end
+  end
 end
