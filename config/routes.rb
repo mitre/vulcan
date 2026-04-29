@@ -75,6 +75,8 @@ Rails.application.routes.draw do
   # withdraw / update operate on a Review by id. See ReviewsController.
   patch '/reviews/:id/triage', to: 'reviews#triage'
   patch '/reviews/:id/adjudicate', to: 'reviews#adjudicate'
+  patch '/reviews/:id/withdraw', to: 'reviews#withdraw'
+  put   '/reviews/:id',          to: 'reviews#update'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 

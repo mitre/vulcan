@@ -389,4 +389,114 @@ RSpec.describe 'Reviews' do
       end
     end
   end
+
+  describe 'PATCH /reviews/:id/withdraw' do
+    let_it_be(:wd_owner) { create(:user) }
+    let_it_be(:wd_other) { create(:user) }
+    let_it_be(:wd_author) { create(:user) }
+
+    before_all do
+      Membership.find_or_create_by!(user: wd_owner, membership: project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: wd_other, membership: project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: wd_author, membership: project) { |m| m.role = 'author' }
+    end
+
+    let!(:my_comment) do
+      Review.create!(action: 'comment', comment: 'my idea', user: wd_owner, rule: rule)
+    end
+
+    context 'as the original commenter on a pending comment' do
+      before { sign_in wd_owner }
+
+      it 'sets triage_status=withdrawn and auto-sets adjudicated_at + adjudicated_by_id=self' do
+        patch "/reviews/#{my_comment.id}/withdraw", as: :json
+        expect(response).to have_http_status(:ok)
+
+        my_comment.reload
+        expect(my_comment.triage_status).to eq('withdrawn')
+        expect(my_comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+        expect(my_comment.adjudicated_by_id).to eq(wd_owner.id)
+      end
+    end
+
+    context 'as a different user (not the original commenter)' do
+      before { sign_in wd_other }
+
+      it 'returns 403 and leaves the comment untouched' do
+        patch "/reviews/#{my_comment.id}/withdraw", as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(my_comment.reload.triage_status).to eq('pending')
+      end
+    end
+
+    context 'when the comment has already been triaged' do
+      before do
+        my_comment.update!(triage_status: 'concur',
+                           triage_set_by_id: wd_author.id, triage_set_at: Time.current)
+        sign_in wd_owner
+      end
+
+      it 'rejects withdraw on a triaged comment with a 422' do
+        patch "/reviews/#{my_comment.id}/withdraw", as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(my_comment.reload.triage_status).to eq('concur')
+      end
+    end
+  end
+
+  describe 'PUT /reviews/:id (commenter edit own pending comment)' do
+    let_it_be(:edit_owner) { create(:user) }
+    let_it_be(:edit_other) { create(:user) }
+    let_it_be(:edit_author) { create(:user) }
+
+    before_all do
+      Membership.find_or_create_by!(user: edit_owner, membership: project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: edit_other, membership: project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: edit_author, membership: project) { |m| m.role = 'author' }
+    end
+
+    let!(:my_comment) do
+      Review.create!(action: 'comment', comment: 'original text', user: edit_owner, rule: rule)
+    end
+
+    context 'as the original commenter while pending' do
+      before { sign_in edit_owner }
+
+      it 'updates the comment text' do
+        put "/reviews/#{my_comment.id}", params: { review: { comment: 'edited text' } }, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(my_comment.reload.comment).to eq('edited text')
+      end
+
+      it 'audits the edit (vulcan_audited captures the comment column)' do
+        expect do
+          put "/reviews/#{my_comment.id}", params: { review: { comment: 'edited' } }, as: :json
+        end.to change(my_comment.audits, :count).by(1)
+      end
+    end
+
+    context 'as a different user' do
+      before { sign_in edit_other }
+
+      it 'returns 403 and leaves the comment text unchanged' do
+        put "/reviews/#{my_comment.id}", params: { review: { comment: 'sneaky' } }, as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(my_comment.reload.comment).to eq('original text')
+      end
+    end
+
+    context 'after the comment has been triaged' do
+      before do
+        my_comment.update!(triage_status: 'concur',
+                           triage_set_by_id: edit_author.id, triage_set_at: Time.current)
+        sign_in edit_owner
+      end
+
+      it 'rejects edits with a 422' do
+        put "/reviews/#{my_comment.id}", params: { review: { comment: 'too late' } }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(my_comment.reload.comment).to eq('original text')
+      end
+    end
+  end
 end

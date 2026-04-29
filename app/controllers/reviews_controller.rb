@@ -6,13 +6,14 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage adjudicate]
-  before_action :set_project_from_review, only: %i[triage adjudicate]
+  before_action :set_review, only: %i[triage adjudicate withdraw update]
+  before_action :set_project_from_review, only: %i[triage adjudicate update]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
   before_action :authorize_author_project, only: %i[triage adjudicate]
+  before_action :authorize_review_owner, only: %i[withdraw update]
 
   def create
     review_params_without_component_id = review_params.except('component_id')
@@ -176,6 +177,48 @@ class ReviewsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: {
       toast: { title: 'Could not close.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PATCH /reviews/:id/withdraw — commenter retracts their own comment
+  # before triage. Allowed only when triage_status is 'pending' or
+  # 'needs_clarification'. The Review#auto_set_adjudicated_for_terminal_statuses
+  # callback (Task 06) fills in adjudicated_at + adjudicated_by_id=self.
+  def withdraw
+    unless %w[pending needs_clarification].include?(@review.triage_status)
+      return render json: {
+        toast: { title: 'Cannot withdraw.',
+                 message: [I18n.t('vulcan.triage.errors.cannot_withdraw_already_triaged')],
+                 variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    @review.update!(triage_status: 'withdrawn')
+    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not withdraw.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PUT /reviews/:id — commenter edits their own comment text. Allowed
+  # only while triage_status='pending'. Audited gem (Task 06) captures
+  # the prior text on the audit trail. Strong params lock to :comment
+  # only — lifecycle fields stay server-controlled.
+  def update
+    unless @review.triage_status == 'pending'
+      return render json: {
+        toast: { title: 'Cannot edit.',
+                 message: [I18n.t('vulcan.triage.errors.cannot_edit_after_triage')],
+                 variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    @review.update!(review_update_params)
+    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not save edit.', message: e.record.errors.full_messages, variant: 'danger' }
     }, status: :unprocessable_entity
   end
 
@@ -358,6 +401,20 @@ class ReviewsController < ApplicationController
     @project ||= @rule&.component&.project || @component&.project
   end
   # rubocop:enable Naming/MemoizedInstanceVariableName
+
+  # Ownership filter for the commenter-self-service endpoints (withdraw +
+  # update). The standard authorize_*_project filters check membership on
+  # the project, which a commenter satisfies; this filter additionally
+  # requires the current user to be the comment's author.
+  def authorize_review_owner
+    return if @review && @review.user_id == current_user&.id
+
+    raise NotAuthorizedError, 'You can only modify your own comments.'
+  end
+
+  def review_update_params
+    params.expect(review: %i[comment])
+  end
 
   def validate_triage_params
     status = params[:triage_status]
