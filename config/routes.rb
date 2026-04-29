@@ -66,6 +66,8 @@ Rails.application.routes.draw do
 
   # Component activity history (B5 reactivity fix) — MUST be before :stig_id catch-all
   get '/components/:id/histories', to: 'components#histories'
+  # Public-comment-review triage table (PR #717) — MUST be before :stig_id catch-all
+  get '/components/:id/comments', to: 'components#comments'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 

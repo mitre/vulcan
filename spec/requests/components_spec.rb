@@ -317,6 +317,37 @@ RSpec.describe 'Components' do
     end
   end
 
+  describe 'GET /components/:id/comments' do
+    before do
+      rule = component.rules.first
+      Review.create!(action: 'comment', comment: 'check issue', user: user, rule: rule, section: 'check_content')
+    end
+
+    it 'returns paginated comments + DISA-native triage_status on the wire' do
+      get "/components/#{component.id}/comments", params: { triage_status: 'all' },
+                                                  headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+      body = response.parsed_body
+      expect(body).to have_key('rows')
+      expect(body).to have_key('pagination')
+      expect(body['rows'].first['triage_status']).to eq('pending') # DISA-native, not 'Pending'
+      expect(body['rows'].first['section']).to eq('check_content') # XCCDF key, not "Check"
+    end
+
+    it 'returns 404 for a non-existent component' do
+      get '/components/99999999/comments', headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'filters by section' do
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', section: 'fixtext' },
+          headers: { 'Accept' => application_json }
+      expect(response.parsed_body['rows'].size).to eq(0)
+    end
+  end
+
   # REQUIREMENT: Delete component must clean up all dependent records
   # without N+1 callbacks. Bulk delete for performance.
   describe 'DELETE /components/:id' do

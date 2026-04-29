@@ -889,4 +889,81 @@ RSpec.describe Component do
       end
     end
   end
+
+  describe '#paginated_comments' do
+    let_it_be(:pc_viewer) { create(:user) }
+    let_it_be(:pc_author) { create(:user) }
+
+    before do
+      Membership.find_or_create_by!(user: pc_viewer, membership: shared_project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: pc_author, membership: shared_project) { |m| m.role = 'author' }
+
+      rule1 = shared_component.rules[0]
+      rule2 = shared_component.rules[1]
+      @c1 = Review.create!(action: 'comment', comment: 'first', user: pc_viewer, rule: rule1, section: 'check_content')
+      @c2 = Review.create!(action: 'comment', comment: 'second', user: pc_viewer, rule: rule1, section: 'fixtext')
+      @c3 = Review.create!(action: 'comment', comment: 'third', user: pc_viewer, rule: rule2,
+                           section: nil, triage_status: 'concur',
+                           triage_set_by_id: pc_author.id, triage_set_at: Time.current)
+      @reply = Review.create!(action: 'comment', comment: 'thanks', user: pc_author, rule: rule1,
+                              responding_to_review_id: @c1.id, section: 'check_content')
+    end
+
+    it 'returns top-level comments only (no replies)' do
+      result = shared_component.paginated_comments(triage_status: 'all')
+      review_ids = result[:rows].pluck(:id)
+      expect(review_ids).to include(@c1.id, @c2.id, @c3.id)
+      expect(review_ids).not_to include(@reply.id)
+    end
+
+    it 'filters by triage_status' do
+      pending_only = shared_component.paginated_comments(triage_status: 'pending')
+      expect(pending_only[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id)
+
+      concur_only = shared_component.paginated_comments(triage_status: 'concur')
+      expect(concur_only[:rows].pluck(:id)).to eq([@c3.id])
+    end
+
+    it 'filters by section' do
+      check = shared_component.paginated_comments(triage_status: 'all', section: 'check_content')
+      expect(check[:rows].pluck(:id)).to eq([@c1.id])
+    end
+
+    it 'filters by rule_id' do
+      rule_id = shared_component.rules[0].id
+      by_rule = shared_component.paginated_comments(triage_status: 'all', rule_id: rule_id)
+      expect(by_rule[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id)
+    end
+
+    it 'filters by author_id' do
+      by_author = shared_component.paginated_comments(triage_status: 'all', author_id: pc_viewer.id)
+      expect(by_author[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id, @c3.id)
+    end
+
+    it 'sanitizes ILIKE wildcards in q (100% should not match everything)' do
+      result = shared_component.paginated_comments(triage_status: 'all', query: '100%')
+      expect(result[:pagination][:total]).to eq(0)
+    end
+
+    it 'searches comment text via q' do
+      result = shared_component.paginated_comments(triage_status: 'all', query: 'second')
+      expect(result[:rows].pluck(:id)).to eq([@c2.id])
+    end
+
+    it 'paginates' do
+      result = shared_component.paginated_comments(triage_status: 'all', page: 1, per_page: 2)
+      expect(result[:rows].size).to eq(2)
+      expect(result[:pagination][:total]).to eq(3)
+    end
+
+    it 'caps per_page at 100' do
+      result = shared_component.paginated_comments(triage_status: 'all', per_page: 999)
+      expect(result[:pagination][:per_page]).to eq(100)
+    end
+
+    it 'filters by resolved=false (adjudicated_at IS NULL)' do
+      unresolved = shared_component.paginated_comments(triage_status: 'all', resolved: 'false')
+      expect(unresolved[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id, @c3.id)
+    end
+  end
 end

@@ -12,7 +12,7 @@ class ComponentsController < ApplicationController
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
   before_action :set_project, only: %i[show create history]
   before_action :set_component_permissions, only: %i[show]
   before_action :set_rule, only: %i[show]
@@ -21,7 +21,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find histories]
+  before_action :authorize_component_access, only: %i[show export find histories comments]
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
@@ -276,6 +276,26 @@ class ComponentsController < ApplicationController
     return head :not_found unless @component
 
     render json: @component.histories(50)
+  end
+
+  # Paginated triage table backing the public-comment-review workflow (PR #717).
+  # Returns { rows: [...], pagination: {...} }. DISA-native vocab on the wire
+  # (triage_status / section keys); frontend translates via triageVocabulary.js.
+  def comments
+    return head :not_found unless @component
+
+    result = @component.paginated_comments(
+      triage_status: params[:triage_status].presence || 'pending',
+      section: params[:section].presence,
+      rule_id: params[:rule_id].presence,
+      author_id: params[:author_id].presence,
+      query: params[:q].presence,
+      page: params[:page].presence || 1,
+      per_page: params[:per_page].presence || 25,
+      resolved: params[:resolved].presence || 'all'
+    )
+
+    render json: result
   end
 
   def based_on_same_srg

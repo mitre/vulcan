@@ -569,6 +569,72 @@ class Component < ApplicationRecord
     end
   end
 
+  # Paginated, filterable accessor for top-level comment Reviews scoped to
+  # this component. Returns { rows: [...], pagination: {...} } where rows
+  # are pre-formatted hashes with author_name + rule_displayed_name injected.
+  # Backs GET /components/:id/comments — the triage table (PR #717).
+  #
+  # On-the-wire vocabulary is DISA-native: triage_status keys (concur,
+  # non_concur, ...) and XCCDF section keys (check_content, fixtext, ...).
+  # The frontend translates to friendly labels via triageVocabulary.js.
+  def paginated_comments(triage_status: 'all', section: nil, rule_id: nil,
+                         author_id: nil, query: nil, page: 1, per_page: 25,
+                         resolved: 'all')
+    page = [page.to_i, 1].max
+    per_page = per_page.to_i.clamp(1, 100)
+
+    # Rule is STI on base_rules — must scope the join via Rule.where(...) merged
+    # in, otherwise AR's `where(rules: { ... })` references a non-existent alias.
+    # joins for the filter, preload for row serialization (avoids N+1).
+    scope = Review.top_level_comments
+                  .joins(:rule)
+                  .merge(Rule.where(component_id: id))
+                  .preload(:user, :triage_set_by, :adjudicated_by)
+
+    scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
+    scope = scope.where(section: section) if section.present? && section != 'all'
+    scope = scope.where(rule_id: rule_id) if rule_id.present?
+    scope = scope.where(user_id: author_id) if author_id.present?
+
+    case resolved.to_s
+    when 'true'  then scope = scope.where.not(adjudicated_at: nil)
+    when 'false' then scope = scope.where(adjudicated_at: nil)
+    end
+
+    if query.present?
+      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
+      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
+    end
+
+    total = scope.count
+    rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+
+    rows = scope.order(created_at: :desc)
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .map do |r|
+                  {
+                    id: r.id,
+                    rule_id: r.rule_id,
+                    rule_displayed_name: rule_id_to_displayed[r.rule_id],
+                    section: r.section,
+                    author_name: r.user&.name,
+                    author_email: r.user&.email,
+                    comment: r.comment,
+                    created_at: r.created_at,
+                    triage_status: r.triage_status,
+                    triage_set_at: r.triage_set_at,
+                    adjudicated_at: r.adjudicated_at,
+                    duplicate_of_review_id: r.duplicate_of_review_id
+                  }
+                end
+
+    {
+      rows: rows,
+      pagination: { page: page, per_page: per_page, total: total }
+    }
+  end
+
   def csv_export
     ::CSV.generate(headers: true) do |csv|
       csv << ExportConstants::EXPORT_HEADERS
