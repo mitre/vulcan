@@ -269,4 +269,126 @@ if dummy_project.components.count < 20
 end
 puts 'Created Components'
 
+# ------------------------------------------------------------ #
+# Seeds for public-comment-review demo (PR #717)               #
+# ------------------------------------------------------------ #
+# Seeds a small set of comments on the Container Platform component
+# so the triage table, my-comments page, and section icons have
+# something to render without manual setup.
+#
+# Idempotent: skips entirely if any 'comment' Reviews already exist.
+puts 'Seeding demo comments for public-comment-review workflow...'
+
+container_component = container_platform.components.find_by(name: 'Container Platform')
+
+if container_component.nil?
+  puts '  No Container Platform component — skipping comment seeds'
+elsif Review.exists?(action: 'comment')
+  puts '  Comments already seeded, skipping'
+else
+  # Reuse two existing non-admin users as our viewer + author (or fall back to admin
+  # if seed-user creation was somehow skipped).
+  demo_admin = User.find_by(admin: true)
+  non_admins = User.where(admin: [false, nil]).limit(2).to_a
+  viewer_user = non_admins[0] || demo_admin
+  author_user = non_admins[1] || demo_admin
+
+  # Memberships — viewer-tier on the project for the commenter, author-tier for
+  # the triager. find_or_create_by avoids duplicate-membership validator failures.
+  Membership.find_or_create_by!(user: viewer_user, membership: container_platform) do |m|
+    m.role = 'viewer'
+  end
+  Membership.find_or_create_by!(user: author_user, membership: container_platform) do |m|
+    m.role = 'author'
+  end
+
+  rules = container_component.rules.order(:rule_id).limit(6).to_a
+  if rules.size < 4
+    puts "  Not enough rules on Container Platform (#{rules.size}) — skipping comment seeds"
+  else
+    rule_a, rule_b, rule_c, rule_d = rules
+
+    # 1) Pending comment, section-tagged to Check
+    Review.create!(
+      user: viewer_user, rule: rule_a, action: 'comment',
+      comment: 'The check text mentions runc 1.0 but the SRG section requires runc >= 1.1.4. Should this be tightened?',
+      section: 'check_content'
+    )
+
+    # 2) Pending comment, section-tagged to Fix (different rule, same author)
+    Review.create!(
+      user: viewer_user, rule: rule_b, action: 'comment',
+      comment: 'The fix text could include the seccomp profile path more explicitly.',
+      section: 'fixtext'
+    )
+
+    # 3) Pending general (un-sectioned) comment from a different user
+    other_voice = User.where.not(id: [viewer_user.id, author_user.id, demo_admin&.id].compact)
+                      .where(admin: [false, nil]).first || viewer_user
+    Membership.find_or_create_by!(user: other_voice, membership: container_platform) do |m|
+      m.role = 'viewer'
+    end
+    Review.create!(
+      user: other_voice, rule: rule_c, action: 'comment',
+      comment: 'Could we soften the severity from CAT II to CAT III for environments without external network access?',
+      section: nil
+    )
+
+    # 4) Concur (accepted), with a triager response in the thread
+    accepted = Review.create!(
+      user: viewer_user, rule: rule_a, action: 'comment',
+      comment: 'Vulnerability discussion paragraph 2 has a typo: "kuberenetes" should be "kubernetes".',
+      section: 'vuln_discussion'
+    )
+    accepted.update!(triage_status: 'concur', triage_set_by_id: author_user.id, triage_set_at: 1.day.ago)
+    Review.create!(
+      user: author_user, rule: rule_a, action: 'comment',
+      comment: 'Thanks — fixing the typo in the next revision.',
+      section: 'vuln_discussion', responding_to_review_id: accepted.id
+    )
+
+    # 5) Non-concur (declined), with the required response in the thread
+    declined = Review.create!(
+      user: other_voice, rule: rule_b, action: 'comment',
+      comment: 'Suggest dropping the rule entirely — most operators will use OPA Gatekeeper instead.',
+      section: nil
+    )
+    declined.update!(triage_status: 'non_concur', triage_set_by_id: author_user.id, triage_set_at: 1.day.ago)
+    Review.create!(
+      user: author_user, rule: rule_b, action: 'comment',
+      comment: "Thanks for raising this. We're keeping the baseline rule for shops not running OPA — happy to add a documentable exception.",
+      responding_to_review_id: declined.id
+    )
+
+    # 6) Adjudicated (closed) — concur_with_comment that ran through full lifecycle
+    closed = Review.create!(
+      user: viewer_user, rule: rule_d, action: 'comment',
+      comment: 'The artifact description should accept either a screenshot or a CLI transcript, not both.',
+      section: 'artifact_description'
+    )
+    closed.update!(
+      triage_status: 'concur_with_comment',
+      triage_set_by_id: author_user.id, triage_set_at: 2.days.ago,
+      adjudicated_at: 1.day.ago, adjudicated_by_id: author_user.id
+    )
+
+    # 7) Informational — auto-adjudicated by the model callback
+    Review.create!(
+      user: other_voice, rule: rule_c, action: 'comment',
+      comment: 'FYI we shipped a similar control in our v1.2 baseline — same wording.',
+      triage_status: 'informational',
+      triage_set_by_id: author_user.id, triage_set_at: 3.hours.ago
+    )
+
+    # 8) Withdrawn (commenter retracted)
+    Review.create!(
+      user: viewer_user, rule: rule_a, action: 'comment',
+      comment: 'Never mind — I see this is already covered by the existing CCI mapping.',
+      triage_status: 'withdrawn'
+    )
+
+    puts '  Seeded demo comments (Container Platform): pending, concur+response, non_concur+response, adjudicated, informational, withdrawn'
+  end
+end
+
 # rubocop:enable Rails/Output
