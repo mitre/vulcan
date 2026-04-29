@@ -28,12 +28,11 @@ WORKDIR /rails
 
 # Install base packages.
 # libvips removed — image_processing gem is commented out and ActiveStorage
-# is not used for file attachments. postgresql kept for db:prepare.
+# is not used for file attachments. curl-minimal, libpq, and libyaml are already
+# present in the UBI Ruby base image, so only postgresql is installed here for
+# db:prepare.
 RUN dnf install -y \
       ca-certificates \
-      curl \
-      libpq \
-      libyaml \
       postgresql && \
     dnf clean all && \
     rm -rf /var/cache/dnf
@@ -59,6 +58,8 @@ ENV MALLOC_ARENA_MAX="2" \
 # =============================================================================
 FROM base AS build-base
 
+USER root
+
 # Install packages needed to build gems and node modules
 RUN dnf install -y \
       gcc \
@@ -77,11 +78,15 @@ RUN dnf install -y \
 # Install Node.js LTS using official binaries
 ARG NODE_VERSION
 ARG TARGETARCH
-RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+RUN mkdir -p "${BUNDLE_PATH}" && \
+    ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
     curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
     tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
     rm node.tar.xz && \
-    corepack enable
+    corepack enable && \
+    chown -R 1001:0 "${BUNDLE_PATH}" /rails
+
+USER 1001
 
 # =============================================================================
 # BUILD STAGE - Compile gems and assets (for production)
@@ -95,17 +100,17 @@ ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test"
 
-COPY Gemfile Gemfile.lock ./
+COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
 # Install node modules (including dev dependencies needed for asset build)
-COPY package.json yarn.lock esbuild.config.js ./
+COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
 
 # Copy application code
-COPY . .
+COPY --chown=1001:0 . .
 
 RUN bundle exec bootsnap precompile app/ lib/ && \
     SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
@@ -134,6 +139,8 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
 # =============================================================================
 FROM build-base AS development
 
+USER root
+
 # Additional dev tools (build deps + Node.js already in build-base)
 RUN dnf install -y \
       vim-enhanced \
@@ -146,16 +153,18 @@ ENV RAILS_ENV="development" \
     BUNDLE_WITHOUT="" \
     BUNDLE_DEPLOYMENT="0"
 
+USER 1001
+
 # Install all gems including dev/test
-COPY Gemfile Gemfile.lock ./
+COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install
 
 # Install node modules
-COPY package.json yarn.lock esbuild.config.js ./
+COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile
 
 # Copy application code
-COPY . .
+COPY --chown=1001:0 . .
 
 # Create non-root user
 RUN groupadd --system --gid 1000 rails && \
@@ -174,6 +183,8 @@ CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
 # PRODUCTION STAGE - Optimized for deployment (default)
 # =============================================================================
 FROM base AS production
+
+USER root
 
 # Production environment — infrastructure only (12-factor: config via env vars at deploy time)
 # App config defaults live in config/vulcan.default.yml, database.yml, and production.rb.
