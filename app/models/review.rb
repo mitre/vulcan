@@ -2,9 +2,47 @@
 
 # Reviews on a specific Rule
 class Review < ApplicationRecord
+  include VulcanAuditable
+
   belongs_to :user
   belongs_to :rule
   has_one :component, through: :rule
+
+  belongs_to :triage_set_by, class_name: 'User', optional: true
+  belongs_to :adjudicated_by, class_name: 'User', optional: true
+  belongs_to :duplicate_of, class_name: 'Review', foreign_key: 'duplicate_of_review_id',
+                            optional: true, inverse_of: :duplicates
+  has_many :duplicates, class_name: 'Review', foreign_key: 'duplicate_of_review_id',
+                        dependent: :nullify, inverse_of: :duplicate_of
+  belongs_to :responding_to, class_name: 'Review', foreign_key: 'responding_to_review_id',
+                             optional: true, inverse_of: :responses
+  has_many :responses, class_name: 'Review', foreign_key: 'responding_to_review_id',
+                       dependent: :destroy, inverse_of: :responding_to
+
+  TRIAGE_STATUSES = %w[
+    pending concur concur_with_comment non_concur
+    duplicate informational needs_clarification withdrawn
+  ].freeze
+
+  TERMINAL_AUTO_ADJUDICATE_STATUSES = %w[duplicate informational withdrawn].freeze
+
+  SECTION_KEYS = %w[
+    title severity status fixtext check_content vuln_discussion
+    disa_metadata vendor_comments artifact_description xccdf_metadata
+  ].freeze
+
+  # adjudicated_at is intentionally NOT audited. Auditing a datetime column
+  # trips Rails 7.1's safe-YAML dump for ActiveSupport::TimeWithZone. The
+  # transition timestamp is recoverable from the audit's created_at on the
+  # triage_status record that captured the terminal-state change.
+  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id comment]
+
+  scope :top_level_comments, -> { where(action: 'comment', responding_to_review_id: nil) }
+  scope :pending_triage, -> { top_level_comments.where(triage_status: 'pending') }
+  scope :awaiting_adjudication, lambda {
+    top_level_comments.where(triage_status: %w[concur concur_with_comment non_concur])
+                      .where(adjudicated_at: nil)
+  }
 
   # Map of role tier → roles that satisfy it (low-to-high inclusive). Replaces
   # the fragile constantize approach so a typo or missing constant raises at
@@ -49,6 +87,17 @@ class Review < ApplicationRecord
       r.action == 'comment' ? [cap, 4000].min : cap
     }
   }
+
+  # rubocop:disable Rails/I18nLocaleTexts
+  validates :triage_status, inclusion: { in: TRIAGE_STATUSES }
+  validates :section, inclusion: { in: SECTION_KEYS, message: 'is not a recognized section' },
+                      allow_nil: true
+  # rubocop:enable Rails/I18nLocaleTexts
+  validate :duplicate_status_requires_target
+  validate :no_self_responding_reference
+  validate :no_self_duplicate_reference
+
+  before_save :auto_set_adjudicated_for_terminal_statuses
 
   before_create :take_review_action
   validate :validate_project_permissions
@@ -199,5 +248,31 @@ class Review < ApplicationRecord
     rule.locked = locked
     rule.changes_requested = changes_requested
     rule.save!
+  end
+
+  def duplicate_status_requires_target
+    return unless triage_status == 'duplicate' && duplicate_of_review_id.blank?
+
+    errors.add(:duplicate_of_review_id, 'is required when triage_status is duplicate')
+  end
+
+  def no_self_responding_reference
+    return unless responding_to_review_id.present? && responding_to_review_id == id
+
+    errors.add(:responding_to_review_id, 'cannot reference itself')
+  end
+
+  def no_self_duplicate_reference
+    return unless duplicate_of_review_id.present? && duplicate_of_review_id == id
+
+    errors.add(:duplicate_of_review_id, 'cannot reference itself')
+  end
+
+  def auto_set_adjudicated_for_terminal_statuses
+    return unless TERMINAL_AUTO_ADJUDICATE_STATUSES.include?(triage_status)
+    return if adjudicated_at.present?
+
+    self.adjudicated_at = Time.current
+    self.adjudicated_by_id ||= (triage_status == 'withdrawn' ? user_id : triage_set_by_id)
   end
 end

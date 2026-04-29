@@ -441,4 +441,145 @@ RSpec.describe Review do
       expect(review.errors[:comment]).to be_empty
     end
   end
+
+  describe 'triage_status enum' do
+    it 'rejects an unknown triage_status' do
+      review = Review.new(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'whatever')
+      review.valid?
+      expect(review.errors[:triage_status].join).to match(/included in the list/i)
+    end
+
+    it 'accepts every value in TRIAGE_STATUSES' do
+      Review::TRIAGE_STATUSES.each do |status|
+        review = Review.new(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1,
+                            triage_status: status)
+        review.valid?
+        expect(review.errors[:triage_status]).to be_empty, "rejected: #{status}"
+      end
+    end
+  end
+
+  describe 'section enum' do
+    it 'rejects an unknown section' do
+      review = Review.new(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1,
+                          section: 'whatever')
+      review.valid?
+      expect(review.errors[:section].join).to match(/recognized section/i)
+    end
+
+    it 'accepts NULL (general comment)' do
+      review = Review.new(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1,
+                          section: nil)
+      review.valid?
+      expect(review.errors[:section]).to be_empty
+    end
+
+    it 'accepts every key in SECTION_KEYS' do
+      Review::SECTION_KEYS.each do |key|
+        review = Review.new(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1,
+                            section: key)
+        review.valid?
+        expect(review.errors[:section]).to be_empty, "rejected: #{key}"
+      end
+    end
+  end
+
+  describe 'duplicate_of_review_id invariants' do
+    let!(:original) do
+      Review.create!(action: 'comment', comment: 'original', user: @p_viewer, rule: @p1r1)
+    end
+
+    it 'requires a target when triage_status is duplicate' do
+      review = Review.new(action: 'comment', comment: 'dup', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'duplicate', duplicate_of_review_id: nil)
+      review.valid?
+      expect(review.errors[:duplicate_of_review_id].join).to match(/required/i)
+    end
+
+    it 'rejects self-referencing duplicate' do
+      review = Review.create!(action: 'comment', comment: 'dup', user: @p_viewer, rule: @p1r1)
+      review.update(triage_status: 'duplicate', duplicate_of_review_id: review.id)
+      expect(review.errors[:duplicate_of_review_id].join).to match(/cannot reference itself/i)
+    end
+  end
+
+  describe 'responding_to_review_id invariants' do
+    let!(:parent) do
+      Review.create!(action: 'comment', comment: 'parent', user: @p_viewer, rule: @p1r1)
+    end
+
+    it 'rejects self-referencing reply' do
+      response = Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1)
+      response.update(responding_to_review_id: response.id)
+      expect(response.errors[:responding_to_review_id].join).to match(/cannot reference itself/i)
+    end
+
+    it 'links a reply via responding_to_review_id' do
+      response = Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
+                                responding_to_review_id: parent.id)
+      expect(parent.reload.responses).to include(response)
+    end
+
+    it 'cascade-deletes responses when parent is deleted' do
+      Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
+                     responding_to_review_id: parent.id)
+      expect { parent.destroy }.to change(Review, :count).by(-2)
+    end
+  end
+
+  describe 'auto-set adjudicated_at on terminal triage statuses' do
+    %w[duplicate informational withdrawn].each do |status|
+      it "sets adjudicated_at when triage_status becomes #{status}" do
+        review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)
+        original_dup = Review.create!(action: 'comment', comment: 'orig', user: @p_viewer, rule: @p1r1)
+
+        attrs = { triage_status: status, triage_set_by_id: @p_admin.id, triage_set_at: Time.current }
+        attrs[:duplicate_of_review_id] = original_dup.id if status == 'duplicate'
+
+        expect { review.update!(attrs) }
+          .to change { review.reload.adjudicated_at }.from(nil).to(an_instance_of(ActiveSupport::TimeWithZone))
+      end
+    end
+  end
+
+  describe 'withdrawn auto-sets adjudicated_by_id to commenter' do
+    it 'sets adjudicated_by_id to user_id (the commenter themselves)' do
+      review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)
+      review.update!(triage_status: 'withdrawn')
+      expect(review.reload.adjudicated_by_id).to eq(@p_viewer.id)
+    end
+  end
+
+  describe 'scopes' do
+    before do
+      @c1 = Review.create!(action: 'comment', comment: 'one', user: @p_viewer, rule: @p1r1,
+                           triage_status: 'pending')
+      @c2 = Review.create!(action: 'comment', comment: 'two', user: @p_viewer, rule: @p1r1,
+                           triage_status: 'concur', triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
+      @reply = Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
+                              responding_to_review_id: @c1.id)
+    end
+
+    it 'top_level_comments excludes responses' do
+      expect(Review.top_level_comments.where(rule: @p1r1)).to include(@c1, @c2)
+      expect(Review.top_level_comments.where(rule: @p1r1)).not_to include(@reply)
+    end
+
+    it 'pending_triage returns only pending top-level comments' do
+      expect(Review.pending_triage.where(rule: @p1r1)).to include(@c1)
+      expect(Review.pending_triage.where(rule: @p1r1)).not_to include(@c2, @reply)
+    end
+  end
+
+  describe 'audits' do
+    it 'audits triage_status changes' do
+      review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)
+      expect do
+        review.update!(triage_status: 'concur', triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
+      end.to change(review.audits, :count).by(1)
+      audit = review.audits.last
+      expect(audit.audited_changes['triage_status']).to eq(%w[pending concur])
+    end
+  end
 end
