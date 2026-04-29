@@ -242,7 +242,7 @@ export default {
       ];
     },
     componentPanels() {
-      return ["details", "metadata", "questions", "comp-history", "comp-reviews"];
+      return ["details", "metadata", "questions", "comp-history"];
     },
     rulePanels() {
       return ["satisfies", "rule-reviews", "rule-history"];
@@ -253,13 +253,6 @@ export default {
     if (this.queriedRule && this.queriedRule.id) {
       this.selectRule(this.queriedRule.id);
       window.history.pushState({}, "", `/components/${this.component.id}`);
-    }
-    // Deep link to the comments triage panel via #comments — opened from
-    // the projects-list "Comments" column or a component-card pending badge.
-    // The hash is left in the URL so refresh restores the panel and the
-    // link is shareable (mirrors GitHub's #issuecomment-NNN pattern).
-    if (window.location.hash === "#comments") {
-      this.togglePanel("comp-reviews");
     }
   },
   methods: {

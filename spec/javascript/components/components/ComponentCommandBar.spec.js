@@ -175,7 +175,7 @@ describe("ComponentCommandBar", () => {
       expect(wrapper.text()).toContain("Details");
       expect(wrapper.text()).toContain("Metadata");
       expect(wrapper.text()).toContain("Questions");
-      // Note: "History" and "Reviews" appear twice (component + rule panels)
+      // Note: "History" and "Triage" appear twice (component + rule panels)
       // We verify them separately in the count test
     });
 
@@ -230,6 +230,31 @@ describe("ComponentCommandBar", () => {
       await questionsBtn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel").some((e) => e[0] === "questions")).toBe(true);
+    });
+
+    // REQUIREMENT: the Reviews affordance now navigates to the full-page
+    // /components/:id/triage view instead of toggling a slideover panel.
+    // This is the user-visible piece of retiring the comp-reviews slideover.
+    describe("Reviews affordance (post-slideover removal)", () => {
+      it("renders a Reviews link pointing at /components/:id/triage", () => {
+        wrapper = createWrapper();
+        const reviewsLink = wrapper.findAll("a").wrappers.find((a) => a.text().includes("Triage"));
+        expect(reviewsLink).toBeDefined();
+        expect(reviewsLink.attributes("href")).toBe("/components/41/triage");
+      });
+
+      it("does NOT toggle a comp-reviews panel anymore", async () => {
+        wrapper = createWrapper();
+        const reviewsAffordance = wrapper
+          .findAll("a, button")
+          .wrappers.find((el) => el.text().includes("Triage"));
+        expect(reviewsAffordance).toBeDefined();
+        // It should be a link (anchor), not a button toggling a panel
+        expect(reviewsAffordance.element.tagName.toLowerCase()).toBe("a");
+        // No comp-reviews emission ever
+        const emissions = wrapper.emitted("toggle-panel") || [];
+        expect(emissions.flat()).not.toContain("comp-reviews");
+      });
     });
   });
 

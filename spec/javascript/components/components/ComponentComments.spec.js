@@ -221,6 +221,58 @@ describe("ComponentComments", () => {
     });
   });
 
+  // REQUIREMENT: viewers can read the triage queue but must NOT see the
+  // Triage / Edit-Close / Re-open action buttons — those are author+
+  // privileges. Server-side gates exist (authorize_author_project on
+  // /reviews/:id/{triage,adjudicate,reopen}) but the UI must mirror them
+  // so viewers don't see misleading buttons that 403 on click.
+  describe("role-gating of action buttons", () => {
+    const adjudicatedRow = {
+      id: 1,
+      rule_id: 1,
+      rule_displayed_name: "X-1",
+      section: null,
+      author_name: "C",
+      comment: "a",
+      created_at: "2026-04-29T00:00:00Z",
+      triage_status: "concur",
+      triage_set_at: "2026-04-29T00:00:00Z",
+      adjudicated_at: "2026-04-29T01:00:00Z",
+      duplicate_of_review_id: null,
+    };
+
+    it("renders Triage / Edit-Close / Re-open for an author", async () => {
+      axios.get.mockResolvedValueOnce({
+        data: {
+          rows: [{ ...adjudicatedRow, triage_status: "pending", adjudicated_at: null }],
+          pagination: { page: 1, per_page: 25, total: 1 },
+        },
+      });
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author" },
+      });
+      await flushPromises();
+      expect(wrapper.text()).toContain("Triage");
+    });
+
+    it("hides action buttons for viewers and shows a read-only hint", async () => {
+      axios.get.mockResolvedValueOnce({
+        data: { rows: [adjudicatedRow], pagination: { page: 1, per_page: 25, total: 1 } },
+      });
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "viewer" },
+      });
+      await flushPromises();
+      // No mutating action buttons in the row
+      const actionTexts = wrapper.findAll("button").wrappers.map((b) => b.text().trim());
+      expect(actionTexts).not.toContain("Triage");
+      expect(actionTexts).not.toContain("Edit / Close");
+      expect(actionTexts).not.toContain("Re-open");
+      // A read-only hint is shown so the absence is intentional, not broken
+      expect(wrapper.text()).toMatch(/read[- ]?only|view only/i);
+    });
+  });
+
   it("surfaces fetch errors via alertOrNotifyResponse without crashing", async () => {
     axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(ComponentComments, {

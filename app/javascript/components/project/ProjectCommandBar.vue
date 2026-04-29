@@ -25,6 +25,17 @@
         <b-icon icon="people" /> Members
       </b-button>
 
+      <!-- Triage Queue (full-page aggregate view across all components) -->
+      <b-button
+        :href="`/projects/${project.id}/triage`"
+        variant="outline-secondary"
+        size="sm"
+        class="mr-2"
+        data-testid="triage-btn"
+      >
+        <b-icon icon="chat-left-text" /> Triage
+      </b-button>
+
       <!-- Download Button -->
       <b-button
         variant="outline-secondary"

@@ -66,11 +66,11 @@
           >
             <b-icon icon="clock-history" /> History
           </b-button>
-          <b-button
-            :variant="isPanelActive('comp-reviews') ? 'secondary' : 'outline-secondary'"
-            @click="onTogglePanel('comp-reviews')"
-          >
-            <b-icon icon="chat-left-text" /> Reviews
+          <!-- Triage navigates to the dedicated full-page triage view
+               (the comp-reviews slideover was retired in favor of the
+               wider, sortable, deep-linkable /triage route). -->
+          <b-button :href="`/components/${component.id}/triage`" variant="outline-secondary">
+            <b-icon icon="chat-left-text" /> Triage
           </b-button>
         </b-button-group>
         <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
@@ -124,7 +124,7 @@ export default {
       return !!this.selectedRule;
     },
     componentPanels() {
-      return ["details", "metadata", "questions", "comp-history", "comp-reviews"];
+      return ["details", "metadata", "questions", "comp-history"];
     },
     rulePanels() {
       return ["satisfies", "rule-reviews", "rule-history"];

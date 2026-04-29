@@ -109,18 +109,4 @@ describe("ControlsSidepanels", () => {
       wrapper = null; // prevent double destroy in afterEach
     });
   });
-
-  // Bug fix: clicking a rule_id link inside the comments triage panel must
-  // both select the rule AND close the panel. Without closing, the open
-  // sidebar visually covers the rules list so the rule-selection is silent.
-  describe("onJumpToRule", () => {
-    it("emits rule-selected with the rule id and close-panel", () => {
-      wrapper = createWrapper();
-      wrapper.vm.onJumpToRule(42);
-
-      expect(wrapper.emitted("rule-selected")).toBeTruthy();
-      expect(wrapper.emitted("rule-selected")[0]).toEqual([42]);
-      expect(wrapper.emitted("close-panel")).toBeTruthy();
-    });
-  });
 });

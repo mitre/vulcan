@@ -71,6 +71,9 @@ Rails.application.routes.draw do
   get '/components/:id/histories', to: 'components#histories'
   # Public-comment-review triage table (PR #717) — MUST be before :stig_id catch-all
   get '/components/:id/comments', to: 'components#comments'
+  get '/components/:id/triage',   to: 'components#triage', as: :component_triage
+  get '/projects/:id/comments',   to: 'projects#comments'
+  get '/projects/:id/triage',     to: 'projects#triage', as: :project_triage
   # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /
   # reopen / withdraw / update operate on a Review by id. See ReviewsController.
   patch '/reviews/:id/triage',      to: 'reviews#triage'

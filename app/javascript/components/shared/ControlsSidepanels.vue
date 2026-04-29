@@ -130,28 +130,6 @@
       </div>
     </b-sidebar>
 
-    <!-- Component Comments (PR #717 — replaces the legacy flat review list).
-         Lazy-mounts via v-if so the GET /components/:id/comments fetch only
-         fires when the user opens this panel. -->
-    <b-sidebar
-      id="sidebar-comp-reviews"
-      :title="titles.compReviews"
-      right
-      shadow
-      backdrop
-      :width="compReviewsWidth"
-      :visible="activePanel === 'comp-reviews'"
-      @hidden="$emit('close-panel')"
-    >
-      <div class="px-3 py-2">
-        <ComponentComments
-          v-if="activePanel === 'comp-reviews'"
-          :component-id="component.id"
-          @jump-to-rule="onJumpToRule"
-        />
-      </div>
-    </b-sidebar>
-
     <!-- Rule Satisfies -->
     <b-sidebar
       id="sidebar-satisfies"
@@ -224,7 +202,6 @@ import RuleReviews from "../rules/RuleReviews.vue";
 import RuleHistories from "../rules/RuleHistories.vue";
 import UpdateComponentDetailsModal from "../components/UpdateComponentDetailsModal.vue";
 import UpdateMetadataModal from "../components/UpdateMetadataModal.vue";
-import ComponentComments from "../components/ComponentComments.vue";
 import AddQuestionsModal from "../components/AddQuestionsModal.vue";
 
 export default {
@@ -237,7 +214,6 @@ export default {
     UpdateComponentDetailsModal,
     UpdateMetadataModal,
     AddQuestionsModal,
-    ComponentComments,
   },
   mixins: [RoleComparisonMixin, DateFormatMixinVue],
   props: {
@@ -300,12 +276,6 @@ export default {
     displayedHistories() {
       return this.localHistories.length > 0 ? this.localHistories : this.component.histories;
     },
-    // Component-comments slideover widens on md+ to fit the triage table.
-    // Below md it goes full-width so the table is usable on mobile.
-    compReviewsWidth() {
-      if (typeof window === "undefined") return "700px";
-      return window.innerWidth >= 768 ? "700px" : "100%";
-    },
   },
   mounted() {
     this.$root.$on("refresh:activity", this.refreshHistories);
@@ -321,13 +291,6 @@ export default {
           this.localHistories = response.data;
         })
         .catch(() => {}); // Silently fail — non-critical UI refresh
-    },
-    // Clicked a rule_id link inside the comments triage table — select
-    // the rule AND close the panel so the user lands on the rule
-    // (the open sidebar would otherwise cover the rules list).
-    onJumpToRule(ruleId) {
-      this.$emit("rule-selected", ruleId);
-      this.$emit("close-panel");
     },
   },
 };

@@ -80,32 +80,36 @@
         />
       </template>
       <template #cell(actions)="{ item }">
-        <b-button
-          v-if="!item.adjudicated_at"
-          size="sm"
-          variant="outline-primary"
-          @click="openTriageFor(item)"
-        >
-          {{ actionLabel(item) }}
-        </b-button>
-        <b-button
-          v-else-if="item.triage_status !== 'withdrawn'"
-          v-b-tooltip.hover
-          size="sm"
-          variant="outline-secondary"
-          title="Revert to 'decided but not closed' so the decision can be revised."
-          @click="openReopen(item)"
-        >
-          <b-icon icon="arrow-counterclockwise" /> Re-open
-        </b-button>
-        <small
-          v-else
-          v-b-tooltip.hover
-          class="text-muted font-italic"
-          title="Withdrawn by the original commenter — only the commenter can re-open."
-        >
-          Commenter-only
-        </small>
+        <template v-if="canTriage">
+          <b-button
+            v-if="!item.adjudicated_at"
+            size="sm"
+            variant="outline-primary"
+            @click="openTriageFor(item)"
+          >
+            {{ actionLabel(item) }}
+          </b-button>
+          <b-button
+            v-else-if="item.triage_status !== 'withdrawn'"
+            v-b-tooltip.hover
+            size="sm"
+            variant="outline-secondary"
+            :aria-label="`Re-open comment ${item.id}`"
+            title="Revert to 'decided but not closed' so the decision can be revised."
+            @click="openReopen(item)"
+          >
+            <b-icon icon="arrow-counterclockwise" /> Re-open
+          </b-button>
+          <small
+            v-else
+            v-b-tooltip.hover
+            class="text-muted font-italic"
+            title="Withdrawn by the original commenter — only the commenter can re-open."
+          >
+            Commenter-only
+          </small>
+        </template>
+        <small v-else class="text-muted font-italic" aria-label="Read-only role"> Read-only </small>
       </template>
       <template #table-busy>
         <div class="text-center py-3"><b-spinner small /> Loading…</div>
@@ -140,6 +144,7 @@
 import axios from "axios";
 import { TRIAGE_LABELS, SECTION_LABELS } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CommentTriageModal from "./CommentTriageModal.vue";
@@ -147,7 +152,7 @@ import CommentTriageModal from "./CommentTriageModal.vue";
 export default {
   name: "ComponentComments",
   components: { TriageStatusBadge, SectionLabel, CommentTriageModal },
-  mixins: [AlertMixin],
+  mixins: [AlertMixin, RoleComparisonMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
     // scope) is required — but not both. The scope prop disambiguates and
@@ -159,6 +164,10 @@ export default {
       default: "component",
       validator: (v) => ["component", "project"].includes(v),
     },
+    // Server-resolved role on this project/component. Viewers see the
+    // triage queue but cannot mutate — author+ can triage / adjudicate
+    // / re-open. Mirrors the backend authorize_author_project gates.
+    effectivePermissions: { type: String, default: null },
   },
   data() {
     const persisted = this.loadPersistedFilters();
@@ -193,6 +202,12 @@ export default {
     };
   },
   computed: {
+    // Triagers (author+) get the mutating action buttons; viewers get
+    // a read-only label. Server enforces the same gate via
+    // authorize_author_project on the /reviews/:id/* endpoints.
+    canTriage() {
+      return this.role_gte_to(this.effectivePermissions, "author");
+    },
     statusOptions() {
       const friendly = Object.entries(TRIAGE_LABELS)
         .filter(([value]) => value !== "pending")
