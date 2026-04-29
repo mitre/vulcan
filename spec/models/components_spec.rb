@@ -831,4 +831,62 @@ RSpec.describe Component do
       dup.destroy!
     end
   end
+
+  describe 'comment phase' do
+    let(:component) { create(:component) }
+
+    it 'defaults to draft' do
+      expect(component.comment_phase).to eq('draft')
+    end
+
+    it 'rejects an invalid phase' do
+      component.comment_phase = 'whatever'
+      expect(component).not_to be_valid
+      expect(component.errors[:comment_phase].join).to match(/included in the list/i)
+    end
+
+    describe '#accepting_new_comments?' do
+      it 'is true only when phase is open' do
+        component.comment_phase = 'open'
+        expect(component.accepting_new_comments?).to be(true)
+        %w[draft adjudication final].each do |phase|
+          component.comment_phase = phase
+          expect(component.accepting_new_comments?).to be(false), "unexpectedly true for #{phase}"
+        end
+      end
+    end
+
+    describe '#triaging_active?' do
+      it 'is true for open and adjudication' do
+        %w[open adjudication].each do |phase|
+          component.comment_phase = phase
+          expect(component.triaging_active?).to be(true), "unexpectedly false for #{phase}"
+        end
+        %w[draft final].each do |phase|
+          component.comment_phase = phase
+          expect(component.triaging_active?).to be(false), "unexpectedly true for #{phase}"
+        end
+      end
+    end
+
+    describe '#comment_period_days_remaining' do
+      it 'returns nil when phase is not open' do
+        component.comment_phase = 'draft'
+        component.comment_period_ends_at = 5.days.from_now
+        expect(component.comment_period_days_remaining).to be_nil
+      end
+
+      it 'returns days remaining when open with an end date' do
+        component.comment_phase = 'open'
+        component.comment_period_ends_at = 5.days.from_now
+        expect(component.comment_period_days_remaining).to eq(5)
+      end
+
+      it 'returns nil when open without an end date' do
+        component.comment_phase = 'open'
+        component.comment_period_ends_at = nil
+        expect(component.comment_period_days_remaining).to be_nil
+      end
+    end
+  end
 end

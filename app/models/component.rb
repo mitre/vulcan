@@ -87,6 +87,23 @@ class Component < ApplicationRecord
            :cannot_unrelease_component,
            :cannot_overlay_self
 
+  COMMENT_PHASES = %w[draft open adjudication final].freeze
+  validates :comment_phase, inclusion: { in: COMMENT_PHASES }
+
+  def accepting_new_comments?
+    comment_phase == 'open'
+  end
+
+  def triaging_active?
+    %w[open adjudication].include?(comment_phase)
+  end
+
+  def comment_period_days_remaining
+    return nil unless comment_phase == 'open' && comment_period_ends_at
+
+    ((comment_period_ends_at - Time.current) / 1.day).ceil
+  end
+
   def as_json(options = {})
     methods = (options[:methods] || []) + %i[releasable additional_questions]
     # SeverityCounts concern already adds severity_counts via its as_json
