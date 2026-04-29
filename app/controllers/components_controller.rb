@@ -11,17 +11,17 @@ class ComponentsController < ApplicationController
   NO_FILE_PROVIDED = 'No file provided'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
-  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update]
+  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage]
   before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
-  before_action :set_project, only: %i[show create history]
-  before_action :set_component_permissions, only: %i[show]
+  before_action :set_project, only: %i[show create history triage]
+  before_action :set_component_permissions, only: %i[show triage]
   before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy]
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find histories comments]
+  before_action :authorize_component_access, only: %i[show export find histories comments triage]
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
@@ -278,9 +278,32 @@ class ComponentsController < ApplicationController
     render json: @component.histories(50)
   end
 
+  # GET /components/:id/triage — full-page triage view for a single
+  # component's public-comment queue. Renders an HTML page that mounts a
+  # Vue app (ComponentTriagePage). The Vue app fetches rows from the
+  # JSON endpoint at GET /components/:id/comments. Replaces the legacy
+  # comments slideover (PR #717 follow-on).
+  #
+  # HTML-only — JSON requests return 406, since the data lives on the
+  # /components/:id/comments JSON endpoint.
+  def triage
+    respond_to do |format|
+      format.html do
+        @component_json = ComponentBlueprint.render(@component, view: :show)
+        @project_json = @component.project.to_json
+      end
+      # Explicit 406 for non-HTML formats so the catch-all StandardError
+      # rescue doesn't turn a missing-template into a 500.
+      format.any { head :not_acceptable }
+    end
+  end
+
   # Paginated triage table backing the public-comment-review workflow (PR #717).
   # Returns { rows: [...], pagination: {...} }. DISA-native vocab on the wire
   # (triage_status / section keys); frontend translates via triageVocabulary.js.
+  #
+  # Sets Cache-Control: no-store so concurrent triagers cannot get a stale
+  # snapshot from a browser/proxy cache during a public-comment window.
   def comments
     return head :not_found unless @component
 
@@ -295,6 +318,7 @@ class ComponentsController < ApplicationController
       resolved: params[:resolved].presence || 'all'
     )
 
+    response.headers['Cache-Control'] = 'no-store'
     render json: result
   end
 

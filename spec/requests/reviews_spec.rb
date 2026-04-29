@@ -279,6 +279,19 @@ RSpec.describe 'Reviews' do
         expect(comment.reload.triage_status).to eq('pending')
       end
 
+      # REQUIREMENT: triage_status='pending' is the INITIAL state of every
+      # comment. Submitting it to the triage endpoint isn't a triage decision
+      # at all — accepting it would silently re-stamp triage_set_by_id and
+      # triage_set_at on a still-pending comment, polluting the audit trail
+      # with a fake "triaged by current_user" entry. Reject 422.
+      it 'rejects triage_status=pending (no decision is being made)' do
+        patch "/reviews/#{comment.id}/triage", params: { triage_status: 'pending' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        comment.reload
+        expect(comment.triage_set_by_id).to be_nil
+        expect(comment.triage_set_at).to be_nil
+      end
+
       it 'returns 404 for a non-existent review id' do
         patch '/reviews/9999999/triage', params: { triage_status: 'concur' }, as: :json
         expect(response).to have_http_status(:not_found)

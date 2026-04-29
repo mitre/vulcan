@@ -10,10 +10,10 @@ class ProjectsController < ApplicationController
 
   IMPORT_ERROR_TITLE = 'Import error'
 
-  before_action :set_project, only: %i[show update destroy export import_backup histories]
-  before_action :set_project_permissions, only: %i[show]
+  before_action :set_project, only: %i[show update destroy export import_backup histories triage comments]
+  before_action :set_project_permissions, only: %i[show triage]
   before_action :authorize_admin_project, only: %i[update destroy import_backup]
-  before_action :authorize_viewer_project, only: %i[show export histories]
+  before_action :authorize_viewer_project, only: %i[show export histories triage comments]
   before_action :authorize_logged_in, only: %i[index search]
   before_action :authorize_admin_or_create_permission_enabled, only: %i[create create_from_backup]
   before_action :check_permission_to_update, only: %i[update]
@@ -84,6 +84,47 @@ class ProjectsController < ApplicationController
     return head :not_found unless @project
 
     render json: @project.histories(50)
+  end
+
+  # GET /projects/:id/triage — full-page aggregate triage view across
+  # all components in the project. Renders an HTML page that mounts a
+  # Vue app (ProjectTriagePage). The Vue app fetches rows from the JSON
+  # endpoint at GET /projects/:id/comments. PR #717 follow-on.
+  #
+  # HTML-only — JSON requests return 406, since the data lives on the
+  # /projects/:id/comments JSON endpoint.
+  def triage
+    respond_to do |format|
+      format.html do
+        @project.current_user = current_user
+        @project_json = ProjectBlueprint.render(@project, view: :show)
+      end
+      format.any { head :not_acceptable }
+    end
+  end
+
+  # GET /projects/:id/comments — paginated triage rows aggregated across
+  # all the project's components. Same row shape as the per-component
+  # endpoint, plus component_id + component_name per row so the table
+  # can show which component each comment belongs to.
+  #
+  # Sets Cache-Control: no-store so concurrent triagers cannot get a
+  # stale snapshot from a browser/proxy cache.
+  def comments
+    return head :not_found unless @project
+
+    result = @project.paginated_comments(
+      triage_status: params[:triage_status].presence || 'pending',
+      section: params[:section].presence,
+      component_id: params[:component_id].presence,
+      author_id: params[:author_id].presence,
+      query: params[:q].presence,
+      page: params[:page].presence || 1,
+      per_page: params[:per_page].presence || 25,
+      resolved: params[:resolved].presence || 'all'
+    )
+    response.headers['Cache-Control'] = 'no-store'
+    render json: result
   end
 
   def create

@@ -346,6 +346,15 @@ RSpec.describe 'Components' do
           headers: { 'Accept' => application_json }
       expect(response.parsed_body['rows'].size).to eq(0)
     end
+
+    # REQUIREMENT: triage rows change moment-to-moment during a public-comment
+    # window — every concurrent triager refresh needs the latest data.
+    # Browsers/proxies must not cache the JSON response, or one triager will
+    # see another's already-handled comment as still-pending and double-act.
+    it 'sets Cache-Control: no-store so browsers/proxies cannot cache the queue' do
+      get "/components/#{component.id}/comments", headers: { 'Accept' => application_json }
+      expect(response.headers['Cache-Control'].to_s).to match(/no-store/i)
+    end
   end
 
   # REQUIREMENT: Delete component must clean up all dependent records
