@@ -141,34 +141,42 @@ class Project < ApplicationRecord
     total = scope.count
 
     component_lookup = project_components.index_by(&:id)
-    rule_lookup = Rule.where(component_id: scope_components).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
+
+    # Materialize the page first, then look up ONLY the rules referenced by
+    # the page's rows. The previous implementation pre-loaded every rule in
+    # the project (component_id IN scope) — for projects with thousands of
+    # rules that's a tens-of-thousands-of-rows query just to decorate one
+    # page of comments. (Code-review finding #7.)
+    page_reviews = scope.order(created_at: :desc)
+                        .offset((page - 1) * per_page)
+                        .limit(per_page)
+                        .to_a
+    page_rule_ids = page_reviews.map(&:rule_id).uniq
+    rule_lookup = Rule.where(id: page_rule_ids).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
       [rid, { rule_id: rule_id, component_id: cid, prefix: component_lookup[cid]&.prefix }]
     end
 
-    rows = scope.order(created_at: :desc)
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-                .map do |r|
-                  rule_meta = rule_lookup[r.rule_id] || {}
-                  cid = rule_meta[:component_id]
-                  {
-                    id: r.id,
-                    rule_id: r.rule_id,
-                    rule_displayed_name: rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil,
-                    component_id: cid,
-                    component_name: component_lookup[cid]&.name,
-                    section: r.section,
-                    author_name: r.user&.name,
-                    # author_email intentionally omitted — see Component#paginated_comments
-                    # for rationale (PII scraping during public review windows).
-                    comment: r.comment,
-                    created_at: r.created_at,
-                    triage_status: r.triage_status,
-                    triage_set_at: r.triage_set_at,
-                    adjudicated_at: r.adjudicated_at,
-                    duplicate_of_review_id: r.duplicate_of_review_id
-                  }
-                end
+    rows = page_reviews.map do |r|
+      rule_meta = rule_lookup[r.rule_id] || {}
+      cid = rule_meta[:component_id]
+      {
+        id: r.id,
+        rule_id: r.rule_id,
+        rule_displayed_name: rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil,
+        component_id: cid,
+        component_name: component_lookup[cid]&.name,
+        section: r.section,
+        author_name: r.user&.name,
+        # author_email intentionally omitted — see Component#paginated_comments
+        # for rationale (PII scraping during public review windows).
+        comment: r.comment,
+        created_at: r.created_at,
+        triage_status: r.triage_status,
+        triage_set_at: r.triage_set_at,
+        adjudicated_at: r.adjudicated_at,
+        duplicate_of_review_id: r.duplicate_of_review_id
+      }
+    end
 
     { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
   end

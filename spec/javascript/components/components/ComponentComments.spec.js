@@ -273,6 +273,135 @@ describe("ComponentComments", () => {
     });
   });
 
+  // REQUIREMENT: openReopen patches /reviews/:id/reopen and re-fetches the
+  // page so the row's status flips from "Closed" back to its prior triage
+  // state. Wired to the Re-open button on adjudicated rows.
+  describe("openReopen", () => {
+    const adjudicatedRow = {
+      id: 99,
+      rule_id: 1,
+      rule_displayed_name: "X-1",
+      section: null,
+      author_name: "C",
+      comment: "a",
+      created_at: "2026-04-29T00:00:00Z",
+      triage_status: "concur",
+      triage_set_at: "2026-04-29T00:00:00Z",
+      adjudicated_at: "2026-04-29T01:00:00Z",
+      duplicate_of_review_id: null,
+    };
+
+    it("PATCHes /reviews/:id/reopen and re-fetches the table", async () => {
+      axios.patch = vi.fn().mockResolvedValue({ data: { review: { id: 99 } } });
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises();
+      const initialFetchCount = axios.get.mock.calls.length;
+
+      await wrapper.vm.openReopen(adjudicatedRow);
+      await flushPromises();
+
+      expect(axios.patch).toHaveBeenCalledWith("/reviews/99/reopen");
+      // Re-fetch fires after a successful re-open so the row's new state
+      // is visible without a manual refresh.
+      expect(axios.get.mock.calls.length).toBeGreaterThan(initialFetchCount);
+    });
+
+    it("surfaces server errors via alertOrNotifyResponse but still re-fetches", async () => {
+      axios.patch = vi.fn().mockRejectedValue({ response: { status: 422, data: {} } });
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises();
+      const alertSpy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse").mockImplementation(() => {});
+      const initialFetchCount = axios.get.mock.calls.length;
+
+      await wrapper.vm.openReopen(adjudicatedRow);
+      await flushPromises();
+
+      expect(alertSpy).toHaveBeenCalled();
+      // Even on failure we re-fetch to make sure the UI matches server state.
+      expect(axios.get.mock.calls.length).toBeGreaterThan(initialFetchCount);
+      alertSpy.mockRestore();
+    });
+  });
+
+  // REQUIREMENT: clicking the refresh button forces a re-fetch without
+  // closing the page — useful when concurrent triagers are working the
+  // same queue and rows go stale.
+  describe("refresh button", () => {
+    it("calls fetch when invoked", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises();
+      const initialFetchCount = axios.get.mock.calls.length;
+
+      await wrapper.vm.fetch();
+      await flushPromises();
+
+      expect(axios.get.mock.calls.length).toBeGreaterThan(initialFetchCount);
+    });
+  });
+
+  // REQUIREMENT: filters persist in localStorage per scope so closing
+  // and re-opening the triage page (or returning from a navigation)
+  // doesn't snap filters back to the default "pending / all sections".
+  describe("persisted filters", () => {
+    const persistKey = (scope, id) => `commentTriageFilters-${scope}-${id}`;
+
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("restores filterStatus / filterSection / filterText from localStorage on mount", () => {
+      localStorage.setItem(
+        persistKey("component", 42),
+        JSON.stringify({
+          filterStatus: "concur",
+          filterSection: "check_content",
+          filterText: "runc",
+        }),
+      );
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        stubs: SHARED_STUBS,
+      });
+      expect(wrapper.vm.filterStatus).toBe("concur");
+      expect(wrapper.vm.filterSection).toBe("check_content");
+      expect(wrapper.vm.filterText).toBe("runc");
+    });
+
+    it("uses a separate persistence key per scope (component vs project)", () => {
+      localStorage.setItem(
+        persistKey("component", 42),
+        JSON.stringify({ filterStatus: "concur", filterSection: null, filterText: "" }),
+      );
+      const projectWrapper = mount(ComponentComments, {
+        propsData: { projectId: 42, scope: "project" },
+        stubs: SHARED_STUBS,
+      });
+      // Project scope on id 42 must NOT pick up the component-scope persisted value
+      expect(projectWrapper.vm.filterStatus).toBe("pending");
+    });
+
+    it("writes filter state to localStorage when filters change", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises();
+      wrapper.vm.filterStatus = "non_concur";
+      wrapper.vm.onFilterChanged();
+      const stored = JSON.parse(localStorage.getItem(persistKey("component", 42)));
+      expect(stored.filterStatus).toBe("non_concur");
+    });
+  });
+
   it("surfaces fetch errors via alertOrNotifyResponse without crashing", async () => {
     axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(ComponentComments, {
