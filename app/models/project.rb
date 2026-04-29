@@ -49,6 +49,30 @@ class Project < ApplicationRecord
           .count
   end
 
+  # Per-project deep-link target for the projects-list "Comments" column.
+  # Returns the unique pending component_id ONLY when a project has
+  # exactly one component with pending comments — letting the list link
+  # bypass the project page entirely (one click → triage panel). When a
+  # project has multiple pending components, callers fall back to the
+  # project-detail page so the user can pick.
+  #
+  # Returns a sparse hash: { project_id => component_id } — projects
+  # with 0 or 2+ pending components are omitted. Single GROUP-BY-HAVING.
+  def self.pending_comment_target_components(project_ids)
+    return {} if project_ids.blank?
+
+    rows = Review.where(action: 'comment',
+                        responding_to_review_id: nil,
+                        triage_status: 'pending')
+                 .joins(:rule)
+                 .merge(Rule.where(component: Component.where(project_id: project_ids)))
+                 .joins('INNER JOIN components ON components.id = base_rules.component_id')
+                 .group('components.project_id')
+                 .having('COUNT(DISTINCT base_rules.component_id) = 1')
+                 .pluck('components.project_id', 'MIN(base_rules.component_id)')
+    rows.to_h
+  end
+
   # Helper method to extract data from Project Metadata
   def metadata
     project_metadata&.data

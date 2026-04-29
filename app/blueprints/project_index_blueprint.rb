@@ -51,4 +51,18 @@ class ProjectIndexBlueprint < Blueprinter::Base
     counts = options[:pending_comment_counts] || {}
     counts[project.id] || 0
   end
+
+  # Resolved deep-link target for the "Comments" badge — computed
+  # server-side so the click bypasses any intermediate page.
+  # - exactly 1 component with pending → /components/:id#comments
+  # - multiple components with pending → /projects/:id#comments
+  # - none → null (frontend renders an em-dash)
+  field :pending_comment_link do |project, options|
+    counts = options[:pending_comment_counts] || {}
+    next nil if (counts[project.id] || 0).zero?
+
+    targets = options[:pending_comment_target_components] || {}
+    component_id = targets[project.id]
+    component_id ? "/components/#{component_id}#comments" : "/projects/#{project.id}#comments"
+  end
 end

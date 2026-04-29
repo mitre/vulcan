@@ -88,15 +88,25 @@
           {{ data.item.name }}
         </b-link>
         <span v-else>{{ data.item.name }}</span>
-        <b-badge
-          v-if="data.item.pending_comment_count > 0"
-          variant="warning"
-          class="ml-2"
-          :title="`${data.item.pending_comment_count} pending public-review comments waiting for triage`"
-          aria-label="pending comments"
+      </template>
+
+      <template #cell(pending_comment_count)="data">
+        <b-link
+          v-if="data.item.pending_comment_link && data.item.is_member"
+          v-b-tooltip.hover
+          :href="data.item.pending_comment_link"
+          :title="`Open the triage view: ${data.item.pending_comment_count} pending public-review comment${data.item.pending_comment_count === 1 ? '' : 's'}`"
         >
-          💬 {{ data.item.pending_comment_count }} pending
-        </b-badge>
+          <b-badge variant="warning">
+            <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }} pending
+          </b-badge>
+        </b-link>
+        <span v-else-if="data.item.pending_comment_count > 0" class="text-muted">
+          <b-badge variant="light">
+            <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }}
+          </b-badge>
+        </span>
+        <span v-else class="text-muted">—</span>
       </template>
 
       <template #cell(description)="data">
@@ -225,6 +235,13 @@ export default {
         { key: "name", sortable: true },
         { key: "description", label: "Description" },
         { key: "memberships_count", label: "Members", sortable: true },
+        {
+          key: "pending_comment_count",
+          label: "Comments",
+          sortable: true,
+          thClass: "text-center",
+          tdClass: "text-center",
+        },
         { key: "updated_at", label: "Last Updated", sortable: true },
         {
           key: "actions",

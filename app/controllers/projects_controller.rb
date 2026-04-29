@@ -30,11 +30,16 @@ class ProjectsController < ApplicationController
     # Batch-load pending-comment counts (single GROUP BY) so the row badge
     # never triggers per-project queries (PR #717 follow-on).
     pending_comment_counts = Project.pending_comment_counts(project_ids)
+    # Resolve the deep-link target server-side: when a project has exactly
+    # one component with pending comments, the row link goes straight to
+    # that component (one click → triage panel — no intermediate-page bounce).
+    pending_comment_targets = Project.pending_comment_target_components(project_ids)
     @projects = ProjectIndexBlueprint.render_as_hash(
       projects,
       current_user: current_user,
       access_requests_by_project: ar_by_project,
-      pending_comment_counts: pending_comment_counts
+      pending_comment_counts: pending_comment_counts,
+      pending_comment_target_components: pending_comment_targets
     )
     respond_to do |format|
       format.html
@@ -59,7 +64,15 @@ class ProjectsController < ApplicationController
     # Setting current_user allows `available_components` to be filtered down only to the
     # projects that a user has permissions to access
     @project.current_user = current_user
-    @project_json = ProjectBlueprint.render(@project, view: :show)
+    # Batch-load pending-comment counts keyed by component_id so the
+    # component cards and the project-level total render without N+1 (PR #717).
+    component_ids = @project.components.pluck(:id)
+    pending_comment_counts = Component.pending_comment_counts(component_ids)
+    @project_json = ProjectBlueprint.render(
+      @project,
+      view: :show,
+      pending_comment_counts: pending_comment_counts
+    )
     respond_to do |format|
       format.html
       format.json { render body: @project_json, content_type: 'application/json' }

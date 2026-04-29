@@ -272,8 +272,20 @@ export default {
         localStorage.removeItem(`projectTabIndex-${this.project.id}`);
       }
     }
+    this.handleCommentsDeepLink();
   },
   methods: {
+    // Arriving from the projects-list "Comments" column → /projects/:id#comments
+    // (only when the project has multiple components with pending — for the
+    // single-component case the list link routes directly to the component).
+    // Switch to the Components tab so the per-card pending pills are visible.
+    // Hash is left in URL on purpose: shareable, refresh-restorable.
+    handleCommentsDeepLink: function () {
+      if (window.location.hash !== "#comments") return;
+      this.$nextTick(() => {
+        this.projectTabIndex = 0; // Components tab
+      });
+    },
     sortedComponents: function () {
       return _.orderBy(
         this.project.components,

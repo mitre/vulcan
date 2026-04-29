@@ -72,4 +72,49 @@ RSpec.describe Project do
       expect(query_count).to eq(1)
     end
   end
+
+  describe '.pending_comment_target_components' do
+    let_it_be(:srg) { create(:security_requirements_guide) }
+    let_it_be(:project_single) { create(:project) }
+    let_it_be(:project_multi) { create(:project) }
+    let_it_be(:project_empty) { create(:project) }
+    let_it_be(:single_component) { create(:component, project: project_single, based_on: srg) }
+    let_it_be(:multi_a) { create(:component, project: project_multi, based_on: srg) }
+    let_it_be(:multi_b) { create(:component, project: project_multi, based_on: srg) }
+    let_it_be(:viewer) { create(:user) }
+
+    before_all do
+      Review.create!(action: 'comment', comment: 'single', user: viewer,
+                     rule: single_component.rules.first)
+      Review.create!(action: 'comment', comment: 'multi-a', user: viewer,
+                     rule: multi_a.rules.first)
+      Review.create!(action: 'comment', comment: 'multi-b', user: viewer,
+                     rule: multi_b.rules.first)
+    end
+
+    it 'returns the component_id when a project has exactly one pending component' do
+      result = described_class.pending_comment_target_components(
+        [project_single.id, project_multi.id, project_empty.id]
+      )
+      expect(result[project_single.id]).to eq(single_component.id)
+    end
+
+    it 'omits projects with multiple pending components (caller falls back to project page)' do
+      result = described_class.pending_comment_target_components(
+        [project_single.id, project_multi.id, project_empty.id]
+      )
+      expect(result).not_to have_key(project_multi.id)
+    end
+
+    it 'omits projects with zero pending components' do
+      result = described_class.pending_comment_target_components(
+        [project_single.id, project_multi.id, project_empty.id]
+      )
+      expect(result).not_to have_key(project_empty.id)
+    end
+
+    it 'returns an empty hash when given an empty array' do
+      expect(described_class.pending_comment_target_components([])).to eq({})
+    end
+  end
 end

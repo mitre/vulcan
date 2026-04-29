@@ -40,6 +40,18 @@
           </div>
           <!-- Rules count info -->
           <div class="text-right">
+            <b-link
+              v-if="component.pending_comment_count > 0"
+              v-b-tooltip.hover
+              :href="`/components/${component.id}#comments`"
+              :title="`Open the triage view: ${component.pending_comment_count} pending public-review comment${component.pending_comment_count === 1 ? '' : 's'}`"
+              class="mr-2"
+            >
+              <b-badge variant="warning" pill class="px-3 py-2">
+                <b-icon icon="chat-left-text" class="mr-1" />
+                {{ component.pending_comment_count }} pending
+              </b-badge>
+            </b-link>
             <b-badge v-if="component.rules_count > 0" variant="info" pill class="px-3 py-2">
               <b-icon icon="shield-check" class="mr-1" />
               {{ ruleCountLabel(component.rules_count) }}

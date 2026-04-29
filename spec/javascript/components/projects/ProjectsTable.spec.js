@@ -87,14 +87,75 @@ describe("ProjectsTable", () => {
   });
 
   // ==========================================
+  // PENDING-COMMENTS COLUMN (PR #717 follow-on)
+  // Requirement: separate "Comments" column with a clickable badge that
+  // links to the server-resolved deep-link target (no client-side bouncing).
+  // ==========================================
+  describe("pending-comments column", () => {
+    it("renders the warning badge with the count when pending_comment_link is set", () => {
+      const projects = [
+        {
+          ...sampleProjects[0],
+          pending_comment_count: 3,
+          pending_comment_link: "/components/42#comments",
+        },
+      ];
+      wrapper = createWrapper({ projects });
+      const link = wrapper.find('a[href="/components/42#comments"]');
+      expect(link.exists()).toBe(true);
+      expect(link.text()).toContain("3 pending");
+    });
+
+    it("links straight to /components/:id#comments when one component has pending", () => {
+      const projects = [
+        {
+          ...sampleProjects[0],
+          pending_comment_count: 2,
+          pending_comment_link: "/components/99#comments",
+        },
+      ];
+      wrapper = createWrapper({ projects });
+      const link = wrapper.find('a[href*="#comments"]');
+      expect(link.attributes("href")).toBe("/components/99#comments");
+    });
+
+    it("links to /projects/:id#comments when multiple components have pending", () => {
+      const projects = [
+        {
+          ...sampleProjects[0],
+          id: 7,
+          pending_comment_count: 5,
+          pending_comment_link: "/projects/7#comments",
+        },
+      ];
+      wrapper = createWrapper({ projects });
+      const link = wrapper.find('a[href*="#comments"]');
+      expect(link.attributes("href")).toBe("/projects/7#comments");
+    });
+
+    it("renders an em-dash when there are no pending comments", () => {
+      const projects = [
+        {
+          ...sampleProjects[0],
+          pending_comment_count: 0,
+          pending_comment_link: null,
+        },
+      ];
+      wrapper = createWrapper({ projects });
+      // Comments column is the 4th cell (after name, description, members)
+      const commentsCell = wrapper.find("td:nth-child(4)");
+      expect(commentsCell.text()).toContain("—");
+      expect(wrapper.find("a[href*='#comments']").exists()).toBe(false);
+    });
+  });
+
+  // ==========================================
   // DESCRIPTION TRUNCATION
   // Requirement: toggle link only shown when description > 75 chars
   // ==========================================
   describe("description truncation", () => {
     it("does not show toggle link for short descriptions", () => {
-      const shortDescProjects = [
-        { ...sampleProjects[0], description: "Short desc" },
-      ];
+      const shortDescProjects = [{ ...sampleProjects[0], description: "Short desc" }];
       wrapper = createWrapper({ projects: shortDescProjects });
       const descCell = wrapper.find("td:nth-child(2)");
       expect(descCell.find("a").exists()).toBe(false);
@@ -109,11 +170,11 @@ describe("ProjectsTable", () => {
     });
 
     it("does not show toggle link when description is null", () => {
-      const nullDescProjects = [
-        { ...sampleProjects[0], description: null },
-      ];
+      const nullDescProjects = [{ ...sampleProjects[0], description: null }];
       wrapper = createWrapper({ projects: nullDescProjects });
-      const links = wrapper.findAll("a").filter((w) => w.text().includes("...") || w.text().includes("read less"));
+      const links = wrapper
+        .findAll("a")
+        .filter((w) => w.text().includes("...") || w.text().includes("read less"));
       expect(links.length).toBe(0);
     });
   });

@@ -572,6 +572,25 @@ class Component < ApplicationRecord
   # Paginated, filterable accessor for top-level comment Reviews scoped to
   # this component. Returns { rows: [...], pagination: {...} } where rows
   # are pre-formatted hashes with author_name + rule_displayed_name injected.
+  # Aggregate count of top-level pending comments per component. Used by
+  # the project-detail page to render a "N pending" badge on each
+  # component card without N+1 queries (PR #717 follow-on, mirrors
+  # Project.pending_comment_counts).
+  #
+  # Returns a sparse hash: { component_id => count } — components with
+  # zero pending comments are omitted so callers can `counts[id] || 0`.
+  def self.pending_comment_counts(component_ids)
+    return {} if component_ids.blank?
+
+    Review.where(action: 'comment',
+                 responding_to_review_id: nil,
+                 triage_status: 'pending')
+          .joins(:rule)
+          .merge(Rule.where(component_id: component_ids))
+          .group('base_rules.component_id')
+          .count
+  end
+
   # Backs GET /components/:id/comments — the triage table (PR #717).
   #
   # On-the-wire vocabulary is DISA-native: triage_status keys (concur,

@@ -28,6 +28,15 @@ class ComponentBlueprint < Blueprinter::Base
     component.severity_counts_hash
   end
 
+  # Pending top-level comment count for this component. Surfaces a
+  # "N pending" badge on the component card so reviewers discover the
+  # triage queue without drilling in. Pre-batched via
+  # Component.pending_comment_counts and passed through render options.
+  field :pending_comment_count do |component, options|
+    counts = options[:pending_comment_counts] || {}
+    counts[component.id] || 0
+  end
+
   # === Index view: listing page ===
   view :index do
     fields :updated_at, :released
