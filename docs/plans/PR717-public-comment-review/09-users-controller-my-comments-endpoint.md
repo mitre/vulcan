@@ -1,4 +1,4 @@
-# Task 09: GET /users/:id/comments (My Comments page backing endpoint)
+# Task 09: GET /users/:id/comments (Comments-by-author endpoint)
 
 **Depends on:** 04, 06
 **Unblocks:** 20
@@ -8,7 +8,39 @@
 - `app/controllers/users_controller.rb` (or equivalent)
 - `spec/requests/users_spec.rb`
 
-Backs the "My Comments" page (§2.9). Always scoped to `current_user` (no admin override — privacy).
+Returns the comments authored by user `:id`, scoped to projects the requester
+can see (admins see all). Backs the "My Comments" page (§2.9), but the same
+endpoint also supports admin and peer-member cross-user views — they all
+read the same shape, the row scope just narrows or widens by who's asking.
+
+**Authorization model — important correction from earlier draft.**
+
+An earlier draft of this plan called this an "absolutely private" endpoint —
+"current_user only, no admin override." That framing was wrong. Comments in
+this system are **not private data**: any project member can already read all
+comments on any rule in projects they have access to via
+`GET /components/:id/comments` (Task 08). The "My Comments" page is a
+*personal dashboard view* — a slice of the same project-member-visible data
+filtered to a specific author — not a separate privacy zone.
+
+Industry pattern (GitHub `/users/:username/issues`, Linear "My issues",
+Jira filter views): filter the rows to what the requester is authorized to
+see, then within that, scope by author. This matches OWASP A01 (Broken
+Access Control) — guard against cross-tenant leak by row-level scoping, not
+by blocking the endpoint on identity equality.
+
+So the actual model is:
+
+- `before_action :authorize_logged_in` on the action — must be authenticated
+- Inside the action: `Review.where(user_id: target_user.id)` joined with
+  `Rule.where(component: Component.where(project_id: current_user.available_projects))`
+- Result: peer members see comments on shared projects only; admins see
+  everything; non-members see an empty list (no leak).
+
+Earlier draft's `authorize_self` filter is **not used** — it would have
+blocked admins triaging by author and forced the v2 admin "comments by user
+X" workflow into a different controller. The simplification ("self only")
+was operationally simpler for v1 but baked in a security-pattern mistake.
 
 ---
 

@@ -34,6 +34,9 @@ Rails.application.routes.draw do
       post :set_password
       post :lock
       post :unlock
+      # Privacy: only the user themselves can read their own comment list
+      # (no admin override — see UsersController#authorize_self).
+      get :comments
     end
   end
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
