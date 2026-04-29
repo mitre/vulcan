@@ -6,15 +6,34 @@ class Review < ApplicationRecord
   belongs_to :rule
   has_one :component, through: :rule
 
-  VALID_ACTIONS = %w[
-    comment
-    request_review
-    revoke_review_request
-    request_changes
-    approve
-    lock_control
-    unlock_control
-  ].freeze
+  # Map of role tier → roles that satisfy it (low-to-high inclusive). Replaces
+  # the fragile constantize approach so a typo or missing constant raises at
+  # boot, not via a 500 at validation time.
+  TIER_ROLES = {
+    viewers: %w[viewer author reviewer admin],
+    authors: %w[author reviewer admin],
+    reviewers: %w[reviewer admin],
+    admins: %w[admin]
+  }.freeze
+
+  # Single source of truth for which action requires which role tier.
+  # validate_project_permissions consults this BEFORE the per-action
+  # state validators (can_request_review, can_approve, etc.) run — closes
+  # the Copilot-flagged bug where a viewer could send action=request_review
+  # against an unlocked, not-under-review rule and become the requestor.
+  ACTION_PERMISSIONS = {
+    'comment' => :viewers,
+    'request_review' => :authors,
+    'revoke_review_request' => :authors,
+    'request_changes' => :reviewers,
+    'approve' => :reviewers,
+    'lock_control' => :admins,
+    'unlock_control' => :admins
+  }.freeze
+
+  # Back-compat alias — derived from ACTION_PERMISSIONS so adding a new action
+  # is one map entry instead of two.
+  VALID_ACTIONS = ACTION_PERMISSIONS.keys.freeze
 
   validates :comment, :action, presence: true
   # rubocop:disable Rails/I18nLocaleTexts
@@ -49,7 +68,17 @@ class Review < ApplicationRecord
   def validate_project_permissions
     return unless user && rule
 
-    errors.add(:base, 'You have no permissions on this project') if project_permissions.blank?
+    required_tier = ACTION_PERMISSIONS[action]
+    return if required_tier.nil? # inclusion validator catches unknown actions
+
+    if project_permissions.blank?
+      errors.add(:base, 'You have no permissions on this project')
+      return
+    end
+
+    return if TIER_ROLES.fetch(required_tier).include?(project_permissions)
+
+    errors.add(:base, "Insufficient permissions to #{action} on this component")
   end
 
   ##
