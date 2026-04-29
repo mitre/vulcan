@@ -1,18 +1,40 @@
 # Task 16: SectionCommentIcon.vue + per-section icons in the rule form
 
 **Depends on:** 13
-**Estimate:** 45 min Claude-pace (revised up — more files than originally thought)
+**Estimate:** 45 min Claude-pace
 **File touches:**
 - `app/javascript/components/shared/SectionCommentIcon.vue` (new)
-- `app/javascript/components/rules/forms/RuleFormGroup.vue` (modify — add slot/prop for icon next to label) **OR** `app/javascript/components/rules/forms/RuleForm.vue`, `CheckForm.vue`, `DisaRuleDescriptionForm.vue`, `RuleDescriptionForm.vue` (modify each section's `<RuleFormGroup>` invocation)
+- `app/javascript/components/shared/RuleFormGroup.vue` (modify — render `<SectionCommentIcon>` inline with the existing label icon stack)
 - `app/javascript/components/rules/RuleEditorHeader.vue` (add general-comment + view-all-comments buttons)
+- `app/javascript/components/rules/forms/UnifiedRuleForm.vue` (compute `commentsBySection` and pass down via provide/inject or per-call-site prop)
 - `spec/javascript/components/shared/SectionCommentIcon.spec.js` (new)
 
-**Verified facts (corrected from initial guess):**
-- There is **no `RulesCodeEditorView.vue` section header pattern** — the rule fields are rendered inside `RuleEditor.vue` → `<UnifiedRuleForm>` → which composes `RuleForm.vue` + `CheckForm.vue` + `DisaRuleDescriptionForm.vue` + `RuleDescriptionForm.vue`.
-- Each field is a `<RuleFormGroup field-name="..." label="..." tooltip="...">` (see `RuleForm.vue:13-31` for the pattern).
-- The 10 sections from `RuleConstants::LOCKABLE_SECTION_NAMES` map to specific `RuleFormGroup` invocations across these files.
-- **Recommended approach (lighter touch):** add an optional `comment-section` prop to `RuleFormGroup.vue` that renders `<SectionCommentIcon>` inline with the label when set. Then each `RuleFormGroup` call site adds `:comment-section="'check_content'"` (or whichever XCCDF key applies).
+**Verified facts (read RuleFormGroup.vue + ruleFieldConfig before writing this task):**
+
+- `RuleFormGroup.vue` is at **`app/javascript/components/shared/RuleFormGroup.vue`** (NOT `forms/`). Imported across `forms/RuleForm.vue`, `forms/CheckForm.vue`, `forms/DisaRuleDescriptionForm.vue`, `benchmarks/RuleDetails.vue` (4 consumers).
+- It already has a **`resolvedSection` computed** (lines 105-108) that returns the human-readable section name (e.g., `"Check"`, `"Fix"`, `"Title"`) by looking up `FIELD_TO_SECTION[fieldName]` from `app/javascript/composables/ruleFieldConfig`. **Good news:** we don't need a new prop — the section is already known.
+- The label rendering with icons is at **lines 4-39**. Existing icons inside the `<label>`: info-circle tooltip (line 6-11), section-lock-fill (line 12-23), section-unlock (line 24-38). New `<SectionCommentIcon>` slots in **right after line 38, still inside `<label>`**.
+- The `resolvedSection` returns the **display label** (e.g., `"Check"`), but our XCCDF-key vocabulary in storage/API uses `"check_content"`. The XCCDF mapping per design §3.1.2 — `SectionCommentIcon` must convert internally and emit the XCCDF key.
+
+**Mapping (display label → XCCDF key) — add to `triageVocabulary.js` from Task 03 if not already present:**
+
+```javascript
+// app/javascript/constants/triageVocabulary.js
+export const DISPLAY_TO_XCCDF_SECTION = Object.freeze({
+  "Title": "title",
+  "Severity": "severity",
+  "Status": "status",
+  "Fix": "fixtext",
+  "Check": "check_content",
+  "Vulnerability Discussion": "vuln_discussion",
+  "DISA Metadata": "disa_metadata",
+  "Vendor Comments": "vendor_comments",
+  "Artifact Description": "artifact_description",
+  "XCCDF Metadata": "xccdf_metadata",
+});
+```
+
+(Task 03 may not have included this map — if missing, add it as part of this task and update the parity spec from Task 03 to assert it.)
 
 Per design §2.6.1: small `💬` icon next to each section label in the rule form. Click → opens composer (Task 17) with section pre-tagged. Counter badge when section has pending comments.
 
@@ -139,62 +161,81 @@ export default {
 
 ## Step 4: Wire into the rule form via `RuleFormGroup.vue`
 
-Open `app/javascript/components/rules/forms/RuleFormGroup.vue`. Read its current structure first — note where `label` is rendered. Add an optional prop `commentSection` and render `<SectionCommentIcon>` inline with the label when set:
+Open `app/javascript/components/shared/RuleFormGroup.vue` (note: under `shared/`, not `forms/`). The template already has a label block at lines 4-39 with three icons inside (info-circle, section-lock-fill, section-unlock). We add `<SectionCommentIcon>` as a fourth icon in that block, after line 38 and before the closing `</label>` on line 39.
 
-```vue
-<!-- in RuleFormGroup.vue's template, next to the label -->
-<template>
-  <b-form-group :label="label" ...>
-    <template #label>
-      {{ label }}
-      <SectionCommentIcon
-        v-if="commentSection"
-        :section="commentSection"
-        :pending-count="pendingCommentsForSection"
-        :locked="ruleLocked"
-        @open-composer="$emit('open-composer', commentSection)"
-      />
-    </template>
-    <slot />
-  </b-form-group>
-</template>
+Add three new props to the `props:` block (lines 63-81):
 
-<script>
-import SectionCommentIcon from "../../shared/SectionCommentIcon.vue";
-export default {
-  name: "RuleFormGroup",
-  components: { SectionCommentIcon },
-  props: {
-    // ...existing props (fieldName, label, tooltip, etc.)...
-    commentSection: { type: String, default: null },          // NEW: XCCDF key
-    pendingCommentsForSection: { type: Number, default: 0 }, // NEW: count for badge
-    ruleLocked: { type: Boolean, default: false },           // NEW: hide on lock
-  },
-  // ...
-};
-</script>
+```javascript
+// New props — every consumer site of RuleFormGroup gets a chance to opt in
+showCommentIcon: { type: Boolean, default: false },          // NEW: only show icon when this is true
+ruleReviews: { type: Array, default: () => [] },              // NEW: rule.reviews to count from
+ruleLocked: { type: Boolean, default: false },                // NEW: hide on locked rules
 ```
 
-(Adjust merge into RuleFormGroup's actual structure — verify by reading it first.)
+Add a computed for the pending count (in the `computed:` block):
 
-Then update each section's `<RuleFormGroup>` invocation in the form files to pass `comment-section`. Mapping (XCCDF keys per §3.1.2 of the design doc):
+```javascript
+import { DISPLAY_TO_XCCDF_SECTION } from "../../constants/triageVocabulary";
 
-| Existing field-name (in *Form.vue) | XCCDF section key |
-|---|---|
-| `status` (in `RuleForm.vue:14`) | `status` |
-| `rule_severity` (in `RuleForm.vue:35`) | `severity` |
-| `title` | `title` |
-| `fixtext` (in `CheckForm.vue` or similar) | `fixtext` |
-| `check_content` | `check_content` |
-| `vuln_discussion` | `vuln_discussion` |
-| (DISA metadata fields — group under one) | `disa_metadata` |
-| `vendor_comments` | `vendor_comments` |
-| `artifact_description` | `artifact_description` |
-| (XCCDF metadata fields — group under one) | `xccdf_metadata` |
+// in computed:
+xccdfSection() {
+  return DISPLAY_TO_XCCDF_SECTION[this.resolvedSection] || null;
+},
+pendingCommentCount() {
+  if (!this.xccdfSection) return 0;
+  return this.ruleReviews.filter(
+    (r) => r.action === "comment"
+        && r.responding_to_review_id == null
+        && r.triage_status === "pending"
+        && r.section === this.xccdfSection,
+  ).length;
+},
+```
 
-For grouped sections like DISA Metadata (which contains many fields per `RuleConstants::SECTION_FIELDS`), only the FIRST field in the section gets the `comment-section` prop — that's where the icon shows. Other fields in the same section don't duplicate.
+Then in the template, after line 38 and BEFORE the `</label>` on line 39, insert:
 
-Verify the actual field-to-section mapping against `app/constants/rule_constants.rb#SECTION_FIELDS` before implementing.
+```vue
+<SectionCommentIcon
+  v-if="showCommentIcon && xccdfSection && !ruleLocked"
+  :section="xccdfSection"
+  :pending-count="pendingCommentCount"
+  class="ml-1"
+  @open-composer="$emit('open-composer', xccdfSection)"
+/>
+```
+
+Register the import:
+
+```javascript
+import SectionCommentIcon from "./SectionCommentIcon.vue"; // both in shared/
+```
+
+**Why one icon per RuleFormGroup, not per section?** RuleFormGroup is rendered once per *field*. Multiple fields belong to the same DISA section (e.g., `documentable`, `false_positives`, `mitigations` all live in "DISA Metadata"). To avoid duplicate icons in DISA Metadata, the consumer (UnifiedRuleForm and the per-section forms) decides which RuleFormGroup gets `:show-comment-icon="true"` — typically the **first field in the section**.
+
+## Step 4a: Decide per-call-site `:show-comment-icon`
+
+Per `RuleConstants::SECTION_FIELDS` (in `app/constants/rule_constants.rb`), each section maps to multiple fields. The "first field" representing each section:
+
+| Section (display label) | XCCDF key | First field |
+|---|---|---|
+| Title | `title` | `title` |
+| Severity | `severity` | `rule_severity` |
+| Status | `status` | `status` |
+| Fix | `fixtext` | `fixtext` |
+| Check | `check_content` | `check_content` |
+| Vulnerability Discussion | `vuln_discussion` | `vuln_discussion` |
+| DISA Metadata | `disa_metadata` | `documentable` |
+| Vendor Comments | `vendor_comments` | `vendor_comments` |
+| Artifact Description | `artifact_description` | `artifact_description` |
+| XCCDF Metadata | `xccdf_metadata` | `version` |
+
+For each of these 10 first-fields in `RuleForm.vue`, `CheckForm.vue`, `DisaRuleDescriptionForm.vue`, `RuleDescriptionForm.vue`: find the `<RuleFormGroup field-name="<first-field>" ...>` invocation and add `:show-comment-icon="true"` + `:rule-reviews="rule.reviews || []"` + `:rule-locked="rule.locked"`.
+
+Use grep to locate each:
+
+```bash
+grep -rnE 'field-name="(title|rule_severity|status|fixtext|check_content|vuln_discussion|documentable|vendor_comments|artifact_description|version)"' app/javascript/components/rules/forms/
+```
 
 ## Step 5: Add general-comment + view-all-comments buttons to `RuleEditorHeader.vue`
 

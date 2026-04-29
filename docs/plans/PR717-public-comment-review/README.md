@@ -16,13 +16,21 @@ You are picking up a TDD-driven implementation that ships in **one PR over 1–2
 
 ```bash
 git rev-parse --abbrev-ref HEAD     # → feat/viewer-comments
-git log --oneline -3                # → top three commits include 3f1593e, 8e8ae99, 8fdb4cf
-git status --short                  # → clean (uncommitted PLAN/DESIGN files at root are expected)
+git log --oneline -6                # → top six commits should include:
+                                    #     6103453 chore(plan): renumber plan tasks ...
+                                    #     dc99d8e docs: TDD-driven implementation plan ...
+                                    #     2061072 docs: design for public-comment-review ...
+                                    #     9001d0b fix: per-action role gate via ACTION_PERMISSIONS map ...
+                                    #     71726fa fix: gate request_review by role + spec polish
+                                    #     3f1593e fix: include admin-contact hint ...
+git status --short                  # → clean working tree (modulo any local untracked work)
 bundle exec parallel_rspec spec/    # → currently green; if not, STOP and surface
 pnpm vitest run                     # → currently green; if not, STOP and surface
 ```
 
 If any of those fail, do **not** start — surface the discrepancy to the user.
+
+**SHA note:** the SHAs above are the state at the time this README was written (after `chore(plan): renumber`). New commits will of course shift the top of `git log`. As long as `9001d0b` (ACTION_PERMISSIONS map) and `71726fa` (Will's role gate fix) are present in `git log feat/viewer-comments`, you're on the right branch.
 
 ---
 
