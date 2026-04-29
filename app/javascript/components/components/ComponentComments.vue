@@ -73,7 +73,17 @@
           variant="outline-primary"
           @click="openTriageFor(item)"
         >
-          {{ item.triage_status === "pending" ? "Triage" : "Close" }}
+          {{ actionLabel(item) }}
+        </b-button>
+        <b-button
+          v-else-if="item.triage_status !== 'withdrawn'"
+          v-b-tooltip.hover
+          size="sm"
+          variant="outline-secondary"
+          title="Revert to 'decided but not closed' so the decision can be revised."
+          @click="openReopen(item)"
+        >
+          <b-icon icon="arrow-counterclockwise" /> Re-open
         </b-button>
       </template>
       <template #table-busy>
@@ -203,6 +213,35 @@ export default {
     openTriageFor(row) {
       this.selectedRow = row;
       this.$bvModal.show("comment-triage-modal");
+    },
+    // Button label clarifies the lifecycle stage: pending → triage,
+    // already-triaged but not yet adjudicated → "Edit / Close" makes
+    // editability obvious (was previously labeled just "Close" which
+    // misleadingly implied finalize-only).
+    actionLabel(row) {
+      if (row.triage_status === "pending") return "Triage";
+      return "Edit / Close";
+    },
+    async openReopen(row) {
+      try {
+        const { data } = await axios.patch(`/reviews/${row.id}/reopen`);
+        // Server returns the updated Review hash on the `review` key.
+        if (data && data.review) {
+          this.alertOrNotifyResponse({
+            data: {
+              toast: {
+                title: "Re-opened",
+                message: ["Decision is editable again."],
+                variant: "success",
+              },
+            },
+          });
+        }
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.fetch();
+      }
     },
     onTriaged() {
       this.fetch();

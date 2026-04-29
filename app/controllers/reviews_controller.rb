@@ -6,13 +6,13 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage adjudicate withdraw update]
-  before_action :set_project_from_review, only: %i[triage adjudicate update]
+  before_action :set_review, only: %i[triage adjudicate reopen withdraw update]
+  before_action :set_project_from_review, only: %i[triage adjudicate reopen update]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
-  before_action :authorize_author_project, only: %i[triage adjudicate]
+  before_action :authorize_author_project, only: %i[triage adjudicate reopen]
   before_action :authorize_review_owner, only: %i[withdraw update]
 
   def create
@@ -177,6 +177,36 @@ class ReviewsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: {
       toast: { title: 'Could not close.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PATCH /reviews/:id/reopen — author+ reverts an adjudicated comment back
+  # to "decided but not adjudicated" so the triage decision can be revised.
+  # Withdrawn comments are commenter-revoked and NOT re-openable by triagers
+  # (the commenter would have to post a new comment instead). Idempotent on
+  # withdraw-rejection: state is unchanged and 422 is returned.
+  def reopen
+    if @review.adjudicated_at.blank?
+      return render json: {
+        toast: { title: 'Cannot re-open.',
+                 message: ['This comment has not been adjudicated.'],
+                 variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    if @review.triage_status == 'withdrawn'
+      return render json: {
+        toast: { title: 'Cannot re-open.',
+                 message: ['Withdrawn comments can only be re-opened by the original commenter.'],
+                 variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    @review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
+    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not re-open.', message: e.record.errors.full_messages, variant: 'danger' }
     }, status: :unprocessable_entity
   end
 

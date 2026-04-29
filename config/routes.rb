@@ -72,11 +72,12 @@ Rails.application.routes.draw do
   # Public-comment-review triage table (PR #717) — MUST be before :stig_id catch-all
   get '/components/:id/comments', to: 'components#comments'
   # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /
-  # withdraw / update operate on a Review by id. See ReviewsController.
-  patch '/reviews/:id/triage', to: 'reviews#triage'
-  patch '/reviews/:id/adjudicate', to: 'reviews#adjudicate'
-  patch '/reviews/:id/withdraw', to: 'reviews#withdraw'
-  put   '/reviews/:id',          to: 'reviews#update'
+  # reopen / withdraw / update operate on a Review by id. See ReviewsController.
+  patch '/reviews/:id/triage',      to: 'reviews#triage'
+  patch '/reviews/:id/adjudicate',  to: 'reviews#adjudicate'
+  patch '/reviews/:id/reopen',      to: 'reviews#reopen'
+  patch '/reviews/:id/withdraw',    to: 'reviews#withdraw'
+  put   '/reviews/:id',             to: 'reviews#update'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 
