@@ -31,3 +31,49 @@
 
 en:
   hello: "Hello world"
+  vulcan:
+    triage:
+      status:
+        pending: "Pending"
+        concur: "Accept"
+        concur_with_comment: "Accept with changes"
+        non_concur: "Decline"
+        duplicate: "Duplicate"
+        informational: "Informational"
+        needs_clarification: "Needs clarification"
+        withdrawn: "Withdrawn"
+      disa_status:
+        pending: "Pending"
+        concur: "Concur"
+        concur_with_comment: "Concur with comment"
+        non_concur: "Non-concur"
+        duplicate: "Duplicate"
+        informational: "Informational"
+        needs_clarification: "Needs clarification"
+        withdrawn: "Withdrawn"
+      adjudicated:
+        label: "Closed"
+        tooltip: "Adjudicated — work complete"
+      errors:
+        decline_requires_response: "Decline requires a response — explain why so the commenter understands."
+        duplicate_requires_target: "Mark-as-duplicate requires selecting the canonical comment."
+        cannot_withdraw_already_triaged: "This comment has already been triaged and can't be withdrawn."
+        cannot_edit_after_triage: "Comments can only be edited while pending triage."
+        permission_denied_comment: "You do not have permission to comment on this component. Ask a project administrator to grant you membership."
+      sections:
+        title: "Title"
+        severity: "Severity"
+        status: "Status"
+        fixtext: "Fix"
+        check_content: "Check"
+        vuln_discussion: "Vulnerability Discussion"
+        disa_metadata: "DISA Metadata"
+        vendor_comments: "Vendor Comments"
+        artifact_description: "Artifact Description"
+        xccdf_metadata: "XCCDF Metadata"
+        general: "(general)"
+      comment_phase:
+        draft: "Draft"
+        open: "Open for comment"
+        adjudication: "Adjudication"
+        final: "Final"
