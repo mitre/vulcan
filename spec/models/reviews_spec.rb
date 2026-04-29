@@ -320,7 +320,8 @@ RSpec.describe Review do
         @p_viewer
       ].each do |user|
         review = Review.new(action: 'comment', comment: '...', user: user, rule: @p1r1)
-        expect(review).to be_valid, "expected #{user} (membership role) to be able to comment"
+        role = user.effective_permissions(@p1r1.component) || 'site-admin'
+        expect(review).to be_valid, "expected #{user} (membership role: #{role}) to be able to comment"
       end
     end
   end
@@ -361,6 +362,12 @@ RSpec.describe Review do
       review = Review.new(action: 'lock_control', comment: 'lock!', user: @p_viewer, rule: @p1r1)
       review.valid?
       expect(review.errors[:base]).to include('Only an admin can lock')
+    end
+
+    it 'rejects a viewer attempting to request_review' do
+      review = Review.new(action: 'request_review', comment: 'please look', user: @p_viewer, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:base]).to include('Only admins, reviewers, and authors can request a review')
     end
   end
 end

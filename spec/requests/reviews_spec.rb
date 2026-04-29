@@ -30,7 +30,7 @@ RSpec.describe 'Reviews' do
       it 'allows posting a comment review' do
         expect do
           post "/rules/#{rule.id}/reviews", params: {
-            review: { action: 'comment', comment: 'Question about this control.' }
+            review: { action: 'comment', comment: 'Question about this control.', component_id: component.id }
           }, as: :json
         end.to change(Review, :count).by(1)
 
@@ -42,7 +42,7 @@ RSpec.describe 'Reviews' do
         rule.update(review_requestor: create(:user))
 
         post "/rules/#{rule.id}/reviews", params: {
-          review: { action: 'approve', comment: 'lgtm' }
+          review: { action: 'approve', comment: 'lgtm', component_id: component.id }
         }, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
@@ -53,15 +53,26 @@ RSpec.describe 'Reviews' do
         rule.update(review_requestor: create(:user))
 
         post "/rules/#{rule.id}/reviews", params: {
-          review: { action: 'request_changes', comment: 'no' }
+          review: { action: 'request_changes', comment: 'no', component_id: component.id }
         }, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
       end
 
+      it 'rejects an attempt to request_review' do
+        post "/rules/#{rule.id}/reviews", params: {
+          review: { action: 'request_review', comment: 'please look', component_id: component.id }
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body.dig('toast', 'message').join)
+          .to match(/Only admins, reviewers, and authors can request a review/i)
+        expect(rule.reload.review_requestor_id).to be_nil
+      end
+
       it 'rejects an unknown action string with the inclusion validator error' do
         post "/rules/#{rule.id}/reviews", params: {
-          review: { action: 'definitely_not_real', comment: 'sneaky' }
+          review: { action: 'definitely_not_real', comment: 'sneaky', component_id: component.id }
         }, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
@@ -80,7 +91,7 @@ RSpec.describe 'Reviews' do
       it 'allows posting a comment review' do
         expect do
           post "/rules/#{rule.id}/reviews", params: {
-            review: { action: 'comment', comment: 'Author note.' }
+            review: { action: 'comment', comment: 'Author note.', component_id: component.id }
           }, as: :json
         end.to change(Review, :count).by(1)
 
@@ -89,7 +100,7 @@ RSpec.describe 'Reviews' do
 
       it 'allows requesting review' do
         post "/rules/#{rule.id}/reviews", params: {
-          review: { action: 'request_review', comment: 'Please review.' }
+          review: { action: 'request_review', comment: 'Please review.', component_id: component.id }
         }, as: :json
 
         expect(response).to have_http_status(:ok)
@@ -111,7 +122,7 @@ RSpec.describe 'Reviews' do
       it 'returns a structured 403 with project admin contacts' do
         expect do
           post "/rules/#{rule.id}/reviews", params: {
-            review: { action: 'comment', comment: 'I should not be here' }
+            review: { action: 'comment', comment: 'I should not be here', component_id: component.id }
           }, as: :json
         end.not_to change(Review, :count)
 
@@ -134,7 +145,7 @@ RSpec.describe 'Reviews' do
       it 'redirects to sign-in' do
         expect do
           post "/rules/#{rule.id}/reviews", params: {
-            review: { action: 'comment', comment: 'unauth' }
+            review: { action: 'comment', comment: 'unauth', component_id: component.id }
           }
         end.not_to change(Review, :count)
 

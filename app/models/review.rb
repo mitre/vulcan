@@ -54,10 +54,14 @@ class Review < ApplicationRecord
 
   ##
   # should only be able to request review if
+  # - current user is admin, reviewer, or author (viewers can only comment)
   # - not currently under review
   # - not currently locked
   def can_request_review
-    if rule.locked
+    perms = project_permissions
+    if perms != 'admin' && perms != 'reviewer' && perms != 'author'
+      errors.add(:base, 'Only admins, reviewers, and authors can request a review')
+    elsif rule.locked
       errors.add(:base, 'Cannot request a review on a locked control')
     elsif !rule.review_requestor_id.nil?
       errors.add(:base, 'Control is already under review')
