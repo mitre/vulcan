@@ -147,7 +147,7 @@
         <ComponentComments
           v-if="activePanel === 'comp-reviews'"
           :component-id="component.id"
-          @jump-to-rule="$emit('select-rule', $event)"
+          @jump-to-rule="onJumpToRule"
         />
       </div>
     </b-sidebar>
@@ -321,6 +321,13 @@ export default {
           this.localHistories = response.data;
         })
         .catch(() => {}); // Silently fail — non-critical UI refresh
+    },
+    // Clicked a rule_id link inside the comments triage table — select
+    // the rule AND close the panel so the user lands on the rule
+    // (the open sidebar would otherwise cover the rules list).
+    onJumpToRule(ruleId) {
+      this.$emit("rule-selected", ruleId);
+      this.$emit("close-panel");
     },
   },
 };
