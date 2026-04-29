@@ -26,13 +26,12 @@ FROM registry.access.redhat.com/ubi9/ruby-33:1 AS base
 USER root
 WORKDIR /rails
 
-# Install base packages including jemalloc for better memory management
+# Install base packages.
 # libvips removed — image_processing gem is commented out and ActiveStorage
 # is not used for file attachments. postgresql kept for db:prepare.
 RUN dnf install -y \
       ca-certificates \
       curl \
-      jemalloc \
       libpq \
       libyaml \
       postgresql && \
@@ -51,8 +50,7 @@ RUN cd /usr/local/share/ca-certificates/custom && \
     rm -f /usr/local/share/ca-certificates/custom/README.md
 
 # Common environment for all stages
-ENV LD_PRELOAD="/usr/lib64/libjemalloc.so.2" \
-    MALLOC_ARENA_MAX="2" \
+ENV MALLOC_ARENA_MAX="2" \
     NODE_EXTRA_CA_CERTS="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" \
     BUNDLE_PATH="/usr/local/bundle"
 
