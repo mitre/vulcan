@@ -6,10 +6,13 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
+  before_action :set_review, only: %i[triage]
+  before_action :set_project_from_review, only: %i[triage]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
+  before_action :authorize_author_project, only: %i[triage]
 
   def create
     review_params_without_component_id = review_params.except('component_id')
@@ -67,6 +70,63 @@ class ReviewsController < ApplicationController
         }
       }, status: :unprocessable_entity
     end
+  end
+
+  # PATCH /reviews/:id/triage — author+ records a triage decision on a
+  # top-level comment Review. If response_comment is supplied, atomically
+  # creates a child Review (action='comment', responding_to_review_id) so
+  # the response renders inline in the rule's existing thread.
+  #
+  # Validation per design §3.5:
+  #   - triage_status must be one of Review::TRIAGE_STATUSES
+  #   - non_concur (Decline) requires response_comment
+  #   - duplicate requires duplicate_of_review_id
+  # Terminal statuses (duplicate / informational / withdrawn) auto-set
+  # adjudicated_at via the Review#auto_set_adjudicated_for_terminal_statuses
+  # callback from Task 06.
+  def triage
+    if @review.adjudicated_at.present? &&
+       Review::TERMINAL_AUTO_ADJUDICATE_STATUSES.exclude?(params[:triage_status])
+      return render json: {
+        toast: { title: 'Cannot re-triage.', message: ['This comment is already closed.'], variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    if (validation_error = validate_triage_params)
+      return render json: {
+        toast: { title: 'Could not save triage.', message: [validation_error], variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    response_review = nil
+    Review.transaction do
+      @review.update!(
+        triage_status: params[:triage_status],
+        triage_set_by_id: current_user.id,
+        triage_set_at: Time.current,
+        duplicate_of_review_id: params[:duplicate_of_review_id]
+      )
+
+      if params[:response_comment].present?
+        response_review = Review.create!(
+          action: 'comment',
+          comment: params[:response_comment],
+          user: current_user,
+          rule: @review.rule,
+          responding_to_review_id: @review.id,
+          section: @review.section
+        )
+      end
+    end
+
+    render json: {
+      review: ReviewBlueprint.render_as_hash(@review),
+      response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
+    }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not save triage.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
   end
 
   def lock_controls
@@ -223,8 +283,39 @@ class ReviewsController < ApplicationController
     @component = Component.find(params[:component_id])
   end
 
+  # Lifecycle endpoints (triage / adjudicate / withdraw / update) operate on
+  # a Review by id. Look it up here so the action body never has to.
+  def set_review
+    @review = Review.find_by(id: params[:id])
+    head :not_found unless @review
+  end
+
+  # Derives @project from @review's rule chain so the standard
+  # authorize_*_project filters work without modification. This is the
+  # IDOR guard for cross-project Review access — pairing set_review with
+  # this filter forces a project membership check before any state change.
+  def set_project_from_review
+    return unless @review
+
+    component = @review.rule&.component
+    @project = component&.project
+  end
+
+  # rubocop:disable Naming/MemoizedInstanceVariableName -- this is a filter,
+  # not a memoizer; the `||=` lets set_project_from_review's earlier @project
+  # assignment win without overwriting it.
   def set_project
-    @project = @rule&.component&.project || @component&.project
+    @project ||= @rule&.component&.project || @component&.project
+  end
+  # rubocop:enable Naming/MemoizedInstanceVariableName
+
+  def validate_triage_params
+    status = params[:triage_status]
+    return I18n.t('vulcan.triage.errors.cannot_edit_after_triage') unless Review::TRIAGE_STATUSES.include?(status)
+    return I18n.t('vulcan.triage.errors.decline_requires_response') if status == 'non_concur' && params[:response_comment].blank?
+    return I18n.t('vulcan.triage.errors.duplicate_requires_target') if status == 'duplicate' && params[:duplicate_of_review_id].blank?
+
+    nil
   end
 
   def review_params

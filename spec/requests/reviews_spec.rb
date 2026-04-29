@@ -184,4 +184,136 @@ RSpec.describe 'Reviews' do
       expect(rule.reload.review_requestor_id).to be_nil
     end
   end
+
+  describe 'PATCH /reviews/:id/triage' do
+    let_it_be(:triager) { create(:user) }
+    let_it_be(:commenter) { create(:user) }
+    let_it_be(:other_project) { create(:project) }
+    let_it_be(:other_component) { create(:component, project: other_project, based_on: srg) }
+
+    # before_all (test_prof) runs once before any example in this describe;
+    # using before(:each) here would race with let!(:comment), which has to
+    # build a Review whose validate_project_permissions sees commenter as
+    # a viewer of `project`.
+    before_all do
+      Membership.find_or_create_by!(user: triager, membership: project) { |m| m.role = 'author' }
+      Membership.find_or_create_by!(user: commenter, membership: project) { |m| m.role = 'viewer' }
+    end
+
+    let(:other_rule) { other_component.rules.first }
+    let!(:comment) do
+      Review.create!(action: 'comment', comment: 'check text issue', user: commenter,
+                     rule: rule, section: 'check_content')
+    end
+
+    context 'as an author' do
+      before { sign_in triager }
+
+      it 'sets triage_status + audit fields and creates a response Review when text is supplied' do
+        patch "/reviews/#{comment.id}/triage", params: {
+          triage_status: 'concur_with_comment',
+          response_comment: "Thanks — we'll adopt with stricter regex."
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        comment.reload
+        expect(comment.triage_status).to eq('concur_with_comment')
+        expect(comment.triage_set_by_id).to eq(triager.id)
+        expect(comment.triage_set_at).to be_within(5.seconds).of(Time.current)
+
+        response_review = Review.find_by(responding_to_review_id: comment.id)
+        expect(response_review).to be_present
+        expect(response_review.action).to eq('comment')
+        expect(response_review.section).to eq('check_content')
+        expect(response_review.user_id).to eq(triager.id)
+        expect(response_review.comment).to match(/stricter regex/)
+      end
+
+      it 'rejects triage_status non_concur without response_comment' do
+        patch "/reviews/#{comment.id}/triage", params: {
+          triage_status: 'non_concur'
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/decline requires a response/i)
+        expect(comment.reload.triage_status).to eq('pending')
+      end
+
+      it 'requires duplicate_of_review_id when triage_status is duplicate' do
+        patch "/reviews/#{comment.id}/triage", params: {
+          triage_status: 'duplicate'
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/canonical comment/i)
+      end
+
+      it 'allows informational without response_comment + auto-sets adjudicated_at' do
+        patch "/reviews/#{comment.id}/triage", params: {
+          triage_status: 'informational'
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        comment.reload
+        expect(comment.triage_status).to eq('informational')
+        expect(comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+      end
+
+      it 'is idempotent on re-triage and audits each transition' do
+        patch "/reviews/#{comment.id}/triage",
+              params: { triage_status: 'concur', response_comment: 'first call' }, as: :json
+        expect(comment.reload.triage_status).to eq('concur')
+
+        patch "/reviews/#{comment.id}/triage",
+              params: { triage_status: 'non_concur', response_comment: 'changed our mind' }, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(comment.reload.triage_status).to eq('non_concur')
+
+        triage_audits = comment.audits.select { |a| a.audited_changes['triage_status'] }
+        expect(triage_audits.size).to be >= 2
+      end
+
+      it 'rejects an unknown triage_status' do
+        patch "/reviews/#{comment.id}/triage", params: { triage_status: 'whatever' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(comment.reload.triage_status).to eq('pending')
+      end
+
+      it 'returns 404 for a non-existent review id' do
+        patch '/reviews/9999999/triage', params: { triage_status: 'concur' }, as: :json
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context 'IDOR — author of project A cannot triage a Review in project B' do
+      before { sign_in triager }
+
+      let!(:other_comment) do
+        outsider = create(:user)
+        Membership.find_or_create_by!(user: outsider, membership: other_project) { |m| m.role = 'viewer' }
+        Review.create!(action: 'comment', comment: 'in other project',
+                       user: outsider, rule: other_rule)
+      end
+
+      it 'returns 403 with structured permission_denied body' do
+        patch "/reviews/#{other_comment.id}/triage",
+              params: { triage_status: 'concur' }, as: :json
+
+        expect(response).to have_http_status(:forbidden)
+        expect(response.parsed_body['error']).to eq('permission_denied')
+        expect(other_comment.reload.triage_status).to eq('pending')
+      end
+    end
+
+    context 'as a viewer (not authorized to triage)' do
+      before { sign_in commenter }
+
+      it 'returns 403 and leaves the comment untouched' do
+        patch "/reviews/#{comment.id}/triage",
+              params: { triage_status: 'concur' }, as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(comment.reload.triage_status).to eq('pending')
+      end
+    end
+  end
 end
