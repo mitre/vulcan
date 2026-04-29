@@ -5,6 +5,7 @@ import {
   TRIAGE_TOOLTIPS,
   TRIAGE_GLYPHS,
   SECTION_LABELS,
+  DISPLAY_TO_XCCDF_SECTION,
   COMMENT_PHASE_LABELS,
   sectionLabel,
   triageDisplay,
@@ -80,5 +81,14 @@ describe("triageVocabulary", () => {
   it("freezes all the maps", () => {
     expect(Object.isFrozen(TRIAGE_LABELS)).toBe(true);
     expect(Object.isFrozen(TRIAGE_GLYPHS)).toBe(true);
+  });
+
+  it("DISPLAY_TO_XCCDF_SECTION is the inverse of SECTION_LABELS (parity)", () => {
+    Object.entries(SECTION_LABELS).forEach(([xccdfKey, displayLabel]) => {
+      expect(DISPLAY_TO_XCCDF_SECTION[displayLabel]).toBe(xccdfKey);
+    });
+    Object.entries(DISPLAY_TO_XCCDF_SECTION).forEach(([displayLabel, xccdfKey]) => {
+      expect(SECTION_LABELS[xccdfKey]).toBe(displayLabel);
+    });
   });
 });

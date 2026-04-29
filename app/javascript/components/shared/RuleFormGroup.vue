@@ -36,6 +36,14 @@
         :data-testid="'section-lock-' + resolvedSection.replace(/\s+/g, '')"
         @click="canManageSectionLocks && $emit('toggle-section-lock', resolvedSection)"
       />
+      <SectionCommentIcon
+        v-if="showCommentIcon && xccdfSection"
+        :section="xccdfSection"
+        :pending-count="pendingCommentCount"
+        :locked="ruleLocked"
+        class="ml-1"
+        @open-composer="$emit('open-composer', xccdfSection)"
+      />
     </label>
 
     <!-- Input slot — parent provides the actual input element -->
@@ -55,11 +63,14 @@
 
 <script>
 import { FIELD_TO_SECTION } from "../../composables/ruleFieldConfig";
+import { DISPLAY_TO_XCCDF_SECTION } from "../../constants/triageVocabulary";
+import SectionCommentIcon from "./SectionCommentIcon.vue";
 
 let _rfgUid = 0;
 
 export default {
   name: "RuleFormGroup",
+  components: { SectionCommentIcon },
   props: {
     fieldName: { type: String, required: true },
     label: { type: String, required: true },
@@ -78,6 +89,11 @@ export default {
     extraClass: { type: [String, Array, Object], default: "" },
     idPrefix: { type: String, default: "ruleEditor" },
     customDisplayCheck: { type: Function, default: null },
+    // PR #717 — Section comment icon. Default false so existing call sites
+    // are unaffected; consumers opt in for the first field of each section.
+    showCommentIcon: { type: Boolean, default: false },
+    ruleReviews: { type: Array, default: () => [] },
+    ruleLocked: { type: Boolean, default: false },
   },
   data() {
     return { mod: _rfgUid++ };
@@ -121,6 +137,24 @@ export default {
     },
     hasInvalidFeedback() {
       return !!(this.invalidFeedback && this.invalidFeedback[this.fieldName]);
+    },
+    // resolvedSection returns the friendly display label ("Check"); the
+    // comments API expects the XCCDF key ("check_content").
+    xccdfSection() {
+      return this.resolvedSection ? DISPLAY_TO_XCCDF_SECTION[this.resolvedSection] || null : null;
+    },
+    // Pending top-level comments scoped to this section, used for the
+    // count badge on SectionCommentIcon. Replies (responding_to_review_id)
+    // are excluded — only top-level comments count.
+    pendingCommentCount() {
+      if (!this.xccdfSection || !this.ruleReviews || this.ruleReviews.length === 0) return 0;
+      return this.ruleReviews.filter(
+        (r) =>
+          r.action === "comment" &&
+          r.responding_to_review_id == null &&
+          r.triage_status === "pending" &&
+          r.section === this.xccdfSection,
+      ).length;
     },
   },
 };
