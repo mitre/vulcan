@@ -49,7 +49,9 @@
         </a>
       </template>
       <template #cell(section)="{ value }">
-        <SectionLabel :section="value" :placeholder="true" />
+        <!-- Use (general) label not em-dash for null section so a rule-level
+             comment is clearly identified rather than looking like missing data. -->
+        <SectionLabel :section="value" />
       </template>
       <template #cell(comment)="{ value }">
         <span :title="value">{{ truncate(value, 80) }}</span>
