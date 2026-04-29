@@ -158,6 +158,69 @@ describe("ComponentComments", () => {
     showSpy.mockRestore();
   });
 
+  // REQUIREMENT: rule deep-link must URL-encode the rule_displayed_name so
+  // that any unusual characters (slashes, hashes, whitespace) cannot break
+  // out of the path segment and silently navigate to the wrong page.
+  describe("ruleHref", () => {
+    it("URL-encodes the rule_displayed_name in the path", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        stubs: SHARED_STUBS,
+      });
+      const href = wrapper.vm.ruleHref({ rule_displayed_name: "FOO BAR/BAZ#1" });
+      expect(href).toBe(`/components/42/${encodeURIComponent("FOO BAR/BAZ#1")}`);
+    });
+
+    it("uses the row's component_id when scope=project", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { projectId: 9, scope: "project" },
+        stubs: SHARED_STUBS,
+      });
+      const href = wrapper.vm.ruleHref({
+        rule_displayed_name: "CNTR-01-000001",
+        component_id: 314,
+      });
+      expect(href).toBe("/components/314/CNTR-01-000001");
+    });
+  });
+
+  // REQUIREMENT: project-scope mode must hit the aggregate endpoint at
+  // /projects/:id/comments and render the Component column so triagers
+  // can see which component each row belongs to.
+  describe('scope="project"', () => {
+    it("fetches from /projects/:id/comments", async () => {
+      mount(ComponentComments, {
+        propsData: { projectId: 9, scope: "project" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises();
+      expect(axios.get).toHaveBeenCalledWith(
+        "/projects/9/comments",
+        expect.objectContaining({
+          params: expect.objectContaining({ triage_status: "pending" }),
+        }),
+      );
+    });
+
+    it("includes the component_name column in the table fields", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { projectId: 9, scope: "project" },
+        stubs: SHARED_STUBS,
+      });
+      const fieldKeys = wrapper.vm.fields.map((f) => f.key);
+      expect(fieldKeys).toContain("component_name");
+    });
+
+    it("does NOT include the component_name column in component scope", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        stubs: SHARED_STUBS,
+      });
+      const fieldKeys = wrapper.vm.fields.map((f) => f.key);
+      expect(fieldKeys).not.toContain("component_name");
+    });
+  });
+
   it("surfaces fetch errors via alertOrNotifyResponse without crashing", async () => {
     axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(ComponentComments, {

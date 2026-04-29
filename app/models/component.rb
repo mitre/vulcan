@@ -638,7 +638,10 @@ class Component < ApplicationRecord
                     rule_displayed_name: rule_id_to_displayed[r.rule_id],
                     section: r.section,
                     author_name: r.user&.name,
-                    author_email: r.user&.email,
+                    # author_email intentionally omitted — comment endpoints are
+                    # accessible to any project member, so exposing email enables
+                    # scraping of every commenter's contact info during a public
+                    # review window. Authorship is tracked by name + user_id only.
                     comment: r.comment,
                     created_at: r.created_at,
                     triage_status: r.triage_status,

@@ -142,6 +142,27 @@ describe("ComponentCard", () => {
       expect(html).toContain("patch-check-fill");
     });
 
+    // REQUIREMENT: pending-comment pill links to the full-page triage view
+    // (the slideover was retired). Anchor must point at /components/:id/triage,
+    // NOT the legacy /components/:id#comments hash URL.
+    describe("pending-comments pill link", () => {
+      it("links to the full-page triage view when pending_comment_count > 0", () => {
+        const comp = { ...defaultComponent, pending_comment_count: 4 };
+        wrapper = createWrapper({ component: comp });
+        const link = wrapper.find('a[href*="/triage"]');
+        expect(link.exists()).toBe(true);
+        expect(link.attributes("href")).toBe(`/components/${comp.id}/triage`);
+        expect(link.text()).toContain("4 pending");
+      });
+
+      it("does not render the pending pill when pending_comment_count is 0", () => {
+        const comp = { ...defaultComponent, pending_comment_count: 0 };
+        wrapper = createWrapper({ component: comp });
+        expect(wrapper.find("a[href*='/triage']").exists()).toBe(false);
+        expect(wrapper.find("a[href*='#comments']").exists()).toBe(false);
+      });
+    });
+
     it("does NOT show released indicator when component is not released", () => {
       const unreleasedComp = { ...defaultComponent, released: false };
       wrapper = createWrapper({ component: unreleasedComp });

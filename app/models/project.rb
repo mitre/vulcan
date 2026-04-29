@@ -99,6 +99,80 @@ class Project < ApplicationRecord
     rows.to_h
   end
 
+  # Backs GET /projects/:id/comments — same row shape as
+  # Component#paginated_comments but aggregated across ALL the project's
+  # components, with a component_id + component_name on each row so the
+  # full-page triage view can show which component each comment belongs to.
+  #
+  # Filters mirror the per-component endpoint. Vocabulary on the wire is
+  # DISA-native; UI translates via triageVocabulary.js.
+  def paginated_comments(triage_status: 'all', section: nil, component_id: nil,
+                         author_id: nil, query: nil, page: 1, per_page: 25,
+                         resolved: 'all')
+    page = [page.to_i, 1].max
+    per_page = per_page.to_i.clamp(1, 100)
+
+    project_components = components.to_a
+    component_ids_in_project = project_components.map(&:id)
+    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if component_ids_in_project.empty?
+
+    scope_components = component_id.present? ? [component_id.to_i] & component_ids_in_project : component_ids_in_project
+    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if scope_components.empty?
+
+    scope = Review.top_level_comments
+                  .joins(:rule)
+                  .merge(Rule.where(component_id: scope_components))
+                  .preload(:user, :triage_set_by, :adjudicated_by)
+
+    scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
+    scope = scope.where(section: section) if section.present? && section != 'all'
+    scope = scope.where(user_id: author_id) if author_id.present?
+
+    case resolved.to_s
+    when 'true'  then scope = scope.where.not(adjudicated_at: nil)
+    when 'false' then scope = scope.where(adjudicated_at: nil)
+    end
+
+    if query.present?
+      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
+      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
+    end
+
+    total = scope.count
+
+    component_lookup = project_components.index_by(&:id)
+    rule_lookup = Rule.where(component_id: scope_components).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
+      [rid, { rule_id: rule_id, component_id: cid, prefix: component_lookup[cid]&.prefix }]
+    end
+
+    rows = scope.order(created_at: :desc)
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .map do |r|
+                  rule_meta = rule_lookup[r.rule_id] || {}
+                  cid = rule_meta[:component_id]
+                  {
+                    id: r.id,
+                    rule_id: r.rule_id,
+                    rule_displayed_name: rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil,
+                    component_id: cid,
+                    component_name: component_lookup[cid]&.name,
+                    section: r.section,
+                    author_name: r.user&.name,
+                    # author_email intentionally omitted — see Component#paginated_comments
+                    # for rationale (PII scraping during public review windows).
+                    comment: r.comment,
+                    created_at: r.created_at,
+                    triage_status: r.triage_status,
+                    triage_set_at: r.triage_set_at,
+                    adjudicated_at: r.adjudicated_at,
+                    duplicate_of_review_id: r.duplicate_of_review_id
+                  }
+                end
+
+    { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
+  end
+
   # Helper method to extract data from Project Metadata
   def metadata
     project_metadata&.data

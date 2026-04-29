@@ -36,17 +36,17 @@ RSpec.describe 'ProjectIndexBlueprint pending_comment_link' do
 
   it 'links directly to the only component when one component has pending' do
     expect(render_project(project_single)[:pending_comment_link])
-      .to eq("/components/#{single_component.id}#comments")
+      .to eq("/components/#{single_component.id}/triage")
   end
 
   it 'falls back to the project page when multiple components have pending' do
     expect(render_project(project_multi)[:pending_comment_link])
-      .to eq("/projects/#{project_multi.id}#comments")
+      .to eq("/projects/#{project_multi.id}/triage")
   end
 
   it 'links to the project page when total > 0 but pending = 0 (closed-only view)' do
     expect(render_project(project_closed_only)[:pending_comment_link])
-      .to eq("/projects/#{project_closed_only.id}#comments")
+      .to eq("/projects/#{project_closed_only.id}/triage")
   end
 
   it 'returns nil when the project has zero comments at all' do

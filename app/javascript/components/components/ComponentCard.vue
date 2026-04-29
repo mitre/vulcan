@@ -43,7 +43,7 @@
             <b-link
               v-if="component.pending_comment_count > 0"
               v-b-tooltip.hover
-              :href="`/components/${component.id}#comments`"
+              :href="`/components/${component.id}/triage`"
               :title="`Open the triage view: ${component.pending_comment_count} pending public-review comment${component.pending_comment_count === 1 ? '' : 's'}`"
               class="mr-2"
             >

@@ -96,6 +96,8 @@ class Review < ApplicationRecord
   validate :duplicate_status_requires_target
   validate :no_self_responding_reference
   validate :no_self_duplicate_reference
+  validate :responding_to_must_be_same_rule
+  validate :duplicate_of_must_be_same_component
 
   before_save :auto_set_adjudicated_for_terminal_statuses
 
@@ -266,6 +268,40 @@ class Review < ApplicationRecord
     return unless duplicate_of_review_id.present? && duplicate_of_review_id == id
 
     errors.add(:duplicate_of_review_id, 'cannot reference itself')
+  end
+
+  # A thread reply (responding_to_review_id) only makes sense within
+  # one rule's discussion. Without this guard a viewer could reply to
+  # a comment on a different rule (or different component / project),
+  # leaving an orphaned cross-rule thread reference in the audit trail.
+  def responding_to_must_be_same_rule
+    return if responding_to_review_id.blank?
+    return if responding_to_review_id == id # self-ref handled separately
+
+    parent = Review.where(id: responding_to_review_id).pick(:rule_id)
+    return if parent.nil? # parent missing handled by belongs_to optionality / FK
+    return if parent == rule_id
+
+    errors.add(:responding_to_review_id, 'must reference a comment on the same rule')
+  end
+
+  # A duplicate marker (duplicate_of_review_id) must point to a
+  # top-level comment within the SAME COMPONENT. Cross-component or
+  # cross-project duplicate references are meaningless to a triager
+  # and risk leaking review IDs across project boundaries.
+  def duplicate_of_must_be_same_component
+    return if duplicate_of_review_id.blank?
+    return if duplicate_of_review_id == id # self-ref handled separately
+    return if rule_id.blank?
+
+    self_component_id = Rule.where(id: rule_id).pick(:component_id)
+    target_component_id = Rule.joins(:reviews)
+                              .where(reviews: { id: duplicate_of_review_id })
+                              .pick('base_rules.component_id')
+    return if self_component_id.nil? || target_component_id.nil?
+    return if self_component_id == target_component_id
+
+    errors.add(:duplicate_of_review_id, 'must reference a comment in the same component')
   end
 
   def auto_set_adjudicated_for_terminal_statuses

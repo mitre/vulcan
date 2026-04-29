@@ -54,9 +54,12 @@
       aria-label="Component comments triage queue"
     >
       <template #cell(rule_displayed_name)="{ item }">
-        <a href="#" @click.prevent="$emit('jump-to-rule', item.rule_id)">
+        <a :href="ruleHref(item)">
           {{ item.rule_displayed_name }}
         </a>
+      </template>
+      <template #cell(component_name)="{ item }">
+        <a :href="`/components/${item.component_id}/triage`">{{ item.component_name }}</a>
       </template>
       <template #cell(section)="{ value }">
         <!-- Use (general) label not em-dash for null section so a rule-level
@@ -95,6 +98,14 @@
         >
           <b-icon icon="arrow-counterclockwise" /> Re-open
         </b-button>
+        <small
+          v-else
+          v-b-tooltip.hover
+          class="text-muted font-italic"
+          title="Withdrawn by the original commenter — only the commenter can re-open."
+        >
+          Commenter-only
+        </small>
       </template>
       <template #table-busy>
         <div class="text-center py-3"><b-spinner small /> Loading…</div>
@@ -138,13 +149,36 @@ export default {
   components: { TriageStatusBadge, SectionLabel, CommentTriageModal },
   mixins: [AlertMixin],
   props: {
-    componentId: { type: [Number, String], required: true },
+    // Either componentId (single-component scope) or projectId (aggregate
+    // scope) is required — but not both. The scope prop disambiguates and
+    // selects the correct backend endpoint.
+    componentId: { type: [Number, String], default: null },
+    projectId: { type: [Number, String], default: null },
+    scope: {
+      type: String,
+      default: "component",
+      validator: (v) => ["component", "project"].includes(v),
+    },
   },
   data() {
-    // Restore filter state per component so closing + re-opening the
-    // slideover (or returning after a navigation) doesn't snap filters
-    // back to "pending" and hide the rows the triager was working on.
     const persisted = this.loadPersistedFilters();
+    const fields = [
+      { key: "id", label: "#", sortable: false },
+      { key: "rule_displayed_name", label: "Rule", sortable: true },
+    ];
+    // Project-scope view spans multiple components — show a Component
+    // column so triagers know which component each row belongs to.
+    if (this.scope === "project") {
+      fields.push({ key: "component_name", label: "Component", sortable: true });
+    }
+    fields.push(
+      { key: "section", label: "Section", sortable: true },
+      { key: "author_name", label: "Author", sortable: true },
+      { key: "comment", label: "Comment", sortable: false },
+      { key: "created_at", label: "Posted", sortable: true },
+      { key: "triage_status", label: "Status", sortable: true },
+      { key: "actions", label: "Action", sortable: false, tdClass: "text-nowrap" },
+    );
     return {
       rows: [],
       total: 0,
@@ -155,16 +189,7 @@ export default {
       filterStatus: persisted.filterStatus,
       filterSection: persisted.filterSection,
       selectedRow: null,
-      fields: [
-        { key: "id", label: "#", sortable: false },
-        { key: "rule_displayed_name", label: "Rule", sortable: true },
-        { key: "section", label: "Section", sortable: true },
-        { key: "author_name", label: "Author", sortable: true },
-        { key: "comment", label: "Comment", sortable: false },
-        { key: "created_at", label: "Posted", sortable: true },
-        { key: "triage_status", label: "Status", sortable: true },
-        { key: "actions", label: "Action", sortable: false },
-      ],
+      fields,
     };
   },
   computed: {
@@ -192,12 +217,16 @@ export default {
   },
   methods: {
     persistKey() {
-      return `commentTriageFilters-${this.componentId}`;
+      const id =
+        this.scope === "project" ? `project-${this.projectId}` : `component-${this.componentId}`;
+      return `commentTriageFilters-${id}`;
     },
     loadPersistedFilters() {
       const fallback = { filterStatus: "pending", filterSection: null, filterText: "" };
       try {
-        const raw = localStorage.getItem(`commentTriageFilters-${this.componentId}`);
+        const id =
+          this.scope === "project" ? `project-${this.projectId}` : `component-${this.componentId}`;
+        const raw = localStorage.getItem(`commentTriageFilters-${id}`);
         if (!raw) return fallback;
         const parsed = JSON.parse(raw);
         return {
@@ -248,7 +277,11 @@ export default {
         if (this.filterSection && this.filterSection !== "(general)") {
           params.section = this.filterSection;
         }
-        const { data } = await axios.get(`/components/${this.componentId}/comments`, { params });
+        const url =
+          this.scope === "project"
+            ? `/projects/${this.projectId}/comments`
+            : `/components/${this.componentId}/comments`;
+        const { data } = await axios.get(url, { params });
         this.rows = data.rows;
         this.total = data.pagination.total;
       } catch (error) {
@@ -256,6 +289,14 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    // Rule-id link target — full-page navigates to the component editor
+    // with the rule selected (Vulcan's existing rule deep-link format).
+    // Encode the rule name segment so that unusual characters can't break
+    // out of the path or silently navigate elsewhere.
+    ruleHref(row) {
+      const compId = this.scope === "project" ? row.component_id : this.componentId;
+      return `/components/${compId}/${encodeURIComponent(row.rule_displayed_name)}`;
     },
     openTriageFor(row) {
       this.selectedRow = row;

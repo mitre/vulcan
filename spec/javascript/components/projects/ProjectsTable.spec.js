@@ -98,28 +98,28 @@ describe("ProjectsTable", () => {
           ...sampleProjects[0],
           pending_comment_count: 3,
           total_comment_count: 9,
-          pending_comment_link: "/components/42#comments",
+          pending_comment_link: "/components/42/triage",
         },
       ];
       wrapper = createWrapper({ projects });
-      const link = wrapper.find('a[href="/components/42#comments"]');
+      const link = wrapper.find('a[href="/components/42/triage"]');
       expect(link.exists()).toBe(true);
       expect(link.text()).toContain("3 pending");
       expect(link.text()).toContain("9 total");
     });
 
-    it("links straight to /components/:id#comments when one component has pending", () => {
+    it("links straight to the component triage view when one component has pending", () => {
       const projects = [
         {
           ...sampleProjects[0],
           pending_comment_count: 2,
           total_comment_count: 5,
-          pending_comment_link: "/components/99#comments",
+          pending_comment_link: "/components/99/triage",
         },
       ];
       wrapper = createWrapper({ projects });
-      const link = wrapper.find('a[href*="#comments"]');
-      expect(link.attributes("href")).toBe("/components/99#comments");
+      const link = wrapper.find('a[href*="/triage"]');
+      expect(link.attributes("href")).toBe("/components/99/triage");
     });
 
     it("shows just the total count when no pending (closed-only activity)", () => {
@@ -128,11 +128,11 @@ describe("ProjectsTable", () => {
           ...sampleProjects[0],
           pending_comment_count: 0,
           total_comment_count: 4,
-          pending_comment_link: "/projects/1#comments",
+          pending_comment_link: "/projects/1/triage",
         },
       ];
       wrapper = createWrapper({ projects });
-      const link = wrapper.find('a[href="/projects/1#comments"]');
+      const link = wrapper.find('a[href="/projects/1/triage"]');
       expect(link.exists()).toBe(true);
       expect(link.text()).toContain("4 total");
       expect(link.text()).not.toContain("pending");
@@ -150,6 +150,7 @@ describe("ProjectsTable", () => {
       wrapper = createWrapper({ projects });
       const commentsCell = wrapper.find("td:nth-child(4)");
       expect(commentsCell.text()).toContain("—");
+      expect(wrapper.find("a[href*='/triage']").exists()).toBe(false);
       expect(wrapper.find("a[href*='#comments']").exists()).toBe(false);
     });
   });
