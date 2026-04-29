@@ -164,22 +164,39 @@ class ReviewsController < ApplicationController
     rules = @component.rules.where(locked: false)
     count = 0
 
-    rules.each do |rule|
-      old_fields = rule.locked_fields.dup
-      fields = rule.locked_fields.dup
-      sections.each do |section|
-        if locked
-          fields[section] = true
-        else
-          fields.delete(section)
+    # Wrap the per-rule updates in a single transaction so a failure on
+    # rule N+1 rolls back rules 1..N. Without this, the loop committed
+    # each rule independently and a mid-loop failure left the component
+    # in a partial-write state plus surfaced a 500 to the user.
+    begin
+      Rule.transaction do
+        rules.each do |rule|
+          old_fields = rule.locked_fields.dup
+          fields = rule.locked_fields.dup
+          sections.each do |section|
+            if locked
+              fields[section] = true
+            else
+              fields.delete(section)
+            end
+          end
+          next if fields == old_fields
+
+          action_word = locked ? 'Locked' : 'Unlocked'
+          rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
+          rule.update!(locked_fields: fields)
+          count += 1
         end
       end
-      next if fields == old_fields
-
-      action_word = locked ? 'Locked' : 'Unlocked'
-      rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
-      rule.update!(locked_fields: fields)
-      count += 1
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
+      Rails.logger.error("Section lock failed for component=#{@component.id}: #{e.message}")
+      return render json: {
+        toast: {
+          title: 'Could not apply section lock.',
+          message: 'A database error prevented the section lock from being applied. No rules were modified.',
+          variant: 'danger'
+        }
+      }, status: :unprocessable_entity
     end
 
     action_word = locked ? 'locked' : 'unlocked'
