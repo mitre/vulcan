@@ -26,6 +26,16 @@
           class="ml-2"
           @update="onFilterChanged"
         />
+        <b-button
+          v-b-tooltip.hover
+          variant="outline-secondary"
+          class="ml-2"
+          aria-label="Refresh"
+          title="Refresh"
+          @click="fetch"
+        >
+          <b-icon icon="arrow-clockwise" />
+        </b-button>
       </b-input-group>
     </b-form-group>
 
@@ -131,15 +141,19 @@ export default {
     componentId: { type: [Number, String], required: true },
   },
   data() {
+    // Restore filter state per component so closing + re-opening the
+    // slideover (or returning after a navigation) doesn't snap filters
+    // back to "pending" and hide the rows the triager was working on.
+    const persisted = this.loadPersistedFilters();
     return {
       rows: [],
       total: 0,
       page: 1,
       perPage: 25,
       loading: false,
-      filterText: "",
-      filterStatus: "pending",
-      filterSection: null,
+      filterText: persisted.filterText,
+      filterStatus: persisted.filterStatus,
+      filterSection: persisted.filterSection,
       selectedRow: null,
       fields: [
         { key: "id", label: "#", sortable: false },
@@ -177,6 +191,38 @@ export default {
     this.fetch();
   },
   methods: {
+    persistKey() {
+      return `commentTriageFilters-${this.componentId}`;
+    },
+    loadPersistedFilters() {
+      const fallback = { filterStatus: "pending", filterSection: null, filterText: "" };
+      try {
+        const raw = localStorage.getItem(`commentTriageFilters-${this.componentId}`);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return {
+          filterStatus: parsed.filterStatus ?? fallback.filterStatus,
+          filterSection: parsed.filterSection ?? fallback.filterSection,
+          filterText: parsed.filterText ?? fallback.filterText,
+        };
+      } catch (_e) {
+        return fallback;
+      }
+    },
+    persistFilters() {
+      try {
+        localStorage.setItem(
+          this.persistKey(),
+          JSON.stringify({
+            filterStatus: this.filterStatus,
+            filterSection: this.filterSection,
+            filterText: this.filterText,
+          }),
+        );
+      } catch (_e) {
+        // localStorage full or disabled — non-fatal, filters just won't persist
+      }
+    },
     truncate(text, n) {
       if (!text) return "";
       return text.length > n ? `${text.slice(0, n)}…` : text;
@@ -187,6 +233,7 @@ export default {
     },
     onFilterChanged() {
       this.page = 1;
+      this.persistFilters();
       this.fetch();
     },
     async fetch() {
