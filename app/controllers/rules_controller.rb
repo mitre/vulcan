@@ -100,18 +100,33 @@ class RulesController < ApplicationController
     warnings << 'This control was locked.' if @rule.locked
     warnings << 'This control was under review.' if @rule.review_requestor_id.present?
 
-    # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
-    @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
-    # rubocop:enable Rails/SkipsModelValidations
-    @rule.additional_answers.destroy_all
-    @rule.reviews.destroy_all
-    @rule.satisfied_by.destroy_all
+    # Wrap soft-delete + dependent cleanup in a single transaction so a
+    # failure in any destroy_all rolls back the rule's deleted_at column.
+    # Without this, a mid-cleanup failure left the rule soft-deleted with
+    # orphan additional_answers / reviews / satisfied_by rows.
+    Rule.transaction do
+      # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
+      @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
+      # rubocop:enable Rails/SkipsModelValidations
+      @rule.additional_answers.destroy_all
+      @rule.reviews.destroy_all
+      @rule.satisfied_by.destroy_all
+    end
 
     Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}") if warnings.any?
 
     message = 'Successfully deleted control.'
     message += " Warning: #{warnings.join(' ')}" if warnings.any?
     render json: { toast: message }
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
+    Rails.logger.error("Rule destroy failed for rule_id=#{@rule.id} user=#{current_user.id}: #{e.message}")
+    render json: {
+      toast: {
+        title: 'Could not delete control.',
+        message: 'A database error prevented the delete from completing. The control was not modified.',
+        variant: 'danger'
+      }
+    }, status: :unprocessable_entity
   end
 
   def revert
