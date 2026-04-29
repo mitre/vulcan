@@ -6,13 +6,13 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage]
-  before_action :set_project_from_review, only: %i[triage]
+  before_action :set_review, only: %i[triage adjudicate]
+  before_action :set_project_from_review, only: %i[triage adjudicate]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
-  before_action :authorize_author_project, only: %i[triage]
+  before_action :authorize_author_project, only: %i[triage adjudicate]
 
   def create
     review_params_without_component_id = review_params.except('component_id')
@@ -126,6 +126,56 @@ class ReviewsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: {
       toast: { title: 'Could not save triage.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PATCH /reviews/:id/adjudicate — author+ marks a triaged comment as
+  # adjudicated (closed). Idempotent: re-adjudicate is a no-op returning
+  # current state. A still-pending comment must be triaged before it can
+  # be closed (422).
+  #
+  # If resolution_comment is supplied, atomically creates a child Review
+  # (action='comment', responding_to_review_id, inherited section) so the
+  # final resolution renders inline in the rule's existing thread.
+  def adjudicate
+    if @review.adjudicated_at.present?
+      return render json: {
+        review: ReviewBlueprint.render_as_hash(@review),
+        response_review: nil
+      }
+    end
+
+    if @review.triage_status == 'pending'
+      return render json: {
+        toast: { title: 'Cannot close yet.',
+                 message: ['Comment must be triaged before it can be closed.'],
+                 variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    response_review = nil
+    Review.transaction do
+      @review.update!(adjudicated_at: Time.current, adjudicated_by_id: current_user.id)
+
+      if params[:resolution_comment].present?
+        response_review = Review.create!(
+          action: 'comment',
+          comment: params[:resolution_comment],
+          user: current_user,
+          rule: @review.rule,
+          responding_to_review_id: @review.id,
+          section: @review.section
+        )
+      end
+    end
+
+    render json: {
+      review: ReviewBlueprint.render_as_hash(@review),
+      response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
+    }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not close.', message: e.record.errors.full_messages, variant: 'danger' }
     }, status: :unprocessable_entity
   end
 

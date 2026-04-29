@@ -74,6 +74,7 @@ Rails.application.routes.draw do
   # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /
   # withdraw / update operate on a Review by id. See ReviewsController.
   patch '/reviews/:id/triage', to: 'reviews#triage'
+  patch '/reviews/:id/adjudicate', to: 'reviews#adjudicate'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 
