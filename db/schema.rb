@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_29_145530) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -243,6 +243,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
     t.text "comment"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "triage_status", default: "pending", null: false
+    t.bigint "triage_set_by_id"
+    t.datetime "triage_set_at"
+    t.datetime "adjudicated_at"
+    t.bigint "adjudicated_by_id"
+    t.bigint "duplicate_of_review_id"
+    t.bigint "responding_to_review_id"
+    t.string "section"
+    t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
+    t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
+    t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"
+    t.index ["rule_id", "section", "triage_status"], name: "index_reviews_on_rule_id_and_section_and_triage_status"
     t.index ["rule_id"], name: "index_reviews_on_rule_id"
     t.index ["user_id"], name: "index_reviews_on_user_id"
   end
@@ -375,5 +387,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
   add_foreign_key "memberships", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
+  add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify
+  add_foreign_key "reviews", "reviews", column: "responding_to_review_id", on_delete: :cascade
+  add_foreign_key "reviews", "users", column: "adjudicated_by_id", on_delete: :nullify
+  add_foreign_key "reviews", "users", column: "triage_set_by_id", on_delete: :nullify
   add_foreign_key "search_abbreviations", "users", column: "created_by_id"
 end
