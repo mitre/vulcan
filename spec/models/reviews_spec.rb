@@ -370,4 +370,53 @@ RSpec.describe Review do
       expect(review.errors[:base]).to include('Only admins, reviewers, and authors can request a review')
     end
   end
+
+  context 'ACTION_PERMISSIONS map (per-action role gate)' do
+    it 'rejects a viewer attempting request_review' do
+      review = Review.new(action: 'request_review', comment: 'try', user: @p_viewer, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:base].join).to match(/insufficient permissions to request_review/i)
+    end
+
+    it 'rejects a viewer attempting revoke_review_request' do
+      @p1r1.update(review_requestor: @p_author)
+      review = Review.new(action: 'revoke_review_request', comment: 'try', user: @p_viewer, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:base].join).to match(/insufficient permissions to revoke_review_request/i)
+    end
+
+    it 'rejects a viewer attempting request_changes via the role gate' do
+      review = Review.new(action: 'request_changes', comment: 'try', user: @p_viewer, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:base].join).to match(/insufficient permissions to request_changes/i)
+    end
+
+    it 'rejects an author attempting approve via the role gate' do
+      review = Review.new(action: 'approve', comment: 'lgtm', user: @p_author, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:base].join).to match(/insufficient permissions to approve/i)
+    end
+
+    it 'rejects an author attempting lock_control via the role gate' do
+      review = Review.new(action: 'lock_control', comment: 'lock', user: @p_author, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:base].join).to match(/insufficient permissions to lock_control/i)
+    end
+
+    it 'allows a viewer to comment (the only mutating action they can perform)' do
+      review = Review.new(action: 'comment', comment: 'looks good', user: @p_viewer, rule: @p1r1)
+      review.valid?
+      expect(review.errors[:base].grep(/insufficient permissions/i)).to be_empty
+    end
+
+    it 'allows an admin to perform every action (smoke check across the map)' do
+      %w[comment request_review request_changes approve lock_control unlock_control].each do |action|
+        review = Review.new(action: action, comment: 'x', user: @p_admin, rule: @p1r1)
+        review.valid?
+        perm_errors = review.errors[:base].grep(/insufficient permissions/i)
+        expect(perm_errors).to be_empty,
+                               "admin unexpectedly blocked from #{action}: #{perm_errors.inspect}"
+      end
+    end
+  end
 end
