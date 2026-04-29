@@ -1,6 +1,6 @@
 # Task 14: ComponentComments.vue (triage table)
 
-**Depends on:** 11, 13
+**Depends on:** 08, 13
 **Unblocks:** —
 **Estimate:** 60 min Claude-pace
 **File touches:**
@@ -443,7 +443,7 @@ cat > /tmp/msg-14.md <<'EOF'
 feat: ComponentComments.vue triage table
 
 The triage table that replaces today's flat 20-row slideover (see DESIGN
-§2.2). Backed by GET /components/:id/comments from Task 11.
+§2.2). Backed by GET /components/:id/comments from Task 08.
 
 - b-table with Rule / Section / Author / Comment preview / Date / Status /
   Action columns, all keyboard-accessible

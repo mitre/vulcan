@@ -1,6 +1,6 @@
-# Task 10: PATCH /reviews/:id/withdraw + PUT /reviews/:id (commenter-only edit)
+# Task 12: PATCH /reviews/:id/withdraw + PUT /reviews/:id (commenter-only edit)
 
-**Depends on:** 03, 05
+**Depends on:** 04, 06
 **Unblocks:** 20
 **Estimate:** 30 min Claude-pace
 **File touches:**
@@ -175,7 +175,7 @@ def withdraw
   end
 
   @review.update!(triage_status: 'withdrawn')
-  # auto_set_adjudicated_for_terminal_statuses callback handles adjudicated_at/by from Task 05
+  # auto_set_adjudicated_for_terminal_statuses callback handles adjudicated_at/by from Task 06
 
   render json: { review: ReviewBlueprint.render_as_hash(@review) }
 rescue ActiveRecord::RecordInvalid => e
@@ -240,13 +240,13 @@ Two commenter-only endpoints, both gated by authorize_review_owner
 (current_user.id == review.user_id):
 
 - PATCH /reviews/:id/withdraw — sets triage_status='withdrawn'; the
-  auto_set_adjudicated_for_terminal_statuses model callback (Task 05)
+  auto_set_adjudicated_for_terminal_statuses model callback (Task 06)
   fills in adjudicated_at + adjudicated_by_id (= the commenter
   themselves). Allowed only when triage_status is 'pending' or
   'needs_clarification'. Rejected once a triager has acted.
 
 - PUT /reviews/:id — edit own comment text. Allowed only while
-  triage_status='pending'. Audited gem (Task 05) captures the prior text
+  triage_status='pending'. Audited gem (Task 06) captures the prior text
   for the tamper-evident trail.
 
 Both back the "My Comments" page actions in Task 20.

@@ -1,6 +1,6 @@
 # Task 20: My Comments page on user profile
 
-**Depends on:** 12, 13, 10
+**Depends on:** 09, 13, 12
 **Estimate:** 60 min Claude-pace
 **File touches:**
 - `app/javascript/packs/my_comments.js` (new pack — mirrors `user_profile.js` pattern)
@@ -10,7 +10,7 @@
 - `app/javascript/components/navbar/App.vue` (add "My Comments" dropdown item to user dropdown)
 - `app/views/layouts/application.html.haml` (pass new prop to `<navbar>` if needed)
 - `config/routes.rb` (HTML route)
-- `app/controllers/users_controller.rb` (HTML render action — add to the controller from Task 12)
+- `app/controllers/users_controller.rb` (HTML render action — add to the controller from Task 09)
 - `spec/javascript/components/users/MyComments.spec.js`
 
 **Verified facts (corrected from initial guess):**
@@ -25,17 +25,17 @@ The commenter's in-app feedback loop. Mockup: design §2.9. This is the v1 subst
 
 ## Step 1: Add the HTML route + controller action
 
-In `config/routes.rb` (alongside the JSON endpoint from Task 12):
+In `config/routes.rb` (alongside the JSON endpoint from Task 09):
 
 ```ruby
 get '/my/comments', to: 'users#my_comments_page', as: :my_comments
 ```
 
-In `app/controllers/users_controller.rb` (extend the controller from Task 12):
+In `app/controllers/users_controller.rb` (extend the controller from Task 09):
 
 ```ruby
 def my_comments_page
-  # authenticate_user! is already in before_action from Task 12
+  # authenticate_user! is already in before_action from Task 09
   @user = current_user
   render :my_comments_page  # explicit so Rails doesn't infer 'comments' from action name
 end
@@ -392,7 +392,7 @@ cat > /tmp/msg-20.md <<'EOF'
 feat: My Comments page on user profile
 
 The v1 in-app feedback loop for commenters — replaces outbound email
-(deferred to v2). Backed by GET /users/:id/comments from Task 12.
+(deferred to v2). Backed by GET /users/:id/comments from Task 09.
 
 Per-row actions:
 - View: opens read-only detail modal with full comment + any responses
@@ -405,7 +405,7 @@ friendly UI labels per the vocabulary-layering principle.
 
 Routes: GET /my/comments → HTML page with #my-comments-app Vue mount
 point. Vue pack mounts MyComments component, fetches via the JSON
-endpoint from Task 12.
+endpoint from Task 09.
 
 Navbar: "My Comments" link added to user dropdown.
 

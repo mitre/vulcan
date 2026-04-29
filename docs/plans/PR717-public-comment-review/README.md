@@ -44,83 +44,105 @@ If any of those fail, do **not** start — surface the discrepancy to the user.
 
 | #  | File | Layer | Effort | Depends on |
 |----|------|-------|--------|------------|
-| 01 | `01-action-permissions-map.md` | Backend (model) | 15 min | — |
+| 01 | `01-action-permissions-map-DONE.md` | Backend (model) | — | — (DONE — landed via Will's `71726fa` + `9001d0b`) |
 | 02 | `02-strong-params-and-rate-limit.md` | Backend (controller + middleware) | 25 min | — |
-| 03 | `03-migration-review-lifecycle.md` | DB | 20 min | — |
-| 04 | `04-migration-component-phase.md` | DB | 10 min | — |
-| 05 | `05-review-model-validations.md` | Backend (model) | 30 min | 01, 03 |
-| 06 | `06-i18n-and-vocabulary-files.md` | Both (single source of truth) | 20 min | — |
-| 07 | `07-reviews-controller-create-fixes.md` | Backend (controller) | 20 min | 01, 02 |
-| 08 | `08-reviews-controller-triage-endpoint.md` | Backend (controller + route) | 30 min | 03, 05, 06, 07 |
-| 09 | `09-reviews-controller-adjudicate-endpoint.md` | Backend (controller + route) | 20 min | 08 |
-| 10 | `10-reviews-controller-withdraw-and-update.md` | Backend (controller + route) | 30 min | 03, 05 |
-| 11 | `11-components-controller-comments-endpoint.md` | Backend (controller + route) | 25 min | 03, 05 |
-| 12 | `12-users-controller-my-comments-endpoint.md` | Backend (controller + route) | 20 min | 03, 05 |
-| 13 | `13-frontend-vocabulary-module.md` | Frontend (constants) | 15 min | 06 |
-| 14 | `14-frontend-component-comments-table.md` | Frontend (Vue) | 60 min | 11, 13 |
-| 15 | `15-frontend-comment-triage-modal.md` | Frontend (Vue) | 60 min | 08, 09, 13 |
-| 16 | `16-frontend-section-comment-icons.md` | Frontend (Vue) | 30 min | 13 |
-| 17 | `17-frontend-comment-composer-modal.md` | Frontend (Vue) | 45 min | 13, 11 |
+| 03 | `03-i18n-and-vocabulary-files.md` | Both (single source of truth) | 20 min | — |
+| 04 | `04-migration-review-lifecycle.md` | DB | 20 min | — |
+| 05 | `05-migration-component-phase.md` | DB | 10 min | — |
+| 06 | `06-review-model-validations.md` | Backend (model) | 30 min | 01, 04 |
+| 07 | `07-reviews-controller-create-fixes.md` | Backend (controller) | 15 min | 02, 04 (trimmed: most content addressed by Will's `71726fa`) |
+| 08 | `08-components-controller-comments-endpoint.md` | Backend (controller + route) | 25 min | 04, 06 |
+| 09 | `09-users-controller-my-comments-endpoint.md` | Backend (controller + route) | 20 min | 04, 06 |
+| 10 | `10-reviews-controller-triage-endpoint.md` | Backend (controller + route) | 30 min | 03, 04, 06, 07 |
+| 11 | `11-reviews-controller-adjudicate-endpoint.md` | Backend (controller + route) | 20 min | 10 |
+| 12 | `12-reviews-controller-withdraw-and-update.md` | Backend (controller + route) | 30 min | 04, 06 |
+| 13 | `13-frontend-vocabulary-module.md` | Frontend (constants) | 15 min | 03 |
+| 14 | `14-frontend-component-comments-table.md` | Frontend (Vue) | 60 min | 08, 13 |
+| 15 | `15-frontend-comment-triage-modal.md` | Frontend (Vue) | 60 min | 10, 11, 13 |
+| 16 | `16-frontend-section-comment-icons.md` | Frontend (Vue) | 45 min | 13 |
+| 17 | `17-frontend-comment-composer-modal.md` | Frontend (Vue) | 45 min | 08, 13 |
 | 18 | `18-frontend-rule-reviews-thread-badges.md` | Frontend (Vue) | 30 min | 13 |
-| 19 | `19-frontend-rules-table-comments-column.md` | Frontend (Vue) | 25 min | 11, 13 |
-| 20 | `20-frontend-my-comments-page.md` | Frontend (Vue + route) | 60 min | 12, 13, 10 |
-| 21 | `21-frontend-comment-period-banner.md` | Frontend (Vue) | 20 min | 04, 13 |
-| 22 | `22-frontend-edit-component-comment-phase.md` | Frontend (Vue + form) | 25 min | 04 |
+| 19 | `19-frontend-rules-table-comments-column.md` | Frontend (Vue) | 25 min | 08, 13 |
+| 20 | `20-frontend-my-comments-page.md` | Frontend (Vue + route) | 60 min | 09, 12, 13 |
+| 21 | `21-frontend-comment-period-banner.md` | Frontend (Vue) | 20 min | 05, 13 |
+| 22 | `22-frontend-edit-component-comment-phase.md` | Frontend (Vue + form) | 25 min | 05 |
 | 98 | `98-vocabulary-grep-verification.md` | Tooling (run before every commit) | < 1 min | — |
 | 99 | `99-final-test-sweep-and-acceptance.md` | Verification | 30 min | all above |
 
-**Total Claude-pace estimate:** ~10–11 hours of focused execution. Leaves margin for review checkpoints, surprises, and the manual smoke test in 99. Comfortably fits the 1–2 day window.
+**Total Claude-pace estimate (remaining after 01):** ~9–10 hours of focused execution. Leaves margin for review checkpoints, surprises, and the manual smoke test in 99. Comfortably fits the 1–2 day window.
+
+**Order rationale (revised after Will's 71726fa landed):**
+- 01 closed itself via Will's commit + the ACTION_PERMISSIONS map infrastructure
+- 03 (i18n) moved up — pure new files, no DB cost; provides error message keys for tasks 07-12 to reference
+- 04, 05, 06 are migrations + model validations — sequential because 06 reads 04's columns
+- 07 has shrunk in scope (Will did the spec polish + role-on-request_review check); only the transaction wrap + strong-params extension remain
+- **08, 09 (read endpoints) before 10, 11, 12 (mutations)** — read endpoints unblock 4 frontend tasks (14, 17, 19, 20); mutations unblock 2 (15, 20). Read-first is safer and accelerates parallel frontend work.
 
 ---
 
 ## Dependency graph (ASCII)
 
 ```
-                   ┌── 01 ──┐
-                   │        ├── 05 ──┬── 08 ──┬── 09 ─┐
-                   │        │        │        │        │
-                   │   ┌── 03         ├── 10  │        │
-                   ├── │   │          ├── 11 ─┤        │
-                   │   │   │          ├── 12 ─┤        │
-                   │   └── 04         │        │        │
-                   ├── 02 ─┐          │        │        │
-                   ├── 06 ─┤          │        │        │
-                   │       └── 07 ────┘        │        │
-                   │                                    │
-                   └── 13 ──┬── 14 (needs 11) ──────────┤
-                            ├── 15 (needs 08, 09) ──────┤
-                            ├── 16 ────────────────────┤
-                            ├── 17 (needs 11) ──────────┤
-                            ├── 18 ────────────────────┤
-                            ├── 19 (needs 11) ──────────┤
-                            ├── 20 (needs 10, 12) ──────┤
-                            ├── 21 (needs 04) ──────────┤
-                            └── 22 (needs 04) ──────────┘
-                                                         │
-                                                         └── 99 (final sweep)
+01 ✓ DONE (Will's 71726fa + ACTION_PERMISSIONS map in 9001d0b)
+
+  Foundation (independent — can interleave):
+   02 (rate limit) ─┐
+   03 (i18n)        ├─→ unblocks 07–12 + 13
+   04 (mig: review) ┤
+   05 (mig: phase)  ┤
+                    │
+                    ▼
+   06 (validations, needs 04) ──────┐
+                                    │
+   07 (controller wrap) ────────────┤
+                                    │
+                                    ▼
+   Read endpoints (parallel):       Mutation endpoints (sequential):
+   08 (components#comments)         10 (triage)
+   09 (users#comments)              11 (adjudicate, needs 10's pattern)
+                                    12 (withdraw + edit-own)
+                    │
+                    ▼
+   13 (TriageStatusBadge + SectionLabel, needs 03)
+                    │
+                    ▼
+   Frontend (mostly independent once their deps land):
+   14 ComponentComments table  ── needs 08, 13
+   15 CommentTriageModal       ── needs 10, 11, 13
+   16 Section icons + form     ── needs 13
+   17 Composer + dedup banner  ── needs 08, 13
+   18 RuleReviews thread       ── needs 13
+   19 RuleNavigator badge      ── needs 08, 13
+   20 My Comments page         ── needs 09, 12, 13
+   21 CommentPeriodBanner      ── needs 05, 13
+   22 UpdateComponentDetailsModal phase fieldset ── needs 05
+                    │
+                    ▼
+   99 (final sweep)
 ```
 
 **Parallelization opportunities** (if multiple agents execute in parallel — single agent should just go in order):
-- 01, 02, 03, 04, 06 are independent → can interleave
-- 14, 15, 16, 17, 18, 19, 20, 21, 22 are mostly independent once their backend deps land
+- 02, 03, 04, 05 are fully independent foundation work
+- 08 and 09 can run in parallel (different controllers)
+- 14-22 are mostly independent once their backend deps land
 - 98 is run before every commit (not a parallelizable task)
 
-For a **single agent doing this solo**: just execute 01 → 99 in numeric order. The graph is shown so you understand why.
+For a **single agent doing this solo**: just execute 02 → 99 in numeric order. The graph is shown so you understand why.
 
 ---
 
-## Bug fixes folded into this plan (Copilot review of PR #717)
+## Bug fixes already landed (Copilot review of PR #717)
 
-The four findings Copilot flagged on PR #717 are addressed in early tasks, before any new feature work:
+All four Copilot findings on PR #717 are **already resolved on the branch**:
 
-| Copilot finding | Addressed in |
+| Copilot finding | Resolved by |
 |---|---|
-| #1 — viewer can `request_review` (auth bypass) | Task 01 (ACTION_PERMISSIONS map) + Task 05 (model validations) |
-| #2 — spec missing `component_id` | Task 07 (reviews controller create-side fixes) |
-| #3 — spec missing `component_id` (different line) | Task 07 |
-| #4 — failure message doesn't interpolate role | Task 07 |
+| #1 — viewer can `request_review` (auth bypass) | Will's `71726fa` (in-place role check in `can_request_review`) + `9001d0b` (`ACTION_PERMISSIONS` map for tier-based gating across all actions) |
+| #2 — spec missing `component_id` | Will's `71726fa` |
+| #3 — spec missing `component_id` (different line) | Will's `71726fa` |
+| #4 — failure message doesn't interpolate role | Will's `71726fa` |
 
-After Task 07, Copilot's findings are all resolved. Tasks 08+ are net-new feature work.
+Tasks 02+ are net-new feature work (the public-comment-review lifecycle). Task 07 is now a small follow-up (transaction wrap + strong-params extension for the new `:section` and `:responding_to_review_id` keys once Task 05's columns exist).
 
 ---
 

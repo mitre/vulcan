@@ -1,6 +1,6 @@
 # Task 17: CommentComposerModal.vue + dedup banner
 
-**Depends on:** 13, 11
+**Depends on:** 13, 08
 **Estimate:** 45 min Claude-pace
 **File touches:**
 - `app/javascript/components/components/CommentComposerModal.vue` (new)

@@ -1,13 +1,13 @@
-# Task 05: Review model validations + audited gem + transaction discipline
+# Task 06: Review model validations + audited gem + transaction discipline
 
-**Depends on:** 01, 03
+**Depends on:** 01, 04
 **Unblocks:** 08, 09, 10, 11, 12
 **Estimate:** 30 min Claude-pace
 **File touches:**
 - `app/models/review.rb` (constants, validators, scopes, audited config)
 - `spec/models/reviews_spec.rb`
 
-This task wires up all the model-layer guard-rails for the lifecycle columns added in Task 03 — invariants, auto-set rules, audit trail, and the strict TRIAGE_STATUSES enum.
+This task wires up all the model-layer guard-rails for the lifecycle columns added in Task 04 — invariants, auto-set rules, audit trail, and the strict TRIAGE_STATUSES enum.
 
 ---
 
@@ -296,7 +296,7 @@ bundle exec parallel_rspec spec/
 cat > /tmp/msg-05.md <<'EOF'
 feat: Review model validations + lifecycle invariants + audit trail
 
-Wires up the model-layer logic for the lifecycle columns added in Task 03:
+Wires up the model-layer logic for the lifecycle columns added in Task 04:
 
 - TRIAGE_STATUSES enum (DISA matrix vocab) with inclusion validator
 - SECTION_KEYS enum (XCCDF element keys) with NULL = general comment

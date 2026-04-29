@@ -1,14 +1,16 @@
-# Task 07: Reviews controller create-side fixes (closes Copilot #2, #3, #4)
+# Task 07: Reviews controller transaction discipline + strong-params extension
 
-**Depends on:** 01, 02
-**Unblocks:** 08
-**Estimate:** 20 min Claude-pace
+**Depends on:** 02, 04
+**Unblocks:** 10
+**Estimate:** 15 min Claude-pace
 **File touches:**
-- `app/controllers/reviews_controller.rb` (strong params + transaction wrap)
+- `app/controllers/reviews_controller.rb` (transaction wrap on create + extend strong params)
 - `spec/requests/reviews_spec.rb`
-- `spec/models/reviews_spec.rb` (failure-message polish — Copilot #4)
 
-This task closes the remaining three Copilot findings on PR #717 (#2, #3, #4) and adds transaction discipline to `Review.create` + `rule.save!` to prevent partial writes if the Review insert fails after `take_review_action` mutates the rule.
+**Scope note (post-Will's `71726fa`):** the original Task 07 was meant to close Copilot #2, #3, #4. Will's commit `71726fa` already did that — added `component_id` to the request specs and interpolated the role in the failure message. **The only remaining work in this task is:**
+
+1. Wrap `Review.create` + `take_review_action`'s `rule.save!` in an explicit `Review.transaction` so a Review save failure rolls back the rule mutation. This was a quiet bug in master pre-existing the PR.
+2. Extend `review_params` to permit `:section` and `:responding_to_review_id` (the new columns added by Task 05). Lifecycle fields (`triage_status`, `triage_set_by_id`, `adjudicated_at`, `adjudicated_by_id`, `duplicate_of_review_id`) are NEVER user-controllable — they're set by Tasks 10/11/12's dedicated PATCH endpoints.
 
 ---
 

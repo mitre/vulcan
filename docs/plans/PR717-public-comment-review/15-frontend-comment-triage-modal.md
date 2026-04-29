@@ -1,6 +1,6 @@
 # Task 15: CommentTriageModal.vue
 
-**Depends on:** 08, 09, 13
+**Depends on:** 10, 11, 13
 **Estimate:** 60 min Claude-pace
 **File touches:**
 - `app/javascript/components/components/CommentTriageModal.vue` (new)

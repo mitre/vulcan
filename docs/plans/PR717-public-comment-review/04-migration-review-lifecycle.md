@@ -1,4 +1,4 @@
-# Task 03: Migration — Review lifecycle columns
+# Task 04: Migration — Review lifecycle columns
 
 **Depends on:** —
 **Unblocks:** 05, 08, 09, 10, 11, 12
@@ -151,7 +151,7 @@ Indexes:
 Backfill of triage_status='pending' on existing rows is safe at Vulcan's
 review-count scale (low thousands per project).
 
-No model logic yet — Task 05 wires up validators, audited gem, and
+No model logic yet — Task 06 wires up validators, audited gem, and
 auto-set rules. No controller/UI changes yet.
 
 Authored by: Aaron Lippold<lippold@gmail.com>
@@ -181,4 +181,4 @@ Authored by: Aaron Lippold<lippold@gmail.com>"
 - Indexes in place for the table-driving queries
 - FK constraints with appropriate `on_delete` semantics
 - Existing model logic still works (columns are NULL/default; nothing references them yet)
-- Foundation for Task 05 (validators) and Tasks 08-12 (controller endpoints)
+- Foundation for Task 06 (validators) and Tasks 08-12 (controller endpoints)

@@ -1,6 +1,6 @@
 # Task 19: RuleNavigator — comment-count badge per rule
 
-**Depends on:** 11, 13
+**Depends on:** 08, 13
 **Estimate:** 25 min Claude-pace
 **File touches:**
 - `app/javascript/components/rules/RuleNavigator.vue` (modify — add badge alongside existing icons)

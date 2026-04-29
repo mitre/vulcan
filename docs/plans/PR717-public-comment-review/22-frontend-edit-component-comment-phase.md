@@ -1,6 +1,6 @@
 # Task 22: UpdateComponentDetailsModal — Comment Phase fieldset
 
-**Depends on:** 04
+**Depends on:** 05
 **Estimate:** 25 min Claude-pace
 **File touches:**
 - `app/javascript/components/components/UpdateComponentDetailsModal.vue` (modify — this is the actual "Edit Component Details" form, opened from the comp-details slideover)
@@ -206,7 +206,7 @@ public-comment phase and setting period dates. Per DESIGN §2.8.
 
 Backend: extends component_update_params (components_controller.rb:597-606)
 to permit :comment_phase, :comment_period_starts_at, :comment_period_ends_at.
-Inclusion validator on Component (Task 04) rejects invalid phases at
+Inclusion validator on Component (Task 05) rejects invalid phases at
 the model layer.
 
 Frontend: extends UpdateComponentDetailsModal.vue's data{} + resetModal +

@@ -1,4 +1,4 @@
-# Task 06: i18n locale + frontend vocabulary file (single source of truth)
+# Task 03: i18n locale + frontend vocabulary file (single source of truth)
 
 **Depends on:** —
 **Unblocks:** 13 (frontend mirror), 07-12 (controllers use error message keys)

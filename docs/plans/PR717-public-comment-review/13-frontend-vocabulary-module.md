@@ -1,6 +1,6 @@
 # Task 13: TriageStatusBadge.vue + SectionLabel.vue (reusable display components)
 
-**Depends on:** 06
+**Depends on:** 03
 **Unblocks:** 14, 15, 16, 17, 18, 19, 20
 **Estimate:** 15 min Claude-pace
 **File touches:**

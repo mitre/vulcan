@@ -1,6 +1,6 @@
-# Task 12: GET /users/:id/comments (My Comments page backing endpoint)
+# Task 09: GET /users/:id/comments (My Comments page backing endpoint)
 
-**Depends on:** 03, 05
+**Depends on:** 04, 06
 **Unblocks:** 20
 **Estimate:** 20 min Claude-pace
 **File touches:**

@@ -1,7 +1,7 @@
-# Task 08: PATCH /reviews/:id/triage endpoint
+# Task 10: PATCH /reviews/:id/triage endpoint
 
-**Depends on:** 03, 05, 06, 07
-**Unblocks:** 09, 15
+**Depends on:** 03, 04, 06, 07
+**Unblocks:** 11, 15
 **Estimate:** 30 min Claude-pace
 **File touches:**
 - `config/routes.rb` (new route)
@@ -301,10 +301,10 @@ Validation:
   explain why so the commenter understands.")
 - duplicate requires duplicate_of_review_id
 - terminal statuses (duplicate / informational / withdrawn) auto-set
-  adjudicated_at via the model callback from Task 05
+  adjudicated_at via the model callback from Task 06
 
 Idempotent re-triage allowed; audited gem captures prior state via the
-config from Task 05.
+config from Task 06.
 
 Authored by: Aaron Lippold<lippold@gmail.com>
 EOF

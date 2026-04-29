@@ -1,4 +1,4 @@
-# Task 04: Migration — Component comment phase
+# Task 05: Migration — Component comment phase
 
 **Depends on:** —
 **Unblocks:** 21, 22
@@ -8,7 +8,7 @@
 - `app/models/component.rb` (helpers)
 - `spec/models/component_spec.rb` (coverage for helpers)
 
-Adds the comment-period phase enum on Component (design doc §3.5.1). Independent of Task 03 — can run in parallel.
+Adds the comment-period phase enum on Component (design doc §3.5.1). Independent of Task 04 — can run in parallel.
 
 ---
 

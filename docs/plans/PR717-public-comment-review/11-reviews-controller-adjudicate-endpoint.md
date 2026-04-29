@@ -1,6 +1,6 @@
-# Task 09: PATCH /reviews/:id/adjudicate endpoint
+# Task 11: PATCH /reviews/:id/adjudicate endpoint
 
-**Depends on:** 08
+**Depends on:** 10
 **Unblocks:** 15
 **Estimate:** 20 min Claude-pace
 **File touches:**
@@ -8,7 +8,7 @@
 - `app/controllers/reviews_controller.rb`
 - `spec/requests/reviews_spec.rb`
 
-Mirrors Task 08's pattern. Author+ marks an already-triaged comment as adjudicated (closed). Idempotent re-adjudicate is a no-op.
+Mirrors Task 10's pattern. Author+ marks an already-triaged comment as adjudicated (closed). Idempotent re-adjudicate is a no-op.
 
 ---
 
@@ -123,7 +123,7 @@ In `app/controllers/reviews_controller.rb`, add to the `before_action :authorize
 before_action :authorize_author_project, only: %i[triage adjudicate]
 ```
 
-(Already there from Task 08 if you used the `%i[triage adjudicate]` array.)
+(Already there from Task 10 if you used the `%i[triage adjudicate]` array.)
 
 Add the action body after `def triage`:
 
@@ -195,7 +195,7 @@ If resolution_comment is supplied, creates a child Review with
 responding_to_review_id + inherited section so the response appears in
 the rule's existing thread.
 
-Author+ via the same IDOR-safe filter chain as Task 08.
+Author+ via the same IDOR-safe filter chain as Task 10.
 
 Authored by: Aaron Lippold<lippold@gmail.com>
 EOF

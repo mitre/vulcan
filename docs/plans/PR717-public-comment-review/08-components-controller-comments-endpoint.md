@@ -1,6 +1,6 @@
-# Task 11: GET /components/:id/comments paginated endpoint
+# Task 08: GET /components/:id/comments paginated endpoint
 
-**Depends on:** 03, 05
+**Depends on:** 04, 06
 **Unblocks:** 14, 17, 19
 **Estimate:** 25 min Claude-pace
 **File touches:**

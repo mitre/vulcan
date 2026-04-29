@@ -1,6 +1,6 @@
 # Task 21: CommentPeriodBanner.vue on Component page
 
-**Depends on:** 04, 13
+**Depends on:** 05, 13
 **Estimate:** 20 min Claude-pace
 **File touches:**
 - `app/javascript/components/components/CommentPeriodBanner.vue` (new)
