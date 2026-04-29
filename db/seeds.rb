@@ -281,10 +281,16 @@ puts 'Seeding demo comments for public-comment-review workflow...'
 
 container_component = container_platform.components.find_by(name: 'Container Platform')
 
+# Helper: any top-level comment Reviews exist on this project's components?
+project_has_comments = lambda do |project|
+  Review.where(action: 'comment', responding_to_review_id: nil)
+        .joins(:rule)
+        .merge(Rule.where(component: project.components))
+        .exists?
+end
+
 if container_component.nil?
   puts '  No Container Platform component — skipping comment seeds'
-elsif Review.exists?(action: 'comment')
-  puts '  Comments already seeded, skipping'
 else
   # Reuse two existing non-admin users as our viewer + author (or fall back to admin
   # if seed-user creation was somehow skipped).
@@ -292,20 +298,27 @@ else
   non_admins = User.where(admin: [false, nil]).limit(2).to_a
   viewer_user = non_admins[0] || demo_admin
   author_user = non_admins[1] || demo_admin
+  other_voice = User.where.not(id: [viewer_user&.id, author_user&.id, demo_admin&.id].compact)
+                    .where(admin: [false, nil]).first || viewer_user
 
-  # Memberships — viewer-tier on the project for the commenter, author-tier for
-  # the triager. find_or_create_by avoids duplicate-membership validator failures.
-  Membership.find_or_create_by!(user: viewer_user, membership: container_platform) do |m|
-    m.role = 'viewer'
-  end
-  Membership.find_or_create_by!(user: author_user, membership: container_platform) do |m|
-    m.role = 'author'
-  end
-
-  rules = container_component.rules.order(:rule_id).limit(6).to_a
-  if rules.size < 4
-    puts "  Not enough rules on Container Platform (#{rules.size}) — skipping comment seeds"
+  if project_has_comments.call(container_platform)
+    puts '  Container Platform comments already seeded, skipping that block'
+  elsif container_component.rules.count < 4
+    puts "  Not enough rules on Container Platform (#{container_component.rules.count}) — skipping comment seeds"
   else
+    # Memberships — viewer-tier on the project for the commenter, author-tier for
+    # the triager. find_or_create_by avoids duplicate-membership validator failures.
+    Membership.find_or_create_by!(user: viewer_user, membership: container_platform) do |m|
+      m.role = 'viewer'
+    end
+    Membership.find_or_create_by!(user: author_user, membership: container_platform) do |m|
+      m.role = 'author'
+    end
+    Membership.find_or_create_by!(user: other_voice, membership: container_platform) do |m|
+      m.role = 'viewer'
+    end
+
+    rules = container_component.rules.order(:rule_id).limit(6).to_a
     rule_a, rule_b, rule_c, rule_d = rules
 
     # 1) Pending comment, section-tagged to Check
@@ -323,11 +336,6 @@ else
     )
 
     # 3) Pending general (un-sectioned) comment from a different user
-    other_voice = User.where.not(id: [viewer_user.id, author_user.id, demo_admin&.id].compact)
-                      .where(admin: [false, nil]).first || viewer_user
-    Membership.find_or_create_by!(user: other_voice, membership: container_platform) do |m|
-      m.role = 'viewer'
-    end
     Review.create!(
       user: other_voice, rule: rule_c, action: 'comment',
       comment: 'Could we soften the severity from CAT II to CAT III for environments without external network access?',
@@ -389,6 +397,67 @@ else
 
     puts '  Seeded demo comments (Container Platform): pending, concur+response, non_concur+response, adjudicated, informational, withdrawn'
   end
+
+  # ---------------------------------------------------------- #
+  # Spread comments across other projects/components so the    #
+  # projects-list "Comments" column shows badges across rows   #
+  # — not just on Container Platform. Each project gets a      #
+  # distinct shape so the totals/pending split is testable.    #
+  # ---------------------------------------------------------- #
+  cross_project_membership = lambda do |user, project, role|
+    Membership.find_or_create_by!(user: user, membership: project) { |m| m.role = role }
+  end
+
+  Project.where.not(id: container_platform.id).find_each do |proj|
+    next if project_has_comments.call(proj)
+
+    components_with_rules = proj.components.includes(:rules).select { |c| c.rules.any? }
+    next if components_with_rules.empty?
+
+    cross_project_membership.call(viewer_user, proj, 'viewer')
+    cross_project_membership.call(other_voice, proj, 'viewer')
+    cross_project_membership.call(author_user, proj, 'author')
+
+    case proj.name
+    when 'Photon 3'
+      # Mostly closed, one pending — exercises the "9 total / 1 pending" badge case
+      comp = components_with_rules.first
+      r = comp.rules.first
+      Review.create!(action: 'comment', user: viewer_user, rule: r, section: 'check_content',
+                     comment: 'Photon 3 baseline: should the audit rule include CIS Level 1 only?')
+      closed = Review.create!(action: 'comment', user: other_voice, rule: r, section: 'fixtext',
+                              comment: 'Fix script needs sudo wrapping for non-root execution.')
+      closed.update!(triage_status: 'concur', triage_set_by_id: author_user.id, triage_set_at: 2.days.ago,
+                     adjudicated_by_id: author_user.id, adjudicated_at: 1.day.ago)
+      r2 = comp.rules.second
+      Review.create!(action: 'comment', user: viewer_user, rule: r2, section: nil,
+                     comment: 'FYI we already shipped this in our internal hardening guide.',
+                     triage_status: 'informational',
+                     triage_set_by_id: author_user.id,
+                     triage_set_at: 1.day.ago)
+
+    when 'Photon 4'
+      # Multiple pending across multiple components — exercises the
+      # /projects/:id#comments fallback link (no single-component target).
+      components_with_rules.first(2).each_with_index do |comp, idx|
+        Review.create!(action: 'comment', user: viewer_user, rule: comp.rules.first,
+                       section: 'vuln_discussion',
+                       comment: "Photon 4 component #{idx + 1}: vuln discussion para 2 typo.")
+        Review.create!(action: 'comment', user: other_voice, rule: comp.rules.first,
+                       section: 'check_content',
+                       comment: "Photon 4 component #{idx + 1}: check command needs --no-pager flag.")
+      end
+
+    when 'vSphere 7.0'
+      # Single pending on a single component — exercises the
+      # /components/:id#comments single-target link from the list.
+      comp = components_with_rules.first
+      Review.create!(action: 'comment', user: viewer_user, rule: comp.rules.first,
+                     section: 'fixtext',
+                     comment: 'vSphere 7.0: fix command targets ESXi 6.7 path — should reference 7.0 layout.')
+    end
+  end
+  puts '  Seeded cross-project demo comments (Photon 3, Photon 4, vSphere 7.0)'
 end
 
 # rubocop:enable Rails/Output

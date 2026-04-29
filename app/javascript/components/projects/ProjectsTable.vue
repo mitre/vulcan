@@ -91,20 +91,24 @@
       </template>
 
       <template #cell(pending_comment_count)="data">
-        <b-link
-          v-if="data.item.pending_comment_link && data.item.is_member"
-          v-b-tooltip.hover
-          :href="data.item.pending_comment_link"
-          :title="`Open the triage view: ${data.item.pending_comment_count} pending public-review comment${data.item.pending_comment_count === 1 ? '' : 's'}`"
-        >
-          <b-badge variant="warning">
-            <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }} pending
-          </b-badge>
-        </b-link>
-        <span v-else-if="data.item.pending_comment_count > 0" class="text-muted">
-          <b-badge variant="light">
-            <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }}
-          </b-badge>
+        <span v-if="data.item.total_comment_count > 0">
+          <b-link
+            v-if="data.item.pending_comment_link && data.item.is_member"
+            v-b-tooltip.hover
+            :href="data.item.pending_comment_link"
+            :title="commentBadgeTitle(data.item)"
+          >
+            <b-badge v-if="data.item.pending_comment_count > 0" variant="warning" class="mr-1">
+              <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }} pending
+            </b-badge>
+            <small class="text-muted"> {{ data.item.total_comment_count }} total </small>
+          </b-link>
+          <span v-else>
+            <b-badge v-if="data.item.pending_comment_count > 0" variant="light" class="mr-1">
+              <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }}
+            </b-badge>
+            <small class="text-muted">{{ data.item.total_comment_count }} total</small>
+          </span>
         </span>
         <span v-else class="text-muted">—</span>
       </template>
@@ -335,6 +339,16 @@ export default {
     // Matches backend authorize_admin_project (User#can_admin_project?).
     canAdminProject(project) {
       return this.is_vulcan_admin || project.admin;
+    },
+    // Tooltip text for the comments-column link — explicit so users
+    // know what the click will do based on the project's state.
+    commentBadgeTitle(project) {
+      const pending = project.pending_comment_count;
+      const total = project.total_comment_count;
+      if (pending > 0) {
+        return `Open triage: ${pending} pending of ${total} total comment${total === 1 ? "" : "s"}`;
+      }
+      return `Open comments: ${total} total comment${total === 1 ? "" : "s"} (all triaged)`;
     },
     // Path to POST/DELETE to when updating/deleting a project
     formAction: function (project) {

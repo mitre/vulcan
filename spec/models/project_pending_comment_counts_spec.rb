@@ -73,6 +73,69 @@ RSpec.describe Project do
     end
   end
 
+  # comment_counts returns BOTH the pending-needs-triage count and the
+  # total-top-level count per project. The projects-list "Comments"
+  # column shows pending as the primary action-needed metric and total
+  # as the ambient activity metric.
+  describe '.comment_counts' do
+    let_it_be(:srg) { create(:security_requirements_guide) }
+    let_it_be(:project_p) { create(:project) }
+    let_it_be(:project_q) { create(:project) }
+    let_it_be(:project_quiet) { create(:project) }
+    let_it_be(:p_component) { create(:component, project: project_p, based_on: srg) }
+    let_it_be(:q_component) { create(:component, project: project_q, based_on: srg) }
+    let_it_be(:viewer) { create(:user) }
+    let_it_be(:author) { create(:user) }
+
+    before_all do
+      # Project P: 2 pending + 1 closed = 3 total
+      Review.create!(action: 'comment', user: viewer, rule: p_component.rules.first, comment: 'p1')
+      Review.create!(action: 'comment', user: viewer, rule: p_component.rules.first, comment: 'p2')
+      closed = Review.create!(action: 'comment', user: viewer,
+                              rule: p_component.rules.first, comment: 'p-closed')
+      closed.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current,
+                     adjudicated_by_id: author.id, adjudicated_at: Time.current)
+      # Reply (excluded from totals — only top-level counts)
+      Review.create!(action: 'comment', user: viewer, rule: p_component.rules.first,
+                     comment: 'reply', responding_to_review_id: closed.id)
+
+      # Project Q: 0 pending + 1 closed = 1 total
+      q_closed = Review.create!(action: 'comment', user: viewer,
+                                rule: q_component.rules.first, comment: 'q1')
+      q_closed.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current,
+                       adjudicated_by_id: author.id, adjudicated_at: Time.current)
+    end
+
+    it 'returns pending and total per project keyed by project_id' do
+      result = described_class.comment_counts([project_p.id, project_q.id, project_quiet.id])
+      expect(result[project_p.id]).to eq(pending: 2, total: 3)
+      expect(result[project_q.id]).to eq(pending: 0, total: 1)
+    end
+
+    it 'omits projects with zero top-level comments' do
+      result = described_class.comment_counts([project_p.id, project_q.id, project_quiet.id])
+      expect(result).not_to have_key(project_quiet.id)
+    end
+
+    it 'returns an empty hash when given an empty array' do
+      expect(described_class.comment_counts([])).to eq({})
+    end
+
+    it 'issues a single SQL query (no N+1 across projects)' do
+      project_ids = [project_p.id, project_q.id]
+      query_count = 0
+      counter = lambda do |_name, _start, _finish, _id, payload|
+        next if payload[:name] == 'SCHEMA' || payload[:sql] =~ /\A\s*(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)/i
+
+        query_count += 1
+      end
+      ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+        described_class.comment_counts(project_ids)
+      end
+      expect(query_count).to eq(1)
+    end
+  end
+
   describe '.pending_comment_target_components' do
     let_it_be(:srg) { create(:security_requirements_guide) }
     let_it_be(:project_single) { create(:project) }

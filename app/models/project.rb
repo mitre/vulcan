@@ -49,6 +49,32 @@ class Project < ApplicationRecord
           .count
   end
 
+  # Pending + total top-level comment counts per project, returned as a
+  # sparse hash: { project_id => { pending: N, total: M } }. Drives the
+  # projects-list "Comments" column (PR #717 follow-on) — pending is the
+  # action-needed metric, total is the ambient activity metric.
+  #
+  # Single GROUP BY using Postgres FILTER aggregate so we count both
+  # without a second query. Projects with zero top-level comments are
+  # omitted; callers can `result[id] || { pending: 0, total: 0 }`.
+  def self.comment_counts(project_ids)
+    return {} if project_ids.blank?
+
+    rows = Review.where(action: 'comment', responding_to_review_id: nil)
+                 .joins(:rule)
+                 .merge(Rule.where(component: Component.where(project_id: project_ids)))
+                 .joins('INNER JOIN components ON components.id = base_rules.component_id')
+                 .group('components.project_id')
+                 .pluck(
+                   Arel.sql('components.project_id'),
+                   Arel.sql("COUNT(*) FILTER (WHERE reviews.triage_status = 'pending')"),
+                   Arel.sql('COUNT(*)')
+                 )
+    rows.each_with_object({}) do |(pid, pending, total), h|
+      h[pid] = { pending: pending, total: total }
+    end
+  end
+
   # Per-project deep-link target for the projects-list "Comments" column.
   # Returns the unique pending component_id ONLY when a project has
   # exactly one component with pending comments — letting the list link

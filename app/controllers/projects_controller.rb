@@ -27,9 +27,10 @@ class ProjectsController < ApplicationController
     ar_by_project = current_user.access_requests
                                 .where(project_id: project_ids)
                                 .index_by(&:project_id)
-    # Batch-load pending-comment counts (single GROUP BY) so the row badge
-    # never triggers per-project queries (PR #717 follow-on).
-    pending_comment_counts = Project.pending_comment_counts(project_ids)
+    # Batch-load comment counts (single GROUP BY with FILTER aggregate) so
+    # the row "Comments" column never triggers per-project queries.
+    # Returns { pid => { pending: N, total: M } }.
+    comment_counts = Project.comment_counts(project_ids)
     # Resolve the deep-link target server-side: when a project has exactly
     # one component with pending comments, the row link goes straight to
     # that component (one click → triage panel — no intermediate-page bounce).
@@ -38,7 +39,7 @@ class ProjectsController < ApplicationController
       projects,
       current_user: current_user,
       access_requests_by_project: ar_by_project,
-      pending_comment_counts: pending_comment_counts,
+      comment_counts: comment_counts,
       pending_comment_target_components: pending_comment_targets
     )
     respond_to do |format|

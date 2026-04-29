@@ -92,11 +92,12 @@ describe("ProjectsTable", () => {
   // links to the server-resolved deep-link target (no client-side bouncing).
   // ==========================================
   describe("pending-comments column", () => {
-    it("renders the warning badge with the count when pending_comment_link is set", () => {
+    it("renders 'N pending' badge alongside total when pending > 0", () => {
       const projects = [
         {
           ...sampleProjects[0],
           pending_comment_count: 3,
+          total_comment_count: 9,
           pending_comment_link: "/components/42#comments",
         },
       ];
@@ -104,6 +105,7 @@ describe("ProjectsTable", () => {
       const link = wrapper.find('a[href="/components/42#comments"]');
       expect(link.exists()).toBe(true);
       expect(link.text()).toContain("3 pending");
+      expect(link.text()).toContain("9 total");
     });
 
     it("links straight to /components/:id#comments when one component has pending", () => {
@@ -111,6 +113,7 @@ describe("ProjectsTable", () => {
         {
           ...sampleProjects[0],
           pending_comment_count: 2,
+          total_comment_count: 5,
           pending_comment_link: "/components/99#comments",
         },
       ];
@@ -119,30 +122,32 @@ describe("ProjectsTable", () => {
       expect(link.attributes("href")).toBe("/components/99#comments");
     });
 
-    it("links to /projects/:id#comments when multiple components have pending", () => {
-      const projects = [
-        {
-          ...sampleProjects[0],
-          id: 7,
-          pending_comment_count: 5,
-          pending_comment_link: "/projects/7#comments",
-        },
-      ];
-      wrapper = createWrapper({ projects });
-      const link = wrapper.find('a[href*="#comments"]');
-      expect(link.attributes("href")).toBe("/projects/7#comments");
-    });
-
-    it("renders an em-dash when there are no pending comments", () => {
+    it("shows just the total count when no pending (closed-only activity)", () => {
       const projects = [
         {
           ...sampleProjects[0],
           pending_comment_count: 0,
+          total_comment_count: 4,
+          pending_comment_link: "/projects/1#comments",
+        },
+      ];
+      wrapper = createWrapper({ projects });
+      const link = wrapper.find('a[href="/projects/1#comments"]');
+      expect(link.exists()).toBe(true);
+      expect(link.text()).toContain("4 total");
+      expect(link.text()).not.toContain("pending");
+    });
+
+    it("renders an em-dash when there are no comments at all", () => {
+      const projects = [
+        {
+          ...sampleProjects[0],
+          pending_comment_count: 0,
+          total_comment_count: 0,
           pending_comment_link: null,
         },
       ];
       wrapper = createWrapper({ projects });
-      // Comments column is the 4th cell (after name, description, members)
       const commentsCell = wrapper.find("td:nth-child(4)");
       expect(commentsCell.text()).toContain("—");
       expect(wrapper.find("a[href*='#comments']").exists()).toBe(false);

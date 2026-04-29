@@ -46,20 +46,31 @@ class ProjectIndexBlueprint < Blueprinter::Base
   # Pending top-level comment count across this project's components.
   # Surfaces a "N pending" badge on the projects-list row so admins
   # discover the triage queue without drilling into every component.
-  # Counts are pre-batched via Project.pending_comment_counts.
+  # Counts are pre-batched via Project.comment_counts.
   field :pending_comment_count do |project, options|
-    counts = options[:pending_comment_counts] || {}
-    counts[project.id] || 0
+    counts = options[:comment_counts] || {}
+    counts.dig(project.id, :pending) || 0
+  end
+
+  # Total top-level comment count (pending + triaged + adjudicated +
+  # withdrawn). Provides ambient activity context alongside the pending
+  # count — "9 total / 3 pending" reads more meaningfully than just "3"
+  # for a project that has had a lot of resolved discussion.
+  field :total_comment_count do |project, options|
+    counts = options[:comment_counts] || {}
+    counts.dig(project.id, :total) || 0
   end
 
   # Resolved deep-link target for the "Comments" badge — computed
   # server-side so the click bypasses any intermediate page.
-  # - exactly 1 component with pending → /components/:id#comments
-  # - multiple components with pending → /projects/:id#comments
-  # - none → null (frontend renders an em-dash)
+  # - exactly 1 component with pending comments → /components/:id#comments
+  # - multiple components with pending comments → /projects/:id#comments
+  # - any total > 0 with no pending → /projects/:id#comments (closed view)
+  # - zero comments → null (frontend renders an em-dash)
   field :pending_comment_link do |project, options|
-    counts = options[:pending_comment_counts] || {}
-    next nil if (counts[project.id] || 0).zero?
+    counts = options[:comment_counts] || {}
+    project_counts = counts[project.id]
+    next nil if project_counts.nil? || project_counts[:total].to_i.zero?
 
     targets = options[:pending_comment_target_components] || {}
     component_id = targets[project.id]
