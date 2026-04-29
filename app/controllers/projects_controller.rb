@@ -79,7 +79,7 @@ class ProjectsController < ApplicationController
 
     # First save ensures base Project is acceptable.
     if project.save
-      send_slack_notification(:create_project, project) if Settings.slack.enabled
+      safely_notify('create_project') { send_slack_notification(:create_project, project) } if Settings.slack.enabled
 
       respond_to do |format|
         format.html { redirect_to project }
@@ -112,7 +112,7 @@ class ProjectsController < ApplicationController
     if @project.update(project_params)
       if Settings.slack.enabled
         notification_types.each do |type|
-          send_slack_notification(type, @project)
+          safely_notify("update_project_#{type}") { send_slack_notification(type, @project) }
         end
       end
       render json: { toast: 'Successfully updated project' }

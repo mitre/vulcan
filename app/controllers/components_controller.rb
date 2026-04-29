@@ -103,7 +103,7 @@ class ComponentsController < ApplicationController
           } }
         end
         component.save
-        send_slack_notification(:create_component, component) if Settings.slack.enabled
+        safely_notify('create_component') { send_slack_notification(:create_component, component) } if Settings.slack.enabled
         render json: { toast: 'Successfully added component to project.' }
       else
         render json: {

@@ -35,22 +35,26 @@ class ReviewsController < ApplicationController
 
     if saved
       if Settings.smtp.enabled
-        send_smtp_notification(
-          UserMailer,
-          review_params[:action],
-          current_user,
-          review_params[:component_id],
-          review_params[:comment],
-          @rule
-        )
+        safely_notify("review_#{review_params[:action]}_smtp") do
+          send_smtp_notification(
+            UserMailer,
+            review_params[:action],
+            current_user,
+            review_params[:component_id],
+            review_params[:comment],
+            @rule
+          )
+        end
       end
 
       if Settings.slack.enabled
-        send_slack_notification(
-          review_params[:action].to_sym,
-          @rule,
-          review_params[:comment]
-        )
+        safely_notify("review_#{review_params[:action]}_slack") do
+          send_slack_notification(
+            review_params[:action].to_sym,
+            @rule,
+            review_params[:comment]
+          )
+        end
       end
 
       render json: { toast: 'Successfully added review.' }
