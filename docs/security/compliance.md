@@ -367,17 +367,17 @@ Rate limiting is enabled by default. Thresholds can be adjusted in `config/initi
 
 ```dockerfile
 # Secure Dockerfile Example
-FROM ruby:3.4.9-slim AS production
+FROM registry.access.redhat.com/ubi9/ruby-33:1 AS production
 
 # Security: Run as non-root user
 RUN groupadd -r app && useradd -r -g app app
 
 # Security: Install only required packages
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        postgresql-client \
+RUN dnf install -y \
+        postgresql \
         nodejs && \
-    rm -rf /var/lib/apt/lists/*
+    dnf clean all && \
+    rm -rf /var/cache/dnf
 
 # Security: Set secure permissions
 WORKDIR /app

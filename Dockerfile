@@ -16,30 +16,28 @@
 #   docker buildx build --platform linux/amd64,linux/arm64 --target production -t vulcan:prod .
 # =============================================================================
 
-# Make sure versions match .ruby-version
-ARG RUBY_VERSION=3.4.9
 ARG NODE_VERSION=24.14.0
 
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM docker.io/library/ruby:${RUBY_VERSION}-slim AS base
+FROM registry.access.redhat.com/ubi9/ruby-33:1 AS base
 
+USER root
 WORKDIR /rails
 
 # Install base packages including jemalloc for better memory management
 # libvips removed — image_processing gem is commented out and ActiveStorage
-# is not used for file attachments. postgresql-client kept for db:prepare.
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
+# is not used for file attachments. postgresql kept for db:prepare.
+RUN dnf install -y \
       ca-certificates \
       curl \
-      libjemalloc2 \
-      libpq5 \
-      libyaml-0-2 \
-      postgresql-client && \
-    ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+      jemalloc \
+      libpq \
+      libyaml \
+      postgresql && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
 
 # Install custom SSL certificates if provided (single layer)
 COPY certs/ /usr/local/share/ca-certificates/custom/
@@ -53,9 +51,9 @@ RUN cd /usr/local/share/ca-certificates/custom && \
     rm -f /usr/local/share/ca-certificates/custom/README.md
 
 # Common environment for all stages
-ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
+ENV LD_PRELOAD="/usr/lib64/libjemalloc.so.2" \
     MALLOC_ARENA_MAX="2" \
-    NODE_EXTRA_CA_CERTS="/etc/ssl/certs/ca-certificates.crt" \
+    NODE_EXTRA_CA_CERTS="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" \
     BUNDLE_PATH="/usr/local/bundle"
 
 # =============================================================================
@@ -64,16 +62,19 @@ ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
 FROM base AS build-base
 
 # Install packages needed to build gems and node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-      build-essential \
+RUN dnf install -y \
+      gcc \
+      gcc-c++ \
       git \
-      gnupg \
-      libpq-dev \
-      libyaml-dev \
-      pkg-config \
-      zlib1g-dev && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+      gnupg2 \
+      make \
+      postgresql-devel \
+      libyaml-devel \
+      pkgconf-pkg-config \
+      xz \
+      zlib-devel && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
 
 # Install Node.js LTS using official binaries
 ARG NODE_VERSION
@@ -136,11 +137,11 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
 FROM build-base AS development
 
 # Additional dev tools (build deps + Node.js already in build-base)
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-      vim \
+RUN dnf install -y \
+      vim-enhanced \
       less && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    dnf clean all && \
+    rm -rf /var/cache/dnf
 
 # Development environment
 ENV RAILS_ENV="development" \
