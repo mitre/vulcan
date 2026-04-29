@@ -42,4 +42,13 @@ class ProjectIndexBlueprint < Blueprinter::Base
       user.access_requests.find_by(project_id: project.id)&.id
     end
   end
+
+  # Pending top-level comment count across this project's components.
+  # Surfaces a "N pending" badge on the projects-list row so admins
+  # discover the triage queue without drilling into every component.
+  # Counts are pre-batched via Project.pending_comment_counts.
+  field :pending_comment_count do |project, options|
+    counts = options[:pending_comment_counts] || {}
+    counts[project.id] || 0
+  end
 end

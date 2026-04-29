@@ -27,6 +27,28 @@ class Project < ApplicationRecord
 
   scope :alphabetical, -> { order(:name) }
 
+  # Aggregate count of top-level pending comments per project. Used by the
+  # projects-list page to render a "N pending comments" badge per row
+  # without N+1 queries (PR #717 follow-on).
+  #
+  # Returns a sparse hash: { project_id => count } — projects with zero
+  # pending comments are omitted so callers can `counts[id] || 0`.
+  #
+  # Single SQL query joins reviews → base_rules (Rule STI) → components,
+  # filters to top-level pending comment Reviews, groups by project_id.
+  def self.pending_comment_counts(project_ids)
+    return {} if project_ids.blank?
+
+    Review.where(action: 'comment',
+                 responding_to_review_id: nil,
+                 triage_status: 'pending')
+          .joins(:rule)
+          .merge(Rule.where(component: Component.where(project_id: project_ids)))
+          .joins('INNER JOIN components ON components.id = base_rules.component_id')
+          .group('components.project_id')
+          .count
+  end
+
   # Helper method to extract data from Project Metadata
   def metadata
     project_metadata&.data

@@ -27,10 +27,14 @@ class ProjectsController < ApplicationController
     ar_by_project = current_user.access_requests
                                 .where(project_id: project_ids)
                                 .index_by(&:project_id)
+    # Batch-load pending-comment counts (single GROUP BY) so the row badge
+    # never triggers per-project queries (PR #717 follow-on).
+    pending_comment_counts = Project.pending_comment_counts(project_ids)
     @projects = ProjectIndexBlueprint.render_as_hash(
       projects,
       current_user: current_user,
-      access_requests_by_project: ar_by_project
+      access_requests_by_project: ar_by_project,
+      pending_comment_counts: pending_comment_counts
     )
     respond_to do |format|
       format.html

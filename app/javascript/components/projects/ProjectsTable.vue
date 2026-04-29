@@ -88,6 +88,15 @@
           {{ data.item.name }}
         </b-link>
         <span v-else>{{ data.item.name }}</span>
+        <b-badge
+          v-if="data.item.pending_comment_count > 0"
+          variant="warning"
+          class="ml-2"
+          :title="`${data.item.pending_comment_count} pending public-review comments waiting for triage`"
+          aria-label="pending comments"
+        >
+          💬 {{ data.item.pending_comment_count }} pending
+        </b-badge>
       </template>
 
       <template #cell(description)="data">
