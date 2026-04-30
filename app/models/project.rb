@@ -252,8 +252,11 @@ class Project < ApplicationRecord
     # Don't allow importing a component twice to the same project
     reject_component_ids = components.pluck(:id, :component_id).flatten.compact
     # Assumption that released components are publicly available within vulcan
+    # rules_count + component_id required by ComponentBlueprint :index for the
+    # controls badge and (Overlaid) tag on ComponentCard.
     Component.where(released: true).where.not(id: reject_component_ids)
              .select(:id, :name, :prefix, :version, :release, :project_id,
-                     :security_requirements_guide_id, :released, :updated_at)
+                     :security_requirements_guide_id, :released, :updated_at,
+                     :rules_count, :component_id)
   end
 end

@@ -38,8 +38,11 @@ class ComponentBlueprint < Blueprinter::Base
   end
 
   # === Index view: listing page ===
+  # rules_count drives ComponentCard's controls badge; component_id
+  # drives the (Overlaid) tag. Without these the card silently hides
+  # the badges (the "Not Configured" bug Aaron flagged).
   view :index do
-    fields :updated_at, :released
+    fields :updated_at, :released, :rules_count, :component_id
   end
 
   # === Related view: related_rules parents (includes project for display name) ===
