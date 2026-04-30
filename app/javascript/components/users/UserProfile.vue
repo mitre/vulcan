@@ -115,65 +115,56 @@
       </b-card-body>
     </b-card>
 
-    <!-- Change Password — collapsed by default. Most visits don't need
-         to change a password; the toggle keeps the section discoverable
-         without dominating the primary view. Local-auth users only. -->
+    <!-- Change Password — full-width section, local-auth users only. -->
     <b-card v-if="!isProviderManaged" class="mt-3" no-body>
-      <b-card-header
-        v-b-toggle.change-password-collapse
-        class="d-flex justify-content-between align-items-center"
-        style="cursor: pointer"
-      >
+      <b-card-header>
         <h5 class="mb-0"><b-icon icon="shield-lock" class="mr-1" /> Change Password</h5>
-        <b-icon icon="chevron-down" />
       </b-card-header>
-      <b-collapse id="change-password-collapse">
-        <b-card-body>
-          <b-form @submit.prevent="saveProfile">
-            <b-form-row>
-              <b-col md="6">
-                <b-form-group
-                  label="New Password"
-                  label-for="user-password"
-                  description="Leave blank if you don't want to change it"
-                >
-                  <PasswordField
-                    id="user-password"
-                    v-model="form.password"
-                    name="user[password]"
-                    autocomplete="new-password"
-                    :policy="passwordPolicy"
-                  />
-                </b-form-group>
-              </b-col>
-              <b-col md="6">
-                <b-form-group label="Confirm New Password" label-for="user-password-confirmation">
-                  <PasswordField
-                    id="user-password-confirmation"
-                    v-model="form.password_confirmation"
-                    name="user[password_confirmation]"
-                    autocomplete="new-password"
-                    :must-match="form.password"
-                  />
-                </b-form-group>
-              </b-col>
-            </b-form-row>
-            <b-form-group
-              label="Current Password"
-              label-for="user-current-password"
-              description="Required to confirm your changes"
-            >
-              <b-form-input
-                id="user-current-password"
-                v-model="form.current_password"
-                type="password"
-                required
-                autocomplete="current-password"
-              />
-            </b-form-group>
-          </b-form>
-        </b-card-body>
-      </b-collapse>
+      <b-card-body>
+        <b-form @submit.prevent="saveProfile">
+          <b-form-row>
+            <b-col md="6">
+              <b-form-group
+                label="New Password"
+                label-for="user-password"
+                description="Leave blank if you don't want to change it"
+              >
+                <PasswordField
+                  id="user-password"
+                  v-model="form.password"
+                  name="user[password]"
+                  autocomplete="new-password"
+                  :policy="passwordPolicy"
+                />
+              </b-form-group>
+            </b-col>
+            <b-col md="6">
+              <b-form-group label="Confirm New Password" label-for="user-password-confirmation">
+                <PasswordField
+                  id="user-password-confirmation"
+                  v-model="form.password_confirmation"
+                  name="user[password_confirmation]"
+                  autocomplete="new-password"
+                  :must-match="form.password"
+                />
+              </b-form-group>
+            </b-col>
+          </b-form-row>
+          <b-form-group
+            label="Current Password"
+            label-for="user-current-password"
+            description="Required to confirm your changes"
+          >
+            <b-form-input
+              id="user-current-password"
+              v-model="form.current_password"
+              type="password"
+              required
+              autocomplete="current-password"
+            />
+          </b-form-group>
+        </b-form>
+      </b-card-body>
     </b-card>
 
     <!-- User Activity Sidebar -->

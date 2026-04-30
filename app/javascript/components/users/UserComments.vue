@@ -1,7 +1,13 @@
 <template>
   <b-card class="mt-3" no-body>
-    <b-card-header class="d-flex justify-content-between align-items-center">
+    <b-card-header>
       <h5 class="mb-0"><b-icon icon="chat-left-text" class="mr-1" /> My Comments</h5>
+    </b-card-header>
+
+    <!-- Filter row — left-aligned so the native <select> dropdown opens
+         well inside the viewport (placing it on the right edge of the
+         card-header pushes the dropdown off-screen on wide windows). -->
+    <div class="px-3 pt-3 pb-2">
       <b-input-group size="sm" style="max-width: 320px">
         <b-form-select
           v-model="filterStatus"
@@ -19,7 +25,7 @@
           <b-icon icon="arrow-clockwise" />
         </b-button>
       </b-input-group>
-    </b-card-header>
+    </div>
 
     <b-table
       :items="rows"
@@ -61,9 +67,12 @@
         <div class="text-center py-3"><b-spinner small /> Loading…</div>
       </template>
       <template #empty>
-        <div class="text-muted text-center py-3">
-          No comments yet — comments you post on rules will appear here so you can track their
-          triage status.
+        <div class="text-center py-5">
+          <b-icon icon="chat-left-text" class="text-muted mb-2" font-scale="2" />
+          <h6 class="mb-2">You have no comments yet</h6>
+          <p class="text-muted mb-0">
+            Add a comment on a component and you'll be able to track its triage status here.
+          </p>
         </div>
       </template>
     </b-table>

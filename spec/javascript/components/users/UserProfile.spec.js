@@ -114,12 +114,12 @@ describe("UserProfile", () => {
       expect(wrapper.find("b-form-row-stub").exists()).toBe(true);
     });
 
-    it("places Change Password in its own collapsible region", () => {
+    it("places Change Password in its own card section", () => {
       wrapper = createWrapper();
-      // Most users don't change passwords often; collapsing keeps the
-      // primary view focused on My Comments + identity fields.
-      const collapse = wrapper.find("b-collapse-stub");
-      expect(collapse.exists()).toBe(true);
+      // Change Password lives in its own b-card with header so it's
+      // visually segregated from the identity fields without hiding it
+      // behind a collapse (always-visible per UX feedback).
+      expect(wrapper.html()).toContain("Change Password");
     });
   });
 
