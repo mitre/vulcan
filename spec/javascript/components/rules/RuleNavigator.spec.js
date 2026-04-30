@@ -381,12 +381,16 @@ describe("RuleNavigator", () => {
       expect(wrapper.find('[data-test="rule-pending-comment-2"]').exists()).toBe(false);
     });
 
-    it("badge text contains the pending comment count", () => {
+    it("badge is icon-only (no count text rendered) — count lives in the tooltip", () => {
       const rules = [ruleWithPending(7, "000070", 4, 4)];
       wrapper = createWrapper({ rules });
       const badge = wrapper.find('[data-test="rule-pending-comment-7"]');
       expect(badge.exists()).toBe(true);
-      expect(badge.text()).toContain("4");
+      // No digits in the rendered badge — the chat icon alone is the
+      // scan-time signal; the count is surfaced via the v-b-tooltip title.
+      expect(badge.text()).not.toMatch(/\d/);
+      // Tooltip carries the precise count for accessibility + on-hover detail.
+      expect(badge.attributes("title")).toContain("4");
     });
 
     it("does NOT render the badge when comment_summary is missing", () => {

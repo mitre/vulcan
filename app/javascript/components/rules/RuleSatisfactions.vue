@@ -37,18 +37,6 @@
         >
           {{ truncateId(satisfies.srg_id) }}
         </span>
-        <span
-          v-if="satisfies.pending_comment_count > 0"
-          v-b-tooltip.hover
-          :title="commentCountTooltip(satisfies)"
-          :data-test="`related-rule-comment-count-${satisfies.id}`"
-          class="ml-auto mr-2"
-        >
-          <b-icon icon="chat-left-text" class="text-primary" aria-hidden="true" />
-          <b-badge variant="primary" pill class="ml-1"
-            >{{ satisfies.pending_comment_count }} pending</b-badge
-          >
-        </span>
         <b-button
           v-b-modal.unmark-satisfies-modal
           size="sm"
@@ -107,18 +95,6 @@
           @click="ruleSelected(satisfied_by)"
         >
           {{ truncateId(satisfied_by.srg_id) }}
-        </span>
-        <span
-          v-if="satisfied_by.pending_comment_count > 0"
-          v-b-tooltip.hover
-          :title="commentCountTooltip(satisfied_by)"
-          :data-test="`related-rule-comment-count-${satisfied_by.id}`"
-          class="ml-auto mr-2"
-        >
-          <b-icon icon="chat-left-text" class="text-primary" aria-hidden="true" />
-          <b-badge variant="primary" pill class="ml-1"
-            >{{ satisfied_by.pending_comment_count }} pending</b-badge
-          >
         </span>
         <b-button
           v-b-modal.unmark-satisfied-by-modal
@@ -207,11 +183,6 @@ export default {
         ruleRow: true,
         selectedRuleRow: this.selectedRuleId == rule.id,
       };
-    },
-    commentCountTooltip(related) {
-      const total = related.total_comment_count || 0;
-      const noun = total === 1 ? "comment" : "comments";
-      return `${total} total ${noun} on this rule`;
     },
   },
 };

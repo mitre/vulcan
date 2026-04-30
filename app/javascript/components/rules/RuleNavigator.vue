@@ -72,10 +72,9 @@
               v-b-tooltip.hover
               :title="`${rulePending(rule)} pending comments`"
               :data-test="`rule-pending-comment-${rule.id}`"
-              class="text-primary mr-1"
+              class="text-warning mr-1"
             >
               <b-icon icon="chat-left-text" aria-hidden="true" />
-              {{ rulePending(rule) }}
             </span>
             <i
               v-if="rule.satisfies.length > 0"
@@ -178,10 +177,9 @@
               v-b-tooltip.hover
               :title="`${rulePending(rule)} pending comments`"
               :data-test="`rule-pending-comment-${rule.id}`"
-              class="text-primary mr-1"
+              class="text-warning mr-1"
             >
               <b-icon icon="chat-left-text" aria-hidden="true" />
-              {{ rulePending(rule) }}
             </span>
             <i
               v-if="rule.satisfies.length > 0"
