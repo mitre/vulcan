@@ -99,6 +99,18 @@
             class="d-flex align-items-center flex-wrap"
             style="gap: 0.25rem"
           >
+            <b-button
+              v-if="effectivePermissions == 'admin'"
+              v-b-tooltip.hover
+              :href="`/components/${component.id}/settings`"
+              variant="outline-secondary"
+              size="sm"
+              title="Component Settings — Identity, PoC, Public Comment Period"
+              data-test="component-card-settings-link"
+            >
+              <b-icon icon="gear" font-scale="0.9" /> Settings
+            </b-button>
+
             <LockControlsModal
               v-if="role_gte_to(effectivePermissions, 'reviewer')"
               :component_id="component.id"

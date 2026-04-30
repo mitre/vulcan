@@ -306,6 +306,25 @@ describe("ComponentCard", () => {
       expect(wrapper.text()).not.toContain("Delete");
     });
 
+    it("shows a Settings link to admins that points to the component settings page", () => {
+      wrapper = createWrapper({
+        effectivePermissions: "admin",
+        component: { ...defaultComponent, id: 42 },
+      });
+      const link = wrapper.find('[data-test="component-card-settings-link"]');
+      expect(link.exists()).toBe(true);
+      expect(link.attributes("href")).toBe("/components/42/settings");
+      expect(link.text()).toContain("Settings");
+    });
+
+    it("hides the Settings link for non-admins", () => {
+      wrapper = createWrapper({
+        effectivePermissions: "author",
+        component: { ...defaultComponent, id: 42 },
+      });
+      expect(wrapper.find('[data-test="component-card-settings-link"]').exists()).toBe(false);
+    });
+
     it("action buttons are in a flex container for visual consistency", () => {
       wrapper = createWrapper({ effectivePermissions: "admin" });
       // Actions should be in a flex container with gap for consistent spacing

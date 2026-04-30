@@ -57,7 +57,7 @@ class ComponentBlueprint < Blueprinter::Base
   # === Show view: non-member read-only ===
   view :show do
     fields :title, :description, :admin_name, :admin_email, :released, :updated_at,
-           :comment_phase, :comment_period_ends_at
+           :comment_phase, :comment_period_starts_at, :comment_period_ends_at
 
     association :rules, blueprint: RuleBlueprint, view: :viewer do |component, _options|
       component.rules
@@ -77,7 +77,7 @@ class ComponentBlueprint < Blueprinter::Base
            :released, :advanced_fields, :project_id, :component_id,
            :security_requirements_guide_id, :memberships_count,
            :rules_count, :updated_at, :created_at,
-           :comment_phase, :comment_period_ends_at
+           :comment_phase, :comment_period_starts_at, :comment_period_ends_at
 
     field :releasable do |component, _options|
       component.releasable
