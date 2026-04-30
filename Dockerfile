@@ -21,9 +21,9 @@ ARG NODE_VERSION=24.14.0
 FROM registry.access.redhat.com/ubi9/ruby-33:1 AS base
 
 USER 0
-RUN mkdir -p /rails /tmp/bundle && \
-    chown -R 1001:0 /rails /tmp/bundle && \
-    chmod -R g=u /rails /tmp/bundle
+RUN mkdir -p /rails /usr/local/bundle && \
+    chown -R 1001:0 /rails /usr/local/bundle && \
+    chmod -R g=u /rails /usr/local/bundle
 WORKDIR /rails
 
 # Install base packages.
@@ -45,8 +45,8 @@ RUN  update-ca-trust && \
 # Common environment for all stages
 ENV MALLOC_ARENA_MAX="2" \
     NODE_EXTRA_CA_CERTS="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" \
-    BUNDLE_USER_HOME="/tmp/bundle" \
-    BUNDLE_PATH="/tmp/bundle"
+    BUNDLE_USER_HOME="/usr/local/bundle" \
+    BUNDLE_PATH="/usr/local/bundle"
 
 USER 1001
 
