@@ -232,7 +232,7 @@ Authored by: Aaron Lippold<lippold@gmail.com>"
 
 The PR is ready to merge when:
 
-- [ ] All 26 implementation tasks (1-22 + 23, 24, 27, 28) are committed and marked DONE
+- [ ] All 27 implementation tasks (1-22 + 23, 24, 27, 28, 29) are committed and marked DONE
       (Tasks 25 + 26 deferred to a follow-up phase — admin force-withdraw
        and admin move-to-rule are documented as console operations in
        `docs/runbook-public-comment-admin-actions.md` for this phase.)
@@ -251,7 +251,7 @@ The PR is ready to merge when:
 
 - Outbound email + opt-in UI + bounce handling + List-Unsubscribe headers
 - Auto-advance comment phase on date boundaries (cron job)
-- DISA comment-resolution-matrix CSV/OSCAL export
+- DISA disposition-matrix OSCAL output — CSV is now in scope as Task 29; OSCAL deferred because no canonical OSCAL model exists for public-comment disposition (see Task 29 "Out of scope" for the SAR-mapping dead-end and what a follow-up should do instead)
 - Structured CCI/CVE/NIST control reference fields on comments
 - Semantic dedup matching on comment composition
 - Bulk triage actions
