@@ -78,6 +78,51 @@ describe("UserProfile", () => {
     }
   });
 
+  // REQUIREMENT: Option B layout — single scrolling page of full-width
+  // stacked sections. Each section is its own b-card. Order prioritizes
+  // commenter feedback loop (My Comments first, then settings, then
+  // password change collapsed).
+  describe("Option B layout", () => {
+    it("places My Comments BEFORE Profile Information (commenter-priority)", () => {
+      wrapper = createWrapper();
+      const html = wrapper.html();
+      const myCommentsIdx = html.indexOf("usercomments-stub");
+      const profileIdx = html.indexOf("Profile Information");
+      expect(myCommentsIdx).toBeGreaterThan(-1);
+      expect(profileIdx).toBeGreaterThan(-1);
+      expect(myCommentsIdx).toBeLessThan(profileIdx);
+    });
+
+    it("does NOT wrap the Profile form CARD in a half-width column", () => {
+      wrapper = createWrapper();
+      // The old layout used <b-row><b-col md="6"><b-card> which made the
+      // entire profile card half-width and left the right column empty.
+      // Option B uses full-width cards. b-col md="6" is still legal
+      // INSIDE b-form-row (for paired-field grids) — what's gone is the
+      // outer <b-row> at the page level wrapping a card.
+      const bareRows = wrapper
+        .findAll("b-row-stub")
+        .filter((r) => !r.element.closest("[is='b-card-stub']"));
+      expect(bareRows.length).toBe(0);
+    });
+
+    it("uses b-form-row to grid form fields responsively", () => {
+      wrapper = createWrapper();
+      // <b-form-row> grids paired fields (Name + Email) side-by-side on
+      // wide viewports and stacks on narrow — needed once we drop the
+      // outer half-width wrapper.
+      expect(wrapper.find("b-form-row-stub").exists()).toBe(true);
+    });
+
+    it("places Change Password in its own collapsible region", () => {
+      wrapper = createWrapper();
+      // Most users don't change passwords often; collapsing keeps the
+      // primary view focused on My Comments + identity fields.
+      const collapse = wrapper.find("b-collapse-stub");
+      expect(collapse.exists()).toBe(true);
+    });
+  });
+
   describe("breadcrumb", () => {
     it("renders breadcrumb", () => {
       wrapper = createWrapper();

@@ -59,94 +59,122 @@
       email for the confirmation link.
     </b-alert>
 
-    <b-row>
-      <b-col md="6">
-        <b-card title="Profile Information">
+    <!-- My Comments — public-comment review feedback loop (PR #717).
+         Industry commenters need to track the status of comments they
+         posted across projects without having to drill into each
+         component's triage queue. Placed FIRST per Option B layout —
+         commenters' primary use case for visiting their profile. -->
+    <UserComments :user-id="user.id" />
+
+    <!-- Profile Information — full-width card. b-form-row grids paired
+         fields side-by-side on wide viewports and stacks on narrow. -->
+    <b-card class="mt-3" no-body>
+      <b-card-header>
+        <h5 class="mb-0"><b-icon icon="person" class="mr-1" /> Profile Information</h5>
+      </b-card-header>
+      <b-card-body>
+        <b-form @submit.prevent="saveProfile">
+          <b-form-row>
+            <b-col md="6">
+              <b-form-group label="Your Name" label-for="user-name">
+                <b-form-input
+                  id="user-name"
+                  v-model="form.name"
+                  :disabled="isProviderManaged"
+                  required
+                  autocomplete="name"
+                />
+              </b-form-group>
+            </b-col>
+            <b-col md="6">
+              <b-form-group label="Email" label-for="user-email">
+                <b-form-input
+                  id="user-email"
+                  v-model="form.email"
+                  type="email"
+                  :disabled="isProviderManaged"
+                  required
+                  autocomplete="email"
+                />
+              </b-form-group>
+            </b-col>
+          </b-form-row>
+          <b-form-group
+            label="Slack User ID (Optional)"
+            label-for="user-slack"
+            description="Provide your Slack user ID (e.g., U123456) for notifications"
+          >
+            <b-form-input
+              id="user-slack"
+              v-model="form.slack_user_id"
+              :disabled="isProviderManaged"
+              autocomplete="off"
+            />
+          </b-form-group>
+        </b-form>
+      </b-card-body>
+    </b-card>
+
+    <!-- Change Password — collapsed by default. Most visits don't need
+         to change a password; the toggle keeps the section discoverable
+         without dominating the primary view. Local-auth users only. -->
+    <b-card v-if="!isProviderManaged" class="mt-3" no-body>
+      <b-card-header
+        v-b-toggle.change-password-collapse
+        class="d-flex justify-content-between align-items-center"
+        style="cursor: pointer"
+      >
+        <h5 class="mb-0"><b-icon icon="shield-lock" class="mr-1" /> Change Password</h5>
+        <b-icon icon="chevron-down" />
+      </b-card-header>
+      <b-collapse id="change-password-collapse">
+        <b-card-body>
           <b-form @submit.prevent="saveProfile">
-            <!-- Name -->
-            <b-form-group label="Your Name" label-for="user-name">
-              <b-form-input
-                id="user-name"
-                v-model="form.name"
-                :disabled="isProviderManaged"
-                required
-                autocomplete="name"
-              />
-            </b-form-group>
-
-            <!-- Email -->
-            <b-form-group label="Email" label-for="user-email">
-              <b-form-input
-                id="user-email"
-                v-model="form.email"
-                type="email"
-                :disabled="isProviderManaged"
-                required
-                autocomplete="email"
-              />
-            </b-form-group>
-
-            <!-- Slack User ID -->
+            <b-form-row>
+              <b-col md="6">
+                <b-form-group
+                  label="New Password"
+                  label-for="user-password"
+                  description="Leave blank if you don't want to change it"
+                >
+                  <PasswordField
+                    id="user-password"
+                    v-model="form.password"
+                    name="user[password]"
+                    autocomplete="new-password"
+                    :policy="passwordPolicy"
+                  />
+                </b-form-group>
+              </b-col>
+              <b-col md="6">
+                <b-form-group label="Confirm New Password" label-for="user-password-confirmation">
+                  <PasswordField
+                    id="user-password-confirmation"
+                    v-model="form.password_confirmation"
+                    name="user[password_confirmation]"
+                    autocomplete="new-password"
+                    :must-match="form.password"
+                  />
+                </b-form-group>
+              </b-col>
+            </b-form-row>
             <b-form-group
-              label="Slack User ID (Optional)"
-              label-for="user-slack"
-              description="Provide your Slack user ID (e.g., U123456) for notifications"
+              label="Current Password"
+              label-for="user-current-password"
+              description="Required to confirm your changes"
             >
               <b-form-input
-                id="user-slack"
-                v-model="form.slack_user_id"
-                :disabled="isProviderManaged"
-                autocomplete="off"
+                id="user-current-password"
+                v-model="form.current_password"
+                type="password"
+                required
+                autocomplete="current-password"
               />
             </b-form-group>
-
-            <!-- Password fields (local auth only) -->
-            <template v-if="!isProviderManaged">
-              <hr class="my-4" />
-              <h5 class="mb-3">Change Password</h5>
-
-              <b-form-group
-                label="New Password"
-                label-for="user-password"
-                description="Leave blank if you don't want to change it"
-              >
-                <PasswordField
-                  id="user-password"
-                  v-model="form.password"
-                  name="user[password]"
-                  autocomplete="new-password"
-                  :policy="passwordPolicy"
-                />
-              </b-form-group>
-
-              <b-form-group label="Confirm New Password" label-for="user-password-confirmation">
-                <PasswordField
-                  id="user-password-confirmation"
-                  v-model="form.password_confirmation"
-                  name="user[password_confirmation]"
-                  autocomplete="new-password"
-                  :must-match="form.password"
-                />
-              </b-form-group>
-
-              <b-form-group
-                label="Current Password"
-                label-for="user-current-password"
-                description="Required to confirm your changes"
-              >
-                <b-form-input
-                  id="user-current-password"
-                  v-model="form.current_password"
-                  type="password"
-                  required
-                  autocomplete="current-password"
-                />
-              </b-form-group>
-            </template>
           </b-form>
-        </b-card>
-      </b-col>
-    </b-row>
+        </b-card-body>
+      </b-collapse>
+    </b-card>
 
     <!-- User Activity Sidebar -->
     <b-sidebar
@@ -217,13 +245,14 @@ import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import History from "../shared/History.vue";
 import PasswordField from "../shared/PasswordField.vue";
+import UserComments from "./UserComments.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useSidebar } from "../../composables";
 
 export default {
   name: "UserProfile",
-  components: { BaseCommandBar, ConfirmDeleteModal, History, PasswordField },
+  components: { BaseCommandBar, ConfirmDeleteModal, History, PasswordField, UserComments },
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     user: {
