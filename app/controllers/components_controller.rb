@@ -521,8 +521,8 @@ class ComponentsController < ApplicationController
     @component = Component.eager_load(
       rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers,
-              { satisfies: :srg_rule },
-              { satisfied_by: :srg_rule },
+              { satisfies: %i[reviews srg_rule] },
+              { satisfied_by: %i[reviews srg_rule] },
               { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }]
     ).find_by(id: params[:id])
 

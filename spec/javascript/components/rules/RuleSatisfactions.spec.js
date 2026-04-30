@@ -412,4 +412,52 @@ describe("RuleSatisfactions", () => {
       expect(wrapper.text()).not.toContain("Also Satisfies");
     });
   });
+
+  // ---------------------------------------------------------------
+  // Task 23 — comment count badges on related rules
+  // ---------------------------------------------------------------
+  describe("PR #717 comment count badges", () => {
+    it("renders a pending-count badge on each satisfies row that has comments", () => {
+      const ruleWithCounts = {
+        ...baseRule,
+        satisfies: [
+          { ...sat1, pending_comment_count: 3, total_comment_count: 5 },
+          { ...sat2, pending_comment_count: 0, total_comment_count: 0 },
+        ],
+      };
+      ({ wrapper } = createWrapper({ rule: ruleWithCounts }));
+      // The row with comments shows the pending count badge.
+      expect(wrapper.text()).toMatch(/3 pending/i);
+      // The data-test selector is stable across DOM refactors.
+      expect(wrapper.find(`[data-test="related-rule-comment-count-${sat1.id}"]`).exists()).toBe(
+        true,
+      );
+      // The row without comments does NOT show a badge.
+      expect(wrapper.find(`[data-test="related-rule-comment-count-${sat2.id}"]`).exists()).toBe(
+        false,
+      );
+    });
+
+    it("renders a pending-count badge on each satisfied_by row that has comments", () => {
+      const ruleWithCounts = {
+        ...baseRule,
+        satisfies: [],
+        satisfied_by: [{ ...sat1, pending_comment_count: 2, total_comment_count: 2 }],
+      };
+      ({ wrapper } = createWrapper({ rule: ruleWithCounts, readOnly: true }));
+      expect(wrapper.text()).toMatch(/2 pending/i);
+      expect(wrapper.find(`[data-test="related-rule-comment-count-${sat1.id}"]`).exists()).toBe(
+        true,
+      );
+    });
+
+    it("does not render the badge when pending_comment_count is missing or zero", () => {
+      const ruleNoCounts = {
+        ...baseRule,
+        satisfies: [{ ...sat1 }, { ...sat2, pending_comment_count: 0 }],
+      };
+      ({ wrapper } = createWrapper({ rule: ruleNoCounts }));
+      expect(wrapper.text()).not.toMatch(/pending/i);
+    });
+  });
 });
