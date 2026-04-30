@@ -90,6 +90,7 @@
           :additional_questions="additional_questions"
           :effective-permissions="effectivePermissions"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
+          @open-composer="$emit('open-composer', $event)"
         />
       </b-tab>
       <b-tab title="Test Script" lazy>

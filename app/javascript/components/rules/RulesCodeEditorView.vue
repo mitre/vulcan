@@ -192,6 +192,7 @@
           @unlock="unlockRule($event)"
           @open-review-modal="$bvModal.show('review-modal')"
           @open-related-modal="$bvModal.show('related-rules-modal')"
+          @open-composer="onOpenComposer"
           @toggle-panel="togglePanel"
           @toggle-advanced-fields="toggleAdvancedFields"
           @toggle-section-lock="toggleSectionLock"
@@ -214,6 +215,18 @@
         @component-updated="refreshComponent"
         @rule-selected="handleRuleSelected"
       />
+
+      <!-- Comment composer modal (PR #717). Opens via onOpenComposer
+           when a SectionCommentIcon emits open-composer. Lives in the
+           right-panels slot but b-modal portals to the document body. -->
+      <CommentComposerModal
+        v-if="selectedRule"
+        :component-id="component.id"
+        :rule-id="selectedRule.id"
+        :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
+        :initial-section="composerSection"
+        @posted="onComposerPosted"
+      />
     </template>
   </ControlsPageLayout>
 </template>
@@ -229,6 +242,7 @@ import RuleFilterBar from "./RuleFilterBar.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import CommentComposerModal from "../components/CommentComposerModal.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
@@ -253,6 +267,7 @@ export default {
     NewRuleModalForm,
     Multiselect,
     ControlsSidepanels,
+    CommentComposerModal,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin],
   props: {
@@ -424,6 +439,9 @@ export default {
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
       showSRGIdChecked: null,
+      // PR #717: section pre-selected on the comment composer when a
+      // SectionCommentIcon click bubbles open-composer up to here.
+      composerSection: null,
     };
   },
   computed: {
@@ -484,6 +502,25 @@ export default {
   },
   methods: {
     selectedCountLabel,
+    /**
+     * PR #717 — open the comment composer with a pre-selected section.
+     * Triggered when SectionCommentIcon emits open-composer; the event
+     * bubbles up RuleFormGroup → RuleForm/CheckForm/DisaRuleDescriptionForm
+     * → UnifiedRuleForm → RuleEditor → here.
+     */
+    onOpenComposer(section) {
+      this.composerSection = section;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    /**
+     * PR #717 — after a comment is posted, refresh the rule so the
+     * thread + per-section pending-count badge update without a reload.
+     */
+    onComposerPosted() {
+      if (this.selectedRule) {
+        this.$root.$emit("refresh:rule", this.selectedRule.id, "all");
+      }
+    },
     updateShowSRGIdChecked() {
       const componentId = this.component.id;
       this.showSRGIdChecked = localStorage.getItem(`showSRGIdChecked-${componentId}`);

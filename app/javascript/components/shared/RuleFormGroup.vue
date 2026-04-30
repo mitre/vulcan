@@ -41,6 +41,7 @@
         :section="xccdfSection"
         :pending-count="pendingCommentCount"
         :locked="ruleLocked"
+        :disabled="commentIconDisabled"
         class="ml-1"
         @open-composer="$emit('open-composer', xccdfSection)"
       />
@@ -94,6 +95,10 @@ export default {
     showCommentIcon: { type: Boolean, default: false },
     ruleReviews: { type: Array, default: () => [] },
     ruleLocked: { type: Boolean, default: false },
+    // ruleStatus drives the disabled state: rules in "Not Yet Determined"
+    // are draft and not ready for commenter review (matches the field-edit
+    // activation semantics — Aaron 2026-04-29).
+    ruleStatus: { type: String, default: null },
   },
   data() {
     return { mod: _rfgUid++ };
@@ -155,6 +160,9 @@ export default {
           r.triage_status === "pending" &&
           r.section === this.xccdfSection,
       ).length;
+    },
+    commentIconDisabled() {
+      return this.ruleStatus === "Not Yet Determined";
     },
   },
 };

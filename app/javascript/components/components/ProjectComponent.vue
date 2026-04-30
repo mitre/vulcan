@@ -64,6 +64,7 @@
             :advanced_fields="localAdvancedFields"
             :additional_questions="component.additional_questions"
             @open-related-modal="$bvModal.show('related-rules-modal')"
+            @open-composer="onOpenComposer"
             @toggle-panel="togglePanel"
             @toggle-advanced-fields="toggleAdvancedFields"
           />
@@ -78,6 +79,17 @@
           :read-only="true"
           :rule="selectedRule"
           :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
+        />
+
+        <!-- Comment composer modal (PR #717). Opens via onOpenComposer
+             when a SectionCommentIcon emits open-composer. -->
+        <CommentComposerModal
+          v-if="selectedRule"
+          :component-id="component.id"
+          :rule-id="selectedRule.id"
+          :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
+          :initial-section="composerSection"
+          @posted="onComposerPosted"
         />
       </template>
 
@@ -118,6 +130,7 @@ import RuleNavigator from "../rules/RuleNavigator.vue";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
+import CommentComposerModal from "./CommentComposerModal.vue";
 
 export default {
   name: "ProjectComponent",
@@ -129,6 +142,7 @@ export default {
     RuleEditor,
     RelatedRulesModal,
     ControlsSidepanels,
+    CommentComposerModal,
   },
   mixins: [
     DateFormatMixinVue,
@@ -212,6 +226,9 @@ export default {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
+      // PR #717: section pre-selected on the comment composer when a
+      // SectionCommentIcon click bubbles open-composer up to here.
+      composerSection: null,
     };
   },
   computed: {
@@ -256,6 +273,22 @@ export default {
     }
   },
   methods: {
+    /**
+     * PR #717 — open the comment composer with a pre-selected section.
+     * Triggered when SectionCommentIcon emits open-composer; the event
+     * bubbles up RuleFormGroup → form → UnifiedRuleForm → RuleEditor.
+     */
+    onOpenComposer(section) {
+      this.composerSection = section;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    /**
+     * PR #717 — refresh the component (and selected rule's reviews) after
+     * a comment is posted so the per-section pending-count badge updates.
+     */
+    onComposerPosted() {
+      this.refreshComponent();
+    },
     refreshComponent() {
       axios
         .get(`/components/${this.component.id}.json`)
