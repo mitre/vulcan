@@ -90,7 +90,7 @@ ENV RAILS_ENV="production" \
 
 COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
-    run -lah /usr/local/bundle/ruby/3.3.0/gems/ox-*/lib && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/gems/ox-*/lib && \
     file /usr/local/bundle/ruby/3.3.0/gems/ox-*/lib/ox.so || true && \
     ldd /usr/local/bundle/ruby/3.3.0/gems/ox-*/lib/ox.so || true && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
