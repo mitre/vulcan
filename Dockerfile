@@ -60,7 +60,7 @@ USER 0
 # Install packages needed to build gems and node modules
 RUN dnf install -y \
       postgresql-devel \
-      libyaml-devel \
+      libyaml-devel && \
     dnf clean all && \
     rm -rf /var/cache/dnf
 
