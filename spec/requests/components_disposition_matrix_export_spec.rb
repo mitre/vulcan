@@ -68,9 +68,11 @@ RSpec.describe 'GET /components/:id/export?type=disposition_csv' do
       expect(response.headers['Content-Disposition']).to match(/disposition-matrix.*\.csv/)
     end
 
-    it 'prepends the UTF-8 BOM at the transport boundary (Excel-on-Windows ergonomics)' do
+    # No BOM — RFC 4180 does not mention BOM; the UK Government tabular data
+    # standard recommends removing BOM before publishing.
+    it 'does NOT prepend a UTF-8 BOM' do
       get "/components/#{component.id}/export/disposition_csv"
-      expect(response.body.b).to start_with(ComponentsController::UTF8_BOM.b)
+      expect(response.body.bytes.first(3)).not_to eq([0xEF, 0xBB, 0xBF])
     end
 
     it 'OMITS the Commenter Email column by default' do

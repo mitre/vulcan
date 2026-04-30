@@ -18,10 +18,11 @@ module DispositionMatrixExport
     'Adjudicated', 'Adjudicated By', 'Adjudicated At', 'Duplicate Of'
   ].freeze
 
-  # Returns CRLF-separated UTF-8 CSV per RFC 4180. No BOM — that is a
-  # transport-encoding concern, applied by the controller when serving the
-  # response so it is invisible at the data layer (and so unit tests do not
-  # need to strip it before parsing).
+  # Returns CRLF-separated UTF-8 CSV per RFC 4180. No BOM — RFC 4180 does not
+  # mention BOM, and the UK Government tabular data standard explicitly
+  # recommends removing BOM before publishing. Excel-on-Windows users open
+  # via Data → Get Data → From Text/CSV (Power Query), which is Microsoft's
+  # own recommended path and handles UTF-8 reliably without a BOM marker.
   def self.generate(component:, triage_status_filter: nil, include_email: false)
     reviews = top_level_reviews(component, triage_status_filter)
     replies_by_parent = load_replies(reviews.map(&:id))
