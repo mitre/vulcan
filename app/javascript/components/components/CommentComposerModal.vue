@@ -3,6 +3,7 @@
     id="comment-composer-modal"
     :title="modalTitle"
     size="lg"
+    centered
     no-close-on-backdrop
     @hidden="onHidden"
   >
