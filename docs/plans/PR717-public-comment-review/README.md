@@ -299,6 +299,8 @@ Execution order (from `.beads/recovery-context.md`, ~5.75 hrs Claude-pace):
 | 22 | Edit comment phase admin form | `22-frontend-edit-component-comment-phase.md` | 25m | Low | Yes (1st cut — admins can hit `/components/:id/edit` directly) |
 | 24 | Mark-as-duplicate UI + canonical picker + chained-dup validator | `24-mark-as-duplicate-action.md` | 45m | Med | Yes (2nd cut — duplicates handled at adjudicate time anyway) |
 | 30 | Edit comment section (retroactive) | `30-edit-comment-section.md` | 30m | Low | Yes (4th cut) |
+| 31 | Inherited-requirements as first-class workflow | `31-inherited-requirements-workflow.md` | ~4-5h | Med | TBD — Aaron's call (may ship in PR-717 or fast-follow) |
+| 32 | DISA-compliant rule editor streamlining | `32-disa-rule-editor-streamlining.md` | ~5h | Med | Likely follow-up phase (depends on 31's status-driven contract) |
 | 29 | DISA disposition matrix CSV export | `29-disposition-matrix-csv-export.md` | 45m | Low | **NEVER cut** — federal deliverable |
 | 98 | Vocabulary grep verification | `98-vocabulary-grep-verification.md` | 15m | Trivial | No |
 | 27 + 99 | Cross-rule smoke + final sweep | `27-...md` + `99-...md` | 1h | Trivial | No |
