@@ -18,15 +18,19 @@ module DispositionMatrixExport
     'Adjudicated', 'Adjudicated By', 'Adjudicated At', 'Duplicate Of'
   ].freeze
 
+  # Returns CRLF-separated UTF-8 CSV per RFC 4180. No BOM — that is a
+  # transport-encoding concern, applied by the controller when serving the
+  # response so it is invisible at the data layer (and so unit tests do not
+  # need to strip it before parsing).
   def self.generate(component:, triage_status_filter: nil, include_email: false)
     reviews = top_level_reviews(component, triage_status_filter)
     replies_by_parent = load_replies(reviews.map(&:id))
     headers = build_headers(include_email)
 
-    CSV.generate do |csv|
-      csv << headers
+    CSV.generate(row_sep: "\r\n") do |out|
+      out << headers
       reviews.each do |r|
-        csv << build_row(r, component, replies_by_parent[r.id], include_email: include_email)
+        out << build_row(r, component, replies_by_parent[r.id], include_email: include_email)
       end
     end
   end

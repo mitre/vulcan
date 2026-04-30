@@ -12,6 +12,12 @@ require 'rails_helper'
 # this PR. CSV is the format DISA consumes today; OSCAL is deferred (see
 # vulcan-oscal-disposition-deadend memory).
 #
+# Layering: this spec covers transport-level concerns only — HTTP status,
+# Content-Type, Content-Disposition, the UTF-8 BOM prepended at the response
+# boundary, auth gates, and audit logging. CSV row-shape and content-format
+# (CRLF separators, header order, reply-collapse logic) are tested directly
+# on the generator in spec/lib/disposition_matrix_export_spec.rb.
+#
 # Authorization model:
 # - Viewer-tier: REJECTED (403) — viewers include external commenters, and
 #   commenter-email scraping must not be possible.
@@ -19,9 +25,6 @@ require 'rails_helper'
 #   server-side. include_email=true on the request is silently ignored.
 # - Admin-tier: allowed; include_email=true adds the Commenter Email column.
 # - Unauthenticated: redirect to sign-in.
-#
-# Audit log: every export records who exported what, when, and whether
-# include_email was set (compliance — "who has the email roster").
 RSpec.describe 'GET /components/:id/export?type=disposition_csv' do
   let_it_be(:anchor_admin) { create(:user, :admin) }
   let_it_be(:project) { create(:project) }
@@ -49,21 +52,25 @@ RSpec.describe 'GET /components/:id/export?type=disposition_csv' do
                    triage_set_by: triager, triage_set_at: 1.day.ago,
                    adjudicated_at: 12.hours.ago, adjudicated_by: triager)
   end
-  let!(:reply) do
-    Review.create!(rule: rule, user: triager, action: 'comment',
-                   responding_to_review_id: c1.id,
-                   comment: 'will fix in next revision',
-                   triage_status: 'pending')
-  end
 
   context 'as author (triager tier — minimum allowed)' do
     before { sign_in triager }
 
-    it 'returns 200 with CSV content type and the locked header row' do
+    it 'returns 200 with text/csv content type and a UTF-8 charset' do
       get "/components/#{component.id}/export/disposition_csv"
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to include('text/csv')
-      expect(response.body.lines.first).to include('Comment ID', 'Rule', 'SRG ID', 'Section')
+      expect(response.content_type).to include('charset=utf-8')
+    end
+
+    it 'sets Content-Disposition with a sensible filename' do
+      get "/components/#{component.id}/export/disposition_csv"
+      expect(response.headers['Content-Disposition']).to match(/disposition-matrix.*\.csv/)
+    end
+
+    it 'prepends the UTF-8 BOM at the transport boundary (Excel-on-Windows ergonomics)' do
+      get "/components/#{component.id}/export/disposition_csv"
+      expect(response.body.b).to start_with(ComponentsController::UTF8_BOM.b)
     end
 
     it 'OMITS the Commenter Email column by default' do
@@ -78,33 +85,6 @@ RSpec.describe 'GET /components/:id/export?type=disposition_csv' do
       expect(response.body).not_to include('Commenter Email')
       expect(response.body).not_to include('sarah@example.com')
     end
-
-    it 'returns one row per top-level comment (replies collapsed into Triager Response)' do
-      get "/components/#{component.id}/export/disposition_csv"
-      csv = CSV.parse(response.body, headers: true)
-      expect(csv.length).to eq(1)
-      row = csv.first
-      expect(row['Comment ID']).to eq(c1.id.to_s)
-      expect(row['Rule']).to eq("#{component.prefix}-#{rule.rule_id}")
-      expect(row['Triager Response']).to include('will fix')
-      expect(row['Triage Status']).to eq('concur_with_comment')
-      expect(row['Adjudicated']).to eq('true')
-    end
-
-    it 'filters by triage_status query param' do
-      Review.create!(rule: rule, user: commenter, action: 'comment',
-                     comment: 'pending one', triage_status: 'pending')
-      get "/components/#{component.id}/export/disposition_csv",
-          params: { triage_status: 'pending' }
-      csv = CSV.parse(response.body, headers: true)
-      expect(csv.length).to eq(1)
-      expect(csv.first['Triage Status']).to eq('pending')
-    end
-
-    it 'sets Content-Disposition with a sensible filename' do
-      get "/components/#{component.id}/export/disposition_csv"
-      expect(response.headers['Content-Disposition']).to match(/disposition-matrix.*\.csv/)
-    end
   end
 
   context 'as project admin with include_email=true' do
@@ -113,8 +93,8 @@ RSpec.describe 'GET /components/:id/export?type=disposition_csv' do
     it 'INCLUDES the Commenter Email column with the email value' do
       get "/components/#{component.id}/export/disposition_csv",
           params: { include_email: 'true' }
-      csv = CSV.parse(response.body, headers: true)
-      expect(csv.first['Commenter Email']).to eq('sarah@example.com')
+      expect(response.body).to include('Commenter Email')
+      expect(response.body).to include('sarah@example.com')
     end
 
     it 'OMITS the Commenter Email column when include_email is not set (default safe)' do

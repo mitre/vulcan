@@ -11,6 +11,13 @@ class ComponentsController < ApplicationController
   NO_FILE_PROVIDED = 'No file provided'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
+  # Excel-on-Windows-pre-365 detects UTF-8 reliably only when the response body
+  # starts with the BOM. Modern Excel 365 auto-detects without it; we send it
+  # for backwards compatibility. BOM is a transport-encoding concern — the
+  # disposition CSV generator returns pure CSV, and we prepend the BOM here so
+  # it stays out of the data layer (and unit specs parse without contortions).
+  UTF8_BOM = "\xEF\xBB\xBF"
+
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
   before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
   before_action :set_project, only: %i[show create history triage settings]
@@ -530,7 +537,9 @@ class ComponentsController < ApplicationController
       }
     )
     filename = "#{@component.project.name}-#{@component.prefix}-disposition-matrix-#{Date.current}.csv"
-    send_data csv_data, type: 'text/csv', disposition: "attachment; filename=\"#{filename}\""
+    send_data "#{UTF8_BOM}#{csv_data}",
+              type: 'text/csv; charset=utf-8',
+              disposition: "attachment; filename=\"#{filename}\""
   end
 
   # Render options shared by ComponentBlueprint calls — surfaces
