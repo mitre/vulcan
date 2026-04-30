@@ -9,7 +9,7 @@
   >
     <p class="mb-2">
       <strong>{{ ruleDisplayedName }}</strong>
-      <template v-if="!replyToReviewId">
+      <template v-if="!currentReplyToId">
         ·
         <FilterDropdown
           v-model="section"
@@ -18,14 +18,20 @@
           class="ml-1 d-inline-block"
         />
       </template>
-      <template v-else> · Replying to comment #{{ replyToReviewId }} </template>
+      <template v-else>
+        · Replying to comment #{{ currentReplyToId }}
+        <b-button variant="link" size="sm" class="p-0 ml-1" @click="cancelReply">
+          (cancel)
+        </b-button>
+      </template>
     </p>
 
     <CommentDedupBanner
-      v-if="!replyToReviewId"
+      v-if="!currentReplyToId"
       :component-id="componentId"
       :rule-id="ruleId"
       :section="section"
+      @reply="onReplyClicked"
     />
 
     <b-form-group :description="charCount" class="mb-0">
@@ -70,7 +76,13 @@ export default {
   },
   data() {
     return {
+      // Mirror the props as internal state so the modal can update them
+      // when the user picks a different section in the dropdown OR clicks
+      // [Reply] in the dedup banner. Watchers below sync prop changes
+      // back into these (so a click on a different SectionCommentIcon
+      // updates the pre-selected section without remounting).
       section: this.initialSection,
+      currentReplyToId: this.replyToReviewId,
       commentText: "",
     };
   },
@@ -82,10 +94,10 @@ export default {
       ];
     },
     modalTitle() {
-      return this.replyToReviewId ? "Reply to comment" : "New comment";
+      return this.currentReplyToId ? "Reply to comment" : "New comment";
     },
     placeholder() {
-      return this.replyToReviewId ? "Reply to this comment..." : "Type your comment...";
+      return this.currentReplyToId ? "Reply to this comment..." : "Type your comment...";
     },
     textState() {
       if (!this.commentText) return null;
@@ -98,6 +110,17 @@ export default {
       return this.commentText.trim().length > 0 && this.commentText.length <= COMMENT_MAX;
     },
   },
+  watch: {
+    // Vue 2 data() runs once at mount, so a parent that just updates
+    // :initial-section won't re-init this.section. Sync the prop into
+    // local state explicitly. Same for replyToReviewId.
+    initialSection(newVal) {
+      this.section = newVal;
+    },
+    replyToReviewId(newVal) {
+      this.currentReplyToId = newVal;
+    },
+  },
   methods: {
     async submit() {
       const payload = {
@@ -108,8 +131,8 @@ export default {
         },
       };
       if (this.section) payload.review.section = this.section;
-      if (this.replyToReviewId) {
-        payload.review.responding_to_review_id = this.replyToReviewId;
+      if (this.currentReplyToId) {
+        payload.review.responding_to_review_id = this.currentReplyToId;
       }
 
       try {
@@ -123,7 +146,19 @@ export default {
     },
     onHidden() {
       this.commentText = "";
+      // Reset reply mode on close so the next open is a fresh new-comment
+      // (the parent decides via :reply-to-review-id when explicitly replying).
+      this.currentReplyToId = this.replyToReviewId;
       this.$emit("hidden");
+    },
+    // CommentDedupBanner [Reply] click handler — switches the modal into
+    // reply mode without closing/reopening. Section dropdown hides because
+    // reply inherits the parent comment's section anyway.
+    onReplyClicked(reviewId) {
+      this.currentReplyToId = reviewId;
+    },
+    cancelReply() {
+      this.currentReplyToId = null;
     },
   },
 };

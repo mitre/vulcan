@@ -24,18 +24,20 @@
         >
           <b-icon icon="chat-left-text" /> Reviews
         </b-button>
-        <CommentModal
-          title="Comment"
-          :message="msg.commentMessage"
-          :require-non-empty="true"
-          button-text="Comment"
-          button-icon="chat-left-text"
-          button-variant="outline-secondary"
-          button-size="sm"
-          :button-disabled="false"
-          wrapper-class="d-inline-flex"
-          @comment="$emit('comment', $event)"
-        />
+        <!-- General Comment — opens the same CommentComposerModal as the
+             per-section icons, with no section pre-selected (defaults to
+             "(general)"). The event bubbles up to RulesCodeEditorView /
+             ProjectComponent which mount the modal. -->
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          :title="commentButtonTooltip"
+          :disabled="commentButtonDisabled"
+          :class="{ 'opacity-65': commentButtonDisabled }"
+          @click="$emit('open-composer', null)"
+        >
+          <b-icon icon="chat-left-text" /> Comment
+        </b-button>
         <b-button variant="outline-info" size="sm" href="/disa-guide" target="_blank">
           <b-icon icon="question-circle" /> DISA Guide
         </b-button>
@@ -143,6 +145,23 @@ export default {
     },
     isUnderReview() {
       return !!this.rule.review_requestor_id;
+    },
+    // PR #717 — Comment button activation mirrors the per-section comment
+    // icons: disabled when the rule is locked OR still in
+    // "Not Yet Determined" status (rule isn't ready for commenter review
+    // yet). Don't hide the feature — show it disabled with a tooltip
+    // (Vulcan UX rule: vulcan-disabled-not-hidden).
+    commentButtonDisabled() {
+      return !!this.rule.locked || this.rule.status === "Not Yet Determined";
+    },
+    commentButtonTooltip() {
+      if (this.rule.locked) {
+        return "Rule is locked — comments are closed for this rule";
+      }
+      if (this.rule.status === "Not Yet Determined") {
+        return "Set the rule status before commenting (rule is Not Yet Determined)";
+      }
+      return "Add a general comment on this rule";
     },
   },
 };

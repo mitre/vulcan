@@ -178,16 +178,28 @@ describe("RuleActionsToolbar", () => {
   // ==========================================
   describe("action buttons", () => {
     describe("Comment button", () => {
+      // PR #717 replaced the old CommentModal-wrapped audit-style button
+      // with a plain b-button that opens the new CommentComposerModal via
+      // the open-composer event (default section: null = "(general)").
+      const findCommentButton = (w) =>
+        w
+          .findAll("button")
+          .wrappers.find(
+            (b) => b.text().trim() === "Comment" || /^Comment\b/.test(b.text().trim()),
+          );
+
       it("is always visible", () => {
         wrapper = createWrapper();
-        expect(wrapper.text()).toContain("Comment");
+        expect(findCommentButton(wrapper)).toBeDefined();
       });
 
-      it("emits comment event", async () => {
+      it("emits open-composer with null section (general comment) on click", async () => {
         wrapper = createWrapper();
-        const btn = wrapper.find(".comment-modal-stub");
+        const btn = findCommentButton(wrapper);
+        expect(btn).toBeDefined();
         await btn.trigger("click");
-        expect(wrapper.emitted("comment")).toBeTruthy();
+        expect(wrapper.emitted("open-composer")).toBeTruthy();
+        expect(wrapper.emitted("open-composer")[0]).toEqual([null]);
       });
 
       // Plan B: viewers can comment. The Comment button must remain enabled
@@ -195,11 +207,31 @@ describe("RuleActionsToolbar", () => {
       // that doesn't require write permission.
       it("is enabled even when readOnly=true (viewer scenario)", () => {
         wrapper = createWrapper({ readOnly: true, effectivePermissions: "viewer" });
-        const commentStub = wrapper
-          .findAll(".comment-modal-stub")
-          .wrappers.find((s) => s.text().includes("Comment") && !s.text().includes("Save"));
-        expect(commentStub).toBeDefined();
-        expect(commentStub.attributes("disabled")).toBeUndefined();
+        const btn = findCommentButton(wrapper);
+        expect(btn).toBeDefined();
+        expect(btn.attributes("disabled")).toBeUndefined();
+      });
+
+      // PR #717 activation rule (Aaron 2026-04-29) — mirrors the per-section
+      // SectionCommentIcon: rule must have status set and not be locked.
+      it("is disabled when rule.status === 'Not Yet Determined'", () => {
+        wrapper = createWrapper({
+          rule: { ...defaultRule, status: "Not Yet Determined" },
+        });
+        const btn = findCommentButton(wrapper);
+        expect(btn).toBeDefined();
+        expect(btn.attributes("disabled")).toBeDefined();
+        expect(btn.attributes("title")).toMatch(/status|not yet/i);
+      });
+
+      it("is disabled when rule.locked === true", () => {
+        wrapper = createWrapper({
+          rule: { ...defaultRule, locked: true },
+        });
+        const btn = findCommentButton(wrapper);
+        expect(btn).toBeDefined();
+        expect(btn.attributes("disabled")).toBeDefined();
+        expect(btn.attributes("title")).toMatch(/lock/i);
       });
 
       it("Save button IS disabled when readOnly=true (viewer scenario)", () => {

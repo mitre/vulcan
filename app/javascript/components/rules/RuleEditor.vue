@@ -11,6 +11,7 @@
       @comment="$emit('comment', $event)"
       @open-review-modal="$emit('open-review-modal')"
       @open-related-modal="$emit('open-related-modal')"
+      @open-composer="$emit('open-composer', $event)"
       @lock="$emit('lock', $event)"
       @unlock="$emit('unlock', $event)"
       @toggle-panel="$emit('toggle-panel', $event)"

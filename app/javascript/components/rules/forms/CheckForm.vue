@@ -1,14 +1,13 @@
 <template>
   <div v-if="check._destroy != true">
-    <!-- system — first field of the "Check" section, owns the SectionCommentIcon -->
+    <!-- system -->
     <RuleFormGroup
       v-slot="{ inputId, isDisabled }"
-      v-bind="formGroupPropsWithCommentIcon"
+      v-bind="formGroupProps"
       field-name="system"
       label="System"
       :tooltip="tooltips['system']"
       id-prefix="ruleEditor-check"
-      @open-composer="bubbleOpenComposer"
     >
       <b-form-input
         :id="inputId"
@@ -58,15 +57,18 @@
       />
     </RuleFormGroup>
 
-    <!-- content -->
+    <!-- content — Check Text. Primary user-facing field of the "Check"
+         section, so it owns the SectionCommentIcon (visual order, not
+         data-structure order, drives where the icon lives). -->
     <RuleFormGroup
       v-slot="{ inputId, isDisabled }"
-      v-bind="formGroupProps"
+      v-bind="formGroupPropsWithCommentIcon"
       field-name="content"
       label="Check"
       :tooltip="tooltips['content']"
       id-prefix="ruleEditor-check"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
+      @open-composer="bubbleOpenComposer"
     >
       <MarkdownTextarea
         :id="inputId"

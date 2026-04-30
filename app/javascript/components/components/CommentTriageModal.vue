@@ -3,6 +3,7 @@
     id="comment-triage-modal"
     size="lg"
     :title="modalTitle"
+    centered
     no-close-on-backdrop
     @hidden="$emit('hidden')"
   >

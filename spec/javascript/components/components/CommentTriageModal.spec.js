@@ -14,15 +14,20 @@ const flushPromises = async (wrapper) => {
 // b-modal in BootstrapVue renders to a portal and stays empty until shown,
 // so for body-content assertions we stub it with a div that always renders
 // its default + modal-footer slots. Same pattern as ConfirmDeleteModal.spec.js.
+// `centered` is exposed so we can assert vertical-centering at the template
+// level (Aaron 2026-04-29 — visual parity with CommentComposerModal).
 const visibleModalStub = {
   "b-modal": {
     template: `
-      <div class="modal">
+      <div class="modal" :data-centered="String(centered)">
         <div class="modal-body"><slot></slot></div>
         <div class="modal-footer"><slot name="modal-footer" :cancel="() => {}"></slot></div>
       </div>
     `,
-    props: ["title"],
+    props: {
+      title: String,
+      centered: { type: Boolean, default: false },
+    },
   },
 };
 
@@ -166,5 +171,16 @@ describe("CommentTriageModal", () => {
 
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  // Vertical centering — visual parity with CommentComposerModal,
+  // requested by Aaron 2026-04-29.
+  it("sets centered=true on the b-modal so it sits in the middle of the viewport", () => {
+    const w = mount(CommentTriageModal, {
+      localVue,
+      propsData: { review: sampleReview },
+      stubs: visibleModalStub,
+    });
+    expect(w.find(".modal").attributes("data-centered")).toBe("true");
   });
 });
