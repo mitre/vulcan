@@ -100,6 +100,7 @@ ENV RAILS_ENV="production" \
 
 COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
+    bundle exec ruby -e "require 'ox'; puts Ox::VERSION" && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
