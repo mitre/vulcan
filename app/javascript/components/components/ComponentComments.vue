@@ -50,6 +50,7 @@
       striped
       small
       stacked="md"
+      show-empty
       role="table"
       aria-label="Component comments triage queue"
     >

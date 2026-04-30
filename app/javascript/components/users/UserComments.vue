@@ -46,6 +46,7 @@
         striped
         small
         stacked="md"
+        show-empty
         role="table"
         aria-label="My comments"
       >
