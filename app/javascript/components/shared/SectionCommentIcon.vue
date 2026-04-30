@@ -1,21 +1,29 @@
 <template>
-  <b-button
-    variant="link"
-    size="sm"
-    type="button"
-    :disabled="isInactive"
-    :aria-label="ariaLabel"
-    :title="tooltipText"
-    class="section-comment-icon p-1"
-    :class="{ 'section-comment-icon--inactive': isInactive }"
-    @click="$emit('open-composer', section)"
-  >
-    <b-icon data-test="icon-glyph" aria-hidden="true" icon="chat-left-text" />
-    <b-badge v-if="pendingCount > 0" data-test="count-badge" variant="primary" class="ml-1">
+  <span class="section-comment-icon ml-1" @click.stop="onClick">
+    <b-icon
+      v-b-tooltip.hover="tooltipText"
+      :icon="glyphIcon"
+      :class="iconClass"
+      :title="tooltipText"
+      :data-testid="'section-comment-' + section"
+      :aria-label="ariaLabel"
+      :tabindex="isInactive ? -1 : 0"
+      role="button"
+      data-test="icon-glyph"
+      @keydown.enter.prevent="onClick"
+      @keydown.space.prevent="onClick"
+    />
+    <b-badge
+      v-if="pendingCount > 0"
+      data-test="count-badge"
+      variant="primary"
+      pill
+      class="section-comment-icon__badge"
+    >
       {{ pendingCount }}
     </b-badge>
     <span v-if="pendingCount > 0" class="sr-only">{{ pendingCount }} pending comments</span>
-  </b-button>
+  </span>
 </template>
 
 <script>
@@ -26,11 +34,11 @@ export default {
   props: {
     section: { type: String, required: true },
     pendingCount: { type: Number, default: 0 },
-    // locked HIDES the icon entirely — the rule is frozen, no commentary.
+    // locked → rule is frozen, no commentary; same visual treatment as
+    // disabled (greyed + tooltip) per the app-wide UX rule
+    // `vulcan-disabled-not-hidden` — never hide features.
     locked: { type: Boolean, default: false },
-    // disabled SHOWS the icon but inactive — typically used while a rule
-    // is still in "Not Yet Determined" status (not ready for commenter
-    // review). Discoverable for commenters via the explanatory tooltip.
+    // disabled → typically rule.status === "Not Yet Determined".
     disabled: { type: Boolean, default: false },
   },
   computed: {
@@ -40,6 +48,17 @@ export default {
     isInactive() {
       return this.locked || this.disabled;
     },
+    glyphIcon() {
+      // Filled glyph when there's prior conversation — quick visual
+      // signal without forcing the eye to read the count badge.
+      return this.pendingCount > 0 ? "chat-left-text-fill" : "chat-left-text";
+    },
+    iconClass() {
+      // Mirrors the lock/info icon pattern: text-* color signals state,
+      // `clickable` class enables hover affordance.
+      if (this.isInactive) return "text-muted opacity-50";
+      return this.pendingCount > 0 ? "text-primary clickable" : "text-info clickable";
+    },
     ariaLabel() {
       const base = `Add comment on ${this.sectionDisplay} section`;
       if (this.locked) return `${base} (rule is locked)`;
@@ -47,10 +66,7 @@ export default {
       return this.pendingCount > 0 ? `${base} (${this.pendingCount} pending)` : base;
     },
     tooltipText() {
-      // Locked is the more specific reason — show it first.
-      if (this.locked) {
-        return "Rule is locked — comments are closed for this rule";
-      }
+      if (this.locked) return "Rule is locked — comments are closed for this rule";
       if (this.disabled) {
         return "Set the rule status before commenting (rule is Not Yet Determined)";
       }
@@ -59,27 +75,34 @@ export default {
         : `Comment on ${this.sectionDisplay}`;
     },
   },
+  methods: {
+    onClick() {
+      if (this.isInactive) return;
+      this.$emit("open-composer", this.section);
+    },
+  },
 };
 </script>
 
 <style scoped>
 .section-comment-icon {
-  text-decoration: none;
-  /* Active state — Bootstrap link blue (default for variant="link") */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
-.section-comment-icon:focus-visible {
+.section-comment-icon .clickable {
+  cursor: pointer;
+}
+.section-comment-icon .clickable:focus-visible,
+.section-comment-icon .clickable:hover {
   outline: 2px solid var(--primary, #007bff);
   outline-offset: 2px;
+  border-radius: 2px;
 }
-/* Inactive state — locked OR rule status is Not Yet Determined.
-   Visible for discoverability (don't hide features) but greyed
-   so the available-for-action state is unambiguous. */
-.section-comment-icon--inactive {
-  color: var(--secondary, #6c757d) !important;
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.section-comment-icon--inactive .badge {
-  opacity: 0.7;
+/* Tighter pill so the count doesn't dominate next to the lock/info icons. */
+.section-comment-icon__badge {
+  font-size: 0.65em;
+  padding: 0.15em 0.4em;
+  margin-left: 0.15em;
 }
 </style>

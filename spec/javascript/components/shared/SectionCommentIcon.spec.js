@@ -3,15 +3,39 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import SectionCommentIcon from "@/components/shared/SectionCommentIcon.vue";
 
+/**
+ * REQUIREMENTS (PR #717 + Aaron 2026-04-29):
+ *
+ * SectionCommentIcon renders inline next to the lock + info icons in
+ * RuleFormGroup's label. To keep the visual + interaction pattern
+ * consistent with those siblings, the icon is a raw <b-icon> with the
+ * `v-b-tooltip.hover` directive (NOT wrapped in a <button>) and uses
+ * the same color-class pattern (text-success / text-warning / text-muted)
+ * as the lock icons.
+ *
+ * Activation rules:
+ *   - rule.locked === true → show inactive (greyed) with "rule is locked"
+ *     tooltip — never hide (`vulcan-disabled-not-hidden` UX rule).
+ *   - rule.status === "Not Yet Determined" → show inactive with
+ *     "set the rule status before commenting" tooltip.
+ *   - otherwise → active. Filled glyph + text-primary when there are
+ *     pending comments; outline glyph + text-info otherwise.
+ */
 describe("SectionCommentIcon", () => {
-  it("renders a button with aria-label that includes the section's friendly name", () => {
+  // Helper: the icon root is a <span class="section-comment-icon"> wrapper
+  // containing a <b-icon> with `data-testid="section-comment-<key>"` and
+  // a `data-test="icon-glyph"` attribute (preserved across the redesign
+  // for stable spec selectors).
+  const findGlyph = (w) => w.find("[data-test=icon-glyph]");
+
+  it("renders an icon with aria-label that includes the section's friendly name", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "check_content", pendingCount: 0 },
     });
-    const btn = w.find("button");
-    expect(btn.attributes("aria-label")).toMatch(/check/i);
-    expect(btn.attributes("aria-label")).toMatch(/comment/i);
+    const glyph = findGlyph(w);
+    expect(glyph.attributes("aria-label")).toMatch(/check/i);
+    expect(glyph.attributes("aria-label")).toMatch(/comment/i);
   });
 
   it("shows a pending count badge when > 0", () => {
@@ -41,107 +65,167 @@ describe("SectionCommentIcon", () => {
     expect(sr.text()).toMatch(/3 pending/i);
   });
 
-  it("emits 'open-composer' with the XCCDF section key on click", async () => {
+  it("emits 'open-composer' with the XCCDF section key when clicked", async () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "check_content", pendingCount: 0 },
     });
-    await w.find("button").trigger("click");
+    // Click the wrapper (matches the @click.stop on the root span).
+    await w.find(".section-comment-icon").trigger("click");
     expect(w.emitted("open-composer")).toEqual([["check_content"]]);
   });
 
-  it("renders the button as disabled when locked=true (don't hide features — show + grey)", () => {
+  it("uses chat-left-text-fill icon when there are pending comments (visual cue)", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "title", pendingCount: 2 },
+    });
+    // b-icon renders the icon as SVG markup, not as an HTML attr — assert
+    // the computed contract that drives the prop instead.
+    expect(w.vm.glyphIcon).toBe("chat-left-text-fill");
+  });
+
+  it("uses chat-left-text outline when there are no pending comments", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "title", pendingCount: 0 },
+    });
+    expect(w.vm.glyphIcon).toBe("chat-left-text");
+  });
+
+  it("applies text-primary + clickable when active with pending comments", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "title", pendingCount: 2 },
+    });
+    const glyph = findGlyph(w);
+    expect(glyph.classes()).toContain("text-primary");
+    expect(glyph.classes()).toContain("clickable");
+  });
+
+  it("applies text-info + clickable when active with no pending comments", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "title", pendingCount: 0 },
+    });
+    const glyph = findGlyph(w);
+    expect(glyph.classes()).toContain("text-info");
+    expect(glyph.classes()).toContain("clickable");
+  });
+
+  // PR #717 — match the unlock-disabled visual treatment (text-muted +
+  // opacity-50). Locked rules are inactive with an explanatory tooltip,
+  // not hidden — same UX rule as the unlock icon when locks aren't
+  // manageable.
+  it("applies text-muted + opacity-50 when locked=true (no clickable)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "title", pendingCount: 0, locked: true },
     });
-    const btn = w.find("button");
-    expect(btn.exists()).toBe(true);
-    expect(btn.attributes("disabled")).toBeDefined();
-    // tooltip explains why
-    expect(btn.attributes("title")).toMatch(/lock/i);
+    const glyph = findGlyph(w);
+    expect(glyph.classes()).toContain("text-muted");
+    expect(glyph.classes()).toContain("opacity-50");
+    expect(glyph.classes()).not.toContain("clickable");
   });
 
-  it("applies the inactive CSS class when locked=true (grey, not colored)", () => {
+  it("applies text-muted + opacity-50 when disabled=true (NYD)", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "title", pendingCount: 0, disabled: true },
+    });
+    const glyph = findGlyph(w);
+    expect(glyph.classes()).toContain("text-muted");
+    expect(glyph.classes()).toContain("opacity-50");
+  });
+
+  it("does NOT emit 'open-composer' when clicked while locked", async () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "check_content", pendingCount: 0, locked: true },
+    });
+    await w.find(".section-comment-icon").trigger("click");
+    expect(w.emitted("open-composer")).toBeUndefined();
+  });
+
+  it("does NOT emit 'open-composer' when clicked while disabled (NYD)", async () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "check_content", pendingCount: 0, disabled: true },
+    });
+    await w.find(".section-comment-icon").trigger("click");
+    expect(w.emitted("open-composer")).toBeUndefined();
+  });
+
+  // Tooltip-content tests assert the computed contract. BootstrapVue's
+  // v-b-tooltip directive renders the tooltip in a portal at hover time,
+  // so the text isn't an inert HTML attribute we can query — but the
+  // computed text IS what the directive consumes.
+  it("uses a 'lock' tooltip when locked", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "title", pendingCount: 0, locked: true },
     });
-    const btn = w.find("button");
-    expect(btn.classes()).toContain("section-comment-icon--inactive");
+    expect(w.vm.tooltipText).toMatch(/lock/i);
   });
 
-  it("does NOT apply the inactive class when active (default state)", () => {
+  it("uses an explanatory tooltip when disabled=true (NYD)", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "check_content", pendingCount: 0, disabled: true },
+    });
+    expect(w.vm.tooltipText).toMatch(/status|ready|not yet/i);
+  });
+
+  it("uses 'X pending comments on Section' tooltip when active with pending", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "fixtext", pendingCount: 3 },
+    });
+    expect(w.vm.tooltipText).toMatch(/3 pending comments on Fix/i);
+  });
+
+  it("uses 'Comment on Section' tooltip when active with no pending", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "title", pendingCount: 0 },
     });
-    const btn = w.find("button");
-    expect(btn.classes()).not.toContain("section-comment-icon--inactive");
+    expect(w.vm.tooltipText).toMatch(/Comment on Title/i);
   });
 
-  it("renders as a native button with type='button' for keyboard accessibility", () => {
+  it("locked tooltip wins over NYD-disabled tooltip (locked is more specific)", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "title", pendingCount: 0, locked: true, disabled: true },
+    });
+    expect(w.vm.tooltipText).toMatch(/lock/i);
+  });
+
+  // Keyboard accessibility — the glyph is role=button with tabindex=0
+  // when active (matches the lock/info icon focus behavior).
+  it("is keyboard-focusable when active (tabindex=0, role=button)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "title", pendingCount: 0 },
     });
-    expect(w.find("button[type='button']").exists()).toBe(true);
+    const glyph = findGlyph(w);
+    expect(glyph.attributes("role")).toBe("button");
+    expect(glyph.attributes("tabindex")).toBe("0");
   });
 
-  it("decorative glyph is aria-hidden so screen readers don't announce it", () => {
+  it("is NOT keyboard-focusable when inactive (tabindex=-1)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0 },
+      propsData: { section: "title", pendingCount: 0, disabled: true },
     });
-    const decorative = w.find("[data-test=icon-glyph]");
-    expect(decorative.exists()).toBe(true);
-    expect(decorative.attributes("aria-hidden")).toBe("true");
+    expect(findGlyph(w).attributes("tabindex")).toBe("-1");
   });
 
-  /**
-   * REQUIREMENT (Aaron 2026-04-29): adding a comment to a rule element
-   * follows the same activation rules as field editing — the rule must
-   * have a real status set. Locked is HIDE (rule is frozen). Disabled is
-   * SHOW-BUT-INACTIVE with explanatory tooltip — discoverable for the
-   * commenter even when they can't act yet.
-   */
-  describe("disabled state (Not Yet Determined / not-ready rules)", () => {
-    it("renders the button but with disabled attribute when disabled=true", () => {
-      const w = mount(SectionCommentIcon, {
-        localVue,
-        propsData: { section: "check_content", pendingCount: 0, disabled: true },
-      });
-      const btn = w.find("button");
-      expect(btn.exists()).toBe(true);
-      expect(btn.attributes("disabled")).toBeDefined();
+  it("emits 'open-composer' on Enter keydown when active", async () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "check_content", pendingCount: 0 },
     });
-
-    it("does NOT emit 'open-composer' when clicked while disabled", async () => {
-      const w = mount(SectionCommentIcon, {
-        localVue,
-        propsData: { section: "check_content", pendingCount: 0, disabled: true },
-      });
-      await w.find("button").trigger("click");
-      expect(w.emitted("open-composer")).toBeUndefined();
-    });
-
-    it("uses an explanatory tooltip when disabled (vs. the active 'Comment on X' tooltip)", () => {
-      const w = mount(SectionCommentIcon, {
-        localVue,
-        propsData: { section: "check_content", pendingCount: 0, disabled: true },
-      });
-      const btn = w.find("button");
-      expect(btn.attributes("title")).toMatch(/status|ready|not yet/i);
-    });
-
-    it("locked tooltip wins over NYD-disabled tooltip (locked is the more specific reason)", () => {
-      const w = mount(SectionCommentIcon, {
-        localVue,
-        propsData: { section: "title", pendingCount: 0, locked: true, disabled: true },
-      });
-      const btn = w.find("button");
-      expect(btn.exists()).toBe(true);
-      expect(btn.attributes("title")).toMatch(/lock/i);
-    });
+    await findGlyph(w).trigger("keydown.enter");
+    expect(w.emitted("open-composer")).toEqual([["check_content"]]);
   });
 });
