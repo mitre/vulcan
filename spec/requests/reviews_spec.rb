@@ -13,7 +13,11 @@ RSpec.describe 'Reviews' do
   let_it_be(:anchor_admin) { create(:user, admin: true) }
   let_it_be(:project) { create(:project) }
   let_it_be(:srg) { create(:security_requirements_guide) }
-  let_it_be(:component) { create(:component, project: project, based_on: srg) }
+  # PR #717: comment posting requires comment_phase = 'open'. Most tests in
+  # this file exercise the comment workflow; default the shared component
+  # to open so they don't fail the new phase gate. Tests that need a
+  # different phase set it explicitly via update_columns.
+  let_it_be(:component) { create(:component, project: project, based_on: srg, comment_phase: 'open') }
   let(:rule) { component.rules.first }
 
   before { Rails.application.reload_routes! }
@@ -584,6 +588,151 @@ RSpec.describe 'Reviews' do
         put "/reviews/#{my_comment.id}", params: { review: { comment: 'too late' } }, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
         expect(my_comment.reload.comment).to eq('original text')
+      end
+    end
+  end
+
+  # PR #717: comment_phase gates the public-comment workflow.
+  #
+  #   draft       — no public comments accepted
+  #   open        — public comments accepted; triage allowed
+  #   adjudication— no NEW public comments; triage continues
+  #   final       — frozen; no Review writes anywhere
+  #
+  # The phase column was previously informational only — the controller
+  # honors it now so the lifecycle has teeth.
+  describe 'comment_phase enforcement' do
+    let_it_be(:phase_seed_admin) { create(:user, admin: true) }
+    let_it_be(:phase_project) { create(:project) }
+    let_it_be(:phase_component) { create(:component, project: phase_project, based_on: srg) }
+    let(:phase_rule) { phase_component.rules.first }
+
+    let_it_be(:phase_viewer) { create(:user, admin: false) }
+    let_it_be(:phase_author) { create(:user, admin: false) }
+    let_it_be(:phase_commenter) { create(:user, admin: false) }
+
+    before do
+      Membership.find_or_create_by!(user: phase_viewer, membership: phase_project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: phase_author, membership: phase_project) { |m| m.role = 'author' }
+      Membership.find_or_create_by!(user: phase_commenter, membership: phase_project) { |m| m.role = 'viewer' }
+    end
+
+    describe 'POST /rules/:rule_id/reviews — public-comment posting' do
+      before { sign_in phase_viewer }
+
+      it 'allows posting when phase is open' do
+        phase_component.update_columns(comment_phase: 'open')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'hello', component_id: phase_component.id } },
+             as: :json
+        expect(response).to have_http_status(:success)
+      end
+
+      %w[draft adjudication final].each do |closed_phase|
+        it "rejects posting when phase is #{closed_phase}" do
+          phase_component.update_columns(comment_phase: closed_phase)
+          post "/rules/#{phase_rule.id}/reviews",
+               params: { review: { action: 'comment', comment: 'no', component_id: phase_component.id } },
+               as: :json
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.body).to include('Comments are closed')
+        end
+      end
+
+      it 'does not gate non-comment actions on phase (request_review remains author-only and unaffected)' do
+        # request_review is author-tier so the viewer here would be denied
+        # for OTHER reasons; the point is that the phase-gate check returns
+        # before the role-gate so a viewer/draft request_review still gets
+        # an auth error, NOT the comments-closed error.
+        phase_component.update_columns(comment_phase: 'draft')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'request_review', comment: 'try', component_id: phase_component.id } },
+             as: :json
+        expect(response.body).not_to include('Comments are closed')
+      end
+    end
+
+    describe 'PATCH /reviews/:id/triage — final freezes triage' do
+      let!(:open_comment) do
+        phase_component.update_columns(comment_phase: 'open')
+        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
+                       comment: 'first', triage_status: 'pending')
+      end
+
+      before { sign_in phase_author }
+
+      it 'allows triage during open' do
+        phase_component.update_columns(comment_phase: 'open')
+        patch "/reviews/#{open_comment.id}/triage",
+              params: { triage_status: 'concur' }, as: :json
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows triage during adjudication' do
+        phase_component.update_columns(comment_phase: 'adjudication')
+        patch "/reviews/#{open_comment.id}/triage",
+              params: { triage_status: 'concur' }, as: :json
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'rejects triage when phase is final' do
+        phase_component.update_columns(comment_phase: 'final')
+        patch "/reviews/#{open_comment.id}/triage",
+              params: { triage_status: 'concur' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('frozen')
+      end
+    end
+
+    describe 'PATCH /reviews/:id/adjudicate — final freezes adjudication' do
+      let!(:triaged_comment) do
+        phase_component.update_columns(comment_phase: 'open')
+        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
+                       comment: 'first', triage_status: 'concur')
+      end
+
+      before { sign_in phase_author }
+
+      it 'rejects adjudicate when phase is final' do
+        phase_component.update_columns(comment_phase: 'final')
+        patch "/reviews/#{triaged_comment.id}/adjudicate", as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('frozen')
+      end
+    end
+
+    describe 'PATCH /reviews/:id/withdraw — final freezes withdraw' do
+      let!(:my_comment) do
+        phase_component.update_columns(comment_phase: 'open')
+        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
+                       comment: 'mine', triage_status: 'pending')
+      end
+
+      before { sign_in phase_commenter }
+
+      it 'rejects withdraw when phase is final' do
+        phase_component.update_columns(comment_phase: 'final')
+        patch "/reviews/#{my_comment.id}/withdraw", as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('frozen')
+      end
+    end
+
+    describe 'PUT /reviews/:id — final freezes self-edit' do
+      let!(:my_comment) do
+        phase_component.update_columns(comment_phase: 'open')
+        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
+                       comment: 'original', triage_status: 'pending')
+      end
+
+      before { sign_in phase_commenter }
+
+      it 'rejects edit when phase is final' do
+        phase_component.update_columns(comment_phase: 'final')
+        put "/reviews/#{my_comment.id}",
+            params: { review: { comment: 'edited' } }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('frozen')
       end
     end
   end

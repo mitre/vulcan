@@ -14,6 +14,10 @@ class ReviewsController < ApplicationController
   before_action :authorize_review_component, only: %i[lock_sections]
   before_action :authorize_author_project, only: %i[triage adjudicate reopen]
   before_action :authorize_review_owner, only: %i[withdraw update]
+  # PR #717 phase enforcement — gates the public-comment lifecycle.
+  # Runs AFTER auth so non-members get the auth error, not a phase error.
+  before_action :reject_if_comments_closed, only: %i[create]
+  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update]
 
   def create
     review_params_without_component_id = review_params.except('component_id')
@@ -465,5 +469,40 @@ class ReviewsController < ApplicationController
     # here — they are set only by the dedicated triage / adjudicate / withdraw
     # endpoints (Tasks 10/11/12).
     params.expect(review: %i[component_id action comment section responding_to_review_id])
+  end
+
+  # PR #717 phase gate: a public comment (action='comment') can only be
+  # posted while the component's comment_phase is 'open'. Other actions
+  # (request_review, approve, request_changes, lock_control,
+  # unlock_control) are role-gated independently and unaffected by this
+  # filter — we early-return for them.
+  def reject_if_comments_closed
+    return unless params.dig(:review, :action) == 'comment'
+    return if @rule&.component&.accepting_new_comments?
+
+    render json: {
+      toast: {
+        title: 'Could not add comment.',
+        message: 'Comments are closed for this component.',
+        variant: 'danger'
+      }
+    }, status: :unprocessable_entity
+  end
+
+  # PR #717 phase gate: once a component's comment_phase reaches 'final',
+  # the component is frozen — no new triage decisions, adjudications,
+  # withdrawals, or self-edits can be applied to its Reviews. The
+  # disposition matrix is published; the trail is immutable.
+  def reject_if_frozen_for_writes
+    component = @review&.rule&.component
+    return unless component&.frozen_for_writes?
+
+    render json: {
+      toast: {
+        title: 'Cannot modify review.',
+        message: 'The component is frozen — its public-comment phase is final.',
+        variant: 'danger'
+      }
+    }, status: :unprocessable_entity
   end
 end

@@ -89,6 +89,7 @@ class Component < ApplicationRecord
 
   COMMENT_PHASES = %w[draft open adjudication final].freeze
   validates :comment_phase, inclusion: { in: COMMENT_PHASES }
+  validate :forward_only_finalization
 
   def accepting_new_comments?
     comment_phase == 'open'
@@ -98,10 +99,30 @@ class Component < ApplicationRecord
     %w[open adjudication].include?(comment_phase)
   end
 
+  # When `final`, the component is read-only — no new comments, no triage
+  # or adjudication writes, no rule edits. Federal-compliance posture: once
+  # disposition is published the document and its comment trail are frozen.
+  def frozen_for_writes?
+    comment_phase == 'final'
+  end
+
   def comment_period_days_remaining
     return nil unless comment_phase == 'open' && comment_period_ends_at
 
     ((comment_period_ends_at - Time.current) / 1.day).ceil
+  end
+
+  # Forward-only guard: once `final`, the only valid value is `final`. Any
+  # earlier phase is rejected. This prevents an admin from accidentally
+  # un-finalizing a published component via the Settings page; rolling back
+  # genuinely requires a Rails-console operation with an explicit
+  # audit_comment so the action is auditable.
+  def forward_only_finalization
+    return unless comment_phase_changed?
+    return unless comment_phase_was == 'final'
+    return if comment_phase == 'final'
+
+    errors.add(:comment_phase, 'once final, the component is frozen — phase cannot regress')
   end
 
   def as_json(options = {})

@@ -176,6 +176,58 @@ describe("SectionCommentIcon", () => {
     expect(w.vm.tooltipText).toMatch(/status|ready|not yet/i);
   });
 
+  // ─── PR #717 phase enforcement ──────────────────────────────────
+  // commentsClosed = component.comment_phase != 'open'. Same disable +
+  // tooltip treatment as locked / NYD per `vulcan-disabled-not-hidden`.
+  describe("commentsClosed (phase != open)", () => {
+    it("renders inactive (greyed) when commentsClosed=true", () => {
+      const w = mount(SectionCommentIcon, {
+        localVue,
+        propsData: { section: "title", pendingCount: 0, commentsClosed: true },
+      });
+      const glyph = findGlyph(w);
+      expect(glyph.classes()).toContain("text-muted");
+      expect(glyph.classes()).toContain("opacity-50");
+      expect(glyph.classes()).not.toContain("clickable");
+    });
+
+    it("does NOT emit 'open-composer' when clicked while commentsClosed", async () => {
+      const w = mount(SectionCommentIcon, {
+        localVue,
+        propsData: {
+          section: "check_content",
+          pendingCount: 0,
+          commentsClosed: true,
+        },
+      });
+      await w.find(".section-comment-icon").trigger("click");
+      expect(w.emitted("open-composer")).toBeUndefined();
+    });
+
+    it("uses a 'comments closed' tooltip when commentsClosed", () => {
+      const w = mount(SectionCommentIcon, {
+        localVue,
+        propsData: { section: "title", pendingCount: 0, commentsClosed: true },
+      });
+      expect(w.vm.tooltipText).toMatch(/comments are closed|comment window/i);
+    });
+
+    it("locked takes precedence over commentsClosed (more specific)", () => {
+      const w = mount(SectionCommentIcon, {
+        localVue,
+        propsData: {
+          section: "title",
+          pendingCount: 0,
+          locked: true,
+          commentsClosed: true,
+        },
+      });
+      // Locked is rule-scope, commentsClosed is component-scope; the
+      // narrower / more-specific signal wins for the user message.
+      expect(w.vm.tooltipText).toMatch(/lock/i);
+    });
+  });
+
   it("uses 'X pending comments on Section' tooltip when active with pending", () => {
     const w = mount(SectionCommentIcon, {
       localVue,

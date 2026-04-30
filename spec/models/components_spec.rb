@@ -888,6 +888,41 @@ RSpec.describe Component do
         expect(component.comment_period_days_remaining).to be_nil
       end
     end
+
+    # PR #717: phases gate behavior, not just labels.
+    describe '#frozen_for_writes?' do
+      it 'is true only when phase is final' do
+        %w[draft open adjudication].each do |phase|
+          component.comment_phase = phase
+          expect(component.frozen_for_writes?).to be(false), "unexpectedly true for #{phase}"
+        end
+        component.comment_phase = 'final'
+        expect(component.frozen_for_writes?).to be(true)
+      end
+    end
+
+    describe 'forward-only finalization' do
+      it 'allows transitioning into final' do
+        component.update!(comment_phase: 'adjudication')
+        component.comment_phase = 'final'
+        expect(component).to be_valid
+      end
+
+      it 'rejects transitioning out of final back to any earlier phase' do
+        component.update!(comment_phase: 'final')
+        %w[draft open adjudication].each do |earlier|
+          component.comment_phase = earlier
+          expect(component).not_to be_valid
+          expect(component.errors[:comment_phase].join).to match(/once final, the component is frozen/i)
+        end
+      end
+
+      it 'allows final → final (no-op save)' do
+        component.update!(comment_phase: 'final')
+        component.comment_phase = 'final'
+        expect(component).to be_valid
+      end
+    end
   end
 
   describe '#paginated_comments' do

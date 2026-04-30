@@ -42,6 +42,7 @@
         :pending-count="pendingCommentCount"
         :locked="ruleLocked"
         :disabled="commentIconDisabled"
+        :comments-closed="commentsClosedInjected"
         class="ml-1"
         @open-composer="$emit('open-composer', xccdfSection)"
       />
@@ -72,6 +73,14 @@ let _rfgUid = 0;
 export default {
   name: "RuleFormGroup",
   components: { SectionCommentIcon },
+  // PR #717 phase enforcement — inject the parent's commentsClosed
+  // signal (provided by ProjectComponent) so the comment icon can
+  // disable when the public-comment window isn't open. Default to
+  // "open" so existing call sites (tests, isolated mounts) are
+  // unaffected.
+  inject: {
+    isCommentsClosed: { default: () => () => false },
+  },
   props: {
     fieldName: { type: String, required: true },
     label: { type: String, required: true },
@@ -163,6 +172,9 @@ export default {
     },
     commentIconDisabled() {
       return this.ruleStatus === "Not Yet Determined";
+    },
+    commentsClosedInjected() {
+      return this.isCommentsClosed();
     },
   },
 };

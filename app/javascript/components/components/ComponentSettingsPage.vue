@@ -66,11 +66,24 @@
               </b-col>
             </b-form-row>
             <b-alert show variant="info" class="mb-0 small">
-              <strong>Draft</strong>: component is being authored — no public comments are accepted.
-              <strong>Open for comment</strong>: viewers can post comments and authors/admins triage
-              them. <strong>Adjudication</strong>: window is closed — no new public comments, but
-              triage continues. <strong>Final</strong>: disposition published — the component is
-              frozen for writes.
+              <ul class="mb-0 pl-3">
+                <li>
+                  <strong>Draft</strong>: component is being authored — no public comments are
+                  accepted.
+                </li>
+                <li>
+                  <strong>Open for comment</strong>: viewers can post comments and authors/admins
+                  triage them.
+                </li>
+                <li>
+                  <strong>Adjudication</strong>: window is closed — no new public comments, but
+                  triage continues.
+                </li>
+                <li>
+                  <strong>Final</strong>: disposition published — the component is frozen for
+                  writes.
+                </li>
+              </ul>
             </b-alert>
           </b-card-body>
         </b-card>
