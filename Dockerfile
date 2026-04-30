@@ -67,6 +67,8 @@ RUN dnf install -y \
       postgresql-devel \
       libyaml-devel \
       pkgconf-pkg-config \
+      ruby-devel \
+      redhat-rpm-config \
       xz \
       zlib-devel && \
     dnf clean all && \
