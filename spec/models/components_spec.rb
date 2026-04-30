@@ -901,24 +901,39 @@ RSpec.describe Component do
       end
     end
 
-    describe 'forward-only finalization' do
-      it 'allows transitioning into final' do
-        component.update!(comment_phase: 'adjudication')
-        component.comment_phase = 'final'
+    # Admin authority: there is no model-level restriction on phase
+    # transitions. Compliance posture is established by:
+    #   (1) the audit trail (vulcan_audited records every phase change
+    #       with optional audit_comment) — accountability lives there;
+    #   (2) frozen_for_writes? which blocks Review writes whenever the
+    #       component IS currently in final, regardless of how it got
+    #       there — content immutability is a phase-state check, not a
+    #       transition lock.
+    # Locking transitions at the model level would prevent legitimate
+    # admin operations (correcting an accidental click, reopening for
+    # post-publication issues) without adding any compliance value the
+    # audit trail doesn't already provide.
+    describe 'phase transitions are unrestricted (admin authority)' do
+      it 'allows final → draft' do
+        component.update!(comment_phase: 'final')
+        component.comment_phase = 'draft'
         expect(component).to be_valid
       end
 
-      it 'rejects transitioning out of final back to any earlier phase' do
+      it 'allows final → open' do
         component.update!(comment_phase: 'final')
-        %w[draft open adjudication].each do |earlier|
-          component.comment_phase = earlier
-          expect(component).not_to be_valid
-          expect(component.errors[:comment_phase].join).to match(/once final, the component is frozen/i)
-        end
+        component.comment_phase = 'open'
+        expect(component).to be_valid
       end
 
-      it 'allows final → final (no-op save)' do
+      it 'allows final → adjudication' do
         component.update!(comment_phase: 'final')
+        component.comment_phase = 'adjudication'
+        expect(component).to be_valid
+      end
+
+      it 'allows skipping phases (draft → final, open → final)' do
+        component.update!(comment_phase: 'draft')
         component.comment_phase = 'final'
         expect(component).to be_valid
       end
