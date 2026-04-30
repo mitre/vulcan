@@ -255,3 +255,69 @@ The PR is ready to merge when:
 - "Public comment period" as a first-class entity (vs. an attribute on Component)
 
 These are tracked in design doc §5 (Out of Scope / YAGNI). When v2 starts, create a new plan folder `docs/plans/v2-comment-email-and-export/`.
+
+## Live-test follow-ups (deferred, not merge-blocking)
+
+Discovered while live-testing the Container SRG comment window. Tracked
+here so we don't fragment into beads. Merge of PR #717 is NOT blocked
+on these.
+
+### F1: Migrate STIG + SRG list/show dropdowns to `FilterDropdown`
+
+The shared `app/javascript/components/shared/FilterDropdown.vue` was
+introduced in PR #717 (commit `4f1c571`) to replace `<b-form-select>`
+filter dropdowns that clip at viewport edges. The PR migrated three
+consumers: `ComponentComments`, `RuleReviews`, `UserComments`. The
+STIG and SRG list/show pages still use `<b-form-select>` for their
+filter dropdowns and have the same clipping behavior. Migrate them.
+
+- [ ] Identify every `<b-form-select>` use in the `stigs.js` / `stig.js`
+      / `security_requirements_guides.js` packs
+- [ ] Replace each with `FilterDropdown`
+- [ ] Verify no clipping at narrow viewports (resize Playwright window
+      to 1440x900 minimum, also test 768 + 375)
+- [ ] All affected vitest specs pass
+- [ ] No regressions on existing tests
+
+### F2: Turbolinks Vue pack-mount race — proper fix
+
+PR #717 commit `83b7dc7` shipped a `data-turbolinks="false"` workaround
+on rule + component links in `ComponentComments` and `UserComments`,
+because turbolinks-mediated navigation between Vue-mounted pages
+appended the destination pack's `<script>` to `<head>` AFTER
+`turbolinks:load` had fired for that navigation — Vue never mounted,
+the page was blank.
+
+The proper fix is a self-mounting registration in every Vue pack:
+
+```javascript
+// Before
+document.addEventListener("turbolinks:load", () => {
+  new Vue({ el: "#projectcomponent" });
+});
+
+// After
+const mount = () => {
+  const el = document.querySelector("#projectcomponent");
+  if (el && !el.__vue__) new Vue({ el });
+};
+mount();
+document.addEventListener("turbolinks:load", mount);
+```
+
+Affected packs (all in `app/javascript/packs/`):
+`project_component.js`, `project_components.js`, `component_triage.js`,
+`released_component.js`, `rules.js`, `stigs.js`, `stig.js`,
+`security_requirements_guides.js`, `users.js`, `login.js` — and any
+other pack with the same `addEventListener("turbolinks:load", ...)`
+shape.
+
+Acceptance criteria:
+- [ ] All packs use the self-mounting pattern
+- [ ] Triage table → rule editor navigation works WITHOUT
+      `data-turbolinks="false"` on the link
+- [ ] Remove the `data-turbolinks="false"` workaround from
+      `ComponentComments.vue` and `UserComments.vue`
+- [ ] No double-mount when turbolinks:load fires for a fresh page load
+      (the `!el.__vue__` guard prevents that)
+- [ ] All existing tests pass
