@@ -317,23 +317,40 @@ export default {
         this.form.admin_name = user.name;
       }
     },
-    save() {
+    async save() {
+      // Reopen-disposition guard: only the final → anything-else transition has
+      // material downstream effect (component was frozen for writes; reopening
+      // unfreezes it). Show a confirmation modal as a safety net. Admin authority
+      // remains unrestricted at the model layer.
+      const wasFinal = this.component.comment_phase === "final";
+      const stillFinal = this.form.comment_phase === "final";
+      if (wasFinal && !stillFinal) {
+        const confirmed = await this.$bvModal.msgBoxConfirm(
+          "Changing the phase out of Final will reopen disposition — the component will become writable again. Continue?",
+          {
+            title: "Reopen disposition?",
+            okTitle: "Yes, reopen",
+            okVariant: "warning",
+            cancelTitle: "Cancel",
+            centered: true,
+          },
+        );
+        if (!confirmed) return;
+      }
+
       this.saving = true;
       const payload = { component: {} };
       PAYLOAD_KEYS.forEach((key) => {
         payload.component[key] = this.form[key];
       });
-      axios
-        .put(`/components/${this.component.id}`, payload)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-        })
-        .catch((error) => {
-          this.alertOrNotifyResponse(error);
-        })
-        .then(() => {
-          this.saving = false;
-        });
+      try {
+        const response = await axios.put(`/components/${this.component.id}`, payload);
+        this.alertOrNotifyResponse(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.saving = false;
+      }
     },
   },
 };

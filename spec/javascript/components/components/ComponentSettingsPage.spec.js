@@ -172,4 +172,62 @@ describe("ComponentSettingsPage", () => {
       });
     });
   });
+
+  // REQUIREMENT: regressing comment_phase out of "final" reopens disposition,
+  // which is the only phase change with significant downstream effect (the
+  // component was frozen for writes and is now writable again). Admin authority
+  // remains unrestricted (no model-level lock — see vulcan-phase-frozen-for-writes
+  // memory) but the UI surfaces a confirmation prompt as a safety net.
+  describe("confirm-modal on final regression", () => {
+    it("shows a confirmation prompt when phase is changed away from final", async () => {
+      wrapper = createWrapper({ comment_phase: "final" });
+      wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
+      wrapper.vm.form.comment_phase = "draft";
+      await wrapper.vm.save();
+
+      expect(wrapper.vm.$bvModal.msgBoxConfirm).toHaveBeenCalled();
+      const [message] = wrapper.vm.$bvModal.msgBoxConfirm.mock.calls[0];
+      expect(message).toMatch(/reopen|disposition/i);
+    });
+
+    it("aborts the save when the user cancels the confirmation", async () => {
+      wrapper = createWrapper({ comment_phase: "final" });
+      wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(false);
+      wrapper.vm.form.comment_phase = "draft";
+      await wrapper.vm.save();
+
+      expect(axios.put).not.toHaveBeenCalled();
+    });
+
+    it("proceeds with the save when the user confirms", async () => {
+      wrapper = createWrapper({ comment_phase: "final" });
+      wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
+      wrapper.vm.form.comment_phase = "open";
+      await wrapper.vm.save();
+
+      expect(axios.put).toHaveBeenCalled();
+      expect(axios.put.mock.calls[0][1].component.comment_phase).toBe("open");
+    });
+
+    it("does NOT show the confirmation when the phase is unchanged", async () => {
+      wrapper = createWrapper({ comment_phase: "final" });
+      wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
+      // form.comment_phase still 'final' — admin only changing PoC fields say
+      await wrapper.vm.save();
+
+      expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();
+      expect(axios.put).toHaveBeenCalled();
+    });
+
+    it("does NOT show the confirmation for non-final transitions", async () => {
+      // open → adjudication is a normal forward step, no reopen-disposition risk
+      wrapper = createWrapper({ comment_phase: "open" });
+      wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
+      wrapper.vm.form.comment_phase = "adjudication";
+      await wrapper.vm.save();
+
+      expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();
+      expect(axios.put).toHaveBeenCalled();
+    });
+  });
 });
