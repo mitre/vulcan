@@ -33,6 +33,30 @@ unless User.exists?(admin: true)
   puts "  Demo admin created (password from #{ENV.key?('VULCAN_SEED_ADMIN_PASSWORD') ? 'VULCAN_SEED_ADMIN_PASSWORD env var' : 'default'})"
 end
 
+# Demo role-tier users (PR #717 follow-up): email-as-role pattern mirroring
+# admin@example.com so manual + Playwright testing has a 30-second login/logout
+# loop across tiers. Project-level role wiring happens after Projects exist
+# (see "Setting demo role tiers on projects" block below).
+DEMO_ROLE_USERS = {
+  'viewer@example.com' => { name: 'Demo Viewer', role: 'viewer' },
+  'author@example.com' => { name: 'Demo Author', role: 'author' },
+  'reviewer@example.com' => { name: 'Demo Reviewer', role: 'reviewer' }
+}.freeze
+
+puts 'Creating demo role-tier users...'
+DEMO_ROLE_USERS.each do |email, attrs|
+  user = User.find_or_initialize_by(email: email)
+  if user.new_record?
+    user.name = attrs[:name]
+    user.password = DEMO_PASSWORD
+    user.skip_confirmation!
+    user.save!
+    puts "  Created #{email} (#{attrs[:role]} tier)"
+  else
+    puts "  Already exists: #{email}"
+  end
+end
+
 puts "Populating database for demo use:\n\n"
 
 # Helper to load an XCCDF XML file and create the corresponding model record.
@@ -113,6 +137,28 @@ puts 'Adding Users to Projects...'
 end
 puts 'Project Members added'
 
+# Upgrade the demo role users from default 'viewer' to their assigned tier on each
+# demo project. Idempotent: skips when role already matches.
+puts 'Setting demo role tiers on projects...'
+demo_projects = [photon3, photon4, vsphere, container_platform]
+DEMO_ROLE_USERS.each do |email, attrs|
+  user = User.find_by(email: email)
+  next unless user
+
+  demo_projects.each do |project|
+    membership = Membership.find_or_initialize_by(
+      user: user,
+      membership_type: 'Project',
+      membership_id: project.id
+    )
+    next if membership.role == attrs[:role]
+
+    membership.role = attrs[:role]
+    membership.save!
+  end
+end
+puts 'Demo role tiers set'
+
 # Counter cache update
 Project.find_each { |p| Project.reset_counters(p.id, :memberships_count) }
 
@@ -192,7 +238,9 @@ end
 
 photon4_v1r1 = seed_component(
   project: photon4, name: 'Photon OS 4', title: 'Photon OS 4 STIG Readiness Guide',
-  prefix: 'PHOS-04', based_on: gpos_srg
+  prefix: 'PHOS-04', based_on: gpos_srg,
+  admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com',
+  comment_phase: 'draft'
 )
 photon4_v1r1.reload
 photon4_v1r1.rules.update(locked: false)
@@ -225,12 +273,20 @@ seed_component(
   prefix: 'VAMI-01', based_on: web_srg
 ).rules.update(locked: false)
 
-# Container Platform project (uses Container Platform SRG)
+# Container Platform project (uses Container Platform SRG).
+# Set to comment_phase: 'open' with an active comment-period window so the banner
+# + section icons + composer are exercisable out of the box. PoC fields populated
+# so the Settings page demos look representative (mirrors the live Container SRG
+# review window — admin_email is the substantive reachable contact).
 container_srg = srg_records[:container]
 if container_srg
   seed_component(
     project: container_platform, name: 'Container Platform', title: 'Container Platform STIG Readiness Guide',
-    prefix: 'CNTR-01', based_on: container_srg
+    prefix: 'CNTR-01', based_on: container_srg,
+    admin_name: 'Container Platform Maintainer', admin_email: 'platform-team@example.com',
+    comment_phase: 'open',
+    comment_period_starts_at: 1.day.ago,
+    comment_period_ends_at: 14.days.from_now
   ).rules.update(locked: false)
 end
 
@@ -292,12 +348,17 @@ end
 if container_component.nil?
   puts '  No Container Platform component — skipping comment seeds'
 else
-  # Reuse two existing non-admin users as our viewer + author (or fall back to admin
-  # if seed-user creation was somehow skipped).
+  # Prefer the named role-tier users (viewer@example.com / author@example.com) so
+  # the demo comments come from clearly-identifiable personas. Fall back to any
+  # non-admin users if the role users are absent.
   demo_admin = User.find_by(admin: true)
-  non_admins = User.where(admin: [false, nil]).limit(2).to_a
-  viewer_user = non_admins[0] || demo_admin
-  author_user = non_admins[1] || demo_admin
+  named_viewer = User.find_by(email: 'viewer@example.com')
+  named_author = User.find_by(email: 'author@example.com')
+  fallback_non_admins = User.where(admin: [false, nil])
+                            .where.not(email: %w[viewer@example.com author@example.com reviewer@example.com])
+                            .limit(2).to_a
+  viewer_user = named_viewer || fallback_non_admins[0] || demo_admin
+  author_user = named_author || fallback_non_admins[1] || demo_admin
   other_voice = User.where.not(id: [viewer_user&.id, author_user&.id, demo_admin&.id].compact)
                     .where(admin: [false, nil]).first || viewer_user
 

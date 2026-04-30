@@ -39,4 +39,61 @@ RSpec.describe 'seed file idempotency and completeness' do
                        'seed_component helper must require title parameter'
     end
   end
+
+  # REQUIREMENT (PR #717 follow-up): role-tier seed users for fast role-switching
+  # in manual + Playwright testing. Email-as-role pattern mirrors the existing
+  # admin@example.com convention. Goal: 30-second login/logout loop across tiers.
+  describe 'role-tier seed users' do
+    it 'creates viewer@example.com (commenter persona)' do
+      expect(seeds).to include('viewer@example.com'),
+                       'expected db/seeds.rb to create viewer@example.com'
+    end
+
+    it 'creates author@example.com (triager persona)' do
+      expect(seeds).to include('author@example.com'),
+                       'expected db/seeds.rb to create author@example.com'
+    end
+
+    it 'creates reviewer@example.com' do
+      expect(seeds).to include('reviewer@example.com'),
+                       'expected db/seeds.rb to create reviewer@example.com'
+    end
+
+    it 'guards role-user creation with an idempotent email lookup' do
+      # Role users must be created via find_or_initialize_by(email:) (or similar)
+      # so reruns don't crash on duplicate-email uniqueness violations. Combined
+      # with the email-presence tests above, this confirms idempotent creation.
+      expect(seeds).to match(/find_or_(initialize|create)_by!?\(email:/),
+                       'expected db/seeds.rb to use find_or_initialize_by(email:) for role-user creation'
+    end
+  end
+
+  # REQUIREMENT: seeded components should have representative PoC name + email
+  # so the Settings page demo looks realistic. Currently admin_name / admin_email
+  # are blank on most seed components.
+  describe 'component PoC fields' do
+    it 'sets admin_name on at least one seeded component' do
+      expect(seeds).to match(/admin_name:\s*['"]/),
+                       'expected at least one seeded component to have admin_name populated'
+    end
+
+    it 'sets admin_email on at least one seeded component' do
+      expect(seeds).to match(/admin_email:\s*['"]/),
+                       'expected at least one seeded component to have admin_email populated'
+    end
+  end
+
+  # REQUIREMENT: seeded components should cover multiple comment_phase values so
+  # the period banner + phase-gated UI are validatable without manual DB hacking.
+  describe 'component phase coverage' do
+    it 'sets comment_phase to "open" on at least one component' do
+      expect(seeds).to match(/comment_phase:\s*['"]open['"]/),
+                       'expected at least one component to have comment_phase: "open" for banner/icon coverage'
+    end
+
+    it 'sets comment_phase to "draft" on at least one component' do
+      expect(seeds).to match(/comment_phase:\s*['"]draft['"]/),
+                       'expected at least one component to have comment_phase: "draft" for phase-toggle coverage'
+    end
+  end
 end
