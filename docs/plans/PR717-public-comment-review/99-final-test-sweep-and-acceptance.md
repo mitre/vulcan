@@ -232,7 +232,7 @@ Authored by: Aaron Lippold<lippold@gmail.com>"
 
 The PR is ready to merge when:
 
-- [ ] All 27 implementation tasks (1-22 + 23, 24, 27, 28, 29) are committed and marked DONE
+- [ ] All 28 implementation tasks (1-22 + 23, 24, 27, 28, 29, 30) are committed and marked DONE
       (Tasks 25 + 26 deferred to a follow-up phase — admin force-withdraw
        and admin move-to-rule are documented as console operations in
        `docs/runbook-public-comment-admin-actions.md` for this phase.)
