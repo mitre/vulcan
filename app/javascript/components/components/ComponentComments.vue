@@ -35,6 +35,17 @@
       >
         <b-icon icon="arrow-clockwise" />
       </b-button>
+      <b-button
+        v-if="canExportDisposition"
+        v-b-tooltip.hover
+        :href="dispositionExportUrl"
+        variant="outline-secondary"
+        size="sm"
+        aria-label="Export disposition matrix CSV"
+        title="Export DISA disposition matrix (CSV) — passes through the active status filter"
+      >
+        <b-icon icon="download" /> Export CSV
+      </b-button>
     </div>
 
     <!-- Table -->
@@ -214,6 +225,18 @@ export default {
     // authorize_author_project on the /reviews/:id/* endpoints.
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    // The DISA disposition matrix CSV export (PR #717 Task 29) is a federal
+    // compliance deliverable. Server enforces author-tier minimum + admin-only
+    // include_email; the UI hides the button for viewers and in project-aggregate
+    // scope (which doesn't have a single-component endpoint).
+    canExportDisposition() {
+      return this.scope === "component" && this.componentId != null && this.canTriage;
+    },
+    dispositionExportUrl() {
+      const base = `/components/${this.componentId}/export/disposition_csv`;
+      if (!this.filterStatus || this.filterStatus === "all") return base;
+      return `${base}?triage_status=${encodeURIComponent(this.filterStatus)}`;
     },
     statusOptions() {
       const friendly = Object.entries(TRIAGE_LABELS)

@@ -348,6 +348,66 @@ describe("ComponentComments", () => {
     });
   });
 
+  // REQUIREMENT: the DISA disposition matrix CSV export (Task 29) is
+  // available to authors+ on a single-component triage queue. The button
+  // links to /components/:id/export/disposition_csv with the active
+  // triage_status filter passed through.
+  describe("disposition CSV export button", () => {
+    it("computes a path-based export URL with the active filterStatus", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author", scope: "component" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.filterStatus = "concur";
+      expect(wrapper.vm.dispositionExportUrl).toBe(
+        "/components/42/export/disposition_csv?triage_status=concur",
+      );
+    });
+
+    it("omits the triage_status query param when filter is 'all'", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author", scope: "component" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.filterStatus = "all";
+      expect(wrapper.vm.dispositionExportUrl).toBe("/components/42/export/disposition_csv");
+    });
+
+    // Don't stub b-button here so the :href path renders as an <a>.
+    const noBtnStubs = SHARED_STUBS.filter((s) => s !== "b-button");
+
+    it("renders the Export CSV button for author+ in component scope", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author", scope: "component" },
+        stubs: noBtnStubs,
+      });
+      await flushPromises();
+      const btn = wrapper.findAll("a").wrappers.find((a) => a.text().includes("Export CSV"));
+      expect(btn).toBeDefined();
+      expect(btn.attributes("href")).toContain("/components/42/export/disposition_csv");
+    });
+
+    it("hides the Export CSV button for viewer role (server enforces 403; UI matches)", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "viewer", scope: "component" },
+        stubs: noBtnStubs,
+      });
+      await flushPromises();
+      const btn = wrapper.findAll("a").wrappers.find((a) => a.text().includes("Export CSV"));
+      expect(btn).toBeUndefined();
+    });
+
+    it("hides the Export CSV button in project (aggregate) scope", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { projectId: 7, effectivePermissions: "author", scope: "project" },
+        stubs: noBtnStubs,
+      });
+      await flushPromises();
+      const btn = wrapper.findAll("a").wrappers.find((a) => a.text().includes("Export CSV"));
+      expect(btn).toBeUndefined();
+    });
+  });
+
   // REQUIREMENT: filters persist in localStorage per scope so closing
   // and re-opening the triage page (or returning from a navigation)
   // doesn't snap filters back to the default "pending / all sections".

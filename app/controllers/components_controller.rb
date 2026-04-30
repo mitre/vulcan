@@ -172,7 +172,7 @@ class ComponentsController < ApplicationController
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[csv inspec xccdf json_archive].include?(export_type)
+    unless %i[csv inspec xccdf json_archive disposition_csv].include?(export_type)
       render json: {
         toast: {
           title: EXPORT_ERROR_TITLE,
@@ -180,6 +180,14 @@ class ComponentsController < ApplicationController
           variant: 'danger'
         }
       }, status: :bad_request
+      return
+    end
+
+    # disposition_csv is gated separately at author-tier minimum (PR #717
+    # Task 29). Viewers must NOT be able to export PII-adjacent data even
+    # though they can read it in the in-app triage table.
+    if export_type == :disposition_csv && !current_user.can_author_project?(@component.project)
+      head :forbidden
       return
     end
 
@@ -210,6 +218,8 @@ class ComponentsController < ApplicationController
             exportable: @component, mode: :backup, format: :json_archive,
             filename: "vulcan-backup-#{@component[:name].tr(' ', '-')}-#{version}#{release}.zip"
           )
+        when :disposition_csv
+          perform_disposition_csv_export
         end
       end
       # JSON responses are just used to validate ahead of time that this
@@ -498,6 +508,30 @@ class ComponentsController < ApplicationController
   end
 
   private
+
+  # PR #717 Task 29 — DISA disposition matrix CSV export. Email column is
+  # opt-in and admin-tier-only (server-side enforcement, not just UI hiding).
+  # Audit log records who exported what + whether the email column was
+  # included so the federal-compliance "who has the roster" question has an
+  # answer.
+  def perform_disposition_csv_export
+    include_email = params[:include_email] == 'true' && current_user.can_admin_project?(@component.project)
+    csv_data = DispositionMatrixExport.generate(
+      component: @component,
+      triage_status_filter: params[:triage_status],
+      include_email: include_email
+    )
+    @component.audits.create!(
+      user: current_user,
+      action: 'export_disposition_csv',
+      audited_changes: {
+        triage_status_filter: params[:triage_status],
+        include_email: include_email
+      }
+    )
+    filename = "#{@component.project.name}-#{@component.prefix}-disposition-matrix-#{Date.current}.csv"
+    send_data csv_data, type: 'text/csv', disposition: "attachment; filename=\"#{filename}\""
+  end
 
   # Render options shared by ComponentBlueprint calls — surfaces
   # pending_comment_count + pending_comment_counts so the page header
