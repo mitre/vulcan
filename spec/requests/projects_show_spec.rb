@@ -43,8 +43,9 @@ RSpec.describe 'GET /projects/:id' do
     expect(response).to have_http_status(:success)
   end
 
-  it 'renders successfully when components have comment_phase set' do
-    component.update!(comment_phase: 'open')
+  it 'renders successfully when components have comment_phase + period dates set' do
+    component.update!(comment_phase: 'open',
+                      comment_period_ends_at: 30.days.from_now)
 
     get "/projects/#{project.id}", as: :json
     expect(response).to have_http_status(:success)

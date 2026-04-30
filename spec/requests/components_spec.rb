@@ -77,6 +77,37 @@ RSpec.describe 'Components' do
         expect(component.reload.advanced_fields).to be(true)
       end
     end
+
+    # Task 22: admin form for the public comment-period lifecycle.
+    # Component model already validates inclusion of comment_phase in
+    # COMMENT_PHASES (draft, open, adjudication, final). The controller
+    # must permit the new params or they get silently filtered out.
+    context 'when updating the comment-phase fieldset' do
+      it 'permits comment_phase and date params' do
+        put "/components/#{component.id}", params: {
+          component: {
+            comment_phase: 'open',
+            comment_period_starts_at: '2026-04-29',
+            comment_period_ends_at: '2026-05-14'
+          }
+        }
+
+        expect(response).to have_http_status(:success)
+        component.reload
+        expect(component.comment_phase).to eq('open')
+        expect(component.comment_period_starts_at).not_to be_nil
+        expect(component.comment_period_ends_at).not_to be_nil
+      end
+
+      it 'rejects invalid comment_phase via the model validator' do
+        put "/components/#{component.id}", params: {
+          component: { comment_phase: 'not-a-real-phase' }
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(component.reload.comment_phase).not_to eq('not-a-real-phase')
+      end
+    end
   end
 
   # ==========================================================================
