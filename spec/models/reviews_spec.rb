@@ -502,6 +502,24 @@ RSpec.describe Review do
       review.update(triage_status: 'duplicate', duplicate_of_review_id: review.id)
       expect(review.errors[:duplicate_of_review_id].join).to match(/cannot reference itself/i)
     end
+
+    # PR #717 Task 24 — chained-duplicate guard. The triager must point at the
+    # ultimate canonical, not at a comment that is itself a duplicate. Otherwise
+    # the disposition matrix has multiple coalescing targets per logical issue.
+    it 'rejects pointing duplicate_of at a comment that is itself a duplicate' do
+      already_dup = Review.create!(action: 'comment', comment: 'A', user: @p_viewer, rule: @p1r1,
+                                   triage_status: 'duplicate', duplicate_of_review_id: original.id)
+      chained = Review.new(action: 'comment', comment: 'B', user: @p_viewer, rule: @p1r1,
+                           triage_status: 'duplicate', duplicate_of_review_id: already_dup.id)
+      expect(chained).not_to be_valid
+      expect(chained.errors[:duplicate_of_review_id].join).to match(/ultimate canonical|another duplicate/i)
+    end
+
+    it 'allows duplicate_of pointing at a non-duplicate canonical' do
+      new_dup = Review.new(action: 'comment', comment: 'C', user: @p_viewer, rule: @p1r1,
+                           triage_status: 'duplicate', duplicate_of_review_id: original.id)
+      expect(new_dup).to be_valid
+    end
   end
 
   describe 'responding_to_review_id invariants' do

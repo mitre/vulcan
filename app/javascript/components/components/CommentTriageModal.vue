@@ -32,17 +32,16 @@
           Decline (Non-concur) — won't incorporate (response required)
         </b-form-radio>
         <b-form-radio v-model="triageStatus" name="triage" value="duplicate">
-          Duplicate of:
-          <b-form-input
-            v-if="triageStatus === 'duplicate'"
-            v-model.number="duplicateOfId"
-            type="number"
-            placeholder="comment #"
-            size="sm"
-            class="d-inline-block ml-2"
-            style="width: 120px"
-          />
+          Duplicate of another comment in this component
         </b-form-radio>
+        <CanonicalCommentPicker
+          v-if="triageStatus === 'duplicate' && pickerComponentId"
+          class="mt-2 ml-4"
+          :component-id="pickerComponentId"
+          :exclude-review-id="review.id"
+          :selected-review-id="duplicateOfId"
+          @selected="onDuplicateSelected"
+        />
         <b-form-radio v-model="triageStatus" name="triage" value="informational">
           Informational — note acknowledged, no action required
         </b-form-radio>
@@ -87,6 +86,7 @@
 import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
+import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
 
 // Statuses that auto-set adjudicated_at server-side via the
 // Review#auto_set_adjudicated_for_terminal_statuses callback (Task 06).
@@ -96,10 +96,14 @@ const TERMINAL_BY_RULE = ["informational", "duplicate", "needs_clarification", "
 
 export default {
   name: "CommentTriageModal",
-  components: { SectionLabel },
+  components: { SectionLabel, CanonicalCommentPicker },
   mixins: [AlertMixin],
   props: {
     review: { type: Object, default: null },
+    // Component the picker is scoped to — defaults to the review's
+    // component_id (set on the row) so project-aggregate triage queues
+    // pick the right component per-row without the parent juggling state.
+    componentId: { type: [Number, String], default: null },
   },
   data() {
     return {
@@ -143,6 +147,9 @@ export default {
     canSaveAndClose() {
       return !TERMINAL_BY_RULE.includes(this.triageStatus);
     },
+    pickerComponentId() {
+      return this.componentId || this.review?.component_id || null;
+    },
   },
   watch: {
     review(val) {
@@ -157,6 +164,9 @@ export default {
     relativeTime(iso) {
       if (!iso) return "";
       return new Date(iso).toLocaleString();
+    },
+    onDuplicateSelected(reviewId) {
+      this.duplicateOfId = reviewId;
     },
     async saveTriage(alsoAdjudicate) {
       if (!this.review) return;

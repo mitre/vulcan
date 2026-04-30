@@ -252,6 +252,85 @@ RSpec.describe 'Reviews' do
         expect(response.parsed_body.dig('toast', 'message').join).to match(/canonical comment/i)
       end
 
+      # PR #717 Task 24 — mark-as-duplicate decision flow. Most validators
+      # already exist on the Review model (no_self_duplicate_reference,
+      # duplicate_of_must_be_same_component, duplicate_status_requires_target).
+      # The chained-duplicate guard is the new validator added in this task.
+      describe 'duplicate marking' do # rubocop:disable RSpec/NestedGroups
+        let_it_be(:rule_b) { component.rules.second }
+        let!(:canonical) do
+          Review.create!(rule: rule, user: commenter, action: 'comment',
+                         comment: 'canonical concern', triage_status: 'pending')
+        end
+        let!(:dup_target_comment) do
+          Review.create!(rule: rule_b, user: commenter, action: 'comment',
+                         comment: 'same concern, other rule', triage_status: 'pending')
+        end
+
+        it 'sets triage_status=duplicate + duplicate_of_review_id when valid' do
+          patch "/reviews/#{dup_target_comment.id}/triage", params: {
+            triage_status: 'duplicate',
+            duplicate_of_review_id: canonical.id
+          }, as: :json
+
+          expect(response).to have_http_status(:ok)
+          dup_target_comment.reload
+          expect(dup_target_comment.triage_status).to eq('duplicate')
+          expect(dup_target_comment.duplicate_of_review_id).to eq(canonical.id)
+          expect(dup_target_comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+        end
+
+        it 'rejects self-reference (the existing no_self_duplicate_reference validator)' do
+          patch "/reviews/#{dup_target_comment.id}/triage", params: {
+            triage_status: 'duplicate',
+            duplicate_of_review_id: dup_target_comment.id
+          }, as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(dup_target_comment.reload.triage_status).to eq('pending')
+        end
+
+        it 'rejects cross-component canonical' do
+          # anchor_admin has system-admin so they can create the foreign canonical
+          # without the cross-scope validator tripping during test setup.
+          other_canonical = Review.create!(rule: other_rule, user: anchor_admin, action: 'comment',
+                                           comment: 'foreign', triage_status: 'pending')
+          patch "/reviews/#{dup_target_comment.id}/triage", params: {
+            triage_status: 'duplicate',
+            duplicate_of_review_id: other_canonical.id
+          }, as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+
+        it 'rejects chained duplicates (canonical itself is a duplicate)' do
+          chained = Review.create!(rule: rule, user: commenter, action: 'comment',
+                                   comment: 'already a dup', triage_status: 'duplicate',
+                                   duplicate_of_review_id: canonical.id)
+          patch "/reviews/#{dup_target_comment.id}/triage", params: {
+            triage_status: 'duplicate',
+            duplicate_of_review_id: chained.id
+          }, as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body.dig('toast', 'message').join)
+            .to match(/ultimate canonical|another duplicate/i)
+        end
+
+        it 'allows re-marking to a different canonical' do
+          dup_target_comment.update!(triage_status: 'duplicate', duplicate_of_review_id: canonical.id)
+          new_canonical = Review.create!(rule: rule, user: commenter, action: 'comment',
+                                         comment: 'better canonical', triage_status: 'pending')
+          patch "/reviews/#{dup_target_comment.id}/triage", params: {
+            triage_status: 'duplicate',
+            duplicate_of_review_id: new_canonical.id
+          }, as: :json
+
+          expect(response).to have_http_status(:ok)
+          expect(dup_target_comment.reload.duplicate_of_review_id).to eq(new_canonical.id)
+        end
+      end
+
       it 'allows informational without response_comment + auto-sets adjudicated_at' do
         patch "/reviews/#{comment.id}/triage", params: {
           triage_status: 'informational'

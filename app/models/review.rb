@@ -98,6 +98,7 @@ class Review < ApplicationRecord
   validate :no_self_duplicate_reference
   validate :responding_to_must_be_same_rule
   validate :duplicate_of_must_be_same_component
+  validate :duplicate_of_must_not_be_a_duplicate
 
   before_save :auto_set_adjudicated_for_terminal_statuses
 
@@ -302,6 +303,19 @@ class Review < ApplicationRecord
     return if self_component_id == target_component_id
 
     errors.add(:duplicate_of_review_id, 'must reference a comment in the same component')
+  end
+
+  # Reject chained duplicates: a comment marked as duplicate of another
+  # comment that is itself a duplicate. Forces triagers to point at the
+  # ultimate canonical so the disposition matrix has a single coalescing
+  # target per logical issue.
+  def duplicate_of_must_not_be_a_duplicate
+    return unless triage_status == 'duplicate' && duplicate_of_review_id.present?
+
+    target_status = Review.where(id: duplicate_of_review_id).pick(:triage_status)
+    return unless target_status == 'duplicate'
+
+    errors.add(:duplicate_of_review_id, 'cannot point to another duplicate — pick the ultimate canonical')
   end
 
   def auto_set_adjudicated_for_terminal_statuses

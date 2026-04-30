@@ -146,9 +146,13 @@
       />
     </div>
 
-    <!-- Triage modal — fully implemented in Task 15 -->
+    <!-- Triage modal — fully implemented in Task 15. componentId is passed
+         through so the duplicate-of picker (Task 24) can scope its candidate
+         search to the right component, both in component-scope (componentId
+         prop on this view) and project-scope (selectedRow.component_id). -->
     <CommentTriageModal
       :review="selectedRow"
+      :component-id="modalComponentId"
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
       @hidden="selectedRow = null"
@@ -237,6 +241,12 @@ export default {
       const base = `/components/${this.componentId}/export/disposition_csv`;
       if (!this.filterStatus || this.filterStatus === "all") return base;
       return `${base}?triage_status=${encodeURIComponent(this.filterStatus)}`;
+    },
+    modalComponentId() {
+      // Component-scope: this view's componentId. Project-aggregate scope:
+      // selectedRow carries component_id per row (different rows can be on
+      // different components). Picker (Task 24) needs the right one.
+      return this.componentId || this.selectedRow?.component_id || null;
     },
     statusOptions() {
       const friendly = Object.entries(TRIAGE_LABELS)
