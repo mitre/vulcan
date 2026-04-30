@@ -26,6 +26,16 @@
         />
       </div>
 
+      <b-form-checkbox
+        v-model="filters.pendingCommentsOnly"
+        size="sm"
+        switch
+        class="mt-2"
+        data-test="filter-pending-comments-only"
+      >
+        Pending comments only
+      </b-form-checkbox>
+
       <hr class="mt-2 mb-2" />
 
       <!-- Currently opened rules -->
@@ -57,6 +67,16 @@
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </span>
           <span>
+            <span
+              v-if="rulePending(rule) > 0"
+              v-b-tooltip.hover
+              :title="`${rulePending(rule)} pending comments`"
+              :data-test="`rule-pending-comment-${rule.id}`"
+              class="text-primary mr-1"
+            >
+              <b-icon icon="chat-left-text" aria-hidden="true" />
+              {{ rulePending(rule) }}
+            </span>
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
@@ -153,6 +173,16 @@
             </b-badge>
           </span>
           <span>
+            <span
+              v-if="rulePending(rule) > 0"
+              v-b-tooltip.hover
+              :title="`${rulePending(rule)} pending comments`"
+              :data-test="`rule-pending-comment-${rule.id}`"
+              class="text-primary mr-1"
+            >
+              <b-icon icon="chat-left-text" aria-hidden="true" />
+              {{ rulePending(rule) }}
+            </span>
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
@@ -529,7 +559,8 @@ export default {
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
           this.doesRuleHaveFilteredReviewStatus(rule) &&
-          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
+          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule)) &&
+          (!this.filters.pendingCommentsOnly || this.rulePending(rule) > 0)
         );
       });
 
@@ -545,6 +576,12 @@ export default {
     },
     sortAlsoSatisfies: function (rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
+    },
+    // PR #717 — pending comment count for a rule. Reads rule.comment_summary
+    // populated by RuleBlueprint default fields. Returns 0 when missing so
+    // the badge stays hidden for rules without any comments.
+    rulePending: function (rule) {
+      return (rule.comment_summary && rule.comment_summary.pending) || 0;
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
