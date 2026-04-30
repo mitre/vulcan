@@ -1,62 +1,67 @@
 # Task 24: Mark-as-duplicate decision in the existing triage modal
 
 **Depends on:** 15 (CommentTriageModal scaffolded)
-**Estimate:** 60 min Claude-pace
+**Estimate:** 45 min Claude-pace (most validators ALREADY EXIST in the model — see Verified facts; net-new work is the picker UI + chained-duplicate rejection + paginated_comments query extension)
 **File touches:**
-- `app/javascript/components/components/CommentTriageModal.vue` (add decision option + canonical picker)
+- `app/javascript/components/components/CommentTriageModal.vue` (replace numeric `duplicateOfId` input with the new picker)
 - `app/javascript/components/components/CanonicalCommentPicker.vue` (new — embedded picker)
-- `app/controllers/reviews_controller.rb` (extend triage endpoint to accept `duplicate_of_review_id`)
-- `app/policies/review_policy.rb` if used, or model validations (cross-rule canonical resolves to same component)
-- `spec/requests/reviews_controller_spec.rb` (extend triage endpoint specs)
-- `spec/javascript/components/components/CommentTriageModal.spec.js` (extend)
+- `app/models/review.rb` (add chained-duplicate rejection validator)
+- `app/models/component.rb` (extend `paginated_comments` query to also search rule displayed_name + author name when picker is open — see Step 0)
+- `spec/models/review_spec.rb` (extend with chained-duplicate test)
+- `spec/javascript/components/components/CommentTriageModal.spec.js` (extend — replace duplicateOfId integer input with picker integration)
 - `spec/javascript/components/components/CanonicalCommentPicker.spec.js` (new)
 
-## Why this task exists
+## Verified facts (READ FIRST — much of this task is already implemented)
 
-The DB schema already supports duplicate marking
-(`triage_status='duplicate'` + `duplicate_of_review_id`); only the UI
-is missing. Triagers regularly find the same concern raised on
-multiple rules (cross-rule) or on the same rule under different
-sections. Mark-as-duplicate gives explicit consolidation: pick a
-canonical, link the duplicate to it, adjudication on the canonical
-implicitly closes the duplicate.
+The 2026-04-29 review session uncovered that **most of the backend
+work for this task already exists**. Don't rebuild it.
 
-This is the **single biggest cross-rule consolidation tool** for
-triagers during the live Container SRG window — and the schema +
-backend support are ready; only the UI is new.
+**Already implemented in `app/models/review.rb` (do NOT re-add):**
+- `belongs_to :duplicate_of, class_name: 'Review', foreign_key: :duplicate_of_review_id, optional: true` (lines 13-14)
+- `validate :no_self_duplicate_reference` (line 98) — forbids `id == duplicate_of_review_id`
+- `validate :duplicate_status_requires_target` (line 96) — forbids `triage_status='duplicate'` without a `duplicate_of_review_id`
+- `validate :duplicate_of_must_be_same_component` (line 100, body at lines 288-305) — same-component constraint
+- `before_validation :auto_set_adjudicated_for_terminal_statuses` (line 102, body at lines 307-313) — ALREADY auto-sets `adjudicated_at` when `triage_status` enters TERMINAL set, and `'duplicate'` is in TERMINAL (line 27). **No `effective_adjudicated_at` derivation needed** — `adjudicated_at` is set on the duplicate the moment it's marked.
+- `Review::TRIAGE_STATUSES` contains `'duplicate'`
 
-## Verified facts
+**Already implemented in `app/controllers/reviews_controller.rb` (do NOT re-add):**
+- `triage` action accepts `duplicate_of_review_id` in `triage_params` and assigns it (line 108 + the `triage_params` permit list)
+- `set_project_from_review` before_action sets `@project` (line 420)
+- Validation rejection for blank target on `triage_status='duplicate'` (line 457)
 
-- `Review#triage_status` already has `'duplicate'` in
-  `Review::TRIAGE_STATUSES` (Task 04 migration; verify via
-  `db/migrate/*review_lifecycle*.rb`)
-- `Review#duplicate_of_review_id` column exists with FK to reviews
-  (verify via `db/schema.rb`)
-- `TriageStatusBadge.vue` already renders `Duplicate of #X` label when
-  `status === 'duplicate'` and `duplicate_of_id` is provided — no
-  frontend display work needed beyond the picker
-- Existing PATCH `/reviews/:id/triage` endpoint accepts `triage_status`
-  + `triager_response` — needs to also accept `duplicate_of_review_id`
-- The triage modal already has a decision-radios layout (per Task 15);
-  add 'duplicate' as a new radio option that reveals the picker
+**Already implemented in `app/javascript/components/shared/TriageStatusBadge.vue`:**
+- `Duplicate of #X` label rendering (lines 33-34)
 
-## Design decisions
+**What is genuinely missing (THIS IS THE TASK):**
+1. Server-side rejection of **chained** duplicates: a comment marked as duplicate of a canonical that is itself a duplicate. Add a model validator for this.
+2. The picker UI (`CanonicalCommentPicker.vue`) — Vue component that fetches candidates and emits a selected review id.
+3. CommentTriageModal integration — replace the existing numeric `duplicateOfId` input field (Task 15) with `<CanonicalCommentPicker>` so triagers can search rather than paste.
+4. `Component#paginated_comments` query: extend the `q` (search) param to ALSO match rule displayed_name + author name (currently only matches `reviews.comment ILIKE` — see component.rb:623-626). Without this, the picker's search promise (find by rule name or author) is unkept.
 
-- **Picker scope**: same component only. A duplicate canonical must
-  live in the same component (cross-component duplicate marking is a
-  data integrity concern). Validate server-side.
-- **Picker UX**: search by author name, comment text, rule
-  displayed_name, or comment id (paste). Show top 5 most recent
-  matching comments by default. Each row shows
-  `[rule_name] author — "snippet"` + `created_at`.
-- **No self-marking**: a comment cannot be its own canonical.
-  Validate client-side (disable own row in picker) and server-side.
-- **No transitive chains**: comment X cannot be marked as duplicate
-  of comment Y if Y is itself marked as duplicate. Resolve to the
-  ultimate canonical or reject. Server-side check.
-- **Adjudication propagation**: when the canonical is adjudicated,
-  the duplicate's effective_adjudicated_at returns the canonical's
-  via a model method (no data mutation, just a derived attribute).
+## Design decisions (revised)
+
+- **Picker scope**: same component only. The model validator
+  `duplicate_of_must_be_same_component` (review.rb:288-305) already
+  enforces this; the picker just queries
+  `/components/<componentId>/comments` directly.
+- **Picker UX**: search field that POSTs `q` to the existing
+  `paginated_comments` endpoint. Show recent matching comments,
+  each row: `[rule_name] author — "snippet"` + `created_at`. Click
+  → emit `selected(review_id)`.
+- **Chained duplicates rejected**: if the picked canonical itself has
+  `triage_status='duplicate'`, reject with a friendly message
+  ("Pick the ultimate canonical, not another duplicate"). Implement
+  as a model validator and a client-side picker filter (defense in
+  depth — server is authoritative).
+- **No self-marking**: client-side (disable own row in picker) and
+  server-side (existing `no_self_duplicate_reference` validator at
+  review.rb:98).
+- **Adjudication on duplicate is automatic**: triage_status='duplicate'
+  is in `Review::TERMINAL_STATUSES` (review.rb:27), so
+  `auto_set_adjudicated_for_terminal_statuses` (lines 307-313) sets
+  `adjudicated_at` on save. The triage table can show "Closed
+  (Duplicate of #X)" by checking `triage_status='duplicate' &&
+  duplicate_of_review_id` directly — no derived attribute needed.
 - **Audit comment required**: duplicate marking is a triage decision;
   the audit comment captures *why* this was marked as a duplicate.
 
@@ -147,43 +152,110 @@ describe 'PATCH /reviews/:id/triage with duplicate marking' do
 end
 ```
 
-## Step 2: Implement — backend
+## Step 2: Backend — minimal additions
 
-In `app/controllers/reviews_controller.rb`'s `triage` action,
-extend the params + validation:
+The triage controller and Review model already do most of this. The
+ONLY backend changes:
+
+### 2a. New model validator: chained-duplicate rejection
+
+Add to `app/models/review.rb` (alongside the existing duplicate
+validators around line 96-100):
 
 ```ruby
-# Inside triage action
-if triage_status == 'duplicate'
-  canonical_id = params[:duplicate_of_review_id]
-  return render_validation_error('Mark-as-duplicate requires a canonical comment') if canonical_id.blank?
-  return render_validation_error('A comment cannot be its own canonical') if canonical_id.to_i == @review.id
-  canonical = Review.find_by(id: canonical_id)
-  return render_validation_error('Canonical comment not found') unless canonical
-  return render_validation_error('Canonical must be in the same component') unless canonical.rule.component_id == @review.rule.component_id
-  return render_validation_error('Canonical itself is a duplicate; pick the ultimate canonical') if canonical.triage_status == 'duplicate'
-  @review.duplicate_of_review_id = canonical.id
+validate :duplicate_of_must_not_be_a_duplicate
+
+private
+
+def duplicate_of_must_not_be_a_duplicate
+  return unless triage_status == 'duplicate' && duplicate_of_review_id.present?
+  canonical = duplicate_of  # uses existing belongs_to at line 13-14
+  return unless canonical&.triage_status == 'duplicate'
+  errors.add(:duplicate_of_review_id,
+             'cannot point to another duplicate — pick the ultimate canonical')
 end
 ```
 
-Plus a model method on Review for derived adjudication:
+The other failure modes (self-reference, cross-component, blank target)
+are ALREADY handled by existing validators. Don't re-implement.
+
+### 2b. Extend `Component#paginated_comments` search
+
+Currently the `q` param only matches `reviews.comment ILIKE` (component.rb:623-626).
+Extend so the picker can search by author name and rule displayed_name too:
 
 ```ruby
-# app/models/review.rb
-def effective_adjudicated_at
-  return adjudicated_at if adjudicated_at.present?
-  return nil unless triage_status == 'duplicate' && duplicate_of_review_id.present?
-  duplicate_of&.adjudicated_at
+# Replace existing q-filter block in component.rb
+if query.present?
+  escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
+  scope = scope.left_joins(rule: { component: nil }, user: nil)
+               .where(
+                 'reviews.comment ILIKE :q OR users.name ILIKE :q OR ' \
+                 "(#{prefix.present? ? "'#{ActiveRecord::Base.sanitize_sql_like(prefix)}-' || " : ''}base_rules.rule_id) ILIKE :q",
+                 q: "%#{escaped}%"
+               )
 end
-
-belongs_to :duplicate_of, class_name: 'Review',
-                          foreign_key: :duplicate_of_review_id,
-                          optional: true
 ```
 
-Update Component#paginated_comments / blueprints to surface
-`effective_adjudicated_at` (so the triage table can show "Closed via
-canonical #X" on duplicates whose canonical has been adjudicated).
+(Adapt to the actual table aliases used by AR; verify with `pp scope.to_sql` during TDD.)
+
+If the SQL gets messy, an acceptable simpler alternative: keep the
+backend filter narrow (comment text only) and have the picker do
+secondary client-side filtering on the loaded rows for author/rule
+matching. Either approach is fine; pick whichever is cleaner during
+implementation.
+
+### 2c. Validation error response pattern
+
+The controller does NOT have a `render_validation_error` helper. The
+project's pattern is:
+
+```ruby
+render json: { toast: { title: 'Validation Error', message: errors_array, variant: 'danger' } },
+       status: :unprocessable_entity
+```
+
+When the model save fails (the new chained-duplicate validator fires),
+the existing `triage` controller action already handles
+`ActiveRecord::RecordInvalid` and renders the toast — no controller
+changes needed.
+
+## Step 2bis: Failing model spec for chained-duplicate
+
+Add to `spec/models/review_spec.rb` (or create if absent):
+
+```ruby
+describe 'chained-duplicate rejection' do
+  let(:component) { create(:component) }
+  let(:rule) { create(:rule, component: component) }
+  let(:user) { create(:user) }
+  let(:canonical) do
+    Review.create!(rule: rule, user: user, action: 'comment',
+                   comment: 'real canon', triage_status: 'pending')
+  end
+  let(:already_dup) do
+    Review.create!(rule: rule, user: user, action: 'comment',
+                   comment: 'A', triage_status: 'duplicate',
+                   duplicate_of_review_id: canonical.id)
+  end
+
+  it 'rejects marking as duplicate of a comment that is itself a duplicate' do
+    chained = Review.new(rule: rule, user: user, action: 'comment',
+                         comment: 'B', triage_status: 'duplicate',
+                         duplicate_of_review_id: already_dup.id)
+    expect(chained).not_to be_valid
+    expect(chained.errors[:duplicate_of_review_id])
+      .to include(/ultimate canonical/)
+  end
+
+  it 'allows marking as duplicate of a non-duplicate canonical' do
+    new_dup = Review.new(rule: rule, user: user, action: 'comment',
+                         comment: 'C', triage_status: 'duplicate',
+                         duplicate_of_review_id: canonical.id)
+    expect(new_dup).to be_valid
+  end
+end
+```
 
 ## Step 3: Failing spec — frontend picker
 
@@ -410,15 +482,15 @@ Commit message + DONE rename per the standard pattern.
 
 ## Acceptance criteria
 
-- [ ] PATCH /reviews/:id/triage accepts `duplicate_of_review_id` when `triage_status='duplicate'`
-- [ ] Server rejects: missing canonical, self-reference, cross-component, chained duplicates
+- [ ] New model validator `duplicate_of_must_not_be_a_duplicate` rejects chained duplicates
+- [ ] Existing validators `no_self_duplicate_reference`, `duplicate_status_requires_target`, `duplicate_of_must_be_same_component` continue to work (regression-only assertion)
+- [ ] PATCH /reviews/:id/triage with triage_status=duplicate + duplicate_of_review_id succeeds (no controller changes — already supported)
 - [ ] Server allows re-marking to a different canonical (idempotent)
-- [ ] CommentTriageModal exposes 'duplicate' decision option
-- [ ] CanonicalCommentPicker fetches scoped to same component
-- [ ] Picker excludes the review being marked + already-duplicate rows
-- [ ] Picker supports text search via the q param (debounced)
-- [ ] Review#effective_adjudicated_at derives from canonical when self.adjudicated_at is nil
-- [ ] Triage table shows "Closed via canonical #X" on duplicates whose canonical has been adjudicated
+- [ ] CanonicalCommentPicker fetches scoped to same component via existing /components/:id/comments endpoint
+- [ ] Picker excludes the review being marked + already-duplicate rows (defense in depth — server is authoritative)
+- [ ] Picker supports text search; backend `q` filter extended to include author name + rule displayed_name (or client-side secondary filter — pick whichever is cleaner)
+- [ ] CommentTriageModal: existing numeric `duplicateOfId` input replaced by `<CanonicalCommentPicker>`
+- [ ] Triage table renders "Closed (Duplicate of #X)" using existing `auto_set_adjudicated_for_terminal_statuses` callback — no derived `effective_adjudicated_at` needed
 - [ ] Audit comment is captured on the duplicate-marking action
 - [ ] No vocabulary leaks (DISA terms only in storage/API; friendly UI labels)
 - [ ] All specs green

@@ -111,6 +111,13 @@ bundle exec rspec spec/blueprints/satisfaction_blueprint_spec.rb
 
 ## Step 3: Implement — backend
 
+**N+1 hazard**: `rule.reviews.where(...).count` issues a fresh COUNT
+query per row even when `:reviews` is eager-loaded. With Container
+SRG's 188 rules, a rule editor render with multiple satisfies entries
+would issue an additional COUNT per related rule. Use **in-memory
+filtering on the eager-loaded `:reviews` association** instead — zero
+extra queries when the parent controller eager-loads.
+
 `app/blueprints/satisfaction_blueprint.rb`:
 
 ```ruby
@@ -123,6 +130,13 @@ bundle exec rspec spec/blueprints/satisfaction_blueprint_spec.rb
 # related rules. Counts are computed against the *related* rule's own
 # reviews — comments are NOT auto-inherited, only their counts are
 # surfaced for cross-rule discoverability.
+#
+# Counts use IN-MEMORY filtering on the eager-loaded :reviews
+# association (rule.reviews.select { ... }.size, NOT
+# rule.reviews.where(...).count) so we don't N+1 with one COUNT per
+# row. The parent controller's set_component eager-loads
+# rules: { reviews: ... } already, so the data is available without
+# additional queries.
 class SatisfactionBlueprint < Blueprinter::Base
   identifier :id
   field :rule_id
@@ -131,18 +145,57 @@ class SatisfactionBlueprint < Blueprinter::Base
   end
 
   field :pending_comment_count do |rule, _options|
-    rule.reviews.where(action: 'comment',
-                       responding_to_review_id: nil,
-                       triage_status: 'pending').count
+    rule.reviews.select do |r|
+      r.action == 'comment' &&
+        r.responding_to_review_id.nil? &&
+        r.triage_status == 'pending'
+    end.size
   end
 
   field :total_comment_count do |rule, _options|
-    rule.reviews.where(action: 'comment', responding_to_review_id: nil).count
+    rule.reviews.select do |r|
+      r.action == 'comment' && r.responding_to_review_id.nil?
+    end.size
   end
 end
 ```
 
 `app/blueprints/satisfied_by_blueprint.rb` already inherits — no change needed.
+
+### Performance assertion (add to existing query_performance_spec)
+
+Append to `spec/models/query_performance_spec.rb` a satisfies-aware case:
+
+```ruby
+describe 'rule editor with satisfies relationships (PR #717 Task 23)' do
+  let(:component) { create(:component) }
+  let!(:base_rule) { create(:rule, component: component) }
+  let!(:related_rules) { Array.new(5) { create(:rule, component: component) } }
+
+  before do
+    related_rules.each do |r|
+      RuleSatisfaction.create!(rule_id: base_rule.id, satisfied_by_rule_id: r.id)
+      Review.create!(rule: r, user: create(:user), action: 'comment',
+                     comment: 'x', triage_status: 'pending')
+    end
+  end
+
+  it 'renders the editor blueprint with bounded queries when satisfies has comments' do
+    component_loaded = Component.eager_load(
+      rules: [
+        :reviews,
+        { satisfied_by: :reviews },
+        { satisfies: :reviews }
+      ]
+    ).find(component.id)
+    rule = component_loaded.rules.find { |r| r.id == base_rule.id }
+
+    # Ceiling: a few queries for blueprint serialization, NOT one COUNT per related rule.
+    expect { JSON.parse(RuleBlueprint.render(rule, view: :editor)) }
+      .to perform_at_most(10).queries
+  end
+end
+```
 
 ## Step 4: Run, GREEN
 
@@ -150,25 +203,35 @@ end
 bundle exec rspec spec/blueprints/satisfaction_blueprint_spec.rb
 ```
 
-## Step 5: Eager-load to keep query count bounded
+## Step 5: Extend `set_component` eager-load
 
-In `app/controllers/components_controller.rb`, the `set_component`
-method already eager-loads many associations. Verify
-`rules: { satisfies: :reviews, satisfied_by: :reviews }` (or equivalent)
-is part of the eager-load so we don't N+1 on the Satisfies panel.
+Read `app/controllers/components_controller.rb#set_component` (lines
+510-519). The existing eager-load includes
+`rules: [:reviews, :disa_rule_descriptions, ...]` but does NOT include
+`satisfies` / `satisfied_by` with their own `:reviews`.
 
-If not, add it:
+Extend it:
 
 ```ruby
 @component = Component.eager_load(
-  rules: [..., satisfies: :reviews, satisfied_by: :reviews]
+  rules: [
+    :reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+    :additional_answers,
+    { satisfies: :reviews },        # ← added
+    { satisfied_by: :reviews },     # ← added
+    { satisfies: :srg_rule },
+    { satisfied_by: :srg_rule },
+    { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }
+  ]
 ).find_by(id: params[:id])
 ```
 
-Run the existing query-performance spec to confirm:
+**Verification**: run the new perf assertion (Step 3 above) and the
+existing performance spec:
 
 ```bash
 bundle exec rspec spec/models/query_performance_spec.rb
+bundle exec rspec spec/models/rule_as_json_performance_spec.rb
 ```
 
 ## Step 6: Failing spec — frontend
@@ -190,6 +253,15 @@ describe("RuleSatisfactions — PR #717 comment count badges", () => {
     satisfied_by: [],
   };
 
+  // RuleSatisfactions also requires `component` and `projectPrefix` props.
+  // Mount helper provides minimal valid values so the spec doesn't fail
+  // Vue prop validation before the badge logic is reached.
+  const mountWith = (rule, readOnly = false) =>
+    mount(RuleSatisfactions, {
+      localVue,
+      propsData: { rule, readOnly, component: { id: 8, prefix: "CNTR-01" }, projectPrefix: "CNTR-01" },
+    });
+
   it("renders a pending-count badge on each satisfies row that has comments", () => {
     const rule = {
       ...baseRule,
@@ -198,10 +270,7 @@ describe("RuleSatisfactions — PR #717 comment count badges", () => {
         { id: 100, rule_id: "000100", srg_id: "SRG-Y", pending_comment_count: 0, total_comment_count: 0 },
       ],
     };
-    const w = mount(RuleSatisfactions, {
-      localVue,
-      propsData: { rule, readOnly: false },
-    });
+    const w = mountWith(rule);
     // Row with comments shows count badge
     expect(w.text()).toMatch(/3 pending/i);
     // Row without comments does NOT show a badge

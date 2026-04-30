@@ -1,6 +1,6 @@
 # Task 27: Cross-rule smoke test scenarios + Task 99 acceptance update
 
-**Depends on:** 23, 24, 25, 26
+**Depends on:** 23, 24 (NOT 25, 26 — those deferred to a follow-up phase per the 2026-04-29 plan review)
 **Estimate:** 30 min Claude-pace (15 min for the Task 99 doc edit + 15 min for ad-hoc smoke run)
 **File touches:**
 - `docs/plans/PR717-public-comment-review/99-final-test-sweep-and-acceptance.md` (extend)
@@ -22,16 +22,14 @@ exercise the cross-rule UI without manual setup:
 
 ```ruby
 # Inside the Container Platform comment-seed block, after the existing
-# Reviews are created:
+# Reviews are created. Use the same HABTM push pattern the surrounding
+# seed code uses (see db/seeds.rb:262 for reference):
 if container_component.rules.count >= 6
   baseline_rule = container_component.rules.order(:rule_id).first  # rule_a
   implementation_rule = container_component.rules.order(:rule_id).limit(6).last
 
-  unless baseline_rule.satisfied_by.include?(implementation_rule)
-    RuleSatisfaction.find_or_create_by!(
-      rule_id: baseline_rule.id,
-      satisfied_by_rule_id: implementation_rule.id
-    )
+  if implementation_rule && baseline_rule.satisfied_by.exclude?(implementation_rule)
+    baseline_rule.satisfied_by << implementation_rule
 
     # Pre-existing comment on the implementation rule so the baseline
     # rule's Satisfies panel shows a "comments here" badge for cross-rule
@@ -41,9 +39,9 @@ if container_component.rules.count >= 6
       comment: 'Implementation rule has its own concern about cipher list configuration.',
       section: 'check_content', triage_status: 'pending'
     )
-  end
 
-  puts '  Seeded baseline ↔ implementation satisfies link with cross-rule comments'
+    puts '  Seeded baseline ↔ implementation satisfies link with cross-rule comments'
+  end
 end
 ```
 
@@ -52,10 +50,15 @@ end
 Add a new subsection §6.7 — Cross-rule scenarios:
 
 ```markdown
-### 6.7 Cross-rule comment flows (PR #717 Tasks 23-26)
+### 6.7 Cross-rule comment flows (PR #717 Tasks 23, 24)
 
 These scenarios exercise the comments-as-objects philosophy + the
-existing satisfies relationship as discoverability surface.
+existing satisfies relationship as discoverability surface. Tasks 25
+and 26 (admin force-withdraw, admin move-to-rule) are deferred to a
+follow-up phase; for those, see
+`docs/runbook-public-comment-admin-actions.md` console operations and
+the smoke scenarios at §6.7.4 / §6.7.6 below covering the runbook
+actions instead of UI buttons.
 
 #### 6.7.1 Satisfies panel shows comment counts (Task 23)
 
@@ -92,58 +95,56 @@ Try each invalid case and confirm the server rejects:
 - Cross-component canonical: server returns 422 with a friendly message
 - Chained duplicate (canonical itself is a duplicate): server returns 422
 
-#### 6.7.4 Admin force-withdraw (Task 25)
+#### 6.7.4 Admin force-withdraw via runbook console (deferred Task 25)
 
-1. Sign in as a project admin of Container Platform.
-2. Open a pending comment in the triage modal.
-3. Open the "Admin actions" disclosure.
-4. Click "Force-withdraw" → audit comment field appears.
-5. Enter a reason (try blank first — Confirm should be disabled).
-6. Confirm → comment row updates to "Withdrawn", with admin
-   attribution shown (adjudicated_by_id = admin).
-7. Verify the audit log on the comment shows the admin override with
-   the reason text.
+UI is deferred. Verify the console procedure in
+`docs/runbook-public-comment-admin-actions.md §1` works against the
+seed data:
 
-#### 6.7.5 Admin force-withdraw permission (Task 25)
+1. Open `bundle exec rails console` as a user with admin role.
+2. Run the runbook §1 snippet against a seeded pending comment.
+3. Verify the comment row in the triage queue now shows "Withdrawn"
+   status with admin attribution.
+4. Run `Review.find(<id>).audits.last.comment` — confirm the audit
+   log captures the reason text.
 
-1. Sign in as an author (not admin) on Container Platform.
-2. Open the triage modal.
-3. Confirm the "Admin actions" disclosure is NOT visible.
-4. Try the endpoint directly via curl with the author's session →
-   server returns 403.
+#### 6.7.5 Admin force-withdraw — non-admin protection
 
-#### 6.7.6 Admin move-to-rule + replies follow parent (Task 26)
+The runbook authorization check (`admin.can_admin_project?(...)`)
+must stop a non-admin from running the same procedure:
 
-1. As admin, find a comment that has a reply (the seeded
-   `triage_set_by` triager-response counts).
-2. Open the triage modal → Admin actions → "Move to rule".
-3. Pick a different rule in the same component (the picker should
-   only show same-component rules; cross-component picks are
-   prevented).
-4. Provide an audit comment, confirm.
-5. Refresh both the source rule's reviews thread and the target
+1. As an `author`-role user, open the rails console and attempt the
+   runbook §1 commands.
+2. Confirm the `unless admin.can_admin_project?(...)` guard raises
+   "Not authorized" before any update happens.
+
+#### 6.7.6 Admin move-to-rule via runbook console (deferred Task 26)
+
+UI is deferred. Verify the console procedure in runbook §2:
+
+1. Pick a seeded comment that has at least one reply.
+2. Run runbook §2's `move_subtree` snippet (children-first walk
+   inside a transaction) to move the parent + replies to a different
+   rule in the same component.
+3. Refresh both the source rule's reviews thread and the target
    rule's reviews thread:
    - Source no longer shows the comment OR its reply
    - Target shows BOTH the comment + the reply, with the thread
      intact
-6. Open the audit log on the moved comment + reply — verify the move
-   is recorded on each.
+4. Confirm the `responding_to_must_be_same_rule` validator did NOT
+   reject during the move (children-first ordering satisfied it).
+5. Note: per runbook §2, `rule_id` is NOT in `vulcan_audited only:`
+   today — when Task 26 ships in a follow-up phase, the audit list
+   is extended.
 
-#### 6.7.7 Move-to-rule validation (Task 26)
-
-- Same-rule target: rejected
-- Cross-component target: rejected
-- Missing target rule (deleted): 404
-- Blank audit comment: rejected
-
-#### 6.7.8 Move-to-rule preserves triage state (Task 26)
+#### 6.7.7 Move-to-rule preserves triage state (deferred Task 26)
 
 1. Pick a comment whose triage_status is `concur` and adjudicated_at is set.
-2. Move it to a different rule in the same component.
+2. Use runbook §2 to move it to a different rule in the same component.
 3. Verify on the target rule: triage_status, adjudicated_at, and
    adjudicated_by_id are unchanged. Only rule_id changed.
 
-#### 6.7.9 Mid-review relationship change (regression scenario)
+#### 6.7.8 Mid-review relationship change (regression scenario)
 
 This is the scenario that originally surfaced the cross-rule design
 question. Verify our chosen design (comments-as-objects, no auto-
@@ -163,23 +164,21 @@ inheritance) behaves predictably:
 
 ## Step 3: Update Task 99 acceptance criteria header
 
-Replace:
-- `[ ] All 22 implementation tasks are committed and marked DONE`
+(Already updated to reference 25 tasks — 1-22 + 23, 24, 27 — when the
+plan files were tightened on 2026-04-30. Tasks 25 + 26 deferred to a
+follow-up phase per the agent-review pass; the runbook covers their
+console procedures.)
 
-With:
-- `[ ] All 26 implementation tasks (1-22 + 23-26) are committed and marked DONE`
+## Step 4: Confirm F1/F2/F3 follow-up framing
 
-(Task 27 is itself the smoke test + acceptance update, so it's
-self-referential — its DONE state coincides with running the smoke
-successfully.)
+Verify the Task 99 "Live-test follow-ups" section has all three
+deferrals documented:
+- **F1**: STIG/SRG dropdowns to FilterDropdown (cross-cutting, deferred)
+- **F2**: Turbolinks Vue pack-mount race proper fix (workaround in place)
+- **F3**: Admin comment-object UI (Tasks 25 + 26 — runbook covers v1)
 
-## Step 4: Move F1/F2 follow-ups firmly to v2
-
-In the existing "Live-test follow-ups" section of Task 99, change the
-"deferred, not merge-blocking" framing for F1 (STIG/SRG dropdowns) and
-F2 (turbolinks pack-mount race) to "**v2 follow-ups, not part of PR
-#717**" — they're cross-cutting infrastructure, not satisfies-comment
-core like Tasks 23-26 are.
+These are NOT merge-blocking for PR #717. They're explicit follow-ups
+for a future phase.
 
 ## Step 5: Commit + DONE rename
 
@@ -210,8 +209,9 @@ Authored by: Aaron Lippold<lippold@gmail.com>"
 
 - [ ] Container Platform seeds include a baseline ↔ implementation
       satisfies link with cross-rule comments
-- [ ] Task 99 §6.7 documents 9 cross-rule smoke scenarios
-- [ ] All 9 scenarios pass during a manual smoke run
-- [ ] F1/F2 framed as v2 follow-ups (not blocking merge)
-- [ ] Final acceptance criteria header updated to reference Tasks 1-26
+- [ ] Task 99 §6.7 documents 8 cross-rule smoke scenarios (6.7.1–6.7.8)
+- [ ] All 8 scenarios pass during a manual smoke run
+- [ ] F1/F2/F3 documented as follow-up-phase items (not blocking merge);
+      F3 cross-references the admin runbook for console procedures
+- [ ] Final acceptance criteria header references 25 tasks (1-22 + 23, 24, 27)
 - [ ] Smoke test runs cleanly end-to-end before PR is marked ready to merge

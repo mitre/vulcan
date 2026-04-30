@@ -196,7 +196,7 @@ Implements the public-comment-review workflow described in
 - **Commenter feedback loop**: per-section `💬` icons in the rule
   editor, CommentComposerModal with dedup banner, "My Comments" page on
   user profile, in-app status visibility (no outbound email — deferred
-  to v2)
+  to a follow-up phase)
 - **Comment phase enum on Component**: draft / open / adjudication / final
 
 Container SRG–ready. ~25 industry commenters can post; project team
@@ -232,7 +232,10 @@ Authored by: Aaron Lippold<lippold@gmail.com>"
 
 The PR is ready to merge when:
 
-- [ ] All 22 implementation tasks are committed and marked DONE
+- [ ] All 26 implementation tasks (1-22 + 23, 24, 27, 28) are committed and marked DONE
+      (Tasks 25 + 26 deferred to a follow-up phase — admin force-withdraw
+       and admin move-to-rule are documented as console operations in
+       `docs/runbook-public-comment-admin-actions.md` for this phase.)
 - [ ] `bundle exec parallel_rspec spec/` is 0 failures
 - [ ] `pnpm vitest run` is 0 failures
 - [ ] `bundle exec rubocop` is 0 offenses
@@ -244,7 +247,7 @@ The PR is ready to merge when:
 - [ ] PR description (Step 9) accurately summarizes the bundle and references the design doc + plan
 - [ ] Container SRG team has been notified the workflow is live (out-of-band — plan agent doesn't post on Slack)
 
-## What v2 picks up (out of scope for this PR)
+## What a follow-up phase picks up (out of scope for this PR)
 
 - Outbound email + opt-in UI + bounce handling + List-Unsubscribe headers
 - Auto-advance comment phase on date boundaries (cron job)
@@ -254,7 +257,7 @@ The PR is ready to merge when:
 - Bulk triage actions
 - "Public comment period" as a first-class entity (vs. an attribute on Component)
 
-These are tracked in design doc §5 (Out of Scope / YAGNI). When v2 starts, create a new plan folder `docs/plans/v2-comment-email-and-export/`.
+These are tracked in design doc §5 (Out of Scope / YAGNI). When the follow-up phase starts, create a new plan folder `docs/plans/v2-comment-email-and-export/`.
 
 ## Live-test follow-ups (deferred, not merge-blocking)
 
@@ -262,22 +265,47 @@ Discovered while live-testing the Container SRG comment window. Tracked
 here so we don't fragment into beads. Merge of PR #717 is NOT blocked
 on these.
 
-### F1: Migrate STIG + SRG list/show dropdowns to `FilterDropdown`
+### F3: Admin comment-object operations — UI promotion (deferred from Tasks 25 + 26)
 
-The shared `app/javascript/components/shared/FilterDropdown.vue` was
-introduced in PR #717 (commit `4f1c571`) to replace `<b-form-select>`
-filter dropdowns that clip at viewport edges. The PR migrated three
-consumers: `ComponentComments`, `RuleReviews`, `UserComments`. The
-STIG and SRG list/show pages still use `<b-form-select>` for their
-filter dropdowns and have the same clipping behavior. Migrate them.
+During the design-and-plan session for cross-rule comment handling, we
+considered building admin UI for force-withdraw (Task 25) and
+move-to-rule (Task 26). Three independent reviewers (Plan agent, design
+code-reviewer, plan-quality reviewer) converged on deferring these:
 
-- [ ] Identify every `<b-form-select>` use in the `stigs.js` / `stig.js`
-      / `security_requirements_guides.js` packs
-- [ ] Replace each with `FilterDropdown`
-- [ ] Verify no clipping at narrow viewports (resize Playwright window
-      to 1440x900 minimum, also test 768 + 375)
-- [ ] All affected vitest specs pass
-- [ ] No regressions on existing tests
+- The events that warrant them (spam, PII, misplaced comments needing
+  reassignment) are rare during a 1-2 day public comment window with
+  vetted industry commenters.
+- The console fallback is auditable via `VulcanAuditable` +
+  `audit_comment` setter — federal compliance is satisfied.
+- Building the UI would consume ~90 min that's better spent on the
+  open original tasks (19, 21, 22) which directly affect commenter
+  visibility (banner, rules-list signal, admin phase form).
+
+Documented in this phase: `docs/runbook-public-comment-admin-actions.md`
+covers force-withdraw, move-to-rule (children-first walk to satisfy the
+`responding_to_must_be_same_rule` validator), hard-delete (rare /
+PII), and recovery patterns.
+
+When this gets promoted to UI in a follow-up phase:
+- [ ] Add `:rule_id` to `Review`'s `vulcan_audited only:` list — the
+      audit gem currently only audits `triage_status`, `adjudicated_by_id`,
+      `duplicate_of_review_id`, `comment` (review.rb:38). Move-to-rule
+      that ONLY changes `rule_id` would otherwise produce no audit
+      record. Federal compliance hazard.
+- [ ] Resolve the concurrent-reply race in move-to-rule via either
+      `SELECT FOR UPDATE` on parent + descendants, or a DB-level CHECK
+      constraint enforcing `reply.rule_id == parent.rule_id`.
+- [ ] Force-withdraw on a comment that has replies: decide whether
+      replies cascade-withdraw (clean visual) or stay (preserves
+      commenter intent). Document either way.
+
+### F1: ~~STIG/SRG dropdowns~~ — PROMOTED to in-scope (Task 28)
+
+Originally deferred. Aaron 2026-04-30: visual inconsistency between the
+already-migrated comment-workflow dropdowns and the rest of the app
+looks unprofessional during the public showing. Promoted to Task 28
+("Migrate filter dropdowns to FilterDropdown — STIG/SRG + visible-page
+sweep") in this PR. See task file for the migration list.
 
 ### F2: Turbolinks Vue pack-mount race — proper fix
 

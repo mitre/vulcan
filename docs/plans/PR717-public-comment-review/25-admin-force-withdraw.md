@@ -40,7 +40,7 @@ Force-withdraw is an admin-only override that flips the comment to
   effectively closed (admin took final action)
 - **Even on already-adjudicated comments** — admins can override
   prior triage state in extreme cases
-- **No commenter notification in v1** — email is out of scope. The
+- **No commenter notification in this phase** — email is out of scope. The
   audit log captures the action for compliance.
 - **UI placement**: admin actions section in CommentTriageModal,
   collapsed by default with a clear "Admin actions" disclosure so
