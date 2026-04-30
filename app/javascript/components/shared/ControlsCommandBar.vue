@@ -71,6 +71,18 @@
         <b-button :href="`/components/${component.id}/triage`" variant="outline-secondary">
           <b-icon icon="chat-left-text" /> Triage
         </b-button>
+        <!-- Component Settings — admin-only dedicated page for typed
+             configuration (Identity, PoC, Public Comment Period).
+             Replaces the "Update Details" button that lived inside
+             the Details slideover. -->
+        <b-button
+          v-if="canAdmin"
+          :href="`/components/${component.id}/settings`"
+          variant="outline-secondary"
+          aria-label="Component settings"
+        >
+          <b-icon icon="gear" /> Settings
+        </b-button>
       </b-button-group>
       <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
     </template>
@@ -155,6 +167,9 @@ export default {
   computed: {
     canEdit() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    canAdmin() {
+      return this.effectivePermissions === "admin";
     },
     canRelease() {
       return this.effectivePermissions === "admin";

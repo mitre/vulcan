@@ -72,6 +72,8 @@ Rails.application.routes.draw do
   # Public-comment-review triage table (PR #717) — MUST be before :stig_id catch-all
   get '/components/:id/comments', to: 'components#comments'
   get '/components/:id/triage',   to: 'components#triage', as: :component_triage
+  # Component admin settings page (PR #717 Task 22) — MUST be before :stig_id catch-all
+  get '/components/:id/settings', to: 'components#settings', as: :component_settings
   get '/projects/:id/comments',   to: 'projects#comments'
   get '/projects/:id/triage',     to: 'projects#triage', as: :project_triage
   # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /

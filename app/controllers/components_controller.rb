@@ -11,13 +11,13 @@ class ComponentsController < ApplicationController
   NO_FILE_PROVIDED = 'No file provided'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
-  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage]
+  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
   before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
-  before_action :set_project, only: %i[show create history triage]
-  before_action :set_component_permissions, only: %i[show triage]
+  before_action :set_project, only: %i[show create history triage settings]
+  before_action :set_component_permissions, only: %i[show triage settings]
   before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
-  before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_admin_component, only: %i[destroy settings]
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
@@ -294,6 +294,23 @@ class ComponentsController < ApplicationController
       end
       # Explicit 406 for non-HTML formats so the catch-all StandardError
       # rescue doesn't turn a missing-template into a 500.
+      format.any { head :not_acceptable }
+    end
+  end
+
+  # Component admin settings page (PR #717 Task 22). Dedicated full-page
+  # admin surface for typed lifecycle/configuration fields — Identity,
+  # Point of Contact, Public Comment Period — separated from rule-editor
+  # context. Free-form metadata + additional questions still live on
+  # their own slideovers; future phases can migrate them in here too.
+  #
+  # Admin-only via authorize_admin_component before_action.
+  def settings
+    respond_to do |format|
+      format.html do
+        @component_json = ComponentBlueprint.render(@component, view: :editor, **blueprint_render_options)
+        @project_json = @component.project.to_json
+      end
       format.any { head :not_acceptable }
     end
   end

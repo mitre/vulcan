@@ -33,11 +33,18 @@
         <div>
           <p class="mb-2"><strong>PoC Email:</strong> {{ component.admin_email || "Not set" }}</p>
         </div>
-        <UpdateComponentDetailsModal
+        <!-- Edit affordance moved to the dedicated Settings page
+             (header gear icon, admin-only). Details slideover is now
+             a pure read-only summary. -->
+        <b-button
           v-if="canAdmin"
-          :component="component"
-          @componentUpdated="$emit('component-updated')"
-        />
+          :href="`/components/${component.id}/settings`"
+          variant="outline-primary"
+          size="sm"
+          class="mt-2"
+        >
+          <b-icon icon="gear" /> Open Component Settings
+        </b-button>
       </div>
     </b-sidebar>
 
@@ -200,7 +207,6 @@ import History from "./History.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
 import RuleReviews from "../rules/RuleReviews.vue";
 import RuleHistories from "../rules/RuleHistories.vue";
-import UpdateComponentDetailsModal from "../components/UpdateComponentDetailsModal.vue";
 import UpdateMetadataModal from "../components/UpdateMetadataModal.vue";
 import AddQuestionsModal from "../components/AddQuestionsModal.vue";
 
@@ -211,7 +217,6 @@ export default {
     RuleSatisfactions,
     RuleReviews,
     RuleHistories,
-    UpdateComponentDetailsModal,
     UpdateMetadataModal,
     AddQuestionsModal,
   },

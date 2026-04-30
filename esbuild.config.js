@@ -15,6 +15,7 @@ const entryPoints = {
   project_component: "app/javascript/packs/project_component.js",
   project_triage: "app/javascript/packs/project_triage.js",
   component_triage: "app/javascript/packs/component_triage.js",
+  component_settings: "app/javascript/packs/component_settings.js",
   released_component: "app/javascript/packs/released_component.js",
   rules: "app/javascript/packs/rules.js",
   security_requirements_guides: "app/javascript/packs/security_requirements_guides.js",
