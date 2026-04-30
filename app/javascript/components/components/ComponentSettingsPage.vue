@@ -21,6 +21,60 @@
       </div>
 
       <b-form @submit.prevent="save">
+        <!-- ───── Public Comment Period ──────────────────────────── -->
+        <!-- Promoted to top section: this is the active workflow lifecycle
+             admins return to manage repeatedly, vs. Identity / PoC which
+             are usually set once at component creation. Page header above
+             already shows component name + version, so demoting Identity
+             does not lose orientation. -->
+        <b-card no-body class="mb-3">
+          <b-card-header class="bg-light">
+            <h2 class="h5 mb-0">Public Comment Period</h2>
+            <small class="text-muted"
+              >Lifecycle of the public-comment window. The banner at the top of the component page
+              reflects this state.</small
+            >
+          </b-card-header>
+          <b-card-body>
+            <b-form-group label="Phase" label-for="settings-comment-phase">
+              <b-form-radio-group
+                id="settings-comment-phase"
+                v-model="form.comment_phase"
+                :options="phaseOptions"
+                stacked
+                aria-label="Comment phase"
+              />
+            </b-form-group>
+            <b-form-row>
+              <b-col>
+                <b-form-group label="Start date" label-for="settings-comment-start">
+                  <b-form-input
+                    id="settings-comment-start"
+                    v-model="form.comment_period_starts_at"
+                    type="date"
+                  />
+                </b-form-group>
+              </b-col>
+              <b-col>
+                <b-form-group label="End date" label-for="settings-comment-end">
+                  <b-form-input
+                    id="settings-comment-end"
+                    v-model="form.comment_period_ends_at"
+                    type="date"
+                  />
+                </b-form-group>
+              </b-col>
+            </b-form-row>
+            <b-alert show variant="info" class="mb-0 small">
+              <strong>Draft</strong>: component is being authored — no public comments are accepted.
+              <strong>Open for comment</strong>: viewers can post comments and authors/admins triage
+              them. <strong>Adjudication</strong>: window is closed — no new public comments, but
+              triage continues. <strong>Final</strong>: disposition published — the component is
+              frozen for writes.
+            </b-alert>
+          </b-card-body>
+        </b-card>
+
         <!-- ───── Identity ────────────────────────────────────────── -->
         <b-card no-body class="mb-3">
           <b-card-header class="bg-light">
@@ -126,54 +180,6 @@
                 </b-form-group>
               </b-col>
             </b-form-row>
-          </b-card-body>
-        </b-card>
-
-        <!-- ───── Public Comment Period ──────────────────────────── -->
-        <b-card no-body class="mb-3">
-          <b-card-header class="bg-light">
-            <h2 class="h5 mb-0">Public Comment Period</h2>
-            <small class="text-muted"
-              >Lifecycle of the public-comment window. The banner at the top of the component page
-              reflects this state.</small
-            >
-          </b-card-header>
-          <b-card-body>
-            <b-form-group label="Phase" label-for="settings-comment-phase">
-              <b-form-radio-group
-                id="settings-comment-phase"
-                v-model="form.comment_phase"
-                :options="phaseOptions"
-                stacked
-                aria-label="Comment phase"
-              />
-            </b-form-group>
-            <b-form-row>
-              <b-col>
-                <b-form-group label="Start date" label-for="settings-comment-start">
-                  <b-form-input
-                    id="settings-comment-start"
-                    v-model="form.comment_period_starts_at"
-                    type="date"
-                  />
-                </b-form-group>
-              </b-col>
-              <b-col>
-                <b-form-group label="End date" label-for="settings-comment-end">
-                  <b-form-input
-                    id="settings-comment-end"
-                    v-model="form.comment_period_ends_at"
-                    type="date"
-                  />
-                </b-form-group>
-              </b-col>
-            </b-form-row>
-            <b-alert show variant="info" class="mb-0 small">
-              During <strong>Open</strong>, viewers can post comments and authors/admins triage
-              them. During <strong>Adjudication</strong>, no new comments are accepted but triage
-              continues. Commenters track status via the <em>My Comments</em> page on their profile
-              — outbound email is deferred to a follow-up phase.
-            </b-alert>
           </b-card-body>
         </b-card>
 
