@@ -86,12 +86,10 @@ FROM build-base AS build
 # and we need devDependencies (esbuild, sass-plugin, etc.) to build assets
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_WITHOUT="development:test" \
-    BUNDLE_FORCE_RUBY_PLATOFRM="true"
+    BUNDLE_WITHOUT="development:test"
 
 COPY --chown=1001:0 Gemfile Gemfile.lock ./
-RUN bundle config set force_ruby_platform true && \
-    bundle install && \
+RUN bundle install && \
     gem pristine ox --extensions && \
     bundle exec ruby -e "require 'ox'; puts Ox::VERSION" && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
