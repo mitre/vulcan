@@ -10,13 +10,11 @@
       <strong>{{ ruleDisplayedName }}</strong>
       <template v-if="!replyToReviewId">
         ·
-        <b-form-select
+        <FilterDropdown
           v-model="section"
           :options="sectionOptions"
-          size="sm"
-          class="d-inline-block ml-1"
-          style="width: auto"
           aria-label="Section to comment on"
+          class="ml-1 d-inline-block"
         />
       </template>
       <template v-else> · Replying to comment #{{ replyToReviewId }} </template>
@@ -54,12 +52,13 @@ import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import CommentDedupBanner from "./CommentDedupBanner.vue";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 
 const COMMENT_MAX = 4000;
 
 export default {
   name: "CommentComposerModal",
-  components: { CommentDedupBanner },
+  components: { CommentDedupBanner, FilterDropdown },
   mixins: [AlertMixin],
   props: {
     componentId: { type: [Number, String], required: true },
