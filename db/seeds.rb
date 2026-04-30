@@ -223,7 +223,8 @@ puts 'Creating Components...'
 
 photon3_v1r1 = seed_component(
   project: photon3, name: 'Photon OS 3', title: 'Photon OS 3 STIG Readiness Guide',
-  prefix: 'PHOS-03', based_on: gpos_srg, version: 1, release: 1
+  prefix: 'PHOS-03', based_on: gpos_srg, version: 1, release: 1,
+  admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com'
 )
 photon3_v1r1.reload
 photon3_v1r1.rules.update(locked: true)
@@ -248,7 +249,8 @@ photon4_v1r1.rules.update(locked: false)
 photon3_v1r1_overlay = seed_component(
   project: vsphere, name: photon3_v1r1.name, title: 'Photon OS 3 Overlay for vSphere',
   prefix: photon3_v1r1.prefix, based_on: photon3_v1r1.based_on,
-  component_id: photon3_v1r1.id
+  component_id: photon3_v1r1.id,
+  admin_name: 'vSphere Maintainer', admin_email: 'vsphere-team@example.com'
 )
 # Overlay components need rules duplicated from the parent component
 if photon3_v1r1_overlay.rules.empty?
@@ -260,17 +262,20 @@ photon3_v1r1_overlay.rules.update(locked: false)
 
 seed_component(
   project: vsphere, name: 'vCenter Perf', title: 'vCenter Performance Service STIG Readiness Guide',
-  prefix: 'VCPF-01', based_on: web_srg
+  prefix: 'VCPF-01', based_on: web_srg,
+  admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com'
 ).rules.update(locked: false)
 
 seed_component(
   project: vsphere, name: 'vCenter STS', title: 'vCenter STS Service STIG Readiness Guide',
-  prefix: 'VSTS-01', based_on: web_srg
+  prefix: 'VSTS-01', based_on: web_srg,
+  admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com'
 ).rules.update(locked: false)
 
 seed_component(
   project: vsphere, name: 'vCenter VAMI', title: 'vCenter VAMI Service STIG Readiness Guide',
-  prefix: 'VAMI-01', based_on: web_srg
+  prefix: 'VAMI-01', based_on: web_srg,
+  admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com'
 ).rules.update(locked: false)
 
 # Container Platform project (uses Container Platform SRG).
@@ -302,7 +307,9 @@ if dummy_project.components.count < 20
       description: rand < 0.5 ? "Test description #{n + 1}" : nil,
       prefix: 'zzzz-00',
       based_on: web_srg,
-      project: dummy_project
+      project: dummy_project,
+      admin_name: 'QA Test Maintainer',
+      admin_email: 'qa-team@example.com'
     )
     next unless c.persisted?
 
@@ -324,6 +331,36 @@ if dummy_project.components.count < 20
   end
 end
 puts 'Created Components'
+
+# Backfill PoC fields on any pre-existing components missing them. Necessary
+# because the dummy 20.times loop is gated on count < 20 + Component.duplicate
+# does not copy PoC, so legacy records wouldn't otherwise pick up admin_name/email.
+#
+# Pattern-aware: components whose name matches a known family get that family's
+# PoC (e.g. Photon OS 3 v1r2 dup gets "Photon OS Maintainer", not generic). Ensures
+# all versions of the same logical component share consistent PoC. Falls back to
+# generic "QA Test Maintainer" for anything unmatched (dummy hex-named filler).
+# Idempotent: rerun is a no-op once everything is populated.
+COMPONENT_POC_PATTERNS = [
+  [/Photon OS/i, { admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com' }],
+  [/vCenter/i, { admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com' }],
+  [/Container Platform/i,
+   { admin_name: 'Container Platform Maintainer', admin_email: 'platform-team@example.com' }]
+].freeze
+GENERIC_POC = { admin_name: 'QA Test Maintainer', admin_email: 'qa-team@example.com' }.freeze
+
+backfilled = Component.where(admin_name: [nil, '']).count
+if backfilled.positive?
+  puts "Backfilling PoC on #{backfilled} legacy components..."
+  Component.where(admin_name: [nil, '']).find_each do |c|
+    matched = COMPONENT_POC_PATTERNS.find { |pattern, _| c.name =~ pattern }
+    attrs = matched ? matched[1] : GENERIC_POC
+    # update_columns skips validations + callbacks (incl. audited) by design —
+    # this is bulk seed-time data fix, no audit-trail value.
+    c.update_columns(attrs) # rubocop:disable Rails/SkipsModelValidations
+  end
+  puts 'PoC backfill complete'
+end
 
 # ------------------------------------------------------------ #
 # Seeds for public-comment-review demo (PR #717)               #

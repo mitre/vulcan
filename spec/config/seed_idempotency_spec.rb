@@ -68,18 +68,48 @@ RSpec.describe 'seed file idempotency and completeness' do
     end
   end
 
-  # REQUIREMENT: seeded components should have representative PoC name + email
-  # so the Settings page demo looks realistic. Currently admin_name / admin_email
-  # are blank on most seed components.
-  describe 'component PoC fields' do
-    it 'sets admin_name on at least one seeded component' do
-      expect(seeds).to match(/admin_name:\s*['"]/),
-                       'expected at least one seeded component to have admin_name populated'
+  # REQUIREMENT: every seeded component must carry representative PoC name + email
+  # so the Settings page demo + projects/components pages render meaningfully
+  # across all projects (not just Container Platform / Photon OS 4). Caught live
+  # 2026-05-01 — projects 1 (Photon 3) and 5 (Nothing to See Here) had blank PoC.
+  describe 'component PoC coverage' do
+    let(:seed_component_calls) { seeds.scan(/seed_component\(.*?\n\)/m) }
+
+    it 'has at least one seed_component call (sanity check)' do
+      expect(seed_component_calls).not_to be_empty,
+                                          'static-analysis regex must match the seed_component invocations'
     end
 
-    it 'sets admin_email on at least one seeded component' do
-      expect(seeds).to match(/admin_email:\s*['"]/),
-                       'expected at least one seeded component to have admin_email populated'
+    it 'every seed_component call passes admin_name' do
+      missing = seed_component_calls.reject { |call| call.include?('admin_name:') }
+      expect(missing).to be_empty,
+                         "seed_component calls without admin_name:\n#{missing.join("\n---\n")}"
+    end
+
+    it 'every seed_component call passes admin_email' do
+      missing = seed_component_calls.reject { |call| call.include?('admin_email:') }
+      expect(missing).to be_empty,
+                         "seed_component calls without admin_email:\n#{missing.join("\n---\n")}"
+    end
+
+    it 'the dummy Component.create block includes admin_name' do
+      # The "Nothing to See Here" 20.times loop creates filler components via
+      # Component.create — those also need PoC so the demo has 100% coverage.
+      # Match the multi-line call by anchoring on a closing `)` at line start.
+      dummy_create = seeds[/Component\.create\(\s*\n.*?^\s*\)/m]
+      expect(dummy_create).to be_present, 'expected to find the dummy Component.create block'
+      expect(dummy_create).to include('admin_name:'),
+                              "dummy Component.create must include admin_name:\n#{dummy_create}"
+      expect(dummy_create).to include('admin_email:'),
+                              "dummy Component.create must include admin_email:\n#{dummy_create}"
+    end
+
+    it 'backfills PoC on legacy components that pre-date this seed pass' do
+      # Existing dummy components in dev DBs (created before PoC was seeded) must
+      # be backfilled so reseeding actually populates them — the dummy create
+      # block is gated on count < 20 so it doesn't re-run.
+      expect(seeds).to match(/Component\.where\(admin_name:\s*\[nil/).or(match(/admin_name:\s*\[nil,\s*['"]\s*['"]\]/)),
+                       'expected a backfill block for components missing admin_name'
     end
   end
 
