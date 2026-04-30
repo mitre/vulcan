@@ -3,89 +3,99 @@
     <b-card-header>
       <h5 class="mb-0"><b-icon icon="chat-left-text" class="mr-1" /> My Comments</h5>
     </b-card-header>
-
-    <!-- Filter row — left-aligned so the native <select> dropdown opens
-         well inside the viewport (placing it on the right edge of the
-         card-header pushes the dropdown off-screen on wide windows). -->
-    <div class="px-3 pt-3 pb-2">
-      <b-input-group size="sm" style="max-width: 320px">
-        <b-form-select
-          v-model="filterStatus"
-          :options="statusOptions"
-          aria-label="Filter by triage status"
-          @change="onFilterChanged"
-        />
+    <b-card-body>
+      <!-- Filter row. Uses <b-dropdown> instead of <b-form-select> because
+           a native <select>'s dropdown is browser-positioned and clips at
+           viewport edges. <b-dropdown> with boundary="viewport" and
+           default auto-flip stays inside the visible window. -->
+      <div class="d-flex align-items-center mb-3" style="gap: 0.5rem">
+        <b-dropdown
+          :text="currentStatusLabel"
+          variant="outline-secondary"
+          size="sm"
+          boundary="viewport"
+        >
+          <b-dropdown-item-button
+            v-for="option in statusOptions"
+            :key="option.value === null ? 'null' : option.value"
+            :active="filterStatus === option.value"
+            @click="setStatusFilter(option.value)"
+          >
+            {{ option.text }}
+          </b-dropdown-item-button>
+        </b-dropdown>
         <b-button
           v-b-tooltip.hover
           variant="outline-secondary"
+          size="sm"
           aria-label="Refresh"
           title="Refresh"
           @click="fetch"
         >
           <b-icon icon="arrow-clockwise" />
         </b-button>
-      </b-input-group>
-    </div>
+      </div>
 
-    <b-table
-      :items="rows"
-      :fields="fields"
-      :busy="loading"
-      sort-by="created_at"
-      :sort-desc="true"
-      hover
-      striped
-      small
-      stacked="md"
-      role="table"
-      aria-label="My comments"
-    >
-      <template #cell(rule_displayed_name)="{ item }">
-        <a :href="ruleHref(item)">{{ item.rule_displayed_name }}</a>
-      </template>
-      <template #cell(component_name)="{ item }">
-        <a :href="`/components/${item.component_id}`">{{ item.component_name }}</a>
-        <small class="text-muted d-block">{{ item.project_name }}</small>
-      </template>
-      <template #cell(section)="{ value }">
-        <SectionLabel :section="value" />
-      </template>
-      <template #cell(comment)="{ value }">
-        <span :title="value">{{ truncate(value, 80) }}</span>
-      </template>
-      <template #cell(created_at)="{ value }">
-        {{ friendlyDateTime(value) }}
-      </template>
-      <template #cell(triage_status)="{ item }">
-        <TriageStatusBadge :status="item.triage_status" :adjudicated-at="item.adjudicated_at" />
-      </template>
-      <template #cell(latest_activity_at)="{ value }">
-        <span v-if="value">{{ friendlyDateTime(value) }}</span>
-        <span v-else class="text-muted">—</span>
-      </template>
-      <template #table-busy>
-        <div class="text-center py-3"><b-spinner small /> Loading…</div>
-      </template>
-      <template #empty>
-        <div class="text-center py-5">
-          <b-icon icon="chat-left-text" class="text-muted mb-2" font-scale="2" />
-          <h6 class="mb-2">You have no comments yet</h6>
-          <p class="text-muted mb-0">
-            Add a comment on a component and you'll be able to track its triage status here.
-          </p>
-        </div>
-      </template>
-    </b-table>
+      <b-table
+        :items="rows"
+        :fields="fields"
+        :busy="loading"
+        sort-by="created_at"
+        :sort-desc="true"
+        hover
+        striped
+        small
+        stacked="md"
+        role="table"
+        aria-label="My comments"
+      >
+        <template #cell(rule_displayed_name)="{ item }">
+          <a :href="ruleHref(item)">{{ item.rule_displayed_name }}</a>
+        </template>
+        <template #cell(component_name)="{ item }">
+          <a :href="`/components/${item.component_id}`">{{ item.component_name }}</a>
+          <small class="text-muted d-block">{{ item.project_name }}</small>
+        </template>
+        <template #cell(section)="{ value }">
+          <SectionLabel :section="value" />
+        </template>
+        <template #cell(comment)="{ value }">
+          <span :title="value">{{ truncate(value, 80) }}</span>
+        </template>
+        <template #cell(created_at)="{ value }">
+          {{ friendlyDateTime(value) }}
+        </template>
+        <template #cell(triage_status)="{ item }">
+          <TriageStatusBadge :status="item.triage_status" :adjudicated-at="item.adjudicated_at" />
+        </template>
+        <template #cell(latest_activity_at)="{ value }">
+          <span v-if="value">{{ friendlyDateTime(value) }}</span>
+          <span v-else class="text-muted">—</span>
+        </template>
+        <template #table-busy>
+          <div class="text-center py-3"><b-spinner small /> Loading…</div>
+        </template>
+        <template #empty>
+          <div class="text-center py-5">
+            <b-icon icon="chat-left-text" class="text-muted mb-2" font-scale="2" />
+            <h6 class="mb-2">You have no comments yet</h6>
+            <p class="text-muted mb-0">
+              Add a comment on a component and you'll be able to track its triage status here.
+            </p>
+          </div>
+        </template>
+      </b-table>
 
-    <div v-if="total > perPage" class="d-flex justify-content-center my-2">
-      <b-pagination
-        v-model="page"
-        :total-rows="total"
-        :per-page="perPage"
-        aria-label="Pagination"
-        @input="fetch"
-      />
-    </div>
+      <div v-if="total > perPage" class="d-flex justify-content-center my-2">
+        <b-pagination
+          v-model="page"
+          :total-rows="total"
+          :per-page="perPage"
+          aria-label="Pagination"
+          @input="fetch"
+        />
+      </div>
+    </b-card-body>
   </b-card>
 </template>
 
@@ -134,6 +144,13 @@ export default {
         ...friendly,
       ];
     },
+    // The text shown on the dropdown trigger button — reflects the
+    // currently selected filter so the user sees the active option
+    // without opening the menu.
+    currentStatusLabel() {
+      const match = this.statusOptions.find((o) => o.value === this.filterStatus);
+      return match ? match.text : "All statuses";
+    },
   },
   mounted() {
     this.fetch();
@@ -152,6 +169,10 @@ export default {
     onFilterChanged() {
       this.page = 1;
       this.fetch();
+    },
+    setStatusFilter(value) {
+      this.filterStatus = value;
+      this.onFilterChanged();
     },
     async fetch() {
       this.loading = true;
