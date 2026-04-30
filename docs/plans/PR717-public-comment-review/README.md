@@ -280,6 +280,10 @@ While Aaron live-tested the Container SRG window, we shipped:
 - Per-section comment composer end-to-end (chain from icon → modal mount → reply targeting)
 - `data-turbolinks="false"` workaround on triage table rule links (turbolinks pack-mount race)
 
+### Testing surface improvements
+
+- **Dev seeds + factory traits** (commit `9ca407e`) — `viewer@example.com` / `author@example.com` / `reviewer@example.com` users (mirroring `admin@example.com`, password `12qwaszx!@QWASZX`) with project-tier memberships. Container Platform component seeded with PoC fields + `comment_phase: 'open'` + active comment-period dates; Photon OS 4 seeded with PoC + `comment_phase: 'draft'`. Idempotent (verified via two back-to-back `db:seed` runs). Factory traits (`:admin`, `:viewer`, `:author`, `:reviewer`, `:with_membership`) added to `spec/factories/users.rb` so test factories compose the same shape. Goal: 30-second login/logout role-switching loop for manual + Playwright testing.
+
 ---
 
 ## Status — what's tomorrow
