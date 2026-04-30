@@ -1,6 +1,3 @@
-# syntax=docker/dockerfile:1
-# check=error=true
-
 # =============================================================================
 # Vulcan Multi-Stage Dockerfile
 # =============================================================================
@@ -23,42 +20,42 @@ ARG NODE_VERSION=24.14.0
 # =============================================================================
 FROM registry.access.redhat.com/ubi9/ruby-33:1 AS base
 
-USER root
+USER 0
+RUN mkdir -p /rails /tmp/bundle && \
+    chown -R 1001:0 /rails /tmp/bundle && \
+    chmod -R g=u /rails /tmp/bundle
 WORKDIR /rails
 
 # Install base packages.
 # libvips removed — image_processing gem is commented out and ActiveStorage
-# is not used for file attachments. curl-minimal, libpq, and libyaml are already
+# is not used for file attachments. curl, libpq, and libyaml are already
 # present in the UBI Ruby base image, so only postgresql is installed here for
 # db:prepare.
+# check if can del postgres image later on
 RUN dnf install -y \
-      ca-certificates \
       postgresql && \
     dnf clean all && \
     rm -rf /var/cache/dnf
 
 # Install custom SSL certificates if provided (single layer)
-COPY certs/ /usr/local/share/ca-certificates/custom/
-RUN cd /usr/local/share/ca-certificates/custom && \
-    for cert in ./*.pem ./*.cer; do \
-      [ -f "$cert" ] && mv "$cert" "${cert%.*}.crt" || true; \
-    done && \
-    if ls ./*.crt 2>/dev/null | grep -q .; then \
-      update-ca-certificates; \
-    fi && \
-    rm -f /usr/local/share/ca-certificates/custom/README.md
+COPY certs/ /etc/pki/ca-trust/source/anchors/
+RUN  update-ca-trust && \
+     rm -f /etc/pki/ca-trust/source/anchors/*
 
 # Common environment for all stages
 ENV MALLOC_ARENA_MAX="2" \
     NODE_EXTRA_CA_CERTS="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" \
-    BUNDLE_PATH="/usr/local/bundle"
+    BUNDLE_USER_HOME="/tmp/bundle" \
+    BUNDLE_PATH="/tmp/bundle"
+
+USER 1001
 
 # =============================================================================
 # BUILD-BASE STAGE - Build tools + Node.js (shared by build and development)
 # =============================================================================
 FROM base AS build-base
 
-USER root
+USER 0
 
 # Install packages needed to build gems and node modules
 RUN dnf install -y \
@@ -78,13 +75,12 @@ RUN dnf install -y \
 # Install Node.js LTS using official binaries
 ARG NODE_VERSION
 ARG TARGETARCH
-RUN mkdir -p "${BUNDLE_PATH}" && \
-    ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    echo "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz" && \
     curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
     tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
     rm node.tar.xz && \
-    corepack enable && \
-    chown -R 1001:0 "${BUNDLE_PATH}" /rails
+    corepack enable
 
 USER 1001
 
@@ -139,32 +135,28 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
 # =============================================================================
 FROM build-base AS development
 
-USER root
-
 # Additional dev tools (build deps + Node.js already in build-base)
-RUN dnf install -y \
-      vim-enhanced \
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      vim \
       less && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Development environment
 ENV RAILS_ENV="development" \
     BUNDLE_WITHOUT="" \
     BUNDLE_DEPLOYMENT="0"
 
-USER 1001
-
 # Install all gems including dev/test
-COPY --chown=1001:0 Gemfile Gemfile.lock ./
+COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
 # Install node modules
-COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
+COPY package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile
 
 # Copy application code
-COPY --chown=1001:0 . .
+COPY . .
 
 # Create non-root user
 RUN groupadd --system --gid 1000 rails && \
