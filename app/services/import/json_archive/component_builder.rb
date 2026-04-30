@@ -26,7 +26,12 @@ module Import
           admin_name: @data['admin_name'],
           admin_email: @data['admin_email'],
           advanced_fields: @data['advanced_fields'] || false,
-          security_requirements_guide_id: srg.id
+          security_requirements_guide_id: srg.id,
+          # PR #717 — public-comment-review lifecycle. Skip when the field is
+          # absent so older backup archives without these fields still import.
+          comment_phase: @data['comment_phase'].presence || 'draft',
+          comment_period_starts_at: @data['comment_period_starts_at'],
+          comment_period_ends_at: @data['comment_period_ends_at']
         )
         component.skip_import_srg_rules = true
 

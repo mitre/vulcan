@@ -489,6 +489,114 @@ RSpec.describe Import::JsonArchiveImporter do
         expect(result).to be_success
       end
     end
+
+    # PR #717 — public-comment review workflow must survive backup/restore.
+    # Without this, a federal-compliance backup taken mid-review would lose
+    # all triage decisions, adjudication metadata, reply threading, and
+    # comment-phase state on restore.
+    context 'with PR-717 public-comment review lifecycle data' do
+      let_it_be(:lifecycle_project) { create(:project) }
+      let_it_be(:lifecycle_component) do
+        create(:component,
+               project: lifecycle_project,
+               comment_phase: 'open',
+               comment_period_starts_at: '2026-04-15T00:00:00Z',
+               comment_period_ends_at: '2026-04-30T00:00:00Z')
+      end
+      let_it_be(:lifecycle_commenter) { create(:user, name: 'Lifecycle Commenter') }
+      let_it_be(:lifecycle_triager) { create(:user, name: 'Lifecycle Triager') }
+
+      let_it_be(:lifecycle_top_review) do
+        Membership.find_or_create_by!(
+          user: lifecycle_commenter, membership: lifecycle_project
+        ) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(
+          user: lifecycle_triager, membership: lifecycle_project
+        ) { |m| m.role = 'author' }
+        Review.create!(
+          user: lifecycle_commenter, rule: lifecycle_component.rules.first,
+          action: 'comment', comment: 'TLS 1.2 EOL',
+          section: 'check_content',
+          triage_status: 'concur_with_comment',
+          triage_set_by: lifecycle_triager, triage_set_at: 1.day.ago,
+          adjudicated_at: 12.hours.ago, adjudicated_by: lifecycle_triager
+        )
+      end
+      let_it_be(:lifecycle_reply) do
+        Review.create!(
+          user: lifecycle_triager, rule: lifecycle_component.rules.first,
+          action: 'comment', comment: 'will fix in next revision',
+          responding_to_review_id: lifecycle_top_review.id
+        )
+      end
+      let_it_be(:lifecycle_dup_target) do
+        Review.create!(
+          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+          action: 'comment', comment: 'duplicate target'
+        )
+      end
+      let_it_be(:lifecycle_dup) do
+        Review.create!(
+          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+          action: 'comment', comment: 'duplicate source',
+          duplicate_of_review_id: lifecycle_dup_target.id,
+          triage_status: 'duplicate'
+        )
+      end
+
+      let_it_be(:lifecycle_zip) do
+        Export::Base.new(
+          exportable: lifecycle_component, mode: :backup, format: :json_archive
+        ).call.data
+      end
+
+      let(:lifecycle_target_project) { create(:project) }
+
+      it 'restores comment_phase + comment_period_*' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        expect(imported.comment_phase).to eq('open')
+        expect(imported.comment_period_starts_at).to be_present
+        expect(imported.comment_period_ends_at).to be_present
+      end
+
+      it 'restores triage_status + section on each comment' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        top = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'TLS 1.2 EOL' }
+        expect(top.triage_status).to eq('concur_with_comment')
+        expect(top.section).to eq('check_content')
+      end
+
+      it 'restores triage_set_by + adjudicated_by user references via email' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        top = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'TLS 1.2 EOL' }
+        expect(top.triage_set_by_id).to eq(lifecycle_triager.id)
+        expect(top.adjudicated_by_id).to eq(lifecycle_triager.id)
+        expect(top.triage_set_at).to be_present
+        expect(top.adjudicated_at).to be_present
+      end
+
+      it 'rebuilds reply threading (responding_to_review_id) using the new ids' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        all_reviews = imported.rules.flat_map(&:reviews)
+        parent = all_reviews.find { |r| r.comment == 'TLS 1.2 EOL' }
+        reply  = all_reviews.find { |r| r.comment == 'will fix in next revision' }
+        expect(reply.responding_to_review_id).to eq(parent.id)
+      end
+
+      it 'rebuilds duplicate_of cross-link using the new ids' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        all_reviews = imported.rules.flat_map(&:reviews)
+        target = all_reviews.find { |r| r.comment == 'duplicate target' }
+        dup    = all_reviews.find { |r| r.comment == 'duplicate source' }
+        expect(dup.duplicate_of_review_id).to eq(target.id)
+        expect(dup.triage_status).to eq('duplicate')
+      end
+    end
   end
 
   private

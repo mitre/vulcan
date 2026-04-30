@@ -64,6 +64,10 @@ module Export
           admin_name: @component.admin_name,
           admin_email: @component.admin_email,
           advanced_fields: @component.advanced_fields,
+          # PR #717 — public-comment-review lifecycle on the component
+          comment_phase: @component.comment_phase,
+          comment_period_starts_at: @component.comment_period_starts_at&.iso8601,
+          comment_period_ends_at: @component.comment_period_ends_at&.iso8601,
           created_at: @component.created_at&.iso8601,
           updated_at: @component.updated_at&.iso8601,
           based_on: {
@@ -176,17 +180,34 @@ module Export
 
       def serialize_reviews
         rules_collection.flat_map do |rule|
-          rule.reviews.order(:created_at).map do |review|
-            {
-              rule_id: rule.rule_id,
-              action: review.action,
-              comment: review.comment,
-              user_email: review.user&.email,
-              user_name: review.user&.name,
-              created_at: review.created_at&.iso8601
-            }
-          end
+          rule.reviews.order(:created_at).map { |review| serialize_review(review, rule) }
         end
+      end
+
+      # external_id is the original DB id used as a stable in-archive key so
+      # parent / duplicate cross-references can be re-linked on import without
+      # the original DB ids surviving (re-import generates fresh ids).
+      def serialize_review(review, rule)
+        {
+          external_id: review.id,
+          rule_id: rule.rule_id,
+          action: review.action,
+          comment: review.comment,
+          user_email: review.user&.email,
+          user_name: review.user&.name,
+          # PR #717 — public-comment-review lifecycle
+          section: review.section,
+          triage_status: review.triage_status,
+          triage_set_by_email: review.triage_set_by&.email,
+          triage_set_by_name: review.triage_set_by&.name,
+          triage_set_at: review.triage_set_at&.iso8601,
+          adjudicated_by_email: review.adjudicated_by&.email,
+          adjudicated_by_name: review.adjudicated_by&.name,
+          adjudicated_at: review.adjudicated_at&.iso8601,
+          responding_to_external_id: review.responding_to_review_id,
+          duplicate_of_external_id: review.duplicate_of_review_id,
+          created_at: review.created_at&.iso8601
+        }
       end
     end
   end
