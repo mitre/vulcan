@@ -130,7 +130,51 @@ DiffViewer uses inline `<option>` children rather than `:options`. The
 new FilterDropdown takes `:options` only; convert the inline options
 to a computed array.
 
-For example:
+**CRITICAL gotcha for baseComponent / diffComponent**: today these
+v-model an entire **component object** (not a primitive). FilterDropdown's
+`value` prop is typed `[String, Number, Boolean]` (see
+`shared/FilterDropdown.vue:46-51`). A drop-in swap will fail Vue prop
+validation.
+
+**Resolution: refactor to ID-based binding** + computed lookup. This
+is cleaner than widening FilterDropdown's prop type — keeps the
+shared component primitive-typed and the consumer responsible for
+maintaining an ID↔object mapping.
+
+```vue
+<!-- before (v-models the whole object) -->
+<b-form-select v-model="baseComponent">
+  <option v-for="comp in components" :key="comp.id" :value="comp">
+    {{ comp.name }}
+  </option>
+</b-form-select>
+
+<!-- after (v-models the ID, object resolved via computed) -->
+<FilterDropdown
+  v-model="baseComponentId"
+  :options="componentOptions"
+  aria-label="Base component for diff"
+/>
+
+<!-- in script -->
+data() { return { baseComponentId: null }; },
+computed: {
+  componentOptions() {
+    return this.components.map(c => ({ value: c.id, text: c.name }));
+  },
+  baseComponent() {
+    return this.components.find(c => c.id === this.baseComponentId);
+  },
+},
+```
+
+Then update every consumer of `this.baseComponent` (e.g., diff fetching,
+display) — they continue to work via the computed. Same pattern for
+`diffComponent` → `diffComponentId`.
+
+For `diffTheme` the existing v-model binds a string already, so this
+one is the simple drop-in:
+
 ```vue
 <!-- before -->
 <b-form-select v-model="diffTheme" class="form-select-sm">
@@ -153,9 +197,6 @@ computed: {
   },
 }
 ```
-
-Same conversion for `baseComponent` and `diffComponent` (currently
-`v-for` over component objects with inline `<option>` slot).
 
 ## Step 4: benchmarks/RuleList.vue
 

@@ -47,8 +47,11 @@ federal-compliance need; OSCAL is filed in Task 99's follow-ups.
   source for the export.
 - DISA reviewers' typical workflow: open the CSV in Excel,
   filter/sort by `triage_status`, generate disposition reports.
-- Authorization: project members with read access can export. Use
-  `authorize_viewer_component` (existing pattern).
+- Authorization: **author tier minimum** (`authorize_author_project`
+  or equivalent) — viewer-tier export is rejected to prevent
+  commenter-email scraping. Email column is admin-only opt-in via
+  `?include_email=true`. (Revised 2026-04-30 after agent review; see
+  PII handling section below.)
 
 ## Design decisions
 
@@ -80,7 +83,7 @@ federal-compliance need; OSCAL is filed in Task 99's follow-ups.
 | SRG ID | `review.rule.version` | `SRG-APP-000014-CTR-000035` |
 | Section | `review.section` (raw XCCDF key) | `check_content` |
 | Commenter Name | `review.user.name` | `Sarah K` |
-| Commenter Email | `review.user.email` | `sarahk@redhat.com` (project members only — see PII note below) |
+| Commenter Email | `review.user.email` (admin + `?include_email=true` only — see PII note below) | `sarahk@redhat.com` |
 | Comment | `review.comment` | `"TLS 1.2 EOL by 2025..."` |
 | Posted | `review.created_at` (ISO 8601) | `2026-04-26T10:00:00Z` |
 | Triage Status | `review.triage_status` (DISA vocab) | `concur_with_comment` |
@@ -92,20 +95,42 @@ federal-compliance need; OSCAL is filed in Task 99's follow-ups.
 | Adjudicated At | `review.adjudicated_at` | `2026-04-28T09:00:00Z` |
 | Duplicate Of | `review.duplicate_of_review_id` (if set) | `99` |
 
-### PII handling
+### PII handling — REVISED 2026-04-30 after agent review
 
-Commenter Email IS included in the CSV — DISA needs commenter
-identification for the formal disposition record. This is a
-deliberate departure from the in-app PII scrubbing
-(`Component#paginated_comments` excludes `author_email` from the JSON
-API, see component.rb:641-644 for the comment).
+The in-app `paginated_comments` deliberately omits `author_email` to
+prevent commenter-email scraping by anyone with read access (see
+component.rb:641-644 for the comment). The CSV export was originally
+going to deviate from that for the federal-compliance record — but
+authorization at viewer-tier reproduces the very leak the in-app
+scrubber prevents (viewers include external commenters who could
+download the whole roster).
 
-The export endpoint must be restricted to **project members** (the
-existing `authorize_viewer_component` already enforces this). Public
-endpoints / unauthenticated downloads NOT allowed.
+**Final decision (revised after agent review):**
+
+1. **Authorization tier raised from viewer to author**: use
+   `authorize_author_project` (or the controller's existing
+   triager-equivalent gate). Project members at viewer tier cannot
+   export. This blocks the scraping vector at the endpoint.
+
+2. **Email column is opt-in, admin-only**: the default CSV export
+   does NOT include `Commenter Email`. To include it, the request
+   must pass `?include_email=true` AND the user must satisfy
+   `current_user.can_admin_project?(@component.project)`. Without
+   admin role, the param is silently ignored and email is omitted
+   (server-side enforcement, not just UI hiding).
+
+3. **Audit logging always**: every export records who exported what,
+   when, and whether `include_email` was set. This satisfies the
+   federal-compliance "who has the email roster" question.
+
+The default-without-email export remains useful for the disposition
+record (DISA can match against their own commenter identity store via
+name + comment ID). The admin-only email column is for the rare cases
+where DISA explicitly needs the email roster as part of the formal
+record.
 
 Logging: write an audit entry when the export is generated, capturing
-exporter user_id + timestamp + component_id.
+exporter user_id + timestamp + component_id + `include_email` flag.
 
 ## Step 1: Failing spec — backend
 
@@ -121,11 +146,13 @@ RSpec.describe 'GET /components/:id/export?type=disposition_csv', type: :request
   let(:commenter) { create(:user, name: 'Sarah K', email: 'sarah@example.com') }
   let(:triager) { create(:user, name: 'Aaron Lippold') }
 
+  let(:viewer) { create(:user) }
+  let(:admin) { create(:user) }
   before do
-    Membership.create!(user: user, membership: project, role: 'viewer')
-    Membership.create!(user: commenter, membership: project, role: 'viewer')
+    Membership.create!(user: viewer, membership: project, role: 'viewer')
     Membership.create!(user: triager, membership: project, role: 'author')
-    sign_in user
+    Membership.create!(user: admin, membership: project, role: 'admin')
+    Membership.create!(user: commenter, membership: project, role: 'viewer')
   end
 
   let!(:c1) do
@@ -142,63 +169,100 @@ RSpec.describe 'GET /components/:id/export?type=disposition_csv', type: :request
                    triage_status: 'pending')
   end
 
-  it 'returns 200 with CSV content type and disposition headers' do
-    get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
-    expect(response).to have_http_status(:ok)
-    expect(response.content_type).to include('text/csv')
-    expect(response.body).to include('Comment ID,Rule,SRG ID,Section,')
+  context 'as author (triager tier — minimum allowed)' do
+    before { sign_in triager }
+
+    it 'returns 200 with CSV content type and disposition headers' do
+      get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
+      expect(response).to have_http_status(:ok)
+      expect(response.content_type).to include('text/csv')
+      expect(response.body).to include('Comment ID,Rule,SRG ID,Section,')
+    end
+
+    it 'OMITS the Commenter Email column by default' do
+      get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
+      expect(response.body).not_to include('Commenter Email')
+      expect(response.body).not_to include('sarah@example.com')
+    end
+
+    it 'IGNORES include_email=true for non-admin users (server-side enforcement)' do
+      get "/components/#{component.id}/export",
+          params: { type: 'disposition_csv', include_email: 'true' }
+      expect(response.body).not_to include('Commenter Email')
+      expect(response.body).not_to include('sarah@example.com')
+    end
+
+    it 'includes one row per top-level comment (replies collapsed into Triager Response)' do
+      get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
+      csv = CSV.parse(response.body, headers: true)
+      expect(csv.length).to eq(1)
+      row = csv.first
+      expect(row['Comment ID']).to eq(c1.id.to_s)
+      expect(row['Rule']).to eq("#{component.prefix}-#{rule.rule_id}")
+      expect(row['Triager Response']).to include('will fix')
+      expect(row['Triage Status']).to eq('concur_with_comment')
+      expect(row['Adjudicated']).to eq('true')
+    end
+
+    it 'filters by triage_status query param' do
+      Review.create!(rule: rule, user: commenter, action: 'comment',
+                     comment: 'pending one', triage_status: 'pending')
+      get "/components/#{component.id}/export",
+          params: { type: 'disposition_csv', triage_status: 'pending' }
+      csv = CSV.parse(response.body, headers: true)
+      expect(csv.length).to eq(1)
+      expect(csv.first['Triage Status']).to eq('pending')
+    end
+
+    it 'sets a sensible filename via Content-Disposition' do
+      get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
+      expect(response.headers['Content-Disposition']).to match(/disposition-matrix.*\.csv/)
+    end
   end
 
-  it 'includes one row per top-level comment (replies collapsed into Triager Response)' do
-    get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
-    csv = CSV.parse(response.body, headers: true)
-    expect(csv.length).to eq(1)  # only top-level
-    row = csv.first
-    expect(row['Comment ID']).to eq(c1.id.to_s)
-    expect(row['Rule']).to eq("#{component.prefix}-#{rule.rule_id}")
-    expect(row['Triager Response']).to include('will fix')
-    expect(row['Triage Status']).to eq('concur_with_comment')
-    expect(row['Adjudicated']).to eq('true')
+  context 'as admin with include_email=true' do
+    before { sign_in admin }
+
+    it 'INCLUDES the Commenter Email column' do
+      get "/components/#{component.id}/export",
+          params: { type: 'disposition_csv', include_email: 'true' }
+      csv = CSV.parse(response.body, headers: true)
+      expect(csv.first['Commenter Email']).to eq('sarah@example.com')
+    end
+
+    it 'OMITS the Commenter Email column when include_email is not set (default safe)' do
+      get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
+      expect(response.body).not_to include('Commenter Email')
+    end
   end
 
-  it 'includes commenter email (PII included for federal compliance record)' do
-    get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
-    csv = CSV.parse(response.body, headers: true)
-    expect(csv.first['Commenter Email']).to eq('sarah@example.com')
+  context 'as viewer (rejected — too loose for PII)' do
+    before { sign_in viewer }
+
+    it 'returns 403 — viewers cannot export disposition data' do
+      get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 
-  it 'filters by triage_status when query param is provided' do
-    Review.create!(rule: rule, user: commenter, action: 'comment',
-                   comment: 'pending one', triage_status: 'pending')
-    get "/components/#{component.id}/export",
-        params: { type: 'disposition_csv', triage_status: 'pending' }
-    csv = CSV.parse(response.body, headers: true)
-    expect(csv.length).to eq(1)
-    expect(csv.first['Triage Status']).to eq('pending')
+  context 'unauthenticated' do
+    it 'redirects to sign in' do
+      get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
+      expect(response).to redirect_to(new_user_session_path)
+    end
   end
 
-  it 'sets a sensible filename via Content-Disposition' do
-    get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
-    expect(response.headers['Content-Disposition']).to match(/disposition-matrix.*\.csv/)
-  end
-
-  it 'rejects unauthenticated access' do
-    sign_out user
-    get "/components/#{component.id}/export", params: { type: 'disposition_csv' }
-    expect(response).to redirect_to(new_user_session_path)
-  end
-
-  it 'logs an audit entry capturing exporter + component' do
-    expect { get "/components/#{component.id}/export", params: { type: 'disposition_csv' } }
-      .to change { /* audit table for the export action */ Audited::Audit.where(auditable_type: 'Component', action: 'export').count }
-      .by(1)  # adjust to match the audit pattern in Vulcan
+  it 'records an audit entry capturing exporter + include_email flag' do
+    sign_in admin
+    expect do
+      get "/components/#{component.id}/export",
+          params: { type: 'disposition_csv', include_email: 'true' }
+    end.to change { component.audits.count }.by_at_least(1)
+    latest = component.audits.last
+    expect(latest.user_id).to eq(admin.id)
   end
 end
 ```
-
-(Adapt the audit assertion to whatever auditing pattern Vulcan uses
-for export operations — check existing :csv export test for the
-established pattern.)
 
 ## Step 2: Backend implementation
 
@@ -212,12 +276,30 @@ end
 
 # Inside the case block:
 when :disposition_csv
+  # Server-side authorization: include_email is admin-only.
+  include_email = params[:include_email] == 'true' &&
+                  current_user.can_admin_project?(@component.project)
   csv_data = DispositionMatrixExport.generate(
     component: @component,
-    triage_status_filter: params[:triage_status]
+    triage_status_filter: params[:triage_status],
+    include_email: include_email
   )
   filename = "#{@component.project.name}-#{@component.prefix}-disposition-matrix-#{Date.current}.csv"
   send_data csv_data, type: 'text/csv', disposition: "attachment; filename=\"#{filename}\""
+end
+```
+
+Add a before_action to gate the disposition_csv export at author tier:
+
+```ruby
+before_action :authorize_author_for_disposition_export, only: %i[export]
+
+private
+
+def authorize_author_for_disposition_export
+  return unless params[:type].to_s == 'disposition_csv'
+  return if current_user.can_author_project?(@component.project)  # or equivalent
+  head :forbidden
 end
 ```
 
@@ -232,30 +314,37 @@ require 'csv'
 # One row per top-level review (responding_to_review_id IS NULL); reply
 # threads are collapsed into the Triager Response column.
 module DispositionMatrixExport
-  HEADERS = [
+  BASE_HEADERS = [
     'Comment ID', 'Rule', 'SRG ID', 'Section',
-    'Commenter Name', 'Commenter Email', 'Comment', 'Posted',
+    'Commenter Name', 'Comment', 'Posted',
     'Triage Status', 'Triaged By', 'Triaged At', 'Triager Response',
     'Adjudicated', 'Adjudicated By', 'Adjudicated At', 'Duplicate Of'
   ].freeze
 
-  def self.generate(component:, triage_status_filter: nil)
+  # `include_email: true` adds a Commenter Email column AFTER Commenter
+  # Name. Default is FALSE — viewer/author tier can't request it; admin
+  # must opt in explicitly via the controller's authorization gate.
+  def self.generate(component:, triage_status_filter: nil, include_email: false)
     reviews = top_level_reviews(component, triage_status_filter)
     replies_by_parent = load_replies(reviews.map(&:id))
+    headers = build_headers(include_email)
 
     CSV.generate do |csv|
-      csv << HEADERS
+      csv << headers
       reviews.each do |r|
         responses = (replies_by_parent[r.id] || [])
                       .sort_by(&:created_at)
                       .map { |x| x.comment.to_s.strip }
                       .reject(&:blank?)
                       .join("\n---\n")
-        csv << [
+        row = [
           r.id, "#{component.prefix}-#{r.rule.rule_id}",
           r.rule.version, r.section.to_s,
-          r.user&.name, r.user&.email, r.comment,
-          r.created_at.iso8601,
+          r.user&.name
+        ]
+        row << r.user&.email if include_email
+        row += [
+          r.comment, r.created_at.iso8601,
           r.triage_status,
           r.triage_set_by&.name, r.triage_set_at&.iso8601,
           responses,
@@ -263,8 +352,14 @@ module DispositionMatrixExport
           r.adjudicated_by&.name, r.adjudicated_at&.iso8601,
           r.duplicate_of_review_id
         ]
+        csv << row
       end
     end
+  end
+
+  def self.build_headers(include_email)
+    return BASE_HEADERS unless include_email
+    BASE_HEADERS.dup.insert(BASE_HEADERS.index('Comment'), 'Commenter Email')
   end
 
   def self.top_level_reviews(component, status_filter)
@@ -287,19 +382,25 @@ end
 
 ### 2c. Audit logging on export
 
-Inside the controller's `disposition_csv` branch, after generation:
+Inside the controller's `disposition_csv` branch, after generation.
+Component is `vulcan_audited` (component.rb:51), so `@component.audits`
+is always defined — no guard needed.
 
 ```ruby
 @component.audits.create!(
   user: current_user,
   action: 'export_disposition_csv',
-  audited_changes: { triage_status_filter: params[:triage_status] }
-) if defined?(@component.audits)
+  audited_changes: {
+    triage_status_filter: params[:triage_status],
+    include_email: include_email
+  }
+)
 ```
 
-(Adapt to Vulcan's existing audit pattern — `vulcan_audited` or
-similar. If no clean fit, fall back to `Rails.logger.info` with the
-exporter + component + timestamp.)
+(`include_email` should be a boolean computed earlier in the action
+from `params[:include_email] == 'true' && current_user.can_admin_project?(@component.project)`
+so the audit log records BOTH the user's request and the system's
+authorization decision.)
 
 ## Step 3: Frontend — download button
 
@@ -364,18 +465,19 @@ Standard pattern.
 ## Acceptance criteria
 
 - [ ] `:disposition_csv` accepted by `ComponentsController#export`
-- [ ] CSV has the locked column schema (16 columns in stable order)
+- [ ] CSV has the locked column schema (15 base columns; +1 if `include_email`)
 - [ ] One row per top-level comment; replies collapsed into Triager Response
 - [ ] Optional `?triage_status=` filter works
 - [ ] Filename includes project name + component prefix + date
-- [ ] Commenter Email IS included (federal compliance — explicit deviation from in-app PII scrubbing)
-- [ ] Authorization: viewers+ on the component can export; unauthenticated rejected
-- [ ] Audit entry recorded when export is generated
-- [ ] Frontend download button on `ComponentComments` triage panel
+- [ ] Authorization: **author tier minimum** — viewer-tier export rejected (403)
+- [ ] `include_email=true` adds the Commenter Email column ONLY for admin-tier users; non-admin requests with the param silently omit the column (server-side enforcement)
+- [ ] Default export omits `Commenter Email` regardless of role
+- [ ] Audit entry recorded on every export, capturing exporter user_id + component_id + triage_status_filter + include_email flag
+- [ ] Frontend download button on `ComponentComments` triage panel (visible to author+ only)
 - [ ] Button passes through the active triage_status filter
 - [ ] No vocabulary leaks (DISA terms in cells, friendly English in column headers only where it doesn't conflict with DISA naming)
 - [ ] All specs green
-- [ ] Manual smoke test passes (open in Excel, verify rows + filter)
+- [ ] Manual smoke test passes — verify each role tier (viewer rejected, author no-email, admin can opt-in to email)
 
 ## Out of scope (deferred)
 

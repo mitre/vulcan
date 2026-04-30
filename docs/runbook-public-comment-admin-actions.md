@@ -28,7 +28,12 @@ unless admin.can_admin_project?(review.rule.component.project)
   raise "Not authorized — must be project admin"
 end
 
-# Required: audit_comment setter (VulcanAuditable persists this on the next save)
+# Required: audit_comment setter (VulcanAuditable persists this on the next save).
+# Note: the model's auto_set_adjudicated_for_terminal_statuses callback
+# (review.rb:307-313) fires on save and will set adjudicated_at + adjudicated_by_id
+# to Time.current and review.user_id by default. The explicit setters below
+# OVERRIDE that default so adjudicated_by_id reflects the admin, not the original
+# commenter.
 review.audit_comment = "Admin force-withdraw: <reason — required>"
 review.update!(
   triage_status: 'withdrawn',
@@ -37,6 +42,14 @@ review.update!(
 )
 puts "Withdrew review #{review.id}; audit log: #{review.audits.last.comment.inspect}"
 ```
+
+**Note on replies**: this procedure withdraws ONLY the parent comment.
+Replies (`responding_to_review_id = review.id`) keep their existing
+`triage_status`. The thread visually shows "withdrawn parent +
+remaining replies" — usually fine, but if you need to also close the
+replies, loop them with `Review.where(responding_to_review_id: review.id).find_each`
+and apply the same withdraw pattern. Decide explicitly per case;
+cascade-on-withdraw is NOT automatic.
 
 **Verification:** the comment row in the triage queue should now show "Withdrawn" status; `review.audits.last.comment` should contain the audit reason.
 
@@ -48,7 +61,16 @@ puts "Withdrew review #{review.id}; audit log: #{review.audits.last.comment.insp
 
 **Authorization:** project administrator.
 
-**Important:** the model has a `responding_to_must_be_same_rule` validator that will reject if you move the parent without moving the replies. **Move children first OR run inside a transaction that defers the validator.**
+**Important:** the model has a `responding_to_must_be_same_rule`
+validator (review.rb:282) that reads the PARENT's current `rule_id`
+from the database. To satisfy it, **move the PARENT FIRST, then walk
+DOWN to the children.** That way each child's validator sees the
+parent already at the target rule.
+
+(Rationale: the parent's own `responding_to_review_id` is nil so the
+validator short-circuits when the parent itself is moved. Then each
+descendant sees parent.rule_id = target, child.rule_id = target —
+match.)
 
 ```ruby
 review = Review.find(<review_id>)
@@ -68,11 +90,12 @@ end
 
 reason = "Admin move-to-rule: <reason — required>"
 
-# Walk the reply tree CHILDREN-FIRST so the same-rule validator is satisfied.
+# Walk PARENT-FIRST so each child's responding_to_must_be_same_rule
+# validator sees the already-moved parent at the target rule.
 move_subtree = lambda do |r|
-  Review.where(responding_to_review_id: r.id).find_each { |child| move_subtree.call(child) }
   r.audit_comment = reason
   r.update!(rule_id: target_rule.id)
+  Review.where(responding_to_review_id: r.id).find_each { |child| move_subtree.call(child) }
 end
 
 ActiveRecord::Base.transaction do
@@ -81,6 +104,18 @@ end
 
 puts "Moved review #{review.id} (+ replies) to rule #{target_rule.id}"
 ```
+
+**Known limitations of this procedure (note before running):**
+- **Concurrent reply race**: if a viewer posts a new reply mid-walk
+  (after parent moves but before all descendants finish), the new
+  reply lands on the SOURCE rule pointing at a parent now on the
+  TARGET rule — orphaned cross-rule. Run moves outside active
+  comment-window peaks, or briefly lock the rule's review thread.
+- **Audit trail gap**: `vulcan_audited only:` (review.rb:38) does NOT
+  include `:rule_id` today. The move's audit comment still records
+  via VulcanAuditable, but the column-change diff is not captured.
+  When Task 26 ships in a follow-up phase, the audited list is
+  extended to include `:rule_id`.
 
 **Note:** `vulcan_audited only:` (review.rb:38) does NOT currently include `:rule_id`. If audit visibility on the move is required for compliance, add `:rule_id` to the audited list temporarily, perform the move, then revert if you don't want ongoing rule_id audits. (When Task 26 ships in a follow-up phase, we'll add rule_id to the audit list permanently.)
 

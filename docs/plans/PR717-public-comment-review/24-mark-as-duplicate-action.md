@@ -21,7 +21,7 @@ work for this task already exists**. Don't rebuild it.
 - `validate :no_self_duplicate_reference` (line 98) — forbids `id == duplicate_of_review_id`
 - `validate :duplicate_status_requires_target` (line 96) — forbids `triage_status='duplicate'` without a `duplicate_of_review_id`
 - `validate :duplicate_of_must_be_same_component` (line 100, body at lines 288-305) — same-component constraint
-- `before_validation :auto_set_adjudicated_for_terminal_statuses` (line 102, body at lines 307-313) — ALREADY auto-sets `adjudicated_at` when `triage_status` enters TERMINAL set, and `'duplicate'` is in TERMINAL (line 27). **No `effective_adjudicated_at` derivation needed** — `adjudicated_at` is set on the duplicate the moment it's marked.
+- `before_save :auto_set_adjudicated_for_terminal_statuses` (line 102, body at lines 307-313) — ALREADY auto-sets `adjudicated_at` when `triage_status` enters the `TERMINAL_AUTO_ADJUDICATE_STATUSES` set (review.rb:27), and `'duplicate'` is in that set. **No `effective_adjudicated_at` derivation needed** — `adjudicated_at` is set on the duplicate the moment it's marked.
 - `Review::TRIAGE_STATUSES` contains `'duplicate'`
 
 **Already implemented in `app/controllers/reviews_controller.rb` (do NOT re-add):**
@@ -57,7 +57,7 @@ work for this task already exists**. Don't rebuild it.
   server-side (existing `no_self_duplicate_reference` validator at
   review.rb:98).
 - **Adjudication on duplicate is automatic**: triage_status='duplicate'
-  is in `Review::TERMINAL_STATUSES` (review.rb:27), so
+  is in `Review::TERMINAL_AUTO_ADJUDICATE_STATUSES` (review.rb:27), so
   `auto_set_adjudicated_for_terminal_statuses` (lines 307-313) sets
   `adjudicated_at` on save. The triage table can show "Closed
   (Duplicate of #X)" by checking `triage_status='duplicate' &&
@@ -179,31 +179,59 @@ end
 The other failure modes (self-reference, cross-component, blank target)
 are ALREADY handled by existing validators. Don't re-implement.
 
-### 2b. Extend `Component#paginated_comments` search
+### 2b. Picker search — client-side filter (PRIMARY APPROACH)
 
-Currently the `q` param only matches `reviews.comment ILIKE` (component.rb:623-626).
-Extend so the picker can search by author name and rule displayed_name too:
+**Decision (after agent review):** keep the backend `q` filter narrow
+(comment text only — existing behavior at component.rb:623-626) and
+have `CanonicalCommentPicker.vue` do **client-side secondary
+filtering** on the loaded rows for author/rule matching.
 
-```ruby
-# Replace existing q-filter block in component.rb
-if query.present?
-  escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
-  scope = scope.left_joins(rule: { component: nil }, user: nil)
-               .where(
-                 'reviews.comment ILIKE :q OR users.name ILIKE :q OR ' \
-                 "(#{prefix.present? ? "'#{ActiveRecord::Base.sanitize_sql_like(prefix)}-' || " : ''}base_rules.rule_id) ILIKE :q",
-                 q: "%#{escaped}%"
-               )
-end
+Why client-side:
+
+- Backend SQL extension to join `users` + concat-prefix on `base_rules.rule_id`
+  is brittle (Postgres-specific `||`, fragile prefix interpolation,
+  multi-table left_joins on an already-joined scope). Risk-to-reward
+  is poor.
+- The picker fetches `per_page: 25` rows. Filtering 25 rows in JS by
+  author name + rule displayed_name is instant.
+- No backend change → no risk of regressing the existing triage queue
+  search behavior.
+
+In `CanonicalCommentPicker.vue`'s `filteredRows` computed, add the
+secondary filter:
+
+```javascript
+filteredRows() {
+  const q = this.query.toLowerCase().trim();
+  return this.rows
+    .filter((r) => r.id !== Number(this.excludeReviewId))
+    .filter((r) => r.triage_status !== "duplicate")
+    .filter((r) => {
+      if (!q) return true;
+      // Backend already filtered by comment text; widen client-side
+      // to also match author name + rule displayed_name.
+      return (
+        (r.comment || "").toLowerCase().includes(q) ||
+        (r.author_name || "").toLowerCase().includes(q) ||
+        (r.rule_displayed_name || "").toLowerCase().includes(q)
+      );
+    });
+}
 ```
 
-(Adapt to the actual table aliases used by AR; verify with `pp scope.to_sql` during TDD.)
+The `q` param still goes to the backend so we don't load all comments
+on the component; backend narrows by comment text, frontend widens to
+author/rule. If the user's search term is in the rule name but NOT in
+any comment, the backend may return 0 rows — to handle that case,
+ALSO call the picker's fetch with no `q` param when the user's search
+term is non-empty and yields 0 backend matches (a small "didn't find
+in comments — searching across all rule names" fallback). Optional
+polish; not required for v1.
 
-If the SQL gets messy, an acceptable simpler alternative: keep the
-backend filter narrow (comment text only) and have the picker do
-secondary client-side filtering on the loaded rows for author/rule
-matching. Either approach is fine; pick whichever is cleaner during
-implementation.
+**Out of scope** (deferred): extending the backend `q` filter to
+include author/rule. If the live window surfaces "I can't find this
+comment by author name even though I know it exists," promote to a
+follow-up.
 
 ### 2c. Validation error response pattern
 

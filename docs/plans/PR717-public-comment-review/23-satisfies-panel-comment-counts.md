@@ -210,21 +210,27 @@ Read `app/controllers/components_controller.rb#set_component` (lines
 `rules: [:reviews, :disa_rule_descriptions, ...]` but does NOT include
 `satisfies` / `satisfied_by` with their own `:reviews`.
 
-Extend it:
+Extend it. **IMPORTANT**: do NOT use multiple separate hashes for the
+same key (e.g. `{ satisfies: :reviews }` followed later by
+`{ satisfies: :srg_rule }`) — Rails' `eager_load` resolves duplicate
+keys to the LAST one wins, you'd silently lose `:reviews` or
+`:srg_rule`. Collapse to array values:
 
 ```ruby
 @component = Component.eager_load(
   rules: [
     :reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
     :additional_answers,
-    { satisfies: :reviews },        # ← added
-    { satisfied_by: :reviews },     # ← added
-    { satisfies: :srg_rule },
-    { satisfied_by: :srg_rule },
+    { satisfies: %i[reviews srg_rule] },        # ← extended (was just :srg_rule)
+    { satisfied_by: %i[reviews srg_rule] },     # ← extended (was just :srg_rule)
     { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }
   ]
 ).find_by(id: params[:id])
 ```
+
+(The pre-existing eager-load already had `{ satisfies: :srg_rule }`
+and `{ satisfied_by: :srg_rule }` — we're widening their values to
+array form so reviews ALSO load alongside srg_rule.)
 
 **Verification**: run the new perf assertion (Step 3 above) and the
 existing performance spec:
