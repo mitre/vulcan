@@ -59,18 +59,8 @@ USER 0
 
 # Install packages needed to build gems and node modules
 RUN dnf install -y \
-      gcc \
-      gcc-c++ \
-      git \
-      gnupg2 \
-      make \
       postgresql-devel \
       libyaml-devel \
-      pkgconf-pkg-config \
-      ruby-devel \
-      redhat-rpm-config \
-      xz \
-      zlib-devel && \
     dnf clean all && \
     rm -rf /var/cache/dnf
 
@@ -96,10 +86,13 @@ FROM build-base AS build
 # and we need devDependencies (esbuild, sass-plugin, etc.) to build assets
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_WITHOUT="development:test"
+    BUNDLE_WITHOUT="development:test" \
+    BUNDLE_FORCE_RUBY_PLATOFRM="true"
 
 COPY --chown=1001:0 Gemfile Gemfile.lock ./
-RUN bundle install && \
+RUN bundle config set force_ruby_platform true && \
+    bundle install && \
+    gem pristine ox --extensions && \
     bundle exec ruby -e "require 'ox'; puts Ox::VERSION" && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
