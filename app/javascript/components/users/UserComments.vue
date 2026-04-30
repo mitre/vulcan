@@ -4,26 +4,16 @@
       <h5 class="mb-0"><b-icon icon="chat-left-text" class="mr-1" /> My Comments</h5>
     </b-card-header>
     <b-card-body>
-      <!-- Filter row. Uses <b-dropdown> instead of <b-form-select> because
-           a native <select>'s dropdown is browser-positioned and clips at
-           viewport edges. <b-dropdown> with boundary="viewport" and
-           default auto-flip stays inside the visible window. -->
+      <!-- Filter row uses the shared FilterDropdown so the menu stays in
+           the visible window even near viewport edges (native <select>
+           dropdowns ignore Vue boundary props). -->
       <div class="d-flex align-items-center mb-3" style="gap: 0.5rem">
-        <b-dropdown
-          :text="currentStatusLabel"
-          variant="outline-secondary"
-          size="sm"
-          boundary="viewport"
-        >
-          <b-dropdown-item-button
-            v-for="option in statusOptions"
-            :key="option.value === null ? 'null' : option.value"
-            :active="filterStatus === option.value"
-            @click="setStatusFilter(option.value)"
-          >
-            {{ option.text }}
-          </b-dropdown-item-button>
-        </b-dropdown>
+        <FilterDropdown
+          v-model="filterStatus"
+          :options="statusOptions"
+          aria-label="Filter by status"
+          @input="onFilterChanged"
+        />
         <b-button
           v-b-tooltip.hover
           variant="outline-secondary"
@@ -107,10 +97,11 @@ import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
   name: "UserComments",
-  components: { TriageStatusBadge, SectionLabel },
+  components: { TriageStatusBadge, SectionLabel, FilterDropdown },
   mixins: [AlertMixin, DateFormatMixin],
   props: {
     userId: { type: [Number, String], required: true },
@@ -145,13 +136,6 @@ export default {
         ...friendly,
       ];
     },
-    // The text shown on the dropdown trigger button — reflects the
-    // currently selected filter so the user sees the active option
-    // without opening the menu.
-    currentStatusLabel() {
-      const match = this.statusOptions.find((o) => o.value === this.filterStatus);
-      return match ? match.text : "All statuses";
-    },
   },
   mounted() {
     this.fetch();
@@ -170,10 +154,6 @@ export default {
     onFilterChanged() {
       this.page = 1;
       this.fetch();
-    },
-    setStatusFilter(value) {
-      this.filterStatus = value;
-      this.onFilterChanged();
     },
     async fetch() {
       this.loading = true;

@@ -3,14 +3,12 @@
     <div class="mb-2 d-flex align-items-center">
       <strong>Reviews &amp; Comments</strong>
       <b-badge pill variant="info" class="ml-1">{{ rule.reviews.length }}</b-badge>
-      <b-form-select
+      <FilterDropdown
         v-if="topLevelComments.length > 0"
         v-model="sectionFilter"
         :options="sectionFilterOptions"
-        size="sm"
-        class="ml-auto"
-        style="max-width: 180px"
         aria-label="Filter by section"
+        class="ml-auto"
       />
     </div>
 
@@ -81,10 +79,11 @@ import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
   name: "RuleReviews",
-  components: { SectionLabel, TriageStatusBadge },
+  components: { SectionLabel, TriageStatusBadge, FilterDropdown },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {

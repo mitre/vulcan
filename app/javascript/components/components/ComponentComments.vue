@@ -1,43 +1,41 @@
 <template>
   <div>
-    <!-- Filter row -->
-    <b-form-group class="mb-2">
-      <b-input-group>
-        <b-form-select
-          v-model="filterStatus"
-          :options="statusOptions"
-          aria-label="Filter by triage status"
-          style="max-width: 220px"
-          @change="onFilterChanged"
-        />
-        <b-form-select
-          v-model="filterSection"
-          :options="sectionOptions"
-          aria-label="Filter by section"
-          class="ml-2"
-          style="max-width: 220px"
-          @change="onFilterChanged"
-        />
-        <b-form-input
-          v-model="filterText"
-          placeholder="Search comments..."
-          debounce="300"
-          aria-label="Search comment text"
-          class="ml-2"
-          @update="onFilterChanged"
-        />
-        <b-button
-          v-b-tooltip.hover
-          variant="outline-secondary"
-          class="ml-2"
-          aria-label="Refresh"
-          title="Refresh"
-          @click="fetch"
-        >
-          <b-icon icon="arrow-clockwise" />
-        </b-button>
-      </b-input-group>
-    </b-form-group>
+    <!-- Filter row. Uses shared FilterDropdown so menus stay in viewport
+         even in narrow panels / slideovers (native <select> ignores
+         boundary props and clips at viewport edges). -->
+    <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 0.5rem">
+      <FilterDropdown
+        v-model="filterStatus"
+        :options="statusOptions"
+        aria-label="Filter by triage status"
+        @input="onFilterChanged"
+      />
+      <FilterDropdown
+        v-model="filterSection"
+        :options="sectionOptions"
+        aria-label="Filter by section"
+        @input="onFilterChanged"
+      />
+      <b-form-input
+        v-model="filterText"
+        placeholder="Search comments..."
+        debounce="300"
+        aria-label="Search comment text"
+        size="sm"
+        style="max-width: 240px"
+        @update="onFilterChanged"
+      />
+      <b-button
+        v-b-tooltip.hover
+        variant="outline-secondary"
+        size="sm"
+        aria-label="Refresh"
+        title="Refresh"
+        @click="fetch"
+      >
+        <b-icon icon="arrow-clockwise" />
+      </b-button>
+    </div>
 
     <!-- Table -->
     <b-table
@@ -149,11 +147,12 @@ import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentTriageModal from "./CommentTriageModal.vue";
 
 export default {
   name: "ComponentComments",
-  components: { TriageStatusBadge, SectionLabel, CommentTriageModal },
+  components: { TriageStatusBadge, SectionLabel, FilterDropdown, CommentTriageModal },
   mixins: [AlertMixin, DateFormatMixin, RoleComparisonMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
