@@ -85,6 +85,7 @@
 <script>
 import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
+import FormMixin from "../../mixins/FormMixin.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
 
@@ -97,7 +98,12 @@ const TERMINAL_BY_RULE = ["informational", "duplicate", "needs_clarification", "
 export default {
   name: "CommentTriageModal",
   components: { SectionLabel, CanonicalCommentPicker },
-  mixins: [AlertMixin],
+  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because the
+  // ComponentTriagePage host pack does NOT include FormMixin, so without this the
+  // modal's axios.patch calls get rejected at the Rails CSRF middleware (422).
+  // Each Vue pack has its own axios singleton (esbuild bundle isolation) — the
+  // navbar pack's FormMixin doesn't reach the triage pack.
+  mixins: [AlertMixin, FormMixin],
   props: {
     review: { type: Object, default: null },
     // Component the picker is scoped to — defaults to the review's
