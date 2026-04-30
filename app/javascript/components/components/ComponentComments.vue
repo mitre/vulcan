@@ -53,12 +53,18 @@
       aria-label="Component comments triage queue"
     >
       <template #cell(rule_displayed_name)="{ item }">
-        <a :href="ruleHref(item)">
+        <!-- data-turbolinks="false" forces a full page load. Without it,
+             turbolinks navigates to the rule editor but the project_component
+             pack registers its turbolinks:load listener after the event has
+             already fired, so Vue never mounts and the page is blank. -->
+        <a :href="ruleHref(item)" data-turbolinks="false">
           {{ item.rule_displayed_name }}
         </a>
       </template>
       <template #cell(component_name)="{ item }">
-        <a :href="`/components/${item.component_id}/triage`">{{ item.component_name }}</a>
+        <a :href="`/components/${item.component_id}/triage`" data-turbolinks="false">
+          {{ item.component_name }}
+        </a>
       </template>
       <template #cell(section)="{ value }">
         <!-- Use (general) label not em-dash for null section so a rule-level
