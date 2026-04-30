@@ -2,6 +2,8 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
+    <CommentPeriodBanner :component="component" @open-comments-panel="openCommentsPanel" />
+
     <ControlsPageLayout
       :has-selected-rule="!!selectedRule"
       :show-command-bar="true"
@@ -131,6 +133,7 @@ import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
+import CommentPeriodBanner from "./CommentPeriodBanner.vue";
 
 export default {
   name: "ProjectComponent",
@@ -143,6 +146,7 @@ export default {
     RelatedRulesModal,
     ControlsSidepanels,
     CommentComposerModal,
+    CommentPeriodBanner,
   },
   mixins: [
     DateFormatMixinVue,
@@ -288,6 +292,9 @@ export default {
      */
     onComposerPosted() {
       this.refreshComponent();
+    },
+    openCommentsPanel() {
+      window.location.href = `/components/${this.component.id}/triage`;
     },
     refreshComponent() {
       axios

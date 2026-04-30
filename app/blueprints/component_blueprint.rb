@@ -14,7 +14,8 @@ class ComponentBlueprint < Blueprinter::Base
   identifier :id
 
   # === Default: fields shared by ALL views ===
-  fields :name, :prefix, :version, :release
+  fields :name, :prefix, :version, :release,
+         :comment_phase, :comment_period_ends_at
 
   field :based_on_title do |component, _options|
     component.based_on&.title

@@ -61,7 +61,7 @@ class ComponentsController < ApplicationController
     respond_to do |format|
       format.html do
         view = @effective_permissions ? :editor : :show
-        @component_json = ComponentBlueprint.render(@component, view: view)
+        @component_json = ComponentBlueprint.render(@component, view: view, **blueprint_render_options)
         @project_json = @component.project.to_json
       end
       format.json do
@@ -69,7 +69,7 @@ class ComponentsController < ApplicationController
           # Editor refresh: use blueprint directly so the refreshComponent() response
           # shape exactly matches the initial render and nothing drifts (e.g.,
           # memberships losing their MembershipBlueprint name/email decoration).
-          render json: ComponentBlueprint.render(@component, view: :editor)
+          render json: ComponentBlueprint.render(@component, view: :editor, **blueprint_render_options)
         else
           # Non-member: jbuilder produces a BenchmarkViewer-specific lightweight
           # rule shape that the :show blueprint view does not.
@@ -481,6 +481,14 @@ class ComponentsController < ApplicationController
   end
 
   private
+
+  # Render options shared by ComponentBlueprint calls — surfaces
+  # pending_comment_count + pending_comment_counts so the page header
+  # banner (CommentPeriodBanner) and any per-rule callouts have the
+  # accurate count. Without this, the blueprint defaults to zero.
+  def blueprint_render_options
+    { pending_comment_counts: Component.pending_comment_counts([@component.id]) }
+  end
 
   def create_or_duplicate
     if component_create_params[:duplicate] || component_create_params[:copy_component]
