@@ -14,8 +14,7 @@ class ComponentBlueprint < Blueprinter::Base
   identifier :id
 
   # === Default: fields shared by ALL views ===
-  fields :name, :prefix, :version, :release,
-         :comment_phase, :comment_period_ends_at
+  fields :name, :prefix, :version, :release
 
   field :based_on_title do |component, _options|
     component.based_on&.title
@@ -57,7 +56,8 @@ class ComponentBlueprint < Blueprinter::Base
 
   # === Show view: non-member read-only ===
   view :show do
-    fields :title, :description, :admin_name, :admin_email, :released, :updated_at
+    fields :title, :description, :admin_name, :admin_email, :released, :updated_at,
+           :comment_phase, :comment_period_ends_at
 
     association :rules, blueprint: RuleBlueprint, view: :viewer do |component, _options|
       component.rules
@@ -76,7 +76,8 @@ class ComponentBlueprint < Blueprinter::Base
     fields :title, :description, :admin_name, :admin_email,
            :released, :advanced_fields, :project_id, :component_id,
            :security_requirements_guide_id, :memberships_count,
-           :rules_count, :updated_at, :created_at
+           :rules_count, :updated_at, :created_at,
+           :comment_phase, :comment_period_ends_at
 
     field :releasable do |component, _options|
       component.releasable
