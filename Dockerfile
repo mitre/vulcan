@@ -153,6 +153,8 @@ RUN yarn install --frozen-lockfile
 # Copy application code
 COPY --chown=1001:0 . .
 
+USER 0
+
 # Create non-root user
 RUN groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
