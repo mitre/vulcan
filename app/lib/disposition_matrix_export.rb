@@ -48,6 +48,17 @@ module DispositionMatrixExport
     }
   end
 
+  # True iff the component has at least one top-level review (a row that
+  # would appear in the disposition matrix). Used by the Working Copy
+  # CSV/Excel piggyback paths to decide whether to attach the disposition
+  # artifact for this component. Matches top_level_reviews semantics.
+  def self.records_exist?(component)
+    Review.top_level_comments
+          .joins(:rule)
+          .merge(Rule.where(component_id: component.id))
+          .exists?
+  end
+
   # Wraps generate(component:) in an Export::Result so the single-component
   # HTTP path AND the Working Copy CSV piggyback path share one source of
   # truth for filename pattern and content-type. Filename matches the

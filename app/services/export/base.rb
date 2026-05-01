@@ -38,7 +38,11 @@ module Export
       elsif @formatter.multi_sheet?
         export_as_workbook(components)
       else
-        results = components.map { |component| export_component(component) }
+        # PR-717 piggyback: each component contributes its rule CSV plus
+        # (when public-comment disposition records exist) a disposition CSV.
+        # Packager passes a single Result through and zips multiple — so a
+        # comments-free single-component export still returns a CSV directly.
+        results = components.flat_map { |component| component_csv_results(component) }
         zip_name = @zip_filename || default_zip_filename
         Packager.package(results, zip_filename: zip_name)
       end
@@ -132,6 +136,16 @@ module Export
       filename = FileNamer.component_filename(component, @formatter.file_extension)
 
       Result.new(data: data, filename: filename, content_type: @formatter.content_type)
+    end
+
+    # PR-717 piggyback: rule CSV + disposition CSV (when comments exist).
+    # Returns 1 or 2 Results so the caller can flatten and pass through
+    # Packager. Disposition only attaches on the CSV path; Excel piggyback
+    # uses a different shape (sheets, see export_as_workbook).
+    def component_csv_results(component)
+      results = [export_component(component)]
+      results << DispositionMatrixExport.generate_file(component: component) if DispositionMatrixExport.records_exist?(component)
+      results
     end
 
     def build_rows(component)
