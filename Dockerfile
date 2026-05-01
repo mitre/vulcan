@@ -131,7 +131,7 @@ USER 0
 
 # Additional dev tools (build deps + Node.js already in build-base)
 RUN dnf install -y \
-      vim-enhanced \
+      vim-enhanced && \
     dnf clean all && \
     rm -rf /var/cache/dnf
 
