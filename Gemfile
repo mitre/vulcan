@@ -5,42 +5,42 @@ source 'https://rubygems.org'
 ruby '3.3.10'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 8.0.0'
+# gem 'rails', '~> 8.0.0'
 # Use postgresql as the database for Active Record
-gem 'pg', '>= 0.18', '< 2.0'
+# gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
-gem 'puma', '~> 7.0'
+# gem 'puma', '~> 7.0'
 # Asset pipeline for JavaScript bundling
-gem 'jsbundling-rails'
+# gem 'jsbundling-rails'
 # Asset pipeline for Rails
-gem 'propshaft'
+# gem 'propshaft'
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
-gem 'turbolinks', '~> 5'
+# gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
-gem 'jbuilder', '~> 2.7'
+# gem 'jbuilder', '~> 2.7'
 # Use HAML instead of ERB
-gem 'haml-rails', '~> 2.0'
+# gem 'haml-rails', '~> 2.0'
 # Add Devise for authentication
-gem 'devise', '~> 5.0'
+# gem 'devise', '~> 5.0'
 # PBKDF2-SHA512 password hashing for FIPS 140-2 compliance
-gem 'devise-encryptable'
+# gem 'devise-encryptable'
 # Session limiting (AC-10), session tracking, and server-side session store
-gem 'activerecord-session_store'
-gem 'devise-security', github: 'mitre/devise-security', ref: '9f560ed125c096205ba9434de8feea532ce97b4c'
+# gem 'activerecord-session_store'
+# gem 'devise-security', github: 'mitre/devise-security', ref: '9f560ed125c096205ba9434de8feea532ce97b4c'
 # Use Omniauth to support additional login providers
-gem 'omniauth', '~> 2.1'
+# gem 'omniauth', '~> 2.1'
 # LDAP Auth — original omniauth-ldap (actively maintained, no nkf/kconv dependency).
 # Replaces gitlab_omniauth-ldap which had a dead `require 'kconv'` that triggered
 # Ruby VM crash bugs.ruby-lang.org/issues/21967 on parallel_tests forking.
-gem 'omniauth-ldap', '~> 2.3', require: false
+# gem 'omniauth-ldap', '~> 2.3', require: false
 # Allow users to sign in with GitHub
-gem 'omniauth-github'
+# gem 'omniauth-github'
 # https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
-gem 'omniauth-rails_csrf_protection', '~> 1.0'
+# gem 'omniauth-rails_csrf_protection', '~> 1.0'
 # Allow users to sign in with OIDC providers
-gem 'omniauth_openid_connect', '~> 0.6.0'
+# gem 'omniauth_openid_connect', '~> 0.6.0'
 # Vulcan settings - upgraded for Ruby 3.1+ compatibility
-gem 'mitre-settingslogic', '~> 3.0'
+# gem 'mitre-settingslogic', '~> 3.0'
 # Use Redis adapter to run Action Cable in production
 # gem 'redis', '~> 4.0'
 # Use Active Model has_secure_password
@@ -50,52 +50,52 @@ gem 'mitre-settingslogic', '~> 3.0'
 # gem 'image_processing', '~> 1.2'
 
 # Reduces boot times through caching; required in config/boot.rb
-gem 'bootsnap', '>= 1.4.2', require: false
+# gem 'bootsnap', '>= 1.4.2', require: false
 
 # Ruby 3.4 compatibility - these will be removed from stdlib
-gem 'abbrev'
-gem 'csv'
+# gem 'abbrev'
+# gem 'csv'
 
-gem 'audited', '~> 5.8.0'
+# gem 'audited', '~> 5.8.0'
 
 # Advisory locks for preventing race conditions (PostgreSQL/MySQL)
-gem 'with_advisory_lock', '~> 5.1'
+# gem 'with_advisory_lock', '~> 5.1'
 
 # Health check endpoints for Kubernetes/Docker probes
-gem 'health_check', '~> 3.1'
+# gem 'health_check', '~> 3.1'
 
 # PostgreSQL full-text search with trigrams, fuzzy matching, and ranking
-gem 'pg_search'
+# gem 'pg_search'
 
-gem 'activerecord-import'
+# gem 'activerecord-import'
 
-gem 'ffaker', '~> 2.10'
+# gem 'ffaker', '~> 2.10'
 
-gem 'nokogiri'
-gem 'nokogiri-happymapper'
+# gem 'nokogiri'
+# gem 'nokogiri-happymapper'
 
-gem 'amoeba'
+# gem 'amoeba'
 
 # For writing excel files with xml:space="preserve" (fixes whitespace round-trip)
-gem 'caxlsx'
+# gem 'caxlsx'
 # For reading excel files
-gem 'ruh-roo', '~> 3.0.0', require: 'roo'
+# gem 'ruh-roo', '~> 3.0.0', require: 'roo'
 
 # REXML - required explicitly in Ruby 3.0+
-gem 'rexml'
+# gem 'rexml'
 
 gem 'ox'
 
-gem 'rubyzip'
+# gem 'rubyzip'
 
 # Markdown rendering for in-app DISA guide
-gem 'commonmarker'
+# gem 'commonmarker'
 
 # Rate limiting and request throttling
-gem 'rack-attack'
+# gem 'rack-attack'
 
-gem 'mitre-inspec-objects'
-gem 'rest-client'
+# gem 'mitre-inspec-objects'
+# gem 'rest-client'
 
 group :development do
   gem 'listen', '~> 3.7'
@@ -143,16 +143,16 @@ group :development, :test do
 end
 
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data'
+# gem 'tzinfo-data'
 
-gem 'highline', '~> 2.0'
+# gem 'highline', '~> 2.0'
 # Ruby wrapper around slack API
-gem 'slack-ruby-client', '1.0.0'
+# gem 'slack-ruby-client', '1.0.0'
 # Slack notification formatting
-gem 'slack_block_kit', '0.3.3'
+# gem 'slack_block_kit', '0.3.3'
 
-gem 'blueprinter', '~> 1.2'
+# gem 'blueprinter', '~> 1.2'
 
-gem 'blueprinter-activerecord', '~> 1.3'
+# gem 'blueprinter-activerecord', '~> 1.3'
 
-gem 'oj', '~> 3.16'
+# gem 'oj', '~> 3.16'
