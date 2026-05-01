@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.3.10'
+ruby '3.4.9'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
@@ -42,12 +42,12 @@ gem 'omniauth_openid_connect', '~> 0.6.0'
 # Vulcan settings - upgraded for Ruby 3.1+ compatibility
 gem 'mitre-settingslogic', '~> 3.0'
 # Use Redis adapter to run Action Cable in production
-gem 'redis', '~> 4.0'
+# gem 'redis', '~> 4.0'
 # Use Active Model has_secure_password
-gem 'bcrypt', '~> 3.1.7'
+# gem 'bcrypt', '~> 3.1.7'
 
 # Use Active Storage variant
-gem 'image_processing', '~> 1.2'
+# gem 'image_processing', '~> 1.2'
 
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
@@ -115,7 +115,7 @@ group :test do
   gem 'capybara', '>= 2.15'
   gem 'selenium-webdriver'
   # Easy installation and use of web drivers to run system tests with browsers
-  gem 'webdrivers'
+  # gem 'webdrivers'
 
   gem 'database_cleaner-active_record'
   gem 'rubocop', require: false
