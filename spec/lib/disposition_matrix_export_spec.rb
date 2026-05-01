@@ -90,4 +90,35 @@ RSpec.describe DispositionMatrixExport do
       end
     end
   end
+
+  # generate_file wraps the pure CSV string in an Export::Result struct so
+  # the single-component HTTP path and the Working Copy CSV piggyback path
+  # can share a single source of truth for filename pattern and content-type.
+  describe '.generate_file' do
+    subject(:result) { described_class.generate_file(component: component) }
+
+    it 'returns an Export::Result' do
+      expect(result).to be_a(Export::Result)
+    end
+
+    it 'sets data to the same CSV bytes generate would emit' do
+      expect(result.data).to eq(described_class.generate(component: component))
+    end
+
+    it 'sets a per-component filename including project + component prefix + date' do
+      expect(result.filename).to include(component.project.name)
+      expect(result.filename).to include(component.prefix)
+      expect(result.filename).to include('disposition-matrix')
+      expect(result.filename).to end_with('.csv')
+    end
+
+    it 'sets content_type to text/csv' do
+      expect(result.content_type).to eq('text/csv')
+    end
+
+    it 'forwards triage_status_filter and include_email through' do
+      file = described_class.generate_file(component: component, include_email: true)
+      expect(file.data).to include('Commenter Email')
+    end
+  end
 end

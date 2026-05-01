@@ -36,6 +36,16 @@ module DispositionMatrixExport
     end
   end
 
+  # Wraps generate(component:) in an Export::Result so the single-component
+  # HTTP path AND the Working Copy CSV piggyback path share one source of
+  # truth for filename pattern and content-type. Filename matches the
+  # existing convention: "<project>-<prefix>-disposition-matrix-<YYYY-MM-DD>.csv".
+  def self.generate_file(component:, **)
+    csv = generate(component: component, **)
+    filename = "#{component.project.name}-#{component.prefix}-disposition-matrix-#{Date.current}.csv"
+    Export::Result.new(data: csv, filename: filename, content_type: 'text/csv')
+  end
+
   def self.build_headers(include_email)
     return BASE_HEADERS unless include_email
 
