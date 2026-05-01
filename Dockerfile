@@ -173,7 +173,7 @@ CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
 # =============================================================================
 FROM base AS production
 
-USER root
+USER 0
 
 # Production environment — infrastructure only (12-factor: config via env vars at deploy time)
 # App config defaults live in config/vulcan.default.yml, database.yml, and production.rb.
