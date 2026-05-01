@@ -895,6 +895,21 @@ RSpec.describe 'Reviews' do
         expect(response).to have_http_status(:unprocessable_entity)
       end
 
+      # PR-717 review remediation .16 — defense-in-depth length cap.
+      # 4096 chars is the AUDIT_COMMENT_MAX_LENGTH constant on the controller.
+      it 'accepts a 4096-char audit_comment' do
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: 'x' * 4096 }, as: :json
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'rejects a 4097-char audit_comment with 422' do
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: 'x' * 4097 }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body.dig('toast', 'title')).to match(/too long/i)
+      end
+
       it 'allows overriding an already-adjudicated review' do
         target_review.update!(triage_status: 'concur',
                               adjudicated_at: 1.day.ago,

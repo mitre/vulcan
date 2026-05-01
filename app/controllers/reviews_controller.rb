@@ -41,6 +41,11 @@ class ReviewsController < ApplicationController
     admin_destroy: 'admin hard-delete',
     section: 'section change'
   }.freeze
+  # PR-717 review remediation .16 — defense-in-depth length cap on the
+  # operator-supplied audit_comment. Postgres `text` has no built-in
+  # ceiling; admin endpoints accept arbitrary text. 4096 chars is enough
+  # for any reasonable explanation while bounding abuse vectors.
+  AUDIT_COMMENT_MAX_LENGTH = 4096
   before_action :require_audit_comment,
                 only: %i[admin_withdraw admin_restore move_to_rule admin_destroy section]
 
@@ -591,17 +596,27 @@ class ReviewsController < ApplicationController
 
   private
 
-  # PR-717 review remediation .14 — single before_action gate for the
-  # audit_comment param. Sets @audit_comment for the action body; renders
-  # an action-specific 422 toast on blank using AUDIT_COMMENT_LABELS.
+  # PR-717 review remediation .14 + .16 — single before_action gate for
+  # the audit_comment param. Sets @audit_comment for the action body;
+  # renders an action-specific 422 toast on blank or oversized.
   def require_audit_comment
     @audit_comment = params[:audit_comment].to_s.strip
-    return if @audit_comment.present?
-
     label = AUDIT_COMMENT_LABELS.fetch(action_name.to_sym, 'this action')
+
+    if @audit_comment.blank?
+      return render json: {
+        toast: { title: 'Audit comment required.',
+                 message: ["An audit comment is required for #{label}."],
+                 variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    return unless @audit_comment.length > AUDIT_COMMENT_MAX_LENGTH
+
     render json: {
-      toast: { title: 'Audit comment required.',
-               message: ["An audit comment is required for #{label}."],
+      toast: { title: 'Audit comment too long.',
+               message: ["Audit comment for #{label} must be #{AUDIT_COMMENT_MAX_LENGTH} characters or fewer " \
+                         "(received #{@audit_comment.length})."],
                variant: 'danger' }
     }, status: :unprocessable_entity
   end
