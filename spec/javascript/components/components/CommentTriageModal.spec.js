@@ -355,4 +355,57 @@ describe("CommentTriageModal", () => {
       expect(w.emitted("destroyed")[0][0]).toBe(sampleReview.id);
     });
   });
+
+  // ==========================================================================
+  // PR-717 Task 26 — admin move-to-rule. Reassigns a misplaced comment
+  // (and atomically all its replies via the controller's parent-first walk)
+  // to a different rule in the same component. Audit comment required;
+  // target rule chosen via the embedded RulePicker.
+  // ==========================================================================
+  describe("admin move-to-rule (PR-717 Task 26)", () => {
+    it("offers a Move-to-rule button when admin actions disclosure is opened", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+        stubs: visibleModalStub,
+      });
+      expect(w.html()).toContain("Move to rule");
+    });
+
+    it("canSubmitAdminAction stays false until BOTH audit comment AND target rule are set", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      w.vm.adminAction = "move-to-rule";
+      w.vm.adminAuditComment = "wrong rule";
+      w.vm.adminTargetRuleId = null;
+      expect(w.vm.canSubmitAdminAction).toBe(false);
+
+      w.vm.adminTargetRuleId = 99;
+      expect(w.vm.canSubmitAdminAction).toBe(true);
+    });
+
+    it("posts to /reviews/:id/move_to_rule with rule_id and audit_comment", async () => {
+      axios.patch.mockResolvedValue({
+        data: { review: { ...sampleReview, rule_id: 99 } },
+      });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+      w.vm.adminAction = "move-to-rule";
+      w.vm.adminAuditComment = "belongs on rule 99";
+      w.vm.adminTargetRuleId = 99;
+      await w.vm.submitAdminAction();
+      await flushPromises(w);
+
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/reviews/142/move_to_rule",
+        expect.objectContaining({ audit_comment: "belongs on rule 99", rule_id: 99 }),
+      );
+    });
+  });
 });

@@ -110,6 +110,15 @@
             </b-button>
             <b-button
               size="sm"
+              variant="outline-secondary"
+              class="mr-2"
+              data-testid="admin-action-move-to-rule"
+              @click="adminAction = 'move-to-rule'"
+            >
+              <b-icon icon="arrow-right-square" /> Move to rule
+            </b-button>
+            <b-button
+              size="sm"
               variant="outline-danger"
               data-testid="admin-action-hard-delete"
               @click="adminAction = 'hard-delete'"
@@ -126,6 +135,14 @@
               <b-icon icon="exclamation-triangle-fill" />
               This permanently deletes the comment AND ALL REPLIES. It cannot be undone.
             </p>
+            <RulePicker
+              v-if="adminAction === 'move-to-rule' && pickerComponentId"
+              class="mb-2"
+              :component-id="pickerComponentId"
+              :exclude-rule-id="review.rule_id"
+              :selected-rule-id="adminTargetRuleId"
+              @selected="onTargetRuleSelected"
+            />
             <b-form-textarea
               v-model="adminAuditComment"
               rows="2"
@@ -187,6 +204,7 @@ import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
+import RulePicker from "./RulePicker.vue";
 
 // Statuses that auto-set adjudicated_at server-side via the
 // Review#auto_set_adjudicated_for_terminal_statuses callback (Task 06).
@@ -196,7 +214,7 @@ const TERMINAL_BY_RULE = ["informational", "duplicate", "needs_clarification", "
 
 export default {
   name: "CommentTriageModal",
-  components: { SectionLabel, CanonicalCommentPicker },
+  components: { SectionLabel, CanonicalCommentPicker, RulePicker },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because the
   // ComponentTriagePage host pack does NOT include FormMixin, so without this the
   // modal's axios.patch calls get rejected at the Rails CSRF middleware (422).
@@ -227,6 +245,8 @@ export default {
       // PR-717 Task 25b: typed-confirmation safeguard for irreversible
       // hard-delete. Admin must type the review ID exactly to enable Confirm.
       adminConfirmationId: "",
+      // PR-717 Task 26: target rule chosen via RulePicker for move-to-rule.
+      adminTargetRuleId: null,
     };
   },
   computed: {
@@ -281,10 +301,14 @@ export default {
     // All admin actions require a non-blank audit comment (server enforces).
     // Hard-delete additionally requires the typed-id confirmation to match
     // the review ID exactly — typo-resistant safeguard for an irreversible op.
+    // Move-to-rule additionally requires a target rule chosen via RulePicker.
     canSubmitAdminAction() {
       if (!this.adminAction || this.adminAuditComment.trim().length === 0) return false;
       if (this.adminAction === "hard-delete") {
         return this.adminConfirmationId === String(this.review?.id);
+      }
+      if (this.adminAction === "move-to-rule") {
+        return this.adminTargetRuleId !== null && this.adminTargetRuleId !== undefined;
       }
       return true;
     },
@@ -308,6 +332,8 @@ export default {
           return "force-withdraw";
         case "restore":
           return "restore";
+        case "move-to-rule":
+          return "move";
         default:
           return "";
       }
@@ -321,6 +347,8 @@ export default {
           return "Reason for restore (audit log) — e.g. force-withdrew the wrong comment...";
         case "hard-delete":
           return "Documented reason for irreversible hard-delete (audit log) — required.";
+        case "move-to-rule":
+          return "Reason for moving this comment (audit log) — e.g. posted on the wrong rule...";
         default:
           return "";
       }
@@ -343,12 +371,16 @@ export default {
     onDuplicateSelected(reviewId) {
       this.duplicateOfId = reviewId;
     },
+    onTargetRuleSelected(ruleId) {
+      this.adminTargetRuleId = ruleId;
+    },
     // PR-717 Task 25 — close the admin-action sub-form without resetting
     // the disclosure (so the user can choose a different admin action).
     cancelAdminAction() {
       this.adminAction = null;
       this.adminAuditComment = "";
       this.adminConfirmationId = "";
+      this.adminTargetRuleId = null;
     },
     // PR-717 Task 25 + 25b — dispatch the right endpoint for the chosen
     // admin action. Emits 'triaged' on patch operations so the parent
@@ -364,6 +396,12 @@ export default {
             data: { audit_comment: auditComment },
           });
           this.$emit("destroyed", reviewId);
+        } else if (this.adminAction === "move-to-rule") {
+          const res = await axios.patch(`/reviews/${reviewId}/move_to_rule`, {
+            rule_id: this.adminTargetRuleId,
+            audit_comment: auditComment,
+          });
+          this.$emit("triaged", res.data.review);
         } else {
           const endpoint =
             this.adminAction === "force-withdraw" ? "admin_withdraw" : "admin_restore";
