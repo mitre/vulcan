@@ -40,6 +40,14 @@ module Export
         name_ending = "-V#{component.version}R#{component.release}-#{component.id}"
         component.name.gsub(/\s+/, '').first(31 - name_ending.length) + name_ending
       end
+
+      # Disposition-sheet variant: same length-safe pattern with "-Disp" marker
+      # so the sheet is unambiguously identifiable in the workbook tab strip
+      # while staying within Excel's 31-character worksheet-name limit.
+      def worksheet_name_disposition(component)
+        name_ending = "-Disp-V#{component.version}R#{component.release}-#{component.id}"
+        component.name.gsub(/\s+/, '').first(31 - name_ending.length) + name_ending
+      end
     end
   end
 end
