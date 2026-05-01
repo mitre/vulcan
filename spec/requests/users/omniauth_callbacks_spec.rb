@@ -87,7 +87,7 @@ RSpec.describe 'Remember Me Functionality' do
 
       # The oauth_error handler should NOT interpolate exception.message into flash
       oauth_error_method = code[/def oauth_error.*?(?=\n {4}def |\nend)/m]
-      expect(oauth_error_method).not_to include('flash.alert = "OAuth error: #{exception.message}"'),
+      expect(oauth_error_method).not_to include(%(flash.alert = "OAuth error: #{exception.message}")),
                                         'oauth_error leaks exception.message — use a generic message instead'
       expect(oauth_error_method).to include('flash.alert ='), 'oauth_error must set flash.alert'
     end

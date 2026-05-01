@@ -19,7 +19,7 @@ class RuleSatisfactionsController < ApplicationController
           message: @rule.errors.full_messages,
           variant: 'danger'
         }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -35,7 +35,7 @@ class RuleSatisfactionsController < ApplicationController
           message: @rule.errors.full_messages,
           variant: 'danger'
         }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 

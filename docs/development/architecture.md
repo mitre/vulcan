@@ -172,10 +172,10 @@ See [Authorization Architecture](authorization.md) for details.
 ### Container-based
 ```dockerfile
 # Multi-stage build for optimization
-FROM ruby:3.4.9-slim as builder
+FROM registry.access.redhat.com/ubi9/ruby-33:1 as builder
 # Build dependencies and assets
 
-FROM ruby:3.4.9-slim
+FROM registry.access.redhat.com/ubi9/ruby-33:1
 # Runtime with jemalloc for memory optimization
 ```
 

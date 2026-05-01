@@ -1,6 +1,3 @@
-# syntax=docker/dockerfile:1
-# check=error=true
-
 # =============================================================================
 # Vulcan Multi-Stage Dockerfile
 # =============================================================================
@@ -16,73 +13,68 @@
 #   docker buildx build --platform linux/amd64,linux/arm64 --target production -t vulcan:prod .
 # =============================================================================
 
-# Make sure versions match .ruby-version
-ARG RUBY_VERSION=3.4.9
 ARG NODE_VERSION=24.14.0
 
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM docker.io/library/ruby:${RUBY_VERSION}-slim AS base
+FROM registry.access.redhat.com/ubi9/ruby-33:1 AS base
 
+USER 0
+RUN mkdir -p /rails /usr/local/bundle && \
+    chown -R 1001:0 /rails /usr/local/bundle && \
+    chmod -R g=u /rails /usr/local/bundle
 WORKDIR /rails
 
-# Install base packages including jemalloc for better memory management
+# Install base packages.
 # libvips removed — image_processing gem is commented out and ActiveStorage
-# is not used for file attachments. postgresql-client kept for db:prepare.
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-      ca-certificates \
-      curl \
-      libjemalloc2 \
-      libpq5 \
-      libyaml-0-2 \
-      postgresql-client && \
-    ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+# is not used for file attachments. curl, libpq, and libyaml are already
+# present in the UBI Ruby base image, so only postgresql is installed here for
+# db:prepare.
+# check if can del postgres image later on
+RUN dnf install -y \
+      postgresql && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
 
 # Install custom SSL certificates if provided (single layer)
-COPY certs/ /usr/local/share/ca-certificates/custom/
-RUN cd /usr/local/share/ca-certificates/custom && \
-    for cert in ./*.pem ./*.cer; do \
-      [ -f "$cert" ] && mv "$cert" "${cert%.*}.crt" || true; \
-    done && \
-    if ls ./*.crt 2>/dev/null | grep -q .; then \
-      update-ca-certificates; \
-    fi && \
-    rm -f /usr/local/share/ca-certificates/custom/README.md
+COPY certs/ /etc/pki/ca-trust/source/anchors/
+RUN  update-ca-trust && \
+     rm -f /etc/pki/ca-trust/source/anchors/*
 
 # Common environment for all stages
-ENV LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
-    MALLOC_ARENA_MAX="2" \
-    NODE_EXTRA_CA_CERTS="/etc/ssl/certs/ca-certificates.crt" \
+ENV MALLOC_ARENA_MAX="2" \
+    NODE_EXTRA_CA_CERTS="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" \
+    BUNDLE_USER_HOME="/usr/local/bundle" \
     BUNDLE_PATH="/usr/local/bundle"
+
+USER 1001
 
 # =============================================================================
 # BUILD-BASE STAGE - Build tools + Node.js (shared by build and development)
 # =============================================================================
 FROM base AS build-base
 
+USER 0
+
 # Install packages needed to build gems and node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-      build-essential \
-      git \
-      gnupg \
-      libpq-dev \
-      libyaml-dev \
-      pkg-config \
-      zlib1g-dev && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+RUN dnf install -y \
+      postgresql-devel \
+      libyaml-devel && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
 
 # Install Node.js LTS using official binaries
 ARG NODE_VERSION
 ARG TARGETARCH
 RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+    echo "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz" && \
     curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
     tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
     rm node.tar.xz && \
     corepack enable
+
+USER 1001
 
 # =============================================================================
 # BUILD STAGE - Compile gems and assets (for production)
@@ -96,17 +88,17 @@ ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test"
 
-COPY Gemfile Gemfile.lock ./
+COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
 # Install node modules (including dev dependencies needed for asset build)
-COPY package.json yarn.lock esbuild.config.js ./
+COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
 
 # Copy application code
-COPY . .
+COPY --chown=1001:0 . .
 
 RUN bundle exec bootsnap precompile app/ lib/ && \
     SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
@@ -135,12 +127,15 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
 # =============================================================================
 FROM build-base AS development
 
+USER 0
+
 # Additional dev tools (build deps + Node.js already in build-base)
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-      vim \
-      less && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+RUN dnf install -y \
+      vim-enhanced && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+
+USER 1001
 
 # Development environment
 ENV RAILS_ENV="development" \
@@ -148,15 +143,17 @@ ENV RAILS_ENV="development" \
     BUNDLE_DEPLOYMENT="0"
 
 # Install all gems including dev/test
-COPY Gemfile Gemfile.lock ./
+COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install
 
 # Install node modules
-COPY package.json yarn.lock esbuild.config.js ./
+COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile
 
 # Copy application code
-COPY . .
+COPY --chown=1001:0 . .
+
+USER 0
 
 # Create non-root user
 RUN groupadd --system --gid 1000 rails && \
@@ -175,6 +172,8 @@ CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
 # PRODUCTION STAGE - Optimized for deployment (default)
 # =============================================================================
 FROM base AS production
+
+USER 0
 
 # Production environment — infrastructure only (12-factor: config via env vars at deploy time)
 # App config defaults live in config/vulcan.default.yml, database.yml, and production.rb.
