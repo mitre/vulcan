@@ -490,6 +490,13 @@ describe("CommentTriageModal", () => {
       );
       expect(w.emitted("triaged")).toBeTruthy();
       expect(hideSpy).toHaveBeenCalledWith("comment-triage-modal");
+
+      // PR-717 review remediation .13 — form-state cleanup must run BEFORE
+      // (or alongside) hide. A regression that calls hide without resetting
+      // would leak prior values into the next time the modal opens.
+      expect(w.vm.sectionEditMode).toBe(false);
+      expect(w.vm.sectionAuditComment).toBe("");
+      expect(w.vm.newSection).toBe(null);
     });
 
     it("accepts null to retag back to (general)", async () => {
