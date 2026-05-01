@@ -47,7 +47,9 @@ e81dc8e fix: complete PoC coverage on every seeded component
 9ca407e feat: dev seeds + factory traits
 ```
 
-**Squash plan (Step 12):** Squash `ff64c69` + `272bc9c` + `a267a6c` into one clean disposition CSV commit. The cycle-1 BOM commit (`272bc9c`) contains a fabricated NIST 800-53 claim that should not survive into PR history.
+**Squash → reword (2026-05-01):** The squash plan was reduced to a `git rebase -i 272bc9c^` reword of `272bc9c`'s body — the same goal (fabricated NIST 800-53 + "Excel 365 auto-detects" claims gone) at lower risk than reordering 3 commits past 4 unrelated ones. Done; new SHA is `2314ddf`. Tree hashes verified identical via `git diff pre-reword-bom HEAD` (empty) — zero content drift. Backup tag `pre-reword-bom` retained until Step 13 lands; drop with `git tag -d pre-reword-bom` after final test sweep.
+
+**Note:** because the rebase replays every commit from `272bc9c` onward, every SHA in the "Commits shipped this session" list above is now stale. Tree content is unchanged. Use `git log master..HEAD --oneline` for the live commit list.
 
 ## 13-step roadmap (current status)
 
