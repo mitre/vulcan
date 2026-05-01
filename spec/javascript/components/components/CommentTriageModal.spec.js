@@ -553,4 +553,103 @@ describe("CommentTriageModal", () => {
       expect(w.vm.sectionAuditComment).toBe("");
     });
   });
+
+  // PR-717 review remediation .8 — modal shows "Triaged by ... · time" and
+  // "Adjudicated by ... · time" when those events have happened. When the
+  // attribution came from a JSON archive restore where the original User
+  // doesn't exist on this instance, we show the imported name/email plus an
+  // "imported" badge so reviewers know the trail is real but unmapped.
+  describe("attribution display (PR-717 .8)", () => {
+    const triagedReview = {
+      ...sampleReview,
+      triage_status: "concur",
+      triage_set_at: "2026-04-28T10:00:00Z",
+      triager_display_name: "Triager Tee",
+      triager_imported: false,
+      adjudicated_at: "2026-04-29T11:00:00Z",
+      adjudicator_display_name: "Adjudicator Aye",
+      adjudicator_imported: false,
+    };
+
+    it("does not render attribution lines for a pending (untriaged) review", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview },
+        stubs: visibleModalStub,
+      });
+      const html = w.html();
+      expect(html).not.toContain("Triaged by");
+      expect(html).not.toContain("Adjudicated by");
+    });
+
+    it("renders 'Triaged by' with the display name when triage_set_at is present", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: triagedReview },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-triaged"]');
+      expect(block.exists()).toBe(true);
+      expect(block.text()).toContain("Triaged by");
+      expect(block.text()).toContain("Triager Tee");
+      expect(block.text()).not.toContain("imported");
+    });
+
+    it("renders 'Adjudicated by' with the display name when adjudicated_at is present", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: triagedReview },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-adjudicated"]');
+      expect(block.exists()).toBe(true);
+      expect(block.text()).toContain("Adjudicated by");
+      expect(block.text()).toContain("Adjudicator Aye");
+    });
+
+    it("shows an 'imported' badge when triager_imported is true", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: {
+          review: { ...triagedReview, triager_display_name: "Old Triager", triager_imported: true },
+        },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-triaged"]');
+      expect(block.text()).toContain("Old Triager");
+      expect(block.text()).toContain("imported");
+    });
+
+    it("shows an 'imported' badge when adjudicator_imported is true", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: {
+          review: {
+            ...triagedReview,
+            adjudicator_display_name: "old@former.example",
+            adjudicator_imported: true,
+          },
+        },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-adjudicated"]');
+      expect(block.text()).toContain("old@former.example");
+      expect(block.text()).toContain("imported");
+    });
+
+    it("renders an em-dash placeholder when display_name is null but the event happened", () => {
+      // Defensive case: triage_set_at set but no FK and no imported_* (shouldn't
+      // happen with current code paths, but the modal should not crash).
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: {
+          review: { ...triagedReview, triager_display_name: null, triager_imported: false },
+        },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-triaged"]');
+      expect(block.exists()).toBe(true);
+      expect(block.text()).toContain("—");
+    });
+  });
 });

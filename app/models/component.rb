@@ -659,7 +659,11 @@ class Component < ApplicationRecord
                     triage_status: r.triage_status,
                     triage_set_at: r.triage_set_at,
                     adjudicated_at: r.adjudicated_at,
-                    duplicate_of_review_id: r.duplicate_of_review_id
+                    duplicate_of_review_id: r.duplicate_of_review_id,
+                    triager_display_name: r.triager_display_name,
+                    triager_imported: r.triager_imported?,
+                    adjudicator_display_name: r.adjudicator_display_name,
+                    adjudicator_imported: r.adjudicator_imported?
                   }
                 end
 

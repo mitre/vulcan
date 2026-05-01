@@ -665,4 +665,87 @@ RSpec.describe Review do
       expect(audit.audited_changes['triage_status']).to eq(%w[pending concur])
     end
   end
+
+  describe 'attribution display helpers (PR-717 .8 imported attribution)' do
+    let(:base) do
+      Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
+    end
+
+    describe '#triager_display_name' do
+      it 'returns the resolved User name when FK is set' do
+        base.update_columns(triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
+        expect(base.reload.triager_display_name).to eq(@p_admin.name)
+      end
+
+      it 'falls back to imported_name when FK is nil' do
+        base.update_columns(triage_set_by_imported_name: 'Alice Imported',
+                            triage_set_by_imported_email: 'alice@old.example')
+        expect(base.reload.triager_display_name).to eq('Alice Imported')
+      end
+
+      it 'falls back to imported_email when imported_name is blank' do
+        base.update_columns(triage_set_by_imported_name: nil,
+                            triage_set_by_imported_email: 'bob@old.example')
+        expect(base.reload.triager_display_name).to eq('bob@old.example')
+      end
+
+      it 'returns nil when nothing is set' do
+        expect(base.triager_display_name).to be_nil
+      end
+    end
+
+    describe '#triager_imported?' do
+      it 'is false when FK is set (resolved User)' do
+        base.update_columns(triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
+        expect(base.reload.triager_imported?).to be(false)
+      end
+
+      it 'is true when FK is nil and imported attribution is present' do
+        base.update_columns(triage_set_by_imported_name: 'Alice')
+        expect(base.reload.triager_imported?).to be(true)
+      end
+
+      it 'is false when FK is nil and no imported attribution' do
+        expect(base.triager_imported?).to be(false)
+      end
+    end
+
+    describe '#adjudicator_display_name' do
+      it 'returns the resolved User name when FK is set' do
+        base.update_columns(adjudicated_by_id: @p_admin.id, adjudicated_at: Time.current)
+        expect(base.reload.adjudicator_display_name).to eq(@p_admin.name)
+      end
+
+      it 'falls back to imported_name when FK is nil' do
+        base.update_columns(adjudicated_by_imported_name: 'Carol Imported',
+                            adjudicated_by_imported_email: 'carol@old.example')
+        expect(base.reload.adjudicator_display_name).to eq('Carol Imported')
+      end
+
+      it 'falls back to imported_email when imported_name blank' do
+        base.update_columns(adjudicated_by_imported_email: 'dan@old.example')
+        expect(base.reload.adjudicator_display_name).to eq('dan@old.example')
+      end
+
+      it 'returns nil when nothing is set' do
+        expect(base.adjudicator_display_name).to be_nil
+      end
+    end
+
+    describe '#adjudicator_imported?' do
+      it 'is false when FK is set' do
+        base.update_columns(adjudicated_by_id: @p_admin.id, adjudicated_at: Time.current)
+        expect(base.reload.adjudicator_imported?).to be(false)
+      end
+
+      it 'is true when FK is nil and imported attribution is present' do
+        base.update_columns(adjudicated_by_imported_email: 'dan@old.example')
+        expect(base.reload.adjudicator_imported?).to be(true)
+      end
+
+      it 'is false when FK is nil and no imported attribution' do
+        expect(base.adjudicator_imported?).to be(false)
+      end
+    end
+  end
 end

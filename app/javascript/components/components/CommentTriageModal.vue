@@ -72,6 +72,35 @@
         {{ review.comment }}
       </blockquote>
 
+      <!-- PR-717 review remediation .8 — attribution chain. "Triaged by"
+           appears once a triage decision has been made; "Adjudicated by"
+           appears once the comment is in a terminal state. The "imported"
+           badge appears when the original User wasn't present on this
+           Vulcan instance and attribution was preserved per-record from
+           a JSON archive restore. -->
+      <p
+        v-if="review.triage_set_at"
+        class="mb-1 text-muted small"
+        data-testid="attribution-triaged"
+      >
+        Triaged by
+        <strong>{{ review.triager_display_name || "—" }}</strong>
+        <b-badge v-if="review.triager_imported" variant="warning" class="ml-1"> imported </b-badge>
+        · {{ relativeTime(review.triage_set_at) }}
+      </p>
+      <p
+        v-if="review.adjudicated_at"
+        class="mb-3 text-muted small"
+        data-testid="attribution-adjudicated"
+      >
+        Adjudicated by
+        <strong>{{ review.adjudicator_display_name || "—" }}</strong>
+        <b-badge v-if="review.adjudicator_imported" variant="warning" class="ml-1">
+          imported
+        </b-badge>
+        · {{ relativeTime(review.adjudicated_at) }}
+      </p>
+
       <b-form-group label="Decision" stacked>
         <b-form-radio v-model="triageStatus" name="triage" value="concur">
           Accept (Concur) — incorporate as suggested

@@ -127,6 +127,34 @@ class Review < ApplicationRecord
   # Serialization is handled by ReviewBlueprint.
   # See app/blueprints/review_blueprint.rb.
 
+  # PR-717 review remediation .8 — display-layer attribution. When a review
+  # is restored from a JSON archive on a different instance, the original
+  # User may not exist locally; ReviewBuilder preserves the original email
+  # and name on `*_imported_email` / `*_imported_name`. Display surfaces
+  # (CommentTriageModal, disposition export) call these instead of touching
+  # the FK directly so the fallback is one source of truth.
+  def triager_display_name
+    triage_set_by&.name.presence ||
+      triage_set_by_imported_name.presence ||
+      triage_set_by_imported_email.presence
+  end
+
+  def triager_imported?
+    triage_set_by_id.nil? &&
+      (triage_set_by_imported_name.present? || triage_set_by_imported_email.present?)
+  end
+
+  def adjudicator_display_name
+    adjudicated_by&.name.presence ||
+      adjudicated_by_imported_name.presence ||
+      adjudicated_by_imported_email.presence
+  end
+
+  def adjudicator_imported?
+    adjudicated_by_id.nil? &&
+      (adjudicated_by_imported_name.present? || adjudicated_by_imported_email.present?)
+  end
+
   private
 
   ##
