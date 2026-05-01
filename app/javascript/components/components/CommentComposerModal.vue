@@ -57,6 +57,7 @@
 <script>
 import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
+import FormMixin from "../../mixins/FormMixin.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import CommentDedupBanner from "./CommentDedupBanner.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -66,7 +67,12 @@ const COMMENT_MAX = 4000;
 export default {
   name: "CommentComposerModal",
   components: { CommentDedupBanner, FilterDropdown },
-  mixins: [AlertMixin],
+  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
+  // each esbuild pack has its own axios singleton (bundle isolation) — the
+  // navbar pack's FormMixin doesn't reach the consuming pack. Without this
+  // the modal's POST /rules/:id/reviews call would 422 on CSRF in a pack
+  // that lacks pack-level CSRF setup.
+  mixins: [AlertMixin, FormMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], required: true },

@@ -193,6 +193,7 @@
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import FormMixin from "../../mixins/FormMixin.vue";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import { useDeleteConfirmation } from "../../composables";
@@ -200,7 +201,12 @@ import { useDeleteConfirmation } from "../../composables";
 export default {
   name: "ProjectsTable",
   components: { UpdateProjectDetailsModal, ConfirmDeleteModal },
-  mixins: [DateFormatMixinVue, AlertMixinVue],
+  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
+  // each esbuild pack has its own axios singleton (bundle isolation) — the
+  // navbar pack's FormMixin doesn't reach the consuming pack. The DELETE
+  // /projects/:id.json call would 422 on CSRF in a pack that lacks
+  // pack-level CSRF setup.
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixin],
   props: {
     projects: {
       type: Array,

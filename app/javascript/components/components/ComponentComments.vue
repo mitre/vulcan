@@ -167,6 +167,7 @@ import axios from "axios";
 import { TRIAGE_LABELS, SECTION_LABELS } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
@@ -176,7 +177,11 @@ import CommentTriageModal from "./CommentTriageModal.vue";
 export default {
   name: "ComponentComments",
   components: { TriageStatusBadge, SectionLabel, FilterDropdown, CommentTriageModal },
-  mixins: [AlertMixin, DateFormatMixin, RoleComparisonMixin],
+  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
+  // each esbuild pack has its own axios singleton (bundle isolation) — the
+  // navbar pack's FormMixin doesn't reach the consuming pack. The reopen
+  // PATCH would 422 on CSRF in a pack that lacks pack-level CSRF setup.
+  mixins: [AlertMixin, DateFormatMixin, FormMixin, RoleComparisonMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
     // scope) is required — but not both. The scope prop disambiguates and
