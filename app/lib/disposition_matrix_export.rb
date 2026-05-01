@@ -24,16 +24,28 @@ module DispositionMatrixExport
   # via Data → Get Data → From Text/CSV (Power Query), which is Microsoft's
   # own recommended path and handles UTF-8 reliably without a BOM marker.
   def self.generate(component:, triage_status_filter: nil, include_email: false)
+    data = rows_and_headers(
+      component: component,
+      triage_status_filter: triage_status_filter,
+      include_email: include_email
+    )
+    CSV.generate(row_sep: "\r\n") do |out|
+      out << data[:headers]
+      data[:rows].each { |row| out << row }
+    end
+  end
+
+  # Returns the disposition matrix as { headers: [...], rows: [[...], ...] }
+  # — the same shape Vulcan's Excel multi-sheet pipeline expects. Letting
+  # the Excel pipeline consume disposition data directly avoids round-tripping
+  # through CSV serialization just to parse it back out into a sheet.
+  def self.rows_and_headers(component:, triage_status_filter: nil, include_email: false)
     reviews = top_level_reviews(component, triage_status_filter)
     replies_by_parent = load_replies(reviews.map(&:id))
-    headers = build_headers(include_email)
-
-    CSV.generate(row_sep: "\r\n") do |out|
-      out << headers
-      reviews.each do |r|
-        out << build_row(r, component, replies_by_parent[r.id], include_email: include_email)
-      end
-    end
+    {
+      headers: build_headers(include_email),
+      rows: reviews.map { |r| build_row(r, component, replies_by_parent[r.id], include_email: include_email) }
+    }
   end
 
   # Wraps generate(component:) in an Export::Result so the single-component

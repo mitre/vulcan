@@ -121,4 +121,55 @@ RSpec.describe DispositionMatrixExport do
       expect(file.data).to include('Commenter Email')
     end
   end
+
+  # rows_and_headers exposes the same row structure that generate(component:)
+  # serialises to CSV — but as a Ruby array-of-arrays rather than a CSV string.
+  # Lets the Excel multi-sheet pipeline consume disposition data directly as
+  # a sheet without parsing CSV bytes back out.
+  describe '.rows_and_headers' do
+    subject(:result) { described_class.rows_and_headers(component: component) }
+
+    it 'returns a hash with :headers and :rows keys' do
+      expect(result).to be_a(Hash)
+      expect(result.keys).to contain_exactly(:headers, :rows)
+    end
+
+    it 'headers match the locked BASE_HEADERS when include_email is false' do
+      expect(result[:headers]).to eq(described_class::BASE_HEADERS)
+    end
+
+    it 'rows are arrays of cell values, one per top-level comment' do
+      expect(result[:rows]).to be_an(Array)
+      expect(result[:rows].length).to eq(1)
+      first_row = result[:rows].first
+      expect(first_row).to be_an(Array)
+      expect(first_row.length).to eq(described_class::BASE_HEADERS.length)
+    end
+
+    it 'cell values match the same rows that generate(component:) emits' do
+      parsed_csv = CSV.parse(described_class.generate(component: component), headers: true)
+      csv_first_row = parsed_csv.first.fields
+
+      helper_first_row = result[:rows].first.map { |v| v&.to_s }
+      csv_normalised = csv_first_row.map(&:presence)
+      helper_normalised = helper_first_row.map(&:presence)
+      expect(helper_normalised).to eq(csv_normalised)
+    end
+
+    it 'inserts the Commenter Email column when include_email is true' do
+      out = described_class.rows_and_headers(component: component, include_email: true)
+      expect(out[:headers]).to include('Commenter Email')
+      email_index = out[:headers].index('Commenter Email')
+      expect(out[:rows].first[email_index]).to eq('sarah@example.com')
+    end
+
+    it 'forwards triage_status_filter through' do
+      Review.create!(rule: rule, user: commenter, action: 'comment',
+                     comment: 'pending one', triage_status: 'pending')
+      filtered = described_class.rows_and_headers(component: component, triage_status_filter: 'pending')
+      expect(filtered[:rows].length).to eq(1)
+      status_index = filtered[:headers].index('Triage Status')
+      expect(filtered[:rows].first[status_index]).to eq('pending')
+    end
+  end
 end
