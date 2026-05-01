@@ -90,15 +90,6 @@ ENV RAILS_ENV="production" \
 
 COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
-    ls -lah /usr/local/bundle && \
-    ls -lah /usr/local/bundle/ruby && \
-    ls -lah /usr/local/bundle/ruby/3.3.0 && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0 && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25 && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25/ox && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25/ox/ox.so && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
@@ -136,12 +127,15 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
 # =============================================================================
 FROM build-base AS development
 
+USER 0
+
 # Additional dev tools (build deps + Node.js already in build-base)
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-      vim \
-      less && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+RUN dnf install -y \
+      vim-enhanced \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+
+USER 1001
 
 # Development environment
 ENV RAILS_ENV="development" \
@@ -149,15 +143,15 @@ ENV RAILS_ENV="development" \
     BUNDLE_DEPLOYMENT="0"
 
 # Install all gems including dev/test
-COPY Gemfile Gemfile.lock ./
+COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install
 
 # Install node modules
-COPY package.json yarn.lock esbuild.config.js ./
+COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile
 
 # Copy application code
-COPY . .
+COPY --chown=1001:0 . .
 
 # Create non-root user
 RUN groupadd --system --gid 1000 rails && \
