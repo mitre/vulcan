@@ -90,6 +90,13 @@ ENV RAILS_ENV="production" \
 
 COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
+    ls -lah /usr/local/bundle && \
+    ls -lah /usr/local/bundle/ruby && \
+    ls -lah /usr/local/bundle/ruby/3.3.0 && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/extensions && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0 && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25 && \
     ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25/ox.so && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
