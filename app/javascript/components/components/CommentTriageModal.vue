@@ -485,6 +485,13 @@ export default {
         });
         this.$emit("triaged", res.data.review);
         this.cancelSectionEdit();
+        // Hide the modal on success — consistent with the other modal
+        // actions (saveTriage, submitAdminAction, etc.). The parent's
+        // @triaged handler refetches the table so the row's new section
+        // is visible. Without this hide, the modal's review prop is stale
+        // (selectedRow object hasn't been re-bound) and the section badge
+        // shows the old value until the user closes and re-opens.
+        this.$bvModal.hide("comment-triage-modal");
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }

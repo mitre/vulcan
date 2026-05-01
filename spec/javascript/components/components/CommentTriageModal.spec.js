@@ -468,7 +468,7 @@ describe("CommentTriageModal", () => {
       expect(w.vm.canSubmitSectionChange).toBe(true);
     });
 
-    it("posts to /reviews/:id/section with section + audit_comment and emits 'triaged'", async () => {
+    it("posts to /reviews/:id/section with section + audit_comment, emits 'triaged', and hides the modal", async () => {
       axios.patch.mockResolvedValue({
         data: { review: { ...sampleReview, section: "fixtext" } },
       });
@@ -476,6 +476,7 @@ describe("CommentTriageModal", () => {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "author" },
       });
+      const hideSpy = vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
 
       w.vm.sectionEditMode = true;
       w.vm.newSection = "fixtext";
@@ -488,6 +489,7 @@ describe("CommentTriageModal", () => {
         expect.objectContaining({ section: "fixtext", audit_comment: "should have been Fix" }),
       );
       expect(w.emitted("triaged")).toBeTruthy();
+      expect(hideSpy).toHaveBeenCalledWith("comment-triage-modal");
     });
 
     it("accepts null to retag back to (general)", async () => {
