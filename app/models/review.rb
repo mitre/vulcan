@@ -40,7 +40,12 @@ class Review < ApplicationRecord
   #   diff is captured on the trail, not just the audit_comment text.
   # - `section` added for Task 30 (edit comment section retroactive) so the
   #   triager's section-relocation is auditable.
-  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id comment rule_id section]
+  # PR-717 review remediation .7 — `associated_with: :rule` so audit rows
+  # remain queryable through Rule after admin_destroy cascades a subtree
+  # (auditable_id points to a deleted Review; associated_id still points
+  # to a valid Rule). Matches the pattern on every other audited model.
+  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id comment rule_id section],
+                 associated_with: :rule
 
   scope :top_level_comments, -> { where(action: 'comment', responding_to_review_id: nil) }
   scope :pending_triage, -> { top_level_comments.where(triage_status: 'pending') }

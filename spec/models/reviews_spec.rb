@@ -591,6 +591,41 @@ RSpec.describe Review do
     end
   end
 
+  # PR-717 review remediation .7 — vulcan_audited needs associated_with: :rule
+  # so audit rows survive admin_destroy as queryable records (auditable_id
+  # points to a destroyed Review, but associated_id still points to a valid
+  # Rule). All other audited models declare associated_with; Review was the gap.
+  # Note: Rule is STI under BaseRule, so audited stores the polymorphic type
+  # as the base class name 'BaseRule' but the polymorphic relation still
+  # resolves to a Rule instance through STI.
+  describe 'audit-trail association via associated_with: :rule' do
+    let!(:assoc_review) do
+      Review.create!(rule: @p1r1, user: @p_viewer, action: 'comment',
+                     comment: 'something', triage_status: 'pending')
+    end
+
+    it 'populates associated to the rule on a triage update audit' do
+      assoc_review.audit_comment = 'first triage'
+      assoc_review.update!(triage_status: 'concur')
+      latest = assoc_review.audits.last
+      expect(latest.associated_type).to eq('BaseRule')
+      expect(latest.associated_id).to eq(@p1r1.id)
+    end
+
+    it 'populates associated on the create-time audit row' do
+      first_audit = assoc_review.audits.first
+      expect(first_audit.associated_type).to eq('BaseRule')
+      expect(first_audit.associated_id).to eq(@p1r1.id)
+    end
+
+    it 'allows querying rule-scoped audit history independent of auditable' do
+      assoc_review.audit_comment = 'note'
+      assoc_review.update!(triage_status: 'concur')
+      rule_audits = Audited::Audit.where(associated_type: 'BaseRule', associated_id: @p1r1.id)
+      expect(rule_audits.where(auditable_type: 'Review', auditable_id: assoc_review.id)).to exist
+    end
+  end
+
   describe 'withdrawn auto-sets adjudicated_by_id to commenter' do
     it 'sets adjudicated_by_id to user_id (the commenter themselves)' do
       review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)
