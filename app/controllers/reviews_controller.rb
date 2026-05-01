@@ -7,9 +7,14 @@ class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
   before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section]
-  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore admin_destroy move_to_rule section]
+  # PR-717 review remediation .6 — withdraw added so :authorize_viewer_project
+  # below has @project to check against. Policy: a user removed from the project
+  # has no remaining authority on the project, including the ability to alter
+  # their own pending comments. The comment itself stays put (project record
+  # stability); the actor just loses the ability to alter it after leaving.
+  before_action :set_project_from_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section]
   before_action :set_project
-  before_action :authorize_viewer_project, only: %i[create]
+  before_action :authorize_viewer_project, only: %i[create withdraw update]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
   before_action :authorize_author_project, only: %i[triage adjudicate reopen section]

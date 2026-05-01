@@ -613,6 +613,25 @@ RSpec.describe 'Reviews' do
         expect(my_comment.reload.triage_status).to eq('concur')
       end
     end
+
+    # PR-717 review remediation .6 — policy: a user removed from the project
+    # has no remaining authority on the project. They cannot withdraw their
+    # own pending comments after leaving. The comment itself stays put
+    # (project record stability); the actor just loses the ability to alter
+    # it. Owner-equality alone (authorize_review_owner) is not enough — the
+    # project membership gate must run first.
+    context 'as the commenter who was removed from the project' do
+      before do
+        Membership.where(user: wd_owner, membership: project).destroy_all
+        sign_in wd_owner
+      end
+
+      it 'returns 403 and leaves the comment untouched' do
+        patch "/reviews/#{my_comment.id}/withdraw", as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(my_comment.reload.triage_status).to eq('pending')
+      end
+    end
   end
 
   describe 'PUT /reviews/:id (commenter edit own pending comment)' do
@@ -666,6 +685,22 @@ RSpec.describe 'Reviews' do
       it 'rejects edits with a 422' do
         put "/reviews/#{my_comment.id}", params: { review: { comment: 'too late' } }, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
+        expect(my_comment.reload.comment).to eq('original text')
+      end
+    end
+
+    # PR-717 review remediation .6 — same gap as withdraw above. A user removed
+    # from the project could still edit their own pending comments because
+    # :authorize_viewer_project was never wired into the update path.
+    context 'as the commenter who was removed from the project' do
+      before do
+        Membership.where(user: edit_owner, membership: project).destroy_all
+        sign_in edit_owner
+      end
+
+      it 'returns 403 and leaves the comment text unchanged' do
+        put "/reviews/#{my_comment.id}", params: { review: { comment: 'sneaky edit' } }, as: :json
+        expect(response).to have_http_status(:forbidden)
         expect(my_comment.reload.comment).to eq('original text')
       end
     end
