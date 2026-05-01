@@ -128,13 +128,19 @@
       </template>
 
       <template #cell(actions)="data">
+        <!-- Admin actions render disabled-with-tooltip for non-admin members,
+             never v-if'd away, per the vulcan-disabled-not-hidden rule. -->
         <UpdateProjectDetailsModal
-          v-if="canAdminProject(data.item)"
           :project="data.item"
           :is_project_table="true"
+          :disabled="!canAdminProject(data.item)"
+          :disabled-title="ADMIN_ONLY_TOOLTIP"
           class="floatright"
           @projectUpdated="refreshProjects"
         />
+        <!-- Access-request controls are status-driven (absence = situation
+             does not apply) — these stay v-if'd per the disabled-not-hidden
+             scope clarification. -->
         <span v-if="!data.item.is_member && !data.item.access_request_id">
           <b-button
             class="btn btn-info text-nowrap mx-2 my-3"
@@ -158,17 +164,18 @@
             Cancel Access Request
           </b-button>
         </span>
-        <span v-if="canAdminProject(data.item)">
-          <b-button
-            class="px-2 m-2"
-            variant="danger"
-            data-testid="remove-project-btn"
-            @click="openDeleteModal(data.item)"
-          >
-            <b-icon icon="trash" aria-hidden="true" />
-            Remove
-          </b-button>
-        </span>
+        <b-button
+          v-b-tooltip.hover="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
+          class="px-2 m-2"
+          variant="danger"
+          data-testid="remove-project-btn"
+          :disabled="!canAdminProject(data.item)"
+          :title="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
+          @click="openDeleteModal(data.item)"
+        >
+          <b-icon icon="trash" aria-hidden="true" />
+          Remove
+        </b-button>
       </template>
     </b-table>
 
@@ -230,6 +237,10 @@ export default {
       perPage: 10,
       currentPage: 1,
       truncated: {}, // store the truncated state for each project description
+      // Tooltip shown on admin-only buttons when the current user lacks
+      // admin rights — keeps the control discoverable per the
+      // vulcan-disabled-not-hidden rule.
+      ADMIN_ONLY_TOOLTIP: "Project admin only",
       filter: {
         discoverableToggled: this.is_vulcan_admin,
         myProjectsToggled: true,

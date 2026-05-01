@@ -186,29 +186,34 @@ describe("ProjectsTable", () => {
   });
 
   // ==========================================
-  // DELETE BUTTON VISIBILITY
-  // Requirement: visible when site admin OR project admin
-  // Backend: authorize_admin_project checks User#can_admin_project?
-  //          which allows admin || project.memberships.admin_role
+  // ADMIN ACTION BUTTONS — disabled-not-hidden
+  // Locked design rule (vulcan-disabled-not-hidden): interactive controls
+  // that the current user can't use must render visibly DISABLED with an
+  // explanatory tooltip — never hide via v-if. This makes role-tier
+  // capabilities discoverable instead of leaving non-admins staring at an
+  // empty Actions cell with no signal of what's possible.
   // ==========================================
-  describe("delete button visibility", () => {
-    it("shows Remove button for vulcan site admin (on all projects)", () => {
+  describe("admin action buttons (disabled-not-hidden)", () => {
+    it("renders enabled Remove button for vulcan site admin (on all projects)", () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
       const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
-      // Site admin sees Remove on ALL projects
       expect(removeBtns.length).toBe(sampleProjects.length);
+      removeBtns.wrappers.forEach((btn) => {
+        expect(btn.attributes("disabled")).toBeUndefined();
+      });
     });
 
-    it("shows Remove button for project admin (non-site-admin)", () => {
+    it("renders enabled Remove button for project admin on their projects, disabled elsewhere", () => {
       // sampleProjects[0] has admin: true, sampleProjects[1] has admin: false
       wrapper = createWrapper({ is_vulcan_admin: false });
       const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
-      // Only project[0] where user is project admin
-      expect(removeBtns.length).toBe(1);
+      expect(removeBtns.length).toBe(sampleProjects.length);
+      // Table sorts by name — "Another Project" (admin: false) is first, "Test Project" (admin: true) is second
+      expect(removeBtns.at(0).attributes("disabled")).toBeDefined();
+      expect(removeBtns.at(1).attributes("disabled")).toBeUndefined();
     });
 
-    it("hides Remove button for non-admin project members", () => {
-      // Both projects have admin: false — user is member but not admin
+    it("renders disabled Remove button with admin-only tooltip for non-admin members", () => {
       const nonAdminProjects = [
         { ...sampleProjects[0], admin: false },
         { ...sampleProjects[1], admin: false },
@@ -218,8 +223,36 @@ describe("ProjectsTable", () => {
         propsData: { projects: nonAdminProjects, is_vulcan_admin: false },
         stubs: { UpdateProjectDetailsModal: true },
       });
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
-      expect(removeBtn.exists()).toBe(false);
+      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      expect(removeBtns.length).toBe(nonAdminProjects.length);
+      removeBtns.wrappers.forEach((btn) => {
+        expect(btn.attributes("disabled")).toBeDefined();
+        // Tooltip directive sets a title attribute the user can hover to read.
+        expect(btn.attributes("title")).toMatch(/admin/i);
+      });
+    });
+
+    it("passes admin-gating to the Update modal opener (disabled for non-admin members)", () => {
+      // Don't stub UpdateProjectDetailsModal so we can read its props passthrough.
+      const nonAdminProjects = [{ ...sampleProjects[0], admin: false }];
+      wrapper = mount(ProjectsTable, {
+        localVue,
+        propsData: { projects: nonAdminProjects, is_vulcan_admin: false },
+      });
+      const updateModal = wrapper.findComponent({ name: "UpdateProjectDetailsModal" });
+      expect(updateModal.exists()).toBe(true);
+      expect(updateModal.props("disabled")).toBe(true);
+      expect(updateModal.props("disabledTitle")).toMatch(/admin/i);
+    });
+
+    it("passes enabled state to the Update modal opener for project admin", () => {
+      const adminProject = [{ ...sampleProjects[0], admin: true }];
+      wrapper = mount(ProjectsTable, {
+        localVue,
+        propsData: { projects: adminProject, is_vulcan_admin: false },
+      });
+      const updateModal = wrapper.findComponent({ name: "UpdateProjectDetailsModal" });
+      expect(updateModal.props("disabled")).toBe(false);
     });
   });
 

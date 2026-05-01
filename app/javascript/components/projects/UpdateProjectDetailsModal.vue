@@ -1,8 +1,11 @@
 <template>
   <span>
     <b-button
+      v-b-tooltip.hover="disabled ? disabledTitle : ''"
       class="px-2 m-2"
       :variant="is_project_table ? 'primary' : 'success'"
+      :disabled="disabled"
+      :title="disabled ? disabledTitle : ''"
       @click="showModal()"
     >
       <b-icon v-if="is_project_table" icon="wrench" aria-hidden="true" />
@@ -50,6 +53,17 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    // Per the locked vulcan-disabled-not-hidden rule: render the opener
+    // button visibly disabled with an explanatory tooltip when the current
+    // user can't perform this action, instead of hiding the control with v-if.
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    disabledTitle: {
+      type: String,
+      default: "",
     },
   },
   data: function () {
