@@ -350,7 +350,7 @@ class ReviewsController < ApplicationController
       return render json: {
         toast: { title: 'Cannot move.',
                  message: ['Target rule must be in the same component.'],
-                 variant: 'unprocessable_entity' }
+                 variant: 'warning' }
       }, status: :unprocessable_entity
     end
 

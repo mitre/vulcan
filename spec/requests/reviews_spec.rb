@@ -1080,6 +1080,10 @@ RSpec.describe 'Reviews' do
               params: { rule_id: rule_other_component.id, audit_comment: 'cross-component attempt' }, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
         expect(parent_review.reload.rule_id).to eq(rule_a.id)
+        # PR-717 review remediation .5 — toast variant must be a valid Bootstrap-Vue
+        # value (success/warning/danger/info). The original code shipped
+        # 'unprocessable_entity' which renders an unstyled toast.
+        expect(response.parsed_body.dig('toast', 'variant')).to eq('warning')
       end
 
       it 'rejects when target rule is the same as the source rule' do
