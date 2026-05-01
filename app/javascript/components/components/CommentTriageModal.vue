@@ -64,6 +64,75 @@
           Decline requires a response — explain why so the commenter understands.
         </b-form-invalid-feedback>
       </b-form-group>
+
+      <!-- PR-717 Task 25: admin override actions. Visible only to project
+           admins. Audit comment required server-side; the Confirm button
+           is gated on a non-blank textarea. Force-withdraw is always
+           available; Restore is offered only when the comment is already
+           adjudicated (otherwise there is nothing to revert). -->
+      <div v-if="canAdminAct" class="mt-3 border-top pt-3">
+        <b-button
+          variant="link"
+          size="sm"
+          class="p-0"
+          data-testid="open-admin-actions"
+          :aria-expanded="String(adminActionsOpen)"
+          @click="adminActionsOpen = !adminActionsOpen"
+        >
+          <b-icon icon="shield-lock" class="text-warning" />
+          Admin actions {{ adminActionsOpen ? "▴" : "▾" }}
+        </b-button>
+
+        <div v-show="adminActionsOpen" class="mt-2 p-2 border rounded bg-light">
+          <p class="text-muted small mb-2">
+            Use sparingly — admin overrides are recorded in the audit log with the reason you
+            provide below. These actions bypass the standard triage flow.
+          </p>
+          <div v-if="!adminAction">
+            <b-button
+              size="sm"
+              variant="outline-warning"
+              class="mr-2"
+              data-testid="admin-action-force-withdraw"
+              @click="adminAction = 'force-withdraw'"
+            >
+              <b-icon icon="x-octagon" /> Force-withdraw
+            </b-button>
+            <b-button
+              v-if="canRestore"
+              size="sm"
+              variant="outline-secondary"
+              data-testid="admin-action-restore"
+              @click="adminAction = 'restore'"
+            >
+              <b-icon icon="arrow-counterclockwise" /> Restore
+            </b-button>
+          </div>
+          <div v-else>
+            <b-form-textarea
+              v-model="adminAuditComment"
+              rows="2"
+              :placeholder="adminActionPrompt"
+              size="sm"
+              data-testid="admin-action-audit-comment"
+            />
+            <div class="mt-2">
+              <b-button size="sm" data-testid="admin-action-cancel" @click="cancelAdminAction">
+                Cancel
+              </b-button>
+              <b-button
+                size="sm"
+                :variant="adminAction === 'force-withdraw' ? 'warning' : 'primary'"
+                data-testid="admin-action-confirm"
+                :disabled="!canSubmitAdminAction"
+                @click="submitAdminAction"
+              >
+                Confirm {{ adminAction === "force-withdraw" ? "force-withdraw" : "restore" }}
+              </b-button>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
 
     <template #modal-footer="{ cancel }">
@@ -110,12 +179,21 @@ export default {
     // component_id (set on the row) so project-aggregate triage queues
     // pick the right component per-row without the parent juggling state.
     componentId: { type: [Number, String], default: null },
+    // PR-717 Task 25: gates the Admin actions disclosure. Project admins
+    // get force-withdraw + restore (the inverse). Anything other than
+    // 'admin' means the disclosure is not rendered.
+    effectivePermissions: { type: String, default: null },
   },
   data() {
     return {
       triageStatus: null,
       responseComment: "",
       duplicateOfId: null,
+      // Admin actions disclosure state (PR-717 Task 25). Closed by default
+      // so triagers don't accidentally click into the override panel.
+      adminActionsOpen: false,
+      adminAction: null, // 'force-withdraw' | 'restore' | null
+      adminAuditComment: "",
     };
   },
   computed: {
@@ -156,6 +234,27 @@ export default {
     pickerComponentId() {
       return this.componentId || this.review?.component_id || null;
     },
+    // PR-717 Task 25 — admin override gating. The server enforces the
+    // same gate (authorize_admin_project), so this is purely UI hiding.
+    canAdminAct() {
+      return this.effectivePermissions === "admin";
+    },
+    // Restore is the inverse of any prior adjudication (force-withdraw,
+    // concur, non-concur, etc.). Only meaningful on already-adjudicated
+    // comments — otherwise there is nothing to revert.
+    canRestore() {
+      return !!this.review?.adjudicated_at;
+    },
+    // Both admin actions require a non-blank audit comment (server enforces).
+    canSubmitAdminAction() {
+      return !!this.adminAction && this.adminAuditComment.trim().length > 0;
+    },
+    // Contextual placeholder for the audit-comment textarea.
+    adminActionPrompt() {
+      return this.adminAction === "force-withdraw"
+        ? "Reason for force-withdraw (audit log) — e.g. spam, PII, policy violation..."
+        : "Reason for restore (audit log) — e.g. force-withdrew the wrong comment...";
+    },
   },
   watch: {
     review(val) {
@@ -173,6 +272,31 @@ export default {
     },
     onDuplicateSelected(reviewId) {
       this.duplicateOfId = reviewId;
+    },
+    // PR-717 Task 25 — close the admin-action sub-form without resetting
+    // the disclosure (so the user can choose a different admin action).
+    cancelAdminAction() {
+      this.adminAction = null;
+      this.adminAuditComment = "";
+    },
+    // PR-717 Task 25 — POST to admin_withdraw or admin_restore depending
+    // on which action the admin selected. Emits 'triaged' so the parent
+    // table can refresh, then hides the modal.
+    async submitAdminAction() {
+      if (!this.review || !this.canSubmitAdminAction) return;
+      const endpoint = this.adminAction === "force-withdraw" ? "admin_withdraw" : "admin_restore";
+      try {
+        const res = await axios.patch(`/reviews/${this.review.id}/${endpoint}`, {
+          audit_comment: this.adminAuditComment.trim(),
+        });
+        this.$emit("triaged", res.data.review);
+        // Reset local admin-action state and close the modal.
+        this.cancelAdminAction();
+        this.adminActionsOpen = false;
+        this.$bvModal.hide("comment-triage-modal");
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     async saveTriage(alsoAdjudicate) {
       if (!this.review) return;

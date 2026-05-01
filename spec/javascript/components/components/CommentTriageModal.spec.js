@@ -183,4 +183,103 @@ describe("CommentTriageModal", () => {
     });
     expect(w.find(".modal").attributes("data-centered")).toBe("true");
   });
+
+  // ==========================================================================
+  // PR-717 Task 25 — admin force-withdraw + restore actions inside the modal.
+  // Visible only when the current user has effective admin permissions.
+  // Audit comment is required server-side; UI gates the Confirm button.
+  // ==========================================================================
+  describe("admin actions disclosure (PR-717 Task 25)", () => {
+    const adjudicatedReview = {
+      ...sampleReview,
+      triage_status: "withdrawn",
+      adjudicated_at: "2026-04-30T10:00:00Z",
+    };
+
+    it("hides the Admin actions disclosure when effectivePermissions !== 'admin'", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+        stubs: visibleModalStub,
+      });
+      expect(w.html()).not.toContain("Admin actions");
+    });
+
+    it("renders the Admin actions disclosure when effectivePermissions === 'admin'", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+        stubs: visibleModalStub,
+      });
+      expect(w.html()).toContain("Admin actions");
+    });
+
+    it("posts to /reviews/:id/admin_withdraw with the audit comment", async () => {
+      axios.patch.mockResolvedValue({
+        data: { review: { ...sampleReview, triage_status: "withdrawn" } },
+      });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+      w.vm.adminAction = "force-withdraw";
+      w.vm.adminAuditComment = "spam content removed";
+      await w.vm.submitAdminAction();
+      await flushPromises(w);
+
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/reviews/142/admin_withdraw",
+        expect.objectContaining({ audit_comment: "spam content removed" }),
+      );
+    });
+
+    it("posts to /reviews/:id/admin_restore with the audit comment", async () => {
+      axios.patch.mockResolvedValue({
+        data: { review: { ...adjudicatedReview, triage_status: "pending", adjudicated_at: null } },
+      });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: adjudicatedReview, effectivePermissions: "admin" },
+      });
+      vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+      w.vm.adminAction = "restore";
+      w.vm.adminAuditComment = "withdrew the wrong one";
+      await w.vm.submitAdminAction();
+      await flushPromises(w);
+
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/reviews/142/admin_restore",
+        expect.objectContaining({ audit_comment: "withdrew the wrong one" }),
+      );
+    });
+
+    it("canSubmitAdminAction is false until the audit comment is non-blank", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      w.vm.adminAction = "force-withdraw";
+      w.vm.adminAuditComment = "";
+      expect(w.vm.canSubmitAdminAction).toBe(false);
+      w.vm.adminAuditComment = "reason";
+      expect(w.vm.canSubmitAdminAction).toBe(true);
+    });
+
+    it("only offers Restore when the comment is already adjudicated", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      expect(w.vm.canRestore).toBe(false);
+
+      w.setProps({ review: adjudicatedReview });
+      // setProps doesn't always re-fire computed instantly without nextTick
+      return w.vm.$nextTick().then(() => {
+        expect(w.vm.canRestore).toBe(true);
+      });
+    });
+  });
 });

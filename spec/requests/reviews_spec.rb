@@ -815,4 +815,154 @@ RSpec.describe 'Reviews' do
       end
     end
   end
+
+  # PR-717 Task 25 — admin actions on a comment.
+  # Force-withdraw lets a project admin override the commenter's intent
+  # (spam, PII, policy violations, withdrawn-account cleanup). Audit
+  # comment is required so the federal-compliance trail captures the
+  # documented reason for the override.
+  # Restore is the inverse — undo a force-withdraw (or any prior
+  # adjudication) so the comment can be re-triaged. Same admin gate +
+  # audit comment requirement.
+  describe 'PATCH /reviews/:id/admin_withdraw' do
+    let_it_be(:adm_admin) { create(:user) }
+    let_it_be(:adm_author) { create(:user) }
+    let_it_be(:adm_commenter) { create(:user) }
+
+    before_all do
+      Membership.find_or_create_by!(user: adm_admin, membership: project) { |m| m.role = 'admin' }
+      Membership.find_or_create_by!(user: adm_author, membership: project) { |m| m.role = 'author' }
+      Membership.find_or_create_by!(user: adm_commenter, membership: project) { |m| m.role = 'viewer' }
+    end
+
+    let!(:target_review) do
+      Review.create!(action: 'comment', comment: 'spam content', user: adm_commenter, rule: rule)
+    end
+
+    context 'as project admin' do
+      before { sign_in adm_admin }
+
+      it 'sets triage_status=withdrawn + adjudicated attribution to admin + persists audit comment' do
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: 'spam content removed by admin' }, as: :json
+        expect(response).to have_http_status(:ok)
+
+        target_review.reload
+        expect(target_review.triage_status).to eq('withdrawn')
+        expect(target_review.adjudicated_at).to be_present
+        expect(target_review.adjudicated_by_id).to eq(adm_admin.id)
+        expect(target_review.audits.last.comment).to include('spam content removed')
+      end
+
+      it 'rejects when audit_comment is blank' do
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: '' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'allows overriding an already-adjudicated review' do
+        target_review.update!(triage_status: 'concur',
+                              adjudicated_at: 1.day.ago,
+                              adjudicated_by_id: adm_author.id)
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: 'overriding prior decision' }, as: :json
+        expect(response).to have_http_status(:ok)
+        target_review.reload
+        expect(target_review.triage_status).to eq('withdrawn')
+        expect(target_review.adjudicated_by_id).to eq(adm_admin.id)
+      end
+
+      it 'is allowed even when the component is in the final (frozen) phase' do
+        component.update_columns(comment_phase: 'final')
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: 'PII cleanup post-window' }, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(target_review.reload.triage_status).to eq('withdrawn')
+      ensure
+        component.update_columns(comment_phase: 'open')
+      end
+    end
+
+    context 'as a non-admin author' do
+      before { sign_in adm_author }
+
+      it 'returns 403 and leaves the comment unchanged' do
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: 'should be rejected' }, as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(target_review.reload.triage_status).to eq('pending')
+      end
+    end
+
+    context 'as the commenter (not admin)' do
+      before { sign_in adm_commenter }
+
+      it 'returns 403' do
+        patch "/reviews/#{target_review.id}/admin_withdraw",
+              params: { audit_comment: 'self-override should be rejected' }, as: :json
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+  end
+
+  describe 'PATCH /reviews/:id/admin_restore' do
+    let_it_be(:adm_r_admin) { create(:user) }
+    let_it_be(:adm_r_author) { create(:user) }
+    let_it_be(:adm_r_commenter) { create(:user) }
+
+    before_all do
+      Membership.find_or_create_by!(user: adm_r_admin, membership: project) { |m| m.role = 'admin' }
+      Membership.find_or_create_by!(user: adm_r_author, membership: project) { |m| m.role = 'author' }
+      Membership.find_or_create_by!(user: adm_r_commenter, membership: project) { |m| m.role = 'viewer' }
+    end
+
+    let!(:withdrawn_review) do
+      r = Review.create!(action: 'comment', comment: 'something', user: adm_r_commenter, rule: rule)
+      r.update!(triage_status: 'withdrawn',
+                adjudicated_at: 1.hour.ago,
+                adjudicated_by_id: adm_r_admin.id)
+      r
+    end
+
+    context 'as project admin' do
+      before { sign_in adm_r_admin }
+
+      it 'reverts triage_status to pending and clears adjudicated_at + adjudicated_by_id' do
+        patch "/reviews/#{withdrawn_review.id}/admin_restore",
+              params: { audit_comment: 'restoring — withdrew the wrong review' }, as: :json
+        expect(response).to have_http_status(:ok)
+
+        withdrawn_review.reload
+        expect(withdrawn_review.triage_status).to eq('pending')
+        expect(withdrawn_review.adjudicated_at).to be_nil
+        expect(withdrawn_review.adjudicated_by_id).to be_nil
+        expect(withdrawn_review.audits.last.comment).to include('restoring')
+      end
+
+      it 'rejects when audit_comment is blank' do
+        patch "/reviews/#{withdrawn_review.id}/admin_restore",
+              params: { audit_comment: '' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'rejects restoring a non-adjudicated comment (nothing to restore from)' do
+        pending_review = Review.create!(action: 'comment', comment: 'still pending',
+                                        user: adm_r_commenter, rule: rule)
+        patch "/reviews/#{pending_review.id}/admin_restore",
+              params: { audit_comment: 'no-op attempt' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+
+    context 'as a non-admin author' do
+      before { sign_in adm_r_author }
+
+      it 'returns 403 and leaves the comment withdrawn' do
+        patch "/reviews/#{withdrawn_review.id}/admin_restore",
+              params: { audit_comment: 'unauthorized restore attempt' }, as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(withdrawn_review.reload.triage_status).to eq('withdrawn')
+      end
+    end
+  end
 end

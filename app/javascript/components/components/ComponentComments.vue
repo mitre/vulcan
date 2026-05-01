@@ -153,6 +153,7 @@
     <CommentTriageModal
       :review="selectedRow"
       :component-id="modalComponentId"
+      :effective-permissions="effectivePermissions"
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
       @hidden="selectedRow = null"

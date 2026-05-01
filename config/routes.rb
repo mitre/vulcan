@@ -78,11 +78,14 @@ Rails.application.routes.draw do
   get '/projects/:id/triage',     to: 'projects#triage', as: :project_triage
   # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /
   # reopen / withdraw / update operate on a Review by id. See ReviewsController.
-  patch '/reviews/:id/triage',      to: 'reviews#triage'
-  patch '/reviews/:id/adjudicate',  to: 'reviews#adjudicate'
-  patch '/reviews/:id/reopen',      to: 'reviews#reopen'
-  patch '/reviews/:id/withdraw',    to: 'reviews#withdraw'
-  put   '/reviews/:id',             to: 'reviews#update'
+  patch '/reviews/:id/triage',          to: 'reviews#triage'
+  patch '/reviews/:id/adjudicate',      to: 'reviews#adjudicate'
+  patch '/reviews/:id/reopen',          to: 'reviews#reopen'
+  patch '/reviews/:id/withdraw',        to: 'reviews#withdraw'
+  # PR-717 Task 25 — admin overrides on a comment. Audit-comment required.
+  patch '/reviews/:id/admin_withdraw',  to: 'reviews#admin_withdraw'
+  patch '/reviews/:id/admin_restore',   to: 'reviews#admin_restore'
+  put   '/reviews/:id',                 to: 'reviews#update'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 

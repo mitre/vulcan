@@ -6,16 +6,22 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage adjudicate reopen withdraw update]
-  before_action :set_project_from_review, only: %i[triage adjudicate reopen update]
+  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore]
+  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
   before_action :authorize_author_project, only: %i[triage adjudicate reopen]
   before_action :authorize_review_owner, only: %i[withdraw update]
+  # PR-717 Task 25 — admin override actions are gated to project admins.
+  # Authorization runs from set_project_from_review, so @project is set.
+  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore]
   # PR #717 phase enforcement — gates the public-comment lifecycle.
   # Runs AFTER auth so non-members get the auth error, not a phase error.
+  # admin_withdraw + admin_restore are NOT included — admin overrides are
+  # the whole point and must work even after the comment window closes
+  # (e.g., remove PII discovered post-final).
   before_action :reject_if_comments_closed, only: %i[create]
   before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update]
 
@@ -232,6 +238,77 @@ class ReviewsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: {
       toast: { title: 'Could not withdraw.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PR-717 Task 25 — PATCH /reviews/:id/admin_withdraw.
+  # Project admin overrides commenter intent (spam, PII leak, content
+  # violating policy, withdrawn-account cleanup). Sets withdrawn +
+  # adjudicated attribution to the admin (overriding the auto-set
+  # callback's default of self-adjudication for terminal statuses).
+  # Audit comment is required — captures the documented reason on the
+  # vulcan_audited trail for federal-compliance review.
+  # Allowed even on already-adjudicated comments and even when the
+  # component is frozen_for_writes (admin override is the whole point).
+  def admin_withdraw
+    audit_comment = params[:audit_comment].to_s.strip
+    if audit_comment.blank?
+      return render json: {
+        toast: { title: 'Audit comment required.',
+                 message: ['An audit comment is required for admin force-withdraw.'],
+                 variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    @review.audit_comment = "Admin force-withdraw: #{audit_comment}"
+    @review.update!(
+      triage_status: 'withdrawn',
+      adjudicated_at: Time.current,
+      adjudicated_by_id: current_user.id
+    )
+    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not force-withdraw.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PR-717 Task 25 — PATCH /reviews/:id/admin_restore.
+  # Inverse of admin_withdraw (and any other adjudication): reverts to
+  # 'pending' so the comment can be re-triaged through the normal flow.
+  # Required when admin force-withdrew the wrong comment, or when a
+  # prior triage decision needs to be reopened beyond what the standard
+  # reopen action allows (which leaves triage_status intact).
+  # Rejects when the comment is not adjudicated — there's nothing to
+  # restore from.
+  def admin_restore
+    audit_comment = params[:audit_comment].to_s.strip
+    if audit_comment.blank?
+      return render json: {
+        toast: { title: 'Audit comment required.',
+                 message: ['An audit comment is required for admin restore.'],
+                 variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    if @review.adjudicated_at.blank?
+      return render json: {
+        toast: { title: 'Cannot restore.',
+                 message: ['This comment has not been adjudicated.'],
+                 variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    @review.audit_comment = "Admin restore: #{audit_comment}"
+    @review.update!(
+      triage_status: 'pending',
+      adjudicated_at: nil,
+      adjudicated_by_id: nil
+    )
+    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not restore.', message: e.record.errors.full_messages, variant: 'danger' }
     }, status: :unprocessable_entity
   end
 
