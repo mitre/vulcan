@@ -94,6 +94,119 @@ RSpec.describe DispositionMatrixExport do
   # generate_file wraps the pure CSV string in an Export::Result struct so
   # the single-component HTTP path and the Working Copy CSV piggyback path
   # can share a single source of truth for filename pattern and content-type.
+  # PR-717 review remediation .3 — Formula injection defang.
+  # Untrusted commenter content (review.comment, replies, user.name, user.email)
+  # MUST be defanged before landing in CSV/Excel cells. Reviewers open the
+  # disposition matrix in Excel/Sheets, where a leading `=`/`+`/`-`/`@`/tab/CR
+  # turns the cell into a formula. OWASP CSV Injection.
+  describe 'formula-injection defang' do
+    let!(:evil_user) do
+      u = create(:user, name: 'placeholder')
+      Membership.find_or_create_by!(user: u, membership: project) { |m| m.role = 'viewer' }
+      # Devise blocks formula-trigger characters at validation; bypass with
+      # update_columns since the goal is to test export defang, not to test
+      # that such records can be saved through normal means.
+      u.update_columns(name: '=cmd|attacker', email: '@evil@example.com')
+      u
+    end
+    let!(:evil_review) do
+      Review.create!(
+        rule: component.rules.second,
+        user: evil_user,
+        action: 'comment',
+        comment: '=HYPERLINK("http://evil/x", "Click me")',
+        triage_status: 'pending'
+      )
+    end
+    let(:rows) { CSV.parse(described_class.generate(component: component, include_email: true), headers: true) }
+    let(:evil_row) { rows.find { |r| r['Comment ID'] == evil_review.id.to_s } }
+
+    it 'prefixes a single-quote on a comment that starts with =' do
+      expect(evil_row['Comment']).to start_with("'=")
+      expect(evil_row['Comment']).to eq(%q('=HYPERLINK("http://evil/x", "Click me")))
+    end
+
+    it 'defangs a commenter name that starts with =' do
+      expect(evil_row['Commenter Name']).to start_with("'=")
+      expect(evil_row['Commenter Name']).to eq("'=cmd|attacker")
+    end
+
+    it 'defangs a commenter email that starts with @' do
+      expect(evil_row['Commenter Email']).to eq("'@evil@example.com")
+    end
+
+    it 'defangs comments starting with each Excel formula trigger character' do
+      %w[+ - @].each do |char|
+        Review.create!(
+          rule: component.rules.first, user: commenter, action: 'comment',
+          comment: "#{char}danger", triage_status: 'pending'
+        )
+      end
+      Review.create!(
+        rule: component.rules.first, user: commenter, action: 'comment',
+        comment: "\tTAB-leading", triage_status: 'pending'
+      )
+      Review.create!(
+        rule: component.rules.first, user: commenter, action: 'comment',
+        comment: "\rCR-leading", triage_status: 'pending'
+      )
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      # rubocop:disable Rails/Pluck -- CSV::Table rows are not ActiveRecord
+      comments = out.map { |r| r['Comment'] }
+      # rubocop:enable Rails/Pluck
+      expect(comments).to include("'+danger", "'-danger", "'@danger")
+      expect(comments).to include(start_with("'\t"))
+      expect(comments).to include(start_with("'\r"))
+    end
+
+    it 'leaves legitimate text content unchanged (no leading defang character)' do
+      legit = Review.create!(
+        rule: component.rules.first, user: commenter, action: 'comment',
+        comment: 'Plain English with no formulas — totally fine.',
+        triage_status: 'pending'
+      )
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      legit_row = out.find { |r| r['Comment ID'] == legit.id.to_s }
+      expect(legit_row['Comment']).to eq('Plain English with no formulas — totally fine.')
+    end
+
+    it 'does NOT defang non-string cells (id, timestamps, enum statuses, booleans)' do
+      expect(evil_row['Comment ID']).to eq(evil_review.id.to_s)
+      expect(evil_row['Comment ID']).not_to start_with("'")
+      expect(evil_row['Triage Status']).to eq('pending')
+      expect(evil_row['Triage Status']).not_to start_with("'")
+      expect(evil_row['Posted']).to match(/\A\d{4}-\d{2}-\d{2}T/)
+      expect(evil_row['Posted']).not_to start_with("'")
+    end
+
+    it 'rows_and_headers (Excel sheet path) returns the same defanged values' do
+      out = described_class.rows_and_headers(component: component, include_email: true)
+      comment_idx = out[:headers].index('Comment')
+      name_idx = out[:headers].index('Commenter Name')
+      email_idx = out[:headers].index('Commenter Email')
+      evil_arr = out[:rows].find { |r| r[0] == evil_review.id }
+      expect(evil_arr[comment_idx]).to start_with("'=")
+      expect(evil_arr[name_idx]).to start_with("'=")
+      expect(evil_arr[email_idx]).to start_with("'@")
+    end
+
+    it 'defangs each individual reply within the joined Triager Response cell' do
+      parent = Review.create!(rule: component.rules.first, user: commenter,
+                              action: 'comment', comment: 'parent question',
+                              triage_status: 'pending')
+      Review.create!(rule: component.rules.first, user: author,
+                     action: 'comment', responding_to_review_id: parent.id,
+                     comment: '=DANGER_REPLY', triage_status: 'pending')
+      Review.create!(rule: component.rules.first, user: author,
+                     action: 'comment', responding_to_review_id: parent.id,
+                     comment: 'normal reply', triage_status: 'pending')
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      parent_row = out.find { |r| r['Comment ID'] == parent.id.to_s }
+      expect(parent_row['Triager Response']).to include("'=DANGER_REPLY")
+      expect(parent_row['Triager Response']).to include('normal reply')
+    end
+  end
+
   describe '.generate_file' do
     subject(:result) { described_class.generate_file(component: component) }
 

@@ -76,9 +76,11 @@ module DispositionMatrixExport
   end
 
   def self.build_row(review, component, replies, include_email:)
+    # Defang each reply individually before joining so a malicious reply
+    # is neutralised even when concatenated into the Triager Response cell.
     responses = (replies || [])
                 .sort_by(&:created_at)
-                .map { |x| x.comment.to_s.strip }
+                .map { |x| defang(x.comment.to_s.strip) }
                 .compact_blank
                 .join("\n---\n")
 
@@ -87,22 +89,38 @@ module DispositionMatrixExport
       "#{component.prefix}-#{review.rule.rule_id}",
       review.rule.version,
       review.section.to_s,
-      review.user&.name
+      defang(review.user&.name)
     ]
-    row << review.user&.email if include_email
+    row << defang(review.user&.email) if include_email
     row += [
-      review.comment,
+      defang(review.comment),
       review.created_at.iso8601,
       review.triage_status,
-      review.triage_set_by&.name,
+      defang(review.triage_set_by&.name),
       review.triage_set_at&.iso8601,
       responses,
       review.adjudicated_at.present?,
-      review.adjudicated_by&.name,
+      defang(review.adjudicated_by&.name),
       review.adjudicated_at&.iso8601,
       review.duplicate_of_review_id
     ]
     row
+  end
+
+  # OWASP CSV Injection / formula injection. When a reviewer opens the
+  # disposition matrix in Excel/Sheets, a cell whose value starts with =, +,
+  # -, @, tab (\t) or CR (\r) is interpreted as a formula. Prefix a single
+  # quote so the cell is rendered literally instead. Apply only to untrusted
+  # commenter content (review.comment, replies, user.name, user.email);
+  # numeric IDs / ISO timestamps / enum statuses are non-string and trusted.
+  FORMULA_TRIGGER = /\A[=+\-@\t\r]/
+  private_constant :FORMULA_TRIGGER
+
+  def self.defang(value)
+    return value if value.nil?
+
+    s = value.to_s
+    s.match?(FORMULA_TRIGGER) ? "'#{s}" : s
   end
 
   def self.top_level_reviews(component, status_filter)
