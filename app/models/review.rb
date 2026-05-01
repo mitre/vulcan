@@ -104,6 +104,17 @@ class Review < ApplicationRecord
                       allow_nil: true
   # rubocop:enable Rails/I18nLocaleTexts
   validate :duplicate_status_requires_target
+  # PR-717 review remediation .21 — duplicate_of_review_id only makes
+  # sense when triage_status='duplicate'. The existing
+  # duplicate_status_requires_target validator catches duplicate-WITHOUT-
+  # target; this one catches the opposite (target-without-duplicate-status,
+  # e.g. concur + stray duplicate_of_review_id). Without it, a bogus
+  # cross-link silently persists and corrupts the disposition matrix
+  # "Duplicate Of" column.
+  # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
+  validates :duplicate_of_review_id, absence: { message: 'must be blank when triage_status is not duplicate' },
+                                     unless: -> { triage_status == 'duplicate' }
+  # rubocop:enable Rails/I18nLocaleTexts
   validate :no_self_responding_reference
   validate :no_self_duplicate_reference
   validate :responding_to_must_be_same_rule

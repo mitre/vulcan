@@ -520,6 +520,23 @@ RSpec.describe Review do
                            triage_status: 'duplicate', duplicate_of_review_id: original.id)
       expect(new_dup).to be_valid
     end
+
+    # PR-717 review remediation .21 — duplicate_of_review_id only makes
+    # sense when triage_status='duplicate'. Catches the opposite of
+    # duplicate_status_requires_target — a stray cross-link on a non-
+    # duplicate triage that would silently corrupt the disposition matrix.
+    it 'rejects a stray duplicate_of_review_id on a non-duplicate triage' do
+      review = Review.new(action: 'comment', comment: 'stray', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'concur', duplicate_of_review_id: original.id)
+      expect(review).not_to be_valid
+      expect(review.errors[:duplicate_of_review_id].join).to match(/blank.*not duplicate/i)
+    end
+
+    it 'allows nil duplicate_of_review_id on a non-duplicate triage' do
+      review = Review.new(action: 'comment', comment: 'fine', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'concur', duplicate_of_review_id: nil)
+      expect(review).to be_valid
+    end
   end
 
   describe 'responding_to_review_id invariants' do
