@@ -61,7 +61,7 @@ e81dc8e fix: complete PoC coverage on every seeded component
 | 6 | Live verify Download surfaces × CSV/Excel × admin/author tier | ✅ verified at route level |
 | 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | ✅ `6c94d43` |
 | 7b | Task 25b — Admin hard-delete UI (TDD, typed-confirmation safeguards) | ✅ `2dd8567` |
-| 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | ⏳ next |
+| 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | ✅ backend `013cd2b` + frontend `8e76d01` |
 | 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | pending |
 | 10 | FormMixin pack audit + per-component fixes | pending |
 | 11 | Delete runbook file (`docs/runbook-public-comment-admin-actions.md`) | pending |
