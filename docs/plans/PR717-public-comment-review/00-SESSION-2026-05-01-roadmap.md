@@ -25,8 +25,10 @@ These are **not open for re-litigation** without explicit authorization. Re-ques
 ## Commits shipped this session (chronological, current branch)
 
 ```
-e9cc8f1 refactor: add DispositionMatrixExport.generate_file Result wrapper
+1a118f9 feat: piggyback disposition CSV into Working Copy CSV export
+eee16be docs: capture session roadmap as compact-resilient plan file
 250115f refactor: expose DispositionMatrixExport.rows_and_headers helper
+e9cc8f1 refactor: add DispositionMatrixExport.generate_file Result wrapper
 4552d77 fix: author/viewer/reviewer see disabled admin actions, not empty cell
 a267a6c fix: drop UTF-8 BOM from disposition CSV — align with RFC 4180 + GOV.UK
 272bc9c fix: separate disposition CSV content-format and transport encoding  ← squash candidate
@@ -48,8 +50,8 @@ e81dc8e fix: complete PoC coverage on every seeded component
 |---|---|---|
 | 1 | Working tree cleanup — salvage `generate_file`, drop `generate_zip` | ✅ `e9cc8f1` |
 | 2 | Extract `rows_and_headers` helper for Excel reuse | ✅ `250115f` |
-| 3 | Piggyback disposition into Working Copy CSV path (TDD) | ⏳ in progress |
-| 4 | Piggyback disposition into Working Copy Excel path (TDD) | pending |
+| 3 | Piggyback disposition into Working Copy CSV path (TDD) | ✅ `1a118f9` |
+| 4 | Piggyback disposition into Working Copy Excel path (TDD) | ⏳ next |
 | 5 | Download button on `ProjectComponent.vue` (per-component editor gap) | pending |
 | 6 | Live verify Download surfaces × CSV/Excel × admin/author tier | pending |
 | 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | pending |
