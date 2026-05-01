@@ -87,6 +87,8 @@ Rails.application.routes.draw do
   patch '/reviews/:id/admin_restore',   to: 'reviews#admin_restore'
   patch '/reviews/:id/move_to_rule',    to: 'reviews#move_to_rule'
   delete '/reviews/:id/admin_destroy',  to: 'reviews#admin_destroy'
+  # PR-717 Task 30 — author+ retags a comment's section retroactively.
+  patch '/reviews/:id/section',         to: 'reviews#section'
   put '/reviews/:id', to: 'reviews#update'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'

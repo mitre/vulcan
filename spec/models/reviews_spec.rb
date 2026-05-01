@@ -561,6 +561,36 @@ RSpec.describe Review do
     end
   end
 
+  # PR #717 Task 30 — section is editable post-creation; the change must show up
+  # in the audit log so the disposition record reflects who retagged what + why.
+  describe 'section auditing' do
+    let!(:section_review) do
+      Review.create!(rule: @p1r1, user: @p_viewer, action: 'comment',
+                     comment: 'misclassified', triage_status: 'pending',
+                     section: nil)
+    end
+
+    it 'records an audit entry when section changes' do
+      expect do
+        section_review.audit_comment = 'tagging as Check after triager review'
+        section_review.update!(section: 'check_content')
+      end.to change { section_review.audits.count }.by_at_least(1)
+    end
+
+    it 'captures the from→to transition in audited_changes' do
+      section_review.audit_comment = 'tagging as Check'
+      section_review.update!(section: 'check_content')
+      latest = section_review.audits.last
+      expect(latest.audited_changes['section']).to eq([nil, 'check_content'])
+    end
+
+    it 'preserves the audit comment' do
+      section_review.audit_comment = 'tagging as Check after triager review'
+      section_review.update!(section: 'check_content')
+      expect(section_review.audits.last.comment).to include('Check after triager')
+    end
+  end
+
   describe 'withdrawn auto-sets adjudicated_by_id to commenter' do
     it 'sets adjudicated_by_id to user_id (the commenter themselves)' do
       review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)

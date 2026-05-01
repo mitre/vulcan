@@ -408,4 +408,140 @@ describe("CommentTriageModal", () => {
       );
     });
   });
+
+  // ==========================================================================
+  // PR-717 Task 30 — edit comment section retroactive. Triager (author+)
+  // retags a comment to the correct XCCDF section without rejecting the
+  // commenter. Audit-comment required. Backend gates author+ via
+  // authorize_author_project + reject_if_frozen_for_writes.
+  // ==========================================================================
+  describe("section editing (PR-717 Task 30)", () => {
+    it("hides the Edit section affordance for viewer-tier users", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "viewer" },
+        stubs: visibleModalStub,
+      });
+      expect(w.vm.canEditSection).toBe(false);
+    });
+
+    it("shows the Edit section affordance for author-tier users", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+        stubs: visibleModalStub,
+      });
+      expect(w.vm.canEditSection).toBe(true);
+    });
+
+    it("shows the Edit section affordance for admins", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+        stubs: visibleModalStub,
+      });
+      expect(w.vm.canEditSection).toBe(true);
+    });
+
+    it("offers a section picker that includes (general) plus the canonical XCCDF keys", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+        stubs: visibleModalStub,
+      });
+      const opts = w.vm.sectionOptions;
+      expect(opts.find((o) => o.value === null)).toBeTruthy();
+      expect(opts.find((o) => o.value === "check_content")).toBeTruthy();
+      expect(opts.find((o) => o.value === "fixtext")).toBeTruthy();
+    });
+
+    it("canSubmitSectionChange requires a non-blank audit comment", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+      });
+      w.vm.sectionEditMode = true;
+      w.vm.newSection = "fixtext";
+      w.vm.sectionAuditComment = "";
+      expect(w.vm.canSubmitSectionChange).toBe(false);
+      w.vm.sectionAuditComment = "retagging — was wrong";
+      expect(w.vm.canSubmitSectionChange).toBe(true);
+    });
+
+    it("posts to /reviews/:id/section with section + audit_comment and emits 'triaged'", async () => {
+      axios.patch.mockResolvedValue({
+        data: { review: { ...sampleReview, section: "fixtext" } },
+      });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+      });
+
+      w.vm.sectionEditMode = true;
+      w.vm.newSection = "fixtext";
+      w.vm.sectionAuditComment = "should have been Fix";
+      await w.vm.submitSectionChange();
+      await flushPromises(w);
+
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/reviews/142/section",
+        expect.objectContaining({ section: "fixtext", audit_comment: "should have been Fix" }),
+      );
+      expect(w.emitted("triaged")).toBeTruthy();
+    });
+
+    it("accepts null to retag back to (general)", async () => {
+      axios.patch.mockResolvedValue({
+        data: { review: { ...sampleReview, section: null } },
+      });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+      });
+
+      w.vm.sectionEditMode = true;
+      w.vm.newSection = null;
+      w.vm.sectionAuditComment = "general after all";
+      await w.vm.submitSectionChange();
+      await flushPromises(w);
+
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/reviews/142/section",
+        expect.objectContaining({ section: null, audit_comment: "general after all" }),
+      );
+    });
+
+    it("surfaces server errors via AlertMixin without crashing", async () => {
+      axios.patch.mockRejectedValueOnce({ response: { status: 422, data: {} } });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+      });
+      const alertSpy = vi.spyOn(w.vm, "alertOrNotifyResponse").mockImplementation(() => {});
+
+      w.vm.sectionEditMode = true;
+      w.vm.newSection = "fixtext";
+      w.vm.sectionAuditComment = "x";
+      await w.vm.submitSectionChange();
+      await flushPromises(w);
+
+      expect(alertSpy).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it("cancelSectionEdit clears the sub-form state", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "author" },
+      });
+      w.vm.sectionEditMode = true;
+      w.vm.newSection = "fixtext";
+      w.vm.sectionAuditComment = "retagging";
+      w.vm.cancelSectionEdit();
+
+      expect(w.vm.sectionEditMode).toBe(false);
+      expect(w.vm.newSection).toBe(null);
+      expect(w.vm.sectionAuditComment).toBe("");
+    });
+  });
 });

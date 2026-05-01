@@ -6,13 +6,13 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule]
-  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore admin_destroy move_to_rule]
+  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section]
+  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore admin_destroy move_to_rule section]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
-  before_action :authorize_author_project, only: %i[triage adjudicate reopen]
+  before_action :authorize_author_project, only: %i[triage adjudicate reopen section]
   before_action :authorize_review_owner, only: %i[withdraw update]
   # PR-717 Task 25 — admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
@@ -23,7 +23,7 @@ class ReviewsController < ApplicationController
   # the whole point and must work even after the comment window closes
   # (e.g., remove PII discovered post-final).
   before_action :reject_if_comments_closed, only: %i[create]
-  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update]
+  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section]
 
   def create
     review_params_without_component_id = review_params.except('component_id')
@@ -403,6 +403,44 @@ class ReviewsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: {
       toast: { title: 'Could not hard-delete.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PR-717 Task 30 — PATCH /reviews/:id/section.
+  # Triager (author+) retags an existing comment's `section` so misclassified
+  # comments land in the correct per-section thread without rejecting the
+  # commenter or going out-of-band via the console. Audit-comment required.
+  # Idempotent: re-posting the same section returns 200 with no audit record.
+  # Section value validates against Review::SECTION_KEYS (canonical XCCDF
+  # keys) plus nil for "(general)". Subject to reject_if_frozen_for_writes
+  # like triage/adjudicate — phase=final blocks edits.
+  def section
+    audit_comment = params[:audit_comment].to_s.strip
+    if audit_comment.blank?
+      return render json: {
+        toast: { title: 'Audit comment required.',
+                 message: ['An audit comment is required for section change.'],
+                 variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    new_section = params.key?(:section) ? params[:section].presence : @review.section
+    unless new_section.nil? || Review::SECTION_KEYS.include?(new_section)
+      return render json: {
+        toast: { title: 'Invalid section.',
+                 message: ["#{new_section.inspect} is not a recognized section key."],
+                 variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    return render json: { review: ReviewBlueprint.render_as_hash(@review) } if new_section == @review.section
+
+    @review.audit_comment = "Section change: #{audit_comment}"
+    @review.update!(section: new_section)
+    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not save section.', message: e.record.errors.full_messages, variant: 'danger' }
     }, status: :unprocessable_entity
   end
 

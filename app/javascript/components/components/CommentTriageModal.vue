@@ -11,7 +11,58 @@
       <p class="mb-1">
         <strong>{{ review.rule_displayed_name }}</strong>
         · Section: <SectionLabel :section="review.section" />
+        <b-button
+          v-if="canEditSection && !sectionEditMode"
+          variant="link"
+          size="sm"
+          class="p-0 ml-1"
+          data-testid="edit-section-affordance"
+          @click="enterSectionEdit"
+        >
+          <b-icon icon="pencil" /> Edit
+        </b-button>
       </p>
+
+      <!-- PR-717 Task 30: retroactive section editing. Triager (author+)
+           retags a misclassified comment to the correct XCCDF section. The
+           server requires an audit comment for the change to land. Saving
+           the same section is a no-op (idempotent — no audit record). -->
+      <div
+        v-if="sectionEditMode"
+        class="mb-3 p-2 border rounded bg-light"
+        data-testid="section-edit-form"
+      >
+        <label class="small text-muted mb-1">Move this comment to section:</label>
+        <FilterDropdown
+          v-model="newSection"
+          :options="sectionOptions"
+          aria-label="Pick a new section for this comment"
+          class="d-inline-block"
+        />
+        <b-form-textarea
+          v-model="sectionAuditComment"
+          rows="2"
+          placeholder="Why is this section wrong? (audit log)"
+          size="sm"
+          class="mt-2"
+          data-testid="section-edit-audit-comment"
+        />
+        <div class="mt-2">
+          <b-button size="sm" data-testid="section-edit-cancel" @click="cancelSectionEdit">
+            Cancel
+          </b-button>
+          <b-button
+            size="sm"
+            variant="primary"
+            data-testid="section-edit-confirm"
+            :disabled="!canSubmitSectionChange"
+            @click="submitSectionChange"
+          >
+            Save section
+          </b-button>
+        </div>
+      </div>
+
       <p class="mb-1 text-muted small">
         <strong>{{ review.author_name }}</strong>
         <span v-if="review.author_email"> · {{ review.author_email }}</span>
@@ -202,7 +253,10 @@
 import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
 import RulePicker from "./RulePicker.vue";
 
@@ -214,13 +268,15 @@ const TERMINAL_BY_RULE = ["informational", "duplicate", "needs_clarification", "
 
 export default {
   name: "CommentTriageModal",
-  components: { SectionLabel, CanonicalCommentPicker, RulePicker },
+  components: { SectionLabel, FilterDropdown, CanonicalCommentPicker, RulePicker },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because the
   // ComponentTriagePage host pack does NOT include FormMixin, so without this the
   // modal's axios.patch calls get rejected at the Rails CSRF middleware (422).
   // Each Vue pack has its own axios singleton (esbuild bundle isolation) — the
   // navbar pack's FormMixin doesn't reach the triage pack.
-  mixins: [AlertMixin, FormMixin],
+  // RoleComparisonMixin provides role_gte_to() for the canEditSection gate
+  // (PR-717 Task 30 — author+ retags a comment's section).
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin],
   props: {
     review: { type: Object, default: null },
     // Component the picker is scoped to — defaults to the review's
@@ -247,6 +303,12 @@ export default {
       adminConfirmationId: "",
       // PR-717 Task 26: target rule chosen via RulePicker for move-to-rule.
       adminTargetRuleId: null,
+      // PR-717 Task 30: section editing sub-form state. Author+ retags
+      // a comment's section retroactively. Closed by default — opens via
+      // the pencil button next to the section badge in the modal header.
+      sectionEditMode: false,
+      newSection: null,
+      sectionAuditComment: "",
     };
   },
   computed: {
@@ -353,6 +415,25 @@ export default {
           return "";
       }
     },
+    // PR-717 Task 30 — gate the Edit section affordance to author+ users.
+    // Server enforces the same gate (authorize_author_project), so this is
+    // purely UI hiding. Viewers + commenters see the section badge but no
+    // edit affordance.
+    canEditSection() {
+      return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    // Reuse the same option shape as CommentComposerModal so the picker
+    // surfaces an identical menu when retagging post-creation.
+    sectionOptions() {
+      return [
+        { value: null, text: "(general)" },
+        ...Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text })),
+      ];
+    },
+    // Server requires audit_comment for any section change (422 if blank).
+    canSubmitSectionChange() {
+      return this.sectionAuditComment.trim().length > 0;
+    },
   },
   watch: {
     review(val) {
@@ -381,6 +462,32 @@ export default {
       this.adminAuditComment = "";
       this.adminConfirmationId = "";
       this.adminTargetRuleId = null;
+    },
+    // PR-717 Task 30 — open the section-edit sub-form, seeded with the
+    // current value so re-saving with no change is detected as no-op
+    // by the server (idempotent path returns 200 with no audit record).
+    enterSectionEdit() {
+      this.newSection = this.review?.section ?? null;
+      this.sectionAuditComment = "";
+      this.sectionEditMode = true;
+    },
+    cancelSectionEdit() {
+      this.sectionEditMode = false;
+      this.newSection = null;
+      this.sectionAuditComment = "";
+    },
+    async submitSectionChange() {
+      if (!this.review || !this.canSubmitSectionChange) return;
+      try {
+        const res = await axios.patch(`/reviews/${this.review.id}/section`, {
+          section: this.newSection,
+          audit_comment: this.sectionAuditComment.trim(),
+        });
+        this.$emit("triaged", res.data.review);
+        this.cancelSectionEdit();
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     // PR-717 Task 25 + 25b — dispatch the right endpoint for the chosen
     // admin action. Emits 'triaged' on patch operations so the parent
