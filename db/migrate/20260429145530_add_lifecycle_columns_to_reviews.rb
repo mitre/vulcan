@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+# PR-717 review remediation .2 — columns + FKs only. Index creation is
+# split into a separate concurrent-index migration
+# (20260501171000_add_review_lifecycle_indexes_concurrently) so deployment
+# does not acquire ACCESS EXCLUSIVE on `reviews` for the duration of all
+# five index builds. Pattern: 20260209232046_add_severity_count_indexes_to_base_rules.
 class AddLifecycleColumnsToReviews < ActiveRecord::Migration[8.0]
   def change
     change_table :reviews, bulk: true do |t|
@@ -14,14 +19,7 @@ class AddLifecycleColumnsToReviews < ActiveRecord::Migration[8.0]
       t.bigint   :duplicate_of_review_id
       t.bigint   :responding_to_review_id
       t.string   :section
-
-      t.index %i[action triage_status]
-      t.index %i[rule_id section triage_status]
-      t.index :responding_to_review_id
-      t.index :duplicate_of_review_id
     end
-
-    add_index :reviews, :user_id unless index_exists?(:reviews, :user_id)
 
     add_foreign_key :reviews, :users,   column: :triage_set_by_id,        on_delete: :nullify
     add_foreign_key :reviews, :users,   column: :adjudicated_by_id,       on_delete: :nullify
