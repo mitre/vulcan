@@ -237,10 +237,10 @@ export default {
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
     },
-    // The DISA disposition matrix CSV export (PR #717 Task 29) is a federal
-    // compliance deliverable. Server enforces author-tier minimum + admin-only
-    // include_email; the UI hides the button for viewers and in project-aggregate
-    // scope (which doesn't have a single-component endpoint).
+    // The DISA disposition matrix CSV export (PR #717 Task 29) is a
+    // public-comment-period deliverable. Server enforces author-tier
+    // minimum + admin-only include_email; the UI hides the button for
+    // viewers and in project-aggregate scope (no single-component endpoint).
     canExportDisposition() {
       return this.scope === "component" && this.componentId != null && this.canTriage;
     },

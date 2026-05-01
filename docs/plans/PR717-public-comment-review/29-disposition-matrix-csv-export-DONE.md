@@ -1,13 +1,26 @@
 # Task 29: DISA disposition matrix CSV export
 
-**Depends on:** none (uses existing export infrastructure)
-**Estimate:** 45 min Claude-pace
+**Status:** DONE — shipped in `ff64c69` + BOM-cycle follow-ups + Working
+Copy piggyback (commits `1a118f9` CSV path + `c418e9a` Excel path).
+
+**Scope expansion (2026-05-01):** Disposition data also piggybacks
+into the existing Working Copy outputs — the disposition CSV ships
+inside the Working Copy zip (alongside the rule CSV) and as a second
+sheet (literal Excel sheet tabs) inside the Working Copy workbook.
+Always-on if the component has reviews. The standalone
+`/components/:id/export/disposition_csv` endpoint stays for the
+triage-page Export CSV button (quick shortcut). See locked decision
+#3 in `00-SESSION-2026-05-01-roadmap.md`.
+
 **File touches:**
 - `app/controllers/components_controller.rb` (add `:disposition_csv` export type)
-- `app/helpers/export_helper.rb` (or new `app/lib/disposition_matrix_export.rb`) — CSV row generator
+- `app/lib/disposition_matrix_export.rb` (CSV generator + `generate_file` Result wrapper + `rows_and_headers` helper for Excel reuse)
+- `app/services/export/base.rb` (CSV piggyback in `component_csv_results`; Excel piggyback in `component_workbook_sheets`)
+- `app/services/export/file_namer.rb` (`worksheet_name_disposition` helper, length-safe under Excel's 31-char limit)
 - `app/javascript/components/components/ComponentComments.vue` (download button on the triage panel header)
-- `spec/controllers/components_controller_spec.rb` or `spec/requests/components_controller_spec.rb` (extend)
-- `spec/helpers/export_helper_spec.rb` (extend) or `spec/lib/disposition_matrix_export_spec.rb` (new)
+- `spec/requests/components_disposition_matrix_export_spec.rb` (request spec + content-format spec)
+- `spec/lib/disposition_matrix_export_spec.rb` (unit spec)
+- `spec/services/export/base_spec.rb` (piggyback path)
 - `spec/javascript/components/components/ComponentComments.spec.js` (extend)
 
 ## Why this task exists

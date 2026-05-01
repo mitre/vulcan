@@ -13,8 +13,6 @@ module Import
     # in the archive — pass 1 inserts every review without parent/dup refs,
     # pass 2 patches parent/dup using the external_id → new_id map.
     class ReviewBuilder
-      LIFECYCLE_USER_FIELDS = %w[triage_set_by_id adjudicated_by_id].freeze
-
       def initialize(reviews_data, rule_id_map, result)
         @reviews_data = reviews_data
         @rule_id_map = rule_id_map

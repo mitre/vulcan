@@ -367,10 +367,9 @@ class ReviewsController < ApplicationController
   # PR-717 Task 25b — DELETE /reviews/:id/admin_destroy.
   # Irreversible: hard-delete a comment (PII / sensitive content / legal
   # request) and its reply subtree (Review#responses dependent: :destroy
-  # cascade). Federal-compliance audit entry is created on the
-  # COMPONENT BEFORE the destroy so the trail survives — the destroyed
-  # review's own audit records remain on the audited gem's table but
-  # the auditable record is gone.
+  # cascade). Audit entry is created on the COMPONENT BEFORE the destroy
+  # so the trail survives — the destroyed review's own audit records
+  # remain on the audited gem's table but the auditable record is gone.
   def admin_destroy
     audit_comment = params[:audit_comment].to_s.strip
     if audit_comment.blank?

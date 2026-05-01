@@ -104,8 +104,8 @@ class Component < ApplicationRecord
   end
 
   # When `final`, the component is read-only — no new comments, no triage
-  # or adjudication writes, no rule edits. Federal-compliance posture: once
-  # disposition is published the document and its comment trail are frozen.
+  # or adjudication writes, no rule edits. Audit posture: once disposition
+  # is published the document and its comment trail are frozen.
   def frozen_for_writes?
     comment_phase == 'final'
   end

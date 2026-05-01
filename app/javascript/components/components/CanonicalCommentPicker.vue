@@ -98,7 +98,12 @@ export default {
         if (this.query) params.q = this.query;
         const { data } = await axios.get(`/components/${this.componentId}/comments`, { params });
         this.rows = data.rows || [];
-      } catch {
+      } catch (err) {
+        // Log so a backend 500 / auth error / network failure is visible
+        // in the console instead of silently zeroing the row list — which
+        // looks identical to "no comments match" to the user.
+        // eslint-disable-next-line no-console
+        console.error("CanonicalCommentPicker: failed to fetch candidates", err);
         this.rows = [];
       } finally {
         this.loading = false;
