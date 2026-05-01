@@ -49,7 +49,7 @@ ruby '3.3.10'
 # Use Active Storage variant
 # gem 'image_processing', '~> 1.2'
 
-Reduces boot times through caching; required in config/boot.rb
+# Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
 # Ruby 3.4 compatibility - these will be removed from stdlib
