@@ -1098,16 +1098,25 @@ RSpec.describe 'Reviews' do
       Review.create!(action: 'comment', comment: 'thanks for raising', user: mtr_author, rule: rule_a,
                      triage_status: 'pending', responding_to_review_id: parent_review.id)
     end
+    # PR-717 review remediation .11 — reply-of-reply, exercises depth>=2 in
+    # move_review_subtree!. Without this, a regression that only descended
+    # one level (e.g. responses.first&.update! instead of recursion) would
+    # pass the original test.
+    let!(:nested_reply_review) do
+      Review.create!(action: 'comment', comment: 'follow-up to the reply', user: mtr_commenter, rule: rule_a,
+                     triage_status: 'pending', responding_to_review_id: reply_review.id)
+    end
 
     context 'as project admin' do
       before { sign_in mtr_admin }
 
-      it 'reassigns the parent review and ALL replies to the target rule (atomic)' do
+      it 'reassigns the parent review and ALL replies (including reply-of-reply) to the target rule' do
         patch "/reviews/#{parent_review.id}/move_to_rule",
               params: { rule_id: rule_b.id, audit_comment: 'belongs on rule B' }, as: :json
         expect(response).to have_http_status(:ok)
         expect(parent_review.reload.rule_id).to eq(rule_b.id)
         expect(reply_review.reload.rule_id).to eq(rule_b.id)
+        expect(nested_reply_review.reload.rule_id).to eq(rule_b.id)
       end
 
       it 'rejects when target rule is in a different component' do
