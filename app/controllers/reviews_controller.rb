@@ -437,7 +437,14 @@ class ReviewsController < ApplicationController
       }, status: :unprocessable_entity
     end
 
-    return render json: { review: ReviewBlueprint.render_as_hash(@review) } if new_section == @review.section
+    # Idempotent short-circuit: re-saving the same section is a no-op. Surface
+    # an explicit `idempotent: true` flag so spec coverage can verify the
+    # controller actively detected the no-change path (otherwise the test
+    # would be tautological — Rails update!(same_value) writes no audit
+    # regardless of whether the short-circuit is in place).
+    if new_section == @review.section # rubocop:disable Style/IfUnlessModifier -- modifier form > 120 chars
+      return render json: { review: ReviewBlueprint.render_as_hash(@review), idempotent: true }
+    end
 
     @review.audit_comment = "Section change: #{audit_comment}"
     @review.update!(section: new_section)

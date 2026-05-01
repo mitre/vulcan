@@ -1241,13 +1241,29 @@ RSpec.describe 'Reviews' do
         expect(section_review.reload.section).to be_nil
       end
 
-      it 'is idempotent when section is unchanged (no audit record, returns 200)' do
+      # PR-717 review remediation .12 — the original test asserted only
+      # `audits.count` didn't change, but Rails update!(same_value) triggers
+      # no Dirty change so the audited gem writes nothing regardless of
+      # whether the controller's explicit short-circuit is in place. That
+      # makes the test tautological. Verify the controller actively detected
+      # the no-change path by surfacing an `idempotent: true` flag in the
+      # response body. A regression that removes the short-circuit would
+      # also drop the flag, failing this assertion.
+      it 'returns idempotent: true when section is unchanged (controller short-circuit)' do
         section_review.update!(section: 'check_content')
         before_count = section_review.audits.count
         patch "/reviews/#{section_review.id}/section",
               params: { section: 'check_content', audit_comment: 'noop' }, as: :json
         expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['idempotent']).to be(true)
         expect(section_review.reload.audits.count).to eq(before_count)
+      end
+
+      it 'does NOT include the idempotent flag when section actually changes' do
+        patch "/reviews/#{section_review.id}/section",
+              params: { section: 'fixtext', audit_comment: 'real change' }, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body).not_to have_key('idempotent')
       end
 
       it 'records the section change in the audit trail (vulcan_audited only must include section)' do
