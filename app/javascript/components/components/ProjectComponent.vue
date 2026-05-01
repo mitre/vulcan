@@ -23,6 +23,7 @@
           @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
           @spreadsheet-updated="refreshComponent"
+          @download="openExportModal"
         />
       </template>
 
@@ -93,6 +94,18 @@
           :initial-section="composerSection"
           @posted="onComposerPosted"
         />
+
+        <!-- PR #717 Step 5: unified Download modal — Purpose + Format radios.
+             Disposition matrix piggybacks into the Working Copy CSV/Excel
+             outputs when comments exist (Steps 3+4). -->
+        <ExportModal
+          v-model="showExportModal"
+          :components="[component]"
+          :available-modes="availableExportModes"
+          :hide-component-selection="true"
+          @export="executeExport"
+          @cancel="showExportModal = false"
+        />
       </template>
 
       <!-- Right Panels (Slideovers) - Using shared component -->
@@ -134,6 +147,7 @@ import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 import CommentPeriodBanner from "./CommentPeriodBanner.vue";
+import ExportModal from "../shared/ExportModal.vue";
 
 export default {
   name: "ProjectComponent",
@@ -147,6 +161,7 @@ export default {
     ControlsSidepanels,
     CommentComposerModal,
     CommentPeriodBanner,
+    ExportModal,
   },
   mixins: [
     DateFormatMixinVue,
@@ -244,6 +259,12 @@ export default {
       // PR #717: section pre-selected on the comment composer when a
       // SectionCommentIcon click bubbles open-composer up to here.
       composerSection: null,
+      // PR #717 Step 5: per-component editor Download surface.
+      // Mode-aware ExportModal (Working Copy / Vendor Submission /
+      // STIG-Ready Publish Draft / Backup) hits the project export
+      // route scoped to this single component.
+      showExportModal: false,
+      availableExportModes: ["working_copy", "vendor_submission", "published_stig", "backup"],
     };
   },
   computed: {
@@ -331,6 +352,39 @@ export default {
           this.alertOrNotifyResponse(response);
           // Update local data property (not prop) for proper reactivity through slots
           this.localAdvancedFields = advanced_fields;
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    /**
+     * PR #717 Step 5 — open the unified Download/ExportModal. Listened from
+     * ControlsCommandBar's Download button.
+     */
+    openExportModal() {
+      this.showExportModal = true;
+    },
+    /**
+     * PR #717 Step 5 — emitted by ExportModal when the user confirms export.
+     * Mirrors Project.vue's pattern but scopes component_ids to this single
+     * component. Disposition data piggybacks the CSV/Excel formats per
+     * Steps 3 and 4 — no extra wiring needed here.
+     */
+    executeExport({
+      type,
+      mode,
+      componentIds,
+      includeSrg,
+      includeMemberships,
+      excludeSatisfiedBy,
+    }) {
+      let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
+      if (mode) url += `&mode=${mode}`;
+      if (includeSrg) url += `&include_srg=true`;
+      if (includeMemberships === false) url += `&include_memberships=false`;
+      if (excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
+      axios
+        .get(url)
+        .then(() => {
+          window.open(url);
         })
         .catch(this.alertOrNotifyResponse);
     },

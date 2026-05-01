@@ -30,6 +30,20 @@
         </b-button>
       </span>
 
+      <!-- Download Button — opens the unified ExportModal in the parent.
+           Available to anyone with component access (gates within the modal
+           cover format-/mode-specific role restrictions). PR-717 Step 5 closed
+           the per-component-editor "where do I click" gap with this. -->
+      <b-button
+        variant="outline-secondary"
+        size="sm"
+        class="mr-2"
+        data-testid="download-btn"
+        @click="$emit('download')"
+      >
+        <b-icon icon="download" /> Download
+      </b-button>
+
       <!-- Update from Spreadsheet (author+ only) -->
       <UpdateFromSpreadsheetModal
         v-if="canEdit"

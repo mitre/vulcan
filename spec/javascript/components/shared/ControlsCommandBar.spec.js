@@ -228,6 +228,40 @@ describe("ControlsCommandBar", () => {
     });
   });
 
+  // ==========================================================================
+  // PR-717 Step 5: per-component Download button. ProjectComponent.vue had
+  // no Download surface — users had to leave the editor to grab the export.
+  // ==========================================================================
+  describe("Download button", () => {
+    it("renders a Download button in the command bar", () => {
+      wrapper = createWrapper();
+      const downloadBtn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Download"));
+      expect(downloadBtn).toBeDefined();
+    });
+
+    it("emits download event when clicked", async () => {
+      wrapper = createWrapper();
+      const downloadBtn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Download"));
+      await downloadBtn.trigger("click");
+      expect(wrapper.emitted("download")).toBeTruthy();
+    });
+
+    it("renders the Download button in BOTH view (readOnly=true) and edit modes", () => {
+      wrapper = createWrapper({ readOnly: true });
+      const viewBtn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Download"));
+      expect(viewBtn).toBeDefined();
+      wrapper.destroy();
+
+      wrapper = createWrapper({ readOnly: false });
+      const editBtn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Download"));
+      expect(editBtn).toBeDefined();
+    });
+  });
+
   // ==========================================
   // COMPONENT PANELS
   // ==========================================
