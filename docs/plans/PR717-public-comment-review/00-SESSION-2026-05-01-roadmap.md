@@ -62,21 +62,20 @@ e81dc8e fix: complete PoC coverage on every seeded component
 | 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | ✅ `6c94d43` |
 | 7b | Task 25b — Admin hard-delete UI (TDD, typed-confirmation safeguards) | ✅ `2dd8567` |
 | 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | ✅ backend `013cd2b` + frontend `8e76d01` |
-| 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | pending |
+| 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | ✅ `10ec34b` |
 | 10 | FormMixin pack audit + per-component fixes | pending |
 | 11 | Delete runbook file (`docs/runbook-public-comment-admin-actions.md`) | pending |
 | 12 | Pre-merge cleanup: squash BOM cycle, rename `-DONE.md` plan files, update Task 29 plan with piggyback note, remove unused `LIFECYCLE_USER_FIELDS`, error logging on `CanonicalCommentPicker` empty catch | pending |
 | 13 | Task 27 + 99 — final test sweep (`parallel_rspec` + `vitest run`) + manual smoke pass as admin/author/viewer/commenter | pending |
 
-## Stash content (preserve)
+## Stash content (applied 2026-05-01 — pending manual drop)
 
 `stash@{0}: On feat/viewer-comments: Task 30 WIP — section auditing model + spec (paused for verification)`
 
-- `app/models/review.rb` — adds `:section` to `vulcan_audited only:` list (1 line)
-- `spec/models/reviews_spec.rb` — adds `describe 'section auditing'` block with 3 specs
-- Verified safe to pop (zero conflict against current HEAD per agent review)
-- Matches Step 1 of the plan in `30-edit-comment-section.md`
-- After pop: continue with Step 3 (request spec for `PATCH /reviews/:id/section`)
+- ✅ Applied as part of `10ec34b feat: edit comment section retroactive (Task 30)`
+- 1-line conflict on `review.rb:38` resolved by keeping HEAD (today's `013cd2b` already added `:section` and `:rule_id` to the audit list)
+- Spec block applied cleanly
+- Stash now redundant — Aaron to `git stash drop stash@{0}` manually (Safety Net blocked agent drop)
 
 ## Architectural notes (so the next agent reads code correctly)
 
