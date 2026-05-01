@@ -62,10 +62,10 @@ e81dc8e fix: complete PoC coverage on every seeded component
 | 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | ✅ `6c94d43` |
 | 7b | Task 25b — Admin hard-delete UI (TDD, typed-confirmation safeguards) | ✅ `2dd8567` |
 | 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | ✅ backend `013cd2b` + frontend `8e76d01` |
-| 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | ✅ `10ec34b` |
-| 10 | FormMixin pack audit + per-component fixes | pending |
-| 11 | Delete runbook file (`docs/runbook-public-comment-admin-actions.md`) | pending |
-| 12 | Pre-merge cleanup: squash BOM cycle, rename `-DONE.md` plan files, update Task 29 plan with piggyback note, remove unused `LIFECYCLE_USER_FIELDS`, error logging on `CanonicalCommentPicker` empty catch | pending |
+| 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | ✅ `10ec34b` (+ UX hide-on-save `bcb5070`) |
+| 10 | FormMixin pack audit + per-component fixes (3 consumers gained FormMixin) | ✅ `f7d54a1` |
+| 11 | Delete runbook file (`docs/runbook-public-comment-admin-actions.md`) | ✅ `95ce04f` |
+| 12 | Pre-merge cleanup: rename `-DONE.md` plan files, update Task 29 plan with piggyback note, remove unused `LIFECYCLE_USER_FIELDS`, error logging on `CanonicalCommentPicker` empty catch, drop dropped Task 32 plan, sweep 3 stray `federal` refs | ✅ `b639a8f` (squash of BOM cycle still pending — destructive history rewrite needs explicit go) |
 | 13 | Task 27 + 99 — final test sweep (`parallel_rspec` + `vitest run`) + manual smoke pass as admin/author/viewer/commenter | pending |
 
 ## Stash content (applied 2026-05-01 — pending manual drop)
