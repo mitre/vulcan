@@ -65,7 +65,7 @@ RSpec.describe 'POST /users/:id/lock' do
     it 'prevents locking yourself' do
       post "/users/#{admin_user.id}/lock", headers: json_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       admin_user.reload
       expect(admin_user.access_locked?).to be false
     end

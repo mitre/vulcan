@@ -30,7 +30,7 @@ module UploadValidatable
         message: "File exceeds maximum size of #{ActiveSupport::NumberHelper.number_to_human_size(max_size)}.",
         variant: 'danger'
       }
-    }, status: :unprocessable_entity
+    }, status: :unprocessable_content
     false
   end
 
@@ -46,7 +46,7 @@ module UploadValidatable
         message: "Invalid file type '#{ext}'. Allowed: #{allowed_types.join(', ')}.",
         variant: 'danger'
       }
-    }, status: :unprocessable_entity
+    }, status: :unprocessable_content
     false
   end
 end

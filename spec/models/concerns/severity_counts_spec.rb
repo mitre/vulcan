@@ -179,7 +179,7 @@ RSpec.describe SeverityCounts do
       loaded = Stig.with_severity_counts.find(stig.id)
 
       expected_cols = Stig.columns.reject { |c| SeverityCounts::HEAVY_COLUMN_TYPES.include?(c.type) }
-                          .map(&:name)
+                                  .map(&:name)
       expected_cols.each do |col|
         expect(loaded.has_attribute?(col)).to be(true), "Expected #{col} to be loaded"
       end

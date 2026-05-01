@@ -42,7 +42,7 @@ class ReviewsController < ApplicationController
           message: review.errors.full_messages,
           variant: 'danger'
         }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -93,7 +93,7 @@ class ReviewsController < ApplicationController
           message: warnings.join("\n"),
           variant: 'warning'
         }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
       return
     end
 
@@ -109,7 +109,7 @@ class ReviewsController < ApplicationController
             message: review.errors.full_messages,
             variant: 'danger'
           }
-        }, status: :unprocessable_entity
+        }, status: :unprocessable_content
         raise ActiveRecord::Rollback
       end
       locked_names = lockable.map(&:displayed_name)
@@ -134,7 +134,7 @@ class ReviewsController < ApplicationController
     comment = params[:comment]
 
     invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
-    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
+    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_content if invalid.any?
 
     rules = @component.rules.where(locked: false)
     count = 0
