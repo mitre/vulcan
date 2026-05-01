@@ -29,6 +29,20 @@ class ReviewsController < ApplicationController
   # (e.g., remove PII discovered post-final).
   before_action :reject_if_comments_closed, only: %i[create]
   before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section]
+  # PR-717 review remediation .14 — single audit-comment gate. Each
+  # mutating endpoint that requires an operator-supplied reason was
+  # open-coding the same blank-check + 422 toast (5 sites, ~8 lines each).
+  # Filter normalizes once, sets @audit_comment, and renders the
+  # action-specific 422 toast on blank.
+  AUDIT_COMMENT_LABELS = {
+    admin_withdraw: 'admin force-withdraw',
+    admin_restore: 'admin restore',
+    move_to_rule: 'admin move-to-rule',
+    admin_destroy: 'admin hard-delete',
+    section: 'section change'
+  }.freeze
+  before_action :require_audit_comment,
+                only: %i[admin_withdraw admin_restore move_to_rule admin_destroy section]
 
   def create
     review_params_without_component_id = review_params.except('component_id')
@@ -256,16 +270,7 @@ class ReviewsController < ApplicationController
   # Allowed even on already-adjudicated comments and even when the
   # component is frozen_for_writes (admin override is the whole point).
   def admin_withdraw
-    audit_comment = params[:audit_comment].to_s.strip
-    if audit_comment.blank?
-      return render json: {
-        toast: { title: 'Audit comment required.',
-                 message: ['An audit comment is required for admin force-withdraw.'],
-                 variant: 'danger' }
-      }, status: :unprocessable_entity
-    end
-
-    @review.audit_comment = "Admin force-withdraw: #{audit_comment}"
+    @review.audit_comment = "Admin force-withdraw: #{@audit_comment}"
     @review.update!(
       triage_status: 'withdrawn',
       adjudicated_at: Time.current,
@@ -287,15 +292,6 @@ class ReviewsController < ApplicationController
   # Rejects when the comment is not adjudicated — there's nothing to
   # restore from.
   def admin_restore
-    audit_comment = params[:audit_comment].to_s.strip
-    if audit_comment.blank?
-      return render json: {
-        toast: { title: 'Audit comment required.',
-                 message: ['An audit comment is required for admin restore.'],
-                 variant: 'danger' }
-      }, status: :unprocessable_entity
-    end
-
     if @review.adjudicated_at.blank?
       return render json: {
         toast: { title: 'Cannot restore.',
@@ -304,7 +300,7 @@ class ReviewsController < ApplicationController
       }, status: :unprocessable_entity
     end
 
-    @review.audit_comment = "Admin restore: #{audit_comment}"
+    @review.audit_comment = "Admin restore: #{@audit_comment}"
     @review.update!(
       triage_status: 'pending',
       adjudicated_at: nil,
@@ -330,15 +326,6 @@ class ReviewsController < ApplicationController
   # point at the source rule. Wrapped in a transaction so any failure
   # rolls back the entire subtree move.
   def move_to_rule
-    audit_comment = params[:audit_comment].to_s.strip
-    if audit_comment.blank?
-      return render json: {
-        toast: { title: 'Audit comment required.',
-                 message: ['An audit comment is required for admin move-to-rule.'],
-                 variant: 'danger' }
-      }, status: :unprocessable_entity
-    end
-
     target_rule_id = params[:rule_id].to_i
     if target_rule_id == @review.rule_id
       return render json: {
@@ -360,7 +347,7 @@ class ReviewsController < ApplicationController
     end
 
     Review.transaction do
-      move_review_subtree!(@review, target_rule.id, audit_comment)
+      move_review_subtree!(@review, target_rule.id, @audit_comment)
     end
     render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
   rescue ActiveRecord::RecordInvalid => e
@@ -376,15 +363,6 @@ class ReviewsController < ApplicationController
   # so the trail survives — the destroyed review's own audit records
   # remain on the audited gem's table but the auditable record is gone.
   def admin_destroy
-    audit_comment = params[:audit_comment].to_s.strip
-    if audit_comment.blank?
-      return render json: {
-        toast: { title: 'Audit comment required.',
-                 message: ['An audit comment is required for admin hard-delete.'],
-                 variant: 'danger' }
-      }, status: :unprocessable_entity
-    end
-
     component = @review.rule.component
     component_audit_payload = {
       review_id: @review.id,
@@ -398,7 +376,7 @@ class ReviewsController < ApplicationController
       component.audits.create!(
         user: current_user,
         action: 'admin_destroy_review',
-        comment: "Admin hard-delete review #{@review.id}: #{audit_comment}",
+        comment: "Admin hard-delete review #{@review.id}: #{@audit_comment}",
         audited_changes: component_audit_payload
       )
       @review.destroy!
@@ -419,15 +397,6 @@ class ReviewsController < ApplicationController
   # keys) plus nil for "(general)". Subject to reject_if_frozen_for_writes
   # like triage/adjudicate — phase=final blocks edits.
   def section
-    audit_comment = params[:audit_comment].to_s.strip
-    if audit_comment.blank?
-      return render json: {
-        toast: { title: 'Audit comment required.',
-                 message: ['An audit comment is required for section change.'],
-                 variant: 'danger' }
-      }, status: :unprocessable_entity
-    end
-
     new_section = params.key?(:section) ? params[:section].presence : @review.section
     unless new_section.nil? || Review::SECTION_KEYS.include?(new_section)
       return render json: {
@@ -446,7 +415,7 @@ class ReviewsController < ApplicationController
       return render json: { review: ReviewBlueprint.render_as_hash(@review), idempotent: true }
     end
 
-    @review.audit_comment = "Section change: #{audit_comment}"
+    @review.audit_comment = "Section change: #{@audit_comment}"
     @review.update!(section: new_section)
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
   rescue ActiveRecord::RecordInvalid => e
@@ -621,6 +590,21 @@ class ReviewsController < ApplicationController
   end
 
   private
+
+  # PR-717 review remediation .14 — single before_action gate for the
+  # audit_comment param. Sets @audit_comment for the action body; renders
+  # an action-specific 422 toast on blank using AUDIT_COMMENT_LABELS.
+  def require_audit_comment
+    @audit_comment = params[:audit_comment].to_s.strip
+    return if @audit_comment.present?
+
+    label = AUDIT_COMMENT_LABELS.fetch(action_name.to_sym, 'this action')
+    render json: {
+      toast: { title: 'Audit comment required.',
+               message: ["An audit comment is required for #{label}."],
+               variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
 
   # PR-717 Task 26 — recursive parent-first walk for move_to_rule.
   # Updates the review's rule_id with the audit comment captured by the
