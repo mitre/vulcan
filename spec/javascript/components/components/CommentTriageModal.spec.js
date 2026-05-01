@@ -282,4 +282,77 @@ describe("CommentTriageModal", () => {
       });
     });
   });
+
+  // ==========================================================================
+  // PR-717 Task 25b — admin hard-delete (irreversible). Typed-confirmation
+  // safeguard: admin must type the review ID into a confirmation field
+  // before the Confirm button enables. Audit comment is also required.
+  // ==========================================================================
+  describe("admin hard-delete (PR-717 Task 25b)", () => {
+    it("offers a Hard-delete button when admin actions disclosure is opened", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+        stubs: visibleModalStub,
+      });
+      expect(w.html()).toContain("Hard-delete");
+    });
+
+    it("canSubmitAdminAction stays false until BOTH audit comment AND typed-id confirmation are valid", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      w.vm.adminAction = "hard-delete";
+      w.vm.adminAuditComment = "PII removed";
+      w.vm.adminConfirmationId = "";
+      expect(w.vm.canSubmitAdminAction).toBe(false);
+
+      w.vm.adminConfirmationId = "wrong-id";
+      expect(w.vm.canSubmitAdminAction).toBe(false);
+
+      w.vm.adminConfirmationId = String(sampleReview.id);
+      expect(w.vm.canSubmitAdminAction).toBe(true);
+    });
+
+    it("posts DELETE to /reviews/:id/admin_destroy with the audit comment", async () => {
+      axios.delete.mockResolvedValue({ data: { ok: true } });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+      w.vm.adminAction = "hard-delete";
+      w.vm.adminAuditComment = "PII removed per legal";
+      w.vm.adminConfirmationId = String(sampleReview.id);
+      await w.vm.submitAdminAction();
+      await flushPromises(w);
+
+      expect(axios.delete).toHaveBeenCalledWith(
+        "/reviews/142/admin_destroy",
+        expect.objectContaining({
+          data: expect.objectContaining({ audit_comment: "PII removed per legal" }),
+        }),
+      );
+    });
+
+    it("emits a 'destroyed' event after a successful hard-delete (parent table can remove the row)", async () => {
+      axios.delete.mockResolvedValue({ data: { ok: true } });
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: { review: sampleReview, effectivePermissions: "admin" },
+      });
+      vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+      w.vm.adminAction = "hard-delete";
+      w.vm.adminAuditComment = "cleanup";
+      w.vm.adminConfirmationId = String(sampleReview.id);
+      await w.vm.submitAdminAction();
+      await flushPromises(w);
+
+      expect(w.emitted("destroyed")).toBeTruthy();
+      expect(w.emitted("destroyed")[0][0]).toBe(sampleReview.id);
+    });
+  });
 });

@@ -85,7 +85,8 @@ Rails.application.routes.draw do
   # PR-717 Task 25 — admin overrides on a comment. Audit-comment required.
   patch '/reviews/:id/admin_withdraw',  to: 'reviews#admin_withdraw'
   patch '/reviews/:id/admin_restore',   to: 'reviews#admin_restore'
-  put   '/reviews/:id',                 to: 'reviews#update'
+  delete '/reviews/:id/admin_destroy',  to: 'reviews#admin_destroy'
+  put '/reviews/:id', to: 'reviews#update'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 

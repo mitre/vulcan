@@ -965,4 +965,71 @@ RSpec.describe 'Reviews' do
       end
     end
   end
+
+  # PR-717 Task 25b — DELETE /reviews/:id/admin_destroy.
+  # Irreversible hard-delete of a comment + its reply subtree (dependent
+  # destroy cascade). Federal-compliance audit entry created on the
+  # COMPONENT before the destroy so the trail survives the deletion.
+  describe 'DELETE /reviews/:id/admin_destroy' do
+    let_it_be(:adm_d_admin) { create(:user) }
+    let_it_be(:adm_d_author) { create(:user) }
+    let_it_be(:adm_d_commenter) { create(:user) }
+
+    before_all do
+      Membership.find_or_create_by!(user: adm_d_admin, membership: project) { |m| m.role = 'admin' }
+      Membership.find_or_create_by!(user: adm_d_author, membership: project) { |m| m.role = 'author' }
+      Membership.find_or_create_by!(user: adm_d_commenter, membership: project) { |m| m.role = 'viewer' }
+    end
+
+    let!(:doomed_review) do
+      Review.create!(action: 'comment', comment: 'PII content', user: adm_d_commenter, rule: rule)
+    end
+    let!(:reply_to_doomed) do
+      Review.create!(action: 'comment', comment: 'reply text', user: adm_d_author, rule: rule,
+                     responding_to_review_id: doomed_review.id)
+    end
+
+    context 'as project admin' do
+      before { sign_in adm_d_admin }
+
+      it 'destroys the review AND its reply subtree (dependent: :destroy cascade)' do
+        delete "/reviews/#{doomed_review.id}/admin_destroy",
+               params: { audit_comment: 'PII removed per legal request' }, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(Review.exists?(doomed_review.id)).to be(false)
+        expect(Review.exists?(reply_to_doomed.id)).to be(false)
+      end
+
+      it 'rejects when audit_comment is blank' do
+        delete "/reviews/#{doomed_review.id}/admin_destroy",
+               params: { audit_comment: '' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(Review.exists?(doomed_review.id)).to be(true)
+      end
+
+      it 'records an audit entry on the COMPONENT (so the trail survives the destroy)' do
+        component_id = doomed_review.rule.component_id
+        before_count = Audited::Audit.where(auditable_type: 'Component', auditable_id: component_id).count
+        delete "/reviews/#{doomed_review.id}/admin_destroy",
+               params: { audit_comment: 'cleanup' }, as: :json
+        after_count = Audited::Audit.where(auditable_type: 'Component', auditable_id: component_id).count
+        expect(after_count).to be > before_count
+        latest = Audited::Audit.where(auditable_type: 'Component', auditable_id: component_id).last
+        expect(latest.action).to eq('admin_destroy_review')
+        expect(latest.comment).to include('cleanup')
+        expect(latest.user_id).to eq(adm_d_admin.id)
+      end
+    end
+
+    context 'as a non-admin author' do
+      before { sign_in adm_d_author }
+
+      it 'returns 403 and leaves the review intact' do
+        delete "/reviews/#{doomed_review.id}/admin_destroy",
+               params: { audit_comment: 'unauthorized' }, as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(Review.exists?(doomed_review.id)).to be(true)
+      end
+    end
+  end
 end

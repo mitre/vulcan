@@ -102,13 +102,30 @@
               v-if="canRestore"
               size="sm"
               variant="outline-secondary"
+              class="mr-2"
               data-testid="admin-action-restore"
               @click="adminAction = 'restore'"
             >
               <b-icon icon="arrow-counterclockwise" /> Restore
             </b-button>
+            <b-button
+              size="sm"
+              variant="outline-danger"
+              data-testid="admin-action-hard-delete"
+              @click="adminAction = 'hard-delete'"
+            >
+              <b-icon icon="trash" /> Hard-delete
+            </b-button>
           </div>
           <div v-else>
+            <p
+              v-if="adminAction === 'hard-delete'"
+              class="text-danger small mb-2 font-weight-bold"
+              role="alert"
+            >
+              <b-icon icon="exclamation-triangle-fill" />
+              This permanently deletes the comment AND ALL REPLIES. It cannot be undone.
+            </p>
             <b-form-textarea
               v-model="adminAuditComment"
               rows="2"
@@ -116,18 +133,31 @@
               size="sm"
               data-testid="admin-action-audit-comment"
             />
+            <div v-if="adminAction === 'hard-delete'" class="mt-2">
+              <label class="small text-muted mb-1">
+                Type the comment ID
+                <strong>{{ review.id }}</strong>
+                to confirm:
+              </label>
+              <b-form-input
+                v-model="adminConfirmationId"
+                size="sm"
+                placeholder="Comment ID"
+                data-testid="admin-action-confirmation-id"
+              />
+            </div>
             <div class="mt-2">
               <b-button size="sm" data-testid="admin-action-cancel" @click="cancelAdminAction">
                 Cancel
               </b-button>
               <b-button
                 size="sm"
-                :variant="adminAction === 'force-withdraw' ? 'warning' : 'primary'"
+                :variant="adminConfirmVariant"
                 data-testid="admin-action-confirm"
                 :disabled="!canSubmitAdminAction"
                 @click="submitAdminAction"
               >
-                Confirm {{ adminAction === "force-withdraw" ? "force-withdraw" : "restore" }}
+                Confirm {{ adminConfirmLabel }}
               </b-button>
             </div>
           </div>
@@ -192,8 +222,11 @@ export default {
       // Admin actions disclosure state (PR-717 Task 25). Closed by default
       // so triagers don't accidentally click into the override panel.
       adminActionsOpen: false,
-      adminAction: null, // 'force-withdraw' | 'restore' | null
+      adminAction: null, // 'force-withdraw' | 'restore' | 'hard-delete' | null
       adminAuditComment: "",
+      // PR-717 Task 25b: typed-confirmation safeguard for irreversible
+      // hard-delete. Admin must type the review ID exactly to enable Confirm.
+      adminConfirmationId: "",
     };
   },
   computed: {
@@ -245,15 +278,52 @@ export default {
     canRestore() {
       return !!this.review?.adjudicated_at;
     },
-    // Both admin actions require a non-blank audit comment (server enforces).
+    // All admin actions require a non-blank audit comment (server enforces).
+    // Hard-delete additionally requires the typed-id confirmation to match
+    // the review ID exactly — typo-resistant safeguard for an irreversible op.
     canSubmitAdminAction() {
-      return !!this.adminAction && this.adminAuditComment.trim().length > 0;
+      if (!this.adminAction || this.adminAuditComment.trim().length === 0) return false;
+      if (this.adminAction === "hard-delete") {
+        return this.adminConfirmationId === String(this.review?.id);
+      }
+      return true;
+    },
+    // Confirm-button variant per action — red for hard-delete to reinforce
+    // the irreversible nature; warning for force-withdraw; primary otherwise.
+    adminConfirmVariant() {
+      switch (this.adminAction) {
+        case "hard-delete":
+          return "danger";
+        case "force-withdraw":
+          return "warning";
+        default:
+          return "primary";
+      }
+    },
+    adminConfirmLabel() {
+      switch (this.adminAction) {
+        case "hard-delete":
+          return "hard-delete";
+        case "force-withdraw":
+          return "force-withdraw";
+        case "restore":
+          return "restore";
+        default:
+          return "";
+      }
     },
     // Contextual placeholder for the audit-comment textarea.
     adminActionPrompt() {
-      return this.adminAction === "force-withdraw"
-        ? "Reason for force-withdraw (audit log) — e.g. spam, PII, policy violation..."
-        : "Reason for restore (audit log) — e.g. force-withdrew the wrong comment...";
+      switch (this.adminAction) {
+        case "force-withdraw":
+          return "Reason for force-withdraw (audit log) — e.g. spam, PII, policy violation...";
+        case "restore":
+          return "Reason for restore (audit log) — e.g. force-withdrew the wrong comment...";
+        case "hard-delete":
+          return "Documented reason for irreversible hard-delete (audit log) — required by federal compliance review.";
+        default:
+          return "";
+      }
     },
   },
   watch: {
@@ -278,19 +348,30 @@ export default {
     cancelAdminAction() {
       this.adminAction = null;
       this.adminAuditComment = "";
+      this.adminConfirmationId = "";
     },
-    // PR-717 Task 25 — POST to admin_withdraw or admin_restore depending
-    // on which action the admin selected. Emits 'triaged' so the parent
-    // table can refresh, then hides the modal.
+    // PR-717 Task 25 + 25b — dispatch the right endpoint for the chosen
+    // admin action. Emits 'triaged' on patch operations so the parent
+    // table refreshes, or 'destroyed' on hard-delete so the parent can
+    // remove the row entirely. All paths reset state and close the modal.
     async submitAdminAction() {
       if (!this.review || !this.canSubmitAdminAction) return;
-      const endpoint = this.adminAction === "force-withdraw" ? "admin_withdraw" : "admin_restore";
+      const reviewId = this.review.id;
+      const auditComment = this.adminAuditComment.trim();
       try {
-        const res = await axios.patch(`/reviews/${this.review.id}/${endpoint}`, {
-          audit_comment: this.adminAuditComment.trim(),
-        });
-        this.$emit("triaged", res.data.review);
-        // Reset local admin-action state and close the modal.
+        if (this.adminAction === "hard-delete") {
+          await axios.delete(`/reviews/${reviewId}/admin_destroy`, {
+            data: { audit_comment: auditComment },
+          });
+          this.$emit("destroyed", reviewId);
+        } else {
+          const endpoint =
+            this.adminAction === "force-withdraw" ? "admin_withdraw" : "admin_restore";
+          const res = await axios.patch(`/reviews/${reviewId}/${endpoint}`, {
+            audit_comment: auditComment,
+          });
+          this.$emit("triaged", res.data.review);
+        }
         this.cancelAdminAction();
         this.adminActionsOpen = false;
         this.$bvModal.hide("comment-triage-modal");

@@ -6,8 +6,8 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore]
-  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore]
+  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy]
+  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore admin_destroy]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
@@ -16,7 +16,7 @@ class ReviewsController < ApplicationController
   before_action :authorize_review_owner, only: %i[withdraw update]
   # PR-717 Task 25 — admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
-  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore]
+  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy]
   # PR #717 phase enforcement — gates the public-comment lifecycle.
   # Runs AFTER auth so non-members get the auth error, not a phase error.
   # admin_withdraw + admin_restore are NOT included — admin overrides are
@@ -309,6 +309,48 @@ class ReviewsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: {
       toast: { title: 'Could not restore.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PR-717 Task 25b — DELETE /reviews/:id/admin_destroy.
+  # Irreversible: hard-delete a comment (PII / sensitive content / legal
+  # request) and its reply subtree (Review#responses dependent: :destroy
+  # cascade). Federal-compliance audit entry is created on the
+  # COMPONENT BEFORE the destroy so the trail survives — the destroyed
+  # review's own audit records remain on the audited gem's table but
+  # the auditable record is gone.
+  def admin_destroy
+    audit_comment = params[:audit_comment].to_s.strip
+    if audit_comment.blank?
+      return render json: {
+        toast: { title: 'Audit comment required.',
+                 message: ['An audit comment is required for admin hard-delete.'],
+                 variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    component = @review.rule.component
+    component_audit_payload = {
+      review_id: @review.id,
+      rule_id: @review.rule_id,
+      author_id: @review.user_id,
+      reply_count: @review.responses.count
+    }
+
+    Review.transaction do
+      # Audit BEFORE destroy so the trail survives the cascade.
+      component.audits.create!(
+        user: current_user,
+        action: 'admin_destroy_review',
+        comment: "Admin hard-delete review #{@review.id}: #{audit_comment}",
+        audited_changes: component_audit_payload
+      )
+      @review.destroy!
+    end
+    render json: { ok: true }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not hard-delete.', message: e.record.errors.full_messages, variant: 'danger' }
     }, status: :unprocessable_entity
   end
 

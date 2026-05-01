@@ -156,6 +156,7 @@
       :effective-permissions="effectivePermissions"
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
+      @destroyed="onDestroyed"
       @hidden="selectedRow = null"
     />
   </div>
@@ -392,6 +393,11 @@ export default {
       this.fetch();
     },
     onAdjudicated() {
+      this.fetch();
+    },
+    // PR-717 Task 25b — admin hard-delete destroys the review entirely;
+    // refresh the queue so the destroyed row (and its replies) disappear.
+    onDestroyed() {
       this.fetch();
     },
   },
