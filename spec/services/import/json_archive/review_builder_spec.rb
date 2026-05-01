@@ -103,4 +103,70 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(result.warnings.first).to match(/5002/)
     end
   end
+
+  # PR-717 review remediation .10 — Component-level audit row records WHICH
+  # external_ids were imported FROM WHICH archive. Provides recovery trail
+  # so admin_destroy → re-import can be reconstructed. Without this, audit
+  # laundering is possible: destroy review (audit row keeps history) then
+  # re-import via Review.insert! (no audit) wipes the lifecycle trail.
+  describe '#build_all writes a Component-level import audit' do
+    let_it_be(:importing_admin) do
+      Membership.find_or_create_by!(user: create(:user, name: 'Admin'),
+                                    membership: project) { |m| m.role = 'admin' }.user
+    end
+    let(:manifest) do
+      { 'vulcan_version' => '2.3.5',
+        'exported_at' => '2026-04-30T12:00:00Z',
+        'backup_format_version' => '1.0' }
+    end
+
+    it 'writes one audit row on the component with action=import_reviews' do
+      data = [review_attrs(external_id: 9001, comment: 'audit-test 1')]
+      builder = described_class.new(data, rule_id_map, result,
+                                    component: component, manifest: manifest,
+                                    imported_by: importing_admin)
+      expect { builder.build_all }.to change {
+        component.audits.where(action: 'import_reviews').count
+      }.by(1)
+    end
+
+    it 'records the external_ids of imported reviews in audited_changes' do
+      data = [
+        review_attrs(external_id: 9101, comment: 'a'),
+        review_attrs(external_id: 9102, comment: 'b')
+      ]
+      described_class.new(data, rule_id_map, result,
+                          component: component, manifest: manifest,
+                          imported_by: importing_admin).build_all
+      audit = component.audits.where(action: 'import_reviews').last
+      expect(audit.audited_changes['review_external_ids']).to contain_exactly(9101, 9102)
+    end
+
+    it 'records archive vulcan_version + exported_at in audited_changes' do
+      data = [review_attrs(external_id: 9201, comment: 'manifest test')]
+      described_class.new(data, rule_id_map, result,
+                          component: component, manifest: manifest,
+                          imported_by: importing_admin).build_all
+      audit = component.audits.where(action: 'import_reviews').last
+      expect(audit.audited_changes['archive_vulcan_version']).to eq('2.3.5')
+      expect(audit.audited_changes['archive_exported_at']).to eq('2026-04-30T12:00:00Z')
+    end
+
+    it 'attributes the audit to the importing admin' do
+      data = [review_attrs(external_id: 9301, comment: 'attribution test')]
+      described_class.new(data, rule_id_map, result,
+                          component: component, manifest: manifest,
+                          imported_by: importing_admin).build_all
+      audit = component.audits.where(action: 'import_reviews').last
+      expect(audit.user_id).to eq(importing_admin.id)
+    end
+
+    it 'writes no audit row when no reviews import successfully' do
+      data = []
+      described_class.new(data, rule_id_map, result,
+                          component: component, manifest: manifest,
+                          imported_by: importing_admin).build_all
+      expect(component.audits.where(action: 'import_reviews')).to be_empty
+    end
+  end
 end

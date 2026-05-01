@@ -19,13 +19,18 @@ module Import
   #   include_reviews: true — import review history (default: true)
   class JsonArchiveImporter
     def initialize(zip_file:, project:, dry_run: false, include_reviews: true, include_memberships: false,
-                   component_filter: nil)
+                   component_filter: nil, imported_by: nil)
       @zip_file = zip_file
       @project = project
       @dry_run = dry_run
       @include_reviews = include_reviews
       @include_memberships = include_memberships
       @component_filter = component_filter
+      # PR-717 review remediation .10 — imported_by surfaces on the
+      # Component-level audit row that ReviewBuilder writes per import.
+      # When unset (controllers may not always pass it), the audit row
+      # still records action + archive identifier + external_ids.
+      @imported_by = imported_by
     end
 
     def call
@@ -176,13 +181,13 @@ module Import
         import_srgs(archive, result)
         return unless result.success?
 
-        import_components(archive, result)
+        import_components(archive, result, manifest: archive[:manifest])
 
         raise ActiveRecord::Rollback unless result.success?
       end
     end
 
-    def import_components(archive, result)
+    def import_components(archive, result, manifest: nil)
       total_rules = 0
       total_satisfactions = 0
       total_reviews = 0
@@ -229,7 +234,8 @@ module Import
         next unless @include_reviews
 
         review_count = JsonArchive::ReviewBuilder.new(
-          comp_data[:reviews], rule_id_map, result
+          comp_data[:reviews], rule_id_map, result,
+          component: component, manifest: manifest, imported_by: @imported_by
         ).build_all
         total_reviews += review_count
       end

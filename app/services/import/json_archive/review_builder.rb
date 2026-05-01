@@ -13,10 +13,21 @@ module Import
     # in the archive — pass 1 inserts every review without parent/dup refs,
     # pass 2 patches parent/dup using the external_id → new_id map.
     class ReviewBuilder
-      def initialize(reviews_data, rule_id_map, result)
+      # `component`, `manifest`, and `imported_by` are optional kwargs so
+      # legacy/test callers can still construct ReviewBuilder positionally.
+      # When all three are present, `build_all` writes a Component-level
+      # audit row capturing WHICH external_ids landed FROM WHICH archive
+      # — closes the audit-laundering chain documented in PR-717 review
+      # remediation .10 (admin_destroy → re-import via Review.insert!
+      # bypasses audited; the Component-level row preserves the recovery
+      # trail).
+      def initialize(reviews_data, rule_id_map, result, component: nil, manifest: nil, imported_by: nil)
         @reviews_data = reviews_data
         @rule_id_map = rule_id_map
         @result = result
+        @component = component
+        @manifest = manifest
+        @imported_by = imported_by
       end
 
       def build_all
@@ -57,7 +68,14 @@ module Import
         # validator messages) and delete the row to keep the post-import DB
         # clean. Children pointing at a removed parent cascade-delete via
         # the FK on_delete: :cascade we already have on responding_to_review_id.
-        count - drop_invalid_reviews(external_to_new_id)
+        dropped = drop_invalid_reviews(external_to_new_id)
+
+        # PR-717 review remediation .10 — write a Component-level audit row
+        # listing imported external_ids + archive identifier. Recovery trail
+        # for admin_destroy → re-import scenarios.
+        write_import_audit(external_to_new_id)
+
+        count - dropped
       end
 
       private
@@ -116,6 +134,31 @@ module Import
           "#{role_prefix}_imported_email": email,
           "#{role_prefix}_imported_name": name
         }
+      end
+
+      def write_import_audit(external_to_new_id)
+        return unless @component && @manifest
+        return if external_to_new_id.empty?
+
+        # Filter to external_ids whose new_id still exists in the DB after
+        # the drop-invalid pass — preserves the "WHICH external_ids landed"
+        # semantic (an external_id whose row was dropped is not a recovery
+        # trail entry).
+        surviving_new_ids = Review.where(id: external_to_new_id.values).pluck(:id).to_set
+        landed_external_ids = external_to_new_id.select { |_ext, new_id| surviving_new_ids.include?(new_id) }.keys
+        return if landed_external_ids.empty?
+
+        @component.audits.create!(
+          user: @imported_by,
+          action: 'import_reviews',
+          audited_changes: {
+            'archive_vulcan_version' => @manifest['vulcan_version'],
+            'archive_exported_at' => @manifest['exported_at'],
+            'review_external_ids' => landed_external_ids
+          },
+          comment: "Imported #{landed_external_ids.size} reviews from backup archive " \
+                   "(vulcan_version=#{@manifest['vulcan_version']}, exported_at=#{@manifest['exported_at']})"
+        )
       end
 
       def drop_invalid_reviews(external_to_new_id)

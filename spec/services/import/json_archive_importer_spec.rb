@@ -597,6 +597,21 @@ RSpec.describe Import::JsonArchiveImporter do
         expect(dup.triage_status).to eq('duplicate')
       end
 
+      # PR-717 review remediation .10 — Component-level import audit row.
+      # Reconstructs WHICH external_ids landed FROM WHICH archive so an
+      # admin_destroy → re-import roundtrip leaves a recovery trail.
+      it 'writes a Component import_reviews audit row with external_ids and archive identifier' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        audit = imported.audits.find_by(action: 'import_reviews')
+        expect(audit).to be_present
+        expect(audit.audited_changes['review_external_ids']).to be_an(Array)
+        expect(audit.audited_changes['review_external_ids']).not_to be_empty
+        expect(audit.audited_changes['archive_vulcan_version']).to be_present
+        expect(audit.audited_changes['archive_exported_at']).to be_present
+        expect(audit.comment).to match(/Imported \d+ reviews from backup archive/)
+      end
+
       # PR-717 review remediation .8 — preserve original attribution
       # per-review when the User can't be resolved on import. Researched
       # GitLab's placeholder-user pattern (overkill for one-shot
