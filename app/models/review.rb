@@ -113,13 +113,25 @@ class Review < ApplicationRecord
   before_save :auto_set_adjudicated_for_terminal_statuses
 
   before_create :take_review_action
-  validate :validate_project_permissions
-  validate :can_request_review, if: -> { action.eql? 'request_review' }
-  validate :can_revoke_review_request, if: -> { action.eql? 'revoke_review_request' }
-  validate :can_request_changes, if: -> { action.eql? 'request_changes' }
-  validate :can_approve, if: -> { action.eql? 'approve' }
-  validate :can_lock_control, if: -> { action.eql? 'lock_control' }
-  validate :can_unlock_control, if: -> { action.eql? 'unlock_control' }
+
+  # PR-717 review remediation .9 — user-action validators are explicitly
+  # scoped to :create + :update so they run on normal saves but NOT in
+  # custom validation contexts. ReviewBuilder calls
+  # `review.valid?(:import_integrity)` after Review.insert! to confirm the
+  # archive's records satisfy structural invariants (FKs, status enum,
+  # cross-rule reply) WITHOUT re-asserting the original user's role tier.
+  # Historical archive records aren't user actions; the importing admin
+  # operates outside the project tier system.
+  # Rails Guides §7.3 (Custom Contexts) is the canonical pattern.
+  validate :validate_project_permissions, on: %i[create update]
+  validate :can_request_review, on: %i[create update], if: -> { action.eql? 'request_review' }
+  validate :can_revoke_review_request,
+           on: %i[create update],
+           if: -> { action.eql? 'revoke_review_request' }
+  validate :can_request_changes, on: %i[create update], if: -> { action.eql? 'request_changes' }
+  validate :can_approve, on: %i[create update], if: -> { action.eql? 'approve' }
+  validate :can_lock_control, on: %i[create update], if: -> { action.eql? 'lock_control' }
+  validate :can_unlock_control, on: %i[create update], if: -> { action.eql? 'unlock_control' }
 
   delegate :name, to: :user
 

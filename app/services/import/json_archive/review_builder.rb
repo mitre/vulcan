@@ -49,7 +49,15 @@ module Import
         # the external_id → new_id map. Backups without these refs short-circuit.
         relink_threaded_refs(external_to_new_id)
 
-        count
+        # PR-717 review remediation .9 — Review.insert! bypasses model
+        # validators (duplicate_status_requires_target, responding_to_must_be_same_rule,
+        # duplicate_of_must_be_same_component, inclusion validators on
+        # triage_status / section). Re-load each inserted record and run
+        # `valid?`; on failure, warn (with the archive's external_id +
+        # validator messages) and delete the row to keep the post-import DB
+        # clean. Children pointing at a removed parent cascade-delete via
+        # the FK on_delete: :cascade we already have on responding_to_review_id.
+        count - drop_invalid_reviews(external_to_new_id)
       end
 
       private
@@ -108,6 +116,35 @@ module Import
           "#{role_prefix}_imported_email": email,
           "#{role_prefix}_imported_name": name
         }
+      end
+
+      def drop_invalid_reviews(external_to_new_id)
+        return 0 if external_to_new_id.empty?
+
+        new_id_to_external = external_to_new_id.invert
+        removed = 0
+        Review.where(id: external_to_new_id.values).find_each do |review|
+          # `:import_integrity` is a Rails custom validation context. Per
+          # Rails Guides §7.3, calling valid?(:custom) runs (a) validators
+          # tagged on: :custom AND (b) validators with no on: option;
+          # validators tagged on: %i[create update] are skipped. Review's
+          # user-action permission validators are tagged on: %i[create update]
+          # so the import context runs ONLY data-integrity validators
+          # (cross-rule references, status enums, FK invariants).
+          next if review.valid?(:import_integrity)
+
+          ext = new_id_to_external[review.id] || review.id
+          @result.add_warning(
+            "Review #{ext}: failed validation on import — " \
+            "#{review.errors.full_messages.join('; ')}. Removed to preserve DB integrity."
+          )
+          # delete (not destroy) to skip after_destroy + audit-on-destroy.
+          # The row was never user-facing on this instance — no audit-trail
+          # value to preserve. FK on_delete: :cascade still removes children.
+          review.delete
+          removed += 1
+        end
+        removed
       end
 
       def relink_threaded_refs(external_to_new_id)
