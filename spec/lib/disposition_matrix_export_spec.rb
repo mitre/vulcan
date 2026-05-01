@@ -207,6 +207,56 @@ RSpec.describe DispositionMatrixExport do
     end
   end
 
+  # PR-717 review remediation .8 — when triage_set_by_id (or adjudicated_by_id)
+  # is nil but triage_set_by_imported_email/name are populated (cross-instance
+  # restore where the user didn't exist on the target), the disposition CSV
+  # falls back to the imported_* fields so DISA reviewers still see WHO
+  # triaged in the deliverable. Annotation marks the row as imported.
+  describe 'imported-attribution fallback in Triaged By / Adjudicated By cells' do
+    let!(:imported_review) do
+      Review.create!(rule: rule, user: commenter, action: 'comment',
+                     comment: 'cross-instance review',
+                     triage_status: 'concur',
+                     triage_set_at: 1.day.ago,
+                     adjudicated_at: 12.hours.ago,
+                     triage_set_by_imported_email: 'alice@example.com',
+                     triage_set_by_imported_name: 'Alice External',
+                     adjudicated_by_imported_email: 'bob@example.com',
+                     adjudicated_by_imported_name: 'Bob External')
+    end
+    let(:rows) { CSV.parse(described_class.generate(component: component), headers: true) }
+    let(:imported_row) { rows.find { |r| r['Comment ID'] == imported_review.id.to_s } }
+
+    it 'falls back to imported name + email annotation in the Triaged By cell' do
+      expect(imported_row['Triaged By']).to eq('Alice External (imported, no account: alice@example.com)')
+    end
+
+    it 'falls back to imported name + email annotation in the Adjudicated By cell' do
+      expect(imported_row['Adjudicated By']).to eq('Bob External (imported, no account: bob@example.com)')
+    end
+
+    it 'uses the resolved User name when triage_set_by_id is present' do
+      author_review = Review.create!(rule: rule, user: commenter, action: 'comment',
+                                     comment: 'normal triaged review',
+                                     triage_status: 'concur',
+                                     triage_set_by: author, triage_set_at: 1.day.ago,
+                                     adjudicated_at: 12.hours.ago, adjudicated_by: author)
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == author_review.id.to_s }
+      expect(row['Triaged By']).to eq('Aaron Lippold')
+      expect(row['Adjudicated By']).to eq('Aaron Lippold')
+    end
+
+    it 'leaves the cell blank when both FK and imported_* are nil (legacy)' do
+      legacy = Review.create!(rule: rule, user: commenter, action: 'comment',
+                              comment: 'legacy untriaged', triage_status: 'pending')
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == legacy.id.to_s }
+      expect(row['Triaged By']).to be_blank
+      expect(row['Adjudicated By']).to be_blank
+    end
+  end
+
   describe '.generate_file' do
     subject(:result) { described_class.generate_file(component: component) }
 

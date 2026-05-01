@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_01_135108) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_01_141409) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -256,6 +256,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_01_135108) do
     t.bigint "duplicate_of_review_id"
     t.bigint "responding_to_review_id"
     t.string "section"
+    t.string "triage_set_by_imported_email"
+    t.string "triage_set_by_imported_name"
+    t.string "adjudicated_by_imported_email"
+    t.string "adjudicated_by_imported_name"
     t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
     t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
     t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"

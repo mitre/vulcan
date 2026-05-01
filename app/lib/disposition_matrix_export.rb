@@ -96,15 +96,32 @@ module DispositionMatrixExport
       defang(review.comment),
       review.created_at.iso8601,
       review.triage_status,
-      defang(review.triage_set_by&.name),
+      defang(attribution_label(review, :triage_set_by)),
       review.triage_set_at&.iso8601,
       responses,
       review.adjudicated_at.present?,
-      defang(review.adjudicated_by&.name),
+      defang(attribution_label(review, :adjudicated_by)),
       review.adjudicated_at&.iso8601,
       review.duplicate_of_review_id
     ]
     row
+  end
+
+  # PR-717 review remediation .8 — prefer the resolved User's name; fall
+  # back to the imported_email / imported_name when the FK is nil but the
+  # archive carried original attribution forward (cross-instance restore
+  # where the User didn't exist on the target). DISA reviewers still see
+  # WHO triaged in the deliverable, with an explicit "imported, no account"
+  # annotation so the trail is unambiguous.
+  def self.attribution_label(review, role)
+    user = review.public_send(role)
+    return user.name if user
+
+    imported_name = review.public_send(:"#{role}_imported_name")
+    imported_email = review.public_send(:"#{role}_imported_email")
+    return nil if imported_name.blank? && imported_email.blank?
+
+    "#{imported_name} (imported, no account: #{imported_email})"
   end
 
   # OWASP CSV Injection / formula injection. When a reviewer opens the

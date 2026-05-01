@@ -81,13 +81,33 @@ module Import
         attrs[:triage_set_at] = parse_time(review_data['triage_set_at']) if review_data['triage_set_at']
         attrs[:adjudicated_at] = parse_time(review_data['adjudicated_at']) if review_data['adjudicated_at']
 
-        triager = resolve_user(review_data, 'triage_set_by_email', 'triage_set_by_name')
-        attrs[:triage_set_by_id] = triager.id if triager
-
-        adjudicator = resolve_user(review_data, 'adjudicated_by_email', 'adjudicated_by_name')
-        attrs[:adjudicated_by_id] = adjudicator.id if adjudicator
+        attrs.merge!(attribution_attrs(review_data, 'triage_set_by'))
+        attrs.merge!(attribution_attrs(review_data, 'adjudicated_by'))
 
         attrs
+      end
+
+      # PR-717 review remediation .8 — if the user resolves on this instance,
+      # set the FK as today. If the user can't resolve but the archive has
+      # an email or name (i.e. attribution data exists), preserve it on
+      # imported_email/imported_name columns and record a warning so the
+      # operator sees who-triaged-what was preserved-but-unmapped. Display +
+      # export layers fall back to the imported_* columns when FK is nil.
+      def attribution_attrs(review_data, role_prefix)
+        email = review_data["#{role_prefix}_email"]
+        name = review_data["#{role_prefix}_name"]
+        user = resolve_user(review_data, "#{role_prefix}_email", "#{role_prefix}_name")
+        return { "#{role_prefix}_id": user.id } if user
+        return {} if email.blank? && name.blank?
+
+        @result.add_warning(
+          "Review #{review_data['external_id']}: #{role_prefix} '#{email || name}' not found on this " \
+          'instance — original attribution preserved on imported_email/imported_name (no FK).'
+        )
+        {
+          "#{role_prefix}_imported_email": email,
+          "#{role_prefix}_imported_name": name
+        }
       end
 
       def relink_threaded_refs(external_to_new_id)

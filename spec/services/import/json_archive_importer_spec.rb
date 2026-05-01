@@ -596,6 +596,101 @@ RSpec.describe Import::JsonArchiveImporter do
         expect(dup.duplicate_of_review_id).to eq(target.id)
         expect(dup.triage_status).to eq('duplicate')
       end
+
+      # PR-717 review remediation .8 — preserve original attribution
+      # per-review when the User can't be resolved on import. Researched
+      # GitLab's placeholder-user pattern (overkill for one-shot
+      # backup/restore use case); 4 cols on Review carry the email + name
+      # forward and display/export layers fall back to them.
+      # https://docs.gitlab.com/development/user_contribution_mapping/
+      #
+      # let_it_be uses refind: true on orphan_triager so destroy! gets a
+      # fresh AR instance per example (otherwise the cached Ruby object
+      # retains @destroyed=true after savepoint rollback and the audited
+      # gem's after_destroy fires "create unless parent is saved").
+      # https://github.com/test-prof/test-prof/blob/master/docs/recipes/let_it_be.md
+      context 'when triage_set_by/adjudicated_by user is missing on the target' do # rubocop:disable RSpec/NestedGroups
+        let_it_be(:orphan_proj) { create(:project) }
+        let_it_be(:orphan_component) { create(:component, project: orphan_proj) }
+        let_it_be(:orphan_commenter) { create(:user, name: 'Orphan Commenter') }
+        let_it_be(:orphan_triager, refind: true) do
+          create(:user, name: 'Orphan Triager', email: 'orphan-triager@example.com')
+        end
+        let_it_be(:orphan_review) do
+          Membership.find_or_create_by!(user: orphan_commenter, membership: orphan_proj) { |m| m.role = 'viewer' }
+          Membership.find_or_create_by!(user: orphan_triager, membership: orphan_proj) { |m| m.role = 'author' }
+          Review.create!(
+            user: orphan_commenter, rule: orphan_component.rules.first,
+            action: 'comment', comment: 'orphan-test comment',
+            triage_status: 'concur',
+            triage_set_by: orphan_triager, triage_set_at: 1.day.ago,
+            adjudicated_at: 12.hours.ago, adjudicated_by: orphan_triager
+          )
+        end
+        let_it_be(:orphan_zip) do
+          Export::Base.new(
+            exportable: orphan_component, mode: :backup, format: :json_archive
+          ).call.data
+        end
+
+        before do
+          # Wipe the triager so the import-side User.find_by(email:) returns nil.
+          # FK satisfaction first, then the User. refind: true above gives
+          # us a fresh AR instance per example so destroy! works repeatedly
+          # across the savepoint-rollback boundary.
+          Membership.where(user: orphan_triager).destroy_all
+          orphan_triager.destroy!
+        end
+
+        let(:orphan_target_project) { create(:project) }
+
+        it 'records a warning naming the missing email' do
+          result = import_archive(orphan_zip, orphan_target_project)
+          expect(result.warnings).to include(a_string_matching(/triage_set_by.*orphan-triager@example.com/i))
+        end
+
+        it 'imports the review with FK nil but imported_email + imported_name populated' do
+          import_archive(orphan_zip, orphan_target_project)
+          imported = orphan_target_project.components.find_by(name: orphan_component.name)
+          rev = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'orphan-test comment' }
+          expect(rev).to be_present
+          expect(rev.triage_set_by_id).to be_nil
+          expect(rev.triage_set_by_imported_email).to eq('orphan-triager@example.com')
+          expect(rev.triage_set_by_imported_name).to eq('Orphan Triager')
+          expect(rev.adjudicated_by_id).to be_nil
+          expect(rev.adjudicated_by_imported_email).to eq('orphan-triager@example.com')
+          expect(rev.adjudicated_by_imported_name).to eq('Orphan Triager')
+        end
+
+        it 'leaves imported_* nil when the user resolves successfully' do
+          # Re-create the triager BEFORE import so resolution succeeds.
+          create(:user, name: 'Orphan Triager Restored', email: 'orphan-triager@example.com')
+          import_archive(orphan_zip, orphan_target_project)
+          imported = orphan_target_project.components.find_by(name: orphan_component.name)
+          rev = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'orphan-test comment' }
+          expect(rev.triage_set_by_id).to be_present
+          expect(rev.triage_set_by_imported_email).to be_nil
+          expect(rev.triage_set_by_imported_name).to be_nil
+        end
+
+        it 'does not warn when triage_set_by_email is absent from the archive' do
+          plain_proj = create(:project)
+          plain_component = create(:component, project: plain_proj)
+          plain_commenter = create(:user, name: 'Plain Commenter')
+          Membership.find_or_create_by!(user: plain_commenter, membership: plain_proj) { |m| m.role = 'viewer' }
+          Review.create!(
+            user: plain_commenter, rule: plain_component.rules.first,
+            action: 'comment', comment: 'plain comment without triage'
+          )
+          plain_zip = Export::Base.new(
+            exportable: plain_component, mode: :backup, format: :json_archive
+          ).call.data
+          plain_target = create(:project)
+          result = import_archive(plain_zip, plain_target)
+          expect(result.warnings).not_to include(a_string_matching(/triage_set_by/i))
+          expect(result.warnings).not_to include(a_string_matching(/adjudicated_by/i))
+        end
+      end
     end
   end
 
