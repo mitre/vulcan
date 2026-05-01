@@ -491,7 +491,7 @@ RSpec.describe Import::JsonArchiveImporter do
     end
 
     # PR #717 — public-comment review workflow must survive backup/restore.
-    # Without this, a federal-compliance backup taken mid-review would lose
+    # Without this, a backup taken mid-review would lose
     # all triage decisions, adjudication metadata, reply threading, and
     # comment-phase state on restore.
     context 'with PR-717 public-comment review lifecycle data' do

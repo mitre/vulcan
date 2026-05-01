@@ -819,7 +819,7 @@ RSpec.describe 'Reviews' do
   # PR-717 Task 25 — admin actions on a comment.
   # Force-withdraw lets a project admin override the commenter's intent
   # (spam, PII, policy violations, withdrawn-account cleanup). Audit
-  # comment is required so the federal-compliance trail captures the
+  # comment is required so the audit trail captures the
   # documented reason for the override.
   # Restore is the inverse — undo a force-withdraw (or any prior
   # adjudication) so the comment can be re-triaged. Same admin gate +
@@ -1029,6 +1029,109 @@ RSpec.describe 'Reviews' do
                params: { audit_comment: 'unauthorized' }, as: :json
         expect(response).to have_http_status(:forbidden)
         expect(Review.exists?(doomed_review.id)).to be(true)
+      end
+    end
+  end
+
+  # PR-717 Task 26 — PATCH /reviews/:id/move_to_rule.
+  # Admin reassigns a misplaced comment (and atomically, all its replies)
+  # to a different rule in the same component. Audit-comment required.
+  # Walks parent-first so the responding_to_must_be_same_rule validator
+  # sees the parent already at the target when each child moves.
+  describe 'PATCH /reviews/:id/move_to_rule' do
+    let_it_be(:mtr_admin) { create(:user) }
+    let_it_be(:mtr_author) { create(:user) }
+    let_it_be(:mtr_commenter) { create(:user) }
+    let_it_be(:other_project) { create(:project) }
+    let_it_be(:other_component) { create(:component, project: other_project, based_on: srg) }
+
+    before_all do
+      Membership.find_or_create_by!(user: mtr_admin, membership: project) { |m| m.role = 'admin' }
+      Membership.find_or_create_by!(user: mtr_author, membership: project) { |m| m.role = 'author' }
+      Membership.find_or_create_by!(user: mtr_commenter, membership: project) { |m| m.role = 'viewer' }
+    end
+
+    let(:rule_a) { component.rules.first }
+    let(:rule_b) { component.rules.second }
+    let(:rule_other_component) { other_component.rules.first }
+
+    let!(:parent_review) do
+      Review.create!(action: 'comment', comment: 'misplaced concern', user: mtr_commenter, rule: rule_a,
+                     triage_status: 'pending')
+    end
+    let!(:reply_review) do
+      Review.create!(action: 'comment', comment: 'thanks for raising', user: mtr_author, rule: rule_a,
+                     triage_status: 'pending', responding_to_review_id: parent_review.id)
+    end
+
+    context 'as project admin' do
+      before { sign_in mtr_admin }
+
+      it 'reassigns the parent review and ALL replies to the target rule (atomic)' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: 'belongs on rule B' }, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(parent_review.reload.rule_id).to eq(rule_b.id)
+        expect(reply_review.reload.rule_id).to eq(rule_b.id)
+      end
+
+      it 'rejects when target rule is in a different component' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_other_component.id, audit_comment: 'cross-component attempt' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(parent_review.reload.rule_id).to eq(rule_a.id)
+      end
+
+      it 'rejects when target rule is the same as the source rule' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_a.id, audit_comment: 'no-op' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'rejects when target rule does not exist' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: 999_999, audit_comment: 'nonexistent' }, as: :json
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it 'rejects when audit_comment is blank' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: '' }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'preserves triage_status and adjudication on move' do
+        parent_review.update!(triage_status: 'concur',
+                              adjudicated_at: 1.day.ago,
+                              adjudicated_by_id: mtr_author.id)
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: 'reassigning' }, as: :json
+        expect(response).to have_http_status(:ok)
+
+        parent_review.reload
+        expect(parent_review.rule_id).to eq(rule_b.id)
+        expect(parent_review.triage_status).to eq('concur')
+        expect(parent_review.adjudicated_at).to be_present
+      end
+
+      it 'records the rule_id change in the audit trail (vulcan_audited only must include rule_id)' do
+        expect do
+          patch "/reviews/#{parent_review.id}/move_to_rule",
+                params: { rule_id: rule_b.id, audit_comment: 'audit-trail check' }, as: :json
+        end.to change { parent_review.reload.audits.count }.by_at_least(1)
+        latest = parent_review.audits.last
+        expect(latest.audited_changes['rule_id']).to eq([rule_a.id, rule_b.id])
+      end
+    end
+
+    context 'as a non-admin author' do
+      before { sign_in mtr_author }
+
+      it 'returns 403 and leaves the rule_id unchanged' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: 'unauthorized' }, as: :json
+        expect(response).to have_http_status(:forbidden)
+        expect(parent_review.reload.rule_id).to eq(rule_a.id)
       end
     end
   end

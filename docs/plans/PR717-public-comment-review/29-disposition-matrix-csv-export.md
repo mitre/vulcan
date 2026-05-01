@@ -12,7 +12,7 @@
 
 ## Why this task exists
 
-The DISA public-comment-review process is a **federal compliance
+The DISA public-comment-review process produces a **required
 artifact**: at the end of a review window, DISA expects a structured
 record of every comment raised, its triage decision, the response, and
 the adjudication outcome. The "disposition matrix" is that record.
@@ -29,7 +29,7 @@ flattens that into a per-row CSV that DISA can consume.
 OSCAL export is intentionally **out of scope** for this task — OSCAL
 schemas for comment-review processes are a larger undertaking and not
 required by DISA at the public-comment phase. CSV satisfies the
-federal-compliance need; OSCAL is filed in Task 99's follow-ups.
+deliverable need; OSCAL is filed in Task 99's follow-ups.
 
 ## Verified facts
 
@@ -100,7 +100,7 @@ federal-compliance need; OSCAL is filed in Task 99's follow-ups.
 The in-app `paginated_comments` deliberately omits `author_email` to
 prevent commenter-email scraping by anyone with read access (see
 component.rb:641-644 for the comment). The CSV export was originally
-going to deviate from that for the federal-compliance record — but
+going to deviate from that for the disposition record — but
 authorization at viewer-tier reproduces the very leak the in-app
 scrubber prevents (viewers include external commenters who could
 download the whole roster).
@@ -120,8 +120,8 @@ download the whole roster).
    (server-side enforcement, not just UI hiding).
 
 3. **Audit logging always**: every export records who exported what,
-   when, and whether `include_email` was set. This satisfies the
-   federal-compliance "who has the email roster" question.
+   when, and whether `include_email` was set. This answers the
+   "who has the email roster" question for any future audit review.
 
 The default-without-email export remains useful for the disposition
 record (DISA can match against their own commenter identity store via
@@ -506,7 +506,7 @@ The closest fit is **SAR** (Assessment Results), specifically its
    downstream tool consumes them meaningfully** without DISA-specific
    code. The OSCAL value proposition (interoperability) is lost.
 3. DISA today consumes the disposition matrix as **CSV / Excel** —
-   that's the working federal-compliance format for this artifact.
+   that's the working format for this artifact.
 4. The OSCAL community has not published a draft-review-disposition
    pattern. Inventing one privately would create maintenance debt
    without payoff.

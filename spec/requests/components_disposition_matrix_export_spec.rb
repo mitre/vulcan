@@ -8,7 +8,7 @@ require 'rails_helper'
 # structured per-comment record (the "disposition matrix") for every comment
 # raised against a component, with triage decisions and adjudication outcomes.
 #
-# This is a federal-compliance deliverable — the only mandatory artifact in
+# This is a required deliverable — the only mandatory artifact in
 # this PR. CSV is the format DISA consumes today; OSCAL is deferred (see
 # vulcan-oscal-disposition-deadend memory).
 #

@@ -276,7 +276,7 @@ code-reviewer, plan-quality reviewer) converged on deferring these:
   reassignment) are rare during a 1-2 day public comment window with
   vetted industry commenters.
 - The console fallback is auditable via `VulcanAuditable` +
-  `audit_comment` setter — federal compliance is satisfied.
+  `audit_comment` setter — audit-trail requirements are satisfied.
 - Building the UI would consume ~90 min that's better spent on the
   open original tasks (19, 21, 22) which directly affect commenter
   visibility (banner, rules-list signal, admin phase form).

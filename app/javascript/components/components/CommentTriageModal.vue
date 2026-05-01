@@ -320,7 +320,7 @@ export default {
         case "restore":
           return "Reason for restore (audit log) — e.g. force-withdrew the wrong comment...";
         case "hard-delete":
-          return "Documented reason for irreversible hard-delete (audit log) — required by federal compliance review.";
+          return "Documented reason for irreversible hard-delete (audit log) — required.";
         default:
           return "";
       }

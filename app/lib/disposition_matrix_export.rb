@@ -2,7 +2,7 @@
 
 require 'csv'
 
-# DISA disposition matrix CSV export — federal-compliance deliverable for
+# DISA disposition matrix CSV export — required deliverable for
 # public-comment review windows. One row per top-level comment, with reply
 # threads collapsed into the Triager Response column. DISA-vocab cell values
 # (concur / non_concur / etc.) so the file is consumed as raw data.

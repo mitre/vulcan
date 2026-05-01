@@ -6,8 +6,8 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy]
-  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore admin_destroy]
+  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule]
+  before_action :set_project_from_review, only: %i[triage adjudicate reopen update admin_withdraw admin_restore admin_destroy move_to_rule]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[lock_controls]
@@ -16,7 +16,7 @@ class ReviewsController < ApplicationController
   before_action :authorize_review_owner, only: %i[withdraw update]
   # PR-717 Task 25 — admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
-  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy]
+  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy move_to_rule]
   # PR #717 phase enforcement — gates the public-comment lifecycle.
   # Runs AFTER auth so non-members get the auth error, not a phase error.
   # admin_withdraw + admin_restore are NOT included — admin overrides are
@@ -247,7 +247,7 @@ class ReviewsController < ApplicationController
   # adjudicated attribution to the admin (overriding the auto-set
   # callback's default of self-adjudication for terminal statuses).
   # Audit comment is required — captures the documented reason on the
-  # vulcan_audited trail for federal-compliance review.
+  # vulcan_audited trail for audit review.
   # Allowed even on already-adjudicated comments and even when the
   # component is frozen_for_writes (admin override is the whole point).
   def admin_withdraw
@@ -309,6 +309,58 @@ class ReviewsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: {
       toast: { title: 'Could not restore.', message: e.record.errors.full_messages, variant: 'danger' }
+    }, status: :unprocessable_entity
+  end
+
+  # PR-717 Task 26 — PATCH /reviews/:id/move_to_rule.
+  # Project admin reassigns a misplaced comment (and atomically all its
+  # replies) to a different rule in the same component. Audit comment
+  # required; the column-change diff is captured because :rule_id is in
+  # the vulcan_audited only: list (review.rb:38).
+  #
+  # Walks PARENT-FIRST so each child's responding_to_must_be_same_rule
+  # validator (review.rb) sees the parent already at the target rule
+  # when the child moves. Children-first would fail because the child's
+  # parent.rule_id (read fresh from DB by the validator) would still
+  # point at the source rule. Wrapped in a transaction so any failure
+  # rolls back the entire subtree move.
+  def move_to_rule
+    audit_comment = params[:audit_comment].to_s.strip
+    if audit_comment.blank?
+      return render json: {
+        toast: { title: 'Audit comment required.',
+                 message: ['An audit comment is required for admin move-to-rule.'],
+                 variant: 'danger' }
+      }, status: :unprocessable_entity
+    end
+
+    target_rule_id = params[:rule_id].to_i
+    if target_rule_id == @review.rule_id
+      return render json: {
+        toast: { title: 'Cannot move.',
+                 message: ['Target rule is the same as the source rule.'],
+                 variant: 'warning' }
+      }, status: :unprocessable_entity
+    end
+
+    target_rule = Rule.find_by(id: target_rule_id)
+    return head :not_found unless target_rule
+
+    unless target_rule.component_id == @review.rule.component_id
+      return render json: {
+        toast: { title: 'Cannot move.',
+                 message: ['Target rule must be in the same component.'],
+                 variant: 'unprocessable_entity' }
+      }, status: :unprocessable_entity
+    end
+
+    Review.transaction do
+      move_review_subtree!(@review, target_rule.id, audit_comment)
+    end
+    render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      toast: { title: 'Could not move.', message: e.record.errors.full_messages, variant: 'danger' }
     }, status: :unprocessable_entity
   end
 
@@ -520,6 +572,19 @@ class ReviewsController < ApplicationController
   end
 
   private
+
+  # PR-717 Task 26 — recursive parent-first walk for move_to_rule.
+  # Updates the review's rule_id with the audit comment captured by the
+  # vulcan_audited gem, then recurses into each child (replies pointing
+  # at this review). Children see the parent already at the target rule
+  # by the time the validator (responding_to_must_be_same_rule) runs.
+  def move_review_subtree!(review, new_rule_id, audit_comment)
+    review.audit_comment = "Admin move-to-rule (rule #{new_rule_id}): #{audit_comment}"
+    review.update!(rule_id: new_rule_id)
+    review.responses.find_each do |child|
+      move_review_subtree!(child, new_rule_id, audit_comment)
+    end
+  end
 
   def set_rule
     @rule = Rule.find(params[:rule_id])

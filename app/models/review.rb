@@ -35,7 +35,12 @@ class Review < ApplicationRecord
   # trips Rails 7.1's safe-YAML dump for ActiveSupport::TimeWithZone. The
   # transition timestamp is recoverable from the audit's created_at on the
   # triage_status record that captured the terminal-state change.
-  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id comment]
+  # Audit-tracked columns. PR-717:
+  # - `rule_id` added for Task 26 (admin move-to-rule) so the column-change
+  #   diff is captured on the trail, not just the audit_comment text.
+  # - `section` added for Task 30 (edit comment section retroactive) so the
+  #   triager's section-relocation is auditable.
+  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id comment rule_id section]
 
   scope :top_level_comments, -> { where(action: 'comment', responding_to_review_id: nil) }
   scope :pending_triage, -> { top_level_comments.where(triage_status: 'pending') }

@@ -512,7 +512,7 @@ class ComponentsController < ApplicationController
   # PR #717 Task 29 — DISA disposition matrix CSV export. Email column is
   # opt-in and admin-tier-only (server-side enforcement, not just UI hiding).
   # Audit log records who exported what + whether the email column was
-  # included so the federal-compliance "who has the roster" question has an
+  # included so the audit "who has the roster" question has an
   # answer.
   def perform_disposition_csv_export
     include_email = params[:include_email] == 'true' && current_user.can_admin_project?(@component.project)

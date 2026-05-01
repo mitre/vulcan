@@ -7,7 +7,7 @@
 
 - **Branch:** `feat/viewer-comments`
 - **Base:** master
-- **PR-717 scope:** Public Comment Review workflow — federal-compliance deliverable; Container SRG window LIVE; DISA stakeholders watching.
+- **PR-717 scope:** Public Comment Review workflow. Container SRG public-comment window LIVE; DISA stakeholders watching.
 
 ## Locked design decisions
 
@@ -25,6 +25,8 @@ These are **not open for re-litigation** without explicit authorization. Re-ques
 ## Commits shipped this session (chronological, current branch)
 
 ```
+6c94d43 feat: admin force-withdraw + restore UI on triage modal (Task 25)
+2ded253 docs: roadmap — Steps 5+6 done, Step 7 next
 7543737 feat: Download button on per-component editor (closes UX gap)
 c418e9a feat: piggyback disposition sheet into Working Copy Excel workbook
 9016cdf docs: update session roadmap — Step 3 done, Step 4 next
@@ -57,9 +59,9 @@ e81dc8e fix: complete PoC coverage on every seeded component
 | 4 | Piggyback disposition into Working Copy Excel path (TDD) | ✅ `c418e9a` |
 | 5 | Download button on `ProjectComponent.vue` (per-component editor gap) | ✅ `7543737` |
 | 6 | Live verify Download surfaces × CSV/Excel × admin/author tier | ✅ verified at route level |
-| 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | ⏳ next |
-| 7b | Task 25b — Admin hard-delete UI (TDD, typed-confirmation safeguards) | pending |
-| 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | pending |
+| 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | ✅ `6c94d43` |
+| 7b | Task 25b — Admin hard-delete UI (TDD, typed-confirmation safeguards) | ✅ `2dd8567` |
+| 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | ⏳ next |
 | 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | pending |
 | 10 | FormMixin pack audit + per-component fixes | pending |
 | 11 | Delete runbook file (`docs/runbook-public-comment-admin-actions.md`) | pending |
