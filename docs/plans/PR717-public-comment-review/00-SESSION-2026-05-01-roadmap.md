@@ -25,6 +25,9 @@ These are **not open for re-litigation** without explicit authorization. Re-ques
 ## Commits shipped this session (chronological, current branch)
 
 ```
+7543737 feat: Download button on per-component editor (closes UX gap)
+c418e9a feat: piggyback disposition sheet into Working Copy Excel workbook
+9016cdf docs: update session roadmap — Step 3 done, Step 4 next
 1a118f9 feat: piggyback disposition CSV into Working Copy CSV export
 eee16be docs: capture session roadmap as compact-resilient plan file
 250115f refactor: expose DispositionMatrixExport.rows_and_headers helper
@@ -51,10 +54,10 @@ e81dc8e fix: complete PoC coverage on every seeded component
 | 1 | Working tree cleanup — salvage `generate_file`, drop `generate_zip` | ✅ `e9cc8f1` |
 | 2 | Extract `rows_and_headers` helper for Excel reuse | ✅ `250115f` |
 | 3 | Piggyback disposition into Working Copy CSV path (TDD) | ✅ `1a118f9` |
-| 4 | Piggyback disposition into Working Copy Excel path (TDD) | ⏳ next |
-| 5 | Download button on `ProjectComponent.vue` (per-component editor gap) | pending |
-| 6 | Live verify Download surfaces × CSV/Excel × admin/author tier | pending |
-| 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | pending |
+| 4 | Piggyback disposition into Working Copy Excel path (TDD) | ✅ `c418e9a` |
+| 5 | Download button on `ProjectComponent.vue` (per-component editor gap) | ✅ `7543737` |
+| 6 | Live verify Download surfaces × CSV/Excel × admin/author tier | ✅ verified at route level |
+| 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | ⏳ next |
 | 7b | Task 25b — Admin hard-delete UI (TDD, typed-confirmation safeguards) | pending |
 | 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | pending |
 | 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | pending |
