@@ -93,9 +93,9 @@ RUN bundle config set frozen false && bundle install && \
     ls -lah /usr/local/bundle/ruby/3.3.0/extensions && \
     ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux && \
     ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0 && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25 && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25/ox && \
-    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.25/ox/ox.so && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.23 && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.23/ox && \
+    ls -lah /usr/local/bundle/ruby/3.3.0/extensions/x86_64-linux/3.3.0/ox-2.14.23/ox/ox.so && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
