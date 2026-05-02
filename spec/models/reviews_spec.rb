@@ -828,6 +828,33 @@ RSpec.describe Review do
     end
   end
 
+  # PR-717 review remediation .j4a step A1 — `reviews` table needs two
+  # nullable string columns to preserve original commenter attribution
+  # when the User row gets removed (User#destroy → reviews.user_id NULL
+  # via on_delete: :nullify FK in step A3) or when a json_archive import
+  # carries a commenter email/name that doesn't resolve to a User on the
+  # target instance. Mirrors the `_imported_email/_name` columns added in
+  # `.8` for triage_set_by + adjudicated_by.
+  describe 'commenter_imported_* columns (PR-717 .j4a step A1)' do
+    it 'has commenter_imported_email column' do
+      expect(Review.column_names).to include('commenter_imported_email')
+    end
+
+    it 'has commenter_imported_name column' do
+      expect(Review.column_names).to include('commenter_imported_name')
+    end
+
+    it 'persists commenter_imported_email + commenter_imported_name values' do
+      review = Review.create!(action: 'comment', comment: 'c', user: @p_viewer,
+                              rule: @p1r1, triage_status: 'pending')
+      review.update_columns(commenter_imported_email: 'imp@old.example',
+                            commenter_imported_name: 'Imported Person')
+      review.reload
+      expect(review.commenter_imported_email).to eq('imp@old.example')
+      expect(review.commenter_imported_name).to eq('Imported Person')
+    end
+  end
+
   describe 'attribution display helpers (PR-717 .8 imported attribution)' do
     let(:base) do
       Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
