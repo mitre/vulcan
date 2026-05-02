@@ -5,6 +5,15 @@ class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
   before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
 
+  # PR-717 review remediation .4 — F4 forensic correlation primitive.
+  # Wraps the request_uuid indexed query in an AuditEventBundle PORO so
+  # forensic reconstruction of multi-row admin operations (admin_destroy
+  # of parent + cascaded replies) is one ergonomic call.
+  # See app/services/audit_event_bundle.rb for the bundle interface.
+  def self.bundled_with(audit_id)
+    AuditEventBundle.new(find(audit_id))
+  end
+
   def self.create_initial_rule_audit_from_mapping(project_id)
     {
       auditable_type: 'Rule',
