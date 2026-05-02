@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_080000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -248,7 +248,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_080000) do
     t.text "comment"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "triage_status", default: "pending", null: false
+    t.string "triage_status"
     t.bigint "triage_set_by_id"
     t.datetime "triage_set_at"
     t.datetime "adjudicated_at"

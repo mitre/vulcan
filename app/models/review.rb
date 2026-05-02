@@ -122,7 +122,12 @@ class Review < ApplicationRecord
   }
 
   # rubocop:disable Rails/I18nLocaleTexts
-  validates :triage_status, inclusion: { in: TRIAGE_STATUSES }
+  # PR-717 review remediation .1 — allow_nil so legacy reviews (rows
+  # backfilled to NULL by 20260502120000_make_review_triage_status_nullable)
+  # don't trip the validator on subsequent saves. NULL means "not part of
+  # a public-comment workflow"; the inclusion list governs every other
+  # state transition.
+  validates :triage_status, inclusion: { in: TRIAGE_STATUSES }, allow_nil: true
   validates :section, inclusion: { in: SECTION_KEYS, message: 'is not a recognized section' },
                       allow_nil: true
   # rubocop:enable Rails/I18nLocaleTexts
@@ -147,6 +152,15 @@ class Review < ApplicationRecord
   before_save :auto_set_adjudicated_for_terminal_statuses
 
   before_create :take_review_action
+  # PR-717 review remediation .1 — the column-level default 'pending' was
+  # dropped (legacy rows backfilled to NULL by
+  # 20260502120000_make_review_triage_status_nullable). Top-level NEW
+  # comments still need to enter the triage queue, so default
+  # triage_status to 'pending' here when the row is a new top-level
+  # comment AND the caller didn't set it explicitly. Replies
+  # (responding_to_review_id present) and non-comment actions
+  # (request_review/approve/etc.) stay NULL — they're not triage candidates.
+  before_create :default_triage_status_for_new_top_level_comment
 
   # PR-717 review remediation .9 — user-action validators are explicitly
   # scoped to :create + :update so they run on normal saves but NOT in
@@ -334,6 +348,13 @@ class Review < ApplicationRecord
     elsif !rule.locked
       errors.add(:base, 'Control is already unlocked') unless rule.locked
     end
+  end
+
+  def default_triage_status_for_new_top_level_comment
+    return if triage_status.present?
+    return unless action == 'comment' && responding_to_review_id.nil?
+
+    self.triage_status = 'pending'
   end
 
   def take_review_action

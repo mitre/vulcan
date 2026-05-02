@@ -670,6 +670,49 @@ RSpec.describe Review do
       expect(Review.pending_triage.where(rule: @p1r1)).to include(@c1)
       expect(Review.pending_triage.where(rule: @p1r1)).not_to include(@c2, @reply)
     end
+
+    # PR-717 review remediation .1 — the original lifecycle migration set
+    # triage_status NOT NULL DEFAULT 'pending'. On systems with pre-PR-717
+    # `comment` reviews (action='comment' rows that were never part of a
+    # public-comment workflow), every legacy row dumps into the triage
+    # queue as "pending". DISA reviewers see unrelated historical content.
+    # Fix: drop the DB default, allow NULL on the column, backfill legacy
+    # rows (rows on rules in components that never opened a public-comment
+    # period) to NULL. The pending_triage scope already filters by
+    # `triage_status: 'pending'` (Rails treats NULL ≠ 'pending'), so the
+    # behavior change is data-only — but we add a defensive
+    # `where.not(triage_status: nil)` clause for explicit intent.
+    context 'with legacy reviews (NULL triage_status)' do
+      let!(:legacy_comment) do
+        review = Review.create!(action: 'comment', comment: 'legacy', user: @p_viewer, rule: @p1r1,
+                                triage_status: 'pending')
+        # Simulate the legacy state directly. update_columns bypasses
+        # validators + callbacks; the DB-level NOT NULL constraint must
+        # be dropped by the migration before this can succeed.
+        review.update_columns(triage_status: nil)
+        review
+      end
+
+      it 'pending_triage excludes legacy comments with NULL triage_status' do
+        expect(Review.pending_triage.where(rule: @p1r1)).not_to include(legacy_comment)
+      end
+
+      it 'allows NULL on triage_status at the DB layer' do
+        # Reload to confirm the value persisted; would raise
+        # ActiveRecord::StatementInvalid (NotNullViolation) on update_columns
+        # in the legacy_comment let! if the column were still NOT NULL.
+        expect(legacy_comment.reload.triage_status).to be_nil
+      end
+
+      it 'passes validation with triage_status nil' do
+        # Without allow_nil on the inclusion validator, save would fail
+        # with "Triage status is not included in the list" once a code
+        # path tries to validate a NULL row (e.g. update through the model
+        # with a different attribute).
+        legacy_comment.reload
+        expect(legacy_comment).to be_valid
+      end
+    end
   end
 
   describe 'audits' do

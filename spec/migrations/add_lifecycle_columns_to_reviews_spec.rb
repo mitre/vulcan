@@ -14,7 +14,13 @@ RSpec.describe 'AddLifecycleColumnsToReviews migration' do
     expect(review).to respond_to(:responding_to_review_id)
     expect(review).to respond_to(:section)
 
-    expect(review.triage_status).to eq('pending')
+    # PR-717 review remediation .1 — the original migration set
+    # `triage_status NOT NULL DEFAULT 'pending'`, but a follow-up migration
+    # (20260502120000_make_review_triage_status_nullable) drops the
+    # default + allows NULL. Schema-level inspection now expects nil for
+    # an unsaved Review.new; new top-level comments get 'pending' from
+    # the model's before_create callback (see app/models/review.rb).
+    expect(review.triage_status).to be_nil
   end
 
   it 'has the expected indexes' do
