@@ -394,11 +394,33 @@ export default {
         this.fetch();
       }
     },
-    onTriaged() {
-      this.fetch();
+    // PR-717 review remediation .20 — modal events update the matching
+    // row in place from the response payload rather than refetching the
+    // whole table. Eliminates the second round trip per mutation. The
+    // expanded ReviewBlueprint default fields (rule_id, section,
+    // responding_to_review_id, duplicate_of_review_id, triage_set_by_id,
+    // triager/adjudicator/commenter display fields) carry enough state
+    // to keep the row visually consistent with the table's row shape.
+    // `rule_displayed_name` is computed in paginated_comments (prefix +
+    // rule_id) and not in the blueprint — preserved via spread merge.
+    // Falls back to fetch when the payload is missing (defensive).
+    updateRowInPlace(updatedReview) {
+      if (!updatedReview || !updatedReview.id) {
+        this.fetch();
+        return;
+      }
+      const idx = this.rows.findIndex((r) => r.id === updatedReview.id);
+      if (idx < 0) {
+        this.fetch();
+        return;
+      }
+      this.rows.splice(idx, 1, { ...this.rows[idx], ...updatedReview });
     },
-    onAdjudicated() {
-      this.fetch();
+    onTriaged(payload) {
+      this.updateRowInPlace(payload);
+    },
+    onAdjudicated(payload) {
+      this.updateRowInPlace(payload);
     },
     // PR-717 Task 25b — admin hard-delete destroys the review entirely;
     // refresh the queue so the destroyed row (and its replies) disappear.

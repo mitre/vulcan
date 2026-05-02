@@ -329,6 +329,124 @@ describe("ComponentComments", () => {
     });
   });
 
+  // PR-717 review remediation .20 — modal events update the row in
+  // place (no full-table refetch) so triage/adjudicate is one round
+  // trip instead of two. The blueprint expansion (.20 primary
+  // deliverable) ensures the response payload carries enough fields
+  // to refresh in place.
+  describe("onTriaged / onAdjudicated update row in place (.20)", () => {
+    const initialRow = {
+      id: 142,
+      rule_id: 7,
+      rule_displayed_name: "X-7",
+      section: "check_content",
+      author_name: "John Doe",
+      comment: "Original comment text",
+      created_at: "2026-04-27T10:00:00Z",
+      triage_status: "pending",
+      triage_set_at: null,
+      adjudicated_at: null,
+      duplicate_of_review_id: null,
+      triager_display_name: null,
+      triager_imported: false,
+      adjudicator_display_name: null,
+      adjudicator_imported: false,
+      commenter_display_name: "John Doe",
+      commenter_imported: false,
+    };
+
+    const triagedPayload = {
+      id: 142,
+      rule_id: 7,
+      action: "comment",
+      comment: "Original comment text",
+      created_at: "2026-04-27T10:00:00Z",
+      triage_status: "concur",
+      triage_set_at: "2026-04-30T11:00:00Z",
+      triage_set_by_id: 5,
+      adjudicated_at: null,
+      section: "check_content",
+      responding_to_review_id: null,
+      duplicate_of_review_id: null,
+      name: "John Doe",
+      author_name: "John Doe",
+      triager_display_name: "Triager Tee",
+      triager_imported: false,
+      adjudicator_display_name: null,
+      adjudicator_imported: false,
+      commenter_display_name: "John Doe",
+      commenter_imported: false,
+    };
+
+    function mountWithRow() {
+      axios.get.mockResolvedValueOnce({
+        data: {
+          rows: [initialRow],
+          pagination: { page: 1, per_page: 25, total: 1 },
+        },
+      });
+      return mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+    }
+
+    it("onTriaged updates the matching row's triage_status without re-fetching", async () => {
+      const wrapper = mountWithRow();
+      await flushPromises();
+      const fetchesAfterMount = axios.get.mock.calls.length;
+
+      await wrapper.vm.onTriaged(triagedPayload);
+      await flushPromises();
+
+      expect(axios.get.mock.calls.length).toBe(fetchesAfterMount); // no extra fetch
+      const refreshed = wrapper.vm.rows.find((r) => r.id === 142);
+      expect(refreshed.triage_status).toBe("concur");
+      expect(refreshed.triager_display_name).toBe("Triager Tee");
+    });
+
+    it("preserves rule_displayed_name (computed in paginated_comments, not in blueprint)", async () => {
+      const wrapper = mountWithRow();
+      await flushPromises();
+
+      await wrapper.vm.onTriaged(triagedPayload);
+      await flushPromises();
+
+      const refreshed = wrapper.vm.rows.find((r) => r.id === 142);
+      expect(refreshed.rule_displayed_name).toBe("X-7");
+    });
+
+    it("onAdjudicated updates the matching row's adjudicated_at without re-fetching", async () => {
+      const wrapper = mountWithRow();
+      await flushPromises();
+      const fetchesAfterMount = axios.get.mock.calls.length;
+
+      const adjudicatedPayload = {
+        ...triagedPayload,
+        adjudicated_at: "2026-04-30T12:00:00Z",
+        adjudicator_display_name: "Adjudicator Aye",
+      };
+      await wrapper.vm.onAdjudicated(adjudicatedPayload);
+      await flushPromises();
+
+      expect(axios.get.mock.calls.length).toBe(fetchesAfterMount);
+      const refreshed = wrapper.vm.rows.find((r) => r.id === 142);
+      expect(refreshed.adjudicated_at).toBe("2026-04-30T12:00:00Z");
+      expect(refreshed.adjudicator_display_name).toBe("Adjudicator Aye");
+    });
+
+    it("falls back to fetch when the payload is missing (defensive)", async () => {
+      const wrapper = mountWithRow();
+      await flushPromises();
+      const fetchesAfterMount = axios.get.mock.calls.length;
+
+      await wrapper.vm.onTriaged(undefined);
+      await flushPromises();
+
+      expect(axios.get.mock.calls.length).toBeGreaterThan(fetchesAfterMount);
+    });
+  });
+
   // REQUIREMENT: clicking the refresh button forces a re-fetch without
   // closing the page — useful when concurrent triagers are working the
   // same queue and rows go stale.
