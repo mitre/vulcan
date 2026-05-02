@@ -452,10 +452,14 @@ class ProjectsController < ApplicationController
     end
 
     if result&.success?
+      # PR-717 review remediation .19d — multi-key response (toast +
+      # redirect_url + summary). Inline the canonical toast object.
       render json: {
         redirect_url: project_path(project),
         summary: result.summary,
-        toast: 'Project created from backup successfully.'
+        toast: { title: 'Project imported.',
+                 message: ['Project created from backup successfully.'],
+                 variant: 'success' }
       }
     else
       render json: {

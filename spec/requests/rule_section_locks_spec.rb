@@ -72,7 +72,9 @@ RSpec.describe 'Rule section locks API' do
         patch "/rules/#{rule.id}/section_locks", params: { section: 'Status', locked: true }
         body = response.parsed_body
         expect(body['rule']['locked_fields']).to eq({ 'Status' => true })
-        expect(body['toast']).to include('locked')
+        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        expect(body['toast']).to be_a(Hash)
+        expect(body['toast']['message'].join).to include('locked')
       end
 
       it 'creates audit record with comment' do

@@ -371,8 +371,10 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok),
                             "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
-        expect(json['toast']).to include('Password reset')
-        expect(json['toast']).to include(target_user.email)
+        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['message'].join).to include('Password reset')
+        expect(json['toast']['message'].join).to include(target_user.email)
       end
 
       it 'does not leak exception message on internal error (71q.5)' do
@@ -425,7 +427,9 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
         expect(json['reset_url']).to include('reset_password_token=')
-        expect(json['toast']).to include('Reset link generated')
+        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['message'].join).to include('Reset link generated')
       end
 
       it 'sets reset_password_token on the user' do
@@ -485,7 +489,9 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok),
                             "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
-        expect(json['toast']).to include(target_user.email)
+        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['message'].join).to include(target_user.email)
 
         # Verify the password actually works
         target_user.reload

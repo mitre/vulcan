@@ -484,7 +484,9 @@ class ComponentsController < ApplicationController
 
     result = @component.apply_spreadsheet_update(file, current_user)
     if result[:success]
-      render json: { toast: "Successfully updated #{result[:count]} rules from spreadsheet." }
+      render_toast(title: 'Spreadsheet applied.',
+                   message: "Successfully updated #{result[:count]} rules from spreadsheet.",
+                   variant: 'success', status: :ok)
     elsif result[:error]
       render json: { error: result[:error] }, status: :unprocessable_entity
     end

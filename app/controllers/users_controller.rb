@@ -168,7 +168,9 @@ class UsersController < ApplicationController
     end
 
     @user.send_reset_password_instructions
-    render json: { toast: "Password reset email sent to #{@user.email}." }
+    render_toast(title: 'Reset email sent.',
+                 message: "Password reset email sent to #{@user.email}.",
+                 variant: 'success', status: :ok)
   rescue StandardError => e
     Rails.logger.error "send_password_reset failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
@@ -179,8 +181,13 @@ class UsersController < ApplicationController
   # Generate a reset token and return the URL without sending email (no SMTP needed)
   def generate_reset_link
     reset_url = generate_reset_url(@user)
+    # PR-717 review remediation .19d — multi-key response (toast + reset_url).
+    # Inline the canonical toast object since render_toast doesn't piggyback
+    # extra response keys.
     render json: {
-      toast: 'Reset link generated. Copy it and deliver to the user.',
+      toast: { title: 'Reset link generated.',
+               message: ['Reset link generated. Copy it and deliver to the user.'],
+               variant: 'success' },
       reset_url: reset_url
     }
   end
@@ -196,8 +203,11 @@ class UsersController < ApplicationController
     @user.lock_access!(send_instructions: false)
     @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [nil, @user.locked_at.iso8601] },
                          user: current_user, comment: "Account locked by #{current_user.name}")
+    # PR-717 review remediation .19d — multi-key response (toast + user).
     render json: {
-      toast: "Account #{@user.email} locked.",
+      toast: { title: 'Account locked.',
+               message: ["Account #{@user.email} locked."],
+               variant: 'success' },
       user: @user.as_json(only: USER_JSON_FIELDS)
     }
   end
@@ -208,8 +218,11 @@ class UsersController < ApplicationController
     @user.unlock_access!
     @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [prev_locked_at, nil] },
                          user: current_user, comment: "Account unlocked by #{current_user.name}")
+    # PR-717 review remediation .19d — multi-key response (toast + user).
     render json: {
-      toast: "Account #{@user.email} unlocked.",
+      toast: { title: 'Account unlocked.',
+               message: ["Account #{@user.email} unlocked."],
+               variant: 'success' },
       user: @user.as_json(only: USER_JSON_FIELDS)
     }
   end
@@ -224,7 +237,9 @@ class UsersController < ApplicationController
 
     @user.password = @user.password_confirmation = password_params[:password]
     if @user.save
-      render json: { toast: "Password updated for #{@user.email}." }
+      render_toast(title: 'Password updated.',
+                   message: "Password updated for #{@user.email}.",
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: { title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger' }

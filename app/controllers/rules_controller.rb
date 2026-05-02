@@ -173,7 +173,13 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
     @rule.update!(locked_fields: fields)
 
-    render json: { rule: RuleBlueprint.render_as_hash(@rule, view: :editor), toast: "#{section} #{locked ? 'locked' : 'unlocked'}" }
+    # PR-717 review remediation .19d — multi-key response (rule + toast).
+    render json: {
+      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
+      toast: { title: locked ? 'Section locked.' : 'Section unlocked.',
+               message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
+               variant: 'success' }
+    }
   end
 
   def bulk_section_locks
@@ -197,7 +203,13 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
     @rule.update!(locked_fields: fields)
 
-    render json: { rule: RuleBlueprint.render_as_hash(@rule, view: :editor), toast: "#{action_word} #{sections.size} sections" }
+    # PR-717 review remediation .19d — multi-key response (rule + toast).
+    render json: {
+      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
+      toast: { title: "Sections #{action_word.downcase}.",
+               message: ["#{action_word} #{sections.size} sections"],
+               variant: 'success' }
+    }
   end
 
   private

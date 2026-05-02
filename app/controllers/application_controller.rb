@@ -81,22 +81,20 @@ class ApplicationController < ActionController::Base
   #     )
   #   end
   rescue_from ActiveRecord::RecordInvalid do |e|
-    title = self.class.record_invalid_title_for(action_name)
+    title = self.class.record_invalid_titles_map[action_name.to_sym] || 'Could not save.'
     render_toast(title: title, message: e.record.errors.full_messages)
   end
 
-  class << self
-    def record_invalid_titles(map)
-      @record_invalid_titles = map.transform_keys(&:to_sym).freeze
-    end
+  # PR-717 .15 — `class_attribute` is the canonical Rails inheritance hook
+  # for per-class config maps. Subclasses get free inheritance + the
+  # ability to override without touching the parent (Devise + Pundit
+  # follow this pattern). Replaced an earlier hand-rolled
+  # `superclass.respond_to?(:record_invalid_title_for)` ancestor walk that
+  # was Rails-quirky and harder to reason about.
+  class_attribute :record_invalid_titles_map, default: {}.freeze
 
-    def record_invalid_title_for(action_name)
-      key = action_name.to_sym
-      return @record_invalid_titles[key] if @record_invalid_titles&.key?(key)
-
-      # Walk the ancestor chain so subclasses inherit a parent's map.
-      superclass.respond_to?(:record_invalid_title_for) ? superclass.record_invalid_title_for(action_name) : 'Could not save.'
-    end
+  def self.record_invalid_titles(map)
+    self.record_invalid_titles_map = map.transform_keys(&:to_sym).freeze
   end
 
   def set_project_permissions

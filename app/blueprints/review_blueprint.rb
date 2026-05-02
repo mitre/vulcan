@@ -41,8 +41,12 @@ class ReviewBlueprint < Blueprinter::Base
   end
 
   # PR-717 review remediation .8 + .j4a C1 — display-layer attribution
-  # for triager / adjudicator / commenter. See app/blueprints/concerns/
-  # imported_attribution_fields.rb for the macro implementation. The
+  # for triager / adjudicator / commenter. See app/blueprints/
+  # imported_attribution_fields.rb for the macro implementation
+  # (top-level, NOT under concerns/ — only app/models/concerns and
+  # app/controllers/concerns are Rails-special skip-namespace autoload
+  # paths; placing the helper under app/blueprints/concerns would force
+  # a Concerns:: prefix and break Zeitwerk constant resolution). The
   # three declarations below replace six hand-written `field` blocks.
   extend ImportedAttributionFields
 

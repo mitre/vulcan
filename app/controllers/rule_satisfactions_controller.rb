@@ -19,7 +19,9 @@ class RuleSatisfactionsController < ApplicationController
     end
 
     if success
-      render json: { toast: "Successfully marked #{@rule.version} as satisfied by #{@satisfied_by_rule.version}." }
+      render_toast(title: 'Satisfied-by recorded.',
+                   message: "Successfully marked #{@rule.version} as satisfied by #{@satisfied_by_rule.version}.",
+                   variant: 'success', status: :ok)
     else
       render_satisfaction_failure('mark', @rule.errors.full_messages)
     end
@@ -40,7 +42,9 @@ class RuleSatisfactionsController < ApplicationController
     end
 
     if success
-      render json: { toast: "#{@rule.version} is no longer marked as satisfied by #{@satisfied_by_rule.version}." }
+      render_toast(title: 'Satisfied-by removed.',
+                   message: "#{@rule.version} is no longer marked as satisfied by #{@satisfied_by_rule.version}.",
+                   variant: 'success', status: :ok)
     else
       render_satisfaction_failure('unmark', @rule.errors.full_messages)
     end

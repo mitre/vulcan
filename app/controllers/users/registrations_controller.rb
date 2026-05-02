@@ -41,7 +41,11 @@ module Users
             flash[:notice] = flash_msg
             redirect_to after_update_path_for(resource)
           end
-          format.json { render json: { toast: flash_msg } }
+          format.json do
+            render_toast(title: 'Account updated.',
+                         message: flash_msg,
+                         variant: 'success', status: :ok)
+          end
         end
       else
         respond_to do |format|
@@ -119,7 +123,9 @@ module Users
           redirect_to edit_user_registration_path
         end
         format.json do
-          render json: { toast: "#{previous_provider.upcase} identity unlinked successfully." }
+          render_toast(title: 'Identity unlinked.',
+                       message: "#{previous_provider.upcase} identity unlinked successfully.",
+                       variant: 'success', status: :ok)
         end
       end
     end
