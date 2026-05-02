@@ -14,7 +14,10 @@
 #
 # Strong Migrations 2-pass: validate: false on the new FK + separate
 # validate_foreign_key avoids the ACCESS EXCLUSIVE on `reviews` for
-# the duration of validation on production-sized tables.
+# the duration of validation on production-sized tables. The validate
+# half is in 20260502080001_validate_review_responding_to_fk.rb,
+# which sets disable_ddl_transaction! so the validate scan runs
+# without holding a long ACCESS EXCLUSIVE — see PR-717 .kea.
 #
 # Reversible: down restores the legacy :cascade semantics. WARNING:
 # do NOT run down in production after admin_destroy snapshots are
@@ -26,7 +29,8 @@ class ChangeReviewRespondingToFkToRestrict < ActiveRecord::Migration[8.0]
                     column: :responding_to_review_id,
                     on_delete: :restrict,
                     validate: false
-    validate_foreign_key :reviews, column: :responding_to_review_id
+    # validate_foreign_key has moved to the paired migration
+    # 20260502080001_validate_review_responding_to_fk.rb. See PR-717 .kea.
   end
 
   def down
