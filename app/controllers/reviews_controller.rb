@@ -373,7 +373,13 @@ class ReviewsController < ApplicationController
       review_id: @review.id,
       rule_id: @review.rule_id,
       author_id: @review.user_id,
-      reply_count: @review.responses.count
+      reply_count: @review.responses.count,
+      # PR-717 review remediation .4 F3 — full pre-destroy snapshot of
+      # the entire reply subtree (parent + every descendant). For PII /
+      # legal hard-delete, the snapshot IS the legal record. Captured
+      # via WITH RECURSIVE CTE; timestamps are ISO8601 strings so YAML
+      # safe-load doesn't break on Audit#find.
+      destroyed_review_snapshots: Review.subtree_with_ancestry(@review.id).map(&:snapshot_attributes)
     }
 
     Review.transaction do

@@ -1118,6 +1118,47 @@ RSpec.describe 'Reviews' do
         expect(fk).to be_present
         expect(fk.on_delete).to eq(:restrict)
       end
+
+      # PR-717 review remediation .4 F3 — pre-destroy snapshot of the
+      # entire reply tree captured into the Component-level audit's
+      # audited_changes. For PII/legal hard-delete, the operator-facing
+      # snapshot IS the legal record — not just reply_count integer.
+      it 'captures destroyed_review_snapshots covering parent + every descendant' do
+        grandchild = Review.create!(
+          action: 'comment', comment: 'grandchild legal-record content',
+          user: adm_d_commenter, rule: rule,
+          responding_to_review_id: reply_to_doomed.id
+        )
+        delete "/reviews/#{doomed_review.id}/admin_destroy",
+               params: { audit_comment: 'snapshot test' }, as: :json
+        expect(response).to have_http_status(:ok)
+
+        component_audit = Audited::Audit.where(
+          auditable_type: 'Component', action: 'admin_destroy_review'
+        ).where('comment LIKE ?', '%snapshot test%').last
+        expect(component_audit).to be_present
+
+        # audited_changes is YAML-serialized with symbol keys preserved.
+        # Snapshot rows themselves use string keys (per Review#snapshot_attributes).
+        changes = component_audit.audited_changes
+        snapshots = changes[:destroyed_review_snapshots]
+        expect(snapshots).to be_an(Array)
+        expect(snapshots.size).to eq(3) # parent + reply + grandchild
+
+        ids = snapshots.map { |s| s['id'] }
+        expect(ids).to contain_exactly(doomed_review.id, reply_to_doomed.id, grandchild.id)
+
+        # Each snapshot is a full hash with the audited + lifecycle columns
+        parent_snap = snapshots.find { |s| s['id'] == doomed_review.id }
+        expect(parent_snap['comment']).to eq('PII content')
+        expect(parent_snap['user_id']).to eq(adm_d_commenter.id)
+        expect(parent_snap['rule_id']).to eq(rule.id)
+        expect(parent_snap['created_at']).to be_a(String) # ISO8601, not Time
+
+        grandchild_snap = snapshots.find { |s| s['id'] == grandchild.id }
+        expect(grandchild_snap['comment']).to eq('grandchild legal-record content')
+        expect(grandchild_snap['responding_to_review_id']).to eq(reply_to_doomed.id)
+      end
     end
 
     context 'as a non-admin author' do
