@@ -36,7 +36,8 @@ Rails.application.routes.draw do
       post :unlock
       # Privacy: only the user themselves can read their own comment list
       # (no admin override — see UsersController#authorize_self).
-      get :comments
+      # PR-717 .bpy — explicit action mapping per Sonar rubydre:S7875.
+      get :comments, to: 'users#comments'
     end
   end
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'

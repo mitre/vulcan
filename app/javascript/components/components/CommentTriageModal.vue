@@ -32,7 +32,11 @@
         class="mb-3 p-2 border rounded bg-light"
         data-testid="section-edit-form"
       >
-        <label class="small text-muted mb-1">Move this comment to section:</label>
+        <!-- PR-717 .bpy — Sonar Web:S6853: <label> without a `for`
+             attribute (or wrapped control) is unassociated. The
+             FilterDropdown below has aria-label, so the visual heading
+             is presentational only — render as <div> not <label>. -->
+        <div class="small text-muted mb-1">Move this comment to section:</div>
         <FilterDropdown
           v-model="newSection"
           :options="sectionOptions"
@@ -241,12 +245,15 @@
               data-testid="admin-action-audit-comment"
             />
             <div v-if="adminAction === 'hard-delete'" class="mt-2">
-              <label class="small text-muted mb-1">
+              <!-- PR-717 .bpy — Sonar Web:S6853: explicit for/id pairs
+                   the <label> with the b-form-input below. -->
+              <label for="admin-action-confirmation-id-input" class="small text-muted mb-1">
                 Type the comment ID
                 <strong>{{ review.id }}</strong>
                 to confirm:
               </label>
               <b-form-input
+                id="admin-action-confirmation-id-input"
                 v-model="adminConfirmationId"
                 size="sm"
                 placeholder="Comment ID"

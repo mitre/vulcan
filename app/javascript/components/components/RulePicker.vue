@@ -12,7 +12,17 @@
       <b-spinner small />
       Loading rules…
     </div>
-    <ul v-else class="list-unstyled mb-0" style="max-height: 280px; overflow-y: auto">
+    <!-- PR-717 .bpy — Sonar Web:S6842: <li role="button"> assigns an
+         interactive role to a non-interactive element. The semantically
+         correct ARIA pattern for picking-from-a-list is <ul role="listbox">
+         + <li role="option" aria-selected>. role="option" is allowed on
+         <li> inside a listbox per ARIA 1.2. -->
+    <ul
+      v-else
+      role="listbox"
+      class="list-unstyled mb-0"
+      style="max-height: 280px; overflow-y: auto"
+    >
       <li v-if="filteredRules.length === 0" class="text-muted small font-italic px-1">
         No matching rules in this component.
       </li>
@@ -22,7 +32,8 @@
         :data-test="`target-rule-${rule.id}`"
         class="border rounded p-2 mb-1 rule-candidate"
         :class="{ 'border-primary bg-light': Number(selectedRuleId) === rule.id }"
-        role="button"
+        role="option"
+        :aria-selected="Number(selectedRuleId) === rule.id"
         tabindex="0"
         @click="$emit('selected', rule.id)"
         @keydown.enter="$emit('selected', rule.id)"

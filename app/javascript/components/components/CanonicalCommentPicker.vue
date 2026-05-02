@@ -12,7 +12,16 @@
       <b-spinner small />
       Loading candidates…
     </div>
-    <ul v-else class="list-unstyled mb-0" style="max-height: 280px; overflow-y: auto">
+    <!-- PR-717 .bpy — Sonar Web:S6842: <li role="button"> assigns an
+         interactive role to a non-interactive element. Use the
+         listbox/option pattern instead — role="option" is allowed on
+         <li> inside <ul role="listbox"> per ARIA 1.2. -->
+    <ul
+      v-else
+      role="listbox"
+      class="list-unstyled mb-0"
+      style="max-height: 280px; overflow-y: auto"
+    >
       <li v-if="filteredRows.length === 0" class="text-muted small font-italic px-1">
         No matching canonical candidates.
       </li>
@@ -22,7 +31,8 @@
         :data-test="`canonical-candidate-${row.id}`"
         class="border rounded p-2 mb-1 canonical-candidate"
         :class="{ 'border-primary bg-light': Number(selectedReviewId) === row.id }"
-        role="button"
+        role="option"
+        :aria-selected="Number(selectedReviewId) === row.id"
         tabindex="0"
         @click="$emit('selected', row.id)"
         @keydown.enter="$emit('selected', row.id)"
