@@ -28,6 +28,25 @@ class VulcanAudit < Audited::Audit
     AuditEventBundle.new(find(audit_id))
   end
 
+  # PR-717 review remediation .vb4 — request_uuid PRODUCER side. Pairs
+  # with the .14r consumer hook (#ensure_request_uuid before_create)
+  # which reads Audited.store[:current_request_uuid]. Bulk audit-emitting
+  # code paths outside an HTTP request (rake tasks, importers, future
+  # ActiveJob workers) wrap their work in this scope so every audit row
+  # created during the block shares one request_uuid — matching the
+  # in-request behavior provided by Audited::Sweeper Rack middleware.
+  #
+  # Snapshot+restore (not set+delete) so it nests correctly under any
+  # outer scope that already set the value (e.g. an HTTP request that
+  # invokes a service object).
+  def self.with_correlation_scope(uuid: SecureRandom.uuid)
+    prev = Audited.store[:current_request_uuid]
+    Audited.store[:current_request_uuid] = uuid
+    yield uuid
+  ensure
+    Audited.store[:current_request_uuid] = prev
+  end
+
   def self.create_initial_rule_audit_from_mapping(project_id)
     {
       auditable_type: 'Rule',
@@ -35,12 +54,33 @@ class VulcanAudit < Audited::Audit
       user_type: 'System',
       audited_changes: {
         project_id: project_id
-      }
+      },
+      # PR-717 review remediation .vb4 — populate request_uuid at build
+      # time too. This row will be persisted via activerecord-import's
+      # bulk path (Component#import_srg_rules → Rule.import recursive:
+      # true), which BYPASSES ActiveRecord callbacks. Without this the
+      # ensure_request_uuid before_create hook never fires, leaving the
+      # row with NULL request_uuid even when it sits inside a
+      # with_correlation_scope. Reading current_request_uuid here
+      # guarantees the bulk-inserted audits share the scope UUID
+      # (or get a fresh SecureRandom orphan UUID if no scope is set).
+      request_uuid: current_request_uuid
     }
   end
 
+  # PR-717 review remediation .vb4 — single source of truth for
+  # "what request_uuid should this audit have right now". Used by
+  # both the consumer-side before_create hook (#ensure_request_uuid)
+  # and bulk-insert build paths that bypass callbacks (e.g.
+  # create_initial_rule_audit_from_mapping). Inside a
+  # with_correlation_scope block returns the scope UUID; outside one
+  # returns a fresh SecureRandom UUID (orphan path).
+  def self.current_request_uuid
+    Audited.store[:current_request_uuid] || SecureRandom.uuid
+  end
+
   def ensure_request_uuid
-    self.request_uuid ||= Audited.store[:current_request_uuid] || SecureRandom.uuid
+    self.request_uuid ||= self.class.current_request_uuid
   end
 
   def set_username

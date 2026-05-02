@@ -751,6 +751,56 @@ RSpec.describe Import::JsonArchiveImporter do
         expect(result).to be_success
       end
     end
+
+    # PR-717 review remediation .vb4 — request_uuid producer side. Pre-fix,
+    # JsonArchiveImporter#call did not set Audited.store[:current_request_uuid]
+    # so each audit row created during the import got a distinct
+    # SecureRandom.uuid (via the .14r consumer fallback). Post-fix, every
+    # audit row created during one import shares one request_uuid —
+    # AuditEventBundle.bundled_with(audit_id) reconstructs the entire
+    # import as one logical operation.
+    context 'with request_uuid correlation (PR-717 .vb4)' do
+      before { Audited.store.delete(:current_request_uuid) }
+
+      after { Audited.store.delete(:current_request_uuid) }
+
+      it 'shares one request_uuid across every audit emitted by the import' do
+        target_project # force lazy evaluation BEFORE last_audit_id is captured
+        last_audit_id = Audited::Audit.maximum(:id) || 0
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).to be_success
+
+        new_audits = Audited::Audit.where('id > ?', last_audit_id)
+        # The import emits at least the Component create + all the
+        # bulk-inserted BaseRule audits (via Component#import_srg_rules
+        # → Rule.import recursive: true).
+        expect(new_audits.count).to be > 0
+        uuids = new_audits.distinct.pluck(:request_uuid)
+        expect(uuids.size).to eq(1)
+        expect(uuids.first).to match(/\A[0-9a-f-]{36}\z/)
+      end
+
+      it 'covers the bulk-insert path too (BaseRule audits via activerecord-import)' do
+        # Regression guard: pre-fix, BaseRule audits inserted via
+        # Rule.import(recursive: true) had request_uuid = NULL because
+        # activerecord-import bypasses the ensure_request_uuid before_create
+        # hook. Fixed by populating request_uuid in
+        # VulcanAudit.create_initial_rule_audit_from_mapping at build time.
+        target_project
+        last_audit_id = Audited::Audit.maximum(:id) || 0
+        import_archive(single_backup_zip, target_project)
+        bulk_inserted = Audited::Audit.where('id > ?', last_audit_id)
+                                      .where(auditable_type: 'BaseRule')
+        expect(bulk_inserted.count).to be > 0
+        expect(bulk_inserted.where(request_uuid: nil).count).to eq(0)
+      end
+
+      it 'does not leak the request_uuid out of the import (restores prior value)' do
+        Audited.store[:current_request_uuid] = 'outer-scope-uuid'
+        import_archive(single_backup_zip, target_project)
+        expect(Audited.store[:current_request_uuid]).to eq('outer-scope-uuid')
+      end
+    end
   end
 
   private

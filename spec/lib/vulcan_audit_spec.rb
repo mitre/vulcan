@@ -107,4 +107,79 @@ RSpec.describe VulcanAudit do
       expect(audit.reload.request_uuid).to eq('22222222-2222-4222-8222-cccccccccccc')
     end
   end
+
+  # PR-717 review remediation .vb4 — request_uuid PRODUCER side. The .14r
+  # consumer hook (ensure_request_uuid before_create) reads
+  # Audited.store[:current_request_uuid] and falls back to SecureRandom
+  # if unset. The producer side wraps a bulk audit-emitting code path
+  # (rake tasks, importers, future ActiveJob workers) in a scope that
+  # sets the same UUID for every audit emitted during the block.
+  #
+  # Snapshot+restore (not set+delete) so it nests correctly under any
+  # outer scope that also sets the value (e.g. an HTTP request that
+  # invokes a service object).
+  describe '.with_correlation_scope (PR-717 .vb4)' do
+    let(:user) { create(:user) }
+    let(:project) { Project.create!(name: 'pr717-vb4') }
+    let(:component) do
+      Component.create!(project: project, name: 'vb4 component',
+                        title: 'vb4 component', version: 'v1', prefix: 'PRVB-01',
+                        based_on: SecurityRequirementsGuide.first || create(:security_requirements_guide))
+    end
+
+    before do
+      Audited.store[:audited_user] = user
+      Audited.store.delete(:current_request_uuid)
+    end
+
+    after { Audited.store.delete(:current_request_uuid) }
+
+    it 'sets a request_uuid for the duration of the block' do
+      observed = nil
+      described_class.with_correlation_scope do
+        observed = Audited.store[:current_request_uuid]
+      end
+      expect(observed).to match(/\A[0-9a-f-]{36}\z/)
+    end
+
+    it 'yields the uuid to the block' do
+      yielded = nil
+      described_class.with_correlation_scope { |uuid| yielded = uuid }
+      expect(yielded).to match(/\A[0-9a-f-]{36}\z/)
+    end
+
+    it 'restores nil when no prior value was set' do
+      described_class.with_correlation_scope { :noop }
+      expect(Audited.store[:current_request_uuid]).to be_nil
+    end
+
+    it 'restores the prior value when one was already set (nesting)' do
+      Audited.store[:current_request_uuid] = 'outer-uuid'
+      described_class.with_correlation_scope { :noop }
+      expect(Audited.store[:current_request_uuid]).to eq('outer-uuid')
+    end
+
+    it 'restores the prior value even if the block raises' do
+      Audited.store[:current_request_uuid] = 'outer-uuid'
+      expect { described_class.with_correlation_scope { raise 'boom' } }.to raise_error('boom')
+      expect(Audited.store[:current_request_uuid]).to eq('outer-uuid')
+    end
+
+    it 'accepts an explicit uuid: argument' do
+      described_class.with_correlation_scope(uuid: 'fixed-uuid') do
+        expect(Audited.store[:current_request_uuid]).to eq('fixed-uuid')
+      end
+    end
+
+    it 'shares one request_uuid across multiple audits emitted inside the block' do
+      uuids = nil
+      described_class.with_correlation_scope do
+        component.audits.create!(action: 'sample-1', comment: 'row-1')
+        component.audits.create!(action: 'sample-2', comment: 'row-2')
+        uuids = component.audits.where(action: %w[sample-1 sample-2]).pluck(:request_uuid)
+      end
+      expect(uuids.uniq.size).to eq(1)
+      expect(uuids.first).to match(/\A[0-9a-f-]{36}\z/)
+    end
+  end
 end

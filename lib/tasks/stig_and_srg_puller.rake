@@ -57,67 +57,79 @@ namespace :stig_and_srg_puller do
   end
 
   task save_data: :process_data do
-    puts 'Saving STIG / SRG data in Vulcan...'
-    @process_data.each do |item|
-      item[:xmls].each do |xml|
-        parsed_benchmark = Xccdf::Benchmark.parse(xml)
-        title = parsed_benchmark.try(:title)&.first&.downcase
-        model = if title&.include?('implementation guide') || title&.include?('stig')
-                  Stig
-                else
-                  title&.include?('requirements guide') ? SecurityRequirementsGuide : nil
-                end
-        next unless model
+    # PR-717 review remediation .vb4 — request_uuid producer side.
+    # Pulling STIGs/SRGs from cyber.mil creates / updates many database
+    # rows in one rake invocation; wrapping the body in
+    # VulcanAudit.with_correlation_scope guarantees that any audit row
+    # emitted (today: none — Stig/SRG/StigRule/SrgRule are not
+    # vulcan_audited; tomorrow: any audited descendant added during
+    # parsing) shares one request_uuid. Operators reconstructing the
+    # rake invocation forensically can then call
+    # AuditEventBundle.bundled_with(audit_id) on any one row to recover
+    # the entire pull as one logical operation.
+    VulcanAudit.with_correlation_scope do
+      puts 'Saving STIG / SRG data in Vulcan...'
+      @process_data.each do |item|
+        item[:xmls].each do |xml|
+          parsed_benchmark = Xccdf::Benchmark.parse(xml)
+          title = parsed_benchmark.try(:title)&.first&.downcase
+          model = if title&.include?('implementation guide') || title&.include?('stig')
+                    Stig
+                  else
+                    title&.include?('requirements guide') ? SecurityRequirementsGuide : nil
+                  end
+          next unless model
 
-        new_object = model.from_mapping(parsed_benchmark)
-        new_object.xml = Nokogiri::XML(xml)
-        id = model == Stig ? new_object.stig_id : new_object.srg_id
+          new_object = model.from_mapping(parsed_benchmark)
+          new_object.xml = Nokogiri::XML(xml)
+          id = model == Stig ? new_object.stig_id : new_object.srg_id
 
-        if new_object.save
-          @new_items += 1
-          puts "Successfully pulled and saved #{new_object.name}"
-        else
-          lookup = { model == Stig ? :stig_id : :srg_id => id, version: new_object.version }
-          existing_object = model.find_by(lookup)
-          existing_object_date = model == Stig ? existing_object&.benchmark_date : existing_object&.release_date
-          new_object_date = model == Stig ? new_object.benchmark_date : new_object.release_date
-          next unless new_object_date > existing_object_date
-
-          update_attributes = new_object.as_json.compact
-          new_rules = if model == Stig
-                        parsed_benchmark.group.map do |grp|
-                          StigRule.from_mapping(grp, existing_object&.id)
-                        end.index_by(&:version)
-                      else
-                        parsed_benchmark.rule.map do |rule|
-                          SrgRule.from_mapping(rule,
-                                               existing_object&.id)
-                        end.index_by(&:version)
-                      end
-          existing_rules = model == Stig ? existing_object&.stig_rules : existing_object.srg_rules
-          if existing_object&.update(update_attributes)
-            existing_rules&.each do |existing_rule|
-              new_rule = new_rules[existing_rule.version]
-              next if new_rule.blank?
-
-              # Use .attributes instead of .as_json — as_json includes computed fields
-              # (nist_control_family, nested associations) that aren't DB columns.
-              rule_attributes = new_rule.attributes.compact.except('id', 'created_at', 'updated_at')
-              existing_rule.update(rule_attributes)
-            end
-            if existing_object.save
-              @updated_items += 1
-              puts "Successfully updated #{item['name']}"
-            end
+          if new_object.save
+            @new_items += 1
+            puts "Successfully pulled and saved #{new_object.name}"
           else
-            msg = "STIG And SRG Puller Worker Error: Unable to save/update (#{item['name']}): ."
-            puts msg + existing_object&.errors&.full_messages&.split(', ')
-            @failed += 1
+            lookup = { model == Stig ? :stig_id : :srg_id => id, version: new_object.version }
+            existing_object = model.find_by(lookup)
+            existing_object_date = model == Stig ? existing_object&.benchmark_date : existing_object&.release_date
+            new_object_date = model == Stig ? new_object.benchmark_date : new_object.release_date
+            next unless new_object_date > existing_object_date
+
+            update_attributes = new_object.as_json.compact
+            new_rules = if model == Stig
+                          parsed_benchmark.group.map do |grp|
+                            StigRule.from_mapping(grp, existing_object&.id)
+                          end.index_by(&:version)
+                        else
+                          parsed_benchmark.rule.map do |rule|
+                            SrgRule.from_mapping(rule,
+                                                 existing_object&.id)
+                          end.index_by(&:version)
+                        end
+            existing_rules = model == Stig ? existing_object&.stig_rules : existing_object.srg_rules
+            if existing_object&.update(update_attributes)
+              existing_rules&.each do |existing_rule|
+                new_rule = new_rules[existing_rule.version]
+                next if new_rule.blank?
+
+                # Use .attributes instead of .as_json — as_json includes computed fields
+                # (nist_control_family, nested associations) that aren't DB columns.
+                rule_attributes = new_rule.attributes.compact.except('id', 'created_at', 'updated_at')
+                existing_rule.update(rule_attributes)
+              end
+              if existing_object.save
+                @updated_items += 1
+                puts "Successfully updated #{item['name']}"
+              end
+            else
+              msg = "STIG And SRG Puller Worker Error: Unable to save/update (#{item['name']}): ."
+              puts msg + existing_object&.errors&.full_messages&.split(', ')
+              @failed += 1
+            end
           end
+        rescue StandardError => e
+          puts "Error: Unable to save data: #{e.message}"
+          @failed += 1
         end
-      rescue StandardError => e
-        puts "Error: Unable to save data: #{e.message}"
-        @failed += 1
       end
     end
   end

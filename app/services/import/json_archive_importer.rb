@@ -34,8 +34,19 @@ module Import
     end
 
     def call
-      result = Result.new
+      # PR-717 review remediation .vb4 — request_uuid producer side. The
+      # importer is a non-HTTP code path that creates many audited rows
+      # (Component + Rules + Reviews + AdditionalQuestions/Answers + the
+      # ReviewBuilder import-event audit). Without this scope each row
+      # would land with a distinct SecureRandom.uuid (via the .14r
+      # consumer fallback), so AuditEventBundle.bundled_with(audit_id)
+      # could not reconstruct the import as one logical operation.
+      VulcanAudit.with_correlation_scope { perform(Result.new) }
+    end
 
+    private
+
+    def perform(result)
       archive = parse_archive(result)
       return result unless result.success?
 
@@ -53,8 +64,6 @@ module Import
 
       result
     end
-
-    private
 
     def parse_archive(result)
       archive = { components: [], srg_files: {} }
