@@ -169,4 +169,35 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(component.audits.where(action: 'import_reviews')).to be_empty
     end
   end
+
+  # PR-717 review remediation .4 step 7 (F5) — defensive transaction
+  # wrap on build_all. JsonArchiveImporter#perform_import already wraps
+  # in ActiveRecord::Base.transaction (acts as outer txn → savepoint
+  # nesting), but ReviewBuilder.new explicitly supports direct/test
+  # callers (constructor signature comment at review_builder.rb:24).
+  # Without an inner txn, a direct caller hitting an exception in
+  # pass 2 (relink_threaded_refs) or pass 3 (drop_invalid_reviews)
+  # would leave the pass-1 inserts as orphan rows.
+  describe '#build_all transaction wrap' do
+    it 'rolls back pass-1 inserts when relink_threaded_refs raises' do
+      data = [
+        review_attrs(external_id: 7001, comment: 'rollback test 1'),
+        review_attrs(external_id: 7002, comment: 'rollback test 2', rule_id: rule_b.rule_id)
+      ]
+      builder = described_class.new(data, rule_id_map, result)
+      allow(builder).to receive(:relink_threaded_refs).and_raise(StandardError, 'simulated mid-pass failure')
+
+      expect { builder.build_all }.to raise_error(StandardError, /simulated mid-pass failure/)
+      expect(Review.where(comment: ['rollback test 1', 'rollback test 2'])).to be_empty
+    end
+
+    it 'rolls back pass-1 inserts when drop_invalid_reviews raises' do
+      data = [review_attrs(external_id: 7101, comment: 'rollback drop-invalid')]
+      builder = described_class.new(data, rule_id_map, result)
+      allow(builder).to receive(:drop_invalid_reviews).and_raise(StandardError, 'simulated drop failure')
+
+      expect { builder.build_all }.to raise_error(StandardError, /simulated drop failure/)
+      expect(Review.where(comment: 'rollback drop-invalid')).to be_empty
+    end
+  end
 end

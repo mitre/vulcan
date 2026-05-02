@@ -31,51 +31,56 @@ module Import
       end
 
       def build_all
-        # Pass 1: insert every review, capture external_id → new DB id map
-        external_to_new_id = {}
-        count = 0
-        @reviews_data.each do |review_data|
-          rule_db_id = @rule_id_map[review_data['rule_id']]
-          unless rule_db_id
-            @result.add_warning("Review: rule_id '#{review_data['rule_id']}' not found in imported rules")
-            next
+        # PR-717 review remediation .4 step 7 (F5) — defensive transaction
+        # wrap. JsonArchiveImporter#perform_import wraps in an outer
+        # ActiveRecord::Base.transaction for the production path; this inner
+        # txn becomes a savepoint there. For direct/test callers
+        # (constructor explicitly supports them per `:24` "legacy/test
+        # callers"), the inner txn ensures pass-1 inserts roll back if
+        # pass 2 (relink) or pass 3 (drop_invalid + audit) raises.
+        Review.transaction do
+          # Pass 1: insert every review, capture external_id → new DB id map
+          external_to_new_id = {}
+          count = 0
+          @reviews_data.each do |review_data|
+            rule_db_id = @rule_id_map[review_data['rule_id']]
+            unless rule_db_id
+              @result.add_warning("Review: rule_id '#{review_data['rule_id']}' not found in imported rules")
+              next
+            end
+
+            user = resolve_user(review_data, 'user_email', 'user_name')
+            unless user
+              @result.add_warning(
+                "Review: user '#{review_data['user_email'] || review_data['user_name']}' not found. " \
+                "Review for rule #{review_data['rule_id']} skipped."
+              )
+              next
+            end
+
+            new_id = insert_review(review_data, rule_db_id, user)
+            external_id = review_data['external_id']
+            external_to_new_id[external_id] = new_id if external_id
+            count += 1
           end
 
-          user = resolve_user(review_data, 'user_email', 'user_name')
-          unless user
-            @result.add_warning(
-              "Review: user '#{review_data['user_email'] || review_data['user_name']}' not found. " \
-              "Review for rule #{review_data['rule_id']} skipped."
-            )
-            next
-          end
+          # Pass 2: patch responding_to_review_id + duplicate_of_review_id using
+          # the external_id → new_id map. Backups without these refs short-circuit.
+          relink_threaded_refs(external_to_new_id)
 
-          new_id = insert_review(review_data, rule_db_id, user)
-          external_id = review_data['external_id']
-          external_to_new_id[external_id] = new_id if external_id
-          count += 1
+          # PR-717 review remediation .9 — Review.insert! bypasses model
+          # validators. Re-load each inserted record and run `valid?`; on
+          # failure, warn + delete the row. Children of removed parents
+          # cascade-delete via the FK semantics on responding_to_review_id.
+          dropped = drop_invalid_reviews(external_to_new_id)
+
+          # PR-717 review remediation .10 — write a Component-level audit row
+          # listing imported external_ids + archive identifier. Recovery
+          # trail for admin_destroy → re-import scenarios.
+          write_import_audit(external_to_new_id)
+
+          count - dropped
         end
-
-        # Pass 2: patch responding_to_review_id + duplicate_of_review_id using
-        # the external_id → new_id map. Backups without these refs short-circuit.
-        relink_threaded_refs(external_to_new_id)
-
-        # PR-717 review remediation .9 — Review.insert! bypasses model
-        # validators (duplicate_status_requires_target, responding_to_must_be_same_rule,
-        # duplicate_of_must_be_same_component, inclusion validators on
-        # triage_status / section). Re-load each inserted record and run
-        # `valid?`; on failure, warn (with the archive's external_id +
-        # validator messages) and delete the row to keep the post-import DB
-        # clean. Children pointing at a removed parent cascade-delete via
-        # the FK on_delete: :cascade we already have on responding_to_review_id.
-        dropped = drop_invalid_reviews(external_to_new_id)
-
-        # PR-717 review remediation .10 — write a Component-level audit row
-        # listing imported external_ids + archive identifier. Recovery trail
-        # for admin_destroy → re-import scenarios.
-        write_import_audit(external_to_new_id)
-
-        count - dropped
       end
 
       private
