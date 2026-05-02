@@ -1145,7 +1145,7 @@ RSpec.describe 'Reviews' do
         expect(snapshots).to be_an(Array)
         expect(snapshots.size).to eq(3) # parent + reply + grandchild
 
-        ids = snapshots.map { |s| s['id'] }
+        ids = snapshots.pluck('id')
         expect(ids).to contain_exactly(doomed_review.id, reply_to_doomed.id, grandchild.id)
 
         # Each snapshot is a full hash with the audited + lifecycle columns
