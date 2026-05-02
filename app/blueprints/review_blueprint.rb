@@ -29,4 +29,15 @@ class ReviewBlueprint < Blueprinter::Base
   field :adjudicator_imported do |review, _options|
     review.adjudicator_imported?
   end
+
+  # PR-717 review remediation .j4a step C1 — commenter attribution
+  # display. Same fallback pattern (resolved User → imported_name →
+  # imported_email → nil) used by triager/adjudicator. Frontend renders
+  # an "imported" badge when commenter_imported is true.
+  field :commenter_display_name do |review, _options|
+    review.commenter_display_name
+  end
+  field :commenter_imported do |review, _options|
+    review.commenter_imported?
+  end
 end

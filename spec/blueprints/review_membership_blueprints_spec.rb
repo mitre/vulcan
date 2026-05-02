@@ -111,6 +111,41 @@ RSpec.describe 'Review and Membership Blueprints' do
         expect(json[:adjudicated_at]).to be_present
       end
     end
+
+    # PR-717 review remediation .j4a step C1 — commenter attribution
+    # display fields. Mirrors triager_*/adjudicator_* in the same modal
+    # (CommentTriageModal renders the commenter's display name + an
+    # "imported" badge when the original User no longer exists locally).
+    describe 'PR-717 .j4a commenter attribution display fields' do
+      it 'exposes commenter_display_name and commenter_imported when User resolved' do
+        json = ReviewBlueprint.render_as_hash(review)
+        expect(json[:commenter_display_name]).to eq(reviewer_name)
+        expect(json[:commenter_imported]).to be(false)
+      end
+
+      it 'falls back to commenter_imported_name when user_id is nil' do
+        review.update_columns(user_id: nil,
+                              commenter_imported_name: 'Imported Person',
+                              commenter_imported_email: 'imp@old.example')
+        json = ReviewBlueprint.render_as_hash(review.reload)
+        expect(json[:commenter_display_name]).to eq('Imported Person')
+        expect(json[:commenter_imported]).to be(true)
+      end
+
+      it 'falls back to commenter_imported_email when imported_name is blank' do
+        review.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
+        json = ReviewBlueprint.render_as_hash(review.reload)
+        expect(json[:commenter_display_name]).to eq('imp@old.example')
+        expect(json[:commenter_imported]).to be(true)
+      end
+
+      it 'returns nil display_name + false imported when fully orphaned' do
+        review.update_columns(user_id: nil)
+        json = ReviewBlueprint.render_as_hash(review.reload)
+        expect(json[:commenter_display_name]).to be_nil
+        expect(json[:commenter_imported]).to be(false)
+      end
+    end
   end
 
   describe MembershipBlueprint do
