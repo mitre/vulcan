@@ -21,9 +21,19 @@ class AddLifecycleColumnsToReviews < ActiveRecord::Migration[8.0]
       t.string   :section
     end
 
-    add_foreign_key :reviews, :users,   column: :triage_set_by_id,        on_delete: :nullify
-    add_foreign_key :reviews, :users,   column: :adjudicated_by_id,       on_delete: :nullify
-    add_foreign_key :reviews, :reviews, column: :duplicate_of_review_id,  on_delete: :nullify
-    add_foreign_key :reviews, :reviews, column: :responding_to_review_id, on_delete: :cascade
+    # PR-717 review remediation .2kp — Strong Migrations 2-pass: add FK
+    # with validate: false (no ACCESS EXCLUSIVE during validation).
+    # Companion migration 20260502160000 runs validate_foreign_key inside
+    # disable_ddl_transaction! to validate without the long lock on
+    # production-sized tables.
+    #
+    # responding_to_review_id is intentionally omitted here — the .4 work
+    # (migration 20260502080000_change_review_responding_to_fk_to_restrict)
+    # already drops + re-adds it with validate: false + a paired
+    # validate_foreign_key call in the same migration body.
+    add_foreign_key :reviews, :users,   column: :triage_set_by_id,        on_delete: :nullify, validate: false
+    add_foreign_key :reviews, :users,   column: :adjudicated_by_id,       on_delete: :nullify, validate: false
+    add_foreign_key :reviews, :reviews, column: :duplicate_of_review_id,  on_delete: :nullify, validate: false
+    add_foreign_key :reviews, :reviews, column: :responding_to_review_id, on_delete: :cascade, validate: false
   end
 end

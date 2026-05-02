@@ -871,6 +871,33 @@ RSpec.describe Review do
     end
   end
 
+  # PR-717 review remediation .2kp — original lifecycle migration
+  # (20260429145530_add_lifecycle_columns_to_reviews) added 4 FKs inline
+  # with column adds. Rails 8 default add_foreign_key validates eagerly
+  # (ACCESS EXCLUSIVE on `reviews` for the duration of validation —
+  # fine on empty dev DBs, painful on a populated production reviews
+  # table). Strong Migrations 2-pass remediation: original migration
+  # uses validate: false; companion migration runs validate_foreign_key
+  # inside disable_ddl_transaction!. Three FKs apply (responding_to_review_id
+  # was already 2-pass-fixed in .4 commit 33b2bea / migration 20260502080000).
+  describe 'lifecycle FK constraints validated (PR-717 .2kp regression)' do
+    let(:fks) { ActiveRecord::Base.connection.foreign_keys(:reviews) }
+
+    {
+      'triage_set_by_id' => { to: 'users', on_delete: :nullify },
+      'adjudicated_by_id' => { to: 'users', on_delete: :nullify },
+      'duplicate_of_review_id' => { to: 'reviews', on_delete: :nullify }
+    }.each do |column, expected|
+      it "FK on #{column} exists, references #{expected[:to]}, validated" do
+        fk = fks.find { |f| f.column == column }
+        expect(fk).not_to be_nil
+        expect(fk.to_table).to eq(expected[:to])
+        expect(fk.on_delete).to eq(expected[:on_delete])
+        expect(fk.options[:validate]).to be(true)
+      end
+    end
+  end
+
   describe 'FK constraint on reviews.user_id (PR-717 .j4a step A3)' do
     let(:user_fk) do
       ActiveRecord::Base.connection.foreign_keys(:reviews).find { |fk| fk.column == 'user_id' }
