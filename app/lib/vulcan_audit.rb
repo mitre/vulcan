@@ -3,7 +3,21 @@
 # Custom Audited class for Vulcan-specific methods for interacting with audits.
 class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
-  before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
+  # PR-717 review remediation .14r — request_uuid invariant. The audited
+  # gem's Audited::Sweeper Rack middleware sets request_uuid for HTTP
+  # requests; recent versions also fall back to SecureRandom for
+  # non-HTTP contexts. This callback makes the invariant a Vulcan-side
+  # guarantee (independent of gem version): every audit row has a
+  # request_uuid. For job/rake-task contexts that want to share a UUID
+  # across multiple audit rows in one logical operation, set
+  # Audited.store[:current_request_uuid] before triggering the audited
+  # operations; this callback reads it first.
+  #
+  # Order matters: ensure_request_uuid runs FIRST so other callbacks
+  # observing the value see the populated UUID. ||= preserves any value
+  # already set by Audited::Sweeper (HTTP path).
+  before_create :ensure_request_uuid,
+                :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
 
   # PR-717 review remediation .4 — F4 forensic correlation primitive.
   # Wraps the request_uuid indexed query in an AuditEventBundle PORO so
@@ -23,6 +37,10 @@ class VulcanAudit < Audited::Audit
         project_id: project_id
       }
     }
+  end
+
+  def ensure_request_uuid
+    self.request_uuid ||= Audited.store[:current_request_uuid] || SecureRandom.uuid
   end
 
   def set_username

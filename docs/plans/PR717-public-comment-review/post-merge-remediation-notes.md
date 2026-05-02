@@ -88,11 +88,27 @@ bundle.to_h                      # Compact JSON-serializable summary
 bundle.trigger.audited_changes[:destroyed_review_snapshots]
 ```
 
-**Boundary:** `request_uuid` is NULL for audit rows created outside
-an HTTP request (rake tasks, seeds, ActiveJob workers, direct
-ReviewBuilder calls). `bundled_with` returns just the trigger row
-in that case. The non-HTTP backfill is tracked separately as
-`vulcan-v3.x-14r`.
+**Boundary (closed by .14r):** `request_uuid` is now guaranteed
+present on every audit row created via `audits.create!` (or any
+Audited create-lifecycle path). `VulcanAudit#ensure_request_uuid`
+runs as a `before_create` callback that:
+
+1. Preserves any value already set by `Audited::Sweeper` (HTTP path).
+2. Falls back to `Audited.store[:current_request_uuid]` if set by
+   job/rake middleware (the integration hook for non-HTTP contexts
+   that want correlation across multiple audit rows in one operation).
+3. Falls back to `SecureRandom.uuid` for genuine orphans.
+
+Direct SQL inserts that bypass the audited gem entirely (e.g.
+`Review.insert!` in `ReviewBuilder`) do not produce audit rows at
+all — the .10 work added a single Component-level audit row per
+import that DOES go through `audits.create!` and therefore has a
+`request_uuid` from this callback.
+
+`bundled_with` still returns just the trigger row when an audit
+predates `.14r` (historical rows, dev DB seeded before the callback
+landed). No retroactive migration — `request_uuid` is set at create
+time only.
 
 ### F5 — Defensive transaction on `ReviewBuilder.build_all`
 

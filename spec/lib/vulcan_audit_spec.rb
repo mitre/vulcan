@@ -44,4 +44,67 @@ RSpec.describe VulcanAudit do
       expect { audit.send(:find_and_save_associated_rule) }.not_to raise_error
     end
   end
+
+  # PR-717 review remediation .14r — request_uuid correlation works for
+  # HTTP-driven audits (Audited::Sweeper Rack middleware auto-populates).
+  # Pre-fix, audits created outside an HTTP request (rake tasks, seeds,
+  # ActiveJob workers, after-commit hooks dispatched after request ends)
+  # had request_uuid NULL — AuditEventBundle.bundled_with returns just
+  # the trigger row in that case, breaking forensic correlation across
+  # any non-HTTP-driven multi-row operation.
+  #
+  # Fix: VulcanAudit before_create reads Audited.store[:current_request_uuid]
+  # first (job/rake middleware sets it), falls back to SecureRandom.uuid
+  # if unset. Result: every audit row has a request_uuid; rows from one
+  # logical operation share one UUID.
+  describe 'request_uuid backfill for non-HTTP audits (PR-717 .14r)' do
+    let(:user) { create(:user) }
+    let(:project) { Project.create!(name: 'pr717-14r') }
+    let(:component) do
+      Component.create!(project: project, name: '14r component',
+                        title: '14r component', version: 'v1', prefix: 'PR14-01',
+                        based_on: SecurityRequirementsGuide.first || create(:security_requirements_guide))
+    end
+
+    before do
+      Audited.store[:audited_user] = user
+      Audited.store.delete(:current_request_uuid)
+    end
+
+    it 'populates request_uuid via SecureRandom when no store key set (orphan path)' do
+      audit = component.audits.create!(action: 'sample', comment: 'orphan path test')
+      expect(audit.request_uuid).to be_present
+      expect(audit.request_uuid).to match(/\A[0-9a-f-]{36}\z/)
+    end
+
+    it 'reuses Audited.store[:current_request_uuid] when set (job/rake middleware path)' do
+      Audited.store[:current_request_uuid] = '00000000-0000-4000-8000-aaaaaaaaaaaa'
+      audit = component.audits.create!(action: 'sample', comment: 'middleware path test')
+      expect(audit.request_uuid).to eq('00000000-0000-4000-8000-aaaaaaaaaaaa')
+    end
+
+    it 'shares one request_uuid across multiple audits in the same logical operation' do
+      Audited.store[:current_request_uuid] = '11111111-1111-4111-8111-bbbbbbbbbbbb'
+      a = component.audits.create!(action: 'sample-1', comment: 'op-row-1')
+      b = component.audits.create!(action: 'sample-2', comment: 'op-row-2')
+      expect(a.request_uuid).to eq(b.request_uuid)
+    end
+
+    it 'gives different orphan-path audits distinct request_uuids' do
+      Audited.store.delete(:current_request_uuid)
+      a = component.audits.create!(action: 'sample-1', comment: 'orphan-1')
+      Audited.store.delete(:current_request_uuid) # ensure fresh per call
+      b = component.audits.create!(action: 'sample-2', comment: 'orphan-2')
+      expect(a.request_uuid).not_to eq(b.request_uuid)
+    end
+
+    it 'does not overwrite a request_uuid set by Audited::Sweeper (HTTP path)' do
+      # When the audited gem's sweeper has already populated request_uuid
+      # (typical HTTP-request path), our before_create must not stomp it.
+      audit = component.audits.build(action: 'sample', comment: 'preserve-test')
+      audit.request_uuid = '22222222-2222-4222-8222-cccccccccccc'
+      audit.save!
+      expect(audit.reload.request_uuid).to eq('22222222-2222-4222-8222-cccccccccccc')
+    end
+  end
 end
