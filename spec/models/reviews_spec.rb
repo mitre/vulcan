@@ -828,6 +828,44 @@ RSpec.describe Review do
     end
   end
 
+  # PR-717 review remediation .j4a step A3+A4 — DB-layer FK constraints
+  # on `reviews.user_id` and `reviews.rule_id`. Pre-.j4a, neither column
+  # had a Postgres FK constraint at all, despite the model-level
+  # belongs_to declarations. Failure modes:
+  # - Direct SQL DELETE on a User orphaned every review (next read 500'd
+  #   on `User must exist`).
+  # - Direct SQL DELETE on a base_rules row orphaned every review
+  #   (matching the pattern reviews_spec covers as "responding_to" via
+  #   the existing self-FK).
+  # The migrations use Strong Migrations 2-pass (`validate: false` +
+  # separate `validate_foreign_key`) to avoid an ACCESS EXCLUSIVE table
+  # lock during validation on production. Behavioral integration ("user
+  # destroyed → review keeps commenter_imported_*") lands in step D1.
+  describe 'FK constraint on reviews.user_id (PR-717 .j4a step A3)' do
+    let(:user_fk) do
+      ActiveRecord::Base.connection.foreign_keys(:reviews).find { |fk| fk.column == 'user_id' }
+    end
+
+    it 'exists' do
+      expect(user_fk).not_to be_nil
+    end
+
+    it 'references the users table' do
+      expect(user_fk.to_table).to eq('users')
+    end
+
+    it 'has on_delete: :nullify (User destroy preserves the review)' do
+      expect(user_fk.on_delete).to eq(:nullify)
+    end
+
+    it 'is validated (not pending)' do
+      # The 2-pass Strong Migrations pattern adds the FK with
+      # validate: false then runs validate_foreign_key in a separate
+      # migration. The FK should be in the validated state at the end.
+      expect(user_fk.options[:validate]).to be(true)
+    end
+  end
+
   # PR-717 review remediation .j4a step A2 — `belongs_to :user` becomes
   # optional so a Review can persist with `user_id` NULL after step A3
   # adds the FK with `on_delete: :nullify` (User#destroy nullifies all
