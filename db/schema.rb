@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_150001) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -267,6 +267,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_150001) do
     t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"
     t.index ["rule_id", "section", "triage_status"], name: "index_reviews_on_rule_id_and_section_and_triage_status"
     t.index ["rule_id"], name: "index_reviews_on_rule_id"
+    t.index ["triage_status", "created_at"], name: "idx_reviews_top_level_triage_recent", where: "(((action)::text = 'comment'::text) AND (responding_to_review_id IS NULL))"
     t.index ["user_id"], name: "index_reviews_on_user_id"
   end
 
