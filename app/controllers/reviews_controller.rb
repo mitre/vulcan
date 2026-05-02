@@ -358,6 +358,27 @@ class ReviewsController < ApplicationController
       # ours to commit. lock! must be inside a txn — held only for the
       # executing statement otherwise.
       @review.lock!
+
+      # PR-717 review remediation .uxf — write an outbound audit on the
+      # SOURCE rule before the move. vulcan_audited associated_with: :rule
+      # attaches per-review audit rows to the NEW rule (after update),
+      # leaving the source rule's audit feed silent about the departure.
+      # This row closes that forensic asymmetry: reviewers auditing the
+      # source rule's history see "review X moved out to rule Y" with
+      # full context.
+      source_rule = @review.rule
+      source_rule.audits.create!(
+        user: current_user,
+        action: 'review_moved_out',
+        comment: "Admin move-to-rule: review #{@review.id} → rule #{target_rule.id}: #{@audit_comment}",
+        audited_changes: {
+          review_id: @review.id,
+          source_rule_id: source_rule.id,
+          destination_rule_id: target_rule.id,
+          reply_count: @review.responses.count
+        }
+      )
+
       move_review_subtree!(@review, target_rule.id, @audit_comment)
     end
     render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }

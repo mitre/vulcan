@@ -1290,6 +1290,51 @@ RSpec.describe 'Reviews' do
         expect(latest.audited_changes['rule_id']).to eq([rule_a.id, rule_b.id])
       end
 
+      # PR-717 review remediation .uxf — outbound audit on the SOURCE rule.
+      # vulcan_audited associated_with: :rule attaches per-review audit
+      # rows to the NEW rule (after the update). Reviewers auditing the
+      # source rule's history would see nothing about the move. The
+      # source-side audit closes that forensic asymmetry: a separate
+      # audit row attached to the source rule, action='review_moved_out',
+      # carrying review_id + source_rule_id + destination_rule_id +
+      # reply_count + the operator's audit_comment.
+      it 'writes an outbound audit on the source rule with action=review_moved_out' do
+        expect do
+          patch "/reviews/#{parent_review.id}/move_to_rule",
+                params: { rule_id: rule_b.id, audit_comment: 'forensic outbound check' }, as: :json
+        end.to change {
+          rule_a.audits.where(action: 'review_moved_out').count
+        }.by(1)
+      end
+
+      it 'outbound audit captures source/destination rule_ids + review_id + reply_count' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: 'payload check' }, as: :json
+        outbound = rule_a.audits.where(action: 'review_moved_out').last
+        expect(outbound).to be_present
+        # Audited stores manually-passed audited_changes hashes via YAML
+        # round-trip with symbol keys (mirrors the F4 destroyed_review_
+        # snapshots assertion in the .4 admin_destroy spec).
+        expect(outbound.audited_changes[:review_id]).to eq(parent_review.id)
+        expect(outbound.audited_changes[:source_rule_id]).to eq(rule_a.id)
+        expect(outbound.audited_changes[:destination_rule_id]).to eq(rule_b.id)
+        expect(outbound.audited_changes[:reply_count]).to eq(parent_review.responses.count)
+      end
+
+      it 'outbound audit carries the operator audit_comment in its comment' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: 'misclassified — moving' }, as: :json
+        outbound = rule_a.audits.where(action: 'review_moved_out').last
+        expect(outbound.comment).to include('misclassified — moving')
+      end
+
+      it 'outbound audit attributed to the operating admin' do
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: 'attribution check' }, as: :json
+        outbound = rule_a.audits.where(action: 'review_moved_out').last
+        expect(outbound.user_id).to eq(mtr_admin.id)
+      end
+
       # PR-717 review remediation .4 F7b — concurrent admin race fix.
       # Same lock! pattern as admin_destroy: SELECT FOR UPDATE inside the
       # Review.transaction block so a concurrent move_to_rule or
