@@ -63,9 +63,19 @@
         </div>
       </div>
 
-      <p class="mb-1 text-muted small">
-        <strong>{{ review.author_name }}</strong>
-        <span v-if="review.author_email"> · {{ review.author_email }}</span>
+      <!-- PR-717 review remediation .j4a step C3 — commenter attribution.
+           commenter_display_name + commenter_imported come from the new
+           ReviewBlueprint fields (step C1) and Component#paginated_comments
+           row hash (step C2). Falls back to legacy author_name for older
+           API consumers that haven't been re-rendered with the new shape. -->
+      <p class="mb-1 text-muted small" data-testid="attribution-commenter">
+        <strong>{{ review.commenter_display_name || review.author_name || "—" }}</strong>
+        <b-badge v-if="review.commenter_imported" variant="warning" class="ml-1">
+          imported
+        </b-badge>
+        <span v-if="review.author_email && !review.commenter_imported">
+          · {{ review.author_email }}</span
+        >
         · posted {{ relativeTime(review.created_at) }}
       </p>
       <blockquote class="border-left pl-3 py-2 mb-3 bg-light">

@@ -652,4 +652,67 @@ describe("CommentTriageModal", () => {
       expect(block.text()).toContain("—");
     });
   });
+
+  // PR-717 review remediation .j4a step C3 — commenter attribution
+  // badge in the byline area (top of the modal). When the original
+  // commenter's User row is gone (User#destroy nullified user_id) but
+  // commenter_imported_email/name are populated, the byline shows the
+  // imported name + an "imported" badge — matches the triager_/
+  // adjudicator_ pattern below.
+  describe("commenter attribution byline (PR-717 .j4a)", () => {
+    it("shows the resolved User name and no imported badge when commenter_imported is false", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: {
+          review: {
+            ...sampleReview,
+            commenter_display_name: "John Doe",
+            commenter_imported: false,
+          },
+        },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-commenter"]');
+      expect(block.exists()).toBe(true);
+      expect(block.text()).toContain("John Doe");
+      expect(block.text()).not.toContain("imported");
+    });
+
+    it("shows the imported attribution name + 'imported' badge when commenter_imported is true", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: {
+          review: {
+            ...sampleReview,
+            commenter_display_name: "Former User",
+            commenter_imported: true,
+            author_name: null, // simulating User#destroy nullification
+          },
+        },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-commenter"]');
+      expect(block.exists()).toBe(true);
+      expect(block.text()).toContain("Former User");
+      expect(block.text()).toContain("imported");
+    });
+
+    it("renders an em-dash placeholder when commenter_display_name is null", () => {
+      const w = mount(CommentTriageModal, {
+        localVue,
+        propsData: {
+          review: {
+            ...sampleReview,
+            commenter_display_name: null,
+            commenter_imported: false,
+            author_name: null,
+          },
+        },
+        stubs: visibleModalStub,
+      });
+      const block = w.find('[data-testid="attribution-commenter"]');
+      expect(block.exists()).toBe(true);
+      expect(block.text()).toContain("—");
+    });
+  });
 });
