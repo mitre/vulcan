@@ -200,4 +200,67 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(Review.where(comment: 'rollback drop-invalid')).to be_empty
     end
   end
+
+  # PR-717 review remediation .j4a step B2 — pre-fix, when the archive's
+  # commenter user_email/user_name didn't resolve to a User on this
+  # instance, ReviewBuilder warned + skipped the review entirely. That
+  # destroyed the audit trail / disposition record. Now that step A2
+  # makes belongs_to :user optional and step A1 added
+  # commenter_imported_email/name columns, we can preserve the row with
+  # user_id NULL + commenter_imported_* populated. Mirrors the existing
+  # attribution_attrs pattern used for triage_set_by + adjudicated_by.
+  describe '#build_all unresolved commenter (PR-717 .j4a step B2)' do
+    it 'imports the review with commenter_imported_email/name when user does not resolve' do
+      data = [review_attrs(
+        external_id: 8001,
+        comment: 'unresolved commenter test',
+        user_email: 'former@no-such-domain.example',
+        user_name: 'Former Commenter'
+      )]
+      count = described_class.new(data, rule_id_map, result).build_all
+      expect(count).to eq(1)
+      review = Review.find_by(comment: 'unresolved commenter test')
+      expect(review.user_id).to be_nil
+      expect(review.commenter_imported_email).to eq('former@no-such-domain.example')
+      expect(review.commenter_imported_name).to eq('Former Commenter')
+    end
+
+    it 'records a warning naming the unresolved commenter' do
+      data = [review_attrs(
+        external_id: 8002,
+        comment: 'warning text test',
+        user_email: 'unknown-commenter@no-such-domain.example',
+        user_name: 'Unknown'
+      )]
+      described_class.new(data, rule_id_map, result).build_all
+      expect(result.warnings).to include(
+        a_string_matching(/8002.*unknown-commenter@no-such-domain\.example.*imported_email/)
+      )
+    end
+
+    it 'still uses the resolved User when one matches by email (no commenter_imported_* set)' do
+      data = [review_attrs(external_id: 8003, comment: 'resolved commenter', user_email: user.email)]
+      described_class.new(data, rule_id_map, result).build_all
+      review = Review.find_by(comment: 'resolved commenter')
+      expect(review.user_id).to eq(user.id)
+      expect(review.commenter_imported_email).to be_nil
+      expect(review.commenter_imported_name).to be_nil
+    end
+
+    it 'does not import when both user_email and user_name are blank (no attribution at all)' do
+      # An archive entry with no commenter info anywhere is genuinely
+      # unrecoverable — drop it with a warning rather than insert a
+      # row that has no provenance whatsoever.
+      data = [review_attrs(
+        external_id: 8004,
+        comment: 'no attribution at all',
+        user_email: nil,
+        user_name: nil
+      )]
+      count = described_class.new(data, rule_id_map, result).build_all
+      expect(count).to eq(0)
+      expect(Review.where(comment: 'no attribution at all')).to be_empty
+      expect(result.warnings).to include(a_string_matching(/8004.*no commenter attribution/i))
+    end
+  end
 end

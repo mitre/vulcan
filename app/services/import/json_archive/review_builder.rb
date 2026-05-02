@@ -49,16 +49,10 @@ module Import
               next
             end
 
-            user = resolve_user(review_data, 'user_email', 'user_name')
-            unless user
-              @result.add_warning(
-                "Review: user '#{review_data['user_email'] || review_data['user_name']}' not found. " \
-                "Review for rule #{review_data['rule_id']} skipped."
-              )
-              next
-            end
+            commenter = commenter_attrs(review_data)
+            next if commenter.nil?
 
-            new_id = insert_review(review_data, rule_db_id, user)
+            new_id = insert_review(review_data, rule_db_id, commenter)
             external_id = review_data['external_id']
             external_to_new_id[external_id] = new_id if external_id
             count += 1
@@ -85,16 +79,16 @@ module Import
 
       private
 
-      def insert_review(review_data, rule_db_id, user)
+      def insert_review(review_data, rule_db_id, commenter)
         created_at = parse_time(review_data['created_at']) || Time.current
         attrs = {
-          user_id: user.id,
           rule_id: rule_db_id,
           action: review_data['action'],
           comment: review_data['comment'],
           created_at: created_at,
           updated_at: created_at
         }
+        attrs.merge!(commenter)
         attrs.merge!(lifecycle_attrs(review_data))
 
         # rubocop:disable Rails/SkipsModelValidations
@@ -103,6 +97,36 @@ module Import
         # historical reviews without re-firing the create-time gates.
         Review.insert!(attrs).rows.first.first
         # rubocop:enable Rails/SkipsModelValidations
+      end
+
+      # PR-717 review remediation .j4a step B2 — return one of:
+      # - { user_id: <id> } when the commenter resolves to a User
+      # - { user_id: nil, commenter_imported_email/name: ... } when
+      #   email or name carry forward but no User matches on this instance
+      # - nil when neither attribution nor User exists (caller should skip)
+      def commenter_attrs(review_data)
+        user = resolve_user(review_data, 'user_email', 'user_name')
+        return { user_id: user.id } if user
+
+        email = review_data['user_email']
+        name = review_data['user_name']
+        if email.blank? && name.blank?
+          @result.add_warning(
+            "Review #{review_data['external_id']}: no commenter attribution (user_email + user_name " \
+            'both blank). Cannot import — skipping.'
+          )
+          return nil
+        end
+
+        @result.add_warning(
+          "Review #{review_data['external_id']}: commenter '#{email || name}' not found on this instance — " \
+          'original attribution preserved on commenter_imported_email/name (no FK).'
+        )
+        {
+          user_id: nil,
+          commenter_imported_email: email,
+          commenter_imported_name: name
+        }
       end
 
       def lifecycle_attrs(review_data)
