@@ -718,6 +718,39 @@ RSpec.describe Import::JsonArchiveImporter do
         end
       end
     end
+
+    # PR-717 review remediation .lsj — zip-bomb decompression budget.
+    # The pre-fix import path enumerated entries lazily and read each
+    # one as needed; rubyzip's per-entry validation catches single
+    # absurd entries but no aggregate-size check exists. A 50–100 MB
+    # archive of empty JSON arrays could decompress to multiple GB
+    # before Ruby OOMs. Settings.import.json_archive_size_budget_mb
+    # caps the SUM of uncompressed entry sizes pre-parse.
+    context 'with archive exceeding the decompression budget (PR-717 .lsj)' do
+      it 'rejects the archive with a clear error before parsing' do
+        # Stub the budget to 1 byte so any real archive exceeds it.
+        allow(Settings.import).to receive(:json_archive_size_budget_mb).and_return(0)
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).not_to be_success
+        expect(result.errors.join).to match(/exceeds.*budget/i)
+      end
+
+      it 'does not start the DB transaction when over budget' do
+        allow(Settings.import).to receive(:json_archive_size_budget_mb).and_return(0)
+        expect(target_project.components.count).to eq(0)
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).not_to be_success
+        # No component / review / etc. created — the budget check fires
+        # before perform_import opens its transaction.
+        expect(target_project.components.count).to eq(0)
+      end
+
+      it 'imports normally when the budget is generous (regression sanity)' do
+        allow(Settings.import).to receive(:json_archive_size_budget_mb).and_return(500)
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).to be_success
+      end
+    end
   end
 
   private

@@ -61,6 +61,25 @@ module Import
 
       begin
         Zip::File.open_buffer(read_file_data) do |zip|
+          # PR-717 review remediation .lsj — zip-bomb decompression
+          # budget. Pre-fix, rubyzip's per-entry validation could pass
+          # while the aggregate uncompressed size still expanded to
+          # multiple GB (50-100 MB archive → 5+ GB on disk before OOM).
+          # Sum entry.size (uncompressed bytes from the central directory
+          # — no actual decompression) and reject before parsing if over
+          # budget. Configurable via Settings.import.json_archive_size_budget_mb
+          # (default 500 MB).
+          budget_bytes = Settings.import.json_archive_size_budget_mb * 1.megabyte
+          total = zip.entries.sum(&:size)
+          if total > budget_bytes
+            result.add_error(
+              "Archive uncompressed size (#{(total / 1.megabyte.to_f).round(1)} MB) " \
+              "exceeds decompression budget (#{Settings.import.json_archive_size_budget_mb} MB). " \
+              'Refusing to decompress.'
+            )
+            return archive
+          end
+
           manifest_entry = zip.find_entry('manifest.json')
           unless manifest_entry
             result.add_error('Invalid backup archive: manifest.json not found')
