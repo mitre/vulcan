@@ -195,7 +195,13 @@ RSpec.describe Import::JsonArchiveImporter do
     end
 
     context 'with unresolvable review user' do
-      it 'skips review and adds warning when user cannot be found' do
+      # PR-717 review remediation .j4a step B2 — pre-fix, an unresolvable
+      # commenter caused ReviewBuilder to skip the review entirely
+      # (destroying the audit trail / disposition record on cross-instance
+      # restore). Now the row imports with user_id=NULL +
+      # commenter_imported_email/name preserved; the warning naming the
+      # missing user still fires for operator visibility.
+      it 'imports review with commenter_imported_* and adds warning when user cannot be found' do
         ghost_user = create(:user, email: 'ghost@example.com', name: 'Ghost')
         Membership.create!(user: ghost_user, membership: source_project, role: 'admin')
         rule = source_component.rules.first
@@ -212,8 +218,13 @@ RSpec.describe Import::JsonArchiveImporter do
 
         result = import_archive(zip, target_project, include_reviews: true)
         expect(result).to be_success
-        expect(result.summary[:reviews_imported]).to eq(0)
-        expect(result.warnings).to include(a_string_matching(/ghost@example\.com.*not found/))
+        expect(result.summary[:reviews_imported]).to be >= 1
+        expect(result.warnings).to include(a_string_matching(/ghost@example\.com.*imported_email/))
+
+        imported = Review.where(comment: 'Haunted').last
+        expect(imported.user_id).to be_nil
+        expect(imported.commenter_imported_email).to eq('ghost@example.com')
+        expect(imported.commenter_imported_name).to eq('Ghost')
       end
     end
 

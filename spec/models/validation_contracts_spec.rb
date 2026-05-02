@@ -231,10 +231,15 @@ RSpec.describe 'Model validation contracts' do
     end
 
     describe 'required associations' do
-      it 'requires a user' do
+      # PR-717 review remediation .j4a step A2 — belongs_to :user is now
+      # optional so reviews can persist with user_id NULL after
+      # User#destroy nullifies the FK (FK on_delete: :nullify, step A3).
+      # The original commenter attribution lives on
+      # commenter_imported_email/name; commenter_display_name handles
+      # the display fallback.
+      it 'permits a nil user (FK :nullify after User#destroy)' do
         review.user = nil
-        expect(review).not_to be_valid
-        expect(review.errors[:user]).to be_present
+        expect(review).to be_valid
       end
 
       it 'requires a rule' do
