@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_140001) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_150001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -398,6 +398,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_140001) do
   add_foreign_key "memberships", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
+  add_foreign_key "reviews", "base_rules", column: "rule_id", on_delete: :restrict
   add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify
   add_foreign_key "reviews", "reviews", column: "responding_to_review_id", on_delete: :restrict
   add_foreign_key "reviews", "users", column: "adjudicated_by_id", on_delete: :nullify

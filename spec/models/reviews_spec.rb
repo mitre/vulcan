@@ -841,6 +841,36 @@ RSpec.describe Review do
   # separate `validate_foreign_key`) to avoid an ACCESS EXCLUSIVE table
   # lock during validation on production. Behavioral integration ("user
   # destroyed → review keeps commenter_imported_*") lands in step D1.
+  # PR-717 review remediation .j4a step A4 — FK on `reviews.rule_id` →
+  # `base_rules.id`. The card description proposed `on_delete: :cascade`
+  # to "match Rule#has_many :reviews, dependent: :destroy", but the .4
+  # cascade-ownership lesson applies (memory `vulcan-cascade-rails-owns`):
+  # PG FK :cascade skips Rails callbacks → audited gem doesn't capture
+  # per-row destroy events. Use :restrict instead. Rails-side
+  # dependent: :destroy walks children-first; the FK is the safety net
+  # for direct SQL DELETE FROM base_rules.
+  describe 'FK constraint on reviews.rule_id (PR-717 .j4a step A4)' do
+    let(:rule_fk) do
+      ActiveRecord::Base.connection.foreign_keys(:reviews).find { |fk| fk.column == 'rule_id' }
+    end
+
+    it 'exists' do
+      expect(rule_fk).not_to be_nil
+    end
+
+    it 'references the base_rules table' do
+      expect(rule_fk.to_table).to eq('base_rules')
+    end
+
+    it 'has on_delete: :restrict (forces use of Rails path → audits captured)' do
+      expect(rule_fk.on_delete).to eq(:restrict)
+    end
+
+    it 'is validated (not pending)' do
+      expect(rule_fk.options[:validate]).to be(true)
+    end
+  end
+
   describe 'FK constraint on reviews.user_id (PR-717 .j4a step A3)' do
     let(:user_fk) do
       ActiveRecord::Base.connection.foreign_keys(:reviews).find { |fk| fk.column == 'user_id' }
