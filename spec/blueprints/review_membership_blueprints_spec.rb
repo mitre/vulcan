@@ -199,26 +199,24 @@ RSpec.describe 'Review and Membership Blueprints' do
         expect(json).not_to have_key(:user_id)
       end
 
-      describe 'author_email gated by include_email option' do
-        it 'omits author_email by default (avoid scraping during open comment window)' do
-          json = ReviewBlueprint.render_as_hash(review)
-          expect(json).not_to have_key(:author_email)
-        end
+      it 'omits author_email by default (avoid scraping during open comment window)' do
+        json = ReviewBlueprint.render_as_hash(review)
+        expect(json).not_to have_key(:author_email)
+      end
 
-        it 'includes author_email when render is called with include_email: true' do
-          json = ReviewBlueprint.render_as_hash(review, include_email: true)
-          expect(json[:author_email]).to eq(reviewer_email)
-        end
+      it 'includes author_email when render is called with include_email: true' do
+        json = ReviewBlueprint.render_as_hash(review, include_email: true)
+        expect(json[:author_email]).to eq(reviewer_email)
+      end
 
-        it 'returns nil author_email when user is detached and include_email: true' do
-          review.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
-          json = ReviewBlueprint.render_as_hash(review.reload, include_email: true)
-          # Strict: author_email surfaces the User#email (it's the *current
-          # account's* email, not the historic commenter_imported_email).
-          # When user_id is nil there is no current account → nil. The
-          # imported email lives on commenter_display_name's fallback chain.
-          expect(json[:author_email]).to be_nil
-        end
+      it 'returns nil author_email when user is detached and include_email: true' do
+        review.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
+        json = ReviewBlueprint.render_as_hash(review.reload, include_email: true)
+        # Strict: author_email surfaces the User#email (the *current
+        # account's* email, not the historic commenter_imported_email).
+        # When user_id is nil there is no current account → nil. The
+        # imported email lives on commenter_display_name's fallback chain.
+        expect(json[:author_email]).to be_nil
       end
     end
   end
