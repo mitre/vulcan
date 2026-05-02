@@ -365,6 +365,11 @@ class ReviewsController < ApplicationController
   # so the trail survives — the destroyed review's own audit records
   # remain on the audited gem's table but the auditable record is gone.
   def admin_destroy
+    # PR-717 review remediation .19 — capture id BEFORE the destroy
+    # so the canonical response shape (`{review: nil, destroyed_id:}`)
+    # has the value even after the row is gone.
+    destroyed_id = @review.id
+
     Review.transaction do
       # PR-717 review remediation .4 F7 — row lock against concurrent
       # admin race (move_to_rule by one admin + hard-delete by another).
@@ -396,7 +401,12 @@ class ReviewsController < ApplicationController
       )
       @review.destroy!
     end
-    render json: { ok: true }
+    # PR-717 review remediation .19 — canonical response shape:
+    # `review: nil` mirrors every other admin/triage endpoint that
+    # returns `{review: <hash>}`; destroyed_id carries the destroyed
+    # row id for any future client logic that wants to reconcile state
+    # without keeping the original review prop in scope.
+    render json: { review: nil, destroyed_id: destroyed_id }
   end
 
   # PR-717 Task 30 — PATCH /reviews/:id/section.

@@ -1066,6 +1066,21 @@ RSpec.describe 'Reviews' do
         expect(Review.exists?(reply_to_doomed.id)).to be(false)
       end
 
+      # PR-717 review remediation .19 — canonicalize admin_destroy
+      # response shape. Pre-fix returned `{ok: true}` — only PR-717
+      # endpoint not following the `{review: ...}` convention. Frontend
+      # never reads the body, but a uniform shape lets the AlertMixin
+      # / refresh logic stay generic across actions.
+      it 'returns canonical {review: nil, destroyed_id: <id>} shape (PR-717 .19)' do
+        target_id = doomed_review.id
+        delete "/reviews/#{target_id}/admin_destroy",
+               params: { audit_comment: 'shape check' }, as: :json
+        body = response.parsed_body
+        expect(body).to have_key('review')
+        expect(body['review']).to be_nil
+        expect(body['destroyed_id']).to eq(target_id)
+      end
+
       it 'rejects when audit_comment is blank' do
         delete "/reviews/#{doomed_review.id}/admin_destroy",
                params: { audit_comment: '' }, as: :json
