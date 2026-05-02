@@ -73,6 +73,15 @@ RSpec.describe 'Memberships' do
       expect(response.parsed_body['toast']['title']).to eq('Membership removed.')
       expect(Membership.find_by(id: target_membership.id)).to be_nil
     end
+
+    # PR-717 .a5u — opt the success path into the canonical-toast-response
+    # shared example so any future regression on this endpoint surfaces
+    # alongside the controller-specific assertions above.
+    context 'success-path toast shape (PR-717 .a5u)' do
+      before { delete "/memberships/#{target_membership.id}", headers: json_headers }
+
+      it_behaves_like 'a canonical toast response'
+    end
   end
 
   describe 'DELETE /memberships/:id with non-admin member' do

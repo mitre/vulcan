@@ -47,15 +47,24 @@ RSpec.describe 'Reviews' do
       # review.'}` (string), every other PR-717 endpoint returned
       # `{toast: {title:, message:, variant:}}` (object). Forced the
       # frontend AlertMixin to special-case string vs object. Now uniform.
-      it 'returns a canonicalized object-shape toast (PR-717 .18)' do
-        post "/rules/#{rule.id}/reviews", params: {
-          review: { action: 'comment', comment: 'shape check', component_id: component.id }
-        }, as: :json
-        expect(response).to have_http_status(:ok)
-        toast = response.parsed_body['toast']
-        expect(toast).to be_a(Hash)
-        expect(toast['variant']).to eq('success')
-        expect(toast['title']).to be_present
+      # PR-717 .a5u — opted into the canonical-toast-response shared
+      # example so any future regression on this endpoint surfaces here.
+      context 'success-path toast shape (PR-717 .18 + .a5u)' do # rubocop:disable RSpec/NestedGroups
+        before do
+          post "/rules/#{rule.id}/reviews", params: {
+            review: { action: 'comment', comment: 'shape check', component_id: component.id }
+          }, as: :json
+        end
+
+        it 'returns 200 OK' do
+          expect(response).to have_http_status(:ok)
+        end
+
+        it 'sets the variant to success' do
+          expect(response.parsed_body.dig('toast', 'variant')).to eq('success')
+        end
+
+        it_behaves_like 'a canonical toast response'
       end
 
       it 'rejects an attempt to approve' do

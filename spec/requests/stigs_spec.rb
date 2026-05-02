@@ -139,6 +139,27 @@ RSpec.describe 'Stigs' do
       temp_file.close
       temp_file.unlink
     end
+
+    # PR-717 .a5u — opt the success path into the canonical-toast-response
+    # shared example so any future regression on this endpoint surfaces
+    # alongside the controller-specific assertions above.
+    context 'success-path toast shape (PR-717 .a5u)' do
+      let(:temp_file) do
+        f = Tempfile.new(['test_stig', '.xml'])
+        f.write(stig.xml)
+        f.rewind
+        f
+      end
+
+      before do
+        sign_in user
+        post '/stigs', params: { file: Rack::Test::UploadedFile.new(temp_file.path, 'application/xml') }
+      end
+
+      after { temp_file.close && temp_file.unlink }
+
+      it_behaves_like 'a canonical toast response'
+    end
   end
 
   describe 'DELETE /stigs/:id' do
