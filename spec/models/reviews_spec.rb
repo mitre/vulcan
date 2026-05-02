@@ -1034,4 +1034,56 @@ RSpec.describe Review do
       end
     end
   end
+
+  # PR-717 review remediation .j4a step B1 — commenter display helpers
+  # mirror the triager_*/adjudicator_* pattern from .8. Used by display
+  # surfaces (CommentTriageModal, CSV export, blueprint) so the fallback
+  # is one source of truth: resolved User name → imported_name →
+  # imported_email → nil.
+  describe 'commenter display helpers (PR-717 .j4a step B1)' do
+    let(:base) do
+      Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
+    end
+
+    describe '#commenter_display_name' do
+      it 'returns the resolved User name when user_id is set' do
+        expect(base.commenter_display_name).to eq(@p_viewer.name)
+      end
+
+      it 'falls back to commenter_imported_name when user_id is nil' do
+        base.update_columns(user_id: nil,
+                            commenter_imported_name: 'Imported Person',
+                            commenter_imported_email: 'imp@old.example')
+        expect(base.reload.commenter_display_name).to eq('Imported Person')
+      end
+
+      it 'falls back to commenter_imported_email when imported_name is blank' do
+        base.update_columns(user_id: nil,
+                            commenter_imported_name: nil,
+                            commenter_imported_email: 'imp@old.example')
+        expect(base.reload.commenter_display_name).to eq('imp@old.example')
+      end
+
+      it 'returns nil when user_id is nil and no imported attribution' do
+        base.update_columns(user_id: nil)
+        expect(base.reload.commenter_display_name).to be_nil
+      end
+    end
+
+    describe '#commenter_imported?' do
+      it 'is false when user_id is set (resolved User)' do
+        expect(base.commenter_imported?).to be(false)
+      end
+
+      it 'is true when user_id is nil and imported attribution is present' do
+        base.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
+        expect(base.reload.commenter_imported?).to be(true)
+      end
+
+      it 'is false when user_id is nil and no imported attribution' do
+        base.update_columns(user_id: nil)
+        expect(base.reload.commenter_imported?).to be(false)
+      end
+    end
+  end
 end

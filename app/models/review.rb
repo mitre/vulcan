@@ -219,6 +219,22 @@ class Review < ApplicationRecord
       (adjudicated_by_imported_name.present? || adjudicated_by_imported_email.present?)
   end
 
+  # PR-717 review remediation .j4a step B1 — commenter display fallback.
+  # Resolved User name → commenter_imported_name → commenter_imported_email
+  # → nil. Used by CommentTriageModal, ReviewBlueprint, CSV/disposition
+  # exports — one source of truth so the same fallback logic doesn't
+  # scatter across surfaces.
+  def commenter_display_name
+    user&.name.presence ||
+      commenter_imported_name.presence ||
+      commenter_imported_email.presence
+  end
+
+  def commenter_imported?
+    user_id.nil? &&
+      (commenter_imported_name.present? || commenter_imported_email.present?)
+  end
+
   # PR-717 review remediation .4 step 4 — pre-destroy snapshot for the
   # admin_destroy Component-level audit row's `audited_changes` payload.
   # Captures the full row state (full comment, every audited + lifecycle
