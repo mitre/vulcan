@@ -112,7 +112,10 @@ class ReviewsController < ApplicationController
         end
       end
 
-      render json: { toast: 'Successfully added review.' }
+      # PR-717 review remediation .18 — canonical object-shape toast
+      # (was a bare string pre-fix). Frontend AlertMixin now sees a
+      # uniform shape across every PR-717 endpoint.
+      render_toast(title: 'Comment posted.', message: '', variant: 'success', status: :ok)
     else
       render_toast(title: 'Could not add review.', message: review.errors.full_messages)
     end

@@ -42,6 +42,22 @@ RSpec.describe 'Reviews' do
         expect(Review.last).to have_attributes(action: 'comment', user: viewer, rule: rule)
       end
 
+      # PR-717 review remediation .18 — canonicalize create response toast.
+      # Pre-fix the create endpoint returned `{toast: 'Successfully added
+      # review.'}` (string), every other PR-717 endpoint returned
+      # `{toast: {title:, message:, variant:}}` (object). Forced the
+      # frontend AlertMixin to special-case string vs object. Now uniform.
+      it 'returns a canonicalized object-shape toast (PR-717 .18)' do
+        post "/rules/#{rule.id}/reviews", params: {
+          review: { action: 'comment', comment: 'shape check', component_id: component.id }
+        }, as: :json
+        expect(response).to have_http_status(:ok)
+        toast = response.parsed_body['toast']
+        expect(toast).to be_a(Hash)
+        expect(toast['variant']).to eq('success')
+        expect(toast['title']).to be_present
+      end
+
       it 'rejects an attempt to approve' do
         rule.update(review_requestor: create(:user))
 
