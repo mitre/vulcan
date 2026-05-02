@@ -1038,7 +1038,7 @@ RSpec.describe Component do
 
       it 'planner uses the partial index for the triage-queue query (or chooses an equivalent)' do
         # EXPLAIN against the canonical query shape paginated_comments runs.
-        plan = ActiveRecord::Base.connection.execute(<<~SQL).map { |r| r['QUERY PLAN'] }.join("\n")
+        sql = <<~SQL.squish
           EXPLAIN
           SELECT reviews.* FROM reviews
             INNER JOIN base_rules ON base_rules.id = reviews.rule_id
@@ -1049,6 +1049,11 @@ RSpec.describe Component do
             ORDER BY reviews.created_at DESC
             LIMIT 25
         SQL
+        # `execute` returns a PG::Result, not an AR relation; `.pluck`
+        # doesn't apply.
+        # rubocop:disable Rails/Pluck
+        plan = ActiveRecord::Base.connection.execute(sql).map { |r| r['QUERY PLAN'] }.join("\n")
+        # rubocop:enable Rails/Pluck
         # The new partial index OR an equivalent btree should appear in
         # the plan. PostgreSQL may pick a sequential scan on tiny test
         # tables; we accept any of: the new index, sequential scan
