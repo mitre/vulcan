@@ -663,7 +663,13 @@ class Component < ApplicationRecord
                     triager_display_name: r.triager_display_name,
                     triager_imported: r.triager_imported?,
                     adjudicator_display_name: r.adjudicator_display_name,
-                    adjudicator_imported: r.adjudicator_imported?
+                    adjudicator_imported: r.adjudicator_imported?,
+                    # PR-717 review remediation .j4a step C2 — commenter
+                    # attribution survives User#destroy via fallback to
+                    # commenter_imported_*. author_name (above) is the
+                    # legacy field; consumers should prefer commenter_*.
+                    commenter_display_name: r.commenter_display_name,
+                    commenter_imported: r.commenter_imported?
                   }
                 end
 

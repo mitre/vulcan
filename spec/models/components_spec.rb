@@ -1015,5 +1015,36 @@ RSpec.describe Component do
       unresolved = shared_component.paginated_comments(triage_status: 'all', resolved: 'false')
       expect(unresolved[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id, @c3.id)
     end
+
+    # PR-717 review remediation .j4a step C2 — row hash includes
+    # commenter_display_name + commenter_imported so the triage page
+    # renders attribution even after User#destroy nullifies user_id.
+    # Mirrors the existing triager_*/adjudicator_* fields in the same row.
+    describe 'commenter attribution fields (PR-717 .j4a step C2)' do
+      it 'exposes commenter_display_name with resolved User name' do
+        result = shared_component.paginated_comments(triage_status: 'all')
+        c1_row = result[:rows].find { |r| r[:id] == @c1.id }
+        expect(c1_row[:commenter_display_name]).to eq(pc_viewer.name)
+        expect(c1_row[:commenter_imported]).to be(false)
+      end
+
+      it 'falls back to commenter_imported_name when user_id is nil' do
+        @c1.update_columns(user_id: nil,
+                           commenter_imported_name: 'Former User',
+                           commenter_imported_email: 'former@old.example')
+        result = shared_component.paginated_comments(triage_status: 'all')
+        c1_row = result[:rows].find { |r| r[:id] == @c1.id }
+        expect(c1_row[:commenter_display_name]).to eq('Former User')
+        expect(c1_row[:commenter_imported]).to be(true)
+      end
+
+      it 'falls back to commenter_imported_email when imported_name is blank' do
+        @c1.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
+        result = shared_component.paginated_comments(triage_status: 'all')
+        c1_row = result[:rows].find { |r| r[:id] == @c1.id }
+        expect(c1_row[:commenter_display_name]).to eq('imp@old.example')
+        expect(c1_row[:commenter_imported]).to be(true)
+      end
+    end
   end
 end
