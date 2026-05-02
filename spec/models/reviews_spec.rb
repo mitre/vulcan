@@ -828,6 +828,35 @@ RSpec.describe Review do
     end
   end
 
+  # PR-717 review remediation .j4a step A2 — `belongs_to :user` becomes
+  # optional so a Review can persist with `user_id` NULL after step A3
+  # adds the FK with `on_delete: :nullify` (User#destroy nullifies all
+  # the user's reviews instead of forcing a cascade). The commenter's
+  # original attribution lives in `commenter_imported_*` once nullified;
+  # display + export layers fall back to those columns when user_id is nil.
+  describe 'belongs_to :user is optional (PR-717 .j4a step A2)' do
+    it 'is valid with user_id nil and commenter_imported_* present' do
+      review = Review.create!(action: 'comment', comment: 'c', user: @p_viewer,
+                              rule: @p1r1, triage_status: 'pending')
+      review.update_columns(user_id: nil,
+                            commenter_imported_email: 'former@example.com',
+                            commenter_imported_name: 'Former User')
+      review.reload
+      expect(review).to be_valid
+    end
+
+    it 'is valid with user_id nil even without imported attribution (FK nullified)' do
+      # Loose validity at the model layer — the row can persist without
+      # a user FK. Display layer handles the "no commenter" case via
+      # commenter_display_name (step B1).
+      review = Review.create!(action: 'comment', comment: 'c', user: @p_viewer,
+                              rule: @p1r1, triage_status: 'pending')
+      review.update_columns(user_id: nil)
+      review.reload
+      expect(review).to be_valid
+    end
+  end
+
   # PR-717 review remediation .j4a step A1 — `reviews` table needs two
   # nullable string columns to preserve original commenter attribution
   # when the User row gets removed (User#destroy → reviews.user_id NULL

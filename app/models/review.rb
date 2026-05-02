@@ -4,7 +4,11 @@
 class Review < ApplicationRecord
   include VulcanAuditable
 
-  belongs_to :user
+  # PR-717 review remediation .j4a step A2 — optional so reviews.user_id
+  # can be NULL after step A3's FK on_delete: :nullify removes the User.
+  # Original commenter attribution lives on commenter_imported_email/name
+  # columns; #commenter_display_name (step B1) provides the display fallback.
+  belongs_to :user, optional: true
   belongs_to :rule
   has_one :component, through: :rule
 
