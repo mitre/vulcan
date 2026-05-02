@@ -368,21 +368,28 @@ class ReviewsController < ApplicationController
   # so the trail survives — the destroyed review's own audit records
   # remain on the audited gem's table but the auditable record is gone.
   def admin_destroy
-    component = @review.rule.component
-    component_audit_payload = {
-      review_id: @review.id,
-      rule_id: @review.rule_id,
-      author_id: @review.user_id,
-      reply_count: @review.responses.count,
-      # PR-717 review remediation .4 F3 — full pre-destroy snapshot of
-      # the entire reply subtree (parent + every descendant). For PII /
-      # legal hard-delete, the snapshot IS the legal record. Captured
-      # via WITH RECURSIVE CTE; timestamps are ISO8601 strings so YAML
-      # safe-load doesn't break on Audit#find.
-      destroyed_review_snapshots: Review.subtree_with_ancestry(@review.id).map(&:snapshot_attributes)
-    }
-
     Review.transaction do
+      # PR-717 review remediation .4 F7 — row lock against concurrent
+      # admin race (move_to_rule by one admin + hard-delete by another).
+      # SELECT FOR UPDATE inside the transaction so the lock is held
+      # until commit/rollback. lock! must be called within a txn — held
+      # only for the executing statement otherwise.
+      @review.lock!
+
+      component = @review.rule.component
+      component_audit_payload = {
+        review_id: @review.id,
+        rule_id: @review.rule_id,
+        author_id: @review.user_id,
+        reply_count: @review.responses.count,
+        # PR-717 review remediation .4 F3 — full pre-destroy snapshot of
+        # the entire reply subtree (parent + every descendant). For PII /
+        # legal hard-delete, the snapshot IS the legal record. Captured
+        # via WITH RECURSIVE CTE; timestamps are ISO8601 strings so YAML
+        # safe-load doesn't break on Audit#find.
+        destroyed_review_snapshots: Review.subtree_with_ancestry(@review.id).map(&:snapshot_attributes)
+      }
+
       # Audit BEFORE destroy so the trail survives the cascade.
       component.audits.create!(
         user: current_user,

@@ -1119,6 +1119,20 @@ RSpec.describe 'Reviews' do
         expect(fk.on_delete).to eq(:restrict)
       end
 
+      # PR-717 review remediation .4 F7a — concurrent admin race fix.
+      # Two admins simultaneously: one moves a review subtree, the other
+      # hard-deletes a node. Without an explicit row lock at the top of
+      # admin_destroy, B's destroy may race with A's move-update. Lock!
+      # acquires SELECT FOR UPDATE so the second admin waits for the
+      # first transaction to commit.
+      it 'acquires a row lock on @review at the start of the action' do
+        expect_any_instance_of(Review).to receive(:lock!).at_least(:once).and_call_original
+        delete "/reviews/#{doomed_review.id}/admin_destroy",
+               params: { audit_comment: 'lock test' }, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(Review.exists?(doomed_review.id)).to be(false)
+      end
+
       # PR-717 review remediation .4 F3 — pre-destroy snapshot of the
       # entire reply tree captured into the Component-level audit's
       # audited_changes. For PII/legal hard-delete, the operator-facing
