@@ -1289,6 +1289,17 @@ RSpec.describe 'Reviews' do
         latest = parent_review.audits.last
         expect(latest.audited_changes['rule_id']).to eq([rule_a.id, rule_b.id])
       end
+
+      # PR-717 review remediation .4 F7b — concurrent admin race fix.
+      # Same lock! pattern as admin_destroy: SELECT FOR UPDATE inside the
+      # Review.transaction block so a concurrent move_to_rule or
+      # admin_destroy on the same subtree waits for ours to commit.
+      it 'acquires a row lock on @review at the start of the action' do
+        expect_any_instance_of(Review).to receive(:lock!).at_least(:once).and_call_original
+        patch "/reviews/#{parent_review.id}/move_to_rule",
+              params: { rule_id: rule_b.id, audit_comment: 'lock test' }, as: :json
+        expect(response).to have_http_status(:ok)
+      end
     end
 
     context 'as a non-admin author' do

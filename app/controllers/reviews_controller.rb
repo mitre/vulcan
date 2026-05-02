@@ -352,6 +352,12 @@ class ReviewsController < ApplicationController
     end
 
     Review.transaction do
+      # PR-717 review remediation .4 F7 — same lock! pattern as
+      # admin_destroy. SELECT FOR UPDATE inside the txn so a concurrent
+      # move_to_rule or admin_destroy on the same subtree waits for
+      # ours to commit. lock! must be inside a txn — held only for the
+      # executing statement otherwise.
+      @review.lock!
       move_review_subtree!(@review, target_rule.id, @audit_comment)
     end
     render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
