@@ -201,6 +201,28 @@ class Review < ApplicationRecord
       (adjudicated_by_imported_name.present? || adjudicated_by_imported_email.present?)
   end
 
+  # PR-717 review remediation .4 step 4 — pre-destroy snapshot for the
+  # admin_destroy Component-level audit row's `audited_changes` payload.
+  # Captures the full row state (full comment, every audited + lifecycle
+  # column, ISO8601 timestamps so YAML safe-load doesn't break on the
+  # audited gem's column deserialization at Audit#find).
+  SNAPSHOT_COLUMNS = %w[
+    id user_id rule_id action comment section
+    triage_status triage_set_by_id triage_set_at
+    adjudicated_at adjudicated_by_id
+    duplicate_of_review_id responding_to_review_id
+    triage_set_by_imported_email triage_set_by_imported_name
+    adjudicated_by_imported_email adjudicated_by_imported_name
+    created_at updated_at
+  ].freeze
+
+  def snapshot_attributes
+    SNAPSHOT_COLUMNS.each_with_object({}) do |col, hash|
+      val = self[col]
+      hash[col] = val.respond_to?(:iso8601) ? val.iso8601 : val
+    end
+  end
+
   private
 
   ##

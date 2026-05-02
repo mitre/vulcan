@@ -683,6 +683,57 @@ RSpec.describe Review do
     end
   end
 
+  # PR-717 review remediation .4 step 4 — snapshot serialization for
+  # the admin_destroy Component-level audit row. Captures full pre-
+  # destroy state (full comment, every audited + lifecycle column,
+  # ISO8601 timestamps so YAML safe-load doesn't break on Audit#find).
+  describe '#snapshot_attributes' do
+    let!(:snap_review) do
+      Review.create!(action: 'comment', comment: 'snap content', user: @p_viewer, rule: @p1r1,
+                     section: 'check_content',
+                     triage_status: 'concur',
+                     triage_set_by_id: @p_admin.id,
+                     triage_set_at: Time.zone.parse('2026-04-01T10:00:00Z'),
+                     adjudicated_at: Time.zone.parse('2026-04-02T11:00:00Z'),
+                     adjudicated_by_id: @p_admin.id)
+    end
+
+    it 'returns a hash with every audited + lifecycle + imported_attribution column' do
+      h = snap_review.snapshot_attributes
+      %w[id user_id rule_id action comment section triage_status
+         triage_set_by_id triage_set_at adjudicated_at adjudicated_by_id
+         duplicate_of_review_id responding_to_review_id
+         triage_set_by_imported_email triage_set_by_imported_name
+         adjudicated_by_imported_email adjudicated_by_imported_name
+         created_at updated_at].each do |col|
+        expect(h).to have_key(col)
+      end
+    end
+
+    it 'preserves the FULL comment text (not truncated)' do
+      long = 'x' * 3000
+      snap_review.update!(comment: long)
+      expect(snap_review.snapshot_attributes['comment']).to eq(long)
+    end
+
+    it 'serializes timestamps as ISO8601 strings (not Time objects)' do
+      h = snap_review.snapshot_attributes
+      expect(h['triage_set_at']).to be_a(String)
+      expect(h['triage_set_at']).to match(/\AZ?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+      expect(h['adjudicated_at']).to be_a(String)
+      expect(h['created_at']).to be_a(String)
+      expect(h['updated_at']).to be_a(String)
+    end
+
+    it 'returns nil for unset nullable fields, not empty strings' do
+      bare = Review.create!(action: 'comment', comment: 'bare', user: @p_viewer, rule: @p1r1)
+      h = bare.snapshot_attributes
+      expect(h['triage_set_by_id']).to be_nil
+      expect(h['adjudicated_at']).to be_nil
+      expect(h['triage_set_by_imported_email']).to be_nil
+    end
+  end
+
   # PR-717 review remediation .4 step 2 — SQL CTE scope for the
   # snapshot-capture step in admin_destroy. Returns root + every
   # descendant via responding_to_review_id chain, in deterministic
