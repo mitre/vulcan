@@ -38,6 +38,67 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
+  # PR-717 review remediation .15 — toast helper. The Vue frontend's
+  # alertOrNotifyResponse mixin reads `{ toast: { title, message, variant } }`
+  # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
+  # shape was hand-written at ~45 sites in reviews_controller alone — typos
+  # in `variant:` (e.g. 'unprocessable_entity' instead of 'warning') shipped
+  # silently and broke the toast styling. This single helper centralizes
+  # the contract.
+  #
+  # `message` is normalized to an Array so a single string and an
+  # ActiveModel errors collection both render uniformly.
+  #
+  # `variant` defaults to 'danger' (the most common case). Caller can
+  # override to 'warning' / 'success' / 'info'.
+  #
+  # `status` defaults to :unprocessable_entity (matches the most common
+  # caller — a validation rejection). Caller overrides for 200 success
+  # toasts (e.g. idempotent reopen returning the current state).
+  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_entity)
+    render json: {
+      toast: {
+        title: title,
+        message: Array(message),
+        variant: variant
+      }
+    }, status: status
+  end
+
+  # PR-717 review remediation .15 — generic RecordInvalid handler. Each
+  # controller declares its own action_name → title map via the
+  # `record_invalid_titles` class method. The handler looks up the title
+  # by current `action_name` and falls back to a generic title for actions
+  # not explicitly mapped. The error's `record.errors.full_messages` becomes
+  # the toast message.
+  #
+  # Subclass example:
+  #   class ReviewsController < ApplicationController
+  #     record_invalid_titles(
+  #       triage: 'Could not save triage.',
+  #       adjudicate: 'Could not close.',
+  #       ...
+  #     )
+  #   end
+  rescue_from ActiveRecord::RecordInvalid do |e|
+    title = self.class.record_invalid_title_for(action_name)
+    render_toast(title: title, message: e.record.errors.full_messages)
+  end
+
+  class << self
+    def record_invalid_titles(map)
+      @record_invalid_titles = map.transform_keys(&:to_sym).freeze
+    end
+
+    def record_invalid_title_for(action_name)
+      key = action_name.to_sym
+      return @record_invalid_titles[key] if @record_invalid_titles&.key?(key)
+
+      # Walk the ancestor chain so subclasses inherit a parent's map.
+      superclass.respond_to?(:record_invalid_title_for) ? superclass.record_invalid_title_for(action_name) : 'Could not save.'
+    end
+  end
+
   def set_project_permissions
     @effective_permissions = current_user&.effective_permissions(@project)
   end

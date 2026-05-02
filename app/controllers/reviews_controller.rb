@@ -49,6 +49,23 @@ class ReviewsController < ApplicationController
   before_action :require_audit_comment,
                 only: %i[admin_withdraw admin_restore move_to_rule admin_destroy section]
 
+  # PR-717 review remediation .15 — action-keyed title map for the
+  # generic ActiveRecord::RecordInvalid handler on ApplicationController.
+  # Replaces 10 hand-written `rescue ActiveRecord::RecordInvalid => e`
+  # blocks that all rendered the same shape with a per-action title.
+  record_invalid_titles(
+    triage: 'Could not save triage.',
+    adjudicate: 'Could not close.',
+    reopen: 'Could not re-open.',
+    withdraw: 'Could not withdraw.',
+    admin_withdraw: 'Could not force-withdraw.',
+    admin_restore: 'Could not restore.',
+    move_to_rule: 'Could not move.',
+    admin_destroy: 'Could not hard-delete.',
+    section: 'Could not save section.',
+    update: 'Could not save edit.'
+  )
+
   def create
     review_params_without_component_id = review_params.except('component_id')
     review = Review.new(review_params_without_component_id.merge({ user: current_user, rule: @rule }))
@@ -97,13 +114,7 @@ class ReviewsController < ApplicationController
 
       render json: { toast: 'Successfully added review.' }
     else
-      render json: {
-        toast: {
-          title: 'Could not add review.',
-          message: review.errors.full_messages,
-          variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+      render_toast(title: 'Could not add review.', message: review.errors.full_messages)
     end
   end
 
@@ -122,15 +133,13 @@ class ReviewsController < ApplicationController
   def triage
     if @review.adjudicated_at.present? &&
        Review::TERMINAL_AUTO_ADJUDICATE_STATUSES.exclude?(params[:triage_status])
-      return render json: {
-        toast: { title: 'Cannot re-triage.', message: ['This comment is already closed.'], variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot re-triage.',
+                          message: 'This comment is already closed.',
+                          variant: 'warning')
     end
 
     if (validation_error = validate_triage_params)
-      return render json: {
-        toast: { title: 'Could not save triage.', message: [validation_error], variant: 'danger' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Could not save triage.', message: validation_error)
     end
 
     response_review = nil
@@ -158,10 +167,6 @@ class ReviewsController < ApplicationController
       review: ReviewBlueprint.render_as_hash(@review),
       response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
     }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not save triage.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PATCH /reviews/:id/adjudicate — author+ marks a triaged comment as
@@ -181,11 +186,9 @@ class ReviewsController < ApplicationController
     end
 
     if @review.triage_status == 'pending'
-      return render json: {
-        toast: { title: 'Cannot close yet.',
-                 message: ['Comment must be triaged before it can be closed.'],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot close yet.',
+                          message: 'Comment must be triaged before it can be closed.',
+                          variant: 'warning')
     end
 
     response_review = nil
@@ -208,10 +211,6 @@ class ReviewsController < ApplicationController
       review: ReviewBlueprint.render_as_hash(@review),
       response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
     }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not close.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PATCH /reviews/:id/reopen — author+ reverts an adjudicated comment back
@@ -221,27 +220,19 @@ class ReviewsController < ApplicationController
   # withdraw-rejection: state is unchanged and 422 is returned.
   def reopen
     if @review.adjudicated_at.blank?
-      return render json: {
-        toast: { title: 'Cannot re-open.',
-                 message: ['This comment has not been adjudicated.'],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot re-open.',
+                          message: 'This comment has not been adjudicated.',
+                          variant: 'warning')
     end
 
     if @review.triage_status == 'withdrawn'
-      return render json: {
-        toast: { title: 'Cannot re-open.',
-                 message: ['Withdrawn comments can only be re-opened by the original commenter.'],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot re-open.',
+                          message: 'Withdrawn comments can only be re-opened by the original commenter.',
+                          variant: 'warning')
     end
 
     @review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not re-open.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PATCH /reviews/:id/withdraw — commenter retracts their own comment
@@ -250,19 +241,13 @@ class ReviewsController < ApplicationController
   # callback (Task 06) fills in adjudicated_at + adjudicated_by_id=self.
   def withdraw
     unless %w[pending needs_clarification].include?(@review.triage_status)
-      return render json: {
-        toast: { title: 'Cannot withdraw.',
-                 message: [I18n.t('vulcan.triage.errors.cannot_withdraw_already_triaged')],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot withdraw.',
+                          message: I18n.t('vulcan.triage.errors.cannot_withdraw_already_triaged'),
+                          variant: 'warning')
     end
 
     @review.update!(triage_status: 'withdrawn')
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not withdraw.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PR-717 Task 25 — PATCH /reviews/:id/admin_withdraw.
@@ -282,10 +267,6 @@ class ReviewsController < ApplicationController
       adjudicated_by_id: current_user.id
     )
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not force-withdraw.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PR-717 Task 25 — PATCH /reviews/:id/admin_restore.
@@ -298,11 +279,9 @@ class ReviewsController < ApplicationController
   # restore from.
   def admin_restore
     if @review.adjudicated_at.blank?
-      return render json: {
-        toast: { title: 'Cannot restore.',
-                 message: ['This comment has not been adjudicated.'],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot restore.',
+                          message: 'This comment has not been adjudicated.',
+                          variant: 'warning')
     end
 
     @review.audit_comment = "Admin restore: #{@audit_comment}"
@@ -312,10 +291,6 @@ class ReviewsController < ApplicationController
       adjudicated_by_id: nil
     )
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not restore.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PR-717 Task 26 — PATCH /reviews/:id/move_to_rule.
@@ -333,22 +308,18 @@ class ReviewsController < ApplicationController
   def move_to_rule
     target_rule_id = params[:rule_id].to_i
     if target_rule_id == @review.rule_id
-      return render json: {
-        toast: { title: 'Cannot move.',
-                 message: ['Target rule is the same as the source rule.'],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot move.',
+                          message: 'Target rule is the same as the source rule.',
+                          variant: 'warning')
     end
 
     target_rule = Rule.find_by(id: target_rule_id)
     return head :not_found unless target_rule
 
     unless target_rule.component_id == @review.rule.component_id
-      return render json: {
-        toast: { title: 'Cannot move.',
-                 message: ['Target rule must be in the same component.'],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot move.',
+                          message: 'Target rule must be in the same component.',
+                          variant: 'warning')
     end
 
     Review.transaction do
@@ -382,10 +353,6 @@ class ReviewsController < ApplicationController
       move_review_subtree!(@review, target_rule.id, @audit_comment)
     end
     render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not move.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PR-717 Task 25b — DELETE /reviews/:id/admin_destroy.
@@ -427,10 +394,6 @@ class ReviewsController < ApplicationController
       @review.destroy!
     end
     render json: { ok: true }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not hard-delete.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PR-717 Task 30 — PATCH /reviews/:id/section.
@@ -444,11 +407,8 @@ class ReviewsController < ApplicationController
   def section
     new_section = params.key?(:section) ? params[:section].presence : @review.section
     unless new_section.nil? || Review::SECTION_KEYS.include?(new_section)
-      return render json: {
-        toast: { title: 'Invalid section.',
-                 message: ["#{new_section.inspect} is not a recognized section key."],
-                 variant: 'danger' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Invalid section.',
+                          message: "#{new_section.inspect} is not a recognized section key.")
     end
 
     # Idempotent short-circuit: re-saving the same section is a no-op. Surface
@@ -463,10 +423,6 @@ class ReviewsController < ApplicationController
     @review.audit_comment = "Section change: #{@audit_comment}"
     @review.update!(section: new_section)
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not save section.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   # PUT /reviews/:id — commenter edits their own comment text. Allowed
@@ -475,19 +431,13 @@ class ReviewsController < ApplicationController
   # only — lifecycle fields stay server-controlled.
   def update
     unless @review.triage_status == 'pending'
-      return render json: {
-        toast: { title: 'Cannot edit.',
-                 message: [I18n.t('vulcan.triage.errors.cannot_edit_after_triage')],
-                 variant: 'warning' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Cannot edit.',
+                          message: I18n.t('vulcan.triage.errors.cannot_edit_after_triage'),
+                          variant: 'warning')
     end
 
     @review.update!(review_update_params)
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
-  rescue ActiveRecord::RecordInvalid => e
-    render json: {
-      toast: { title: 'Could not save edit.', message: e.record.errors.full_messages, variant: 'danger' }
-    }, status: :unprocessable_entity
   end
 
   def lock_controls
@@ -531,13 +481,9 @@ class ReviewsController < ApplicationController
     lockable = unlocked.where.not(id: skipped_ids.to_a)
 
     if lockable.empty? && skipped_ids.any?
-      render json: {
-        toast: {
-          title: 'No controls could be locked.',
-          message: warnings.join("\n"),
-          variant: 'warning'
-        }
-      }, status: :unprocessable_entity
+      render_toast(title: 'No controls could be locked.',
+                   message: warnings.join("\n"),
+                   variant: 'warning')
       return
     end
 
@@ -555,13 +501,7 @@ class ReviewsController < ApplicationController
     end
 
     if save_failure_messages
-      render json: {
-        toast: {
-          title: 'Could not lock controls.',
-          message: save_failure_messages,
-          variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+      render_toast(title: 'Could not lock controls.', message: save_failure_messages)
       return
     end
 
@@ -569,13 +509,10 @@ class ReviewsController < ApplicationController
     message = "Locked: #{locked_names.join(', ')}"
     message += "\n\n#{warnings.join("\n")}" if warnings.any?
 
-    render json: {
-      toast: {
-        title: title,
-        message: message,
-        variant: warnings.any? ? 'warning' : 'success'
-      }
-    }
+    render_toast(title: title,
+                 message: message,
+                 variant: warnings.any? ? 'warning' : 'success',
+                 status: :ok)
   end
 
   def lock_sections
@@ -615,23 +552,15 @@ class ReviewsController < ApplicationController
       end
     rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
       Rails.logger.error("Section lock failed for component=#{@component.id}: #{e.message}")
-      return render json: {
-        toast: {
-          title: 'Could not apply section lock.',
-          message: 'A database error prevented the section lock from being applied. No rules were modified.',
-          variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Could not apply section lock.',
+                          message: 'A database error prevented the section lock from being applied. No rules were modified.')
     end
 
     action_word = locked ? 'locked' : 'unlocked'
-    render json: {
-      toast: {
-        title: 'Section lock applied',
-        message: "#{action_word.capitalize} #{sections.size} section(s) on #{count} rule(s)",
-        variant: 'success'
-      }
-    }
+    render_toast(title: 'Section lock applied',
+                 message: "#{action_word.capitalize} #{sections.size} section(s) on #{count} rule(s)",
+                 variant: 'success',
+                 status: :ok)
   end
 
   private
@@ -644,21 +573,15 @@ class ReviewsController < ApplicationController
     label = AUDIT_COMMENT_LABELS.fetch(action_name.to_sym, 'this action')
 
     if @audit_comment.blank?
-      return render json: {
-        toast: { title: 'Audit comment required.',
-                 message: ["An audit comment is required for #{label}."],
-                 variant: 'danger' }
-      }, status: :unprocessable_entity
+      return render_toast(title: 'Audit comment required.',
+                          message: "An audit comment is required for #{label}.")
     end
 
     return unless @audit_comment.length > AUDIT_COMMENT_MAX_LENGTH
 
-    render json: {
-      toast: { title: 'Audit comment too long.',
-               message: ["Audit comment for #{label} must be #{AUDIT_COMMENT_MAX_LENGTH} characters or fewer " \
-                         "(received #{@audit_comment.length})."],
-               variant: 'danger' }
-    }, status: :unprocessable_entity
+    render_toast(title: 'Audit comment too long.',
+                 message: "Audit comment for #{label} must be #{AUDIT_COMMENT_MAX_LENGTH} characters or fewer " \
+                          "(received #{@audit_comment.length}).")
   end
 
   # PR-717 Task 26 — recursive parent-first walk for move_to_rule.
@@ -752,13 +675,8 @@ class ReviewsController < ApplicationController
     return unless params.dig(:review, :action) == 'comment'
     return if @rule&.component&.accepting_new_comments?
 
-    render json: {
-      toast: {
-        title: 'Could not add comment.',
-        message: 'Comments are closed for this component.',
-        variant: 'danger'
-      }
-    }, status: :unprocessable_entity
+    render_toast(title: 'Could not add comment.',
+                 message: 'Comments are closed for this component.')
   end
 
   # PR #717 phase gate: once a component's comment_phase reaches 'final',
@@ -769,12 +687,7 @@ class ReviewsController < ApplicationController
     component = @review&.rule&.component
     return unless component&.frozen_for_writes?
 
-    render json: {
-      toast: {
-        title: 'Cannot modify review.',
-        message: 'The component is frozen — its public-comment phase is final.',
-        variant: 'danger'
-      }
-    }, status: :unprocessable_entity
+    render_toast(title: 'Cannot modify review.',
+                 message: 'The component is frozen — its public-comment phase is final.')
   end
 end
