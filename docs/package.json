@@ -9,12 +9,12 @@
     "preview": "vitepress preview ."
   },
   "devDependencies": {
-    "svgo": "^4.0.0",
+    "svgo": "^4.0.1",
     "vite-plugin-image-optimizer": "^2.0.2",
     "vitepress": "2.0.0-alpha.11",
-    "vue": "^3.5.18"
+    "vue": "^3.5.33"
   },
   "dependencies": {
-    "mermaid": "^10.9.3"
+    "mermaid": "^10.9.4"
   }
 }
