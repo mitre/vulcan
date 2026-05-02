@@ -54,6 +54,29 @@ class Review < ApplicationRecord
                       .where(adjudicated_at: nil)
   }
 
+  # PR-717 review remediation .4 step 2 — recursive subtree fetch via
+  # Postgres WITH RECURSIVE CTE. Returns root + every descendant via
+  # responding_to_review_id chain in one query, ordered so the root
+  # appears first and children follow their parent.
+  #
+  # Used by admin_destroy to capture pre-destroy snapshots of the entire
+  # reply tree before Rails dependent: :destroy walks it. Returns an
+  # Array<Review> (not Relation — Postgres CTE can't be wrapped in FROM
+  # without losing the recursive scope), so callers needing .pluck must
+  # post-process via .map.
+  def self.subtree_with_ancestry(root_id)
+    sql = sanitize_sql_array([<<~SQL.squish, root_id])
+      WITH RECURSIVE subtree AS (
+        SELECT * FROM reviews WHERE id = ?
+        UNION ALL
+        SELECT r.* FROM reviews r
+        INNER JOIN subtree s ON r.responding_to_review_id = s.id
+      )
+      SELECT * FROM subtree ORDER BY responding_to_review_id NULLS FIRST, created_at
+    SQL
+    find_by_sql(sql)
+  end
+
   # Map of role tier → roles that satisfy it (low-to-high inclusive). Replaces
   # the fragile constantize approach so a typo or missing constant raises at
   # boot, not via a 500 at validation time.

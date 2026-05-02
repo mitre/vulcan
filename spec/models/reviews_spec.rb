@@ -683,6 +683,57 @@ RSpec.describe Review do
     end
   end
 
+  # PR-717 review remediation .4 step 2 — SQL CTE scope for the
+  # snapshot-capture step in admin_destroy. Returns root + every
+  # descendant via responding_to_review_id chain, in deterministic
+  # depth-first-ish order so the audit-row snapshot is reproducible.
+  describe '.subtree_with_ancestry' do
+    let!(:root) do
+      Review.create!(action: 'comment', comment: 'root', user: @p_viewer, rule: @p1r1)
+    end
+    let!(:child_a) do
+      Review.create!(action: 'comment', comment: 'child A', user: @p_viewer, rule: @p1r1,
+                     responding_to_review_id: root.id)
+    end
+    let!(:child_b) do
+      Review.create!(action: 'comment', comment: 'child B', user: @p_viewer, rule: @p1r1,
+                     responding_to_review_id: root.id)
+    end
+    let!(:grandchild) do
+      Review.create!(action: 'comment', comment: 'grandchild of A', user: @p_viewer, rule: @p1r1,
+                     responding_to_review_id: child_a.id)
+    end
+
+    it 'returns the root and every descendant' do
+      ids = Review.subtree_with_ancestry(root.id).map(&:id)
+      expect(ids).to contain_exactly(root.id, child_a.id, child_b.id, grandchild.id)
+    end
+
+    it 'returns just the root when there are no replies' do
+      lone = Review.create!(action: 'comment', comment: 'lone', user: @p_viewer, rule: @p1r1)
+      expect(Review.subtree_with_ancestry(lone.id).map(&:id)).to eq([lone.id])
+    end
+
+    it 'returns deterministic order: root first, then by parent_id NULLS FIRST, created_at' do
+      ids = Review.subtree_with_ancestry(root.id).map(&:id)
+      # root is first (parent_id is nil within the subtree-as-roots framing)
+      expect(ids.first).to eq(root.id)
+      # grandchild MUST come after its parent child_a (depth ordering)
+      expect(ids.index(grandchild.id)).to be > ids.index(child_a.id)
+    end
+
+    it 'returns nothing when the root id does not exist' do
+      expect(Review.subtree_with_ancestry(0)).to be_empty
+    end
+
+    it 'is an ActiveRecord::Relation of Review records (not raw rows)' do
+      result = Review.subtree_with_ancestry(root.id)
+      expect(result.first).to be_a(Review)
+      # Has access to associations, not just attributes
+      expect(result.first.user).to eq(@p_viewer)
+    end
+  end
+
   describe 'attribution display helpers (PR-717 .8 imported attribution)' do
     let(:base) do
       Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
