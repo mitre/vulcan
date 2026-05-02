@@ -32,11 +32,10 @@ RSpec.describe 'Review and Membership Blueprints' do
       expect(json[:name]).to eq(reviewer_name)
     end
 
-    it 'excludes user_id, rule_id, updated_at (matches Rule#as_json strip pattern)' do
+    it 'excludes user_id and updated_at (Rule#as_json strip pattern; rule_id added in .20)' do
       json = ReviewBlueprint.render_as_hash(review)
 
       expect(json).not_to have_key(:user_id)
-      expect(json).not_to have_key(:rule_id)
       expect(json).not_to have_key(:updated_at)
     end
 
@@ -144,6 +143,82 @@ RSpec.describe 'Review and Membership Blueprints' do
         json = ReviewBlueprint.render_as_hash(review.reload)
         expect(json[:commenter_display_name]).to be_nil
         expect(json[:commenter_imported]).to be(false)
+      end
+    end
+
+    # PR-717 review remediation .20 — expand default fields to eliminate
+    # the post-mutation refetch in CommentTriageModal. Today the modal
+    # opens with a row hash from Component#paginated_comments, but after
+    # /reviews/:id/triage|adjudicate|withdraw|update returns
+    # ReviewBlueprint.render_as_hash, the response is missing several
+    # fields the modal needs (rule_id, section, threading FKs, etc.).
+    # The frontend has to refetch the parent table → 2 round trips per
+    # mutation. Adding these fields to the blueprint default lets the
+    # modal refresh in place from the response payload alone.
+    describe 'PR-717 .20 expanded default fields (eliminate frontend refetch)' do
+      it 'exposes rule_id (modal needs it for picker scope)' do
+        json = ReviewBlueprint.render_as_hash(review)
+        expect(json[:rule_id]).to eq(rule.id)
+      end
+
+      it 'exposes section (modal renders SectionLabel)' do
+        review.update_columns(section: 'check_content')
+        json = ReviewBlueprint.render_as_hash(review.reload)
+        expect(json[:section]).to eq('check_content')
+      end
+
+      it 'exposes responding_to_review_id (modal distinguishes top-level vs reply)' do
+        parent = Review.create!(user: user, rule: rule, action: 'comment', comment: 'parent')
+        reply = Review.create!(user: user, rule: rule, action: 'comment',
+                               comment: 'reply', responding_to_review_id: parent.id)
+        json = ReviewBlueprint.render_as_hash(reply)
+        expect(json[:responding_to_review_id]).to eq(parent.id)
+      end
+
+      it 'exposes duplicate_of_review_id (modal renders dup-target picker state)' do
+        target = Review.create!(user: user, rule: rule, action: 'comment',
+                                comment: 'target', triage_status: 'pending')
+        review.update_columns(triage_status: 'duplicate', duplicate_of_review_id: target.id)
+        json = ReviewBlueprint.render_as_hash(review.reload)
+        expect(json[:duplicate_of_review_id]).to eq(target.id)
+      end
+
+      it 'exposes triage_set_by_id (forensic queries — admin-tier modal)' do
+        review.update_columns(triage_set_by_id: user.id, triage_set_at: Time.current)
+        json = ReviewBlueprint.render_as_hash(review.reload)
+        expect(json[:triage_set_by_id]).to eq(user.id)
+      end
+
+      it 'exposes author_name (modal renders blockquote header)' do
+        json = ReviewBlueprint.render_as_hash(review)
+        expect(json[:author_name]).to eq(reviewer_name)
+      end
+
+      it 'still excludes user_id (sensitive — public-comment correlation guard)' do
+        json = ReviewBlueprint.render_as_hash(review)
+        expect(json).not_to have_key(:user_id)
+      end
+
+      describe 'author_email gated by include_email option' do
+        it 'omits author_email by default (avoid scraping during open comment window)' do
+          json = ReviewBlueprint.render_as_hash(review)
+          expect(json).not_to have_key(:author_email)
+        end
+
+        it 'includes author_email when render is called with include_email: true' do
+          json = ReviewBlueprint.render_as_hash(review, include_email: true)
+          expect(json[:author_email]).to eq(reviewer_email)
+        end
+
+        it 'returns nil author_email when user is detached and include_email: true' do
+          review.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
+          json = ReviewBlueprint.render_as_hash(review.reload, include_email: true)
+          # Strict: author_email surfaces the User#email (it's the *current
+          # account's* email, not the historic commenter_imported_email).
+          # When user_id is nil there is no current account → nil. The
+          # imported email lives on commenter_display_name's fallback chain.
+          expect(json[:author_email]).to be_nil
+        end
       end
     end
   end
