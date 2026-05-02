@@ -87,7 +87,11 @@ class SecurityRequirementsGuidesController < ApplicationController
           flash.notice = 'Successfully removed SRG.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully removed SRG' } }
+        format.json do
+          render_toast(title: 'SRG removed.',
+                       message: 'Successfully removed SRG.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|

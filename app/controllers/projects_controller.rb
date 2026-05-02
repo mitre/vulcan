@@ -142,7 +142,15 @@ class ProjectsController < ApplicationController
 
       respond_to do |format|
         format.html { redirect_to project }
-        format.json { render json: { redirect_url: project_path(project), toast: 'Successfully created project' } }
+        format.json do
+          # PR-717 review remediation .19d — multi-key response (toast +
+          # redirect_url). Inline the canonical toast object since
+          # render_toast doesn't support piggybacking extra response keys.
+          render json: {
+            toast: { title: 'Project created.', message: ['Successfully created project.'], variant: 'success' },
+            redirect_url: project_path(project)
+          }
+        end
       end
     else
       respond_to do |format|
@@ -174,7 +182,9 @@ class ProjectsController < ApplicationController
           safely_notify("update_project_#{type}") { send_slack_notification(type, @project) }
         end
       end
-      render json: { toast: 'Successfully updated project' }
+      render_toast(title: 'Project updated.',
+                   message: 'Successfully updated project.',
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: {
@@ -194,7 +204,11 @@ class ProjectsController < ApplicationController
           flash.notice = 'Successfully removed project.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully removed project.' } }
+        format.json do
+          render_toast(title: 'Project removed.',
+                       message: 'Successfully removed project.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|

@@ -30,7 +30,9 @@ class StigsController < ApplicationController
     file.tempfile.seek(0)
     stig.xml = file.read
     if stig.save
-      render(json: { toast: "Successfully added #{stig.title}." }, status: :ok)
+      render_toast(title: 'STIG added.',
+                   message: "Successfully added #{stig.title}.",
+                   variant: 'success', status: :ok)
     else
       render(json: {
                toast: {
@@ -83,7 +85,11 @@ class StigsController < ApplicationController
           flash.notice = "Successfully removed #{@stig.title}."
           redirect_to stigs_path
         end
-        format.json { render json: { toast: "Successfully removed #{@stig.title}." } }
+        format.json do
+          render_toast(title: 'STIG removed.',
+                       message: "Successfully removed #{@stig.title}.",
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|

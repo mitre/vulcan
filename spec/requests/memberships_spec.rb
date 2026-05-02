@@ -42,7 +42,8 @@ RSpec.describe 'Memberships' do
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to include(application_json)
       json = response.parsed_body
-      expect(json['toast']).to eq('Successfully removed membership.')
+      expect(json['toast']).to be_a(Hash)
+      expect(json['toast']['title']).to eq('Membership removed.')
     end
 
     it 'returns JSON error response on failure' do
@@ -68,7 +69,8 @@ RSpec.describe 'Memberships' do
       delete "/memberships/#{target_membership.id}", headers: json_headers
 
       expect(response).to have_http_status(:ok)
-      expect(response.parsed_body['toast']).to eq('Successfully removed membership.')
+      expect(response.parsed_body['toast']).to be_a(Hash)
+      expect(response.parsed_body['toast']['title']).to eq('Membership removed.')
       expect(Membership.find_by(id: target_membership.id)).to be_nil
     end
   end

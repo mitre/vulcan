@@ -132,7 +132,9 @@ RSpec.describe 'Stigs' do
 
       expect(response).to have_http_status(:ok)
       json = response.parsed_body
-      expect(json['toast']).to include('Successfully added')
+      expect(json['toast']).to be_a(Hash)
+      expect(json['toast']['title']).to eq('STIG added.')
+      expect(json['toast']['message'].join).to include('Successfully added')
 
       temp_file.close
       temp_file.unlink
@@ -181,7 +183,9 @@ RSpec.describe 'Stigs' do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to include(application_json)
         json = response.parsed_body
-        expect(json['toast']).to include('Successfully removed')
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['title']).to eq('STIG removed.')
+        expect(json['toast']['message'].join).to include('Successfully removed')
       end
 
       it 'returns JSON error response on failure' do

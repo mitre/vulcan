@@ -80,7 +80,8 @@ RSpec.describe 'Users' do
       expect(response.content_type).to include('application/json')
 
       json_response = response.parsed_body
-      expect(json_response['toast']).to eq('Successfully updated user')
+      expect(json_response['toast']).to be_a(Hash)
+      expect(json_response['toast']['title']).to eq('User updated.')
 
       target_user.reload
       expect(target_user.admin).to be true
@@ -160,7 +161,8 @@ RSpec.describe 'Users' do
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to include('application/json')
       json = response.parsed_body
-      expect(json['toast']).to eq('Successfully removed user.')
+      expect(json['toast']).to be_a(Hash)
+      expect(json['toast']['title']).to eq('User removed.')
     end
 
     it 'returns JSON error response on failure' do

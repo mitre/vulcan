@@ -47,14 +47,13 @@ describe("AlertMixin#alertOrNotifyResponse", () => {
   });
 
   describe("legacy success paths", () => {
-    it("renders a success toast when data.toast is a string", () => {
-      wrapper = createWrapper();
-      wrapper.vm.alertOrNotifyResponse({ data: { toast: "Saved." } });
-      expect(mockToast).toHaveBeenCalledWith(
-        "Saved.",
-        expect.objectContaining({ title: "Success", variant: "success" }),
-      );
-    });
+    // PR-717 review remediation .19d — string-toast handling removed.
+    // Every controller now returns canonical {title, message, variant}
+    // object toasts. The pre-fix `typeof toast === 'string'` branch in
+    // AlertMixin had no remaining producers; the test for it was
+    // removed alongside the branch. If a backend still returns a string
+    // toast, the request falls through to the error path so the dev
+    // sees the regression immediately.
 
     it("renders a toast when data.toast is an object with title/variant/message", () => {
       wrapper = createWrapper();

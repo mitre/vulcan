@@ -256,8 +256,11 @@ RSpec.describe 'Rules' do
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
-        expect(json['toast']).to include('Warning')
-        expect(json['toast']).to include('locked')
+        # PR-717 .19d — toast canonicalized; warnings live in message array.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['variant']).to eq('warning')
+        expect(json['toast']['message'].join).to include('Warning')
+        expect(json['toast']['message'].join).to include('locked')
       end
 
       it 'soft-deletes a rule under review with warning' do
@@ -266,8 +269,10 @@ RSpec.describe 'Rules' do
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
-        expect(json['toast']).to include('Warning')
-        expect(json['toast']).to include('under review')
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['variant']).to eq('warning')
+        expect(json['toast']['message'].join).to include('Warning')
+        expect(json['toast']['message'].join).to include('under review')
       end
 
       it 'cleans up associated records' do

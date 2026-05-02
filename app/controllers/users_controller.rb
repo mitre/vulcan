@@ -83,7 +83,15 @@ class UsersController < ApplicationController
           flash.notice = 'Successfully updated user.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully updated user', user: @user.as_json(only: USER_JSON_FIELDS) } }
+        # PR-717 review remediation .19d — multi-key response (toast +
+        # user). Inline the canonical toast object since render_toast
+        # doesn't support piggybacking extra response keys.
+        format.json do
+          render json: {
+            toast: { title: 'User updated.', message: ['Successfully updated user.'], variant: 'success' },
+            user: @user.as_json(only: USER_JSON_FIELDS)
+          }
+        end
       end
     else
       respond_to do |format|
@@ -126,7 +134,11 @@ class UsersController < ApplicationController
           flash.notice = 'Successfully removed user.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully removed user.' } }
+        format.json do
+          render_toast(title: 'User removed.',
+                       message: 'Successfully removed user.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|

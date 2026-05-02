@@ -18,7 +18,11 @@ class MembershipsController < ApplicationController
 
       respond_to do |format|
         format.html { redirect_to membership.membership }
-        format.json { render json: { toast: 'Successfully created membership.' } }
+        format.json do
+          render_toast(title: 'Membership created.',
+                       message: 'Successfully created membership.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|
@@ -48,7 +52,11 @@ class MembershipsController < ApplicationController
           flash.notice = 'Successfully updated membership.'
           redirect_to @membership.membership
         end
-        format.json { render json: { toast: 'Successfully updated membership' } }
+        format.json do
+          render_toast(title: 'Membership updated.',
+                       message: 'Successfully updated membership.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|
@@ -78,7 +86,11 @@ class MembershipsController < ApplicationController
           flash.notice = 'Successfully removed membership.'
           redirect_to @membership.membership
         end
-        format.json { render json: { toast: 'Successfully removed membership.' } }
+        format.json do
+          render_toast(title: 'Membership removed.',
+                       message: 'Successfully removed membership.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|

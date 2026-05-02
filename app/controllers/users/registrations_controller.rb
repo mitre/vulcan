@@ -72,7 +72,11 @@ module Users
           flash[:notice] = 'Your account has been successfully deleted.'
           redirect_to root_path
         end
-        format.json { render json: { toast: 'Account deleted successfully.' } }
+        format.json do
+          render_toast(title: 'Account deleted.',
+                       message: 'Account deleted successfully.',
+                       variant: 'success', status: :ok)
+        end
       end
     end
 

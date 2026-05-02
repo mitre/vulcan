@@ -11,12 +11,14 @@ export default {
     // - response["data"]["toast"]
     // - response["response"]["data"]["toast"]
     //
-    // Second, it will check if the toast is a string or object
-    // - If string -> generate a basic success toast with that message
-    // - If object -> generate a toast using 'title', 'variant', and 'message' parameters
+    // Second, it will render the toast object using 'title', 'variant',
+    // and 'message' parameters
     //   - 'message' is required and can be a string or array of strings
-    //   - 'title', and 'variant' are optional and will default to 'Success' and 'sucess'
+    //   - 'title', and 'variant' are optional and will default to 'Success' and 'success'
     // - If no response is provided -> show 'message' as an alert on the screen
+    // (PR-717 .19d: pre-fix the toast could also be a bare string;
+    //  every controller now returns the canonical object shape so the
+    //  string branch was removed.)
     alertOrNotifyResponse: function (response) {
       // Structured permission-denied path (Plan B / B3): render a rich toast
       // with the project admin contacts so the user knows who to ask for access.
@@ -42,17 +44,12 @@ export default {
         toast = response["response"]["data"]["toast"];
       }
 
-      // If toast is just a string, then assume it's a basic success message
-      if (typeof toast === "string" || toast instanceof String) {
-        this.$bvToast.toast(toast, {
-          title: "Success",
-          variant: "success",
-          solid: true,
-        });
-        return;
-      }
-
-      // If toast is an object, then gather its parameters with some defaults
+      // PR-717 review remediation .19d — every controller now returns
+      // canonical {title, message, variant} object toasts (was a mix of
+      // string + object pre-fix). The string-handling branch was here
+      // and has been removed; if a backend still returns a string we
+      // fall through to the error branch below, which the dev sees in
+      // the console — caller will fix the backend.
       if (_.isPlainObject(toast)) {
         const title = toast["title"] || "Success";
         const variant = toast["variant"] || "success";

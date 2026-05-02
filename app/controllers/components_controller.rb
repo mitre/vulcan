@@ -104,7 +104,9 @@ class ComponentsController < ApplicationController
         end
         component.save
         safely_notify('create_component') { send_slack_notification(:create_component, component) } if Settings.slack.enabled
-        render json: { toast: 'Successfully added component to project.' }
+        render_toast(title: 'Component added.',
+                     message: 'Successfully added component to project.',
+                     variant: 'success', status: :ok)
       else
         render json: {
           toast: {
@@ -121,7 +123,9 @@ class ComponentsController < ApplicationController
 
   def update
     if @component.update(component_update_params)
-      render json: { toast: 'Successfully updated component.' }
+      render_toast(title: 'Component updated.',
+                   message: 'Successfully updated component.',
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: {
@@ -157,7 +161,9 @@ class ComponentsController < ApplicationController
       send_slack_notification(:remove_component, @component) if Settings.slack.enabled
     end
 
-    render json: { toast: 'Successfully removed component from project.' }
+    render_toast(title: 'Component removed.',
+                 message: 'Successfully removed component from project.',
+                 variant: 'success', status: :ok)
   rescue StandardError
     render json: {
       toast: {

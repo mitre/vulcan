@@ -68,8 +68,13 @@ class RulesController < ApplicationController
   def create
     rule = create_or_duplicate
     if rule.save
-      render json: { toast: 'Successfully created control.',
-                     data: RuleBlueprint.render_as_hash(rule, view: :editor) }
+      # PR-717 review remediation .19d — multi-key response (toast +
+      # data). Inline the canonical toast object since render_toast
+      # doesn't support piggybacking extra response keys.
+      render json: {
+        toast: { title: 'Control created.', message: ['Successfully created control.'], variant: 'success' },
+        data: RuleBlueprint.render_as_hash(rule, view: :editor)
+      }
     else
       render json: {
         toast: {
@@ -83,7 +88,9 @@ class RulesController < ApplicationController
 
   def update
     if @rule.update(rule_update_params)
-      render json: { toast: 'Successfully updated control.' }
+      render_toast(title: 'Control updated.',
+                   message: 'Successfully updated control.',
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: {
@@ -117,7 +124,10 @@ class RulesController < ApplicationController
 
     message = 'Successfully deleted control.'
     message += " Warning: #{warnings.join(' ')}" if warnings.any?
-    render json: { toast: message }
+    render_toast(title: 'Control deleted.',
+                 message: message,
+                 variant: warnings.any? ? 'warning' : 'success',
+                 status: :ok)
   rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
     Rails.logger.error("Rule destroy failed for rule_id=#{@rule.id} user=#{current_user.id}: #{e.message}")
     render json: {
@@ -133,7 +143,9 @@ class RulesController < ApplicationController
     Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
     # Save the rule to trigger callbacks (update inspec)
     @rule.save
-    render json: { toast: 'Successfully reverted history for control.' }
+    render_toast(title: 'History reverted.',
+                 message: 'Successfully reverted history for control.',
+                 variant: 'success', status: :ok)
   rescue RuleRevertError => e
     render json: {
       toast: {
