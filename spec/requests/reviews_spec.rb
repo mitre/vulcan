@@ -1069,6 +1069,55 @@ RSpec.describe 'Reviews' do
         expect(latest.comment).to include('cleanup')
         expect(latest.user_id).to eq(adm_d_admin.id)
       end
+
+      # PR-717 review remediation .4 step 3 — FK swap regression test.
+      # With FK on_delete: :restrict on responding_to_review_id, Rails
+      # `dependent: :destroy` MUST walk the reply tree children-first
+      # (recursively) so the parent delete doesn't violate the FK. This
+      # test exercises a 3-level chain (parent → child → grandchild) AND
+      # asserts every destroy event ends up sharing one request_uuid with
+      # the operator's Component-level admin_destroy_review audit row —
+      # the request_uuid correlation primitive AuditEventBundle uses for
+      # forensic reconstruction.
+      it 'cascades parent + child + grandchild via Rails callbacks; all events share one request_uuid' do
+        grandchild = Review.create!(
+          action: 'comment', comment: 'grandchild', user: adm_d_commenter, rule: rule,
+          responding_to_review_id: reply_to_doomed.id
+        )
+        delete "/reviews/#{doomed_review.id}/admin_destroy",
+               params: { audit_comment: 'cascade-correlation test' }, as: :json
+        expect(response).to have_http_status(:ok)
+        # All three reviews destroyed
+        expect(Review.exists?(doomed_review.id)).to be(false)
+        expect(Review.exists?(reply_to_doomed.id)).to be(false)
+        expect(Review.exists?(grandchild.id)).to be(false)
+        # Per-Review destroy events captured by audited gem (proves Rails
+        # callback path fired, not silent SQL cascade)
+        per_review_destroys = Audited::Audit.where(
+          action: 'destroy', auditable_type: 'Review',
+          auditable_id: [doomed_review.id, reply_to_doomed.id, grandchild.id]
+        )
+        expect(per_review_destroys.count).to eq(3)
+        # Component-level admin_destroy_review row + all 3 per-Review
+        # destroys share one request_uuid (forensic correlation primitive)
+        component_audit = Audited::Audit.where(
+          auditable_type: 'Component', action: 'admin_destroy_review'
+        ).where('comment LIKE ?', '%cascade-correlation test%').last
+        expect(component_audit).to be_present
+        expect(component_audit.request_uuid).to be_present
+        expect(per_review_destroys.pluck(:request_uuid).uniq).to eq([component_audit.request_uuid])
+      end
+
+      # PR-717 review remediation .4 F1 — FK semantics. Constraint must
+      # be on_delete: :restrict so Rails owns the cascade (callbacks +
+      # audited destroy events fire); FK is a safety net against bypass.
+      it 'has FK responding_to_review_id with on_delete: :restrict' do
+        fk = ActiveRecord::Base.connection.foreign_keys('reviews').find do |k|
+          k.column == 'responding_to_review_id'
+        end
+        expect(fk).to be_present
+        expect(fk.on_delete).to eq(:restrict)
+      end
     end
 
     context 'as a non-admin author' do
