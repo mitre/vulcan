@@ -52,6 +52,23 @@ class User < ApplicationRecord
   has_many :components, through: :memberships, source: :membership, source_type: 'Component'
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
 
+  # PR-717 review remediation .j4a step D1 — preserve commenter
+  # attribution on the user's reviews before the FK gets nullified.
+  # `prepend: true` ensures this callback fires BEFORE the
+  # `dependent: :nullify` callback Rails registers for the reviews
+  # association (which would otherwise null user_id first and leave
+  # commenter_imported_* empty, destroying the audit/disposition trail).
+  # Mirrors how dependent_destroy + .8 imported_* preserve triager +
+  # adjudicator attribution across cross-instance archive restores.
+  before_destroy :preserve_review_attribution, prepend: true
+
+  def preserve_review_attribution
+    reviews.update_all(
+      commenter_imported_email: email,
+      commenter_imported_name: name
+    )
+  end
+
   scope :alphabetical, -> { order(:name) }
 
   # Transparent password migration from bcrypt to PBKDF2-SHA512.
