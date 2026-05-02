@@ -40,32 +40,13 @@ class ReviewBlueprint < Blueprinter::Base
     review.user&.email
   end
 
-  # PR-717 review remediation .8 — display-layer attribution. The display
-  # methods on Review fall back to imported_email/name when the original
-  # User can't be resolved on this instance (cross-instance JSON archive
-  # restore). `*_imported` is the boolean Vue uses to render an "imported"
-  # badge next to the name.
-  field :triager_display_name do |review, _options|
-    review.triager_display_name
-  end
-  field :triager_imported do |review, _options|
-    review.triager_imported?
-  end
-  field :adjudicator_display_name do |review, _options|
-    review.adjudicator_display_name
-  end
-  field :adjudicator_imported do |review, _options|
-    review.adjudicator_imported?
-  end
+  # PR-717 review remediation .8 + .j4a C1 — display-layer attribution
+  # for triager / adjudicator / commenter. See app/blueprints/concerns/
+  # imported_attribution_fields.rb for the macro implementation. The
+  # three declarations below replace six hand-written `field` blocks.
+  extend ImportedAttributionFields
 
-  # PR-717 review remediation .j4a step C1 — commenter attribution
-  # display. Same fallback pattern (resolved User → imported_name →
-  # imported_email → nil) used by triager/adjudicator. Frontend renders
-  # an "imported" badge when commenter_imported is true.
-  field :commenter_display_name do |review, _options|
-    review.commenter_display_name
-  end
-  field :commenter_imported do |review, _options|
-    review.commenter_imported?
-  end
+  attribution_fields :triager
+  attribution_fields :adjudicator
+  attribution_fields :commenter
 end

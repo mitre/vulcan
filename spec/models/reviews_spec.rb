@@ -748,6 +748,7 @@ RSpec.describe Review do
          duplicate_of_review_id responding_to_review_id
          triage_set_by_imported_email triage_set_by_imported_name
          adjudicated_by_imported_email adjudicated_by_imported_name
+         commenter_imported_email commenter_imported_name
          created_at updated_at].each do |col|
         expect(h).to have_key(col)
       end
