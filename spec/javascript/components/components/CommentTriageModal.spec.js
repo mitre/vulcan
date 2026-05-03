@@ -144,17 +144,49 @@ describe("CommentTriageModal", () => {
     expect(w.emitted("adjudicated")).toBeTruthy();
   });
 
-  it("disables 'Save & close' for terminal-by-rule statuses (informational, duplicate, needs_clarification, withdrawn)", () => {
+  it("collapses the footer to one button for terminal-by-rule statuses (no separate 'Save decision' option)", () => {
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
     });
     ["informational", "duplicate", "needs_clarification", "withdrawn"].forEach((status) => {
       w.vm.triageStatus = status;
-      expect(w.vm.canSaveAndClose).toBe(false);
+      expect(w.vm.autoAdjudicating).toBe(true);
+      expect(w.vm.hasSaveDecisionOnlyOption).toBe(false);
     });
     w.vm.triageStatus = "concur";
-    expect(w.vm.canSaveAndClose).toBe(true);
+    expect(w.vm.autoAdjudicating).toBe(false);
+    expect(w.vm.hasSaveDecisionOnlyOption).toBe(true);
+  });
+
+  it("relabels the primary button to 'Save & wait for commenter' when status is needs_clarification", () => {
+    const w = mount(CommentTriageModal, {
+      localVue,
+      propsData: { review: sampleReview },
+    });
+    w.vm.triageStatus = "needs_clarification";
+    expect(w.vm.saveAndCloseLabel).toBe("Save & wait for commenter");
+    w.vm.triageStatus = "concur";
+    expect(w.vm.saveAndCloseLabel).toBe("Save & close");
+  });
+
+  it("skips the redundant adjudicate call for auto-adjudicating statuses", async () => {
+    axios.patch.mockResolvedValueOnce({
+      data: { review: { ...sampleReview, triage_status: "informational" } },
+    });
+    const w = mount(CommentTriageModal, {
+      localVue,
+      propsData: { review: sampleReview },
+    });
+    vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+    w.vm.triageStatus = "informational";
+    await w.vm.saveTriage(true);
+    await flushPromises(w);
+
+    expect(axios.patch).toHaveBeenCalledTimes(1);
+    expect(axios.patch.mock.calls[0][0]).toBe("/reviews/142/triage");
+    expect(w.emitted("adjudicated")).toBeFalsy();
   });
 
   it("surfaces server errors via AlertMixin without crashing", async () => {

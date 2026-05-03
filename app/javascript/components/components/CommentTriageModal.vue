@@ -281,15 +281,16 @@
 
     <template #modal-footer="{ cancel }">
       <b-button variant="secondary" @click="cancel()">Cancel</b-button>
-      <b-button variant="outline-primary" :disabled="!canSave" @click="saveTriage(false)">
+      <b-button
+        v-if="hasSaveDecisionOnlyOption"
+        variant="outline-primary"
+        :disabled="!canSave"
+        @click="saveTriage(false)"
+      >
         Save decision
       </b-button>
-      <b-button
-        variant="primary"
-        :disabled="!canSave || !canSaveAndClose"
-        @click="saveTriage(true)"
-      >
-        Save &amp; close
+      <b-button variant="primary" :disabled="!canSave" @click="saveTriage(true)">
+        {{ saveAndCloseLabel }}
       </b-button>
     </template>
   </b-modal>
@@ -307,9 +308,10 @@ import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
 import RulePicker from "./RulePicker.vue";
 
 // Statuses that auto-set adjudicated_at server-side via the
-// Review#auto_set_adjudicated_for_terminal_statuses callback (Task 06).
-// "Save & close" doesn't make sense for these — they're already terminal,
-// or (needs_clarification) explicitly waiting on the commenter.
+// Review#auto_set_adjudicated_for_terminal_statuses callback. The
+// triage PATCH alone closes these out — a separate adjudicate call
+// would be redundant or 422, so we collapse to a single button when
+// the chosen status is one of these.
 const TERMINAL_BY_RULE = ["informational", "duplicate", "needs_clarification", "withdrawn"];
 
 export default {
@@ -389,8 +391,20 @@ export default {
       if (this.triageStatus === "duplicate" && !this.duplicateOfId) return false;
       return true;
     },
-    canSaveAndClose() {
-      return !TERMINAL_BY_RULE.includes(this.triageStatus);
+    // Two-button vs one-button footer. For statuses that auto-adjudicate
+    // (informational / duplicate / needs_clarification / withdrawn) the
+    // distinction between "save decision" and "save & adjudicate" is
+    // meaningless — a single primary button avoids the dimmed-button
+    // confusion users hit when picking those statuses.
+    autoAdjudicating() {
+      return TERMINAL_BY_RULE.includes(this.triageStatus);
+    },
+    hasSaveDecisionOnlyOption() {
+      return !this.autoAdjudicating;
+    },
+    saveAndCloseLabel() {
+      if (this.triageStatus === "needs_clarification") return "Save & wait for commenter";
+      return "Save & close";
     },
     pickerComponentId() {
       return this.componentId || this.review?.component_id || null;
@@ -593,7 +607,9 @@ export default {
         const triageRes = await axios.patch(`/reviews/${this.review.id}/triage`, triagePayload);
         this.$emit("triaged", triageRes.data.review);
 
-        if (alsoAdjudicate) {
+        // Skip the explicit adjudicate call for statuses that already
+        // auto-adjudicated server-side via the triage callback.
+        if (alsoAdjudicate && !this.autoAdjudicating) {
           const adjudicateRes = await axios.patch(`/reviews/${this.review.id}/adjudicate`, {});
           this.$emit("adjudicated", adjudicateRes.data.review);
         }
