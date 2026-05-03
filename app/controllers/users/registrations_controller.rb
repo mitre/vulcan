@@ -5,18 +5,34 @@ module Users
   # login is disabled.
   class RegistrationsController < Devise::RegistrationsController
     before_action :configure_permitted_parameters
+    # Devise's stock `authenticate_scope!` only guards :edit / :update /
+    # :destroy. The settings-shell sub-pages we add (#edit_password,
+    # #edit_activity) need the same protection.
+    prepend_before_action :authenticate_scope!, only: %i[edit_password edit_activity]
 
     def edit
-      # Load user's audit history for the activity panel.
-      # The `user` association on Audited::Audit is polymorphic (user_id + user_type),
-      # so we must filter on BOTH to avoid matching non-User actors that might share
-      # the same numeric ID (e.g. 'System' entries created by background jobs).
+      super
+    end
+
+    # GET /users/edit/password — Change Password sub-page of the
+    # settings shell. Renders a Vue page (UserPasswordPage) that
+    # PUTs to /users on save (same endpoint as profile updates).
+    def edit_password
+      self.resource = current_user
+    end
+
+    # GET /users/edit/activity — Activity sub-page of the settings
+    # shell. Loads the user's audit trail (Audited::Audit polymorphism
+    # requires filtering on BOTH user_id AND user_type to avoid matching
+    # non-User actors that share a numeric id, e.g. 'System' background
+    # job entries).
+    def edit_activity
+      self.resource = current_user
       @histories = Audited.audit_class.includes(:user)
                           .where(user_id: current_user.id, user_type: 'User')
                           .order(created_at: :desc)
                           .limit(50)
                           .map(&:format)
-      super
     end
 
     def create

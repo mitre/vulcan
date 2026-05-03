@@ -685,5 +685,17 @@ RSpec.describe 'Users' do
         expect(response.status).to be_in([302, 401])
       end
     end
+
+    # The same path serves the standalone My Comments page for HTML
+    # requests; the Vue mount point on the page consumes the JSON.
+    context 'HTML format (My Comments page)' do
+      before { sign_in viewer }
+
+      it 'renders the page successfully' do
+        get "/users/#{viewer.id}/comments"
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('mycommentspage')
+      end
+    end
   end
 end

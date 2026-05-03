@@ -22,6 +22,12 @@ Rails.application.routes.draw do
   # Requires current password. See Users::RegistrationsController#unlink_identity.
   devise_scope :user do
     post '/users/unlink_identity', to: 'users/registrations#unlink_identity', as: :unlink_identity
+    # Settings shell sub-pages — each section gets its own URL so it's
+    # bookmarkable and can be linked to directly from notifications,
+    # navbar dropdowns, etc. /users/edit (Devise's default) renders the
+    # Profile Information section.
+    get '/users/edit/password', to: 'users/registrations#edit_password', as: :edit_user_password_form
+    get '/users/edit/activity', to: 'users/registrations#edit_activity', as: :edit_user_activity
   end
 
   resources :users, only: %i[index update destroy] do

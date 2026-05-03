@@ -24,6 +24,9 @@ const entryPoints = {
   stigs: "app/javascript/packs/stigs.js",
   users: "app/javascript/packs/users.js",
   user_profile: "app/javascript/packs/user_profile.js",
+  user_password: "app/javascript/packs/user_password.js",
+  user_activity: "app/javascript/packs/user_activity.js",
+  user_comments: "app/javascript/packs/user_comments.js",
 };
 
 // Check if we're in watch mode

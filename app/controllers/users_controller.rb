@@ -253,32 +253,37 @@ class UsersController < ApplicationController
   end
 
   # GET /users/:id/comments — comments authored by user :id, scoped to
-  # projects the requester can see (admins see all). Backs the "My
-  # Comments" page (PR #717), but the same endpoint also supports admin
-  # cross-user views and any project member viewing a peer's comments
-  # on shared projects.
+  # projects the requester can see. The endpoint is NOT identity-gated:
+  # comments are project-member-visible (see GET /components/:id/comments
+  # for the per-component slice), so the row scope prevents cross-tenant
+  # leak via Component → Project filter against
+  # current_user.available_projects.
   #
-  # Authorization model (OWASP A01 — Broken Access Control):
-  # - authorize_logged_in handles the auth boundary
-  # - row scoping (Component → Project filter against
-  #   current_user.available_projects) prevents cross-tenant leak
-  # The endpoint is NOT identity-gated — comments are not private data,
-  # they are project-member-visible. See GET /components/:id/comments
-  # for the same data sliced per-component.
+  # HTML returns the standalone "My Comments" page; JSON returns the
+  # paginated row data the page consumes.
   #
   # On-the-wire vocab is DISA-native (triage_status, section keys);
   # frontend translates via triageVocabulary.js.
   def comments
-    target_user = User.find_by(id: params[:id])
-    return head :not_found unless target_user
+    @target_user = User.find_by(id: params[:id])
+    return head :not_found unless @target_user
 
+    respond_to do |format|
+      format.html
+      format.json { render json: comments_json_payload }
+    end
+  end
+
+  private
+
+  def comments_json_payload
     page     = [params[:page].to_i, 1].max
     per_page = (params[:per_page].presence || 25).to_i.clamp(1, 100)
 
     visible_components = Component.where(project_id: current_user.available_projects.select(:id))
 
     scope = Review.top_level_comments
-                  .where(user_id: target_user.id)
+                  .where(user_id: @target_user.id)
                   .joins(:rule)
                   .merge(Rule.where(component: visible_components))
                   .preload(rule: { component: :project })
@@ -288,18 +293,16 @@ class UsersController < ApplicationController
     scope = scope.merge(Rule.where(component: Component.where(project_id: params[:project_id]))) if params[:project_id].present?
 
     total = scope.count
-
-    page_records = scope.order(created_at: :desc).offset((page - 1) * per_page).limit(per_page).to_a
+    page_records = scope.order(created_at: :desc)
+                        .offset((page - 1) * per_page).limit(per_page).to_a
     latest_response_at = Review.where(responding_to_review_id: page_records.map(&:id))
                                .group(:responding_to_review_id)
                                .maximum(:created_at)
 
     rows = page_records.map { |r| comment_row_for(r, latest_response_at[r.id]) }
 
-    render json: { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
+    { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
   end
-
-  private
 
   def comment_row_for(review, latest_response)
     rule      = review.rule
