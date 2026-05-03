@@ -270,6 +270,15 @@ export default {
     CommentComposerModal,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin],
+  // Mirror ProjectComponent's provide chain so SectionCommentIcon and
+  // RuleActionsToolbar can read the component's comment_phase from
+  // either host page.
+  provide() {
+    return {
+      getCommentPhase: () => this.component.comment_phase || "open",
+      isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
+    };
+  },
   props: {
     effectivePermissions: {
       type: String,

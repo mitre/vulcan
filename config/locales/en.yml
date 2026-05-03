@@ -73,7 +73,8 @@ en:
         xccdf_metadata: "XCCDF Metadata"
         general: "(general)"
       comment_phase:
-        draft: "Draft"
-        open: "Open for comment"
-        adjudication: "Adjudication"
-        final: "Final"
+        open: "Open"
+        closed: "Closed"
+      closed_reason:
+        adjudicating: "Adjudicating"
+        finalized: "Finalized"

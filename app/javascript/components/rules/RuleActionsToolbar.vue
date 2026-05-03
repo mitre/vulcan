@@ -119,6 +119,11 @@ export default {
   components: {
     CommentModal,
   },
+  // Component-level "comments closed" gate is provided by ProjectComponent
+  // / RulesCodeEditorView. Default keeps tests + isolated mounts green.
+  inject: {
+    isCommentsClosed: { default: () => () => false },
+  },
   props: {
     rule: {
       type: Object,
@@ -146,20 +151,22 @@ export default {
     isUnderReview() {
       return !!this.rule.review_requestor_id;
     },
-    // PR #717 — Comment button activation mirrors the per-section comment
-    // icons: disabled when the rule is locked OR still in
-    // "Not Yet Determined" status (rule isn't ready for commenter review
-    // yet). Don't hide the feature — show it disabled with a tooltip
-    // (Vulcan UX rule: vulcan-disabled-not-hidden).
+    commentsClosedForComponent() {
+      return this.isCommentsClosed();
+    },
+    // Comment button activation: locked rule blocks (rule scope) and a
+    // closed comment phase blocks (component scope). The rule's own
+    // status is intentionally NOT a precondition — viewers can comment
+    // on a requirement before its status is set.
     commentButtonDisabled() {
-      return !!this.rule.locked || this.rule.status === "Not Yet Determined";
+      return !!this.rule.locked || this.commentsClosedForComponent;
     },
     commentButtonTooltip() {
       if (this.rule.locked) {
         return "Rule is locked — comments are closed for this rule";
       }
-      if (this.rule.status === "Not Yet Determined") {
-        return "Set the rule status before commenting (rule is Not Yet Determined)";
+      if (this.commentsClosedForComponent) {
+        return "Comments are closed — the public comment window is not open";
       }
       return "Add a general comment on this rule";
     },

@@ -7,6 +7,8 @@ import {
   SECTION_LABELS,
   DISPLAY_TO_XCCDF_SECTION,
   COMMENT_PHASE_LABELS,
+  CLOSED_REASON_LABELS,
+  commentPhaseStatusText,
   sectionLabel,
   triageDisplay,
 } from "@/constants/triageVocabulary";
@@ -55,10 +57,19 @@ describe("triageVocabulary", () => {
     expectedSections.forEach((s) => expect(SECTION_LABELS[s]).toBeDefined());
   });
 
-  it("COMMENT_PHASE_LABELS has draft/open/adjudication/final", () => {
-    ["draft", "open", "adjudication", "final"].forEach((p) =>
-      expect(COMMENT_PHASE_LABELS[p]).toBeDefined(),
-    );
+  it("COMMENT_PHASE_LABELS has open/closed", () => {
+    ["open", "closed"].forEach((p) => expect(COMMENT_PHASE_LABELS[p]).toBeDefined());
+  });
+
+  it("CLOSED_REASON_LABELS has adjudicating/finalized", () => {
+    ["adjudicating", "finalized"].forEach((r) => expect(CLOSED_REASON_LABELS[r]).toBeDefined());
+  });
+
+  it("commentPhaseStatusText composes the inline status badge text", () => {
+    expect(commentPhaseStatusText("open", null)).toBe("Open");
+    expect(commentPhaseStatusText("closed", null)).toBe("Closed");
+    expect(commentPhaseStatusText("closed", "adjudicating")).toBe("Closed (Adjudicating)");
+    expect(commentPhaseStatusText("closed", "finalized")).toBe("Closed (Finalized)");
   });
 
   it("sectionLabel renders null as (general)", () => {

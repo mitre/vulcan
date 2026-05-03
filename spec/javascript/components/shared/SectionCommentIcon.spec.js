@@ -4,22 +4,18 @@ import { localVue } from "@test/testHelper";
 import SectionCommentIcon from "@/components/shared/SectionCommentIcon.vue";
 
 /**
- * REQUIREMENTS (PR #717 + Aaron 2026-04-29):
- *
  * SectionCommentIcon renders inline next to the lock + info icons in
- * RuleFormGroup's label. To keep the visual + interaction pattern
- * consistent with those siblings, the icon is a raw <b-icon> with the
- * `v-b-tooltip.hover` directive (NOT wrapped in a <button>) and uses
- * the same color-class pattern (text-success / text-warning / text-muted)
- * as the lock icons.
+ * RuleFormGroup's label. The icon is a raw <b-icon> with the
+ * `v-b-tooltip.hover` directive (NOT wrapped in a <button>) so it
+ * matches the lock/info sibling pattern visually and interactively.
  *
  * Activation rules:
- *   - rule.locked === true → show inactive (greyed) with "rule is locked"
- *     tooltip — never hide (`vulcan-disabled-not-hidden` UX rule).
- *   - rule.status === "Not Yet Determined" → show inactive with
- *     "set the rule status before commenting" tooltip.
- *   - otherwise → active. Filled glyph + text-primary when there are
- *     pending comments; outline glyph + text-info otherwise.
+ *   - rule.locked === true → inactive (greyed) with "rule is locked"
+ *     tooltip — never hide.
+ *   - component comment_phase !== 'open' (commentsClosed prop true)
+ *     → inactive with "comments are closed" tooltip.
+ *   - otherwise → active. Filled glyph + text-primary when pending,
+ *     outline glyph + text-info otherwise.
  */
 describe("SectionCommentIcon", () => {
   // Helper: the icon root is a <span class="section-comment-icon"> wrapper
@@ -113,10 +109,8 @@ describe("SectionCommentIcon", () => {
     expect(glyph.classes()).toContain("clickable");
   });
 
-  // PR #717 — match the unlock-disabled visual treatment (text-muted +
-  // opacity-50). Locked rules are inactive with an explanatory tooltip,
-  // not hidden — same UX rule as the unlock icon when locks aren't
-  // manageable.
+  // Locked is inactive (greyed) with explanatory tooltip rather than
+  // hidden, mirroring the unlock-icon pattern.
   it("applies text-muted + opacity-50 when locked=true (no clickable)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
@@ -128,29 +122,10 @@ describe("SectionCommentIcon", () => {
     expect(glyph.classes()).not.toContain("clickable");
   });
 
-  it("applies text-muted + opacity-50 when disabled=true (NYD)", () => {
-    const w = mount(SectionCommentIcon, {
-      localVue,
-      propsData: { section: "title", pendingCount: 0, disabled: true },
-    });
-    const glyph = findGlyph(w);
-    expect(glyph.classes()).toContain("text-muted");
-    expect(glyph.classes()).toContain("opacity-50");
-  });
-
   it("does NOT emit 'open-composer' when clicked while locked", async () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "check_content", pendingCount: 0, locked: true },
-    });
-    await w.find(".section-comment-icon").trigger("click");
-    expect(w.emitted("open-composer")).toBeUndefined();
-  });
-
-  it("does NOT emit 'open-composer' when clicked while disabled (NYD)", async () => {
-    const w = mount(SectionCommentIcon, {
-      localVue,
-      propsData: { section: "check_content", pendingCount: 0, disabled: true },
     });
     await w.find(".section-comment-icon").trigger("click");
     expect(w.emitted("open-composer")).toBeUndefined();
@@ -168,17 +143,6 @@ describe("SectionCommentIcon", () => {
     expect(w.vm.tooltipText).toMatch(/lock/i);
   });
 
-  it("uses an explanatory tooltip when disabled=true (NYD)", () => {
-    const w = mount(SectionCommentIcon, {
-      localVue,
-      propsData: { section: "check_content", pendingCount: 0, disabled: true },
-    });
-    expect(w.vm.tooltipText).toMatch(/status|ready|not yet/i);
-  });
-
-  // ─── PR #717 phase enforcement ──────────────────────────────────
-  // commentsClosed = component.comment_phase != 'open'. Same disable +
-  // tooltip treatment as locked / NYD per `vulcan-disabled-not-hidden`.
   describe("commentsClosed (phase != open)", () => {
     it("renders inactive (greyed) when commentsClosed=true", () => {
       const w = mount(SectionCommentIcon, {
@@ -244,14 +208,6 @@ describe("SectionCommentIcon", () => {
     expect(w.vm.tooltipText).toMatch(/Comment on Title/i);
   });
 
-  it("locked tooltip wins over NYD-disabled tooltip (locked is more specific)", () => {
-    const w = mount(SectionCommentIcon, {
-      localVue,
-      propsData: { section: "title", pendingCount: 0, locked: true, disabled: true },
-    });
-    expect(w.vm.tooltipText).toMatch(/lock/i);
-  });
-
   // Keyboard accessibility — the glyph is role=button with tabindex=0
   // when active (matches the lock/info icon focus behavior).
   it("is keyboard-focusable when active (tabindex=0, role=button)", () => {
@@ -264,10 +220,10 @@ describe("SectionCommentIcon", () => {
     expect(glyph.attributes("tabindex")).toBe("0");
   });
 
-  it("is NOT keyboard-focusable when inactive (tabindex=-1)", () => {
+  it("is NOT keyboard-focusable when locked (tabindex=-1)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0, disabled: true },
+      propsData: { section: "title", pendingCount: 0, locked: true },
     });
     expect(findGlyph(w).attributes("tabindex")).toBe("-1");
   });

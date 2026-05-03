@@ -240,8 +240,7 @@ end
 photon4_v1r1 = seed_component(
   project: photon4, name: 'Photon OS 4', title: 'Photon OS 4 STIG Readiness Guide',
   prefix: 'PHOS-04', based_on: gpos_srg,
-  admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com',
-  comment_phase: 'draft'
+  admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com'
 )
 photon4_v1r1.reload
 photon4_v1r1.rules.update(locked: false)
@@ -279,10 +278,8 @@ seed_component(
 ).rules.update(locked: false)
 
 # Container Platform project (uses Container Platform SRG).
-# Set to comment_phase: 'open' with an active comment-period window so the banner
-# + section icons + composer are exercisable out of the box. PoC fields populated
-# so the Settings page demos look representative (mirrors the live Container SRG
-# review window — admin_email is the substantive reachable contact).
+# Seeded with an active comment-period window so the banner + section
+# icons + composer are exercisable out of the box.
 container_srg = srg_records[:container]
 if container_srg
   seed_component(

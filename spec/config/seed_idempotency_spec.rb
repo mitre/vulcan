@@ -113,17 +113,19 @@ RSpec.describe 'seed file idempotency and completeness' do
     end
   end
 
-  # REQUIREMENT: seeded components should cover multiple comment_phase values so
-  # the period banner + phase-gated UI are validatable without manual DB hacking.
+  # Seeded components should cover the open/closed banner state so the
+  # phase-gated UI is exercisable without manual DB hacking. Components
+  # that omit comment_phase get the model default ("open"), so an
+  # explicit comment_phase: 'open' with start/end dates is what the
+  # banner needs to render.
   describe 'component phase coverage' do
-    it 'sets comment_phase to "open" on at least one component' do
+    it 'sets comment_phase to "open" with comment_period dates on at least one component' do
       expect(seeds).to match(/comment_phase:\s*['"]open['"]/),
                        'expected at least one component to have comment_phase: "open" for banner/icon coverage'
-    end
-
-    it 'sets comment_phase to "draft" on at least one component' do
-      expect(seeds).to match(/comment_phase:\s*['"]draft['"]/),
-                       'expected at least one component to have comment_phase: "draft" for phase-toggle coverage'
+      expect(seeds).to match(/comment_period_starts_at:/),
+                       'expected at least one component to set comment_period_starts_at for banner coverage'
+      expect(seeds).to match(/comment_period_ends_at:/),
+                       'expected at least one component to set comment_period_ends_at for banner countdown coverage'
     end
   end
 end

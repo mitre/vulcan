@@ -34,16 +34,10 @@ export default {
   props: {
     section: { type: String, required: true },
     pendingCount: { type: Number, default: 0 },
-    // locked → rule is frozen, no commentary; same visual treatment as
-    // disabled (greyed + tooltip) per the app-wide UX rule
-    // `vulcan-disabled-not-hidden` — never hide features.
+    // Never-hide-features: locked + commentsClosed both render a visibly
+    // disabled icon with an explanatory tooltip rather than disappearing.
     locked: { type: Boolean, default: false },
-    // disabled → typically rule.status === "Not Yet Determined".
-    disabled: { type: Boolean, default: false },
-    // commentsClosed → component.comment_phase != 'open'. PR #717 phase
-    // enforcement; the backend rejects comment creation outside `open`,
-    // so disabling the affordance here keeps the UX honest. Same
-    // greyed + tooltip treatment as locked / NYD.
+    // Component's comment_phase is anything other than 'open'.
     commentsClosed: { type: Boolean, default: false },
   },
   computed: {
@@ -51,7 +45,7 @@ export default {
       return sectionLabel(this.section);
     },
     isInactive() {
-      return this.locked || this.disabled || this.commentsClosed;
+      return this.locked || this.commentsClosed;
     },
     glyphIcon() {
       // Filled glyph when there's prior conversation — quick visual
@@ -59,26 +53,19 @@ export default {
       return this.pendingCount > 0 ? "chat-left-text-fill" : "chat-left-text";
     },
     iconClass() {
-      // Mirrors the lock/info icon pattern: text-* color signals state,
-      // `clickable` class enables hover affordance.
       if (this.isInactive) return "text-muted opacity-50";
       return this.pendingCount > 0 ? "text-primary clickable" : "text-info clickable";
     },
     ariaLabel() {
       const base = `Add comment on ${this.sectionDisplay} section`;
-      // Order matters — narrowest scope first wins for the message.
+      // Order matters — narrowest scope first wins.
       if (this.locked) return `${base} (rule is locked)`;
-      if (this.disabled) return `${base} (set rule status before commenting)`;
       if (this.commentsClosed) return `${base} (comments are closed for this component)`;
       return this.pendingCount > 0 ? `${base} (${this.pendingCount} pending)` : base;
     },
     tooltipText() {
-      // Order matters — narrowest / more-specific signal wins.
-      // Rule-scope (locked / NYD) before component-scope (commentsClosed).
+      // Rule-scope (locked) before component-scope (commentsClosed).
       if (this.locked) return "Rule is locked — comments are closed for this rule";
-      if (this.disabled) {
-        return "Set the rule status before commenting (rule is Not Yet Determined)";
-      }
       if (this.commentsClosed) {
         return "Comments are closed — the public comment window is not open";
       }

@@ -717,7 +717,7 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :released, :name, :version, :release, :title, :prefix,
       :description, :admin_name, :admin_email, :advanced_fields,
-      :comment_phase, :comment_period_starts_at, :comment_period_ends_at,
+      :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
       component_metadata_attributes: { data: {} }
     )

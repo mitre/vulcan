@@ -87,31 +87,39 @@ class Component < ApplicationRecord
            :cannot_unrelease_component,
            :cannot_overlay_self
 
-  COMMENT_PHASES = %w[draft open adjudication final].freeze
+  COMMENT_PHASES = %w[open closed].freeze
+  CLOSED_REASONS = %w[adjudicating finalized].freeze
   validates :comment_phase, inclusion: { in: COMMENT_PHASES }
-  # NOTE: phase transitions are intentionally unrestricted — admins have
-  # authority to regress, skip forward, etc. Compliance posture is in the
-  # audit trail (vulcan_audited captures every phase change with optional
-  # audit_comment) plus frozen_for_writes? (blocks Review writes whenever
-  # the component IS currently in final, regardless of transition history).
+  validates :closed_reason, inclusion: { in: CLOSED_REASONS }, allow_nil: true
+  validate  :closed_reason_only_when_closed
+  # Phase transitions are intentionally unrestricted — admins may regress,
+  # skip forward, etc. Compliance posture lives in the audit trail
+  # (vulcan_audited captures every phase change with optional audit_comment)
+  # plus frozen_for_writes? (blocks Review writes whenever the component IS
+  # currently closed+finalized, regardless of how it got there).
 
   def accepting_new_comments?
     comment_phase == 'open'
   end
 
+  # Triage continues while comments are accepted OR while a closed
+  # component is still being adjudicated. Stops once finalized.
   def triaging_active?
-    %w[open adjudication].include?(comment_phase)
+    return true if comment_phase == 'open'
+
+    comment_phase == 'closed' && closed_reason == 'adjudicating'
   end
 
-  # When `final`, the component is read-only — no new comments, no triage
-  # or adjudication writes, no rule edits. Audit posture: once disposition
-  # is published the document and its comment trail are frozen.
+  # When closed+finalized the component is read-only: no new comments,
+  # no triage/adjudication writes, no rule edits.
   def frozen_for_writes?
-    comment_phase == 'final'
+    comment_phase == 'closed' && closed_reason == 'finalized'
   end
 
+  # Returns nil when there is no actionable countdown — comments aren't
+  # being accepted, no end date is set, or the end date has passed.
   def comment_period_days_remaining
-    return nil unless comment_phase == 'open' && comment_period_ends_at
+    return nil unless accepting_new_comments? && comment_period_ends_at&.future?
 
     ((comment_period_ends_at - Time.current) / 1.day).ceil
   end
@@ -733,6 +741,16 @@ class Component < ApplicationRecord
   end
 
   private
+
+  # closed_reason is meaningless on an open component; reject the
+  # combination rather than silently storing an inert value.
+  def closed_reason_only_when_closed
+    return if closed_reason.blank?
+    return if comment_phase == 'closed'
+
+    errors.add(:closed_reason,
+               'can only be set when comment_phase is "closed"')
+  end
 
   # Parse satisfaction text from any source string.
   # Returns { direction: "satisfies"|"satisfied by", identifiers: [...] } or nil.

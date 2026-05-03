@@ -180,9 +180,6 @@ describe("RuleActionsToolbar", () => {
   // ==========================================
   describe("action buttons", () => {
     describe("Comment button", () => {
-      // PR #717 replaced the old CommentModal-wrapped audit-style button
-      // with a plain b-button that opens the new CommentComposerModal via
-      // the open-composer event (default section: null = "(general)").
       const findCommentButton = (w) =>
         w.findAll("button").wrappers.find((b) => b.text().includes("Leave a Comment"));
 
@@ -200,9 +197,8 @@ describe("RuleActionsToolbar", () => {
         expect(wrapper.emitted("open-composer")[0]).toEqual([null]);
       });
 
-      // Plan B: viewers can comment. The Comment button must remain enabled
-      // when readOnly=true (viewer role) — it's the one collaboration action
-      // that doesn't require write permission.
+      // Viewers can comment — the Comment button is the one collaboration
+      // action that doesn't require write permission.
       it("is enabled even when readOnly=true (viewer scenario)", () => {
         wrapper = createWrapper({ readOnly: true, effectivePermissions: "viewer" });
         const btn = findCommentButton(wrapper);
@@ -210,16 +206,16 @@ describe("RuleActionsToolbar", () => {
         expect(btn.attributes("disabled")).toBeUndefined();
       });
 
-      // PR #717 activation rule (Aaron 2026-04-29) — mirrors the per-section
-      // SectionCommentIcon: rule must have status set and not be locked.
-      it("is disabled when rule.status === 'Not Yet Determined'", () => {
+      // Status precondition (NYD) used to gate this button. Removed:
+      // viewers should be able to comment on a requirement before its
+      // status is set.
+      it("is enabled when rule.status === 'Not Yet Determined'", () => {
         wrapper = createWrapper({
           rule: { ...defaultRule, status: "Not Yet Determined" },
         });
         const btn = findCommentButton(wrapper);
         expect(btn).toBeDefined();
-        expect(btn.attributes("disabled")).toBeDefined();
-        expect(btn.attributes("title")).toMatch(/status|not yet/i);
+        expect(btn.attributes("disabled")).toBeUndefined();
       });
 
       it("is disabled when rule.locked === true", () => {
@@ -230,6 +226,31 @@ describe("RuleActionsToolbar", () => {
         expect(btn).toBeDefined();
         expect(btn.attributes("disabled")).toBeDefined();
         expect(btn.attributes("title")).toMatch(/lock/i);
+      });
+
+      it("is disabled when the component's comments are closed (injected)", () => {
+        wrapper = mount(RuleActionsToolbar, {
+          localVue,
+          propsData: {
+            rule: defaultRule,
+            effectivePermissions: "admin",
+            readOnly: false,
+          },
+          provide: {
+            isCommentsClosed: () => true,
+          },
+          stubs: {
+            CommentModal: {
+              template:
+                '<button class="comment-modal-stub" :disabled="buttonDisabled">{{ buttonText }}</button>',
+              props: ["buttonText", "buttonDisabled", "buttonIcon", "buttonVariant", "buttonSize"],
+            },
+          },
+        });
+        const btn = findCommentButton(wrapper);
+        expect(btn).toBeDefined();
+        expect(btn.attributes("disabled")).toBeDefined();
+        expect(btn.attributes("title")).toMatch(/closed/i);
       });
 
       it("Save button IS disabled when readOnly=true (viewer scenario)", () => {

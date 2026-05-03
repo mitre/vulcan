@@ -66,11 +66,19 @@
           >
             <b-icon icon="clock-history" /> History
           </b-button>
-          <!-- Triage navigates to the dedicated full-page triage view
-               (the comp-reviews slideover was retired in favor of the
-               wider, sortable, deep-linkable /triage route). -->
-          <b-button :href="`/components/${component.id}/triage`" variant="outline-secondary">
-            <b-icon icon="chat-left-text" /> Triage
+          <!-- Comments navigates to the full-page triage view. The badge
+               doubles as the inline open/closed status indicator so the
+               comment-period state is readable at a glance from anywhere
+               on the component page. -->
+          <b-button
+            :href="`/components/${component.id}/triage`"
+            variant="outline-secondary"
+            data-testid="component-commandbar-comments"
+          >
+            <b-icon icon="chat-left-text" /> Comments
+            <b-badge :variant="commentStatusVariant" class="ml-1">
+              {{ commentStatusText }}
+            </b-badge>
           </b-button>
         </b-button-group>
         <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
@@ -81,6 +89,7 @@
 
 <script>
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { commentPhaseStatusText } from "../../constants/triageVocabulary";
 
 export default {
   name: "ComponentCommandBar",
@@ -128,6 +137,13 @@ export default {
     },
     rulePanels() {
       return ["satisfies", "rule-reviews", "rule-history"];
+    },
+    commentStatusText() {
+      const phase = this.component.comment_phase || "open";
+      return commentPhaseStatusText(phase, this.component.closed_reason);
+    },
+    commentStatusVariant() {
+      return (this.component.comment_phase || "open") === "open" ? "success" : "secondary";
     },
   },
   methods: {

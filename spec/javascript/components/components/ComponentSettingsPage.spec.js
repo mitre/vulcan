@@ -1,18 +1,9 @@
 /**
- * ComponentSettingsPage — admin-only configuration surface (Task 22).
+ * ComponentSettingsPage — admin-only configuration surface.
  *
- * REQUIREMENTS:
- *
- * 1. Three sections: Identity, Point of Contact, Public Comment Period.
- * 2. form fields seeded from initialComponentState including the new
- *    comment_phase + period date fields.
- * 3. ISO datetime values in initialComponentState are trimmed to YYYY-MM-DD
- *    so <input type="date"> can render them; backend stores datetime, the
- *    form just doesn't expose time-of-day.
- * 4. comment_phase falls back to "draft" when missing on the prop.
- * 5. phaseOptions exposes the four DISA→friendly labels.
- * 6. save() PUTs the full payload (all 11 keys including the three
- *    Task 22 fields) to /components/:id and shows a toast.
+ * Three sections: Identity, Point of Contact, Public Comment Period.
+ * The comment-period card edits the open/closed phase + optional
+ * closed_reason + optional comment_period_starts_at / ends_at dates.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -96,14 +87,16 @@ describe("ComponentSettingsPage", () => {
   });
 
   describe("Public Comment Period field seeding", () => {
-    it("falls back to 'draft' when the component has no comment_phase set", () => {
+    it("falls back to 'open' when the component has no comment_phase set", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.form.comment_phase).toBe("draft");
+      expect(wrapper.vm.form.comment_phase).toBe("open");
+      expect(wrapper.vm.form.closed_reason).toBeNull();
     });
 
-    it("seeds comment_phase from the component prop when set", () => {
-      wrapper = createWrapper({ comment_phase: "open" });
-      expect(wrapper.vm.form.comment_phase).toBe("open");
+    it("seeds comment_phase + closed_reason from the prop", () => {
+      wrapper = createWrapper({ comment_phase: "closed", closed_reason: "adjudicating" });
+      expect(wrapper.vm.form.comment_phase).toBe("closed");
+      expect(wrapper.vm.form.closed_reason).toBe("adjudicating");
     });
 
     it("trims ISO datetime to YYYY-MM-DD for the date inputs", () => {
@@ -115,19 +108,33 @@ describe("ComponentSettingsPage", () => {
       expect(wrapper.vm.form.comment_period_ends_at).toBe("2026-05-14");
     });
 
-    it("phaseOptions exposes the four DISA→friendly labels", () => {
+    it("phaseOptions exposes the two-value enum (open/closed)", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.phaseOptions).toEqual([
-        { value: "draft", text: "Draft" },
-        { value: "open", text: "Open for comment" },
-        { value: "adjudication", text: "Adjudication" },
-        { value: "final", text: "Final" },
+        { value: "open", text: "Open" },
+        { value: "closed", text: "Closed" },
       ]);
+    });
+
+    it("closedReasonOptions includes a null/none option plus the two reasons", () => {
+      wrapper = createWrapper({ comment_phase: "closed" });
+      const opts = wrapper.vm.closedReasonOptions;
+      expect(opts[0].value).toBeNull();
+      expect(opts.slice(1)).toEqual([
+        { value: "adjudicating", text: "Adjudicating" },
+        { value: "finalized", text: "Finalized" },
+      ]);
+    });
+
+    it("clears closed_reason when phase flips to 'open'", () => {
+      wrapper = createWrapper({ comment_phase: "closed", closed_reason: "adjudicating" });
+      wrapper.vm.onPhaseChange("open");
+      expect(wrapper.vm.form.closed_reason).toBeNull();
     });
   });
 
   describe("Identity field seeding", () => {
-    it("seeds the form from the prop (name, version, prefix, title, description)", () => {
+    it("seeds the form from the prop (name, prefix, title)", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.form.name).toBe("Container Platform");
       expect(wrapper.vm.form.prefix).toBe("CNTR-01");
@@ -151,7 +158,7 @@ describe("ComponentSettingsPage", () => {
   });
 
   describe("save", () => {
-    it("PUTs all 11 form keys to /components/:id", async () => {
+    it("PUTs all 12 form keys to /components/:id (including closed_reason)", async () => {
       wrapper = createWrapper({ comment_phase: "open" });
       wrapper.vm.form.comment_period_ends_at = "2026-05-14";
       await wrapper.vm.save();
@@ -160,29 +167,22 @@ describe("ComponentSettingsPage", () => {
       expect(url).toBe("/components/8");
       expect(payload.component).toMatchObject({
         name: "Container Platform",
-        version: "1",
-        release: "1",
-        title: "Container Platform STIG",
-        description: "Test description",
         prefix: "CNTR-01",
-        admin_name: "Demo Admin",
-        admin_email: "admin@example.com",
         comment_phase: "open",
+        closed_reason: null,
         comment_period_ends_at: "2026-05-14",
       });
     });
   });
 
-  // REQUIREMENT: regressing comment_phase out of "final" reopens disposition,
-  // which is the only phase change with significant downstream effect (the
-  // component was frozen for writes and is now writable again). Admin authority
-  // remains unrestricted (no model-level lock — see vulcan-phase-frozen-for-writes
-  // memory) but the UI surfaces a confirmation prompt as a safety net.
-  describe("confirm-modal on final regression", () => {
-    it("shows a confirmation prompt when phase is changed away from final", async () => {
-      wrapper = createWrapper({ comment_phase: "final" });
+  describe("confirm-modal on closed+finalized regression", () => {
+    const finalizedProps = { comment_phase: "closed", closed_reason: "finalized" };
+
+    it("shows a confirmation prompt when reopening from closed+finalized", async () => {
+      wrapper = createWrapper(finalizedProps);
       wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
-      wrapper.vm.form.comment_phase = "draft";
+      wrapper.vm.form.comment_phase = "open";
+      wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
       expect(wrapper.vm.$bvModal.msgBoxConfirm).toHaveBeenCalled();
@@ -191,18 +191,20 @@ describe("ComponentSettingsPage", () => {
     });
 
     it("aborts the save when the user cancels the confirmation", async () => {
-      wrapper = createWrapper({ comment_phase: "final" });
+      wrapper = createWrapper(finalizedProps);
       wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(false);
-      wrapper.vm.form.comment_phase = "draft";
+      wrapper.vm.form.comment_phase = "open";
+      wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
       expect(axios.put).not.toHaveBeenCalled();
     });
 
     it("proceeds with the save when the user confirms", async () => {
-      wrapper = createWrapper({ comment_phase: "final" });
+      wrapper = createWrapper(finalizedProps);
       wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
       wrapper.vm.form.comment_phase = "open";
+      wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
       expect(axios.put).toHaveBeenCalled();
@@ -210,20 +212,21 @@ describe("ComponentSettingsPage", () => {
     });
 
     it("does NOT show the confirmation when the phase is unchanged", async () => {
-      wrapper = createWrapper({ comment_phase: "final" });
+      wrapper = createWrapper(finalizedProps);
       wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
-      // form.comment_phase still 'final' — admin only changing PoC fields say
+      // form still closed+finalized — admin only changing PoC fields say
       await wrapper.vm.save();
 
       expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();
       expect(axios.put).toHaveBeenCalled();
     });
 
-    it("does NOT show the confirmation for non-final transitions", async () => {
-      // open → adjudication is a normal forward step, no reopen-disposition risk
-      wrapper = createWrapper({ comment_phase: "open" });
+    it("does NOT show the confirmation moving from closed+adjudicating to open", async () => {
+      // adjudicating wasn't the frozen-for-writes state, so no reopen risk
+      wrapper = createWrapper({ comment_phase: "closed", closed_reason: "adjudicating" });
       wrapper.vm.$bvModal.msgBoxConfirm = vi.fn().mockResolvedValue(true);
-      wrapper.vm.form.comment_phase = "adjudication";
+      wrapper.vm.form.comment_phase = "open";
+      wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
       expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();

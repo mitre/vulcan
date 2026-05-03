@@ -835,8 +835,8 @@ RSpec.describe Component do
   describe 'comment phase' do
     let(:component) { create(:component) }
 
-    it 'defaults to draft' do
-      expect(component.comment_phase).to eq('draft')
+    it 'defaults to open' do
+      expect(component.comment_phase).to eq('open')
     end
 
     it 'rejects an invalid phase' do
@@ -845,38 +845,73 @@ RSpec.describe Component do
       expect(component.errors[:comment_phase].join).to match(/included in the list/i)
     end
 
+    describe 'closed_reason' do
+      it 'permits adjudicating + finalized when phase is closed' do
+        %w[adjudicating finalized].each do |reason|
+          component.comment_phase = 'closed'
+          component.closed_reason = reason
+          expect(component).to be_valid, "unexpectedly invalid for closed_reason=#{reason}"
+        end
+      end
+
+      it 'permits null when phase is closed (closed without a reason)' do
+        component.comment_phase = 'closed'
+        component.closed_reason = nil
+        expect(component).to be_valid
+      end
+
+      it 'rejects closed_reason on an open component' do
+        component.comment_phase = 'open'
+        component.closed_reason = 'adjudicating'
+        expect(component).not_to be_valid
+        expect(component.errors[:closed_reason].join).to match(/comment_phase is "closed"/)
+      end
+
+      it 'rejects an invalid closed_reason value' do
+        component.comment_phase = 'closed'
+        component.closed_reason = 'mystery'
+        expect(component).not_to be_valid
+        expect(component.errors[:closed_reason].join).to match(/included in the list/i)
+      end
+    end
+
     describe '#accepting_new_comments?' do
       it 'is true only when phase is open' do
         component.comment_phase = 'open'
         expect(component.accepting_new_comments?).to be(true)
-        %w[draft adjudication final].each do |phase|
-          component.comment_phase = phase
-          expect(component.accepting_new_comments?).to be(false), "unexpectedly true for #{phase}"
-        end
+        component.comment_phase = 'closed'
+        expect(component.accepting_new_comments?).to be(false)
       end
     end
 
     describe '#triaging_active?' do
-      it 'is true for open and adjudication' do
-        %w[open adjudication].each do |phase|
-          component.comment_phase = phase
-          expect(component.triaging_active?).to be(true), "unexpectedly false for #{phase}"
-        end
-        %w[draft final].each do |phase|
-          component.comment_phase = phase
-          expect(component.triaging_active?).to be(false), "unexpectedly true for #{phase}"
-        end
+      it 'is true for open and for closed+adjudicating' do
+        component.comment_phase = 'open'
+        expect(component.triaging_active?).to be(true)
+
+        component.comment_phase = 'closed'
+        component.closed_reason = 'adjudicating'
+        expect(component.triaging_active?).to be(true)
+      end
+
+      it 'is false for closed+finalized and closed-without-reason' do
+        component.comment_phase = 'closed'
+        component.closed_reason = 'finalized'
+        expect(component.triaging_active?).to be(false)
+
+        component.closed_reason = nil
+        expect(component.triaging_active?).to be(false)
       end
     end
 
     describe '#comment_period_days_remaining' do
-      it 'returns nil when phase is not open' do
-        component.comment_phase = 'draft'
+      it 'returns nil when comments are closed' do
+        component.comment_phase = 'closed'
         component.comment_period_ends_at = 5.days.from_now
         expect(component.comment_period_days_remaining).to be_nil
       end
 
-      it 'returns days remaining when open with an end date' do
+      it 'returns days remaining when open with a future end date' do
         component.comment_phase = 'open'
         component.comment_period_ends_at = 5.days.from_now
         expect(component.comment_period_days_remaining).to eq(5)
@@ -887,54 +922,56 @@ RSpec.describe Component do
         component.comment_period_ends_at = nil
         expect(component.comment_period_days_remaining).to be_nil
       end
+
+      it 'returns nil when open but the end date is in the past' do
+        component.comment_phase = 'open'
+        component.comment_period_ends_at = 2.days.ago
+        expect(component.comment_period_days_remaining).to be_nil
+      end
     end
 
-    # PR #717: phases gate behavior, not just labels.
     describe '#frozen_for_writes?' do
-      it 'is true only when phase is final' do
-        %w[draft open adjudication].each do |phase|
-          component.comment_phase = phase
-          expect(component.frozen_for_writes?).to be(false), "unexpectedly true for #{phase}"
-        end
-        component.comment_phase = 'final'
+      it 'is true only when closed+finalized' do
+        component.comment_phase = 'open'
+        expect(component.frozen_for_writes?).to be(false)
+
+        component.comment_phase = 'closed'
+        component.closed_reason = 'adjudicating'
+        expect(component.frozen_for_writes?).to be(false)
+
+        component.closed_reason = nil
+        expect(component.frozen_for_writes?).to be(false)
+
+        component.closed_reason = 'finalized'
         expect(component.frozen_for_writes?).to be(true)
       end
     end
 
-    # Admin authority: there is no model-level restriction on phase
-    # transitions. Compliance posture is established by:
-    #   (1) the audit trail (vulcan_audited records every phase change
-    #       with optional audit_comment) — accountability lives there;
-    #   (2) frozen_for_writes? which blocks Review writes whenever the
-    #       component IS currently in final, regardless of how it got
-    #       there — content immutability is a phase-state check, not a
-    #       transition lock.
-    # Locking transitions at the model level would prevent legitimate
-    # admin operations (correcting an accidental click, reopening for
-    # post-publication issues) without adding any compliance value the
-    # audit trail doesn't already provide.
+    # Phase transitions are unrestricted at the model layer — compliance
+    # lives in the audit trail (vulcan_audited captures every change) and
+    # in frozen_for_writes? which blocks Review writes whenever the
+    # component IS currently closed+finalized regardless of how it got
+    # there. Locking transitions would block legitimate admin operations
+    # (correcting an accidental click, reopening for post-publication
+    # issues) without adding compliance value.
     describe 'phase transitions are unrestricted (admin authority)' do
-      it 'allows final → draft' do
-        component.update!(comment_phase: 'final')
-        component.comment_phase = 'draft'
-        expect(component).to be_valid
-      end
-
-      it 'allows final → open' do
-        component.update!(comment_phase: 'final')
+      it 'allows closed+finalized → open' do
+        component.update!(comment_phase: 'closed', closed_reason: 'finalized')
         component.comment_phase = 'open'
+        component.closed_reason = nil
         expect(component).to be_valid
       end
 
-      it 'allows final → adjudication' do
-        component.update!(comment_phase: 'final')
-        component.comment_phase = 'adjudication'
+      it 'allows closed+finalized → closed+adjudicating' do
+        component.update!(comment_phase: 'closed', closed_reason: 'finalized')
+        component.closed_reason = 'adjudicating'
         expect(component).to be_valid
       end
 
-      it 'allows skipping phases (draft → final, open → final)' do
-        component.update!(comment_phase: 'draft')
-        component.comment_phase = 'final'
+      it 'allows open → closed+finalized in a single update' do
+        component.update!(comment_phase: 'open')
+        component.comment_phase = 'closed'
+        component.closed_reason = 'finalized'
         expect(component).to be_valid
       end
     end

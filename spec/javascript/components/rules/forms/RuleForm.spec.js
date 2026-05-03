@@ -501,23 +501,6 @@ describe("RuleForm", () => {
       expect(statusGroup.props("ruleLocked")).toBe(true);
     });
 
-    /**
-     * REQUIREMENT (Aaron 2026-04-29):
-     * Adding a comment to an element follows the same activation rules as
-     * field editing — the rule must have a real status set. A rule still
-     * in "Not Yet Determined" is a draft that's not ready for review, so
-     * the comment icon must be disabled until status is set. Locked rules
-     * are also frozen and don't accept new comments.
-     */
-    it("forwards rule.status to first-field RuleFormGroups (drives NYD-disable rule)", () => {
-      wrapper = createWrapper({
-        rule: makeRule({ status: "Not Yet Determined" }),
-        fields: allFieldsDisplayed,
-      });
-      const statusGroup = findGroup(wrapper, "status");
-      expect(statusGroup.props("ruleStatus")).toBe("Not Yet Determined");
-    });
-
     it("re-emits open-composer with the section key when a child group emits it", async () => {
       wrapper = createWrapper({ fields: allFieldsDisplayed });
       const titleGroup = findGroup(wrapper, "title");

@@ -82,13 +82,26 @@ export const DISPLAY_TO_XCCDF_SECTION = Object.freeze(
   Object.fromEntries(Object.entries(SECTION_LABELS).map(([key, label]) => [label, key])),
 );
 
-// Component comment phase → friendly UI label
+// Component comment phase → friendly UI label.
+// Two-state model: 'open' or 'closed'. The closed state may carry a
+// CLOSED_REASON_LABELS value that decorates it ("Closed (Adjudicating)").
 export const COMMENT_PHASE_LABELS = Object.freeze({
-  draft: "Draft",
-  open: "Open for comment",
-  adjudication: "Adjudication",
-  final: "Final",
+  open: "Open",
+  closed: "Closed",
 });
+
+export const CLOSED_REASON_LABELS = Object.freeze({
+  adjudicating: "Adjudicating",
+  finalized: "Finalized",
+});
+
+// Render "Open" / "Closed" / "Closed (Adjudicating)" / "Closed (Finalized)".
+export function commentPhaseStatusText(phase, reason) {
+  const phaseLabel = COMMENT_PHASE_LABELS[phase] || phase;
+  if (phase !== "closed" || !reason) return phaseLabel;
+  const reasonLabel = CLOSED_REASON_LABELS[reason] || reason;
+  return `${phaseLabel} (${reasonLabel})`;
+}
 
 // Helper: render the section label for a possibly-null section value
 export function sectionLabel(section) {

@@ -78,15 +78,14 @@ RSpec.describe 'Components' do
       end
     end
 
-    # Task 22: admin form for the public comment-period lifecycle.
-    # Component model already validates inclusion of comment_phase in
-    # COMMENT_PHASES (draft, open, adjudication, final). The controller
-    # must permit the new params or they get silently filtered out.
+    # The controller must permit the lifecycle params or strong params
+    # filters them out and the model never sees them.
     context 'when updating the comment-phase fieldset' do
-      it 'permits comment_phase and date params' do
+      it 'permits comment_phase, closed_reason, and date params' do
         put "/components/#{component.id}", params: {
           component: {
-            comment_phase: 'open',
+            comment_phase: 'closed',
+            closed_reason: 'adjudicating',
             comment_period_starts_at: '2026-04-29',
             comment_period_ends_at: '2026-05-14'
           }
@@ -94,7 +93,8 @@ RSpec.describe 'Components' do
 
         expect(response).to have_http_status(:success)
         component.reload
-        expect(component.comment_phase).to eq('open')
+        expect(component.comment_phase).to eq('closed')
+        expect(component.closed_reason).to eq('adjudicating')
         expect(component.comment_period_starts_at).not_to be_nil
         expect(component.comment_period_ends_at).not_to be_nil
       end

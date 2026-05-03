@@ -170,15 +170,14 @@ export default {
     ConfirmComponentReleaseMixin,
     SortRulesMixin,
   ],
-  // PR #717 phase enforcement — provide the component's comment_phase
-  // (and a derived `commentsClosed` boolean) to the rule-editor subtree
-  // so SectionCommentIcon can disable the comment affordance when the
-  // window isn't open. Function form keeps reactivity through Vue 2's
-  // non-reactive provide.
+  // Provide the component's comment_phase (and a derived `commentsClosed`
+  // boolean) to the rule-editor subtree so SectionCommentIcon can disable
+  // the comment affordance when the window isn't open. Function form
+  // keeps reactivity through Vue 2's non-reactive provide.
   provide() {
     return {
-      getCommentPhase: () => this.component.comment_phase || "draft",
-      isCommentsClosed: () => (this.component.comment_phase || "draft") !== "open",
+      getCommentPhase: () => this.component.comment_phase || "open",
+      isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
     };
   },
   props: {

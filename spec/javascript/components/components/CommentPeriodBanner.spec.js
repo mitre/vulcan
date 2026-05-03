@@ -4,44 +4,50 @@ import { localVue } from "@test/testHelper";
 import CommentPeriodBanner from "@/components/components/CommentPeriodBanner.vue";
 
 /**
- * REQUIREMENTS (PR #717 — Task 21):
- *
- * The CommentPeriodBanner sits at the top of the Component page so EVERY
- * page visitor — commenter, triager, admin — sees the comment-window
- * lifecycle state immediately. Plain English over jargon.
- *
- * 1. Hidden entirely when phase = "draft" (no public window yet, no need
- *    to broadcast anything).
- * 2. When phase = "open", surfaces "Open for comment" + "N days remaining"
- *    + the pending-triage count if provided. The variant is informational
- *    (info / blue) so it announces, not alarms.
- * 3. When phase = "adjudication", surfaces the "Adjudication" label so
- *    triagers know the window is closed but disposition is pending. The
- *    variant is warning to draw attention to the open work.
- * 4. role="status" makes phase-change announcements audible to assistive
- *    technologies (WCAG 4.1.3).
- * 5. The "Open Comments panel" button emits an event the parent uses to
- *    open the existing slideover (does NOT navigate / reload).
+ * The banner only surfaces when there is a deadline worth surfacing —
+ * an open component with a future end date (countdown), or a closed
+ * component whose recorded end date has already passed (post-deadline
+ * notice). Open-without-end-date and open-with-past-end-date are both
+ * silent; the inline ComponentCommandBar status badge already
+ * communicates "Comments: Open" without consuming banner space.
  */
 describe("CommentPeriodBanner", () => {
-  it("renders nothing when phase is draft", () => {
+  const futureEnds = () => new Date(Date.now() + 16 * 86400000).toISOString();
+  const pastEnds = () => new Date(Date.now() - 3 * 86400000).toISOString();
+
+  it("renders nothing for an open component without an end date", () => {
     const w = mount(CommentPeriodBanner, {
       localVue,
-      propsData: { component: { comment_phase: "draft" } },
+      propsData: { component: { comment_phase: "open" } },
     });
-    // v-if false at the root → vue-test-utils v1 reports the wrapper's
-    // outer HTML as the empty string.
     expect(w.html()).toBe("");
   });
 
-  it("renders 'Open for comment' label and days-remaining when phase is open", () => {
-    const ends = new Date(Date.now() + 16 * 86400000).toISOString();
+  it("renders nothing for an open component whose end date is already in the past", () => {
+    const w = mount(CommentPeriodBanner, {
+      localVue,
+      propsData: {
+        component: { comment_phase: "open", comment_period_ends_at: pastEnds() },
+      },
+    });
+    expect(w.html()).toBe("");
+  });
+
+  it("renders nothing for a closed component with no recorded end date", () => {
+    const w = mount(CommentPeriodBanner, {
+      localVue,
+      propsData: { component: { comment_phase: "closed", closed_reason: "adjudicating" } },
+    });
+    expect(w.html()).toBe("");
+  });
+
+  it("renders the open-with-deadline countdown when end date is in the future", () => {
     const w = mount(CommentPeriodBanner, {
       localVue,
       propsData: {
         component: {
           comment_phase: "open",
-          comment_period_ends_at: ends,
+          comment_period_ends_at: futureEnds(),
           pending_comment_count: 12,
         },
       },
@@ -52,19 +58,27 @@ describe("CommentPeriodBanner", () => {
     expect(w.text()).toMatch(/12 pending/);
   });
 
-  it("renders 'Adjudication' label when phase is adjudication", () => {
+  it("renders the closed-with-past-deadline notice when closed and end date passed", () => {
     const w = mount(CommentPeriodBanner, {
       localVue,
-      propsData: { component: { comment_phase: "adjudication" } },
+      propsData: {
+        component: {
+          comment_phase: "closed",
+          closed_reason: "adjudicating",
+          comment_period_ends_at: pastEnds(),
+        },
+      },
       stubs: ["b-alert"],
     });
-    expect(w.text()).toContain("Adjudication");
+    expect(w.text()).toMatch(/Comments closed on/);
   });
 
-  it("uses role=status for screen-reader announcement", () => {
+  it("uses role=status for screen-reader announcement when rendered", () => {
     const w = mount(CommentPeriodBanner, {
       localVue,
-      propsData: { component: { comment_phase: "open" } },
+      propsData: {
+        component: { comment_phase: "open", comment_period_ends_at: futureEnds() },
+      },
     });
     expect(w.find('[role="status"]').exists()).toBe(true);
   });
@@ -73,7 +87,11 @@ describe("CommentPeriodBanner", () => {
     const w = mount(CommentPeriodBanner, {
       localVue,
       propsData: {
-        component: { comment_phase: "open", pending_comment_count: 5 },
+        component: {
+          comment_phase: "open",
+          comment_period_ends_at: futureEnds(),
+          pending_comment_count: 5,
+        },
       },
     });
     const btn = w.find('[data-testid="banner-open-comments-panel"]');
@@ -82,18 +100,12 @@ describe("CommentPeriodBanner", () => {
     expect(w.emitted("open-comments-panel")).toBeTruthy();
   });
 
-  it("omits the days-remaining suffix when comment_period_ends_at is missing", () => {
-    const w = mount(CommentPeriodBanner, {
-      localVue,
-      propsData: { component: { comment_phase: "open" } },
-    });
-    expect(w.text()).not.toMatch(/days remaining/);
-  });
-
   it("omits the pending-count line when pending_comment_count is missing", () => {
     const w = mount(CommentPeriodBanner, {
       localVue,
-      propsData: { component: { comment_phase: "open" } },
+      propsData: {
+        component: { comment_phase: "open", comment_period_ends_at: futureEnds() },
+      },
     });
     expect(w.text()).not.toMatch(/pending comments/);
   });

@@ -64,8 +64,10 @@ module Export
           admin_name: @component.admin_name,
           admin_email: @component.admin_email,
           advanced_fields: @component.advanced_fields,
-          # PR #717 — public-comment-review lifecycle on the component
+          # closed_reason is 'adjudicating' / 'finalized' when closed,
+          # null when open.
           comment_phase: @component.comment_phase,
+          closed_reason: @component.closed_reason,
           comment_period_starts_at: @component.comment_period_starts_at&.iso8601,
           comment_period_ends_at: @component.comment_period_ends_at&.iso8601,
           created_at: @component.created_at&.iso8601,
