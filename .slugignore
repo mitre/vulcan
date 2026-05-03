@@ -9,8 +9,11 @@
 # Test suite
 /spec
 
-# Documentation (VitePress site, not served by Rails)
-/docs
+# /docs is intentionally NOT excluded — DisaGuideController reads
+# markdown from docs/disa-process at runtime, so the slug needs it.
+# The rest of docs/ is the VitePress source (~1MB) which is harmless
+# to ship. Build artifacts (docs/.vitepress/cache + dist) and
+# docs/node_modules are gitignored already, so they aren't in the slug.
 
 # Archive (old backups, migration artifacts)
 /archive
