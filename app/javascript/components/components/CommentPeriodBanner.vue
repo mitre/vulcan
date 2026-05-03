@@ -14,9 +14,15 @@
     <template v-if="component.pending_comment_count != null">
       <br />
       {{ component.pending_comment_count }} pending comments awaiting triage
-      <a href="#" class="ml-2" @click.prevent="$emit('open-comments-panel')"
-        >[Open Comments panel →]</a
+      <b-button
+        variant="outline-primary"
+        size="sm"
+        class="ml-2"
+        data-testid="banner-open-comments-panel"
+        @click="$emit('open-comments-panel')"
       >
+        Open Comments panel <b-icon icon="arrow-right-short" />
+      </b-button>
     </template>
   </b-alert>
 </template>

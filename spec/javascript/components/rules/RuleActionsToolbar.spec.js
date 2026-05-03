@@ -9,8 +9,8 @@ import RuleActionsToolbar from "@/components/rules/RuleActionsToolbar.vue";
  * REQUIREMENTS:
  *
  * 1. BUTTON ORDER (left to right, safe → destructive):
- *    Info/Reference: Related, Satisfies, History, Reviews (read-only panels)
- *    Collaboration: Comment, Review (team interaction)
+ *    Info/Reference: Related, Satisfies, History, Comment History (read-only panels)
+ *    Collaboration: Leave a Comment, Change Review Status (team interaction)
  *    Edit: Save, Clone (modify/create data)
  *    Admin: Delete, Lock/Unlock (destructive/restricted)
  *
@@ -18,11 +18,11 @@ import RuleActionsToolbar from "@/components/rules/RuleActionsToolbar.vue";
  *    - Related: Opens RelatedRulesModal (always available)
  *    - Satisfies: Opens satisfies panel (always available)
  *    - History: Opens rule history panel (always available)
- *    - Reviews: Opens rule reviews panel (always available)
+ *    - Comment History: Opens rule reviews panel (always available)
  *
  * 3. ACTION BUTTONS:
- *    - Comment: Always available
- *    - Review: Disabled in read-only mode
+ *    - Leave a Comment: Always available
+ *    - Change Review Status: Disabled in read-only mode
  *    - Save: Disabled when locked/under review or read-only
  *    - Clone: Disabled in read-only mode
  *    - Delete: Admin only, disabled when locked/under review
@@ -76,13 +76,13 @@ describe("RuleActionsToolbar", () => {
       const buttons = wrapper.findAll("button, .comment-modal-stub");
       const buttonTexts = buttons.wrappers.map((b) => b.text().trim());
 
-      // Expected order: Related, Satisfies, History, Reviews, Comment, Change Review Status, Save, Clone, Delete, Lock
+      // Expected order: Related, Satisfies, History, Comment History, Leave a Comment, Change Review Status, Save, Clone, Delete, Lock
       const expectedOrder = [
         "Related",
         "Satisfies",
         "History",
-        "Reviews",
-        "Comment",
+        "Comment History",
+        "Leave a Comment",
         "Change Review Status",
         "Save",
         "Clone",
@@ -115,9 +115,9 @@ describe("RuleActionsToolbar", () => {
       expect(wrapper.text()).toContain("History");
     });
 
-    it("shows Reviews button", () => {
+    it("shows Comment History button", () => {
       wrapper = createWrapper();
-      expect(wrapper.text()).toContain("Reviews");
+      expect(wrapper.text()).toContain("Comment History");
     });
 
     it("emits open-related-modal when Related clicked", async () => {
@@ -143,9 +143,11 @@ describe("RuleActionsToolbar", () => {
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-history"]);
     });
 
-    it('emits toggle-panel with "rule-reviews" when Reviews clicked', async () => {
+    it('emits toggle-panel with "rule-reviews" when Comment History clicked', async () => {
       wrapper = createWrapper();
-      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Reviews"));
+      const btn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Comment History"));
       await btn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-reviews"]);
@@ -164,7 +166,7 @@ describe("RuleActionsToolbar", () => {
         .wrappers.find((b) => b.text().includes("History"));
       const reviewsBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("Reviews"));
+        .wrappers.find((b) => b.text().includes("Comment History"));
 
       expect(relatedBtn.attributes("disabled")).toBeUndefined();
       expect(satisfiesBtn.attributes("disabled")).toBeUndefined();
@@ -182,11 +184,7 @@ describe("RuleActionsToolbar", () => {
       // with a plain b-button that opens the new CommentComposerModal via
       // the open-composer event (default section: null = "(general)").
       const findCommentButton = (w) =>
-        w
-          .findAll("button")
-          .wrappers.find(
-            (b) => b.text().trim() === "Comment" || /^Comment\b/.test(b.text().trim()),
-          );
+        w.findAll("button").wrappers.find((b) => b.text().includes("Leave a Comment"));
 
       it("is always visible", () => {
         wrapper = createWrapper();

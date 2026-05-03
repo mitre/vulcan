@@ -142,7 +142,12 @@ export default {
       }
 
       try {
-        await axios.post(`/rules/${this.ruleId}/reviews`, payload);
+        const res = await axios.post(`/rules/${this.ruleId}/reviews`, payload);
+        // PR-717 review remediation — confirm to the commenter that the
+        // post landed. ReviewsController#create returns the canonical
+        // toast object; AlertMixin renders it identically to the other
+        // success-toast endpoints in the app.
+        this.alertOrNotifyResponse(res);
         this.$emit("posted");
         this.$bvModal.hide("comment-composer-modal");
         this.commentText = "";

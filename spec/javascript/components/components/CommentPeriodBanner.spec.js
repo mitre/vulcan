@@ -20,8 +20,8 @@ import CommentPeriodBanner from "@/components/components/CommentPeriodBanner.vue
  *    variant is warning to draw attention to the open work.
  * 4. role="status" makes phase-change announcements audible to assistive
  *    technologies (WCAG 4.1.3).
- * 5. The "Open Comments panel" link emits an event the parent uses to open
- *    the existing slideover (does NOT navigate / reload).
+ * 5. The "Open Comments panel" button emits an event the parent uses to
+ *    open the existing slideover (does NOT navigate / reload).
  */
 describe("CommentPeriodBanner", () => {
   it("renders nothing when phase is draft", () => {
@@ -69,16 +69,16 @@ describe("CommentPeriodBanner", () => {
     expect(w.find('[role="status"]').exists()).toBe(true);
   });
 
-  it("emits open-comments-panel when the [Open Comments panel →] link is clicked", async () => {
+  it("emits open-comments-panel when the Open Comments panel button is clicked", async () => {
     const w = mount(CommentPeriodBanner, {
       localVue,
       propsData: {
         component: { comment_phase: "open", pending_comment_count: 5 },
       },
     });
-    const link = w.findAll("a").wrappers.find((a) => a.text().includes("Open Comments panel"));
-    expect(link).toBeDefined();
-    await link.trigger("click");
+    const btn = w.find('[data-testid="banner-open-comments-panel"]');
+    expect(btn.exists()).toBe(true);
+    await btn.trigger("click");
     expect(w.emitted("open-comments-panel")).toBeTruthy();
   });
 

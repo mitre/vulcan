@@ -22,7 +22,7 @@
           size="sm"
           @click="$emit('toggle-panel', 'rule-reviews')"
         >
-          <b-icon icon="chat-left-text" /> Reviews
+          <b-icon icon="chat-quote" /> Comment History
         </b-button>
         <!-- General Comment — opens the same CommentComposerModal as the
              per-section icons, with no section pre-selected (defaults to
@@ -36,7 +36,7 @@
           :class="{ 'opacity-65': commentButtonDisabled }"
           @click="$emit('open-composer', null)"
         >
-          <b-icon icon="chat-left-text" /> Comment
+          <b-icon icon="pencil-square" /> Leave a Comment
         </b-button>
         <b-button variant="outline-info" size="sm" href="/disa-guide" target="_blank">
           <b-icon icon="question-circle" /> DISA Guide

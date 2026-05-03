@@ -273,6 +273,29 @@ describe("CommentComposerModal", () => {
     expect(w.emitted("posted")).toBeTruthy();
   });
 
+  it("surfaces the success toast via AlertMixin on a successful post", async () => {
+    const successResponse = {
+      data: {
+        toast: { title: "Comment posted.", message: "", variant: "success" },
+      },
+    };
+    axios.post.mockResolvedValue(successResponse);
+    const w = mount(CommentComposerModal, {
+      localVue,
+      propsData: baseProps,
+      stubs: visibleModalStub,
+    });
+    vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+    const alertSpy = vi.spyOn(w.vm, "alertOrNotifyResponse").mockImplementation(() => {});
+
+    w.vm.commentText = "my new comment";
+    await w.vm.submit();
+    await flushPromises(w);
+
+    expect(alertSpy).toHaveBeenCalledWith(successResponse);
+    expect(w.emitted("posted")).toBeTruthy();
+  });
+
   it("posts with responding_to_review_id when in reply mode", async () => {
     axios.post.mockResolvedValue({ data: { toast: "ok" } });
     const w = mount(CommentComposerModal, {
