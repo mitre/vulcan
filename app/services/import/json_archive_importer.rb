@@ -19,18 +19,34 @@ module Import
   #   include_reviews: true — import review history (default: true)
   class JsonArchiveImporter
     def initialize(zip_file:, project:, dry_run: false, include_reviews: true, include_memberships: false,
-                   component_filter: nil)
+                   component_filter: nil, imported_by: nil)
       @zip_file = zip_file
       @project = project
       @dry_run = dry_run
       @include_reviews = include_reviews
       @include_memberships = include_memberships
       @component_filter = component_filter
+      # PR-717 review remediation .10 — imported_by surfaces on the
+      # Component-level audit row that ReviewBuilder writes per import.
+      # When unset (controllers may not always pass it), the audit row
+      # still records action + archive identifier + external_ids.
+      @imported_by = imported_by
     end
 
     def call
-      result = Result.new
+      # PR-717 review remediation .vb4 — request_uuid producer side. The
+      # importer is a non-HTTP code path that creates many audited rows
+      # (Component + Rules + Reviews + AdditionalQuestions/Answers + the
+      # ReviewBuilder import-event audit). Without this scope each row
+      # would land with a distinct SecureRandom.uuid (via the .14r
+      # consumer fallback), so AuditEventBundle.bundled_with(audit_id)
+      # could not reconstruct the import as one logical operation.
+      VulcanAudit.with_correlation_scope { perform(Result.new) }
+    end
 
+    private
+
+    def perform(result)
       archive = parse_archive(result)
       return result unless result.success?
 
@@ -49,13 +65,30 @@ module Import
       result
     end
 
-    private
-
     def parse_archive(result)
       archive = { components: [], srg_files: {} }
 
       begin
         Zip::File.open_buffer(read_file_data) do |zip|
+          # PR-717 review remediation .lsj — zip-bomb decompression
+          # budget. Pre-fix, rubyzip's per-entry validation could pass
+          # while the aggregate uncompressed size still expanded to
+          # multiple GB (50-100 MB archive → 5+ GB on disk before OOM).
+          # Sum entry.size (uncompressed bytes from the central directory
+          # — no actual decompression) and reject before parsing if over
+          # budget. Configurable via Settings.import.json_archive_size_budget_mb
+          # (default 500 MB).
+          budget_bytes = Settings.import.json_archive_size_budget_mb * 1.megabyte
+          total = zip.entries.sum(&:size)
+          if total > budget_bytes
+            result.add_error(
+              "Archive uncompressed size (#{(total / 1.megabyte.to_f).round(1)} MB) " \
+              "exceeds decompression budget (#{Settings.import.json_archive_size_budget_mb} MB). " \
+              'Refusing to decompress.'
+            )
+            return archive
+          end
+
           manifest_entry = zip.find_entry('manifest.json')
           unless manifest_entry
             result.add_error('Invalid backup archive: manifest.json not found')
@@ -176,13 +209,13 @@ module Import
         import_srgs(archive, result)
         return unless result.success?
 
-        import_components(archive, result)
+        import_components(archive, result, manifest: archive[:manifest])
 
         raise ActiveRecord::Rollback unless result.success?
       end
     end
 
-    def import_components(archive, result)
+    def import_components(archive, result, manifest: nil)
       total_rules = 0
       total_satisfactions = 0
       total_reviews = 0
@@ -229,7 +262,8 @@ module Import
         next unless @include_reviews
 
         review_count = JsonArchive::ReviewBuilder.new(
-          comp_data[:reviews], rule_id_map, result
+          comp_data[:reviews], rule_id_map, result,
+          component: component, manifest: manifest, imported_by: @imported_by
         ).build_all
         total_reviews += review_count
       end

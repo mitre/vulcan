@@ -15,6 +15,13 @@ if defined?(ParallelTests)
 
       puts 'Syncing parallel test databases...'
       Rake::Task['parallel:prepare'].invoke
+      # parallel:prepare's internals call ActiveRecord::Base.establish_connection
+      # against the test env to set up parallel test DBs. When it returns, AR is
+      # left pointed at the test connection. If a subsequent in-process task
+      # (e.g. db:seed during a db:reset chain) then tries to query against the
+      # dev connection, it fails with ConnectionNotDefined. Restore the original
+      # env's connection so the rest of the chain works.
+      ActiveRecord::Base.establish_connection(Rails.env.to_sym)
       puts 'Parallel test databases synced.'
     end
   end

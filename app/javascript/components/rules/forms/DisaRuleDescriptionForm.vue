@@ -1,14 +1,15 @@
 <template>
   <div v-if="description._destroy != true">
-    <!-- documentable -->
+    <!-- documentable — first field of the "DISA Metadata" section, owns the SectionCommentIcon -->
     <RuleFormGroup
-      v-bind="formGroupProps"
+      v-bind="formGroupPropsWithCommentIcon"
       field-name="documentable"
       label="Documentable"
       checkbox-mode
       id-prefix="ruleEditor-disa_rule_description"
       :tooltip="tooltips['documentable']"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
+      @open-composer="bubbleOpenComposer"
     >
       <template #default="{ isDisabled }">
         <b-form-checkbox
@@ -34,9 +35,9 @@
       </template>
     </RuleFormGroup>
 
-    <!-- vuln_discussion -->
+    <!-- vuln_discussion — first field of the "Vulnerability Discussion" section, owns the SectionCommentIcon -->
     <RuleFormGroup
-      v-bind="formGroupProps"
+      v-bind="formGroupPropsWithCommentIcon"
       field-name="vuln_discussion"
       label="Vulnerability Discussion"
       id-prefix="ruleEditor-disa_rule_description"
@@ -45,6 +46,7 @@
         () => fields.displayed.includes('vuln_discussion') || rule.status == 'Not Yet Determined'
       "
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
+      @open-composer="bubbleOpenComposer"
     >
       <template #default="{ inputId, isDisabled }">
         <MarkdownTextarea
@@ -441,12 +443,13 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 export default {
   name: "DisaRuleDescriptionForm",
   components: { MarkdownTextarea, RuleFormGroup },
-  mixins: [FormFeedbackMixinVue],
+  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {

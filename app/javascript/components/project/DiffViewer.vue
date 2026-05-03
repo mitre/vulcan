@@ -40,68 +40,33 @@
           <b-input-group-prepend>
             <b-input-group-text class="rounded-0">Base (older)</b-input-group-text>
           </b-input-group-prepend>
-          <b-form-select
+          <FilterDropdown
             id="baseComponent"
-            v-model="baseComponent"
-            class="form-select-sm"
-            @change="updateCompareList"
-          >
-            <option
-              v-for="(selectOption, indexOpt) in project.components"
-              :key="indexOpt"
-              :value="selectOption"
-            >
-              {{ selectOption.name }}
-              {{
-                selectOption.version || selectOption.release
-                  ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
-                  : ""
-              }}
-            </option>
-          </b-form-select>
+            v-model="baseComponentId"
+            :options="componentOptions"
+            aria-label="Base component for diff"
+            @input="updateCompareList"
+          />
           <b-input-group-prepend>
             <b-input-group-text class="rounded-0">Compare (newer)</b-input-group-text>
           </b-input-group-prepend>
-          <b-form-select
+          <FilterDropdown
             id="diffComponent"
-            v-model="diffComponent"
-            class="form-select-sm"
-            :disabled="!baseComponent"
-            @change="compareComponents"
-          >
-            <option
-              v-for="(selectOption, indexOpt) in compareList"
-              :key="indexOpt"
-              :value="selectOption"
-            >
-              {{ selectOption.name }}
-              {{
-                selectOption.version || selectOption.release
-                  ? `(${[
-                      selectOption.version ? `Version ${selectOption.version}` : "",
-                      selectOption.release ? `Release ${selectOption.release}` : "",
-                    ].join(", ")})`
-                  : ""
-              }}
-              {{ selectOption.project_name && `- ${selectOption.project_name}` }}
-            </option>
-          </b-form-select>
+            v-model="diffComponentId"
+            :options="compareListOptions"
+            aria-label="Compare component for diff"
+            @input="compareComponents"
+          />
           <b-input-group-prepend>
             <b-input-group-text class="rounded-0">Theme</b-input-group-text>
           </b-input-group-prepend>
-          <b-form-select
+          <FilterDropdown
             id="diffTheme"
-            class="form-select-sm"
             :value="monacoEditorOptions.theme"
-            @change="updateTheme"
-          >
-            <option value="vs">Visual Studio</option>
-            <option value="vs-dark">Visual Studio Dark</option>
-            <option value="hc-black">High Contrast Dark</option>
-          </b-form-select>
+            :options="themeOptions"
+            aria-label="Diff editor theme"
+            @input="updateTheme"
+          />
           <b-button
             size="sm"
             @click="updateSettings('renderSideBySide', !monacoEditorOptions.renderSideBySide)"
@@ -130,11 +95,13 @@ import _ from "lodash";
 import axios from "axios";
 import MonacoEditor from "vue-monaco";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
   name: "DiffViewer",
   components: {
     MonacoEditor,
+    FilterDropdown,
   },
   mixins: [AlertMixinVue],
   props: {
@@ -155,8 +122,8 @@ export default {
         tabSize: 2,
         theme: "vs-dark",
       },
-      baseComponent: null,
-      diffComponent: null,
+      baseComponentId: null,
+      diffComponentId: null,
       filters: {
         rcFilterChecked: true, // Rule Changed
       },
@@ -176,6 +143,35 @@ export default {
       return {
         "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
       };
+    },
+    baseComponent() {
+      if (this.baseComponentId == null) return null;
+      return this.project.components.find((c) => c.id === this.baseComponentId) || null;
+    },
+    diffComponent() {
+      if (this.diffComponentId == null) return null;
+      return this.compareList.find((c) => c.id === this.diffComponentId) || null;
+    },
+    componentOptions() {
+      return this.project.components.map((c) => ({
+        value: c.id,
+        text: this.componentDisplayLabel(c),
+      }));
+    },
+    compareListOptions() {
+      return this.compareList.map((c) => ({
+        value: c.id,
+        text: c.project_name
+          ? `${this.componentDisplayLabel(c)} - ${c.project_name}`
+          : this.componentDisplayLabel(c),
+      }));
+    },
+    themeOptions() {
+      return [
+        { value: "vs", text: "Visual Studio" },
+        { value: "vs-dark", text: "Visual Studio Dark" },
+        { value: "hc-black", text: "High Contrast Dark" },
+      ];
     },
   },
   watch: {
@@ -280,6 +276,13 @@ export default {
       this.monacoEditorOptions.theme = value;
       localStorage.setItem("monacoEditorTheme", value);
       this.editorKey += 1;
+    },
+    componentDisplayLabel(c) {
+      const versionParts = [];
+      if (c.version) versionParts.push(`Version ${c.version}`);
+      if (c.release) versionParts.push(`Release ${c.release}`);
+      const suffix = versionParts.length ? ` (${versionParts.join(", ")})` : "";
+      return `${c.name}${suffix}`;
     },
     handleScroll: function () {
       this.$nextTick(() => {

@@ -256,8 +256,11 @@ RSpec.describe 'Rules' do
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
-        expect(json['toast']).to include('Warning')
-        expect(json['toast']).to include('locked')
+        # PR-717 .19d — toast canonicalized; warnings live in message array.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['variant']).to eq('warning')
+        expect(json['toast']['message'].join).to include('Warning')
+        expect(json['toast']['message'].join).to include('locked')
       end
 
       it 'soft-deletes a rule under review with warning' do
@@ -266,8 +269,10 @@ RSpec.describe 'Rules' do
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
-        expect(json['toast']).to include('Warning')
-        expect(json['toast']).to include('under review')
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['variant']).to eq('warning')
+        expect(json['toast']['message'].join).to include('Warning')
+        expect(json['toast']['message'].join).to include('under review')
       end
 
       it 'cleans up associated records' do
@@ -286,6 +291,30 @@ RSpec.describe 'Rules' do
 
         expect(Rule.find_by(id: rule_id)).to be_nil
         expect(Rule.unscoped.find(rule_id)).not_to be_nil
+      end
+
+      it 'rolls back the soft-delete if a dependent destroy raises (no partial writes)' do
+        # Pre-fix the controller did update_columns(deleted_at:) FIRST and then
+        # destroy_all on associations one-by-one with no transaction. A failure
+        # in any destroy_all left the rule soft-deleted with orphan dependents.
+        rule_id = rule.id
+        Review.create!(user: user, rule: rule, action: 'comment', comment: 'test')
+        review_count_before = Review.where(rule_id: rule_id).count
+        expect(review_count_before).to eq(1)
+
+        # Force Review#destroy to raise — destroy_all iterates records and calls
+        # destroy on each, so this triggers a failure mid-cleanup.
+        allow_any_instance_of(Review).to receive(:destroy).and_raise(
+          ActiveRecord::StatementInvalid, 'forced'
+        )
+
+        delete "/rules/#{rule_id}"
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        # Critical: rule must NOT be soft-deleted (deleted_at stays nil)
+        expect(Rule.unscoped.find(rule_id).deleted_at).to be_nil
+        # And reviews stay intact
+        expect(Review.where(rule_id: rule_id).count).to eq(review_count_before)
       end
     end
 

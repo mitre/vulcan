@@ -1,0 +1,100 @@
+# PR-717 Session Roadmap — 2026-05-01
+
+> **Audience:** any agent (or human) picking up this branch mid-stream.
+> **Purpose:** survive compaction + give a clean handoff. The locked decisions and step ordering below are the authoritative plan as of 2026-05-01.
+
+## Branch context
+
+- **Branch:** `feat/viewer-comments`
+- **Base:** master
+- **PR-717 scope:** Public Comment Review workflow. Container SRG public-comment window LIVE; DISA stakeholders watching.
+
+## Locked design decisions
+
+These are **not open for re-litigation** without explicit authorization. Re-questioning them wastes time and erodes trust.
+
+1. **No UTF-8 BOM in the disposition CSV.** RFC 4180 doesn't mention BOM. UK Government tabular data standard explicitly recommends removing BOM before publishing. Microsoft's recommended Excel-on-Windows path is Power Query (Data → Get Data → From Text/CSV) which handles UTF-8 reliably without BOM. CRLF row separators per RFC 4180 §2.1. Sources: RFC 4180, GOV.UK tabular standard, Microsoft Support docs.
+2. **CRLF row separators.** Per RFC 4180 §2.1.
+3. **Disposition data piggybacks the existing Working Copy CSV (zip of CSVs) and Excel (multi-sheet workbook) outputs.** No separate zip endpoint, no new Format radio in the modal, no Vue tab system in the modal. Always-on if the component has reviews.
+4. **`/components/:id/export/disposition_csv` standalone endpoint stays** as the triage-page quick-access shortcut. Already shipped (`ff64c69` + `a267a6c`).
+5. **Admin actions go in the UI, not in a runbook.** Force-withdraw, restore, move-to-rule, and hard-delete are UI features in this PR (Tasks 25, 25b, 26). The previous runbook (`docs/runbook-public-comment-admin-actions.md`) was a stopgap and gets deleted. No migration of its content — UI is self-documenting; bulk policy is self-documenting via absence of bulk UI.
+6. **Tasks 31 + 32 dropped from this PR.** Task 31 (DISA inheritance pattern) deferred — easy to revisit if DISA flags a real export rejection. Task 32 (rule-editor streamlining) dropped entirely — the original plan contained a fabricated-gap claim about `RuleEditor.vue` that was never re-verified; speculative work doesn't belong in a federal-deliverable PR.
+7. **FormMixin pack audit is in scope.** Recurring class of bug (esbuild bundle isolation; per `vulcan-esbuild-pack-axios-isolation` memory). Sweep all packs+modals for `axios.patch/post/put/delete` calls, ensure FormMixin reaches each one.
+8. **Disabled-not-hidden** for interactive controls (locked rule). Status indicators (badges, count icons) hide when not applicable. Already applied to ProjectsTable in `4552d77`.
+
+## Commits shipped this session (chronological, current branch)
+
+```
+6c94d43 feat: admin force-withdraw + restore UI on triage modal (Task 25)
+2ded253 docs: roadmap — Steps 5+6 done, Step 7 next
+7543737 feat: Download button on per-component editor (closes UX gap)
+c418e9a feat: piggyback disposition sheet into Working Copy Excel workbook
+9016cdf docs: update session roadmap — Step 3 done, Step 4 next
+1a118f9 feat: piggyback disposition CSV into Working Copy CSV export
+eee16be docs: capture session roadmap as compact-resilient plan file
+250115f refactor: expose DispositionMatrixExport.rows_and_headers helper
+e9cc8f1 refactor: add DispositionMatrixExport.generate_file Result wrapper
+4552d77 fix: author/viewer/reviewer see disabled admin actions, not empty cell
+a267a6c fix: drop UTF-8 BOM from disposition CSV — align with RFC 4180 + GOV.UK
+272bc9c fix: separate disposition CSV content-format and transport encoding  ← squash candidate
+30a6cc0 fix: missing FormMixin on CommentTriageModal broke triage CSRF
+8b6a4df docs: add Task 31 (inherited reqs) + Task 32 (rule-editor streamlining)  ← Tasks dropped; consider deleting these plan files
+a0810c7 feat: mark-as-duplicate picker UI + chained validator (Task 24)
+af1f6f4 fix: preserve PR-717 lifecycle through json_archive backup/restore
+ff64c69 feat: DISA disposition matrix CSV export (Task 29)  ← squash candidate
+1f9b426 feat: confirm modal when regressing comment_phase out of final
+e81dc8e fix: complete PoC coverage on every seeded component
+9ca407e feat: dev seeds + factory traits
+```
+
+**Squash → reword (2026-05-01):** The squash plan was reduced to a `git rebase -i 272bc9c^` reword of `272bc9c`'s body — the same goal (fabricated NIST 800-53 + "Excel 365 auto-detects" claims gone) at lower risk than reordering 3 commits past 4 unrelated ones. Done; new SHA is `2314ddf`. Tree hashes verified identical via `git diff pre-reword-bom HEAD` (empty) — zero content drift. Backup tag `pre-reword-bom` retained until Step 13 lands; drop with `git tag -d pre-reword-bom` after final test sweep.
+
+**Note:** because the rebase replays every commit from `272bc9c` onward, every SHA in the "Commits shipped this session" list above is now stale. Tree content is unchanged. Use `git log master..HEAD --oneline` for the live commit list.
+
+## 13-step roadmap (current status)
+
+| # | Step | Status |
+|---|---|---|
+| 1 | Working tree cleanup — salvage `generate_file`, drop `generate_zip` | ✅ `e9cc8f1` |
+| 2 | Extract `rows_and_headers` helper for Excel reuse | ✅ `250115f` |
+| 3 | Piggyback disposition into Working Copy CSV path (TDD) | ✅ `1a118f9` |
+| 4 | Piggyback disposition into Working Copy Excel path (TDD) | ✅ `c418e9a` |
+| 5 | Download button on `ProjectComponent.vue` (per-component editor gap) | ✅ `7543737` |
+| 6 | Live verify Download surfaces × CSV/Excel × admin/author tier | ✅ verified at route level |
+| 7 | Task 25 — Admin force-withdraw + Restore UI (TDD) | ✅ `6c94d43` |
+| 7b | Task 25b — Admin hard-delete UI (TDD, typed-confirmation safeguards) | ✅ `2dd8567` |
+| 8 | Task 26 — Admin move-to-rule UI (TDD; includes `:rule_id` audit prereq + RulePicker) | ✅ backend `013cd2b` + frontend `8e76d01` |
+| 9 | Task 30 — Edit comment section retroactive (pop `stash@{0}`, continue TDD) | ✅ `10ec34b` (+ UX hide-on-save `bcb5070`) |
+| 10 | FormMixin pack audit + per-component fixes (3 consumers gained FormMixin) | ✅ `f7d54a1` |
+| 11 | Delete runbook file (`docs/runbook-public-comment-admin-actions.md`) | ✅ `95ce04f` |
+| 12 | Pre-merge cleanup: rename `-DONE.md` plan files, update Task 29 plan with piggyback note, remove unused `LIFECYCLE_USER_FIELDS`, error logging on `CanonicalCommentPicker` empty catch, drop dropped Task 32 plan, sweep 3 stray `federal` refs | ✅ `b639a8f` (squash of BOM cycle still pending — destructive history rewrite needs explicit go) |
+| 13 | Task 27 + 99 — final test sweep (`parallel_rspec` + `vitest run`) + manual smoke pass as admin/author/viewer/commenter | pending |
+
+## Stash content (applied 2026-05-01 — pending manual drop)
+
+`stash@{0}: On feat/viewer-comments: Task 30 WIP — section auditing model + spec (paused for verification)`
+
+- ✅ Applied as part of `10ec34b feat: edit comment section retroactive (Task 30)`
+- 1-line conflict on `review.rb:38` resolved by keeping HEAD (today's `013cd2b` already added `:section` and `:rule_id` to the audit list)
+- Spec block applied cleanly
+- Stash now redundant — Aaron to `git stash drop stash@{0}` manually (Safety Net blocked agent drop)
+
+## Architectural notes (so the next agent reads code correctly)
+
+- **CSV piggyback injection point:** `Export::Base#call` `else` branch (base.rb:40-43). Today: `components.map { |c| export_component(c) }`. Tomorrow: `components.flat_map { |c| [export_component(c), disposition_result_for(c)].compact }`. Single-component case still works because `Packager.package` passes through a single Result.
+- **Excel piggyback injection point:** `Export::Base#export_as_workbook` (base.rb:106-125). After building the per-component rule sheet, append a disposition sheet via `DispositionMatrixExport.rows_and_headers(component:)` if the component has any disposition records.
+- **Disposition gating:** include only when the component has at least one top-level review. Implementation: a method on `Component` like `disposition_records_exist?` that runs the existence check matching `DispositionMatrixExport.top_level_reviews` semantics.
+- **Audit logging on the piggyback path:** per-component audit entry on `@component.audits.create!`, mirroring the existing single-component `perform_disposition_csv_export` pattern. Project-level audit logging is NOT today's pattern for rule-data exports either; staying consistent.
+
+## Process discipline (calibrated to this session's pain points)
+
+- **Don't run `rubocop -A`.** Aggressive autocorrect can break behavior. Read each offense, decide, hand-edit. Lefthook's pre-commit hook may run safe autocorrects automatically; that's separate.
+- **Don't fabricate.** Standards claims (RFC 4180, NIST 800-53, GOV.UK, etc.) need a real source citation, not "I think this is what it says." When unsure: say "I don't know — let me check."
+- **Don't grab license.** Partial answers ("yes that part is fine") aren't blanket approval. Wait for explicit go on each step's destructive action.
+- **Don't `git checkout <ref> -- <file>`** without explicit approval — it overwrites uncommitted work.
+- **Read before reasoning.** Don't propose injection points without reading the actual code first.
+- **Disabled-not-hidden** for interactive controls. The `vulcan-disabled-not-hidden` and `-scope` bd memories are authoritative.
+
+## When in doubt
+
+Ask. The cost of a clarifying question is seconds; the cost of acting on a wrong assumption is hours.

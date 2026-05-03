@@ -4,12 +4,12 @@
       <b-input-group-prepend>
         <b-input-group-text class="rounded-0">Component Name</b-input-group-text>
       </b-input-group-prepend>
-      <b-form-select
+      <FilterDropdown
         id="componentName"
         v-model="componentName"
-        class="form-select-sm"
-        :options="uniqueComponentNames"
-        @change="fetchRevisionHistory"
+        :options="componentNameOptions"
+        aria-label="Select component for revision history"
+        @input="fetchRevisionHistory"
       />
     </b-input-group>
     <div v-if="loading" class="mt-3">
@@ -57,10 +57,11 @@ import _ from "lodash";
 import axios from "axios";
 import MonacoEditor from "vue-monaco";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
   name: "RevisionHistory",
-  components: {},
+  components: { FilterDropdown },
   mixins: [AlertMixinVue],
   props: {
     project: {
@@ -78,6 +79,11 @@ export default {
       revisionHistory: [],
       loading: false,
     };
+  },
+  computed: {
+    componentNameOptions() {
+      return this.uniqueComponentNames.map((name) => ({ value: name, text: name }));
+    },
   },
   methods: {
     fetchRevisionHistory: function () {

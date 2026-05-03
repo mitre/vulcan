@@ -175,7 +175,7 @@ describe("ComponentCommandBar", () => {
       expect(wrapper.text()).toContain("Details");
       expect(wrapper.text()).toContain("Metadata");
       expect(wrapper.text()).toContain("Questions");
-      // Note: "History" and "Reviews" appear twice (component + rule panels)
+      // Note: "History" and "Triage" appear twice (component + rule panels)
       // We verify them separately in the count test
     });
 
@@ -230,6 +230,61 @@ describe("ComponentCommandBar", () => {
       await questionsBtn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel").some((e) => e[0] === "questions")).toBe(true);
+    });
+
+    // The Comments affordance navigates to the full-page
+    // /components/:id/triage view (the comp-reviews slideover was retired
+    // in favor of the wider, sortable, deep-linkable /triage route). The
+    // button doubles as the always-visible inline comment-period status
+    // indicator via the badge inside it.
+    describe("Comments affordance + inline status badge", () => {
+      const findCommentsAffordance = (w) => w.find('[data-testid="component-commandbar-comments"]');
+
+      it("renders a Comments link pointing at /components/:id/triage", () => {
+        wrapper = createWrapper();
+        const link = findCommentsAffordance(wrapper);
+        expect(link.exists()).toBe(true);
+        expect(link.attributes("href")).toBe("/components/41/triage");
+      });
+
+      it("does NOT toggle a comp-reviews panel", async () => {
+        wrapper = createWrapper();
+        const link = findCommentsAffordance(wrapper);
+        expect(link.element.tagName.toLowerCase()).toBe("a");
+        const emissions = wrapper.emitted("toggle-panel") || [];
+        expect(emissions.flat()).not.toContain("comp-reviews");
+      });
+
+      it("shows 'Open' status badge when component is open", () => {
+        wrapper = createWrapper({
+          component: { ...defaultProps.component, comment_phase: "open" },
+        });
+        expect(findCommentsAffordance(wrapper).text()).toContain("Open");
+      });
+
+      it("shows 'Closed (Adjudicating)' status badge when closed with reason", () => {
+        wrapper = createWrapper({
+          component: {
+            ...defaultProps.component,
+            comment_phase: "closed",
+            closed_reason: "adjudicating",
+          },
+        });
+        expect(findCommentsAffordance(wrapper).text()).toContain("Closed (Adjudicating)");
+      });
+
+      it("shows plain 'Closed' status badge when closed without a reason", () => {
+        wrapper = createWrapper({
+          component: {
+            ...defaultProps.component,
+            comment_phase: "closed",
+            closed_reason: null,
+          },
+        });
+        const text = findCommentsAffordance(wrapper).text();
+        expect(text).toContain("Closed");
+        expect(text).not.toContain("(");
+      });
     });
   });
 

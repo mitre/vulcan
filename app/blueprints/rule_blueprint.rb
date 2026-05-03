@@ -15,6 +15,22 @@ class RuleBlueprint < Blueprinter::Base
   fields :rule_id, :title, :version, :status, :rule_severity, :locked,
          :review_requestor_id, :changes_requested
 
+  # PR #717 Task 19 — per-rule comment summary surfaced on the navigator
+  # so triagers can spot rules with pending comments without drilling in.
+  # Computed in-memory against the eager-loaded :reviews association
+  # (set_component already eager-loads rules → :reviews) so this is
+  # zero additional queries. Top-level only — replies don't represent
+  # new pending work.
+  field :comment_summary do |rule, _options|
+    top_level = rule.reviews.select do |r|
+      r.action == 'comment' && r.responding_to_review_id.nil?
+    end
+    {
+      pending: top_level.count { |r| r.triage_status == 'pending' },
+      total: top_level.size
+    }
+  end
+
   # === Navigator view: sidebar list ===
   # Only fields needed for the rule navigator sidebar (sorting, filtering, badges).
   # No heavy text fields, no nested associations.

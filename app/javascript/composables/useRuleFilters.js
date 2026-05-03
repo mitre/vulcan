@@ -21,6 +21,8 @@ export function getDefaultFilters() {
     nestSatisfiedRulesChecked: true,
     showSRGIdChecked: false,
     sortBySRGIdChecked: true,
+    // PR #717 — comment-aware filter
+    pendingCommentsOnly: false,
   };
 }
 

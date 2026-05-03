@@ -77,6 +77,37 @@ RSpec.describe 'Components' do
         expect(component.reload.advanced_fields).to be(true)
       end
     end
+
+    # The controller must permit the lifecycle params or strong params
+    # filters them out and the model never sees them.
+    context 'when updating the comment-phase fieldset' do
+      it 'permits comment_phase, closed_reason, and date params' do
+        put "/components/#{component.id}", params: {
+          component: {
+            comment_phase: 'closed',
+            closed_reason: 'adjudicating',
+            comment_period_starts_at: '2026-04-29',
+            comment_period_ends_at: '2026-05-14'
+          }
+        }
+
+        expect(response).to have_http_status(:success)
+        component.reload
+        expect(component.comment_phase).to eq('closed')
+        expect(component.closed_reason).to eq('adjudicating')
+        expect(component.comment_period_starts_at).not_to be_nil
+        expect(component.comment_period_ends_at).not_to be_nil
+      end
+
+      it 'rejects invalid comment_phase via the model validator' do
+        put "/components/#{component.id}", params: {
+          component: { comment_phase: 'not-a-real-phase' }
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(component.reload.comment_phase).not_to eq('not-a-real-phase')
+      end
+    end
   end
 
   # ==========================================================================
@@ -314,6 +345,46 @@ RSpec.describe 'Components' do
       get '/components/999999/histories',
           headers: { 'Accept' => application_json }
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe 'GET /components/:id/comments' do
+    before do
+      rule = component.rules.first
+      Review.create!(action: 'comment', comment: 'check issue', user: user, rule: rule, section: 'check_content')
+    end
+
+    it 'returns paginated comments + DISA-native triage_status on the wire' do
+      get "/components/#{component.id}/comments", params: { triage_status: 'all' },
+                                                  headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+      body = response.parsed_body
+      expect(body).to have_key('rows')
+      expect(body).to have_key('pagination')
+      expect(body['rows'].first['triage_status']).to eq('pending') # DISA-native, not 'Pending'
+      expect(body['rows'].first['section']).to eq('check_content') # XCCDF key, not "Check"
+    end
+
+    it 'returns 404 for a non-existent component' do
+      get '/components/99999999/comments', headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'filters by section' do
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', section: 'fixtext' },
+          headers: { 'Accept' => application_json }
+      expect(response.parsed_body['rows'].size).to eq(0)
+    end
+
+    # REQUIREMENT: triage rows change moment-to-moment during a public-comment
+    # window — every concurrent triager refresh needs the latest data.
+    # Browsers/proxies must not cache the JSON response, or one triager will
+    # see another's already-handled comment as still-pending and double-act.
+    it 'sets Cache-Control: no-store so browsers/proxies cannot cache the queue' do
+      get "/components/#{component.id}/comments", headers: { 'Accept' => application_json }
+      expect(response.headers['Cache-Control'].to_s).to match(/no-store/i)
     end
   end
 

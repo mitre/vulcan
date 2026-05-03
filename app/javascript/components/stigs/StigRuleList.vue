@@ -54,7 +54,11 @@
         <thead>
           <tr>
             <th class="d-flex">
-              <b-form-select v-model="field" :options="ruleFields" />
+              <FilterDropdown
+                v-model="field"
+                :options="ruleFieldOptions"
+                aria-label="Filter rules by ID type"
+              />
               <b-icon
                 v-if="sortOrder === 'asc'"
                 icon="arrow-down-circle"
@@ -86,8 +90,11 @@
 </template>
 
 <script>
+import FilterDropdown from "../shared/FilterDropdown.vue";
+
 export default {
   name: "StigRuleList",
+  components: { FilterDropdown },
   props: {
     rules: {
       type: Array,
@@ -112,6 +119,9 @@ export default {
     };
   },
   computed: {
+    ruleFieldOptions() {
+      return this.ruleFields.map((f) => ({ value: f, text: f }));
+    },
     filteredRules() {
       if (this.searchText) {
         return this.rules.filter((rule) => {

@@ -52,6 +52,31 @@ class User < ApplicationRecord
   has_many :components, through: :memberships, source: :membership, source_type: 'Component'
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
 
+  # PR-717 review remediation .j4a step D1 — preserve commenter
+  # attribution on the user's reviews before the FK gets nullified.
+  # `prepend: true` ensures this callback fires BEFORE the
+  # `dependent: :nullify` callback Rails registers for the reviews
+  # association (which would otherwise null user_id first and leave
+  # commenter_imported_* empty, destroying the audit/disposition trail).
+  # Mirrors how dependent_destroy + .8 imported_* preserve triager +
+  # adjudicator attribution across cross-instance archive restores.
+  before_destroy :preserve_review_attribution, prepend: true
+
+  def preserve_review_attribution
+    # rubocop:disable Rails/SkipsModelValidations
+    # Intentional: bulk copy from a validated parent (User just passed
+    # destroy validations); per-row Review validation isn't needed since
+    # the values come from the same User instance and we're not changing
+    # any column the validators police. Firing per-row callbacks would
+    # also generate one audit per review, polluting the audit trail with
+    # noise — the User#destroy event itself is the meaningful audit.
+    reviews.update_all(
+      commenter_imported_email: email,
+      commenter_imported_name: name
+    )
+    # rubocop:enable Rails/SkipsModelValidations
+  end
+
   scope :alphabetical, -> { order(:name) }
 
   # Transparent password migration from bcrypt to PBKDF2-SHA512.

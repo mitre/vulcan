@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -146,6 +146,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
     t.integer "release"
     t.string "title"
     t.text "description"
+    t.string "comment_phase", default: "draft", null: false
+    t.datetime "comment_period_starts_at"
+    t.datetime "comment_period_ends_at"
+    t.index ["comment_period_starts_at", "comment_period_ends_at"], name: "index_components_on_comment_period_dates"
+    t.index ["comment_phase"], name: "index_components_on_comment_phase"
     t.index ["component_id"], name: "index_components_on_component_id"
     t.index ["name"], name: "index_components_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["prefix"], name: "index_components_on_prefix_trigram", opclass: :gin_trgm_ops, using: :gin
@@ -243,7 +248,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
     t.text "comment"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "triage_status"
+    t.bigint "triage_set_by_id"
+    t.datetime "triage_set_at"
+    t.datetime "adjudicated_at"
+    t.bigint "adjudicated_by_id"
+    t.bigint "duplicate_of_review_id"
+    t.bigint "responding_to_review_id"
+    t.string "section"
+    t.string "triage_set_by_imported_email"
+    t.string "triage_set_by_imported_name"
+    t.string "adjudicated_by_imported_email"
+    t.string "adjudicated_by_imported_name"
+    t.string "commenter_imported_email"
+    t.string "commenter_imported_name"
+    t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
+    t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
+    t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"
+    t.index ["rule_id", "section", "triage_status"], name: "index_reviews_on_rule_id_and_section_and_triage_status"
     t.index ["rule_id"], name: "index_reviews_on_rule_id"
+    t.index ["triage_status", "created_at"], name: "idx_reviews_top_level_triage_recent", where: "(((action)::text = 'comment'::text) AND (responding_to_review_id IS NULL))"
     t.index ["user_id"], name: "index_reviews_on_user_id"
   end
 
@@ -375,5 +399,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_000002) do
   add_foreign_key "memberships", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
+  add_foreign_key "reviews", "base_rules", column: "rule_id", on_delete: :restrict
+  add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify
+  add_foreign_key "reviews", "reviews", column: "responding_to_review_id", on_delete: :restrict
+  add_foreign_key "reviews", "users", column: "adjudicated_by_id", on_delete: :nullify
+  add_foreign_key "reviews", "users", column: "triage_set_by_id", on_delete: :nullify
+  add_foreign_key "reviews", "users", on_delete: :nullify
   add_foreign_key "search_abbreviations", "users", column: "created_by_id"
 end

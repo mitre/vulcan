@@ -74,6 +74,19 @@ describe("ProjectCommandBar", () => {
     });
   });
 
+  // REQUIREMENT: the project page must surface a clear way into the
+  // public-comment triage queue without forcing the user to drill into
+  // a specific component card. The Triage affordance navigates to the
+  // /projects/:id/triage aggregate view (PR #717).
+  describe("Triage affordance", () => {
+    it("renders a Triage link pointing at /projects/:id/triage", () => {
+      wrapper = createWrapper();
+      const triageLink = wrapper.findAll("a").wrappers.find((a) => a.text().includes("Triage"));
+      expect(triageLink).toBeDefined();
+      expect(triageLink.attributes("href")).toBe("/projects/1/triage");
+    });
+  });
+
   // ==========================================
   // VISIBILITY TOGGLE (Admin only)
   // ==========================================

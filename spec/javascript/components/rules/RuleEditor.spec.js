@@ -116,11 +116,11 @@ describe("RuleEditor", () => {
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-history"]);
     });
 
-    it("forwards toggle-panel event when Reviews button is clicked", async () => {
+    it("forwards toggle-panel event when Comment History button is clicked", async () => {
       wrapper = createWrapper();
       const reviewsBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("Reviews"));
+        .wrappers.find((b) => b.text().includes("Comment History"));
       expect(reviewsBtn).toBeDefined();
       await reviewsBtn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
@@ -444,6 +444,36 @@ describe("RuleEditor", () => {
         const toolbarInTab = tab.findComponent({ name: "RuleActionsToolbar" });
         expect(toolbarInTab.exists()).toBe(false);
       }
+    });
+  });
+
+  // ─── PR #717: open-composer bubble chain ───────────────────
+  // REQUIREMENT: SectionCommentIcon emissions bubble all the way to the
+  // parent (RulesCodeEditorView / ProjectComponent) which mounts the
+  // CommentComposerModal. RuleEditor sits between two emitters
+  // (RuleActionsToolbar's Comment button, UnifiedRuleForm's section icons)
+  // and a single listener.
+  describe("PR #717: bubbles open-composer up", () => {
+    it("re-emits open-composer when RuleActionsToolbar emits it", async () => {
+      wrapper = createWrapper();
+      const toolbar = wrapper.findComponent({ name: "RuleActionsToolbar" });
+      toolbar.vm.$emit("open-composer", null);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.emitted("open-composer")).toBeTruthy();
+      expect(wrapper.emitted("open-composer")[0]).toEqual([null]);
+    });
+
+    it("re-emits open-composer when UnifiedRuleForm emits it (section icon path)", async () => {
+      wrapper = createWrapper();
+      const form = wrapper.findComponent({ name: "UnifiedRuleForm" });
+      form.vm.$emit("open-composer", "check_content");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.emitted("open-composer")).toBeTruthy();
+      // The first emission may come from toolbar in another test order;
+      // the LAST emission for this test is the one we just triggered.
+      const lastPayload =
+        wrapper.emitted("open-composer")[wrapper.emitted("open-composer").length - 1];
+      expect(lastPayload).toEqual(["check_content"]);
     });
   });
 });

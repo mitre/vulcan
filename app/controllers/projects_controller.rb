@@ -10,10 +10,10 @@ class ProjectsController < ApplicationController
 
   IMPORT_ERROR_TITLE = 'Import error'
 
-  before_action :set_project, only: %i[show update destroy export import_backup histories]
-  before_action :set_project_permissions, only: %i[show]
+  before_action :set_project, only: %i[show update destroy export import_backup histories triage comments]
+  before_action :set_project_permissions, only: %i[show triage]
   before_action :authorize_admin_project, only: %i[update destroy import_backup]
-  before_action :authorize_viewer_project, only: %i[show export histories]
+  before_action :authorize_viewer_project, only: %i[show export histories triage comments]
   before_action :authorize_logged_in, only: %i[index search]
   before_action :authorize_admin_or_create_permission_enabled, only: %i[create create_from_backup]
   before_action :check_permission_to_update, only: %i[update]
@@ -27,10 +27,20 @@ class ProjectsController < ApplicationController
     ar_by_project = current_user.access_requests
                                 .where(project_id: project_ids)
                                 .index_by(&:project_id)
+    # Batch-load comment counts (single GROUP BY with FILTER aggregate) so
+    # the row "Comments" column never triggers per-project queries.
+    # Returns { pid => { pending: N, total: M } }.
+    comment_counts = Project.comment_counts(project_ids)
+    # Resolve the deep-link target server-side: when a project has exactly
+    # one component with pending comments, the row link goes straight to
+    # that component (one click → triage panel — no intermediate-page bounce).
+    pending_comment_targets = Project.pending_comment_target_components(project_ids)
     @projects = ProjectIndexBlueprint.render_as_hash(
       projects,
       current_user: current_user,
-      access_requests_by_project: ar_by_project
+      access_requests_by_project: ar_by_project,
+      comment_counts: comment_counts,
+      pending_comment_target_components: pending_comment_targets
     )
     respond_to do |format|
       format.html
@@ -55,7 +65,15 @@ class ProjectsController < ApplicationController
     # Setting current_user allows `available_components` to be filtered down only to the
     # projects that a user has permissions to access
     @project.current_user = current_user
-    @project_json = ProjectBlueprint.render(@project, view: :show)
+    # Batch-load pending-comment counts keyed by component_id so the
+    # component cards and the project-level total render without N+1 (PR #717).
+    component_ids = @project.components.pluck(:id)
+    pending_comment_counts = Component.pending_comment_counts(component_ids)
+    @project_json = ProjectBlueprint.render(
+      @project,
+      view: :show,
+      pending_comment_counts: pending_comment_counts
+    )
     respond_to do |format|
       format.html
       format.json { render body: @project_json, content_type: 'application/json' }
@@ -66,6 +84,47 @@ class ProjectsController < ApplicationController
     return head :not_found unless @project
 
     render json: @project.histories(50)
+  end
+
+  # GET /projects/:id/triage — full-page aggregate triage view across
+  # all components in the project. Renders an HTML page that mounts a
+  # Vue app (ProjectTriagePage). The Vue app fetches rows from the JSON
+  # endpoint at GET /projects/:id/comments. PR #717 follow-on.
+  #
+  # HTML-only — JSON requests return 406, since the data lives on the
+  # /projects/:id/comments JSON endpoint.
+  def triage
+    respond_to do |format|
+      format.html do
+        @project.current_user = current_user
+        @project_json = ProjectBlueprint.render(@project, view: :show)
+      end
+      format.any { head :not_acceptable }
+    end
+  end
+
+  # GET /projects/:id/comments — paginated triage rows aggregated across
+  # all the project's components. Same row shape as the per-component
+  # endpoint, plus component_id + component_name per row so the table
+  # can show which component each comment belongs to.
+  #
+  # Sets Cache-Control: no-store so concurrent triagers cannot get a
+  # stale snapshot from a browser/proxy cache.
+  def comments
+    return head :not_found unless @project
+
+    result = @project.paginated_comments(
+      triage_status: params[:triage_status].presence || 'pending',
+      section: params[:section].presence,
+      component_id: params[:component_id].presence,
+      author_id: params[:author_id].presence,
+      query: params[:q].presence,
+      page: params[:page].presence || 1,
+      per_page: params[:per_page].presence || 25,
+      resolved: params[:resolved].presence || 'all'
+    )
+    response.headers['Cache-Control'] = 'no-store'
+    render json: result
   end
 
   def create
@@ -79,11 +138,19 @@ class ProjectsController < ApplicationController
 
     # First save ensures base Project is acceptable.
     if project.save
-      send_slack_notification(:create_project, project) if Settings.slack.enabled
+      safely_notify('create_project') { send_slack_notification(:create_project, project) } if Settings.slack.enabled
 
       respond_to do |format|
         format.html { redirect_to project }
-        format.json { render json: { redirect_url: project_path(project), toast: 'Successfully created project' } }
+        format.json do
+          # PR-717 review remediation .19d — multi-key response (toast +
+          # redirect_url). Inline the canonical toast object since
+          # render_toast doesn't support piggybacking extra response keys.
+          render json: {
+            toast: { title: 'Project created.', message: ['Successfully created project.'], variant: 'success' },
+            redirect_url: project_path(project)
+          }
+        end
       end
     else
       respond_to do |format|
@@ -112,10 +179,12 @@ class ProjectsController < ApplicationController
     if @project.update(project_params)
       if Settings.slack.enabled
         notification_types.each do |type|
-          send_slack_notification(type, @project)
+          safely_notify("update_project_#{type}") { send_slack_notification(type, @project) }
         end
       end
-      render json: { toast: 'Successfully updated project' }
+      render_toast(title: 'Project updated.',
+                   message: 'Successfully updated project.',
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: {
@@ -129,13 +198,17 @@ class ProjectsController < ApplicationController
 
   def destroy
     if @project.destroy
-      send_slack_notification(:remove_project, @project) if Settings.slack.enabled
+      safely_notify('remove_project') { send_slack_notification(:remove_project, @project) } if Settings.slack.enabled
       respond_to do |format|
         format.html do
           flash.notice = 'Successfully removed project.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully removed project.' } }
+        format.json do
+          render_toast(title: 'Project removed.',
+                       message: 'Successfully removed project.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|
@@ -379,10 +452,14 @@ class ProjectsController < ApplicationController
     end
 
     if result&.success?
+      # PR-717 review remediation .19d — multi-key response (toast +
+      # redirect_url + summary). Inline the canonical toast object.
       render json: {
         redirect_url: project_path(project),
         summary: result.summary,
-        toast: 'Project created from backup successfully.'
+        toast: { title: 'Project imported.',
+                 message: ['Project created from backup successfully.'],
+                 variant: 'success' }
       }
     else
       render json: {

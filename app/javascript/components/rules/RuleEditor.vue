@@ -11,6 +11,7 @@
       @comment="$emit('comment', $event)"
       @open-review-modal="$emit('open-review-modal')"
       @open-related-modal="$emit('open-related-modal')"
+      @open-composer="$emit('open-composer', $event)"
       @lock="$emit('lock', $event)"
       @unlock="$emit('unlock', $event)"
       @toggle-panel="$emit('toggle-panel', $event)"
@@ -90,6 +91,7 @@
           :additional_questions="additional_questions"
           :effective-permissions="effectivePermissions"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
+          @open-composer="$emit('open-composer', $event)"
         />
       </b-tab>
       <b-tab title="Test Script" lazy>

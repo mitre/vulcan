@@ -42,7 +42,8 @@ RSpec.describe 'Memberships' do
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to include(application_json)
       json = response.parsed_body
-      expect(json['toast']).to eq('Successfully removed membership.')
+      expect(json['toast']).to be_a(Hash)
+      expect(json['toast']['title']).to eq('Membership removed.')
     end
 
     it 'returns JSON error response on failure' do
@@ -55,6 +56,31 @@ RSpec.describe 'Memberships' do
       expect(response.content_type).to include(application_json)
       json = response.parsed_body
       expect(json['toast']['title']).to include('Could not remove')
+    end
+
+    it 'still returns success when an in-app membership notification raises' do
+      # safely_notify regression guard: a downstream notification failure
+      # must NOT turn a successful destroy into a 500 — destroy already
+      # committed; the user-facing operation succeeded.
+      allow_any_instance_of(MembershipsController)
+        .to receive(:send_membership_notification)
+        .and_raise(StandardError, 'forced notification failure')
+
+      delete "/memberships/#{target_membership.id}", headers: json_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['toast']).to be_a(Hash)
+      expect(response.parsed_body['toast']['title']).to eq('Membership removed.')
+      expect(Membership.find_by(id: target_membership.id)).to be_nil
+    end
+
+    # PR-717 .a5u — opt the success path into the canonical-toast-response
+    # shared example so any future regression on this endpoint surfaces
+    # alongside the controller-specific assertions above.
+    context 'success-path toast shape (PR-717 .a5u)' do
+      before { delete "/memberships/#{target_membership.id}", headers: json_headers }
+
+      it_behaves_like 'a canonical toast response'
     end
   end
 

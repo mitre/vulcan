@@ -60,9 +60,21 @@
             <b-nav-item-dropdown right>
               <template #button-content>
                 <b-icon icon="person-circle" aria-hidden="true" />
+                <span v-if="userDisplayName" class="ml-2 d-none d-xl-inline">
+                  {{ userDisplayName }}
+                </span>
               </template>
+              <li v-if="userDisplayName" class="px-3 py-2 text-muted small">
+                <div class="font-weight-bold text-body">{{ userDisplayName }}</div>
+                <div v-if="current_user && current_user.email">{{ current_user.email }}</div>
+              </li>
+              <b-dropdown-divider v-if="userDisplayName" />
               <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
+              <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath">
+                My Comments
+              </b-dropdown-item>
               <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
+              <b-dropdown-divider />
               <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
             </b-nav-item-dropdown>
           </b-navbar-nav>
@@ -112,6 +124,11 @@ export default {
       type: String,
       required: false,
     },
+    current_user: {
+      type: Object,
+      required: false,
+      default: null,
+    },
     sign_out_path: {
       type: String,
       required: false,
@@ -151,6 +168,14 @@ export default {
   computed: {
     notificationCount() {
       return this.localAccessRequests.length + this.localLockedUsers.length;
+    },
+    userDisplayName() {
+      if (!this.current_user) return null;
+      return this.current_user.name || this.current_user.email || null;
+    },
+    myCommentsPath() {
+      if (!this.current_user || !this.current_user.id) return null;
+      return `/users/${this.current_user.id}/comments`;
     },
   },
   mounted() {

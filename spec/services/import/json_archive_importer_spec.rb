@@ -195,7 +195,13 @@ RSpec.describe Import::JsonArchiveImporter do
     end
 
     context 'with unresolvable review user' do
-      it 'skips review and adds warning when user cannot be found' do
+      # PR-717 review remediation .j4a step B2 — pre-fix, an unresolvable
+      # commenter caused ReviewBuilder to skip the review entirely
+      # (destroying the audit trail / disposition record on cross-instance
+      # restore). Now the row imports with user_id=NULL +
+      # commenter_imported_email/name preserved; the warning naming the
+      # missing user still fires for operator visibility.
+      it 'imports review with commenter_imported_* and adds warning when user cannot be found' do
         ghost_user = create(:user, email: 'ghost@example.com', name: 'Ghost')
         Membership.create!(user: ghost_user, membership: source_project, role: 'admin')
         rule = source_component.rules.first
@@ -212,8 +218,13 @@ RSpec.describe Import::JsonArchiveImporter do
 
         result = import_archive(zip, target_project, include_reviews: true)
         expect(result).to be_success
-        expect(result.summary[:reviews_imported]).to eq(0)
-        expect(result.warnings).to include(a_string_matching(/ghost@example\.com.*not found/))
+        expect(result.summary[:reviews_imported]).to be >= 1
+        expect(result.warnings).to include(a_string_matching(/ghost@example\.com.*imported_email/))
+
+        imported = Review.where(comment: 'Haunted').last
+        expect(imported.user_id).to be_nil
+        expect(imported.commenter_imported_email).to eq('ghost@example.com')
+        expect(imported.commenter_imported_name).to eq('Ghost')
       end
     end
 
@@ -487,6 +498,307 @@ RSpec.describe Import::JsonArchiveImporter do
         filter = {}
         result = import_archive(single_backup_zip, target_project, component_filter: filter)
         expect(result).to be_success
+      end
+    end
+
+    # PR #717 — public-comment review workflow must survive backup/restore.
+    # Without this, a backup taken mid-review would lose
+    # all triage decisions, adjudication metadata, reply threading, and
+    # comment-phase state on restore.
+    context 'with PR-717 public-comment review lifecycle data' do
+      let_it_be(:lifecycle_project) { create(:project) }
+      let_it_be(:lifecycle_component) do
+        create(:component,
+               project: lifecycle_project,
+               comment_phase: 'open',
+               comment_period_starts_at: '2026-04-15T00:00:00Z',
+               comment_period_ends_at: '2026-04-30T00:00:00Z')
+      end
+      let_it_be(:lifecycle_commenter) { create(:user, name: 'Lifecycle Commenter') }
+      let_it_be(:lifecycle_triager) { create(:user, name: 'Lifecycle Triager') }
+
+      let_it_be(:lifecycle_top_review) do
+        Membership.find_or_create_by!(
+          user: lifecycle_commenter, membership: lifecycle_project
+        ) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(
+          user: lifecycle_triager, membership: lifecycle_project
+        ) { |m| m.role = 'author' }
+        Review.create!(
+          user: lifecycle_commenter, rule: lifecycle_component.rules.first,
+          action: 'comment', comment: 'TLS 1.2 EOL',
+          section: 'check_content',
+          triage_status: 'concur_with_comment',
+          triage_set_by: lifecycle_triager, triage_set_at: 1.day.ago,
+          adjudicated_at: 12.hours.ago, adjudicated_by: lifecycle_triager
+        )
+      end
+      let_it_be(:lifecycle_reply) do
+        Review.create!(
+          user: lifecycle_triager, rule: lifecycle_component.rules.first,
+          action: 'comment', comment: 'will fix in next revision',
+          responding_to_review_id: lifecycle_top_review.id
+        )
+      end
+      let_it_be(:lifecycle_dup_target) do
+        Review.create!(
+          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+          action: 'comment', comment: 'duplicate target'
+        )
+      end
+      let_it_be(:lifecycle_dup) do
+        Review.create!(
+          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+          action: 'comment', comment: 'duplicate source',
+          duplicate_of_review_id: lifecycle_dup_target.id,
+          triage_status: 'duplicate'
+        )
+      end
+
+      let_it_be(:lifecycle_zip) do
+        Export::Base.new(
+          exportable: lifecycle_component, mode: :backup, format: :json_archive
+        ).call.data
+      end
+
+      let(:lifecycle_target_project) { create(:project) }
+
+      it 'restores comment_phase + comment_period_*' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        expect(imported.comment_phase).to eq('open')
+        expect(imported.comment_period_starts_at).to be_present
+        expect(imported.comment_period_ends_at).to be_present
+      end
+
+      it 'restores triage_status + section on each comment' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        top = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'TLS 1.2 EOL' }
+        expect(top.triage_status).to eq('concur_with_comment')
+        expect(top.section).to eq('check_content')
+      end
+
+      it 'restores triage_set_by + adjudicated_by user references via email' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        top = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'TLS 1.2 EOL' }
+        expect(top.triage_set_by_id).to eq(lifecycle_triager.id)
+        expect(top.adjudicated_by_id).to eq(lifecycle_triager.id)
+        expect(top.triage_set_at).to be_present
+        expect(top.adjudicated_at).to be_present
+      end
+
+      it 'rebuilds reply threading (responding_to_review_id) using the new ids' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        all_reviews = imported.rules.flat_map(&:reviews)
+        parent = all_reviews.find { |r| r.comment == 'TLS 1.2 EOL' }
+        reply  = all_reviews.find { |r| r.comment == 'will fix in next revision' }
+        expect(reply.responding_to_review_id).to eq(parent.id)
+      end
+
+      it 'rebuilds duplicate_of cross-link using the new ids' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        all_reviews = imported.rules.flat_map(&:reviews)
+        target = all_reviews.find { |r| r.comment == 'duplicate target' }
+        dup    = all_reviews.find { |r| r.comment == 'duplicate source' }
+        expect(dup.duplicate_of_review_id).to eq(target.id)
+        expect(dup.triage_status).to eq('duplicate')
+      end
+
+      # PR-717 review remediation .10 — Component-level import audit row.
+      # Reconstructs WHICH external_ids landed FROM WHICH archive so an
+      # admin_destroy → re-import roundtrip leaves a recovery trail.
+      it 'writes a Component import_reviews audit row with external_ids and archive identifier' do
+        import_archive(lifecycle_zip, lifecycle_target_project)
+        imported = lifecycle_target_project.components.find_by(name: lifecycle_component.name)
+        audit = imported.audits.find_by(action: 'import_reviews')
+        expect(audit).to be_present
+        expect(audit.audited_changes['review_external_ids']).to be_an(Array)
+        expect(audit.audited_changes['review_external_ids']).not_to be_empty
+        expect(audit.audited_changes['archive_vulcan_version']).to be_present
+        expect(audit.audited_changes['archive_exported_at']).to be_present
+        expect(audit.comment).to match(/Imported \d+ reviews from backup archive/)
+      end
+
+      # PR-717 review remediation .8 — preserve original attribution
+      # per-review when the User can't be resolved on import. Researched
+      # GitLab's placeholder-user pattern (overkill for one-shot
+      # backup/restore use case); 4 cols on Review carry the email + name
+      # forward and display/export layers fall back to them.
+      # https://docs.gitlab.com/development/user_contribution_mapping/
+      #
+      # let_it_be uses refind: true on orphan_triager so destroy! gets a
+      # fresh AR instance per example (otherwise the cached Ruby object
+      # retains @destroyed=true after savepoint rollback and the audited
+      # gem's after_destroy fires "create unless parent is saved").
+      # https://github.com/test-prof/test-prof/blob/master/docs/recipes/let_it_be.md
+      context 'when triage_set_by/adjudicated_by user is missing on the target' do # rubocop:disable RSpec/NestedGroups
+        let_it_be(:orphan_proj) { create(:project) }
+        let_it_be(:orphan_component) { create(:component, project: orphan_proj) }
+        let_it_be(:orphan_commenter) { create(:user, name: 'Orphan Commenter') }
+        let_it_be(:orphan_triager, refind: true) do
+          create(:user, name: 'Orphan Triager', email: 'orphan-triager@example.com')
+        end
+        let_it_be(:orphan_review) do
+          Membership.find_or_create_by!(user: orphan_commenter, membership: orphan_proj) { |m| m.role = 'viewer' }
+          Membership.find_or_create_by!(user: orphan_triager, membership: orphan_proj) { |m| m.role = 'author' }
+          Review.create!(
+            user: orphan_commenter, rule: orphan_component.rules.first,
+            action: 'comment', comment: 'orphan-test comment',
+            triage_status: 'concur',
+            triage_set_by: orphan_triager, triage_set_at: 1.day.ago,
+            adjudicated_at: 12.hours.ago, adjudicated_by: orphan_triager
+          )
+        end
+        let_it_be(:orphan_zip) do
+          Export::Base.new(
+            exportable: orphan_component, mode: :backup, format: :json_archive
+          ).call.data
+        end
+
+        before do
+          # Wipe the triager so the import-side User.find_by(email:) returns nil.
+          # FK satisfaction first, then the User. refind: true above gives
+          # us a fresh AR instance per example so destroy! works repeatedly
+          # across the savepoint-rollback boundary.
+          Membership.where(user: orphan_triager).destroy_all
+          orphan_triager.destroy!
+        end
+
+        let(:orphan_target_project) { create(:project) }
+
+        it 'records a warning naming the missing email' do
+          result = import_archive(orphan_zip, orphan_target_project)
+          expect(result.warnings).to include(a_string_matching(/triage_set_by.*orphan-triager@example.com/i))
+        end
+
+        it 'imports the review with FK nil but imported_email + imported_name populated' do
+          import_archive(orphan_zip, orphan_target_project)
+          imported = orphan_target_project.components.find_by(name: orphan_component.name)
+          rev = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'orphan-test comment' }
+          expect(rev).to be_present
+          expect(rev.triage_set_by_id).to be_nil
+          expect(rev.triage_set_by_imported_email).to eq('orphan-triager@example.com')
+          expect(rev.triage_set_by_imported_name).to eq('Orphan Triager')
+          expect(rev.adjudicated_by_id).to be_nil
+          expect(rev.adjudicated_by_imported_email).to eq('orphan-triager@example.com')
+          expect(rev.adjudicated_by_imported_name).to eq('Orphan Triager')
+        end
+
+        it 'leaves imported_* nil when the user resolves successfully' do
+          # Re-create the triager BEFORE import so resolution succeeds.
+          create(:user, name: 'Orphan Triager Restored', email: 'orphan-triager@example.com')
+          import_archive(orphan_zip, orphan_target_project)
+          imported = orphan_target_project.components.find_by(name: orphan_component.name)
+          rev = imported.rules.flat_map(&:reviews).find { |r| r.comment == 'orphan-test comment' }
+          expect(rev.triage_set_by_id).to be_present
+          expect(rev.triage_set_by_imported_email).to be_nil
+          expect(rev.triage_set_by_imported_name).to be_nil
+        end
+
+        it 'does not warn when triage_set_by_email is absent from the archive' do
+          plain_proj = create(:project)
+          plain_component = create(:component, project: plain_proj)
+          plain_commenter = create(:user, name: 'Plain Commenter')
+          Membership.find_or_create_by!(user: plain_commenter, membership: plain_proj) { |m| m.role = 'viewer' }
+          Review.create!(
+            user: plain_commenter, rule: plain_component.rules.first,
+            action: 'comment', comment: 'plain comment without triage'
+          )
+          plain_zip = Export::Base.new(
+            exportable: plain_component, mode: :backup, format: :json_archive
+          ).call.data
+          plain_target = create(:project)
+          result = import_archive(plain_zip, plain_target)
+          expect(result.warnings).not_to include(a_string_matching(/triage_set_by/i))
+          expect(result.warnings).not_to include(a_string_matching(/adjudicated_by/i))
+        end
+      end
+    end
+
+    # PR-717 review remediation .lsj — zip-bomb decompression budget.
+    # The pre-fix import path enumerated entries lazily and read each
+    # one as needed; rubyzip's per-entry validation catches single
+    # absurd entries but no aggregate-size check exists. A 50–100 MB
+    # archive of empty JSON arrays could decompress to multiple GB
+    # before Ruby OOMs. Settings.import.json_archive_size_budget_mb
+    # caps the SUM of uncompressed entry sizes pre-parse.
+    context 'with archive exceeding the decompression budget (PR-717 .lsj)' do
+      it 'rejects the archive with a clear error before parsing' do
+        # Stub the budget to 1 byte so any real archive exceeds it.
+        allow(Settings.import).to receive(:json_archive_size_budget_mb).and_return(0)
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).not_to be_success
+        expect(result.errors.join).to match(/exceeds.*budget/i)
+      end
+
+      it 'does not start the DB transaction when over budget' do
+        allow(Settings.import).to receive(:json_archive_size_budget_mb).and_return(0)
+        expect(target_project.components.count).to eq(0)
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).not_to be_success
+        # No component / review / etc. created — the budget check fires
+        # before perform_import opens its transaction.
+        expect(target_project.components.count).to eq(0)
+      end
+
+      it 'imports normally when the budget is generous (regression sanity)' do
+        allow(Settings.import).to receive(:json_archive_size_budget_mb).and_return(500)
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).to be_success
+      end
+    end
+
+    # PR-717 review remediation .vb4 — request_uuid producer side. Pre-fix,
+    # JsonArchiveImporter#call did not set Audited.store[:current_request_uuid]
+    # so each audit row created during the import got a distinct
+    # SecureRandom.uuid (via the .14r consumer fallback). Post-fix, every
+    # audit row created during one import shares one request_uuid —
+    # AuditEventBundle.bundled_with(audit_id) reconstructs the entire
+    # import as one logical operation.
+    context 'with request_uuid correlation (PR-717 .vb4)' do
+      before { Audited.store.delete(:current_request_uuid) }
+
+      after { Audited.store.delete(:current_request_uuid) }
+
+      it 'shares one request_uuid across every audit emitted by the import' do
+        target_project # force lazy evaluation BEFORE last_audit_id is captured
+        last_audit_id = Audited::Audit.maximum(:id) || 0
+        result = import_archive(single_backup_zip, target_project)
+        expect(result).to be_success
+
+        new_audits = Audited::Audit.where('id > ?', last_audit_id)
+        # The import emits at least the Component create + all the
+        # bulk-inserted BaseRule audits (via Component#import_srg_rules
+        # → Rule.import recursive: true).
+        expect(new_audits.count).to be > 0
+        uuids = new_audits.distinct.pluck(:request_uuid)
+        expect(uuids.size).to eq(1)
+        expect(uuids.first).to match(/\A[0-9a-f-]{36}\z/)
+      end
+
+      it 'covers the bulk-insert path too (BaseRule audits via activerecord-import)' do
+        # Regression guard: pre-fix, BaseRule audits inserted via
+        # Rule.import(recursive: true) had request_uuid = NULL because
+        # activerecord-import bypasses the ensure_request_uuid before_create
+        # hook. Fixed by populating request_uuid in
+        # VulcanAudit.create_initial_rule_audit_from_mapping at build time.
+        target_project
+        last_audit_id = Audited::Audit.maximum(:id) || 0
+        import_archive(single_backup_zip, target_project)
+        bulk_inserted = Audited::Audit.where('id > ?', last_audit_id)
+                                      .where(auditable_type: 'BaseRule')
+        expect(bulk_inserted.count).to be > 0
+        expect(bulk_inserted.where(request_uuid: nil).count).to eq(0)
+      end
+
+      it 'does not leak the request_uuid out of the import (restores prior value)' do
+        Audited.store[:current_request_uuid] = 'outer-scope-uuid'
+        import_archive(single_backup_zip, target_project)
+        expect(Audited.store[:current_request_uuid]).to eq('outer-scope-uuid')
       end
     end
   end

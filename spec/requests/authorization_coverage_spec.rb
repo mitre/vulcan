@@ -33,6 +33,7 @@ AUTHORIZE_METHODS = %w[
   authorize_component_access
   authorize_compare_access
   authorize_section_lock
+  authorize_review_owner
   check_admin_for_advanced_fields
   set_and_authorize_access_request
 ].freeze

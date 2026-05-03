@@ -61,4 +61,70 @@ RSpec.describe 'Rack::Attack throttling' do
       expect(response).to have_http_status(:too_many_requests)
     end
   end
+
+  describe 'comment-action throttling on POST /rules/:id/reviews' do
+    let_it_be(:srg) do
+      srg_xml = Rails.root.join('db/seeds/srgs/U_Web_Server_SRG_V4R4_Manual-xccdf.xml').read
+      parsed = Xccdf::Benchmark.parse(srg_xml)
+      s = SecurityRequirementsGuide.from_mapping(parsed)
+      s.xml = srg_xml
+      s.save!
+      s
+    end
+    let_it_be(:project) { Project.create!(name: "Throttle Test #{SecureRandom.hex(4)}") }
+    let_it_be(:component) do
+      Component.create!(project: project, name: 'TestComp', title: 'TestComp',
+                        version: 'V1R1', prefix: 'THRT-01', based_on: srg)
+    end
+    let(:rule) { component.rules.first }
+    let(:viewer) { create(:user) }
+
+    before do
+      Membership.create!(user: viewer, membership: project, role: 'viewer')
+      sign_in viewer
+    end
+
+    it 'allows the first 10 comment posts in a minute' do
+      10.times do |i|
+        post "/rules/#{rule.id}/reviews",
+             params: { review: { action: 'comment', comment: "comment #{i}", component_id: component.id } },
+             as: :json
+        expect(response.status).not_to eq(429), "Request #{i + 1} unexpectedly throttled"
+      end
+    end
+
+    it 'throttles the 11th comment post within a minute' do
+      10.times do |i|
+        post "/rules/#{rule.id}/reviews",
+             params: { review: { action: 'comment', comment: "comment #{i}", component_id: component.id } },
+             as: :json
+      end
+
+      post "/rules/#{rule.id}/reviews",
+           params: { review: { action: 'comment', comment: 'eleventh', component_id: component.id } },
+           as: :json
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.parsed_body.dig('toast', 'title')).to eq('Rate limited')
+    end
+
+    it 'does not throttle non-comment review actions on the same endpoint' do
+      # Promote to author so request_review passes the model-layer role gate.
+      # Membership has a uniqueness validation (one role per user/project), so
+      # update the existing viewer row rather than create a second.
+      Membership.find_by!(user: viewer, membership: project).update!(role: 'author')
+
+      # Burn the comment limit
+      10.times do |i|
+        post "/rules/#{rule.id}/reviews",
+             params: { review: { action: 'comment', comment: "spam #{i}", component_id: component.id } },
+             as: :json
+      end
+
+      # request_review on the same endpoint goes through (separate throttle key)
+      post "/rules/#{rule.id}/reviews",
+           params: { review: { action: 'request_review', comment: 'please look', component_id: component.id } },
+           as: :json
+      expect(response).not_to have_http_status(:too_many_requests)
+    end
+  end
 end

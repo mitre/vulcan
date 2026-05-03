@@ -14,6 +14,14 @@ class ProjectBlueprint < Blueprinter::Base
   end
 
   view :show do
+    # Aggregate of pending comments across this project's components — sum
+    # of the per-component counts passed in via options[:pending_comment_counts].
+    # Renders a project-level discovery banner near the page header.
+    field :pending_comment_count do |_project, options|
+      counts = options[:pending_comment_counts] || {}
+      counts.values.sum
+    end
+
     field :details do |project, _options|
       project.details
     end

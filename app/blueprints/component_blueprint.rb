@@ -28,9 +28,21 @@ class ComponentBlueprint < Blueprinter::Base
     component.severity_counts_hash
   end
 
+  # Pending top-level comment count for this component. Surfaces a
+  # "N pending" badge on the component card so reviewers discover the
+  # triage queue without drilling in. Pre-batched via
+  # Component.pending_comment_counts and passed through render options.
+  field :pending_comment_count do |component, options|
+    counts = options[:pending_comment_counts] || {}
+    counts[component.id] || 0
+  end
+
   # === Index view: listing page ===
+  # rules_count drives ComponentCard's controls badge; component_id
+  # drives the (Overlaid) tag. Without these the card silently hides
+  # the badges (the "Not Configured" bug Aaron flagged).
   view :index do
-    fields :updated_at, :released
+    fields :updated_at, :released, :rules_count, :component_id
   end
 
   # === Related view: related_rules parents (includes project for display name) ===
@@ -44,7 +56,8 @@ class ComponentBlueprint < Blueprinter::Base
 
   # === Show view: non-member read-only ===
   view :show do
-    fields :title, :description, :admin_name, :admin_email, :released, :updated_at
+    fields :title, :description, :admin_name, :admin_email, :released, :updated_at,
+           :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
     association :rules, blueprint: RuleBlueprint, view: :viewer do |component, _options|
       component.rules
@@ -63,7 +76,8 @@ class ComponentBlueprint < Blueprinter::Base
     fields :title, :description, :admin_name, :admin_email,
            :released, :advanced_fields, :project_id, :component_id,
            :security_requirements_guide_id, :memberships_count,
-           :rules_count, :updated_at, :created_at
+           :rules_count, :updated_at, :created_at,
+           :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
     field :releasable do |component, _options|
       component.releasable

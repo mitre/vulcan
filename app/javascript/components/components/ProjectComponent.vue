@@ -2,6 +2,8 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
+    <CommentPeriodBanner :component="component" @open-comments-panel="openCommentsPanel" />
+
     <ControlsPageLayout
       :has-selected-rule="!!selectedRule"
       :show-command-bar="true"
@@ -21,6 +23,7 @@
           @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
           @spreadsheet-updated="refreshComponent"
+          @download="openExportModal"
         />
       </template>
 
@@ -64,6 +67,7 @@
             :advanced_fields="localAdvancedFields"
             :additional_questions="component.additional_questions"
             @open-related-modal="$bvModal.show('related-rules-modal')"
+            @open-composer="onOpenComposer"
             @toggle-panel="togglePanel"
             @toggle-advanced-fields="toggleAdvancedFields"
           />
@@ -78,6 +82,29 @@
           :read-only="true"
           :rule="selectedRule"
           :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
+        />
+
+        <!-- Comment composer modal (PR #717). Opens via onOpenComposer
+             when a SectionCommentIcon emits open-composer. -->
+        <CommentComposerModal
+          v-if="selectedRule"
+          :component-id="component.id"
+          :rule-id="selectedRule.id"
+          :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
+          :initial-section="composerSection"
+          @posted="onComposerPosted"
+        />
+
+        <!-- PR #717 Step 5: unified Download modal — Purpose + Format radios.
+             Disposition matrix piggybacks into the Working Copy CSV/Excel
+             outputs when comments exist (Steps 3+4). -->
+        <ExportModal
+          v-model="showExportModal"
+          :components="[component]"
+          :available-modes="availableExportModes"
+          :hide-component-selection="true"
+          @export="executeExport"
+          @cancel="showExportModal = false"
         />
       </template>
 
@@ -118,6 +145,9 @@ import RuleNavigator from "../rules/RuleNavigator.vue";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
+import CommentComposerModal from "./CommentComposerModal.vue";
+import CommentPeriodBanner from "./CommentPeriodBanner.vue";
+import ExportModal from "../shared/ExportModal.vue";
 
 export default {
   name: "ProjectComponent",
@@ -129,6 +159,9 @@ export default {
     RuleEditor,
     RelatedRulesModal,
     ControlsSidepanels,
+    CommentComposerModal,
+    CommentPeriodBanner,
+    ExportModal,
   },
   mixins: [
     DateFormatMixinVue,
@@ -137,6 +170,16 @@ export default {
     ConfirmComponentReleaseMixin,
     SortRulesMixin,
   ],
+  // Provide the component's comment_phase (and a derived `commentsClosed`
+  // boolean) to the rule-editor subtree so SectionCommentIcon can disable
+  // the comment affordance when the window isn't open. Function form
+  // keeps reactivity through Vue 2's non-reactive provide.
+  provide() {
+    return {
+      getCommentPhase: () => this.component.comment_phase || "open",
+      isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
+    };
+  },
   props: {
     queriedRule: {
       type: Object,
@@ -212,6 +255,15 @@ export default {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
+      // PR #717: section pre-selected on the comment composer when a
+      // SectionCommentIcon click bubbles open-composer up to here.
+      composerSection: null,
+      // PR #717 Step 5: per-component editor Download surface.
+      // Mode-aware ExportModal (Working Copy / Vendor Submission /
+      // STIG-Ready Publish Draft / Backup) hits the project export
+      // route scoped to this single component.
+      showExportModal: false,
+      availableExportModes: ["working_copy", "vendor_submission", "published_stig", "backup"],
     };
   },
   computed: {
@@ -242,7 +294,7 @@ export default {
       ];
     },
     componentPanels() {
-      return ["details", "metadata", "questions", "comp-history", "comp-reviews"];
+      return ["details", "metadata", "questions", "comp-history"];
     },
     rulePanels() {
       return ["satisfies", "rule-reviews", "rule-history"];
@@ -256,6 +308,25 @@ export default {
     }
   },
   methods: {
+    /**
+     * PR #717 — open the comment composer with a pre-selected section.
+     * Triggered when SectionCommentIcon emits open-composer; the event
+     * bubbles up RuleFormGroup → form → UnifiedRuleForm → RuleEditor.
+     */
+    onOpenComposer(section) {
+      this.composerSection = section;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    /**
+     * PR #717 — refresh the component (and selected rule's reviews) after
+     * a comment is posted so the per-section pending-count badge updates.
+     */
+    onComposerPosted() {
+      this.refreshComponent();
+    },
+    openCommentsPanel() {
+      window.location.href = `/components/${this.component.id}/triage`;
+    },
     refreshComponent() {
       axios
         .get(`/components/${this.component.id}.json`)
@@ -280,6 +351,39 @@ export default {
           this.alertOrNotifyResponse(response);
           // Update local data property (not prop) for proper reactivity through slots
           this.localAdvancedFields = advanced_fields;
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    /**
+     * PR #717 Step 5 — open the unified Download/ExportModal. Listened from
+     * ControlsCommandBar's Download button.
+     */
+    openExportModal() {
+      this.showExportModal = true;
+    },
+    /**
+     * PR #717 Step 5 — emitted by ExportModal when the user confirms export.
+     * Mirrors Project.vue's pattern but scopes component_ids to this single
+     * component. Disposition data piggybacks the CSV/Excel formats per
+     * Steps 3 and 4 — no extra wiring needed here.
+     */
+    executeExport({
+      type,
+      mode,
+      componentIds,
+      includeSrg,
+      includeMemberships,
+      excludeSatisfiedBy,
+    }) {
+      let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
+      if (mode) url += `&mode=${mode}`;
+      if (includeSrg) url += `&include_srg=true`;
+      if (includeMemberships === false) url += `&include_memberships=false`;
+      if (excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
+      axios
+        .get(url)
+        .then(() => {
+          window.open(url);
         })
         .catch(this.alertOrNotifyResponse);
     },

@@ -406,4 +406,108 @@ describe("RuleForm", () => {
       expect(wrapper.vm.tooltips.fixtext).toContain("Change the status");
     });
   });
+
+  // ─── PR #717 — Section comment icon wiring (Task 16) ──────
+  /**
+   * REQUIREMENTS:
+   * The first RuleFormGroup of each section in RuleForm must opt in to the
+   * SectionCommentIcon by passing show-comment-icon=true. The form must
+   * also forward rule.reviews and bubble open-composer up to its parent.
+   *
+   * Sections owned by RuleForm.vue (per LOCKABLE_SECTIONS):
+   *   - Status            — first field: status
+   *   - Severity          — first field: rule_severity
+   *   - Title             — first field: title
+   *   - Fix               — first field: fixtext
+   *   - Artifact Description — first field: artifact_description
+   *   - Vendor Comments   — first field: vendor_comments
+   *   - XCCDF Metadata    — first field: version
+   *
+   * Sections owned by CheckForm and DisaRuleDescriptionForm are tested in
+   * those forms' specs. status_justification belongs to "Status" — no icon
+   * (status field already has it).
+   */
+  describe("section comment icon wiring (PR #717)", () => {
+    const findGroup = (w, fieldName) =>
+      w
+        .findAllComponents({ name: "RuleFormGroup" })
+        .wrappers.find((g) => g.props("fieldName") === fieldName);
+
+    const allFieldsDisplayed = {
+      displayed: [
+        "status",
+        "rule_severity",
+        "status_justification",
+        "title",
+        "fixtext",
+        "artifact_description",
+        "vendor_comments",
+        "version",
+        "rule_weight",
+        "fix_id",
+        "fixtext_fixref",
+        "ident",
+        "ident_system",
+      ],
+      disabled: [],
+    };
+
+    it.each([
+      ["status", "Status"],
+      ["rule_severity", "Severity"],
+      ["title", "Title"],
+      ["fixtext", "Fix"],
+      ["artifact_description", "Artifact Description"],
+      ["vendor_comments", "Vendor Comments"],
+      ["version", "XCCDF Metadata"],
+    ])("first field of '%s' section (%s) opts in to show-comment-icon", (fieldName) => {
+      wrapper = createWrapper({ fields: allFieldsDisplayed });
+      const group = findGroup(wrapper, fieldName);
+      expect(group, `RuleFormGroup with field-name=${fieldName} not found`).toBeDefined();
+      expect(group.props("showCommentIcon")).toBe(true);
+    });
+
+    it("does NOT enable show-comment-icon on status_justification (Status section already has icon on status)", () => {
+      wrapper = createWrapper({ fields: allFieldsDisplayed });
+      const group = findGroup(wrapper, "status_justification");
+      expect(group).toBeDefined();
+      expect(group.props("showCommentIcon")).toBe(false);
+    });
+
+    it("forwards rule.reviews to first-field RuleFormGroups (drives pending-count badge)", () => {
+      const reviews = [
+        {
+          id: 1,
+          action: "comment",
+          section: "check_content",
+          triage_status: "pending",
+          responding_to_review_id: null,
+        },
+      ];
+      wrapper = createWrapper({
+        rule: makeRule({ reviews }),
+        fields: allFieldsDisplayed,
+      });
+      const statusGroup = findGroup(wrapper, "status");
+      expect(statusGroup.props("ruleReviews")).toEqual(reviews);
+    });
+
+    it("forwards rule.locked to first-field RuleFormGroups (controls icon disabled state)", () => {
+      wrapper = createWrapper({
+        rule: makeRule({ locked: true }),
+        fields: allFieldsDisplayed,
+      });
+      const statusGroup = findGroup(wrapper, "status");
+      expect(statusGroup.props("ruleLocked")).toBe(true);
+    });
+
+    it("re-emits open-composer with the section key when a child group emits it", async () => {
+      wrapper = createWrapper({ fields: allFieldsDisplayed });
+      const titleGroup = findGroup(wrapper, "title");
+      titleGroup.vm.$emit("open-composer", "title");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.emitted("open-composer")).toBeTruthy();
+      expect(wrapper.emitted("open-composer")[0]).toEqual(["title"]);
+    });
+  });
 });

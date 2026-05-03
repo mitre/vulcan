@@ -127,6 +127,50 @@ describe("Navbar locked user notifications", () => {
   });
 });
 
+describe("Navbar profile dropdown", () => {
+  const userProps = (overrides = {}) => ({
+    ...baseProps,
+    current_user: { id: 42, name: "Casey Tester", email: "casey@example.com", ...overrides },
+  });
+
+  it("shows the user's name next to the profile icon when current_user is provided", () => {
+    const wrapper = mount(App, { localVue, propsData: userProps() });
+    expect(wrapper.text()).toContain("Casey Tester");
+  });
+
+  it("falls back to email if name is missing", () => {
+    const wrapper = mount(App, {
+      localVue,
+      propsData: userProps({ name: null }),
+    });
+    expect(wrapper.text()).toContain("casey@example.com");
+  });
+
+  it("renders the user's name + email at the top of the dropdown", () => {
+    const wrapper = mount(App, { localVue, propsData: userProps() });
+    const html = wrapper.html();
+    expect(html).toContain("Casey Tester");
+    expect(html).toContain("casey@example.com");
+  });
+
+  it("links 'My Comments' to /users/<id>/comments", () => {
+    const wrapper = mount(App, { localVue, propsData: userProps() });
+    const link = wrapper
+      .findAll(".dropdown-item")
+      .wrappers.find((w) => w.text().includes("My Comments"));
+    expect(link).toBeDefined();
+    expect(link.attributes("href")).toBe("/users/42/comments");
+  });
+
+  it("omits the My Comments item when current_user is not provided", () => {
+    const wrapper = mount(App, { localVue, propsData: baseProps });
+    const link = wrapper
+      .findAll(".dropdown-item")
+      .wrappers.find((w) => w.text().includes("My Comments"));
+    expect(link).toBeUndefined();
+  });
+});
+
 describe("Navbar access request reactivity", () => {
   it("initializes localAccessRequests from prop", () => {
     const requests = [

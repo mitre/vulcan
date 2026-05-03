@@ -3,7 +3,49 @@
 # Custom Audited class for Vulcan-specific methods for interacting with audits.
 class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
-  before_create :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
+  # PR-717 review remediation .14r — request_uuid invariant. The audited
+  # gem's Audited::Sweeper Rack middleware sets request_uuid for HTTP
+  # requests; recent versions also fall back to SecureRandom for
+  # non-HTTP contexts. This callback makes the invariant a Vulcan-side
+  # guarantee (independent of gem version): every audit row has a
+  # request_uuid. For job/rake-task contexts that want to share a UUID
+  # across multiple audit rows in one logical operation, set
+  # Audited.store[:current_request_uuid] before triggering the audited
+  # operations; this callback reads it first.
+  #
+  # Order matters: ensure_request_uuid runs FIRST so other callbacks
+  # observing the value see the populated UUID. ||= preserves any value
+  # already set by Audited::Sweeper (HTTP path).
+  before_create :ensure_request_uuid,
+                :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
+
+  # PR-717 review remediation .4 — F4 forensic correlation primitive.
+  # Wraps the request_uuid indexed query in an AuditEventBundle PORO so
+  # forensic reconstruction of multi-row admin operations (admin_destroy
+  # of parent + cascaded replies) is one ergonomic call.
+  # See app/services/audit_event_bundle.rb for the bundle interface.
+  def self.bundled_with(audit_id)
+    AuditEventBundle.new(find(audit_id))
+  end
+
+  # PR-717 review remediation .vb4 — request_uuid PRODUCER side. Pairs
+  # with the .14r consumer hook (#ensure_request_uuid before_create)
+  # which reads Audited.store[:current_request_uuid]. Bulk audit-emitting
+  # code paths outside an HTTP request (rake tasks, importers, future
+  # ActiveJob workers) wrap their work in this scope so every audit row
+  # created during the block shares one request_uuid — matching the
+  # in-request behavior provided by Audited::Sweeper Rack middleware.
+  #
+  # Snapshot+restore (not set+delete) so it nests correctly under any
+  # outer scope that already set the value (e.g. an HTTP request that
+  # invokes a service object).
+  def self.with_correlation_scope(uuid: SecureRandom.uuid)
+    prev = Audited.store[:current_request_uuid]
+    Audited.store[:current_request_uuid] = uuid
+    yield uuid
+  ensure
+    Audited.store[:current_request_uuid] = prev
+  end
 
   def self.create_initial_rule_audit_from_mapping(project_id)
     {
@@ -12,8 +54,33 @@ class VulcanAudit < Audited::Audit
       user_type: 'System',
       audited_changes: {
         project_id: project_id
-      }
+      },
+      # PR-717 review remediation .vb4 — populate request_uuid at build
+      # time too. This row will be persisted via activerecord-import's
+      # bulk path (Component#import_srg_rules → Rule.import recursive:
+      # true), which BYPASSES ActiveRecord callbacks. Without this the
+      # ensure_request_uuid before_create hook never fires, leaving the
+      # row with NULL request_uuid even when it sits inside a
+      # with_correlation_scope. Reading current_request_uuid here
+      # guarantees the bulk-inserted audits share the scope UUID
+      # (or get a fresh SecureRandom orphan UUID if no scope is set).
+      request_uuid: current_request_uuid
     }
+  end
+
+  # PR-717 review remediation .vb4 — single source of truth for
+  # "what request_uuid should this audit have right now". Used by
+  # both the consumer-side before_create hook (#ensure_request_uuid)
+  # and bulk-insert build paths that bypass callbacks (e.g.
+  # create_initial_rule_audit_from_mapping). Inside a
+  # with_correlation_scope block returns the scope UUID; outside one
+  # returns a fresh SecureRandom UUID (orphan path).
+  def self.current_request_uuid
+    Audited.store[:current_request_uuid] || SecureRandom.uuid
+  end
+
+  def ensure_request_uuid
+    self.request_uuid ||= self.class.current_request_uuid
   end
 
   def set_username

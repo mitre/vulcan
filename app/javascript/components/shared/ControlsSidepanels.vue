@@ -33,11 +33,18 @@
         <div>
           <p class="mb-2"><strong>PoC Email:</strong> {{ component.admin_email || "Not set" }}</p>
         </div>
-        <UpdateComponentDetailsModal
+        <!-- Edit affordance moved to the dedicated Settings page
+             (header gear icon, admin-only). Details slideover is now
+             a pure read-only summary. -->
+        <b-button
           v-if="canAdmin"
-          :component="component"
-          @componentUpdated="$emit('component-updated')"
-        />
+          :href="`/components/${component.id}/settings`"
+          variant="outline-primary"
+          size="sm"
+          class="mt-2"
+        >
+          <b-icon icon="gear" /> Open Component Settings
+        </b-button>
       </div>
     </b-sidebar>
 
@@ -130,36 +137,6 @@
       </div>
     </b-sidebar>
 
-    <!-- Component Reviews -->
-    <b-sidebar
-      id="sidebar-comp-reviews"
-      :title="titles.compReviews"
-      right
-      shadow
-      backdrop
-      width="400px"
-      :visible="activePanel === 'comp-reviews'"
-      @hidden="$emit('close-panel')"
-    >
-      <div class="px-3 py-2">
-        <div v-for="review in component.reviews" :key="review.id">
-          <p class="mb-1">
-            <strong>{{ review.displayed_rule_name }}</strong>
-          </p>
-          <p class="mb-1">
-            <strong>{{ review.name }} - {{ actionDescriptions[review.action] }}</strong>
-          </p>
-          <p class="mb-1">
-            <small class="text-muted">{{ friendlyDateTime(review.created_at) }}</small>
-          </p>
-          <p class="mb-3 white-space-pre-wrap">{{ review.comment }}</p>
-        </div>
-        <div v-if="!component.reviews || component.reviews.length === 0">
-          <p class="text-muted">No reviews yet.</p>
-        </div>
-      </div>
-    </b-sidebar>
-
     <!-- Rule Satisfies -->
     <b-sidebar
       id="sidebar-satisfies"
@@ -230,7 +207,6 @@ import History from "./History.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
 import RuleReviews from "../rules/RuleReviews.vue";
 import RuleHistories from "../rules/RuleHistories.vue";
-import UpdateComponentDetailsModal from "../components/UpdateComponentDetailsModal.vue";
 import UpdateMetadataModal from "../components/UpdateMetadataModal.vue";
 import AddQuestionsModal from "../components/AddQuestionsModal.vue";
 
@@ -241,7 +217,6 @@ export default {
     RuleSatisfactions,
     RuleReviews,
     RuleHistories,
-    UpdateComponentDetailsModal,
     UpdateMetadataModal,
     AddQuestionsModal,
   },

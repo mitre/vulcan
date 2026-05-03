@@ -38,7 +38,11 @@ module Export
       elsif @formatter.multi_sheet?
         export_as_workbook(components)
       else
-        results = components.map { |component| export_component(component) }
+        # PR-717 piggyback: each component contributes its rule CSV plus
+        # (when public-comment disposition records exist) a disposition CSV.
+        # Packager passes a single Result through and zips multiple — so a
+        # comments-free single-component export still returns a CSV directly.
+        results = components.flat_map { |component| component_csv_results(component) }
         zip_name = @zip_filename || default_zip_filename
         Packager.package(results, zip_filename: zip_name)
       end
@@ -103,25 +107,50 @@ module Export
 
     # Multi-sheet path: aggregates all components into a single workbook.
     # Used by ExcelFormatter where each component becomes one worksheet.
+    # PR-717 piggyback: when a component has any public-comment disposition
+    # records, an additional "<prefix>-Disp..." sheet is appended for that
+    # component alongside its rule sheet.
     def export_as_workbook(components)
-      sheets = components.sort_by(&:id).map do |component|
-        rows_with_sources = build_rows_with_sources(component)
-        sheet = {
-          name: FileNamer.worksheet_name(component),
-          headers: @mode.headers,
-          rows: rows_with_sources.map { |r| r[:row] }
-        }
-        if @mode.include_source_column?
-          sheet[:row_sources] = rows_with_sources.map { |r| r[:source] }
-          sheet[:row_rules] = rows_with_sources.map { |r| r[:rule] }
-        end
-        sheet
+      sheets = components.sort_by(&:id).flat_map do |component|
+        component_workbook_sheets(component)
       end
 
       data = @formatter.generate_workbook(sheets: sheets)
       filename = default_workbook_filename
 
       Result.new(data: data, filename: filename, content_type: @formatter.content_type)
+    end
+
+    # Builds the rule sheet plus (when comments exist) the disposition sheet
+    # for one component. Each return entry is the { name:, headers:, rows:, ... }
+    # shape ExcelFormatter#generate_workbook expects.
+    def component_workbook_sheets(component)
+      sheets = [build_rule_sheet(component)]
+      sheets << build_disposition_sheet(component) if DispositionMatrixExport.records_exist?(component)
+      sheets
+    end
+
+    def build_rule_sheet(component)
+      rows_with_sources = build_rows_with_sources(component)
+      sheet = {
+        name: FileNamer.worksheet_name(component),
+        headers: @mode.headers,
+        rows: rows_with_sources.pluck(:row)
+      }
+      if @mode.include_source_column?
+        sheet[:row_sources] = rows_with_sources.pluck(:source)
+        sheet[:row_rules] = rows_with_sources.pluck(:rule)
+      end
+      sheet
+    end
+
+    def build_disposition_sheet(component)
+      data = DispositionMatrixExport.rows_and_headers(component: component)
+      {
+        name: FileNamer.worksheet_name_disposition(component),
+        headers: data[:headers],
+        rows: data[:rows]
+      }
     end
 
     # Single-file-per-component path: each component is one Result.
@@ -132,6 +161,16 @@ module Export
       filename = FileNamer.component_filename(component, @formatter.file_extension)
 
       Result.new(data: data, filename: filename, content_type: @formatter.content_type)
+    end
+
+    # PR-717 piggyback: rule CSV + disposition CSV (when comments exist).
+    # Returns 1 or 2 Results so the caller can flatten and pass through
+    # Packager. Disposition only attaches on the CSV path; Excel piggyback
+    # uses a different shape (sheets, see export_as_workbook).
+    def component_csv_results(component)
+      results = [export_component(component)]
+      results << DispositionMatrixExport.generate_file(component: component) if DispositionMatrixExport.records_exist?(component)
+      results
     end
 
     def build_rows(component)

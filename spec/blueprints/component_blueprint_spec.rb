@@ -36,6 +36,23 @@ RSpec.describe 'ComponentBlueprint' do
       expect(json).to have_key(:severity_counts)
     end
 
+    # REQUIREMENT: ComponentCard.vue renders a "{N} controls" pill that
+    # depends on rules_count from the JSON payload. Without this field
+    # the Vue side evaluates `component.rules_count > 0` against
+    # undefined and hides the badge — leading to the "Not Configured"
+    # bug Aaron flagged in live testing on the project-detail page.
+    it 'includes rules_count so the card can render the controls badge' do
+      expect(json).to have_key(:rules_count)
+      expect(json[:rules_count]).to be_a(Integer)
+    end
+
+    # Overlaid components are surfaced via component_id on the card —
+    # the same blueprint must expose it for ComponentCard.vue's
+    # `(Overlaid)` tag to render.
+    it 'includes component_id so the (Overlaid) tag can render' do
+      expect(json).to have_key(:component_id)
+    end
+
     it 'excludes heavy fields' do
       expect(json).not_to have_key(:rules)
       expect(json).not_to have_key(:histories)

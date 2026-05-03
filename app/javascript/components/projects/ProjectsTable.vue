@@ -90,6 +90,29 @@
         <span v-else>{{ data.item.name }}</span>
       </template>
 
+      <template #cell(pending_comment_count)="data">
+        <span v-if="data.item.total_comment_count > 0">
+          <b-link
+            v-if="data.item.pending_comment_link && data.item.is_member"
+            v-b-tooltip.hover
+            :href="data.item.pending_comment_link"
+            :title="commentBadgeTitle(data.item)"
+          >
+            <b-badge v-if="data.item.pending_comment_count > 0" variant="warning" class="mr-1">
+              <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }} pending
+            </b-badge>
+            <small class="text-muted"> {{ data.item.total_comment_count }} total </small>
+          </b-link>
+          <span v-else>
+            <b-badge v-if="data.item.pending_comment_count > 0" variant="light" class="mr-1">
+              <b-icon icon="chat-left-text" /> {{ data.item.pending_comment_count }}
+            </b-badge>
+            <small class="text-muted">{{ data.item.total_comment_count }} total</small>
+          </span>
+        </span>
+        <span v-else class="text-muted">—</span>
+      </template>
+
       <template #cell(description)="data">
         {{ truncate(data.item.description, data.item.id) }}
         <b-link
@@ -105,13 +128,19 @@
       </template>
 
       <template #cell(actions)="data">
+        <!-- Admin actions render disabled-with-tooltip for non-admin members,
+             never v-if'd away, per the vulcan-disabled-not-hidden rule. -->
         <UpdateProjectDetailsModal
-          v-if="canAdminProject(data.item)"
           :project="data.item"
           :is_project_table="true"
+          :disabled="!canAdminProject(data.item)"
+          :disabled-title="ADMIN_ONLY_TOOLTIP"
           class="floatright"
           @projectUpdated="refreshProjects"
         />
+        <!-- Access-request controls are status-driven (absence = situation
+             does not apply) — these stay v-if'd per the disabled-not-hidden
+             scope clarification. -->
         <span v-if="!data.item.is_member && !data.item.access_request_id">
           <b-button
             class="btn btn-info text-nowrap mx-2 my-3"
@@ -135,17 +164,18 @@
             Cancel Access Request
           </b-button>
         </span>
-        <span v-if="canAdminProject(data.item)">
-          <b-button
-            class="px-2 m-2"
-            variant="danger"
-            data-testid="remove-project-btn"
-            @click="openDeleteModal(data.item)"
-          >
-            <b-icon icon="trash" aria-hidden="true" />
-            Remove
-          </b-button>
-        </span>
+        <b-button
+          v-b-tooltip.hover="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
+          class="px-2 m-2"
+          variant="danger"
+          data-testid="remove-project-btn"
+          :disabled="!canAdminProject(data.item)"
+          :title="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
+          @click="openDeleteModal(data.item)"
+        >
+          <b-icon icon="trash" aria-hidden="true" />
+          Remove
+        </b-button>
       </template>
     </b-table>
 
@@ -163,6 +193,7 @@
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import FormMixin from "../../mixins/FormMixin.vue";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import { useDeleteConfirmation } from "../../composables";
@@ -170,7 +201,12 @@ import { useDeleteConfirmation } from "../../composables";
 export default {
   name: "ProjectsTable",
   components: { UpdateProjectDetailsModal, ConfirmDeleteModal },
-  mixins: [DateFormatMixinVue, AlertMixinVue],
+  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
+  // each esbuild pack has its own axios singleton (bundle isolation) — the
+  // navbar pack's FormMixin doesn't reach the consuming pack. The DELETE
+  // /projects/:id.json call would 422 on CSRF in a pack that lacks
+  // pack-level CSRF setup.
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixin],
   props: {
     projects: {
       type: Array,
@@ -207,6 +243,10 @@ export default {
       perPage: 10,
       currentPage: 1,
       truncated: {}, // store the truncated state for each project description
+      // Tooltip shown on admin-only buttons when the current user lacks
+      // admin rights — keeps the control discoverable per the
+      // vulcan-disabled-not-hidden rule.
+      ADMIN_ONLY_TOOLTIP: "Project admin only",
       filter: {
         discoverableToggled: this.is_vulcan_admin,
         myProjectsToggled: true,
@@ -216,6 +256,13 @@ export default {
         { key: "name", sortable: true },
         { key: "description", label: "Description" },
         { key: "memberships_count", label: "Members", sortable: true },
+        {
+          key: "pending_comment_count",
+          label: "Comments",
+          sortable: true,
+          thClass: "text-center",
+          tdClass: "text-center",
+        },
         { key: "updated_at", label: "Last Updated", sortable: true },
         {
           key: "actions",
@@ -309,6 +356,16 @@ export default {
     // Matches backend authorize_admin_project (User#can_admin_project?).
     canAdminProject(project) {
       return this.is_vulcan_admin || project.admin;
+    },
+    // Tooltip text for the comments-column link — explicit so users
+    // know what the click will do based on the project's state.
+    commentBadgeTitle(project) {
+      const pending = project.pending_comment_count;
+      const total = project.total_comment_count;
+      if (pending > 0) {
+        return `Open triage: ${pending} pending of ${total} total comment${total === 1 ? "" : "s"}`;
+      }
+      return `Open comments: ${total} total comment${total === 1 ? "" : "s"} (all triaged)`;
     },
     // Path to POST/DELETE to when updating/deleting a project
     formAction: function (project) {

@@ -22,20 +22,22 @@
           size="sm"
           @click="$emit('toggle-panel', 'rule-reviews')"
         >
-          <b-icon icon="chat-left-text" /> Reviews
+          <b-icon icon="chat-quote" /> Comment History
         </b-button>
-        <CommentModal
-          title="Comment"
-          :message="msg.commentMessage"
-          :require-non-empty="true"
-          button-text="Comment"
-          button-icon="chat-left-text"
-          button-variant="outline-secondary"
-          button-size="sm"
-          :button-disabled="false"
-          wrapper-class="d-inline-flex"
-          @comment="$emit('comment', $event)"
-        />
+        <!-- General Comment — opens the same CommentComposerModal as the
+             per-section icons, with no section pre-selected (defaults to
+             "(general)"). The event bubbles up to RulesCodeEditorView /
+             ProjectComponent which mount the modal. -->
+        <b-button
+          variant="outline-secondary"
+          size="sm"
+          :title="commentButtonTooltip"
+          :disabled="commentButtonDisabled"
+          :class="{ 'opacity-65': commentButtonDisabled }"
+          @click="$emit('open-composer', null)"
+        >
+          <b-icon icon="pencil-square" /> Leave a Comment
+        </b-button>
         <b-button variant="outline-info" size="sm" href="/disa-guide" target="_blank">
           <b-icon icon="question-circle" /> DISA Guide
         </b-button>
@@ -117,6 +119,11 @@ export default {
   components: {
     CommentModal,
   },
+  // Component-level "comments closed" gate is provided by ProjectComponent
+  // / RulesCodeEditorView. Default keeps tests + isolated mounts green.
+  inject: {
+    isCommentsClosed: { default: () => () => false },
+  },
   props: {
     rule: {
       type: Object,
@@ -143,6 +150,25 @@ export default {
     },
     isUnderReview() {
       return !!this.rule.review_requestor_id;
+    },
+    commentsClosedForComponent() {
+      return this.isCommentsClosed();
+    },
+    // Comment button activation: locked rule blocks (rule scope) and a
+    // closed comment phase blocks (component scope). The rule's own
+    // status is intentionally NOT a precondition — viewers can comment
+    // on a requirement before its status is set.
+    commentButtonDisabled() {
+      return !!this.rule.locked || this.commentsClosedForComponent;
+    },
+    commentButtonTooltip() {
+      if (this.rule.locked) {
+        return "Rule is locked — comments are closed for this rule";
+      }
+      if (this.commentsClosedForComponent) {
+        return "Comments are closed — the public comment window is not open";
+      }
+      return "Add a general comment on this rule";
     },
   },
 };

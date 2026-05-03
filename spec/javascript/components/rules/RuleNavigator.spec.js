@@ -364,4 +364,56 @@ describe("RuleNavigator", () => {
       expect(wrapper.vm.hasParentRules).toBe(true);
     });
   });
+
+  // ─── PR #717 Task 19: Comment-count badge + pending-only filter ──
+  describe("PR #717 comment-count badge", () => {
+    const ruleWithPending = (id, ruleId, pending = 0, total = 0) =>
+      createRule(id, ruleId, {
+        comment_summary: { pending: pending, total: total },
+      });
+
+    it("renders a comment-count badge for rules with pending > 0", () => {
+      const rules = [ruleWithPending(1, "000010", 3, 5), ruleWithPending(2, "000020", 0, 0)];
+      wrapper = createWrapper({ rules });
+      // The badge wrapper has a stable data-test selector.
+      expect(wrapper.find('[data-test="rule-pending-comment-1"]').exists()).toBe(true);
+      // Rule 2 has no comments — no badge.
+      expect(wrapper.find('[data-test="rule-pending-comment-2"]').exists()).toBe(false);
+    });
+
+    it("badge is icon-only (no count text rendered) — count lives in the tooltip", () => {
+      const rules = [ruleWithPending(7, "000070", 4, 4)];
+      wrapper = createWrapper({ rules });
+      const badge = wrapper.find('[data-test="rule-pending-comment-7"]');
+      expect(badge.exists()).toBe(true);
+      // No digits in the rendered badge — the chat icon alone is the
+      // scan-time signal; the count is surfaced via the v-b-tooltip title.
+      expect(badge.text()).not.toMatch(/\d/);
+      // Tooltip carries the precise count for accessibility + on-hover detail.
+      expect(badge.attributes("title")).toContain("4");
+    });
+
+    it("does NOT render the badge when comment_summary is missing", () => {
+      const rules = [createRule(8, "000080")];
+      wrapper = createWrapper({ rules });
+      expect(wrapper.find('[data-test="rule-pending-comment-8"]').exists()).toBe(false);
+    });
+
+    it("filteredRules narrows to rules with pending > 0 when pendingCommentsOnly is set", () => {
+      const rules = [
+        ruleWithPending(10, "000100", 3, 3),
+        ruleWithPending(11, "000110", 0, 0),
+        createRule(12, "000120"),
+      ];
+      wrapper = createWrapper({ rules }, { pendingCommentsOnly: true });
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      expect(ids).toEqual([10]);
+    });
+
+    it("filteredRules behaves as before when pendingCommentsOnly is unset", () => {
+      const rules = [ruleWithPending(20, "000200", 1, 1), ruleWithPending(21, "000210", 0, 0)];
+      wrapper = createWrapper({ rules });
+      expect(wrapper.vm.filteredRules.length).toBe(2);
+    });
+  });
 });
