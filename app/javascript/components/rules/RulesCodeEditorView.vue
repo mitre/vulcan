@@ -214,6 +214,7 @@
         @close-panel="closePanel"
         @component-updated="refreshComponent"
         @rule-selected="handleRuleSelected"
+        @open-reply-composer="onOpenReplyComposer"
       />
 
       <!-- Comment composer modal. Opens via onOpenComposer
@@ -225,7 +226,9 @@
         :rule-id="selectedRule.id"
         :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
         :initial-section="composerSection"
+        :reply-to-review-id="composerReplyToId"
         @posted="onComposerPosted"
+        @hidden="onComposerHidden"
       />
     </template>
   </ControlsPageLayout>
@@ -452,6 +455,9 @@ export default {
       // section pre-selected on the comment composer when a
       // SectionCommentIcon click bubbles open-composer up to here.
       composerSection: null,
+      // top-level review id when the composer is opened in reply mode
+      // via CommentThread's "Reply" buttons.
+      composerReplyToId: null,
     };
   },
   computed: {
@@ -520,6 +526,12 @@ export default {
      */
     onOpenComposer(section) {
       this.composerSection = section;
+      this.composerReplyToId = null;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    onOpenReplyComposer(reviewId) {
+      this.composerSection = null;
+      this.composerReplyToId = reviewId;
       this.$bvModal.show("comment-composer-modal");
     },
     /**
@@ -530,6 +542,10 @@ export default {
       if (this.selectedRule) {
         this.$root.$emit("refresh:rule", this.selectedRule.id, "all");
       }
+      this.composerReplyToId = null;
+    },
+    onComposerHidden() {
+      this.composerReplyToId = null;
     },
     updateShowSRGIdChecked() {
       const componentId = this.component.id;

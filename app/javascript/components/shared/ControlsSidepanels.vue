@@ -176,6 +176,8 @@
           :rule="selectedRule"
           :effective-permissions="effectivePermissions"
           :current-user-id="currentUserId"
+          :comments-closed="commentsClosed"
+          @open-reply-composer="$emit('open-reply-composer', $event)"
         />
       </div>
     </b-sidebar>
@@ -271,6 +273,9 @@ export default {
     };
   },
   computed: {
+    commentsClosed() {
+      return (this.component?.comment_phase || "open") !== "open";
+    },
     canAdmin() {
       return this.role_gte_to(this.effectivePermissions, "admin");
     },

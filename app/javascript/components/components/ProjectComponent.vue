@@ -92,7 +92,9 @@
           :rule-id="selectedRule.id"
           :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
           :initial-section="composerSection"
+          :reply-to-review-id="composerReplyToId"
           @posted="onComposerPosted"
+          @hidden="onComposerHidden"
         />
 
         <!-- Purpose + Format radios.
@@ -122,6 +124,7 @@
           @close-panel="closePanel"
           @component-updated="refreshComponent"
           @rule-selected="handleRuleSelected"
+          @open-reply-composer="onOpenReplyComposer"
         />
       </template>
     </ControlsPageLayout>
@@ -259,6 +262,10 @@ export default {
       // section pre-selected on the comment composer when a
       // SectionCommentIcon click bubbles open-composer up to here.
       composerSection: null,
+      // top-level review id when the composer is opened in reply mode
+      // (CommentThread's "Reply" buttons emit open-reply-composer up
+      // through ControlsSidepanels → here).
+      composerReplyToId: null,
       // per-component editor Download surface.
       // Mode-aware ExportModal (Working Copy / Vendor Submission /
       // STIG-Ready Publish Draft / Backup) hits the project export
@@ -316,6 +323,12 @@ export default {
      */
     onOpenComposer(section) {
       this.composerSection = section;
+      this.composerReplyToId = null;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    onOpenReplyComposer(reviewId) {
+      this.composerSection = null;
+      this.composerReplyToId = reviewId;
       this.$bvModal.show("comment-composer-modal");
     },
     /**
@@ -324,6 +337,10 @@ export default {
      */
     onComposerPosted() {
       this.refreshComponent();
+      this.composerReplyToId = null;
+    },
+    onComposerHidden() {
+      this.composerReplyToId = null;
     },
     openCommentsPanel() {
       globalThis.location.href = `/components/${this.component.id}/triage`;

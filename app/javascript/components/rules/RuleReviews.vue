@@ -32,22 +32,17 @@
       <p class="mb-1">
         <small class="text-muted">{{ friendlyDateTime(parent.created_at) }}</small>
       </p>
-      <p class="mb-0 white-space-pre-wrap">{{ parent.comment }}</p>
+      <p class="mb-1 white-space-pre-wrap">{{ parent.comment }}</p>
 
-      <div
-        v-for="response in responsesFor(parent.id)"
-        :key="response.id"
-        class="ml-4 mt-2 pl-3 border-left border-info"
-      >
-        <p class="mb-0">
-          <strong>{{ response.name }}</strong>
-          <small class="text-muted ml-2">responding to ↑</small>
-        </p>
-        <p class="mb-1">
-          <small class="text-muted">{{ friendlyDateTime(response.created_at) }}</small>
-        </p>
-        <p class="mb-0 white-space-pre-wrap">{{ response.comment }}</p>
-      </div>
+      <CommentThread
+        v-if="parent.action === 'comment'"
+        :ref="`thread-${parent.id}`"
+        :parent-review-id="parent.id"
+        :responses-count="responsesCountFor(parent.id)"
+        :can-reply="canReply"
+        :initially-expanded="responsesCountFor(parent.id) > 0"
+        @reply="onReply"
+      />
     </div>
 
     <p v-if="rule.reviews.length === 0" class="text-muted small">No reviews or comments yet.</p>
@@ -80,10 +75,11 @@ import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
+import CommentThread from "../shared/CommentThread.vue";
 
 export default {
   name: "RuleReviews",
-  components: { SectionLabel, TriageStatusBadge, FilterDropdown },
+  components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
@@ -99,6 +95,10 @@ export default {
     rule: {
       type: Object,
       required: true,
+    },
+    commentsClosed: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -138,10 +138,21 @@ export default {
     topLevelFilteredVisible() {
       return this.topLevelFilteredAll.slice(0, this.numShownReviews);
     },
+    // Authenticated viewer+ can reply during an open comment window.
+    // Server enforces via reject_if_comments_closed + authorize_viewer_project.
+    canReply() {
+      return !!this.currentUserId && !!this.effectivePermissions && !this.commentsClosed;
+    },
   },
   methods: {
-    responsesFor(parentId) {
-      return (this.rule.reviews || []).filter((r) => r.responding_to_review_id === parentId);
+    // Count replies known locally on rule.reviews. CommentThread also fetches
+    // the canonical list via /reviews/:id/responses on expand; this count
+    // drives the toggle visibility before the fetch resolves.
+    responsesCountFor(parentId) {
+      return (this.rule.reviews || []).filter((r) => r.responding_to_review_id === parentId).length;
+    },
+    onReply(parentId) {
+      this.$emit("open-reply-composer", parentId);
     },
   },
 };

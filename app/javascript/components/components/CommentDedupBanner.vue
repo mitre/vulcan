@@ -15,11 +15,18 @@
       </button>
     </b-alert>
     <ul v-show="expanded" :id="listId" class="list-unstyled mb-0 pl-3">
-      <li v-for="row in rows" :key="row.id" class="mb-1">
-        <strong>{{ row.author_name }}</strong>
-        <SectionLabel v-if="row.section" :section="row.section" class="badge badge-light ml-1" />
-        ({{ relativeTime(row.created_at) }}) — &quot;{{ truncate(row.comment, 100) }}&quot;
-        <a href="#" @click.prevent="$emit('reply', row.id)">[Reply]</a>
+      <li v-for="row in rows" :key="row.id" class="mb-2">
+        <div>
+          <strong>{{ row.author_name }}</strong>
+          <SectionLabel v-if="row.section" :section="row.section" class="badge badge-light ml-1" />
+          ({{ relativeTime(row.created_at) }}) — &quot;{{ truncate(row.comment, 100) }}&quot;
+        </div>
+        <CommentThread
+          :parent-review-id="row.id"
+          :responses-count="row.responses_count || 0"
+          :can-reply="true"
+          @reply="$emit('reply', $event)"
+        />
       </li>
     </ul>
   </div>
@@ -29,10 +36,11 @@
 import axios from "axios";
 import { sectionLabel } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
+import CommentThread from "../shared/CommentThread.vue";
 
 export default {
   name: "CommentDedupBanner",
-  components: { SectionLabel },
+  components: { SectionLabel, CommentThread },
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], required: true },

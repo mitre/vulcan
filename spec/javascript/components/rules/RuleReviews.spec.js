@@ -1,7 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleReviews from "@/components/rules/RuleReviews.vue";
+
+// CommentThread lazy-loads replies via axios.get(/reviews/:id/responses).
+// Stub it here so the rendering tests don't depend on a network call.
+vi.mock("axios", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: { rows: [] } })),
+    defaults: { headers: { common: {} } },
+  },
+}));
 
 /**
  * REQUIREMENTS:
@@ -71,24 +80,27 @@ describe("RuleReviews", () => {
     });
   });
 
-  describe("response nesting", () => {
-    it("renders responses under their parent (responding_to_review_id)", () => {
+  describe("reply chain (CommentThread integration)", () => {
+    it("shows a 'N replies' toggle on top-level comments that have replies", () => {
       const w = mountWith(reviewsWithLifecycle);
-      const html = w.html();
-      const johnIdx = html.indexOf("John Doe");
-      const aaronIdx = html.indexOf("Aaron Lippold");
-      expect(johnIdx).toBeGreaterThan(-1);
-      expect(aaronIdx).toBeGreaterThan(-1);
-      // Reply must appear after the parent it responds to
-      expect(johnIdx).toBeLessThan(aaronIdx);
+      // John Doe's comment has one reply (Aaron) in rule.reviews; Sarah's
+      // has none. The toggle text reflects local count before lazy fetch.
+      expect(w.text()).toContain("1 reply");
     });
 
     it("does not double-count replies as top-level comments", () => {
       const w = mountWith(reviewsWithLifecycle);
-      // There are 3 reviews total but only 2 top-level — so only 2 status
-      // badges (verified above), and exactly one block contains the
-      // 'responding to' indicator
-      expect(w.html().match(/responding to/g)?.length || 0).toBe(1);
+      // 3 reviews total but only 2 top-level. Only 2 TriageStatusBadge
+      // components render (verified in the prior describe). Replies render
+      // inside CommentThread (lazy-loaded), not as their own top-level row.
+      const badges = w.findAllComponents({ name: "TriageStatusBadge" });
+      expect(badges.length).toBe(2);
+    });
+
+    it("mounts a CommentThread per top-level comment row", () => {
+      const w = mountWith(reviewsWithLifecycle);
+      const threads = w.findAllComponents({ name: "CommentThread" });
+      expect(threads.length).toBe(2);
     });
   });
 

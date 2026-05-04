@@ -106,14 +106,13 @@ describe("CommentDedupBanner", () => {
     expect(labels.length).toBe(2);
   });
 
-  it("emits 'reply' with the row id when the [Reply] link is clicked", async () => {
+  it("emits 'reply' with the row id when CommentThread emits reply", async () => {
     const w = await mountWith();
-    // Expand so the list is in the DOM
+    // Expand so the per-row CommentThreads are in the DOM
     await w.find("button").trigger("click");
-    const replyLinks = w.findAll("a");
-    const firstReply = replyLinks.wrappers.find((a) => a.text() === "[Reply]");
-    expect(firstReply).toBeDefined();
-    await firstReply.trigger("click");
+    const threads = w.findAllComponents({ name: "CommentThread" });
+    expect(threads.length).toBe(3);
+    threads.at(0).vm.$emit("reply", 1);
     expect(w.emitted("reply")).toBeTruthy();
     expect(w.emitted("reply")[0]).toEqual([1]);
   });
