@@ -177,6 +177,7 @@ export default {
   provide() {
     return {
       getCommentPhase: () => this.component.comment_phase || "open",
+      getClosedReason: () => this.component.closed_reason || null,
       isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
     };
   },
@@ -301,10 +302,10 @@ export default {
     },
   },
   mounted() {
-    // Handle deep linking to specific rule
     if (this.queriedRule && this.queriedRule.id) {
       this.selectRule(this.queriedRule.id);
-      window.history.pushState({}, "", `/components/${this.component.id}`);
+      // replaceState (not pushState) so back returns to the calling page.
+      window.history.replaceState({}, "", `/components/${this.component.id}`);
     }
   },
   methods: {

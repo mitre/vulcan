@@ -276,6 +276,7 @@ export default {
   provide() {
     return {
       getCommentPhase: () => this.component.comment_phase || "open",
+      getClosedReason: () => this.component.closed_reason || null,
       isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
     };
   },

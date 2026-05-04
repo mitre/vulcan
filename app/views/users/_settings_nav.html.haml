@@ -1,16 +1,20 @@
 -# Shared left-rail nav for the user settings shell.
--# Pass `active:` (one of :profile, :password, :activity) so the matching
--# entry receives the `active` class. Password tab is hidden for users
--# whose account is provider-managed (no local password to change).
+-# Pass `active:` (one of :profile, :password, :activity, :my_comments) so
+-# the matching entry receives the `active` class. Password tab is hidden
+-# for users whose account is provider-managed.
+-#
+-# data-turbolinks="false" on every link forces a full page load. Each
+-# settings sub-page is a separate Vue pack; with Turbolinks, the new
+-# pack's turbolinks:load listener can register AFTER the event has
+-# fired, leaving the mount target empty.
 - active ||= :profile
 .list-group.list-group-flush.user-settings-nav
-  = link_to 'Profile Information', '/users/edit',
+  = link_to 'Profile Information', '/users/edit', data: { turbolinks: false },
             class: "list-group-item list-group-item-action #{'active' if active == :profile}"
   - unless current_user.provider.present?
-    = link_to 'Change Password', '/users/edit/password',
+    = link_to 'Change Password', '/users/edit/password', data: { turbolinks: false },
               class: "list-group-item list-group-item-action #{'active' if active == :password}"
-  = link_to 'Activity', '/users/edit/activity',
+  = link_to 'Activity', '/users/edit/activity', data: { turbolinks: false },
             class: "list-group-item list-group-item-action #{'active' if active == :activity}"
-  %hr.my-2
-  = link_to 'My Comments', "/users/#{current_user.id}/comments",
-            class: 'list-group-item list-group-item-action'
+  = link_to 'My Comments', "/users/#{current_user.id}/comments", data: { turbolinks: false },
+            class: "list-group-item list-group-item-action #{'active' if active == :my_comments}"

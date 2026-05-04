@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { sectionLabel } from "../../constants/triageVocabulary";
+import { sectionLabel, commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {
   name: "SectionCommentIcon",
@@ -39,6 +39,9 @@ export default {
     locked: { type: Boolean, default: false },
     // Component's comment_phase is anything other than 'open'.
     commentsClosed: { type: Boolean, default: false },
+    // closed_reason value when commentsClosed is true; drives the
+    // tooltip wording so the user knows WHY commenting is unavailable.
+    closedReason: { type: String, default: null },
   },
   computed: {
     sectionDisplay() {
@@ -66,9 +69,7 @@ export default {
     tooltipText() {
       // Rule-scope (locked) before component-scope (commentsClosed).
       if (this.locked) return "Rule is locked — comments are closed for this rule";
-      if (this.commentsClosed) {
-        return "Comments are closed — the public comment window is not open";
-      }
+      if (this.commentsClosed) return commentsClosedTooltip(this.closedReason);
       return this.pendingCount > 0
         ? `${this.pendingCount} pending comments on ${this.sectionDisplay}`
         : `Comment on ${this.sectionDisplay}`;

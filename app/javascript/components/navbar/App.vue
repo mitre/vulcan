@@ -69,11 +69,20 @@
                 <div v-if="current_user && current_user.email">{{ current_user.email }}</div>
               </b-dropdown-text>
               <b-dropdown-divider v-if="userDisplayName" />
-              <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
-              <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath">
+              <!-- data-turbolinks="false" — each profile sub-page is its
+                   own Vue pack, and Turbolinks-tracked navigation
+                   between packs sometimes lands before the new pack's
+                   turbolinks:load listener registers. Force a full page
+                   load to keep the mount reliable. -->
+              <b-dropdown-item :href="profile_path" data-turbolinks="false">
+                Profile
+              </b-dropdown-item>
+              <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath" data-turbolinks="false">
                 My Comments
               </b-dropdown-item>
-              <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
+              <b-dropdown-item v-if="users_path" :href="users_path" data-turbolinks="false">
+                Manage Users
+              </b-dropdown-item>
               <b-dropdown-divider />
               <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
             </b-nav-item-dropdown>

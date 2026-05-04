@@ -113,6 +113,7 @@
 <script>
 import CommentModal from "../shared/CommentModal.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
+import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {
   name: "RuleActionsToolbar",
@@ -123,6 +124,7 @@ export default {
   // / RulesCodeEditorView. Default keeps tests + isolated mounts green.
   inject: {
     isCommentsClosed: { default: () => () => false },
+    getClosedReason: { default: () => () => null },
   },
   props: {
     rule: {
@@ -166,7 +168,7 @@ export default {
         return "Rule is locked — comments are closed for this rule";
       }
       if (this.commentsClosedForComponent) {
-        return "Comments are closed — the public comment window is not open";
+        return commentsClosedTooltip(this.getClosedReason());
       }
       return "Add a general comment on this rule";
     },

@@ -42,6 +42,7 @@
         :pending-count="pendingCommentCount"
         :locked="ruleLocked"
         :comments-closed="commentsClosedInjected"
+        :closed-reason="closedReasonInjected"
         class="ml-1"
         @open-composer="$emit('open-composer', xccdfSection)"
       />
@@ -77,6 +78,7 @@ export default {
   // tests + isolated mounts green.
   inject: {
     isCommentsClosed: { default: () => () => false },
+    getClosedReason: { default: () => () => null },
   },
   props: {
     fieldName: { type: String, required: true },
@@ -165,6 +167,9 @@ export default {
     },
     commentsClosedInjected() {
       return this.isCommentsClosed();
+    },
+    closedReasonInjected() {
+      return this.getClosedReason();
     },
   },
 };

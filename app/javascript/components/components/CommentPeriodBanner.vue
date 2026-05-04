@@ -3,7 +3,7 @@
     <template v-if="bannerKind === 'open-with-deadline'">
       <strong>Open for comment</strong>
       · last day to comment: {{ friendlyDate(component.comment_period_ends_at) }}
-      <span class="text-muted">({{ daysRemaining }} days left)</span>
+      <span class="text-muted">({{ daysRemainingLabel }})</span>
     </template>
     <template v-else-if="bannerKind === 'closed-with-past-deadline'">
       <strong>Comments closed on {{ friendlyDate(component.comment_period_ends_at) }}</strong>
@@ -54,6 +54,10 @@ export default {
       if (!this.component.comment_period_ends_at) return null;
       const ms = new Date(this.component.comment_period_ends_at).getTime() - Date.now();
       return Math.ceil(ms / 86400000);
+    },
+    daysRemainingLabel() {
+      const n = this.daysRemaining;
+      return `${n} ${n === 1 ? "day" : "days"} left`;
     },
     bannerVariant() {
       return this.bannerKind === "open-with-deadline" ? "info" : "secondary";

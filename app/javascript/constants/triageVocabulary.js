@@ -103,6 +103,18 @@ export function commentPhaseStatusText(phase, reason) {
   return `${phaseLabel} (${reasonLabel})`;
 }
 
+// Tooltip copy for a disabled comment-related affordance, parameterized
+// on closed_reason so the user knows WHY commenting is unavailable.
+export function commentsClosedTooltip(reason) {
+  if (reason === "adjudicating") {
+    return "Comments are closed — the disposition is being adjudicated";
+  }
+  if (reason === "finalized") {
+    return "Comments are closed — the disposition is finalized";
+  }
+  return "Comments are not enabled for this component";
+}
+
 // Helper: render the section label for a possibly-null section value
 export function sectionLabel(section) {
   if (section === null || section === undefined) return "(general)";

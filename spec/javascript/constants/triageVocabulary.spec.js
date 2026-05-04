@@ -9,6 +9,7 @@ import {
   COMMENT_PHASE_LABELS,
   CLOSED_REASON_LABELS,
   commentPhaseStatusText,
+  commentsClosedTooltip,
   sectionLabel,
   triageDisplay,
 } from "@/constants/triageVocabulary";
@@ -70,6 +71,12 @@ describe("triageVocabulary", () => {
     expect(commentPhaseStatusText("closed", null)).toBe("Closed");
     expect(commentPhaseStatusText("closed", "adjudicating")).toBe("Closed (Adjudicating)");
     expect(commentPhaseStatusText("closed", "finalized")).toBe("Closed (Finalized)");
+  });
+
+  it("commentsClosedTooltip varies wording by closed_reason", () => {
+    expect(commentsClosedTooltip(null)).toMatch(/not enabled/i);
+    expect(commentsClosedTooltip("adjudicating")).toMatch(/adjudicat/i);
+    expect(commentsClosedTooltip("finalized")).toMatch(/finaliz/i);
   });
 
   it("sectionLabel renders null as (general)", () => {

@@ -168,12 +168,36 @@ describe("SectionCommentIcon", () => {
       expect(w.emitted("open-composer")).toBeUndefined();
     });
 
-    it("uses a 'comments closed' tooltip when commentsClosed", () => {
+    it("uses a 'not enabled' tooltip when commentsClosed without a reason", () => {
       const w = mount(SectionCommentIcon, {
         localVue,
         propsData: { section: "title", pendingCount: 0, commentsClosed: true },
       });
-      expect(w.vm.tooltipText).toMatch(/comments are closed|comment window/i);
+      expect(w.vm.tooltipText).toMatch(/not enabled/i);
+    });
+
+    it("varies the tooltip by closedReason", () => {
+      const adj = mount(SectionCommentIcon, {
+        localVue,
+        propsData: {
+          section: "title",
+          pendingCount: 0,
+          commentsClosed: true,
+          closedReason: "adjudicating",
+        },
+      });
+      expect(adj.vm.tooltipText).toMatch(/adjudicat/i);
+
+      const fin = mount(SectionCommentIcon, {
+        localVue,
+        propsData: {
+          section: "title",
+          pendingCount: 0,
+          commentsClosed: true,
+          closedReason: "finalized",
+        },
+      });
+      expect(fin.vm.tooltipText).toMatch(/finaliz/i);
     });
 
     it("locked takes precedence over commentsClosed (more specific)", () => {

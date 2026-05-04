@@ -168,7 +168,14 @@ export default {
         if (this.filterStatus && this.filterStatus !== "all") {
           params.triage_status = this.filterStatus;
         }
-        const { data } = await axios.get(`/users/${this.userId}/comments`, { params });
+        // Explicit Accept header — the user_comments pack has its own
+        // axios singleton (esbuild bundle isolation) and doesn't pull in
+        // FormMixin's defaults setup, so without this Rails serves the
+        // HTML view of the same /users/:id/comments route.
+        const { data } = await axios.get(`/users/${this.userId}/comments`, {
+          params,
+          headers: { Accept: "application/json" },
+        });
         this.rows = data.rows;
         this.total = data.pagination.total;
       } catch (error) {

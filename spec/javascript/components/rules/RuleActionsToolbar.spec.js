@@ -250,7 +250,8 @@ describe("RuleActionsToolbar", () => {
         const btn = findCommentButton(wrapper);
         expect(btn).toBeDefined();
         expect(btn.attributes("disabled")).toBeDefined();
-        expect(btn.attributes("title")).toMatch(/closed/i);
+        // Default "no reason" tooltip — see commentsClosedTooltip().
+        expect(btn.attributes("title")).toMatch(/not enabled/i);
       });
 
       it("Save button IS disabled when readOnly=true (viewer scenario)", () => {
