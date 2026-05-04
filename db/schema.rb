@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_170000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -146,9 +146,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_170000) do
     t.integer "release"
     t.string "title"
     t.text "description"
-    t.string "comment_phase", default: "draft", null: false
+    t.string "comment_phase", default: "open", null: false
     t.datetime "comment_period_starts_at"
     t.datetime "comment_period_ends_at"
+    t.string "closed_reason"
+    t.index ["closed_reason"], name: "index_components_on_closed_reason"
     t.index ["comment_period_starts_at", "comment_period_ends_at"], name: "index_components_on_comment_period_dates"
     t.index ["comment_phase"], name: "index_components_on_comment_phase"
     t.index ["component_id"], name: "index_components_on_component_id"
