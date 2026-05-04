@@ -96,7 +96,7 @@ export default {
     extraClass: { type: [String, Array, Object], default: "" },
     idPrefix: { type: String, default: "ruleEditor" },
     customDisplayCheck: { type: Function, default: null },
-    // PR #717 — Section comment icon. Default false so existing call sites
+    // Section comment icon. Default false so existing call sites
     // are unaffected; consumers opt in for the first field of each section.
     showCommentIcon: { type: Boolean, default: false },
     ruleReviews: { type: Array, default: () => [] },

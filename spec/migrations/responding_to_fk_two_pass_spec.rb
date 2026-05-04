@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# PR-717 review remediation .kea — regression guard for the 2-pass
+# regression guard for the 2-pass
 # Strong Migrations FK pattern on reviews.responding_to_review_id.
 #
 # Pre-fix: 20260502080000_change_review_responding_to_fk_to_restrict
@@ -20,7 +20,7 @@ require 'rails_helper'
 # migration validated the FK, only that the FK exists, has the
 # correct on_delete behavior, and is validated. Either the legacy
 # 1-pass migration or the new 2-pass pair leaves the same end state.
-RSpec.describe 'reviews.responding_to_review_id FK 2-pass (PR-717 .kea)' do
+RSpec.describe 'reviews.responding_to_review_id FK 2-pass' do
   let(:fk) do
     ActiveRecord::Base.connection.foreign_keys(:reviews).find do |f|
       f.column == 'responding_to_review_id'

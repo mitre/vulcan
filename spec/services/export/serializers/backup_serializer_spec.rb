@@ -181,7 +181,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
       end
     end
 
-    # PR #717 — public-comment review workflow round-trip support. Backups
+    # public-comment review workflow round-trip support. Backups
     # taken mid-review must preserve the full lifecycle so a restore reconstructs
     # disposition state without compliance loss. Validators on Review prevent
     # cross-component replies, so this section uses a single rule for all the

@@ -1053,11 +1053,11 @@ RSpec.describe Component do
       expect(unresolved[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id, @c3.id)
     end
 
-    # PR-717 review remediation .17 — partial index covering the triage
+    # partial index covering the triage
     # queue's natural shape: top-level comments filtered by triage_status
     # and ordered by created_at DESC. Asserts the index exists; EXPLAIN
     # plan use is verified by a separate query-plan test.
-    describe 'partial index on triage queue shape (PR-717 .17)' do
+    describe 'partial index on triage queue shape' do
       it 'creates idx_reviews_top_level_triage_recent on (triage_status, created_at) WHERE top-level comment' do
         idx = ActiveRecord::Base.connection.indexes(:reviews)
                                 .find { |i| i.name == 'idx_reviews_top_level_triage_recent' }
@@ -1102,11 +1102,11 @@ RSpec.describe Component do
       end
     end
 
-    # PR-717 review remediation .j4a step C2 — row hash includes
+    # row hash includes
     # commenter_display_name + commenter_imported so the triage page
     # renders attribution even after User#destroy nullifies user_id.
     # Mirrors the existing triager_*/adjudicator_* fields in the same row.
-    describe 'commenter attribution fields (PR-717 .j4a step C2)' do
+    describe 'commenter attribution fields' do
       it 'exposes commenter_display_name with resolved User name' do
         result = shared_component.paginated_comments(triage_status: 'all')
         c1_row = result[:rows].find { |r| r[:id] == @c1.id }

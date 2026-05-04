@@ -87,7 +87,7 @@ describe("ProjectsTable", () => {
   });
 
   // ==========================================
-  // PENDING-COMMENTS COLUMN (PR #717 follow-on)
+  // PENDING-COMMENTS COLUMN
   // Requirement: separate "Comments" column with a clickable badge that
   // links to the server-resolved deep-link target (no client-side bouncing).
   // ==========================================

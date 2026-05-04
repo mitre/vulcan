@@ -74,10 +74,10 @@ RSpec.describe 'Memberships' do
       expect(Membership.find_by(id: target_membership.id)).to be_nil
     end
 
-    # PR-717 .a5u — opt the success path into the canonical-toast-response
+    # opt the success path into the canonical-toast-response
     # shared example so any future regression on this endpoint surfaces
     # alongside the controller-specific assertions above.
-    context 'success-path toast shape (PR-717 .a5u)' do
+    context 'success-path toast shape' do
       before { delete "/memberships/#{target_membership.id}", headers: json_headers }
 
       it_behaves_like 'a canonical toast response'

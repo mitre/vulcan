@@ -3,7 +3,7 @@
 require 'rails_helper'
 require 'rake'
 
-# PR-717 review remediation .vb4 — request_uuid producer side. The
+# request_uuid producer side. The
 # stig_and_srg_puller:pull task is a non-HTTP code path. The
 # audit-compliance review flagged that any audit row emitted during the
 # task would land with a distinct SecureRandom.uuid (via the .14r
@@ -17,7 +17,7 @@ require 'rake'
 # scope is preemptive defense so that the moment any model touched
 # during pull starts emitting audits (or one of these models becomes
 # audited), the forensic invariant holds without further refactoring.
-RSpec.describe 'stig_and_srg_puller:save_data (PR-717 .vb4 wrap)' do
+RSpec.describe 'stig_and_srg_puller:save_data' do
   before(:all) { Rails.application.load_tasks }
 
   before do

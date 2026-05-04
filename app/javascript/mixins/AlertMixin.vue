@@ -44,7 +44,7 @@ export default {
         toast = response["response"]["data"]["toast"];
       }
 
-      // PR-717 review remediation .19d — every controller now returns
+      // every controller now returns
       // canonical {title, message, variant} object toasts (was a mix of
       // string + object pre-fix). The string-handling branch was here
       // and has been removed; if a backend still returns a string we

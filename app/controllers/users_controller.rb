@@ -83,7 +83,7 @@ class UsersController < ApplicationController
           flash.notice = 'Successfully updated user.'
           redirect_to action: 'index'
         end
-        # PR-717 review remediation .19d — multi-key response (toast +
+        # multi-key response (toast +
         # user). Inline the canonical toast object since render_toast
         # doesn't support piggybacking extra response keys.
         format.json do
@@ -181,7 +181,7 @@ class UsersController < ApplicationController
   # Generate a reset token and return the URL without sending email (no SMTP needed)
   def generate_reset_link
     reset_url = generate_reset_url(@user)
-    # PR-717 review remediation .19d — multi-key response (toast + reset_url).
+    # multi-key response (toast + reset_url).
     # Inline the canonical toast object since render_toast doesn't piggyback
     # extra response keys.
     render json: {
@@ -203,7 +203,7 @@ class UsersController < ApplicationController
     @user.lock_access!(send_instructions: false)
     @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [nil, @user.locked_at.iso8601] },
                          user: current_user, comment: "Account locked by #{current_user.name}")
-    # PR-717 review remediation .19d — multi-key response (toast + user).
+    # multi-key response (toast + user).
     render json: {
       toast: { title: 'Account locked.',
                message: ["Account #{@user.email} locked."],
@@ -218,7 +218,7 @@ class UsersController < ApplicationController
     @user.unlock_access!
     @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [prev_locked_at, nil] },
                          user: current_user, comment: "Account unlocked by #{current_user.name}")
-    # PR-717 review remediation .19d — multi-key response (toast + user).
+    # multi-key response (toast + user).
     render json: {
       toast: { title: 'Account unlocked.',
                message: ["Account #{@user.email} unlocked."],

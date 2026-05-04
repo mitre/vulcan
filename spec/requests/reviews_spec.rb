@@ -13,7 +13,7 @@ RSpec.describe 'Reviews' do
   let_it_be(:anchor_admin) { create(:user, admin: true) }
   let_it_be(:project) { create(:project) }
   let_it_be(:srg) { create(:security_requirements_guide) }
-  # PR #717: comment posting requires comment_phase = 'open'. Most tests in
+  # comment posting requires comment_phase = 'open'. Most tests in
   # this file exercise the comment workflow; default the shared component
   # to open so they don't fail the new phase gate. Tests that need a
   # different phase set it explicitly via update_columns.
@@ -42,14 +42,14 @@ RSpec.describe 'Reviews' do
         expect(Review.last).to have_attributes(action: 'comment', user: viewer, rule: rule)
       end
 
-      # PR-717 review remediation .18 — canonicalize create response toast.
+      # canonicalize create response toast.
       # Pre-fix the create endpoint returned `{toast: 'Successfully added
       # review.'}` (string), every other PR-717 endpoint returned
       # `{toast: {title:, message:, variant:}}` (object). Forced the
       # frontend AlertMixin to special-case string vs object. Now uniform.
-      # PR-717 .a5u — opted into the canonical-toast-response shared
+      # opted into the canonical-toast-response shared
       # example so any future regression on this endpoint surfaces here.
-      context 'success-path toast shape (PR-717 .18 + .a5u)' do # rubocop:disable RSpec/NestedGroups
+      context 'success-path toast shape' do # rubocop:disable RSpec/NestedGroups
         before do
           post "/rules/#{rule.id}/reviews", params: {
             review: { action: 'comment', comment: 'shape check', component_id: component.id }
@@ -277,7 +277,7 @@ RSpec.describe 'Reviews' do
         expect(response.parsed_body.dig('toast', 'message').join).to match(/canonical comment/i)
       end
 
-      # PR #717 Task 24 — mark-as-duplicate decision flow. Most validators
+      # mark-as-duplicate decision flow. Most validators
       # already exist on the Review model (no_self_duplicate_reference,
       # duplicate_of_must_be_same_component, duplicate_status_requires_target).
       # The chained-duplicate guard is the new validator added in this task.
@@ -639,7 +639,7 @@ RSpec.describe 'Reviews' do
       end
     end
 
-    # PR-717 review remediation .6 — policy: a user removed from the project
+    # policy: a user removed from the project
     # has no remaining authority on the project. They cannot withdraw their
     # own pending comments after leaving. The comment itself stays put
     # (project record stability); the actor just loses the ability to alter
@@ -714,7 +714,7 @@ RSpec.describe 'Reviews' do
       end
     end
 
-    # PR-717 review remediation .6 — same gap as withdraw above. A user removed
+    # same gap as withdraw above. A user removed
     # from the project could still edit their own pending comments because
     # :authorize_viewer_project was never wired into the update path.
     context 'as the commenter who was removed from the project' do
@@ -731,7 +731,7 @@ RSpec.describe 'Reviews' do
     end
   end
 
-  # PR #717: comment_phase gates the public-comment workflow.
+  # comment_phase gates the public-comment workflow.
   #
   #   open                       — public comments accepted; triage allowed
   #   closed (no reason)         — no NEW public comments; triage allowed
@@ -881,7 +881,7 @@ RSpec.describe 'Reviews' do
     end
   end
 
-  # PR-717 Task 25 — admin actions on a comment.
+  # admin actions on a comment.
   # Force-withdraw lets a project admin override the commenter's intent
   # (spam, PII, policy violations, withdrawn-account cleanup). Audit
   # comment is required so the audit trail captures the
@@ -925,7 +925,7 @@ RSpec.describe 'Reviews' do
         expect(response).to have_http_status(:unprocessable_entity)
       end
 
-      # PR-717 review remediation .16 — defense-in-depth length cap.
+      # defense-in-depth length cap.
       # 4096 chars is the AUDIT_COMMENT_MAX_LENGTH constant on the controller.
       it 'accepts a 4096-char audit_comment' do
         patch "/reviews/#{target_review.id}/admin_withdraw",
@@ -1046,7 +1046,7 @@ RSpec.describe 'Reviews' do
     end
   end
 
-  # PR-717 Task 25b — DELETE /reviews/:id/admin_destroy.
+  # DELETE /reviews/:id/admin_destroy.
   # Irreversible hard-delete of a comment + its reply subtree (dependent
   # destroy cascade). Federal-compliance audit entry created on the
   # COMPONENT before the destroy so the trail survives the deletion.
@@ -1080,12 +1080,12 @@ RSpec.describe 'Reviews' do
         expect(Review.exists?(reply_to_doomed.id)).to be(false)
       end
 
-      # PR-717 review remediation .19 — canonicalize admin_destroy
+      # canonicalize admin_destroy
       # response shape. Pre-fix returned `{ok: true}` — only PR-717
       # endpoint not following the `{review: ...}` convention. Frontend
       # never reads the body, but a uniform shape lets the AlertMixin
       # / refresh logic stay generic across actions.
-      it 'returns canonical {review: nil, destroyed_id: <id>} shape (PR-717 .19)' do
+      it 'returns canonical {review: nil, destroyed_id: <id>} shape' do
         target_id = doomed_review.id
         delete "/reviews/#{target_id}/admin_destroy",
                params: { audit_comment: 'shape check' }, as: :json
@@ -1115,7 +1115,7 @@ RSpec.describe 'Reviews' do
         expect(latest.user_id).to eq(adm_d_admin.id)
       end
 
-      # PR-717 review remediation .4 step 3 — FK swap regression test.
+      # FK swap regression test.
       # With FK on_delete: :restrict on responding_to_review_id, Rails
       # `dependent: :destroy` MUST walk the reply tree children-first
       # (recursively) so the parent delete doesn't violate the FK. This
@@ -1153,7 +1153,7 @@ RSpec.describe 'Reviews' do
         expect(per_review_destroys.pluck(:request_uuid).uniq).to eq([component_audit.request_uuid])
       end
 
-      # PR-717 review remediation .4 F1 — FK semantics. Constraint must
+      # FK semantics. Constraint must
       # be on_delete: :restrict so Rails owns the cascade (callbacks +
       # audited destroy events fire); FK is a safety net against bypass.
       it 'has FK responding_to_review_id with on_delete: :restrict' do
@@ -1164,7 +1164,7 @@ RSpec.describe 'Reviews' do
         expect(fk.on_delete).to eq(:restrict)
       end
 
-      # PR-717 review remediation .4 F7a — concurrent admin race fix.
+      # concurrent admin race fix.
       # Two admins simultaneously: one moves a review subtree, the other
       # hard-deletes a node. Without an explicit row lock at the top of
       # admin_destroy, B's destroy may race with A's move-update. Lock!
@@ -1178,7 +1178,7 @@ RSpec.describe 'Reviews' do
         expect(Review.exists?(doomed_review.id)).to be(false)
       end
 
-      # PR-717 review remediation .4 F3 — pre-destroy snapshot of the
+      # pre-destroy snapshot of the
       # entire reply tree captured into the Component-level audit's
       # audited_changes. For PII/legal hard-delete, the operator-facing
       # snapshot IS the legal record — not just reply_count integer.
@@ -1232,7 +1232,7 @@ RSpec.describe 'Reviews' do
     end
   end
 
-  # PR-717 Task 26 — PATCH /reviews/:id/move_to_rule.
+  # PATCH /reviews/:id/move_to_rule.
   # Admin reassigns a misplaced comment (and atomically, all its replies)
   # to a different rule in the same component. Audit-comment required.
   # Walks parent-first so the responding_to_must_be_same_rule validator
@@ -1262,7 +1262,7 @@ RSpec.describe 'Reviews' do
       Review.create!(action: 'comment', comment: 'thanks for raising', user: mtr_author, rule: rule_a,
                      triage_status: 'pending', responding_to_review_id: parent_review.id)
     end
-    # PR-717 review remediation .11 — reply-of-reply, exercises depth>=2 in
+    # reply-of-reply, exercises depth>=2 in
     # move_review_subtree!. Without this, a regression that only descended
     # one level (e.g. responses.first&.update! instead of recursion) would
     # pass the original test.
@@ -1288,7 +1288,7 @@ RSpec.describe 'Reviews' do
               params: { rule_id: rule_other_component.id, audit_comment: 'cross-component attempt' }, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
         expect(parent_review.reload.rule_id).to eq(rule_a.id)
-        # PR-717 review remediation .5 — toast variant must be a valid Bootstrap-Vue
+        # toast variant must be a valid Bootstrap-Vue
         # value (success/warning/danger/info). The original code shipped
         # 'unprocessable_entity' which renders an unstyled toast.
         expect(response.parsed_body.dig('toast', 'variant')).to eq('warning')
@@ -1335,7 +1335,7 @@ RSpec.describe 'Reviews' do
         expect(latest.audited_changes['rule_id']).to eq([rule_a.id, rule_b.id])
       end
 
-      # PR-717 review remediation .uxf — outbound audit on the SOURCE rule.
+      # outbound audit on the SOURCE rule.
       # vulcan_audited associated_with: :rule attaches per-review audit
       # rows to the NEW rule (after the update). Reviewers auditing the
       # source rule's history would see nothing about the move. The
@@ -1380,7 +1380,7 @@ RSpec.describe 'Reviews' do
         expect(outbound.user_id).to eq(mtr_admin.id)
       end
 
-      # PR-717 review remediation .4 F7b — concurrent admin race fix.
+      # concurrent admin race fix.
       # Same lock! pattern as admin_destroy: SELECT FOR UPDATE inside the
       # Review.transaction block so a concurrent move_to_rule or
       # admin_destroy on the same subtree waits for ours to commit.
@@ -1404,7 +1404,7 @@ RSpec.describe 'Reviews' do
     end
   end
 
-  # PR-717 Task 30 — PATCH /reviews/:id/section.
+  # PATCH /reviews/:id/section.
   # Triager (author+) edits the `section` of an existing comment so misclassified
   # comments can be retagged to the correct XCCDF section without rejecting the
   # commenter or going out-of-band via the console. Audit-comment required.
@@ -1461,7 +1461,7 @@ RSpec.describe 'Reviews' do
         expect(section_review.reload.section).to be_nil
       end
 
-      # PR-717 review remediation .12 — the original test asserted only
+      # the original test asserted only
       # `audits.count` didn't change, but Rails update!(same_value) triggers
       # no Dirty change so the audited gem writes nothing regardless of
       # whether the controller's explicit short-circuit is in place. That

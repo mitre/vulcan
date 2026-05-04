@@ -94,7 +94,7 @@ RSpec.describe DispositionMatrixExport do
   # generate_file wraps the pure CSV string in an Export::Result struct so
   # the single-component HTTP path and the Working Copy CSV piggyback path
   # can share a single source of truth for filename pattern and content-type.
-  # PR-717 review remediation .3 — Formula injection defang.
+  # Formula injection defang.
   # Untrusted commenter content (review.comment, replies, user.name, user.email)
   # MUST be defanged before landing in CSV/Excel cells. Reviewers open the
   # disposition matrix in Excel/Sheets, where a leading `=`/`+`/`-`/`@`/tab/CR
@@ -207,7 +207,7 @@ RSpec.describe DispositionMatrixExport do
     end
   end
 
-  # PR-717 review remediation .8 — when triage_set_by_id (or adjudicated_by_id)
+  # when triage_set_by_id (or adjudicated_by_id)
   # is nil but triage_set_by_imported_email/name are populated (cross-instance
   # restore where the user didn't exist on the target), the disposition CSV
   # falls back to the imported_* fields so DISA reviewers still see WHO

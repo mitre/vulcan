@@ -40,7 +40,7 @@ RSpec.describe 'seed file idempotency and completeness' do
     end
   end
 
-  # REQUIREMENT (PR #717 follow-up): role-tier seed users for fast role-switching
+  # REQUIREMENT: role-tier seed users for fast role-switching
   # in manual + Playwright testing. Email-as-role pattern mirrors the existing
   # admin@example.com convention. Goal: 30-second login/logout loop across tiers.
   describe 'role-tier seed users' do

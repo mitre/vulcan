@@ -3,7 +3,7 @@
 # Custom Audited class for Vulcan-specific methods for interacting with audits.
 class VulcanAudit < Audited::Audit
   belongs_to :audited_user, class_name: 'User', optional: true
-  # PR-717 review remediation .14r — request_uuid invariant. The audited
+  # request_uuid invariant. The audited
   # gem's Audited::Sweeper Rack middleware sets request_uuid for HTTP
   # requests; recent versions also fall back to SecureRandom for
   # non-HTTP contexts. This callback makes the invariant a Vulcan-side
@@ -19,7 +19,7 @@ class VulcanAudit < Audited::Audit
   before_create :ensure_request_uuid,
                 :set_username, :find_and_save_audited_user, :find_and_save_associated_rule
 
-  # PR-717 review remediation .4 — F4 forensic correlation primitive.
+  # F4 forensic correlation primitive.
   # Wraps the request_uuid indexed query in an AuditEventBundle PORO so
   # forensic reconstruction of multi-row admin operations (admin_destroy
   # of parent + cascaded replies) is one ergonomic call.
@@ -28,7 +28,7 @@ class VulcanAudit < Audited::Audit
     AuditEventBundle.new(find(audit_id))
   end
 
-  # PR-717 review remediation .vb4 — request_uuid PRODUCER side. Pairs
+  # request_uuid PRODUCER side. Pairs
   # with the .14r consumer hook (#ensure_request_uuid before_create)
   # which reads Audited.store[:current_request_uuid]. Bulk audit-emitting
   # code paths outside an HTTP request (rake tasks, importers, future
@@ -55,7 +55,7 @@ class VulcanAudit < Audited::Audit
       audited_changes: {
         project_id: project_id
       },
-      # PR-717 review remediation .vb4 — populate request_uuid at build
+      # populate request_uuid at build
       # time too. This row will be persisted via activerecord-import's
       # bulk path (Component#import_srg_rules → Rule.import recursive:
       # true), which BYPASSES ActiveRecord callbacks. Without this the
@@ -68,7 +68,7 @@ class VulcanAudit < Audited::Audit
     }
   end
 
-  # PR-717 review remediation .vb4 — single source of truth for
+  # single source of truth for
   # "what request_uuid should this audit have right now". Used by
   # both the consumer-side before_create hook (#ensure_request_uuid)
   # and bulk-insert build paths that bypass callbacks (e.g.

@@ -298,7 +298,7 @@ class ComponentsController < ApplicationController
   # component's public-comment queue. Renders an HTML page that mounts a
   # Vue app (ComponentTriagePage). The Vue app fetches rows from the
   # JSON endpoint at GET /components/:id/comments. Replaces the legacy
-  # comments slideover (PR #717 follow-on).
+  # comments slideover.
   #
   # HTML-only — JSON requests return 406, since the data lives on the
   # /components/:id/comments JSON endpoint.
@@ -314,7 +314,7 @@ class ComponentsController < ApplicationController
     end
   end
 
-  # Component admin settings page (PR #717 Task 22). Dedicated full-page
+  # Component admin settings page. Dedicated full-page
   # admin surface for typed lifecycle/configuration fields — Identity,
   # Point of Contact, Public Comment Period — separated from rule-editor
   # context. Free-form metadata + additional questions still live on
@@ -331,7 +331,7 @@ class ComponentsController < ApplicationController
     end
   end
 
-  # Paginated triage table backing the public-comment-review workflow (PR #717).
+  # Paginated triage table backing the public-comment-review workflow.
   # Returns { rows: [...], pagination: {...} }. DISA-native vocab on the wire
   # (triage_status / section keys); frontend translates via triageVocabulary.js.
   #
@@ -517,7 +517,7 @@ class ComponentsController < ApplicationController
 
   private
 
-  # PR #717 Task 29 — DISA disposition matrix CSV export. Email column is
+  # DISA disposition matrix CSV export. Email column is
   # opt-in and admin-tier-only (server-side enforcement, not just UI hiding).
   # Audit log records who exported what + whether the email column was
   # included so the audit "who has the roster" question has an

@@ -66,7 +66,7 @@ class ProjectsController < ApplicationController
     # projects that a user has permissions to access
     @project.current_user = current_user
     # Batch-load pending-comment counts keyed by component_id so the
-    # component cards and the project-level total render without N+1 (PR #717).
+    # component cards and the project-level total render without N+1.
     component_ids = @project.components.pluck(:id)
     pending_comment_counts = Component.pending_comment_counts(component_ids)
     @project_json = ProjectBlueprint.render(
@@ -143,7 +143,7 @@ class ProjectsController < ApplicationController
       respond_to do |format|
         format.html { redirect_to project }
         format.json do
-          # PR-717 review remediation .19d — multi-key response (toast +
+          # multi-key response (toast +
           # redirect_url). Inline the canonical toast object since
           # render_toast doesn't support piggybacking extra response keys.
           render json: {
@@ -452,7 +452,7 @@ class ProjectsController < ApplicationController
     end
 
     if result&.success?
-      # PR-717 review remediation .19d — multi-key response (toast +
+      # multi-key response (toast +
       # redirect_url + summary). Inline the canonical toast object.
       render json: {
         redirect_url: project_path(project),

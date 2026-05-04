@@ -12,7 +12,7 @@
       <b-spinner small />
       Loading rules…
     </div>
-    <!-- PR-717 .bpy — Sonar Web:S6842: <li role="button"> assigns an
+    <!-- Sonar Web:S6842: <li role="button"> assigns an
          interactive role to a non-interactive element. The semantically
          correct ARIA pattern for picking-from-a-list is <ul role="listbox">
          + <li role="option" aria-selected>. role="option" is allowed on

@@ -359,7 +359,7 @@ describe("ProjectComponent", () => {
   });
 
   // ==========================================================================
-  // PR-717 Step 5: per-component editor Download surface. Mounts ExportModal
+  // per-component editor Download surface. Mounts ExportModal
   // and listens for the `download` event from ControlsCommandBar.
   // ==========================================================================
   describe("Download flow", () => {

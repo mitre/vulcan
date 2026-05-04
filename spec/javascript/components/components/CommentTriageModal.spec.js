@@ -217,11 +217,11 @@ describe("CommentTriageModal", () => {
   });
 
   // ==========================================================================
-  // PR-717 Task 25 — admin force-withdraw + restore actions inside the modal.
+  // admin force-withdraw + restore actions inside the modal.
   // Visible only when the current user has effective admin permissions.
   // Audit comment is required server-side; UI gates the Confirm button.
   // ==========================================================================
-  describe("admin actions disclosure (PR-717 Task 25)", () => {
+  describe("admin actions disclosure", () => {
     const adjudicatedReview = {
       ...sampleReview,
       triage_status: "withdrawn",
@@ -316,11 +316,11 @@ describe("CommentTriageModal", () => {
   });
 
   // ==========================================================================
-  // PR-717 Task 25b — admin hard-delete (irreversible). Typed-confirmation
+  // admin hard-delete (irreversible). Typed-confirmation
   // safeguard: admin must type the review ID into a confirmation field
   // before the Confirm button enables. Audit comment is also required.
   // ==========================================================================
-  describe("admin hard-delete (PR-717 Task 25b)", () => {
+  describe("admin hard-delete", () => {
     it("offers a Hard-delete button when admin actions disclosure is opened", () => {
       const w = mount(CommentTriageModal, {
         localVue,
@@ -389,12 +389,12 @@ describe("CommentTriageModal", () => {
   });
 
   // ==========================================================================
-  // PR-717 Task 26 — admin move-to-rule. Reassigns a misplaced comment
+  // admin move-to-rule. Reassigns a misplaced comment
   // (and atomically all its replies via the controller's parent-first walk)
   // to a different rule in the same component. Audit comment required;
   // target rule chosen via the embedded RulePicker.
   // ==========================================================================
-  describe("admin move-to-rule (PR-717 Task 26)", () => {
+  describe("admin move-to-rule", () => {
     it("offers a Move-to-rule button when admin actions disclosure is opened", () => {
       const w = mount(CommentTriageModal, {
         localVue,
@@ -442,12 +442,12 @@ describe("CommentTriageModal", () => {
   });
 
   // ==========================================================================
-  // PR-717 Task 30 — edit comment section retroactive. Triager (author+)
+  // edit comment section retroactive. Triager (author+)
   // retags a comment to the correct XCCDF section without rejecting the
   // commenter. Audit-comment required. Backend gates author+ via
   // authorize_author_project + reject_if_frozen_for_writes.
   // ==========================================================================
-  describe("section editing (PR-717 Task 30)", () => {
+  describe("section editing", () => {
     it("hides the Edit section affordance for viewer-tier users", () => {
       const w = mount(CommentTriageModal, {
         localVue,
@@ -523,7 +523,7 @@ describe("CommentTriageModal", () => {
       expect(w.emitted("triaged")).toBeTruthy();
       expect(hideSpy).toHaveBeenCalledWith("comment-triage-modal");
 
-      // PR-717 review remediation .13 — form-state cleanup must run BEFORE
+      // form-state cleanup must run BEFORE
       // (or alongside) hide. A regression that calls hide without resetting
       // would leak prior values into the next time the modal opens.
       expect(w.vm.sectionEditMode).toBe(false);
@@ -586,12 +586,12 @@ describe("CommentTriageModal", () => {
     });
   });
 
-  // PR-717 review remediation .8 — modal shows "Triaged by ... · time" and
+  // modal shows "Triaged by ... · time" and
   // "Adjudicated by ... · time" when those events have happened. When the
   // attribution came from a JSON archive restore where the original User
   // doesn't exist on this instance, we show the imported name/email plus an
   // "imported" badge so reviewers know the trail is real but unmapped.
-  describe("attribution display (PR-717 .8)", () => {
+  describe("attribution display", () => {
     const triagedReview = {
       ...sampleReview,
       triage_status: "concur",
@@ -685,13 +685,13 @@ describe("CommentTriageModal", () => {
     });
   });
 
-  // PR-717 review remediation .j4a step C3 — commenter attribution
+  // commenter attribution
   // badge in the byline area (top of the modal). When the original
   // commenter's User row is gone (User#destroy nullified user_id) but
   // commenter_imported_email/name are populated, the byline shows the
   // imported name + an "imported" badge — matches the triager_/
   // adjudicator_ pattern below.
-  describe("commenter attribution byline (PR-717 .j4a)", () => {
+  describe("commenter attribution byline", () => {
     it("shows the resolved User name and no imported badge when commenter_imported is false", () => {
       const w = mount(CommentTriageModal, {
         localVue,

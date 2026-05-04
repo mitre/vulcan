@@ -611,7 +611,7 @@ class Component < ApplicationRecord
           .count
   end
 
-  # Backs GET /components/:id/comments — the triage table (PR #717).
+  # Backs GET /components/:id/comments — the triage table.
   #
   # On-the-wire vocabulary is DISA-native: triage_status keys (concur,
   # non_concur, ...) and XCCDF section keys (check_content, fixtext, ...).
@@ -672,7 +672,7 @@ class Component < ApplicationRecord
                     triager_imported: r.triager_imported?,
                     adjudicator_display_name: r.adjudicator_display_name,
                     adjudicator_imported: r.adjudicator_imported?,
-                    # PR-717 review remediation .j4a step C2 — commenter
+                    # commenter
                     # attribution survives User#destroy via fallback to
                     # commenter_imported_*. author_name (above) is the
                     # legacy field; consumers should prefer commenter_*.

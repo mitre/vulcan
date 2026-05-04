@@ -15,7 +15,7 @@ class RuleBlueprint < Blueprinter::Base
   fields :rule_id, :title, :version, :status, :rule_severity, :locked,
          :review_requestor_id, :changes_requested
 
-  # PR #717 Task 19 — per-rule comment summary surfaced on the navigator
+  # per-rule comment summary surfaced on the navigator
   # so triagers can spot rules with pending comments without drilling in.
   # Computed in-memory against the eager-loaded :reviews association
   # (set_component already eager-loads rules → :reviews) so this is

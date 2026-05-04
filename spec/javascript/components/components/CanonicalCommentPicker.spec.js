@@ -6,7 +6,7 @@ import CanonicalCommentPicker from "@/components/components/CanonicalCommentPick
 
 vi.mock("axios");
 
-// REQUIREMENT (PR #717 Task 24): the canonical comment picker is the
+// REQUIREMENT: the canonical comment picker is the
 // search/select widget shown when a triager marks a comment as duplicate.
 // Scoped to the same component as the comment being triaged. Server enforces
 // the same-component constraint via duplicate_of_must_be_same_component;

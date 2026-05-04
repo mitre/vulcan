@@ -131,7 +131,7 @@ RSpec.describe Export::Base do
   end
 
   # ==========================================================================
-  # PR-717: when a Working Copy CSV export runs and a component has any
+  # when a Working Copy CSV export runs and a component has any
   # public-comment disposition records (top-level reviews), the disposition
   # matrix CSV is bundled into the same zip alongside the rule CSV. The
   # disposition file rides with the existing Working Copy export — no separate
@@ -240,7 +240,7 @@ RSpec.describe Export::Base do
   end
 
   # ==========================================================================
-  # PR-717: when a Working Copy Excel export runs and a component has any
+  # when a Working Copy Excel export runs and a component has any
   # public-comment disposition records, an additional disposition sheet
   # is added to the workbook for that component (alongside the rule sheet).
   # Empty workbooks still produce a single workbook file (Excel is always

@@ -140,10 +140,10 @@ RSpec.describe 'Stigs' do
       temp_file.unlink
     end
 
-    # PR-717 .a5u — opt the success path into the canonical-toast-response
+    # opt the success path into the canonical-toast-response
     # shared example so any future regression on this endpoint surfaces
     # alongside the controller-specific assertions above.
-    context 'success-path toast shape (PR-717 .a5u)' do
+    context 'success-path toast shape' do
       let(:temp_file) do
         f = Tempfile.new(['test_stig', '.xml'])
         f.write(stig.xml)

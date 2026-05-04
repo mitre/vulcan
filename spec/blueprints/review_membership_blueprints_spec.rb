@@ -46,7 +46,7 @@ RSpec.describe 'Review and Membership Blueprints' do
       expect(json[:name]).to be_nil
     end
 
-    describe 'PR-717 .8 attribution display fields' do
+    describe 'triager + adjudicator attribution fields' do
       let_it_be(:triager) { create(:user, name: 'Tri Ager', email: 'triager@test.com') }
       let_it_be(:adjudicator) { create(:user, name: 'Adj Udic', email: 'adj@test.com') }
 
@@ -111,11 +111,11 @@ RSpec.describe 'Review and Membership Blueprints' do
       end
     end
 
-    # PR-717 review remediation .j4a step C1 — commenter attribution
+    # commenter attribution
     # display fields. Mirrors triager_*/adjudicator_* in the same modal
     # (CommentTriageModal renders the commenter's display name + an
     # "imported" badge when the original User no longer exists locally).
-    describe 'PR-717 .j4a commenter attribution display fields' do
+    describe 'commenter attribution fields' do
       it 'exposes commenter_display_name and commenter_imported when User resolved' do
         json = ReviewBlueprint.render_as_hash(review)
         expect(json[:commenter_display_name]).to eq(reviewer_name)
@@ -146,7 +146,7 @@ RSpec.describe 'Review and Membership Blueprints' do
       end
     end
 
-    # PR-717 review remediation .20 — expand default fields to eliminate
+    # expand default fields to eliminate
     # the post-mutation refetch in CommentTriageModal. Today the modal
     # opens with a row hash from Component#paginated_comments, but after
     # /reviews/:id/triage|adjudicate|withdraw|update returns
@@ -155,7 +155,7 @@ RSpec.describe 'Review and Membership Blueprints' do
     # The frontend has to refetch the parent table → 2 round trips per
     # mutation. Adding these fields to the blueprint default lets the
     # modal refresh in place from the response payload alone.
-    describe 'PR-717 .20 expanded default fields (eliminate frontend refetch)' do
+    describe 'expanded default fields (eliminate frontend refetch)' do
       it 'exposes rule_id (modal needs it for picker scope)' do
         json = ReviewBlueprint.render_as_hash(review)
         expect(json[:rule_id]).to eq(rule.id)

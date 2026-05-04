@@ -45,7 +45,7 @@ RSpec.describe VulcanAudit do
     end
   end
 
-  # PR-717 review remediation .14r — request_uuid correlation works for
+  # request_uuid correlation works for
   # HTTP-driven audits (Audited::Sweeper Rack middleware auto-populates).
   # Pre-fix, audits created outside an HTTP request (rake tasks, seeds,
   # ActiveJob workers, after-commit hooks dispatched after request ends)
@@ -57,7 +57,7 @@ RSpec.describe VulcanAudit do
   # first (job/rake middleware sets it), falls back to SecureRandom.uuid
   # if unset. Result: every audit row has a request_uuid; rows from one
   # logical operation share one UUID.
-  describe 'request_uuid backfill for non-HTTP audits (PR-717 .14r)' do
+  describe 'request_uuid backfill for non-HTTP audits' do
     let(:user) { create(:user) }
     let(:project) { Project.create!(name: 'pr717-14r') }
     let(:component) do
@@ -108,7 +108,7 @@ RSpec.describe VulcanAudit do
     end
   end
 
-  # PR-717 review remediation .vb4 — request_uuid PRODUCER side. The .14r
+  # request_uuid PRODUCER side. The .14r
   # consumer hook (ensure_request_uuid before_create) reads
   # Audited.store[:current_request_uuid] and falls back to SecureRandom
   # if unset. The producer side wraps a bulk audit-emitting code path
@@ -118,7 +118,7 @@ RSpec.describe VulcanAudit do
   # Snapshot+restore (not set+delete) so it nests correctly under any
   # outer scope that also sets the value (e.g. an HTTP request that
   # invokes a service object).
-  describe '.with_correlation_scope (PR-717 .vb4)' do
+  describe '.with_correlation_scope' do
     let(:user) { create(:user) }
     let(:project) { Project.create!(name: 'pr717-vb4') }
     let(:component) do

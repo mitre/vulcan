@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# REQUIREMENTS (PR #717 Task 22 — dedicated Component Settings surface):
+# REQUIREMENTS:
 #
 # 1. GET /components/:id/settings is the admin-only configuration page —
 #    Identity / PoC / Public Comment Period sections live here. Renders

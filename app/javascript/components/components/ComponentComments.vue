@@ -237,7 +237,7 @@ export default {
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
     },
-    // The DISA disposition matrix CSV export (PR #717 Task 29) is a
+    // The DISA disposition matrix CSV export is a
     // public-comment-period deliverable. Server enforces author-tier
     // minimum + admin-only include_email; the UI hides the button for
     // viewers and in project-aggregate scope (no single-component endpoint).
@@ -394,7 +394,7 @@ export default {
         this.fetch();
       }
     },
-    // PR-717 review remediation .20 — modal events update the matching
+    // modal events update the matching
     // row in place from the response payload rather than refetching the
     // whole table. Eliminates the second round trip per mutation. The
     // expanded ReviewBlueprint default fields (rule_id, section,
@@ -422,7 +422,7 @@ export default {
     onAdjudicated(payload) {
       this.updateRowInPlace(payload);
     },
-    // PR-717 Task 25b — admin hard-delete destroys the review entirely;
+    // admin hard-delete destroys the review entirely;
     // refresh the queue so the destroyed row (and its replies) disappear.
     onDestroyed() {
       this.fetch();

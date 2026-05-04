@@ -197,7 +197,7 @@ module Export
           comment: review.comment,
           user_email: review.user&.email,
           user_name: review.user&.name,
-          # PR #717 — public-comment-review lifecycle
+          # public-comment-review lifecycle
           section: review.section,
           triage_status: review.triage_status,
           triage_set_by_email: review.triage_set_by&.email,

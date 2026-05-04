@@ -143,7 +143,7 @@ export default {
 
       try {
         const res = await axios.post(`/rules/${this.ruleId}/reviews`, payload);
-        // PR-717 review remediation — confirm to the commenter that the
+        // confirm to the commenter that the
         // post landed. ReviewsController#create returns the canonical
         // toast object; AlertMixin renders it identically to the other
         // success-toast endpoints in the app.

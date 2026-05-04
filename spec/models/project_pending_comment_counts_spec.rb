@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # Coverage for Project.pending_comment_counts — the aggregate count
 # query used by the projects-list page to render a "N pending comments"
-# badge per project (PR #717 follow-on).
+# badge per project.
 RSpec.describe Project do
   describe '.pending_comment_counts' do
     let_it_be(:srg) { create(:security_requirements_guide) }

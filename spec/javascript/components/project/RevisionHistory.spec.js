@@ -1,5 +1,5 @@
 /**
- * RevisionHistory Regression Tests (PR #717 Task 28)
+ * RevisionHistory Regression Tests
  *
  * REQUIREMENTS:
  *

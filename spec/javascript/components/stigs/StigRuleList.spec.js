@@ -1,5 +1,5 @@
 /**
- * StigRuleList Regression Tests (PR #717 Task 28)
+ * StigRuleList Regression Tests
  *
  * REQUIREMENTS:
  *

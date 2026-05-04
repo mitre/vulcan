@@ -427,7 +427,7 @@ describe("RuleForm", () => {
    * those forms' specs. status_justification belongs to "Status" — no icon
    * (status field already has it).
    */
-  describe("section comment icon wiring (PR #717)", () => {
+  describe("section comment icon wiring", () => {
     const findGroup = (w, fieldName) =>
       w
         .findAllComponents({ name: "RuleFormGroup" })

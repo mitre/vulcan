@@ -371,7 +371,7 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok),
                             "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
-        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        # canonical {title, message, variant} toast shape.
         expect(json['toast']).to be_a(Hash)
         expect(json['toast']['message'].join).to include('Password reset')
         expect(json['toast']['message'].join).to include(target_user.email)
@@ -427,7 +427,7 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
         expect(json['reset_url']).to include('reset_password_token=')
-        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        # canonical {title, message, variant} toast shape.
         expect(json['toast']).to be_a(Hash)
         expect(json['toast']['message'].join).to include('Reset link generated')
       end
@@ -489,7 +489,7 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok),
                             "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
-        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        # canonical {title, message, variant} toast shape.
         expect(json['toast']).to be_a(Hash)
         expect(json['toast']['message'].join).to include(target_user.email)
 

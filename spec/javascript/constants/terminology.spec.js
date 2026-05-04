@@ -83,7 +83,7 @@ describe("terminology constants", () => {
       expect(SIDEBAR_TITLES).toHaveProperty("metadata");
       expect(SIDEBAR_TITLES).toHaveProperty("questions");
       expect(SIDEBAR_TITLES).toHaveProperty("compHistory");
-      // compReviews retired with the slideover (PR #717).
+      // compReviews retired with the slideover.
       expect(SIDEBAR_TITLES).toHaveProperty("satisfies");
       expect(SIDEBAR_TITLES).toHaveProperty("ruleHistory");
       expect(SIDEBAR_TITLES).toHaveProperty("ruleReviews");

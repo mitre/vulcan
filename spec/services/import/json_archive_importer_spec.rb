@@ -195,7 +195,7 @@ RSpec.describe Import::JsonArchiveImporter do
     end
 
     context 'with unresolvable review user' do
-      # PR-717 review remediation .j4a step B2 — pre-fix, an unresolvable
+      # pre-fix, an unresolvable
       # commenter caused ReviewBuilder to skip the review entirely
       # (destroying the audit trail / disposition record on cross-instance
       # restore). Now the row imports with user_id=NULL +
@@ -501,7 +501,7 @@ RSpec.describe Import::JsonArchiveImporter do
       end
     end
 
-    # PR #717 — public-comment review workflow must survive backup/restore.
+    # public-comment review workflow must survive backup/restore.
     # Without this, a backup taken mid-review would lose
     # all triage decisions, adjudication metadata, reply threading, and
     # comment-phase state on restore.
@@ -608,7 +608,7 @@ RSpec.describe Import::JsonArchiveImporter do
         expect(dup.triage_status).to eq('duplicate')
       end
 
-      # PR-717 review remediation .10 — Component-level import audit row.
+      # Component-level import audit row.
       # Reconstructs WHICH external_ids landed FROM WHICH archive so an
       # admin_destroy → re-import roundtrip leaves a recovery trail.
       it 'writes a Component import_reviews audit row with external_ids and archive identifier' do
@@ -623,7 +623,7 @@ RSpec.describe Import::JsonArchiveImporter do
         expect(audit.comment).to match(/Imported \d+ reviews from backup archive/)
       end
 
-      # PR-717 review remediation .8 — preserve original attribution
+      # preserve original attribution
       # per-review when the User can't be resolved on import. Researched
       # GitLab's placeholder-user pattern (overkill for one-shot
       # backup/restore use case); 4 cols on Review carry the email + name
@@ -719,14 +719,14 @@ RSpec.describe Import::JsonArchiveImporter do
       end
     end
 
-    # PR-717 review remediation .lsj — zip-bomb decompression budget.
+    # zip-bomb decompression budget.
     # The pre-fix import path enumerated entries lazily and read each
     # one as needed; rubyzip's per-entry validation catches single
     # absurd entries but no aggregate-size check exists. A 50–100 MB
     # archive of empty JSON arrays could decompress to multiple GB
     # before Ruby OOMs. Settings.import.json_archive_size_budget_mb
     # caps the SUM of uncompressed entry sizes pre-parse.
-    context 'with archive exceeding the decompression budget (PR-717 .lsj)' do
+    context 'with archive exceeding the decompression budget' do
       it 'rejects the archive with a clear error before parsing' do
         # Stub the budget to 1 byte so any real archive exceeds it.
         allow(Settings.import).to receive(:json_archive_size_budget_mb).and_return(0)
@@ -752,14 +752,14 @@ RSpec.describe Import::JsonArchiveImporter do
       end
     end
 
-    # PR-717 review remediation .vb4 — request_uuid producer side. Pre-fix,
+    # request_uuid producer side. Pre-fix,
     # JsonArchiveImporter#call did not set Audited.store[:current_request_uuid]
     # so each audit row created during the import got a distinct
     # SecureRandom.uuid (via the .14r consumer fallback). Post-fix, every
     # audit row created during one import shares one request_uuid —
     # AuditEventBundle.bundled_with(audit_id) reconstructs the entire
     # import as one logical operation.
-    context 'with request_uuid correlation (PR-717 .vb4)' do
+    context 'with request_uuid correlation' do
       before { Audited.store.delete(:current_request_uuid) }
 
       after { Audited.store.delete(:current_request_uuid) }

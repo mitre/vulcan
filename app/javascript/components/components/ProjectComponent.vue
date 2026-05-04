@@ -84,7 +84,7 @@
           :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
         />
 
-        <!-- Comment composer modal (PR #717). Opens via onOpenComposer
+        <!-- Comment composer modal. Opens via onOpenComposer
              when a SectionCommentIcon emits open-composer. -->
         <CommentComposerModal
           v-if="selectedRule"
@@ -95,7 +95,7 @@
           @posted="onComposerPosted"
         />
 
-        <!-- PR #717 Step 5: unified Download modal — Purpose + Format radios.
+        <!-- Purpose + Format radios.
              Disposition matrix piggybacks into the Working Copy CSV/Excel
              outputs when comments exist (Steps 3+4). -->
         <ExportModal
@@ -255,10 +255,10 @@ export default {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
-      // PR #717: section pre-selected on the comment composer when a
+      // section pre-selected on the comment composer when a
       // SectionCommentIcon click bubbles open-composer up to here.
       composerSection: null,
-      // PR #717 Step 5: per-component editor Download surface.
+      // per-component editor Download surface.
       // Mode-aware ExportModal (Working Copy / Vendor Submission /
       // STIG-Ready Publish Draft / Backup) hits the project export
       // route scoped to this single component.
@@ -309,7 +309,7 @@ export default {
   },
   methods: {
     /**
-     * PR #717 — open the comment composer with a pre-selected section.
+     * open the comment composer with a pre-selected section.
      * Triggered when SectionCommentIcon emits open-composer; the event
      * bubbles up RuleFormGroup → form → UnifiedRuleForm → RuleEditor.
      */
@@ -318,7 +318,7 @@ export default {
       this.$bvModal.show("comment-composer-modal");
     },
     /**
-     * PR #717 — refresh the component (and selected rule's reviews) after
+     * refresh the component (and selected rule's reviews) after
      * a comment is posted so the per-section pending-count badge updates.
      */
     onComposerPosted() {
@@ -355,14 +355,14 @@ export default {
         .catch(this.alertOrNotifyResponse);
     },
     /**
-     * PR #717 Step 5 — open the unified Download/ExportModal. Listened from
+     * open the unified Download/ExportModal. Listened from
      * ControlsCommandBar's Download button.
      */
     openExportModal() {
       this.showExportModal = true;
     },
     /**
-     * PR #717 Step 5 — emitted by ExportModal when the user confirms export.
+     * emitted by ExportModal when the user confirms export.
      * Mirrors Project.vue's pattern but scopes component_ids to this single
      * component. Disposition data piggybacks the CSV/Excel formats per
      * Steps 3 and 4 — no extra wiring needed here.

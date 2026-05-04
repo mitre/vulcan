@@ -231,7 +231,7 @@ RSpec.describe 'Model validation contracts' do
     end
 
     describe 'required associations' do
-      # PR-717 review remediation .j4a step A2 — belongs_to :user is now
+      # belongs_to :user is now
       # optional so reviews can persist with user_id NULL after
       # User#destroy nullifies the FK (FK on_delete: :nullify, step A3).
       # The original commenter attribution lives on

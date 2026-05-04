@@ -38,7 +38,7 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
-  # PR-717 review remediation .15 — toast helper. The Vue frontend's
+  # toast helper. The Vue frontend's
   # alertOrNotifyResponse mixin reads `{ toast: { title, message, variant } }`
   # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
   # shape was hand-written at ~45 sites in reviews_controller alone — typos
@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
     }, status: status
   end
 
-  # PR-717 review remediation .15 — generic RecordInvalid handler. Each
+  # generic RecordInvalid handler. Each
   # controller declares its own action_name → title map via the
   # `record_invalid_titles` class method. The handler looks up the title
   # by current `action_name` and falls back to a generic title for actions
@@ -85,7 +85,7 @@ class ApplicationController < ActionController::Base
     render_toast(title: title, message: e.record.errors.full_messages)
   end
 
-  # PR-717 .15 — `class_attribute` is the canonical Rails inheritance hook
+  # `class_attribute` is the canonical Rails inheritance hook
   # for per-class config maps. Subclasses get free inheritance + the
   # ability to override without touching the parent (Devise + Pundit
   # follow this pattern). Replaced an earlier hand-rolled

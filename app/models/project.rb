@@ -29,7 +29,7 @@ class Project < ApplicationRecord
 
   # Aggregate count of top-level pending comments per project. Used by the
   # projects-list page to render a "N pending comments" badge per row
-  # without N+1 queries (PR #717 follow-on).
+  # without N+1 queries.
   #
   # Returns a sparse hash: { project_id => count } — projects with zero
   # pending comments are omitted so callers can `counts[id] || 0`.
@@ -51,7 +51,7 @@ class Project < ApplicationRecord
 
   # Pending + total top-level comment counts per project, returned as a
   # sparse hash: { project_id => { pending: N, total: M } }. Drives the
-  # projects-list "Comments" column (PR #717 follow-on) — pending is the
+  # projects-list "Comments" column — pending is the
   # action-needed metric, total is the ambient activity metric.
   #
   # Single GROUP BY using Postgres FILTER aggregate so we count both

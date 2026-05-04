@@ -42,7 +42,7 @@ class ProjectAccessRequestsController < ApplicationController
           flash.notice = toast
           redirect_back(fallback_location: root_path)
         end
-        # PR-717 review remediation .19d — multi-key response (toast + id).
+        # multi-key response (toast + id).
         format.json do
           render json: {
             toast: { title: 'Access request submitted.', message: [toast], variant: 'success' },

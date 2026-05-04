@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# PR-717 review remediation .9 — ReviewBuilder uses Review.insert! to bypass
+# ReviewBuilder uses Review.insert! to bypass
 # create-time callbacks (audit-resume + before_create state machine). That
 # also bypasses model validators. A malicious or legacy archive could carry
 # review records that violate validators added since the snapshot was made:
@@ -104,7 +104,7 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
     end
   end
 
-  # PR-717 review remediation .10 — Component-level audit row records WHICH
+  # Component-level audit row records WHICH
   # external_ids were imported FROM WHICH archive. Provides recovery trail
   # so admin_destroy → re-import can be reconstructed. Without this, audit
   # laundering is possible: destroy review (audit row keeps history) then
@@ -170,7 +170,7 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
     end
   end
 
-  # PR-717 review remediation .4 step 7 (F5) — defensive transaction
+  # defensive transaction
   # wrap on build_all. JsonArchiveImporter#perform_import already wraps
   # in ActiveRecord::Base.transaction (acts as outer txn → savepoint
   # nesting), but ReviewBuilder.new explicitly supports direct/test
@@ -201,7 +201,7 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
     end
   end
 
-  # PR-717 review remediation .j4a step B2 — pre-fix, when the archive's
+  # pre-fix, when the archive's
   # commenter user_email/user_name didn't resolve to a User on this
   # instance, ReviewBuilder warned + skipped the review entirely. That
   # destroyed the audit trail / disposition record. Now that step A2
@@ -209,7 +209,7 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
   # commenter_imported_email/name columns, we can preserve the row with
   # user_id NULL + commenter_imported_* populated. Mirrors the existing
   # attribution_attrs pattern used for triage_set_by + adjudicated_by.
-  describe '#build_all unresolved commenter (PR-717 .j4a step B2)' do
+  describe '#build_all unresolved commenter' do
     it 'imports the review with commenter_imported_email/name when user does not resolve' do
       data = [review_attrs(
         external_id: 8001,

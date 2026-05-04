@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# PR-717 review remediation .4 — F4 forensic correlation primitive.
+# F4 forensic correlation primitive.
 #
 # Audited gem auto-populates `request_uuid` on every audit row created
 # during one Rails HTTP request. AuditEventBundle wraps the indexed

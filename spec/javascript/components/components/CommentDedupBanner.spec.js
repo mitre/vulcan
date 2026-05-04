@@ -38,7 +38,7 @@ const sampleRows = [
 ];
 
 /**
- * REQUIREMENTS (PR #717 + Aaron 2026-04-29):
+ * REQUIREMENTS:
  *
  * The dedup banner shows commenters PRIOR conversation on the rule so
  * they can avoid duplicating an existing comment. Behavior:

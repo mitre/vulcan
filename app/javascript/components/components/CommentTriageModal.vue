@@ -23,7 +23,7 @@
         </b-button>
       </p>
 
-      <!-- PR-717 Task 30: retroactive section editing. Triager (author+)
+      <!-- retroactive section editing. Triager (author+)
            retags a misclassified comment to the correct XCCDF section. The
            server requires an audit comment for the change to land. Saving
            the same section is a no-op (idempotent — no audit record). -->
@@ -32,7 +32,7 @@
         class="mb-3 p-2 border rounded bg-light"
         data-testid="section-edit-form"
       >
-        <!-- PR-717 .bpy — Sonar Web:S6853: <label> without a `for`
+        <!-- Sonar Web:S6853: <label> without a `for`
              attribute (or wrapped control) is unassociated. The
              FilterDropdown below has aria-label, so the visual heading
              is presentational only — render as <div> not <label>. -->
@@ -67,7 +67,7 @@
         </div>
       </div>
 
-      <!-- PR-717 review remediation .j4a step C3 — commenter attribution.
+      <!-- commenter attribution.
            commenter_display_name + commenter_imported come from the new
            ReviewBlueprint fields (step C1) and Component#paginated_comments
            row hash (step C2). Falls back to legacy author_name for older
@@ -86,7 +86,7 @@
         {{ review.comment }}
       </blockquote>
 
-      <!-- PR-717 review remediation .8 — attribution chain. "Triaged by"
+      <!-- attribution chain. "Triaged by"
            appears once a triage decision has been made; "Adjudicated by"
            appears once the comment is in a terminal state. The "imported"
            badge appears when the original User wasn't present on this
@@ -159,7 +159,7 @@
         </b-form-invalid-feedback>
       </b-form-group>
 
-      <!-- PR-717 Task 25: admin override actions. Visible only to project
+      <!-- admin override actions. Visible only to project
            admins. Audit comment required server-side; the Confirm button
            is gated on a non-blank textarea. Force-withdraw is always
            available; Restore is offered only when the comment is already
@@ -245,7 +245,7 @@
               data-testid="admin-action-audit-comment"
             />
             <div v-if="adminAction === 'hard-delete'" class="mt-2">
-              <!-- PR-717 .bpy — Sonar Web:S6853: explicit for/id pairs
+              <!-- Sonar Web:S6853: explicit for/id pairs
                    the <label> with the b-form-input below. -->
               <label for="admin-action-confirmation-id-input" class="small text-muted mb-1">
                 Type the comment ID
@@ -323,7 +323,7 @@ export default {
   // Each Vue pack has its own axios singleton (esbuild bundle isolation) — the
   // navbar pack's FormMixin doesn't reach the triage pack.
   // RoleComparisonMixin provides role_gte_to() for the canEditSection gate
-  // (PR-717 Task 30 — author+ retags a comment's section).
+  //.
   mixins: [AlertMixin, FormMixin, RoleComparisonMixin],
   props: {
     review: { type: Object, default: null },
@@ -331,7 +331,7 @@ export default {
     // component_id (set on the row) so project-aggregate triage queues
     // pick the right component per-row without the parent juggling state.
     componentId: { type: [Number, String], default: null },
-    // PR-717 Task 25: gates the Admin actions disclosure. Project admins
+    // gates the Admin actions disclosure. Project admins
     // get force-withdraw + restore (the inverse). Anything other than
     // 'admin' means the disclosure is not rendered.
     effectivePermissions: { type: String, default: null },
@@ -341,17 +341,17 @@ export default {
       triageStatus: null,
       responseComment: "",
       duplicateOfId: null,
-      // Admin actions disclosure state (PR-717 Task 25). Closed by default
+      // Admin actions disclosure state. Closed by default
       // so triagers don't accidentally click into the override panel.
       adminActionsOpen: false,
       adminAction: null, // 'force-withdraw' | 'restore' | 'hard-delete' | null
       adminAuditComment: "",
-      // PR-717 Task 25b: typed-confirmation safeguard for irreversible
+      // typed-confirmation safeguard for irreversible
       // hard-delete. Admin must type the review ID exactly to enable Confirm.
       adminConfirmationId: "",
-      // PR-717 Task 26: target rule chosen via RulePicker for move-to-rule.
+      // target rule chosen via RulePicker for move-to-rule.
       adminTargetRuleId: null,
-      // PR-717 Task 30: section editing sub-form state. Author+ retags
+      // section editing sub-form state. Author+ retags
       // a comment's section retroactively. Closed by default — opens via
       // the pencil button next to the section badge in the modal header.
       sectionEditMode: false,
@@ -409,7 +409,7 @@ export default {
     pickerComponentId() {
       return this.componentId || this.review?.component_id || null;
     },
-    // PR-717 Task 25 — admin override gating. The server enforces the
+    // admin override gating. The server enforces the
     // same gate (authorize_admin_project), so this is purely UI hiding.
     canAdminAct() {
       return this.effectivePermissions === "admin";
@@ -475,7 +475,7 @@ export default {
           return "";
       }
     },
-    // PR-717 Task 30 — gate the Edit section affordance to author+ users.
+    // gate the Edit section affordance to author+ users.
     // Server enforces the same gate (authorize_author_project), so this is
     // purely UI hiding. Viewers + commenters see the section badge but no
     // edit affordance.
@@ -515,7 +515,7 @@ export default {
     onTargetRuleSelected(ruleId) {
       this.adminTargetRuleId = ruleId;
     },
-    // PR-717 Task 25 — close the admin-action sub-form without resetting
+    // close the admin-action sub-form without resetting
     // the disclosure (so the user can choose a different admin action).
     cancelAdminAction() {
       this.adminAction = null;
@@ -523,7 +523,7 @@ export default {
       this.adminConfirmationId = "";
       this.adminTargetRuleId = null;
     },
-    // PR-717 Task 30 — open the section-edit sub-form, seeded with the
+    // open the section-edit sub-form, seeded with the
     // current value so re-saving with no change is detected as no-op
     // by the server (idempotent path returns 200 with no audit record).
     enterSectionEdit() {
@@ -556,7 +556,7 @@ export default {
         this.alertOrNotifyResponse(error);
       }
     },
-    // PR-717 Task 25 + 25b — dispatch the right endpoint for the chosen
+    // dispatch the right endpoint for the chosen
     // admin action. Emits 'triaged' on patch operations so the parent
     // table refreshes, or 'destroyed' on hard-delete so the parent can
     // remove the row entirely. All paths reset state and close the modal.

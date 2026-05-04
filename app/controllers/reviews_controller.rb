@@ -7,7 +7,7 @@ class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
   before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section]
-  # PR-717 review remediation .6 — withdraw added so :authorize_viewer_project
+  # withdraw added so :authorize_viewer_project
   # below has @project to check against. Policy: a user removed from the project
   # has no remaining authority on the project, including the ability to alter
   # their own pending comments. The comment itself stays put (project record
@@ -19,17 +19,17 @@ class ReviewsController < ApplicationController
   before_action :authorize_review_component, only: %i[lock_sections]
   before_action :authorize_author_project, only: %i[triage adjudicate reopen section]
   before_action :authorize_review_owner, only: %i[withdraw update]
-  # PR-717 Task 25 — admin override actions are gated to project admins.
+  # admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
   before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy move_to_rule]
-  # PR #717 phase enforcement — gates the public-comment lifecycle.
+  # gates the public-comment lifecycle.
   # Runs AFTER auth so non-members get the auth error, not a phase error.
   # admin_withdraw + admin_restore are NOT included — admin overrides are
   # the whole point and must work even after the comment window closes
   # (e.g., remove PII discovered post-final).
   before_action :reject_if_comments_closed, only: %i[create]
   before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section]
-  # PR-717 review remediation .14 — single audit-comment gate. Each
+  # single audit-comment gate. Each
   # mutating endpoint that requires an operator-supplied reason was
   # open-coding the same blank-check + 422 toast (5 sites, ~8 lines each).
   # Filter normalizes once, sets @audit_comment, and renders the
@@ -41,7 +41,7 @@ class ReviewsController < ApplicationController
     admin_destroy: 'admin hard-delete',
     section: 'section change'
   }.freeze
-  # PR-717 review remediation .16 — defense-in-depth length cap on the
+  # defense-in-depth length cap on the
   # operator-supplied audit_comment. Postgres `text` has no built-in
   # ceiling; admin endpoints accept arbitrary text. 4096 chars is enough
   # for any reasonable explanation while bounding abuse vectors.
@@ -49,7 +49,7 @@ class ReviewsController < ApplicationController
   before_action :require_audit_comment,
                 only: %i[admin_withdraw admin_restore move_to_rule admin_destroy section]
 
-  # PR-717 review remediation .15 — action-keyed title map for the
+  # action-keyed title map for the
   # generic ActiveRecord::RecordInvalid handler on ApplicationController.
   # Replaces 10 hand-written `rescue ActiveRecord::RecordInvalid => e`
   # blocks that all rendered the same shape with a per-action title.
@@ -112,7 +112,7 @@ class ReviewsController < ApplicationController
         end
       end
 
-      # PR-717 review remediation .18 — canonical object-shape toast
+      # canonical object-shape toast
       # (was a bare string pre-fix). Frontend AlertMixin now sees a
       # uniform shape across every PR-717 endpoint.
       render_toast(title: 'Comment posted.', message: '', variant: 'success', status: :ok)
@@ -253,7 +253,7 @@ class ReviewsController < ApplicationController
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
   end
 
-  # PR-717 Task 25 — PATCH /reviews/:id/admin_withdraw.
+  # PATCH /reviews/:id/admin_withdraw.
   # Project admin overrides commenter intent (spam, PII leak, content
   # violating policy, withdrawn-account cleanup). Sets withdrawn +
   # adjudicated attribution to the admin (overriding the auto-set
@@ -272,7 +272,7 @@ class ReviewsController < ApplicationController
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
   end
 
-  # PR-717 Task 25 — PATCH /reviews/:id/admin_restore.
+  # PATCH /reviews/:id/admin_restore.
   # Inverse of admin_withdraw (and any other adjudication): reverts to
   # 'pending' so the comment can be re-triaged through the normal flow.
   # Required when admin force-withdrew the wrong comment, or when a
@@ -296,7 +296,7 @@ class ReviewsController < ApplicationController
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
   end
 
-  # PR-717 Task 26 — PATCH /reviews/:id/move_to_rule.
+  # PATCH /reviews/:id/move_to_rule.
   # Project admin reassigns a misplaced comment (and atomically all its
   # replies) to a different rule in the same component. Audit comment
   # required; the column-change diff is captured because :rule_id is in
@@ -326,14 +326,14 @@ class ReviewsController < ApplicationController
     end
 
     Review.transaction do
-      # PR-717 review remediation .4 F7 — same lock! pattern as
+      # same lock! pattern as
       # admin_destroy. SELECT FOR UPDATE inside the txn so a concurrent
       # move_to_rule or admin_destroy on the same subtree waits for
       # ours to commit. lock! must be inside a txn — held only for the
       # executing statement otherwise.
       @review.lock!
 
-      # PR-717 review remediation .uxf — write an outbound audit on the
+      # write an outbound audit on the
       # SOURCE rule before the move. vulcan_audited associated_with: :rule
       # attaches per-review audit rows to the NEW rule (after update),
       # leaving the source rule's audit feed silent about the departure.
@@ -358,20 +358,20 @@ class ReviewsController < ApplicationController
     render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
   end
 
-  # PR-717 Task 25b — DELETE /reviews/:id/admin_destroy.
+  # DELETE /reviews/:id/admin_destroy.
   # Irreversible: hard-delete a comment (PII / sensitive content / legal
   # request) and its reply subtree (Review#responses dependent: :destroy
   # cascade). Audit entry is created on the COMPONENT BEFORE the destroy
   # so the trail survives — the destroyed review's own audit records
   # remain on the audited gem's table but the auditable record is gone.
   def admin_destroy
-    # PR-717 review remediation .19 — capture id BEFORE the destroy
+    # capture id BEFORE the destroy
     # so the canonical response shape (`{review: nil, destroyed_id:}`)
     # has the value even after the row is gone.
     destroyed_id = @review.id
 
     Review.transaction do
-      # PR-717 review remediation .4 F7 — row lock against concurrent
+      # row lock against concurrent
       # admin race (move_to_rule by one admin + hard-delete by another).
       # SELECT FOR UPDATE inside the transaction so the lock is held
       # until commit/rollback. lock! must be called within a txn — held
@@ -384,7 +384,7 @@ class ReviewsController < ApplicationController
         rule_id: @review.rule_id,
         author_id: @review.user_id,
         reply_count: @review.responses.count,
-        # PR-717 review remediation .4 F3 — full pre-destroy snapshot of
+        # full pre-destroy snapshot of
         # the entire reply subtree (parent + every descendant). For PII /
         # legal hard-delete, the snapshot IS the legal record. Captured
         # via WITH RECURSIVE CTE; timestamps are ISO8601 strings so YAML
@@ -401,7 +401,7 @@ class ReviewsController < ApplicationController
       )
       @review.destroy!
     end
-    # PR-717 review remediation .19 — canonical response shape:
+    # canonical response shape:
     # `review: nil` mirrors every other admin/triage endpoint that
     # returns `{review: <hash>}`; destroyed_id carries the destroyed
     # row id for any future client logic that wants to reconcile state
@@ -409,7 +409,7 @@ class ReviewsController < ApplicationController
     render json: { review: nil, destroyed_id: destroyed_id }
   end
 
-  # PR-717 Task 30 — PATCH /reviews/:id/section.
+  # PATCH /reviews/:id/section.
   # Triager (author+) retags an existing comment's `section` so misclassified
   # comments land in the correct per-section thread without rejecting the
   # commenter or going out-of-band via the console. Audit-comment required.
@@ -578,7 +578,7 @@ class ReviewsController < ApplicationController
 
   private
 
-  # PR-717 review remediation .14 + .16 — single before_action gate for
+  # single before_action gate for
   # the audit_comment param. Sets @audit_comment for the action body;
   # renders an action-specific 422 toast on blank or oversized.
   def require_audit_comment
@@ -597,7 +597,7 @@ class ReviewsController < ApplicationController
                           "(received #{@audit_comment.length}).")
   end
 
-  # PR-717 Task 26 — recursive parent-first walk for move_to_rule.
+  # recursive parent-first walk for move_to_rule.
   # Updates the review's rule_id with the audit comment captured by the
   # vulcan_audited gem, then recurses into each child (replies pointing
   # at this review). Children see the parent already at the target rule
@@ -679,7 +679,7 @@ class ReviewsController < ApplicationController
     params.expect(review: %i[component_id action comment section responding_to_review_id])
   end
 
-  # PR #717 phase gate: a public comment (action='comment') can only be
+  # a public comment (action='comment') can only be
   # posted while the component's comment_phase is 'open'. Other actions
   # (request_review, approve, request_changes, lock_control,
   # unlock_control) are role-gated independently and unaffected by this
@@ -692,7 +692,7 @@ class ReviewsController < ApplicationController
                  message: 'Comments are closed for this component.')
   end
 
-  # PR #717 phase gate: once a component's comment_phase reaches 'final',
+  # once a component's comment_phase reaches 'final',
   # the component is frozen — no new triage decisions, adjudications,
   # withdrawals, or self-edits can be applied to its Reviews. The
   # disposition matrix is published; the trail is immutable.

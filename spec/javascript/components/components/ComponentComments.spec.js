@@ -329,7 +329,7 @@ describe("ComponentComments", () => {
     });
   });
 
-  // PR-717 review remediation .20 — modal events update the row in
+  // modal events update the row in
   // place (no full-table refetch) so triage/adjudicate is one round
   // trip instead of two. The blueprint expansion (.20 primary
   // deliverable) ensures the response payload carries enough fields

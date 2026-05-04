@@ -39,7 +39,7 @@ RSpec.describe 'Format Handling Across Controllers' do
 
         json_response = response.parsed_body
         expect(json_response['redirect_url']).to be_present
-        # PR-717 review remediation .19d — toast canonicalized to
+        # toast canonicalized to
         # {title:, message:, variant:} object across all controllers.
         expect(json_response['toast']).to be_a(Hash)
         expect(json_response['toast']['title']).to eq('Project created.')

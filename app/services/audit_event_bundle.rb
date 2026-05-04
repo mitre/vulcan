@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .4 — F4 forensic correlation primitive.
+# F4 forensic correlation primitive.
 #
 # Wraps the `request_uuid` indexed query so reconstructing a multi-row
 # admin operation (e.g. admin_destroy of a parent comment cascading N

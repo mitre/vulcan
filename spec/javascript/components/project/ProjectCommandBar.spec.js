@@ -77,7 +77,7 @@ describe("ProjectCommandBar", () => {
   // REQUIREMENT: the project page must surface a clear way into the
   // public-comment triage queue without forcing the user to drill into
   // a specific component card. The Triage affordance navigates to the
-  // /projects/:id/triage aggregate view (PR #717).
+  // /projects/:id/triage aggregate view.
   describe("Triage affordance", () => {
     it("renders a Triage link pointing at /projects/:id/triage", () => {
       wrapper = createWrapper();

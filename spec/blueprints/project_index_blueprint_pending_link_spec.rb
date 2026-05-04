@@ -5,7 +5,7 @@ require 'rails_helper'
 # Verifies the projects-list payload includes pending_comment_link, the
 # server-resolved deep-link target for the "Comments" column. This avoids
 # bouncing through the project-detail page when the deep-link target is
-# unambiguous (PR #717 follow-on, Aaron's "feels clunky" feedback).
+# unambiguous.
 RSpec.describe 'ProjectIndexBlueprint pending_comment_link' do
   let_it_be(:srg) { create(:security_requirements_guide) }
   let_it_be(:project_single) { create(:project) }

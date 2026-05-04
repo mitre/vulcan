@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ##
-# PR-717 review remediation .a5u — regression guard for the canonical
+# regression guard for the canonical
 # toast response contract.
 #
 # As of PR-717 .19d, every JSON mutation endpoint that surfaces a

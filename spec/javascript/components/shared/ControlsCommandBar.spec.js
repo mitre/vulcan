@@ -229,7 +229,7 @@ describe("ControlsCommandBar", () => {
   });
 
   // ==========================================================================
-  // PR-717 Step 5: per-component Download button. ProjectComponent.vue had
+  // per-component Download button. ProjectComponent.vue had
   // no Download surface — users had to leave the editor to grab the export.
   // ==========================================================================
   describe("Download button", () => {

@@ -575,7 +575,7 @@ export default {
     sortAlsoSatisfies: function (rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
     },
-    // PR #717 — pending comment count for a rule. Reads rule.comment_summary
+    // pending comment count for a rule. Reads rule.comment_summary
     // populated by RuleBlueprint default fields. Returns 0 when missing so
     // the badge stays hidden for rules without any comments.
     rulePending: function (rule) {

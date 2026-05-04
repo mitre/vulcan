@@ -107,7 +107,7 @@ module DispositionMatrixExport
     row
   end
 
-  # PR-717 review remediation .8 — prefer the resolved User's name; fall
+  # prefer the resolved User's name; fall
   # back to the imported_email / imported_name when the FK is nil but the
   # archive carried original attribution forward (cross-instance restore
   # where the User didn't exist on the target). DISA reviewers still see

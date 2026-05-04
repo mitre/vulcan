@@ -68,7 +68,7 @@ class RulesController < ApplicationController
   def create
     rule = create_or_duplicate
     if rule.save
-      # PR-717 review remediation .19d — multi-key response (toast +
+      # multi-key response (toast +
       # data). Inline the canonical toast object since render_toast
       # doesn't support piggybacking extra response keys.
       render json: {
@@ -173,7 +173,7 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
     @rule.update!(locked_fields: fields)
 
-    # PR-717 review remediation .19d — multi-key response (rule + toast).
+    # multi-key response (rule + toast).
     render json: {
       rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
       toast: { title: locked ? 'Section locked.' : 'Section unlocked.',
@@ -203,7 +203,7 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
     @rule.update!(locked_fields: fields)
 
-    # PR-717 review remediation .19d — multi-key response (rule + toast).
+    # multi-key response (rule + toast).
     render json: {
       rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
       toast: { title: "Sections #{action_word.downcase}.",

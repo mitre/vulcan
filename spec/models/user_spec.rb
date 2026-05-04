@@ -140,7 +140,7 @@ RSpec.describe User do
     end
   end
 
-  # PR-717 review remediation .j4a step D1 — User#destroy preserves
+  # User#destroy preserves
   # commenter attribution on the user's reviews. dependent: :nullify
   # already drops the FK, but without copying name + email into
   # commenter_imported_* first, the reviews end up with NO attribution

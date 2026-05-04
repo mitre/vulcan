@@ -38,7 +38,7 @@ module Export
       elsif @formatter.multi_sheet?
         export_as_workbook(components)
       else
-        # PR-717 piggyback: each component contributes its rule CSV plus
+        # each component contributes its rule CSV plus
         # (when public-comment disposition records exist) a disposition CSV.
         # Packager passes a single Result through and zips multiple — so a
         # comments-free single-component export still returns a CSV directly.
@@ -107,7 +107,7 @@ module Export
 
     # Multi-sheet path: aggregates all components into a single workbook.
     # Used by ExcelFormatter where each component becomes one worksheet.
-    # PR-717 piggyback: when a component has any public-comment disposition
+    # when a component has any public-comment disposition
     # records, an additional "<prefix>-Disp..." sheet is appended for that
     # component alongside its rule sheet.
     def export_as_workbook(components)
@@ -163,7 +163,7 @@ module Export
       Result.new(data: data, filename: filename, content_type: @formatter.content_type)
     end
 
-    # PR-717 piggyback: rule CSV + disposition CSV (when comments exist).
+    # rule CSV + disposition CSV (when comments exist).
     # Returns 1 or 2 Results so the caller can flatten and pass through
     # Packager. Disposition only attaches on the CSV path; Excel piggyback
     # uses a different shape (sheets, see export_as_workbook).

@@ -47,7 +47,7 @@ describe("AlertMixin#alertOrNotifyResponse", () => {
   });
 
   describe("legacy success paths", () => {
-    // PR-717 review remediation .19d — string-toast handling removed.
+    // string-toast handling removed.
     // Every controller now returns canonical {title, message, variant}
     // object toasts. The pre-fix `typeof toast === 'string'` branch in
     // AlertMixin had no remaining producers; the test for it was

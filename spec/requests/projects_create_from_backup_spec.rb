@@ -65,7 +65,7 @@ RSpec.describe 'Project Create From Backup' do
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
         expect(json['redirect_url']).to be_present
-        # PR-717 .19d — canonical {title, message, variant} toast shape.
+        # canonical {title, message, variant} toast shape.
         expect(json['toast']).to be_a(Hash)
         expect(json['toast']['message'].join).to match(/successfully/i)
       end

@@ -5,14 +5,14 @@ class Review < ApplicationRecord
   include VulcanAuditable
   include ImportedAttribution
 
-  # PR-717 review remediation .8 + .j4a B1 — see app/models/concerns/
+  # see app/models/concerns/
   # imported_attribution.rb for the macro implementation. The three
   # declarations below replace six hand-written method bodies.
   imported_attribution :triager,     via: :triage_set_by
   imported_attribution :adjudicator, via: :adjudicated_by
   imported_attribution :commenter,   via: :user, column_prefix: :commenter
 
-  # PR-717 review remediation .j4a step A2 — optional so reviews.user_id
+  # optional so reviews.user_id
   # can be NULL after step A3's FK on_delete: :nullify removes the User.
   # Original commenter attribution lives on commenter_imported_email/name
   # columns; #commenter_display_name (step B1) provides the display fallback.
@@ -52,7 +52,7 @@ class Review < ApplicationRecord
   #   diff is captured on the trail, not just the audit_comment text.
   # - `section` added for Task 30 (edit comment section retroactive) so the
   #   triager's section-relocation is auditable.
-  # PR-717 review remediation .7 — `associated_with: :rule` so audit rows
+  # `associated_with: :rule` so audit rows
   # remain queryable through Rule after admin_destroy cascades a subtree
   # (auditable_id points to a deleted Review; associated_id still points
   # to a valid Rule). Matches the pattern on every other audited model.
@@ -66,7 +66,7 @@ class Review < ApplicationRecord
                       .where(adjudicated_at: nil)
   }
 
-  # PR-717 review remediation .4 step 2 — recursive subtree fetch via
+  # recursive subtree fetch via
   # Postgres WITH RECURSIVE CTE. Returns root + every descendant via
   # responding_to_review_id chain in one query, ordered so the root
   # appears first and children follow their parent.
@@ -134,7 +134,7 @@ class Review < ApplicationRecord
   }
 
   # rubocop:disable Rails/I18nLocaleTexts
-  # PR-717 review remediation .1 — allow_nil so legacy reviews (rows
+  # allow_nil so legacy reviews (rows
   # backfilled to NULL by 20260502120000_make_review_triage_status_nullable)
   # don't trip the validator on subsequent saves. NULL means "not part of
   # a public-comment workflow"; the inclusion list governs every other
@@ -144,7 +144,7 @@ class Review < ApplicationRecord
                       allow_nil: true
   # rubocop:enable Rails/I18nLocaleTexts
   validate :duplicate_status_requires_target
-  # PR-717 review remediation .21 — duplicate_of_review_id only makes
+  # duplicate_of_review_id only makes
   # sense when triage_status='duplicate'. The existing
   # duplicate_status_requires_target validator catches duplicate-WITHOUT-
   # target; this one catches the opposite (target-without-duplicate-status,
@@ -164,7 +164,7 @@ class Review < ApplicationRecord
   before_save :auto_set_adjudicated_for_terminal_statuses
 
   before_create :take_review_action
-  # PR-717 review remediation .1 — the column-level default 'pending' was
+  # the column-level default 'pending' was
   # dropped (legacy rows backfilled to NULL by
   # 20260502120000_make_review_triage_status_nullable). Top-level NEW
   # comments still need to enter the triage queue, so default
@@ -174,7 +174,7 @@ class Review < ApplicationRecord
   # (request_review/approve/etc.) stay NULL — they're not triage candidates.
   before_create :default_triage_status_for_new_top_level_comment
 
-  # PR-717 review remediation .9 — user-action validators are explicitly
+  # user-action validators are explicitly
   # scoped to :create + :update so they run on normal saves but NOT in
   # custom validation contexts. ReviewBuilder calls
   # `review.valid?(:import_integrity)` after Review.insert! to confirm the
@@ -199,7 +199,7 @@ class Review < ApplicationRecord
   # Serialization is handled by ReviewBlueprint.
   # See app/blueprints/review_blueprint.rb.
 
-  # PR-717 review remediation .8 + .j4a B1 — display-layer attribution
+  # display-layer attribution
   # for triager / adjudicator / commenter. Resolved User name → the
   # role's imported_name column → imported_email column → nil. When a
   # review is restored from a JSON archive on a different instance the
@@ -215,7 +215,7 @@ class Review < ApplicationRecord
   #                                                  differs from association
   #                                                  name; declared explicitly)
 
-  # PR-717 review remediation .4 step 4 — pre-destroy snapshot for the
+  # pre-destroy snapshot for the
   # admin_destroy Component-level audit row's `audited_changes` payload.
   # Captures the full row state (full comment, every audited + lifecycle
   # column, ISO8601 timestamps so YAML safe-load doesn't break on the

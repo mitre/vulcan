@@ -12,7 +12,7 @@
       <b-spinner small />
       Loading candidates…
     </div>
-    <!-- PR-717 .bpy — Sonar Web:S6842: <li role="button"> assigns an
+    <!-- Sonar Web:S6842: <li role="button"> assigns an
          interactive role to a non-interactive element. Use the
          listbox/option pattern instead — role="option" is allowed on
          <li> inside <ul role="listbox"> per ARIA 1.2. -->

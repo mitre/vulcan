@@ -26,7 +26,7 @@ module Import
       @include_reviews = include_reviews
       @include_memberships = include_memberships
       @component_filter = component_filter
-      # PR-717 review remediation .10 — imported_by surfaces on the
+      # imported_by surfaces on the
       # Component-level audit row that ReviewBuilder writes per import.
       # When unset (controllers may not always pass it), the audit row
       # still records action + archive identifier + external_ids.
@@ -34,7 +34,7 @@ module Import
     end
 
     def call
-      # PR-717 review remediation .vb4 — request_uuid producer side. The
+      # request_uuid producer side. The
       # importer is a non-HTTP code path that creates many audited rows
       # (Component + Rules + Reviews + AdditionalQuestions/Answers + the
       # ReviewBuilder import-event audit). Without this scope each row
@@ -70,7 +70,7 @@ module Import
 
       begin
         Zip::File.open_buffer(read_file_data) do |zip|
-          # PR-717 review remediation .lsj — zip-bomb decompression
+          # zip-bomb decompression
           # budget. Pre-fix, rubyzip's per-entry validation could pass
           # while the aggregate uncompressed size still expanded to
           # multiple GB (50-100 MB archive → 5+ GB on disk before OOM).

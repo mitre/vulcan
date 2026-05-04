@@ -53,13 +53,13 @@ RSpec.describe 'Triage vocabulary parity (en.yml ↔ triageVocabulary.js)' do
     expect(yml['comment_phase'].keys).to match_array(%w[draft open adjudication final])
   end
 
-  # PR-717 review remediation .22 — proper key-set parity. The earlier
+  # proper key-set parity. The earlier
   # tests use loose substring matching ("yml key appears anywhere in JS
   # source") which doesn't catch misnamed-constant errors and never
   # checks the JS→YAML direction. This block extracts the literal key
   # set from each frozen JS constant via regex and asserts symmetric
   # set equality with the YAML namespace.
-  describe 'symmetric key-set parity (PR-717 .22)' do
+  describe 'symmetric key-set parity' do
     # Extract the keys from `export const NAME = Object.freeze({ key: ..., })`
     # in the JS source. Returns Set<String>.
     def js_const_keys(name, source)

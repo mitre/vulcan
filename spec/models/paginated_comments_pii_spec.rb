@@ -41,13 +41,13 @@ RSpec.describe 'paginated_comments — PII shape' do
     end
   end
 
-  # PR-717 review remediation .8 — paginated_comments rows feed the comment
+  # paginated_comments rows feed the comment
   # triage table directly into CommentTriageModal (no extra fetch). The modal
   # renders "Triaged by ... · time / Adjudicated by ... · time" with an
   # "imported" badge when the FK is nil and imported_* attribution survives
   # from a JSON archive restore. Tests assert the row hash carries the four
   # display fields the modal expects.
-  describe 'attribution display fields (PR-717 .8)' do
+  describe 'attribution display fields' do
     let_it_be(:triager) { create(:user, name: 'Tri Ager', email: 'triager@test.com') }
 
     before do

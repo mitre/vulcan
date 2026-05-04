@@ -11,7 +11,7 @@ class ReviewBlueprint < Blueprinter::Base
 
   fields :action, :comment, :created_at, :triage_status, :triage_set_at, :adjudicated_at
 
-  # PR-717 review remediation .20 — fields the frontend modal needs
+  # fields the frontend modal needs
   # to refresh in place after a triage/adjudicate/withdraw/update
   # mutation, eliminating the post-mutation refetch round trip.
   fields :rule_id, :section, :responding_to_review_id, :duplicate_of_review_id, :triage_set_by_id
@@ -21,14 +21,14 @@ class ReviewBlueprint < Blueprinter::Base
     review.user&.name
   end
 
-  # PR-717 review remediation .20 — explicit author_name. Frontend modal
+  # explicit author_name. Frontend modal
   # uses `review.author_name` from the row hash; ReviewBlueprint output
   # had only :name. Expose both for stability across the API.
   field :author_name do |review, _options|
     review.user&.name
   end
 
-  # PR-717 review remediation .20 — author_email is gated. Default
+  # author_email is gated. Default
   # response omits it (a public-comment endpoint exposing every
   # commenter's email enables scraping during open comment windows).
   # Admin-tier surfaces (admin actions disclosure, disposition export)
@@ -40,7 +40,7 @@ class ReviewBlueprint < Blueprinter::Base
     review.user&.email
   end
 
-  # PR-717 review remediation .8 + .j4a C1 — display-layer attribution
+  # display-layer attribution
   # for triager / adjudicator / commenter. See app/blueprints/
   # imported_attribution_fields.rb for the macro implementation
   # (top-level, NOT under concerns/ — only app/models/concerns and

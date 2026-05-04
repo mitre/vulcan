@@ -503,7 +503,7 @@ RSpec.describe Review do
       expect(review.errors[:duplicate_of_review_id].join).to match(/cannot reference itself/i)
     end
 
-    # PR #717 Task 24 — chained-duplicate guard. The triager must point at the
+    # chained-duplicate guard. The triager must point at the
     # ultimate canonical, not at a comment that is itself a duplicate. Otherwise
     # the disposition matrix has multiple coalescing targets per logical issue.
     it 'rejects pointing duplicate_of at a comment that is itself a duplicate' do
@@ -521,7 +521,7 @@ RSpec.describe Review do
       expect(new_dup).to be_valid
     end
 
-    # PR-717 review remediation .21 — duplicate_of_review_id only makes
+    # duplicate_of_review_id only makes
     # sense when triage_status='duplicate'. Catches the opposite of
     # duplicate_status_requires_target — a stray cross-link on a non-
     # duplicate triage that would silently corrupt the disposition matrix.
@@ -578,7 +578,7 @@ RSpec.describe Review do
     end
   end
 
-  # PR #717 Task 30 — section is editable post-creation; the change must show up
+  # section is editable post-creation; the change must show up
   # in the audit log so the disposition record reflects who retagged what + why.
   describe 'section auditing' do
     let!(:section_review) do
@@ -608,7 +608,7 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .7 — vulcan_audited needs associated_with: :rule
+  # vulcan_audited needs associated_with: :rule
   # so audit rows survive admin_destroy as queryable records (auditable_id
   # points to a destroyed Review, but associated_id still points to a valid
   # Rule). All other audited models declare associated_with; Review was the gap.
@@ -671,7 +671,7 @@ RSpec.describe Review do
       expect(Review.pending_triage.where(rule: @p1r1)).not_to include(@c2, @reply)
     end
 
-    # PR-717 review remediation .1 — the original lifecycle migration set
+    # the original lifecycle migration set
     # triage_status NOT NULL DEFAULT 'pending'. On systems with pre-PR-717
     # `comment` reviews (action='comment' rows that were never part of a
     # public-comment workflow), every legacy row dumps into the triage
@@ -726,7 +726,7 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .4 step 4 — snapshot serialization for
+  # snapshot serialization for
   # the admin_destroy Component-level audit row. Captures full pre-
   # destroy state (full comment, every audited + lifecycle column,
   # ISO8601 timestamps so YAML safe-load doesn't break on Audit#find).
@@ -778,7 +778,7 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .4 step 2 — SQL CTE scope for the
+  # SQL CTE scope for the
   # snapshot-capture step in admin_destroy. Returns root + every
   # descendant via responding_to_review_id chain, in deterministic
   # depth-first-ish order so the audit-row snapshot is reproducible.
@@ -829,7 +829,7 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .j4a step A3+A4 — DB-layer FK constraints
+  # DB-layer FK constraints
   # on `reviews.user_id` and `reviews.rule_id`. Pre-.j4a, neither column
   # had a Postgres FK constraint at all, despite the model-level
   # belongs_to declarations. Failure modes:
@@ -842,7 +842,7 @@ RSpec.describe Review do
   # separate `validate_foreign_key`) to avoid an ACCESS EXCLUSIVE table
   # lock during validation on production. Behavioral integration ("user
   # destroyed → review keeps commenter_imported_*") lands in step D1.
-  # PR-717 review remediation .j4a step A4 — FK on `reviews.rule_id` →
+  # FK on `reviews.rule_id` →
   # `base_rules.id`. The card description proposed `on_delete: :cascade`
   # to "match Rule#has_many :reviews, dependent: :destroy", but the .4
   # cascade-ownership lesson applies (memory `vulcan-cascade-rails-owns`):
@@ -850,7 +850,7 @@ RSpec.describe Review do
   # per-row destroy events. Use :restrict instead. Rails-side
   # dependent: :destroy walks children-first; the FK is the safety net
   # for direct SQL DELETE FROM base_rules.
-  describe 'FK constraint on reviews.rule_id (PR-717 .j4a step A4)' do
+  describe 'FK constraint on reviews.rule_id' do
     let(:rule_fk) do
       ActiveRecord::Base.connection.foreign_keys(:reviews).find { |fk| fk.column == 'rule_id' }
     end
@@ -872,7 +872,7 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .2kp — original lifecycle migration
+  # original lifecycle migration
   # (20260429145530_add_lifecycle_columns_to_reviews) added 4 FKs inline
   # with column adds. Rails 8 default add_foreign_key validates eagerly
   # (ACCESS EXCLUSIVE on `reviews` for the duration of validation —
@@ -881,7 +881,7 @@ RSpec.describe Review do
   # uses validate: false; companion migration runs validate_foreign_key
   # inside disable_ddl_transaction!. Three FKs apply (responding_to_review_id
   # was already 2-pass-fixed in .4 commit 33b2bea / migration 20260502080000).
-  describe 'lifecycle FK constraints validated (PR-717 .2kp regression)' do
+  describe 'lifecycle FK constraints validated' do
     let(:fks) { ActiveRecord::Base.connection.foreign_keys(:reviews) }
 
     {
@@ -899,7 +899,7 @@ RSpec.describe Review do
     end
   end
 
-  describe 'FK constraint on reviews.user_id (PR-717 .j4a step A3)' do
+  describe 'FK constraint on reviews.user_id' do
     let(:user_fk) do
       ActiveRecord::Base.connection.foreign_keys(:reviews).find { |fk| fk.column == 'user_id' }
     end
@@ -924,13 +924,13 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .j4a step A2 — `belongs_to :user` becomes
+  # `belongs_to :user` becomes
   # optional so a Review can persist with `user_id` NULL after step A3
   # adds the FK with `on_delete: :nullify` (User#destroy nullifies all
   # the user's reviews instead of forcing a cascade). The commenter's
   # original attribution lives in `commenter_imported_*` once nullified;
   # display + export layers fall back to those columns when user_id is nil.
-  describe 'belongs_to :user is optional (PR-717 .j4a step A2)' do
+  describe 'belongs_to :user is optional' do
     it 'is valid with user_id nil and commenter_imported_* present' do
       review = Review.create!(action: 'comment', comment: 'c', user: @p_viewer,
                               rule: @p1r1, triage_status: 'pending')
@@ -953,14 +953,14 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .j4a step A1 — `reviews` table needs two
+  # `reviews` table needs two
   # nullable string columns to preserve original commenter attribution
   # when the User row gets removed (User#destroy → reviews.user_id NULL
   # via on_delete: :nullify FK in step A3) or when a json_archive import
   # carries a commenter email/name that doesn't resolve to a User on the
   # target instance. Mirrors the `_imported_email/_name` columns added in
   # `.8` for triage_set_by + adjudicated_by.
-  describe 'commenter_imported_* columns (PR-717 .j4a step A1)' do
+  describe 'commenter_imported_* columns' do
     it 'has commenter_imported_email column' do
       expect(Review.column_names).to include('commenter_imported_email')
     end
@@ -980,7 +980,7 @@ RSpec.describe Review do
     end
   end
 
-  describe 'attribution display helpers (PR-717 .8 imported attribution)' do
+  describe 'attribution display helpers' do
     let(:base) do
       Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
     end
@@ -1063,12 +1063,12 @@ RSpec.describe Review do
     end
   end
 
-  # PR-717 review remediation .j4a step B1 — commenter display helpers
+  # commenter display helpers
   # mirror the triager_*/adjudicator_* pattern from .8. Used by display
   # surfaces (CommentTriageModal, CSV export, blueprint) so the fallback
   # is one source of truth: resolved User name → imported_name →
   # imported_email → nil.
-  describe 'commenter display helpers (PR-717 .j4a step B1)' do
+  describe 'commenter display helpers' do
     let(:base) do
       Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
     end

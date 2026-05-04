@@ -52,7 +52,7 @@ class User < ApplicationRecord
   has_many :components, through: :memberships, source: :membership, source_type: 'Component'
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
 
-  # PR-717 review remediation .j4a step D1 — preserve commenter
+  # preserve commenter
   # attribution on the user's reviews before the FK gets nullified.
   # `prepend: true` ensures this callback fires BEFORE the
   # `dependent: :nullify` callback Rails registers for the reviews

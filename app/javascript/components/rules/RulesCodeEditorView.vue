@@ -216,7 +216,7 @@
         @rule-selected="handleRuleSelected"
       />
 
-      <!-- Comment composer modal (PR #717). Opens via onOpenComposer
+      <!-- Comment composer modal. Opens via onOpenComposer
            when a SectionCommentIcon emits open-composer. Lives in the
            right-panels slot but b-modal portals to the document body. -->
       <CommentComposerModal
@@ -448,7 +448,7 @@ export default {
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
       showSRGIdChecked: null,
-      // PR #717: section pre-selected on the comment composer when a
+      // section pre-selected on the comment composer when a
       // SectionCommentIcon click bubbles open-composer up to here.
       composerSection: null,
     };
@@ -512,7 +512,7 @@ export default {
   methods: {
     selectedCountLabel,
     /**
-     * PR #717 — open the comment composer with a pre-selected section.
+     * open the comment composer with a pre-selected section.
      * Triggered when SectionCommentIcon emits open-composer; the event
      * bubbles up RuleFormGroup → RuleForm/CheckForm/DisaRuleDescriptionForm
      * → UnifiedRuleForm → RuleEditor → here.
@@ -522,7 +522,7 @@ export default {
       this.$bvModal.show("comment-composer-modal");
     },
     /**
-     * PR #717 — after a comment is posted, refresh the rule so the
+     * after a comment is posted, refresh the rule so the
      * thread + per-section pending-count badge update without a reload.
      */
     onComposerPosted() {

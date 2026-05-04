@@ -7,7 +7,7 @@ module Import
     # Uses direct INSERT to bypass Review model callbacks (same pattern
     # as Component#duplicate_reviews_and_history).
     #
-    # PR #717: handles public-comment review lifecycle fields including reply
+    # handles public-comment review lifecycle fields including reply
     # threading + duplicate cross-links. Uses a two-pass approach so the new
     # DB ids assigned at import time can be mapped to the original external_ids
     # in the archive — pass 1 inserts every review without parent/dup refs,
@@ -31,7 +31,7 @@ module Import
       end
 
       def build_all
-        # PR-717 review remediation .4 step 7 (F5) — defensive transaction
+        # defensive transaction
         # wrap. JsonArchiveImporter#perform_import wraps in an outer
         # ActiveRecord::Base.transaction for the production path; this inner
         # txn becomes a savepoint there. For direct/test callers
@@ -62,13 +62,13 @@ module Import
           # the external_id → new_id map. Backups without these refs short-circuit.
           relink_threaded_refs(external_to_new_id)
 
-          # PR-717 review remediation .9 — Review.insert! bypasses model
+          # Review.insert! bypasses model
           # validators. Re-load each inserted record and run `valid?`; on
           # failure, warn + delete the row. Children of removed parents
           # cascade-delete via the FK semantics on responding_to_review_id.
           dropped = drop_invalid_reviews(external_to_new_id)
 
-          # PR-717 review remediation .10 — write a Component-level audit row
+          # write a Component-level audit row
           # listing imported external_ids + archive identifier. Recovery
           # trail for admin_destroy → re-import scenarios.
           write_import_audit(external_to_new_id)
@@ -99,7 +99,7 @@ module Import
         # rubocop:enable Rails/SkipsModelValidations
       end
 
-      # PR-717 review remediation .j4a step B2 — return one of:
+      # return one of:
       # - { user_id: <id> } when the commenter resolves to a User
       # - { user_id: nil, commenter_imported_email/name: ... } when
       #   email or name carry forward but no User matches on this instance
@@ -142,7 +142,7 @@ module Import
         attrs
       end
 
-      # PR-717 review remediation .8 — if the user resolves on this instance,
+      # if the user resolves on this instance,
       # set the FK as today. If the user can't resolve but the archive has
       # an email or name (i.e. attribution data exists), preserve it on
       # imported_email/imported_name columns and record a warning so the

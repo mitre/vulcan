@@ -38,7 +38,7 @@ RSpec.describe 'Lock Controls (B10)' do
       body = response.parsed_body
       # Should be warning (not danger) since NYD rules were skipped
       expect(body['toast']['variant']).to eq('warning')
-      # PR-717 review remediation .15 — render_toast normalizes message
+      # render_toast normalizes message
       # to an Array. The "Not Yet Determined" annotation is one element of
       # a multi-line message string carried by the array's first element.
       expect(body['toast']['message']).to be_an(Array)

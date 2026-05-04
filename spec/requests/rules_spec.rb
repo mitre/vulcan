@@ -256,7 +256,7 @@ RSpec.describe 'Rules' do
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
-        # PR-717 .19d — toast canonicalized; warnings live in message array.
+        # toast canonicalized; warnings live in message array.
         expect(json['toast']).to be_a(Hash)
         expect(json['toast']['variant']).to eq('warning')
         expect(json['toast']['message'].join).to include('Warning')
