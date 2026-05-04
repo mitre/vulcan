@@ -49,8 +49,12 @@ RSpec.describe 'Triage vocabulary parity (en.yml ↔ triageVocabulary.js)' do
     expect(yml['sections'].keys).to include(*expected_sections)
   end
 
-  it 'has all 4 comment phase keys' do
-    expect(yml['comment_phase'].keys).to match_array(%w[draft open adjudication final])
+  it 'has the open/closed comment phase keys' do
+    expect(yml['comment_phase'].keys).to match_array(%w[open closed])
+  end
+
+  it 'has the adjudicating/finalized closed_reason keys' do
+    expect(yml['closed_reason'].keys).to match_array(%w[adjudicating finalized])
   end
 
   # proper key-set parity. The earlier
