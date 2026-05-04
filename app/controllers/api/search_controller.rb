@@ -52,12 +52,12 @@ module Api
                   .where(*build_ilike_conditions(%w[name description]))
                   .limit(limit)
                   .map do |project|
-        {
-          id: project.id,
-          name: project.name,
-          description: project.description,
-          components_count: project.components.count
-        }
+                    {
+                      id: project.id,
+                      name: project.name,
+                      description: project.description,
+                      components_count: project.components.count
+                    }
       end
     end
 
@@ -79,15 +79,15 @@ module Api
                .distinct
                .limit(limit)
                .map do |component|
-        {
-          id: component.id,
-          name: component.name,
-          version: component.version,
-          release: component.release,
-          project_id: component.project_id,
-          project_name: component.project&.name,
-          metadata: component.component_metadata&.data
-        }
+                 {
+                   id: component.id,
+                   name: component.name,
+                   version: component.version,
+                   release: component.release,
+                   project_id: component.project_id,
+                   project_name: component.project&.name,
+                   metadata: component.component_metadata&.data
+                 }
       end
     end
 
@@ -114,15 +114,15 @@ module Api
       rules_scope.includes(:component, :disa_rule_descriptions, :checks)
                  .limit(limit)
                  .map do |rule|
-        {
-          id: rule.id,
-          rule_id: rule.rule_id,
-          title: rule.title,
-          status: rule.status,
-          component_id: rule.component_id,
-          component_prefix: rule.component&.prefix,
-          snippet: generate_snippet(rule, @query[:normalized])
-        }
+                   {
+                     id: rule.id,
+                     rule_id: rule.rule_id,
+                     title: rule.title,
+                     status: rule.status,
+                     component_id: rule.component_id,
+                     component_prefix: rule.component&.prefix,
+                     snippet: generate_snippet(rule, @query[:normalized])
+                   }
       end
     end
 

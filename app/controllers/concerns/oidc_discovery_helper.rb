@@ -200,7 +200,6 @@ module OidcDiscoveryHelper
     Rails.logger.debug { "Cached OIDC discovery for #{normalized_issuer}, expires in 1 hour" }
   end
 
-  # rubocop:disable Naming/PredicateMethod
   def validate_discovery_document(config, expected_issuer)
     # Security: Validate issuer matches expected value (prevents man-in-the-middle attacks)
     actual_issuer = config['issuer']
@@ -291,7 +290,6 @@ module OidcDiscoveryHelper
 
     true
   end
-  # rubocop:enable Naming/PredicateMethod
 
   def fetch_oidc_endpoint(endpoint_name, fallback_url = nil)
     return fallback_url unless Settings.oidc.discovery

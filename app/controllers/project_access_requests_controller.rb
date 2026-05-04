@@ -32,7 +32,7 @@ class ProjectAccessRequestsController < ApplicationController
       respond_to do |format|
         format.html do
           flash.notice = toast
-          redirect_back(fallback_location: root_path)
+          redirect_back_or_to(root_path)
         end
         format.json { render json: { toast: toast, id: @access_request.id } }
       end
@@ -40,9 +40,9 @@ class ProjectAccessRequestsController < ApplicationController
       respond_to do |format|
         format.html do
           flash.alert = @access_request.errors.full_messages.to_sentence
-          redirect_back(fallback_location: root_path)
+          redirect_back_or_to(root_path)
         end
-        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_entity }
+        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_content }
       end
     end
   end

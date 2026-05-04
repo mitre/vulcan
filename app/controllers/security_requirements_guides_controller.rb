@@ -102,7 +102,7 @@ class SecurityRequirementsGuidesController < ApplicationController
               message: @srg.errors.full_messages,
               variant: 'danger'
             }
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end

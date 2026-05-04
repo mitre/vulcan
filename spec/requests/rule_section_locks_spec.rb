@@ -56,7 +56,7 @@ RSpec.describe 'Rule section locks API' do
 
       it 'rejects invalid section name' do
         patch "/rules/#{rule.id}/section_locks", params: { section: 'Bogus', locked: true }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body['error']).to match(/invalid section/i)
       end
 
@@ -194,7 +194,7 @@ RSpec.describe 'Rule section locks API' do
     it 'rejects if any section name is invalid' do
       patch "/rules/#{rule.id}/bulk_section_locks",
             params: { sections: %w[Title Bogus], locked: true }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end

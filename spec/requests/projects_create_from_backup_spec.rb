@@ -126,12 +126,12 @@ RSpec.describe 'Project Create From Backup' do
           }
         end.not_to change(Project, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'requires project_name for real import' do
         post BACKUP_ENDPOINT, params: { file: uploaded_file }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'returns 400 when no file provided' do
