@@ -138,8 +138,11 @@ export default {
       }
     },
     sortedRules() {
-      const rules = this.filteredRules;
-      return rules.sort((a, b) => {
+      // Spread before sort — Array#sort mutates in place, and
+      // filteredRules sometimes returns the rules prop directly.
+      // Sorting it would mutate the prop and re-trigger the computed
+      // (Vue dev mode catches this as an infinite update loop).
+      return [...this.filteredRules].sort((a, b) => {
         if (this.field === "SRG ID") {
           return this.sortOrder === "asc"
             ? a.srg_id.localeCompare(b.srg_id)
