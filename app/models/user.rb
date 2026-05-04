@@ -287,13 +287,15 @@ class User < ApplicationRecord
 
   private
 
+  # rubocop:disable Naming/PredicateMethod -- the explicit `true` return
+  # below is for Sonar S7887 (callbacks must not implicitly return :abort
+  # / false), not because this is a predicate. Renaming to add `?` would
+  # break the before_destroy registration above.
   def preserve_review_attribution
-    # rubocop:disable Rails/SkipsModelValidations
-    # Bulk copy from a validated parent: per-row Review validation isn't
-    # needed since the values come from the same User instance, and per-row
-    # callbacks would generate one audit per review. Returning true keeps
-    # the destroy chain explicit (update_all's integer return is truthy in
-    # Ruby, but Sonar S7887 wants the intent unambiguous).
+    # rubocop:disable Rails/SkipsModelValidations -- bulk copy from a
+    # validated parent: per-row Review validation isn't needed since the
+    # values come from the same User instance, and per-row callbacks
+    # would generate one audit per review.
     reviews.update_all(
       commenter_imported_email: email,
       commenter_imported_name: name
@@ -301,6 +303,7 @@ class User < ApplicationRecord
     # rubocop:enable Rails/SkipsModelValidations
     true
   end
+  # rubocop:enable Naming/PredicateMethod
 
   # Promotes the first user to admin if VULCAN_FIRST_USER_ADMIN is enabled
   # and no admin users exist yet. This makes Docker deployments functional
