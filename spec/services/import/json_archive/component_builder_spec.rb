@@ -13,7 +13,7 @@ RSpec.describe Import::JsonArchive::ComponentBuilder do
   def component_data(phase:, reason: nil)
     {
       'name' => "Imported #{SecureRandom.hex(2)}",
-      'prefix' => 'IMP-01',
+      'prefix' => 'IMPT-01',
       'version' => '1',
       'release' => '1',
       'title' => 'Imported title',
