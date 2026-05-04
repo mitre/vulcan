@@ -54,7 +54,8 @@ describe("CommentPeriodBanner", () => {
       stubs: ["b-alert"],
     });
     expect(w.text()).toContain("Open for comment");
-    expect(w.text()).toMatch(/16 days remaining/);
+    expect(w.text()).toMatch(/last day to comment/);
+    expect(w.text()).toMatch(/16 days left/);
     expect(w.text()).toMatch(/12 pending/);
   });
 

@@ -2,8 +2,8 @@
   <b-alert v-if="bannerKind" show :variant="bannerVariant" role="status" class="mb-3">
     <template v-if="bannerKind === 'open-with-deadline'">
       <strong>Open for comment</strong>
-      · {{ daysRemaining }} days remaining
-      <span class="text-muted">(closes {{ friendlyDate(component.comment_period_ends_at) }})</span>
+      · last day to comment: {{ friendlyDate(component.comment_period_ends_at) }}
+      <span class="text-muted">({{ daysRemaining }} days left)</span>
     </template>
     <template v-else-if="bannerKind === 'closed-with-past-deadline'">
       <strong>Comments closed on {{ friendlyDate(component.comment_period_ends_at) }}</strong>
