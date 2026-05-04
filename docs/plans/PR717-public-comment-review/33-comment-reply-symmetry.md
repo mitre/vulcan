@@ -43,10 +43,35 @@ NULL`. Three of the five surfaces use it directly, hiding replies.
   - `UsersController#comments_json_payload`
   - `CommentDedupBanner` payload source (the `/components/:id/comments`
     JSON used for prior-comment deduplication)
-- Decide: eager-include `responses` in the row payload (simple, fine
-  if reply counts stay small — typical case <5) OR add a
-  `GET /reviews/:id/responses` endpoint and lazy-load on expand.
-  Recommend eager-include for v1; revisit if reply counts grow.
+- **Lazy-load reply bodies** via a new `GET /reviews/:id/responses`
+  endpoint. Authorization derives from the parent review's component
+  via the existing `authorize_component_access` pattern — replies
+  inherit the same visibility as their parent. Returns the reply
+  chain serialized through `ReviewBlueprint` (same shape used for
+  rendering top-level comments). Eager-including reply bodies in row
+  payloads was rejected — the dedup banner endpoint downgrades to
+  `authorize_logged_in` on released components, so eager-including
+  there would expose every reply to any logged-in user.
+- **Redact `commenter_display_name` PII fallback.** Today
+  `ImportedAttribution#commenter_display_name` falls back to
+  `commenter_imported_email` when both the resolved User and
+  `commenter_imported_name` are nil. Spreading reply rendering across
+  five surfaces makes this a PII-scraping vector via the dedup banner
+  (broadly readable on released components). Change the fallback to
+  `"(imported commenter)"` when only the email column is populated.
+  Keep `commenter_imported_email` server-side only.
+- **Defense-in-depth: forbid triage on replies.** Add a model
+  validator: `triage_status` must be absent when
+  `responding_to_review_id.present?`. Frontend already filters
+  replies out of the triage queue; this prevents a future regression
+  from silently letting replies become adjudicable.
+- **Reply parent auth — keep the rule_id in the URL.**
+  `ReviewsController#create` authorizes via `params[:rule_id]`. The
+  `responding_to_must_be_same_rule` model validator is the backstop.
+  Every reply-creation path must continue to POST to
+  `/rules/:rule_id/reviews` — never derive the rule server-side from
+  `responding_to_review_id`. This is a constraint on the new code,
+  not a new endpoint.
 
 ### Shared Vue component
 
@@ -76,30 +101,60 @@ Emits: `expand`, `reply`, `triage`.
    comment. Allow expanding to read the thread before deciding to
    compose new vs reply to existing.
 
-## Design questions to resolve before starting
+## Design decisions (resolved)
 
-- **Triage-table thread display:** inline expansion (recommended) vs
-  thread-detail page. Inline preserves at-a-glance queue; thread page
-  gives more space but takes you out of context.
-- **Reply ordering:** chronological (oldest-first, like a chat) vs
-  reverse-chronological (newest-first, like a forum). Currently
-  RuleReviews uses chronological for nested replies under each
-  parent. Stay consistent.
-- **Triage of replies:** today only top-level comments have triage
-  status. Replies inherit nothing. Keep that — replies are
-  conversation, top-level is the unit of disposition. (But verify
-  this matches your team's mental model.)
+- **Triage-table thread display:** inline expansion. Click chevron to
+  expand the reply chain under the row; preserves the at-a-glance
+  queue.
+- **Reply ordering:** chronological (oldest-first), matching
+  RuleReviews.
+- **Triage of replies:** confirmed — replies are conversation, only
+  top-level comments are adjudicable units. Enforced now at the
+  frontend filter AND the model validator (see Backend §).
+- **Reply payload strategy:** lazy-load via
+  `GET /reviews/:id/responses` everywhere. Single auth gate per
+  expansion, replies inherit parent's component visibility.
+- **My Comments + discoverable projects:** replies match root
+  comments. If you can see the parent on My Comments today (because
+  it's yours, on a project you can access), expanding loads replies
+  via the same auth gate as the parent. No reply-specific carve-out.
+
+## Security review (incorporated 2026-05-04)
+
+This plan was reviewed before any code commits. Findings folded into
+Backend § above:
+- C1: PII redaction for `commenter_display_name` fallback
+- C2: lazy-load endpoint instead of eager-include (avoids broad reply
+  exposure via the dedup banner)
+- C3: reply parent auth must keep rule_id in the URL
+- R1: replies inherit parent's auth (not gated separately)
+- R2: model validator forbidding triage_status on replies
+- CSRF/FormMixin wiring on every new reply-POST surface — verify in
+  each surface integration commit
+- Spec asserting closed-window reply rejection
 
 ## Test plan
 
-- Backend specs: `responses_count` populated correctly across all
-  payloads; thread payloads round-trip through JSON archive
-  export/import.
+- Backend specs:
+  - `responses_count` populated correctly across all payloads
+  - `GET /reviews/:id/responses` authorizes via parent's component
+    (member, discoverable+released, denied for inaccessible components)
+  - `commenter_display_name` redaction when only `commenter_imported_email`
+    is populated (verify dedup banner payload, triage modal payload,
+    My Comments payload)
+  - Model validator: `Review` with `responding_to_review_id` cannot
+    save with non-nil `triage_status`
+  - Viewer cannot reply on a closed component (`reject_if_comments_closed`
+    applies to `responding_to_review_id`-bearing reviews)
+  - Thread payloads round-trip through JSON archive export/import
 - Vue specs: `<CommentThread>` renders parent + replies, fires reply
   event with correct id, expand/collapse persists across navigations.
 - Integration: post a reply from each of the five surfaces and
   confirm it appears in all three read-surfaces (triage table
   expanded, rule editor pullout, dedup banner).
+- CSRF: each new reply-POST surface either includes `FormMixin` or
+  imports `CommentComposerModal` (which mixes it in). Verify per
+  surface commit.
 
 ## Out of scope
 

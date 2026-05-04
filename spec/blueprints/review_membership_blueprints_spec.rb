@@ -83,13 +83,15 @@ RSpec.describe 'Review and Membership Blueprints' do
         expect(json[:adjudicator_imported]).to be(false)
       end
 
-      it 'falls back to imported_email when imported_name is blank' do
+      # Task 33 PII guard: redact to role label when only imported_email
+      # is populated (see ImportedAttribution).
+      it 'redacts to "(imported adjudicator)" when only imported_email is populated' do
         review.update_columns(
           adjudicated_at: Time.current,
           adjudicated_by_imported_email: 'orig-adj@former.example'
         )
         json = ReviewBlueprint.render_as_hash(review.reload)
-        expect(json[:adjudicator_display_name]).to eq('orig-adj@former.example')
+        expect(json[:adjudicator_display_name]).to eq('(imported adjudicator)')
         expect(json[:adjudicator_imported]).to be(true)
       end
 
@@ -131,10 +133,12 @@ RSpec.describe 'Review and Membership Blueprints' do
         expect(json[:commenter_imported]).to be(true)
       end
 
-      it 'falls back to commenter_imported_email when imported_name is blank' do
+      # Task 33 PII guard: redact to role label when only imported_email
+      # is populated (see ImportedAttribution).
+      it 'redacts to "(imported commenter)" when only imported_email is populated' do
         review.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
         json = ReviewBlueprint.render_as_hash(review.reload)
-        expect(json[:commenter_display_name]).to eq('imp@old.example')
+        expect(json[:commenter_display_name]).to eq('(imported commenter)')
         expect(json[:commenter_imported]).to be(true)
       end
 

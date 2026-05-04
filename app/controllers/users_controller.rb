@@ -295,16 +295,18 @@ class UsersController < ApplicationController
     total = scope.count
     page_records = scope.order(created_at: :desc)
                         .offset((page - 1) * per_page).limit(per_page).to_a
-    latest_response_at = Review.where(responding_to_review_id: page_records.map(&:id))
-                               .group(:responding_to_review_id)
-                               .maximum(:created_at)
+    response_aggregates = Review.where(responding_to_review_id: page_records.map(&:id))
+                                .group(:responding_to_review_id)
+                                .pluck(Arel.sql('responding_to_review_id, MAX(created_at), COUNT(*)'))
+    latest_response_at = response_aggregates.to_h { |id, max_at, _count| [id, max_at] }
+    responses_count = response_aggregates.to_h { |id, _max_at, count| [id, count] }
 
-    rows = page_records.map { |r| comment_row_for(r, latest_response_at[r.id]) }
+    rows = page_records.map { |r| comment_row_for(r, latest_response_at[r.id], responses_count[r.id] || 0) }
 
     { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
   end
 
-  def comment_row_for(review, latest_response)
+  def comment_row_for(review, latest_response, responses_count)
     rule      = review.rule
     component = rule.component
     project   = component.project
@@ -322,7 +324,8 @@ class UsersController < ApplicationController
       triage_status: review.triage_status,
       triage_set_at: review.triage_set_at,
       adjudicated_at: review.adjudicated_at,
-      latest_activity_at: [review.triage_set_at, review.adjudicated_at, latest_response].compact.max
+      latest_activity_at: [review.triage_set_at, review.adjudicated_at, latest_response].compact.max,
+      responses_count: responses_count
     }
   end
 

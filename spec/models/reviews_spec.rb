@@ -561,6 +561,23 @@ RSpec.describe Review do
                      responding_to_review_id: parent.id)
       expect { parent.destroy }.to change(Review, :count).by(-2)
     end
+
+    # Defense-in-depth: replies are conversation, not adjudicable.
+    # The triage queue filters by responding_to_review_id IS NULL, but a
+    # future regression could leak triage_status onto a reply via mass-
+    # assignment. The model validator stops it at save time.
+    it 'rejects setting triage_status on a reply' do
+      reply = Review.new(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
+                         responding_to_review_id: parent.id, triage_status: 'concur')
+      expect(reply.valid?).to be(false)
+      expect(reply.errors[:triage_status].join).to match(/cannot be set on a reply/i)
+    end
+
+    it 'allows nil triage_status on a reply (the default)' do
+      reply = Review.new(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
+                         responding_to_review_id: parent.id)
+      expect(reply.valid?).to be(true)
+    end
   end
 
   describe 'auto-set adjudicated_at on terminal triage statuses' do
@@ -997,10 +1014,12 @@ RSpec.describe Review do
         expect(base.reload.triager_display_name).to eq('Alice Imported')
       end
 
-      it 'falls back to imported_email when imported_name is blank' do
+      # Task 33 PII guard: redact to role label when only imported_email
+      # is populated. See ImportedAttribution comment block for rationale.
+      it 'redacts to "(imported triager)" when only imported_email is populated' do
         base.update_columns(triage_set_by_imported_name: nil,
                             triage_set_by_imported_email: 'bob@old.example')
-        expect(base.reload.triager_display_name).to eq('bob@old.example')
+        expect(base.reload.triager_display_name).to eq('(imported triager)')
       end
 
       it 'returns nil when nothing is set' do
@@ -1036,9 +1055,11 @@ RSpec.describe Review do
         expect(base.reload.adjudicator_display_name).to eq('Carol Imported')
       end
 
-      it 'falls back to imported_email when imported_name blank' do
+      # Task 33 PII guard: redact to role label when only imported_email
+      # is populated. See ImportedAttribution comment block for rationale.
+      it 'redacts to "(imported adjudicator)" when only imported_email is populated' do
         base.update_columns(adjudicated_by_imported_email: 'dan@old.example')
-        expect(base.reload.adjudicator_display_name).to eq('dan@old.example')
+        expect(base.reload.adjudicator_display_name).to eq('(imported adjudicator)')
       end
 
       it 'returns nil when nothing is set' do
@@ -1085,11 +1106,15 @@ RSpec.describe Review do
         expect(base.reload.commenter_display_name).to eq('Imported Person')
       end
 
-      it 'falls back to commenter_imported_email when imported_name is blank' do
+      # Task 33 PII guard: when ONLY imported_email is populated, the
+      # display fallback is a redacted role label rather than the raw
+      # email. JSON archives can carry real source-instance emails;
+      # surfacing them through any read surface is a scrape vector.
+      it 'redacts to "(imported commenter)" when only imported_email is populated' do
         base.update_columns(user_id: nil,
                             commenter_imported_name: nil,
                             commenter_imported_email: 'imp@old.example')
-        expect(base.reload.commenter_display_name).to eq('imp@old.example')
+        expect(base.reload.commenter_display_name).to eq('(imported commenter)')
       end
 
       it 'returns nil when user_id is nil and no imported attribution' do

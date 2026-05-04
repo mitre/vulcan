@@ -78,12 +78,75 @@ RSpec.describe 'paginated_comments — PII shape' do
       expect(row[:triager_imported]).to be(true)
     end
 
+    # PII redaction: when ONLY the imported_email column is populated
+    # (not imported_name), the display fallback redacts to a role token
+    # rather than leaking the raw email. JSON archives can carry real
+    # emails from a source instance; surfacing them through every read
+    # surface during a public comment window is a scrape vector.
+    it 'redacts triager fallback when only imported_email is populated' do
+      posted_review.update_columns(
+        triage_set_by_id: nil,
+        triage_set_by_imported_name: nil,
+        triage_set_by_imported_email: 'leak-me@example.com'
+      )
+      row = component.paginated_comments[:rows].first
+      expect(row[:triager_display_name]).to eq('(imported triager)')
+      expect(row[:triager_imported]).to be(true)
+      expect(row.values).not_to include('leak-me@example.com')
+    end
+
+    it 'redacts commenter fallback when only commenter_imported_email is populated' do
+      posted_review.update_columns(
+        user_id: nil,
+        commenter_imported_name: nil,
+        commenter_imported_email: 'commenter-leak@example.com'
+      )
+      row = component.paginated_comments[:rows].first
+      expect(row[:commenter_display_name]).to eq('(imported commenter)')
+      expect(row[:commenter_imported]).to be(true)
+      expect(row.values).not_to include('commenter-leak@example.com')
+    end
+
     it 'Project#paginated_comments carries the same four display fields' do
       row = project.paginated_comments[:rows].first
       expect(row[:triager_display_name]).to eq('Tri Ager')
       expect(row[:triager_imported]).to be(false)
       expect(row).to have_key(:adjudicator_display_name)
       expect(row).to have_key(:adjudicator_imported)
+    end
+  end
+
+  # Task 33: row payloads carry a responses_count so the read surfaces
+  # can show "N replies" without N+1 fetches. Replies are lazy-loaded
+  # via GET /reviews/:id/responses on expand.
+  describe 'responses_count on row payloads' do
+    let_it_be(:replier) do
+      u = create(:user, name: 'Replier', email: 'replier@example.com')
+      Membership.find_or_create_by!(user: u, membership: project) { |m| m.role = 'viewer' }
+      u
+    end
+
+    before do
+      Review.create!(action: 'comment', comment: 'first reply', user: replier,
+                     rule: posted_review.rule, responding_to_review_id: posted_review.id)
+      Review.create!(action: 'comment', comment: 'second reply', user: replier,
+                     rule: posted_review.rule, responding_to_review_id: posted_review.id)
+    end
+
+    it 'Component#paginated_comments includes responses_count' do
+      row = component.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
+      expect(row[:responses_count]).to eq(2)
+    end
+
+    it 'Project#paginated_comments includes responses_count' do
+      row = project.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
+      expect(row[:responses_count]).to eq(2)
+    end
+
+    it 'returns 0 when a top-level comment has no replies' do
+      lone = Review.create!(action: 'comment', comment: 'lone', user: replier, rule: posted_review.rule)
+      row = component.paginated_comments[:rows].find { |r| r[:id] == lone.id }
+      expect(row[:responses_count]).to eq(0)
     end
   end
 end

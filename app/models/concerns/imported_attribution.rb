@@ -26,10 +26,18 @@
 #                   declares `column_prefix: :commenter` explicitly
 #                   because its column-prefix doesn't match `user`.
 #
-# Display fallback (matches the original .8 / .j4a methods exactly):
+# Display fallback:
 #   public_send(via)&.name.presence ||
 #     public_send("#{column_prefix}_imported_name").presence ||
-#     public_send("#{column_prefix}_imported_email").presence
+#     "(imported #{role})" if email column is populated, else nil
+#
+# The email-column fallback is intentionally redacted to a role label
+# rather than the raw email. Imported attribution columns are populated
+# from JSON archives that may carry real user emails from the source
+# instance; surfacing them in payloads readable by every project member
+# (or, for released components, every logged-in user) creates a PII-
+# scraping vector. Display still signals "this attribution came from an
+# import" via the (imported X) label and the *_imported? predicate.
 #
 # Imported predicate:
 #   public_send("#{via}_id").nil? &&
@@ -43,11 +51,12 @@ module ImportedAttribution
       imported_email = "#{column_prefix}_imported_email"
       imported_name  = "#{column_prefix}_imported_name"
       via_id         = "#{via}_id"
+      redacted_label = "(imported #{role})"
 
       define_method("#{role}_display_name") do
         public_send(via)&.name.presence ||
           public_send(imported_name).presence ||
-          public_send(imported_email).presence
+          (redacted_label if public_send(imported_email).present?)
       end
 
       define_method("#{role}_imported?") do

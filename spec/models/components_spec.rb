@@ -1124,11 +1124,13 @@ RSpec.describe Component do
         expect(c1_row[:commenter_imported]).to be(true)
       end
 
-      it 'falls back to commenter_imported_email when imported_name is blank' do
+      # Task 33 PII guard: redact to role label when only imported_email
+      # is populated (see Review spec for rationale).
+      it 'redacts to "(imported commenter)" when only imported_email is populated' do
         @c1.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
         result = shared_component.paginated_comments(triage_status: 'all')
         c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-        expect(c1_row[:commenter_display_name]).to eq('imp@old.example')
+        expect(c1_row[:commenter_display_name]).to eq('(imported commenter)')
         expect(c1_row[:commenter_imported]).to be(true)
       end
     end

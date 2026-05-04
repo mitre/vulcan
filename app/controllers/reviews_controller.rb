@@ -6,13 +6,13 @@
 class ReviewsController < ApplicationController
   before_action :set_rule, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
-  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section]
+  before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section responses]
   # withdraw added so :authorize_viewer_project
   # below has @project to check against. Policy: a user removed from the project
   # has no remaining authority on the project, including the ability to alter
   # their own pending comments. The comment itself stays put (project record
   # stability); the actor just loses the ability to alter it after leaving.
-  before_action :set_project_from_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section]
+  before_action :set_project_from_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section responses]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create withdraw update]
   before_action :authorize_admin_component, only: %i[lock_controls]
@@ -22,6 +22,9 @@ class ReviewsController < ApplicationController
   # admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
   before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy move_to_rule]
+  # Reply chain visibility mirrors the parent component's read auth:
+  # released → any logged-in user; unreleased → project member.
+  before_action :authorize_review_visibility, only: %i[responses]
   # gates the public-comment lifecycle.
   # Runs AFTER auth so non-members get the auth error, not a phase error.
   # admin_withdraw + admin_restore are NOT included — admin overrides are
@@ -453,6 +456,30 @@ class ReviewsController < ApplicationController
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
   end
 
+  # GET /reviews/:id/responses — fetch the reply chain under a top-level
+  # comment. Auth mirrors the parent component's read gate (released
+  # → any logged-in user; unreleased → project member). Returns replies
+  # in chronological (oldest-first) order, matching the order RuleReviews
+  # uses for nested replies.
+  def responses
+    replies = @review.responses
+                     .preload(:user)
+                     .order(:created_at)
+    rows = replies.map do |r|
+      {
+        id: r.id,
+        responding_to_review_id: r.responding_to_review_id,
+        section: r.section,
+        comment: r.comment,
+        created_at: r.created_at,
+        commenter_display_name: r.commenter_display_name,
+        commenter_imported: r.commenter_imported?
+      }
+    end
+    response.headers['Cache-Control'] = 'no-store'
+    render json: { rows: rows }
+  end
+
   def lock_controls
     unlocked = @component.rules.where(locked: false)
 
@@ -652,6 +679,22 @@ class ReviewsController < ApplicationController
     return if @review && @review.user_id == current_user&.id
 
     raise NotAuthorizedError, 'You can only modify your own comments.'
+  end
+
+  # Visibility filter for the reply-chain read endpoint. Mirrors
+  # ComponentsController#authorize_component_access (released → any
+  # logged-in user; unreleased → project member) so reply visibility
+  # tracks parent-comment visibility exactly. Sets @component for the
+  # authorize_viewer_component delegate.
+  def authorize_review_visibility
+    @component = @review&.rule&.component
+    return head :not_found unless @component
+
+    if @component.released
+      authorize_logged_in
+    else
+      authorize_viewer_component
+    end
   end
 
   def review_update_params

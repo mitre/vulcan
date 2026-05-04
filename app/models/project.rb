@@ -158,6 +158,10 @@ class Project < ApplicationRecord
       [rid, { rule_id: rule_id, component_id: cid, prefix: component_lookup[cid]&.prefix }]
     end
 
+    responses_count_lookup = Review.where(responding_to_review_id: page_reviews.map(&:id))
+                                   .group(:responding_to_review_id)
+                                   .count
+
     rows = page_reviews.map do |r|
       rule_meta = rule_lookup[r.rule_id] || {}
       cid = rule_meta[:component_id]
@@ -180,7 +184,8 @@ class Project < ApplicationRecord
         triager_display_name: r.triager_display_name,
         triager_imported: r.triager_imported?,
         adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?
+        adjudicator_imported: r.adjudicator_imported?,
+        responses_count: responses_count_lookup[r.id] || 0
       }
     end
 

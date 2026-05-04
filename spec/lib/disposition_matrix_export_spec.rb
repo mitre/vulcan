@@ -31,8 +31,7 @@ RSpec.describe DispositionMatrixExport do
   let!(:reply) do
     Review.create!(rule: rule, user: author, action: 'comment',
                    responding_to_review_id: c1.id,
-                   comment: 'will fix in next revision',
-                   triage_status: 'pending')
+                   comment: 'will fix in next revision')
   end
 
   describe '.generate' do
@@ -196,10 +195,10 @@ RSpec.describe DispositionMatrixExport do
                               triage_status: 'pending')
       Review.create!(rule: component.rules.first, user: author,
                      action: 'comment', responding_to_review_id: parent.id,
-                     comment: '=DANGER_REPLY', triage_status: 'pending')
+                     comment: '=DANGER_REPLY')
       Review.create!(rule: component.rules.first, user: author,
                      action: 'comment', responding_to_review_id: parent.id,
-                     comment: 'normal reply', triage_status: 'pending')
+                     comment: 'normal reply')
       out = CSV.parse(described_class.generate(component: component), headers: true)
       parent_row = out.find { |r| r['Comment ID'] == parent.id.to_s }
       expect(parent_row['Triager Response']).to include("'=DANGER_REPLY")

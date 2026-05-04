@@ -648,38 +648,41 @@ class Component < ApplicationRecord
     total = scope.count
     rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
 
-    rows = scope.order(created_at: :desc)
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-                .map do |r|
-                  {
-                    id: r.id,
-                    rule_id: r.rule_id,
-                    rule_displayed_name: rule_id_to_displayed[r.rule_id],
-                    section: r.section,
-                    author_name: r.user&.name,
-                    # author_email intentionally omitted — comment endpoints are
-                    # accessible to any project member, so exposing email enables
-                    # scraping of every commenter's contact info during a public
-                    # review window. Authorship is tracked by name + user_id only.
-                    comment: r.comment,
-                    created_at: r.created_at,
-                    triage_status: r.triage_status,
-                    triage_set_at: r.triage_set_at,
-                    adjudicated_at: r.adjudicated_at,
-                    duplicate_of_review_id: r.duplicate_of_review_id,
-                    triager_display_name: r.triager_display_name,
-                    triager_imported: r.triager_imported?,
-                    adjudicator_display_name: r.adjudicator_display_name,
-                    adjudicator_imported: r.adjudicator_imported?,
-                    # commenter
-                    # attribution survives User#destroy via fallback to
-                    # commenter_imported_*. author_name (above) is the
-                    # legacy field; consumers should prefer commenter_*.
-                    commenter_display_name: r.commenter_display_name,
-                    commenter_imported: r.commenter_imported?
-                  }
-                end
+    page_records = scope.order(created_at: :desc)
+                        .offset((page - 1) * per_page)
+                        .limit(per_page)
+                        .to_a
+
+    responses_count_lookup = Review.where(responding_to_review_id: page_records.map(&:id))
+                                   .group(:responding_to_review_id)
+                                   .count
+
+    rows = page_records.map do |r|
+      {
+        id: r.id,
+        rule_id: r.rule_id,
+        rule_displayed_name: rule_id_to_displayed[r.rule_id],
+        section: r.section,
+        author_name: r.user&.name,
+        # author_email intentionally omitted — comment endpoints are
+        # accessible to any project member, so exposing email enables
+        # scraping of every commenter's contact info during a public
+        # review window. Authorship is tracked by name + user_id only.
+        comment: r.comment,
+        created_at: r.created_at,
+        triage_status: r.triage_status,
+        triage_set_at: r.triage_set_at,
+        adjudicated_at: r.adjudicated_at,
+        duplicate_of_review_id: r.duplicate_of_review_id,
+        triager_display_name: r.triager_display_name,
+        triager_imported: r.triager_imported?,
+        adjudicator_display_name: r.adjudicator_display_name,
+        adjudicator_imported: r.adjudicator_imported?,
+        commenter_display_name: r.commenter_display_name,
+        commenter_imported: r.commenter_imported?,
+        responses_count: responses_count_lookup[r.id] || 0
+      }
+    end
 
     {
       rows: rows,

@@ -160,6 +160,7 @@ class Review < ApplicationRecord
   validate :responding_to_must_be_same_rule
   validate :duplicate_of_must_be_same_component
   validate :duplicate_of_must_not_be_a_duplicate
+  validate :replies_cannot_have_triage_status
 
   before_save :auto_set_adjudicated_for_terminal_statuses
 
@@ -444,6 +445,18 @@ class Review < ApplicationRecord
     return unless target_status == 'duplicate'
 
     errors.add(:duplicate_of_review_id, 'cannot point to another duplicate — pick the ultimate canonical')
+  end
+
+  # Replies are conversation, not adjudicable units. The triage queue
+  # only operates on top-level comments. Defense-in-depth against a
+  # future regression that allows triage_status through on a reply via
+  # mass-assignment or direct attribute write — frontend filtering
+  # alone would silently let it into the triage queue.
+  def replies_cannot_have_triage_status
+    return if responding_to_review_id.blank?
+    return if triage_status.blank?
+
+    errors.add(:triage_status, 'cannot be set on a reply (replies are not adjudicable)')
   end
 
   def auto_set_adjudicated_for_terminal_statuses
