@@ -152,18 +152,26 @@ export default {
     xccdfSection() {
       return this.resolvedSection ? DISPLAY_TO_XCCDF_SECTION[this.resolvedSection] || null : null;
     },
-    // Pending top-level comments scoped to this section, used for the
-    // count badge on SectionCommentIcon. Replies (responding_to_review_id)
-    // are excluded — only top-level comments count.
+    // Pending comments scoped to this section. Top-level pendings drive
+    // the badge, and their replies count too — replies are comments. A
+    // reply's `section` column is null (server doesn't ask for it on the
+    // reply form) but it semantically belongs to the parent's section,
+    // so we include any reply whose parent is in the matched set.
     pendingCommentCount() {
       if (!this.xccdfSection || !this.ruleReviews || this.ruleReviews.length === 0) return 0;
-      return this.ruleReviews.filter(
+      const topLevelOnSection = this.ruleReviews.filter(
         (r) =>
           r.action === "comment" &&
           r.responding_to_review_id == null &&
           r.triage_status === "pending" &&
           r.section === this.xccdfSection,
-      ).length;
+      );
+      if (topLevelOnSection.length === 0) return 0;
+      const parentIds = new Set(topLevelOnSection.map((r) => r.id));
+      const replies = this.ruleReviews.filter(
+        (r) => r.responding_to_review_id != null && parentIds.has(r.responding_to_review_id),
+      );
+      return topLevelOnSection.length + replies.length;
     },
     commentsClosedInjected() {
       return this.isCommentsClosed();

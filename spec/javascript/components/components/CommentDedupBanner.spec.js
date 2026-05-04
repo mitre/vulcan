@@ -80,7 +80,25 @@ describe("CommentDedupBanner", () => {
     expect(w.find("button").exists()).toBe(false);
   });
 
-  it("shows total comment count in the header", async () => {
+  it("shows total comment count (replies included) in the header", async () => {
+    // Server reports 3 top-level rows, 7 total comments (3 root + 4 replies).
+    // A reply counts as a comment for display purposes.
+    axios.get.mockResolvedValue({
+      data: {
+        rows: sampleRows,
+        pagination: { total: 3, total_comments: 7 },
+      },
+    });
+    const w = mount(CommentDedupBanner, {
+      localVue,
+      propsData: { ...baseProps, section: null },
+    });
+    await flushPromises(w);
+    expect(w.text()).toContain("7 existing comments on this rule");
+  });
+
+  it("falls back to top-level total when total_comments is absent", async () => {
+    // Older/cached payloads without total_comments still render correctly.
     const w = await mountWith();
     expect(w.text()).toContain("3 existing comments on this rule");
   });

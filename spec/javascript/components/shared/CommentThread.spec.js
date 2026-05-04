@@ -125,6 +125,44 @@ describe("CommentThread", () => {
     expect(w.text()).toContain("Failed to load replies");
   });
 
+  it("invalidates cache + refetches when responsesCount changes while expanded", async () => {
+    axios.get.mockResolvedValue({
+      data: {
+        rows: [
+          {
+            id: 7,
+            comment: "first",
+            commenter_display_name: "X",
+            commenter_imported: false,
+            created_at: "2026-05-04T00:00:00Z",
+          },
+        ],
+      },
+    });
+    const w = mount(CommentThread, {
+      localVue,
+      propsData: { parentReviewId: 1, responsesCount: 1 },
+    });
+    await w.find("button[aria-controls]").trigger("click");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(axios.get).toHaveBeenCalledTimes(1);
+
+    // Host's parent re-fetched and the count went up — refetch the thread.
+    await w.setProps({ responsesCount: 2 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(axios.get).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not refetch on responsesCount change when collapsed (cache cleared lazily)", async () => {
+    const w = mount(CommentThread, {
+      localVue,
+      propsData: { parentReviewId: 1, responsesCount: 1 },
+    });
+    await w.setProps({ responsesCount: 2 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(axios.get).not.toHaveBeenCalled();
+  });
+
   it("redacts PII fallback names from the server payload (display token only)", async () => {
     axios.get.mockResolvedValue({
       data: {

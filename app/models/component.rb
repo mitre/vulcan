@@ -646,6 +646,21 @@ class Component < ApplicationRecord
     end
 
     total = scope.count
+
+    # Total includes replies — drives the dedup banner header so commenters
+    # see the full conversation size, not just the top-level count. Same
+    # filter scope as `scope` minus the top_level_comments filter.
+    total_comments_scope = Review.where(action: 'comment')
+                                 .joins(:rule)
+                                 .merge(Rule.where(component_id: id))
+    total_comments_scope = total_comments_scope.where(rule_id: rule_id) if rule_id.present?
+    total_comments_scope = total_comments_scope.where(section: section) if section.present? && section != 'all'
+    if query.present?
+      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
+      total_comments_scope = total_comments_scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
+    end
+    total_comments = total_comments_scope.count
+
     rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
 
     page_records = scope.order(created_at: :desc)
@@ -686,7 +701,7 @@ class Component < ApplicationRecord
 
     {
       rows: rows,
-      pagination: { page: page, per_page: per_page, total: total }
+      pagination: { page: page, per_page: per_page, total: total, total_comments: total_comments }
     }
   end
 

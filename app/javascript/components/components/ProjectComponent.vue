@@ -332,12 +332,29 @@ export default {
       this.$bvModal.show("comment-composer-modal");
     },
     /**
-     * refresh the component (and selected rule's reviews) after
-     * a comment is posted so the per-section pending-count badge updates.
+     * Refresh the rule whose composer just posted (in-place splice into
+     * the rules array) so reactivity reliably propagates to RuleReviews
+     * + the per-section pending-count badges. Object.assign on the whole
+     * component drops Vue 2 reactivity for nested arrays in this prop
+     * tree, so we mirror Rules.vue's per-rule splice pattern.
      */
     onComposerPosted() {
-      this.refreshComponent();
+      const ruleId = this.selectedRule?.id;
       this.composerReplyToId = null;
+      this.composerSection = null;
+      if (!ruleId) {
+        this.refreshComponent();
+        return;
+      }
+      axios
+        .get(`/rules/${ruleId}`)
+        .then((response) => {
+          const idx = this.component.rules.findIndex((r) => r.id === ruleId);
+          if (idx >= 0) {
+            this.component.rules.splice(idx, 1, response.data);
+          }
+        })
+        .catch(this.alertOrNotifyResponse);
     },
     onComposerHidden() {
       this.composerReplyToId = null;

@@ -104,6 +104,14 @@ export default {
         this.fetch();
       }
     },
+    // When the host re-fetches and the count changes (e.g. a reply was
+    // posted server-side), our cache is stale — invalidate. If currently
+    // expanded, refetch immediately so the visible thread updates.
+    responsesCount(newVal, oldVal) {
+      if (newVal === oldVal) return;
+      this.loaded = false;
+      if (this.expanded) this.fetch();
+    },
   },
   mounted() {
     if (this.initiallyExpanded && this.responsesCount > 0) {

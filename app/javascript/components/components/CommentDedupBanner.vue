@@ -1,5 +1,5 @@
 <template>
-  <div v-if="total > 0" class="mb-3">
+  <div v-if="totalComments > 0" class="mb-3">
     <b-alert show variant="info" class="mb-1">
       <button
         type="button"
@@ -9,7 +9,7 @@
         @click="expanded = !expanded"
       >
         <span aria-hidden="true">ⓘ</span>
-        {{ total }} existing comment{{ total === 1 ? "" : "s" }} on this rule
+        {{ totalComments }} existing comment{{ totalComments === 1 ? "" : "s" }} on this rule
         <template v-if="sectionDisplay"> ({{ inSection }} on {{ sectionDisplay }}) </template>
         <span>{{ expanded ? "Hide ▴" : "Read first ▾" }}</span>
       </button>
@@ -47,7 +47,7 @@ export default {
     section: { type: String, default: null },
   },
   data() {
-    return { rows: [], total: 0, expanded: false };
+    return { rows: [], total: 0, totalComments: 0, expanded: false };
   },
   computed: {
     sectionDisplay() {
@@ -89,9 +89,11 @@ export default {
         });
         this.rows = data.rows.slice(0, 5);
         this.total = data.pagination.total;
+        this.totalComments = data.pagination.total_comments ?? data.pagination.total;
       } catch {
         this.rows = [];
         this.total = 0;
+        this.totalComments = 0;
       }
     },
   },

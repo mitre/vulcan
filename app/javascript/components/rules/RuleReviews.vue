@@ -11,6 +11,11 @@
         class="ml-auto"
       />
     </div>
+    <p v-if="triageHref" class="mb-2 small">
+      <a :href="triageHref" data-turbolinks="false">
+        <b-icon icon="kanban" class="mr-1" /> Open triage queue for this component
+      </a>
+    </p>
 
     <div v-for="parent in topLevelFilteredVisible" :key="parent.id" class="mb-3">
       <p class="mb-0 d-flex flex-wrap align-items-center">
@@ -142,6 +147,10 @@ export default {
     // Server enforces via reject_if_comments_closed + authorize_viewer_project.
     canReply() {
       return !!this.currentUserId && !!this.effectivePermissions && !this.commentsClosed;
+    },
+    triageHref() {
+      const componentId = this.rule?.component_id;
+      return componentId ? `/components/${componentId}/triage` : null;
     },
   },
   methods: {

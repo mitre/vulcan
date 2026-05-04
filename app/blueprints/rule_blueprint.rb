@@ -19,15 +19,19 @@ class RuleBlueprint < Blueprinter::Base
   # so triagers can spot rules with pending comments without drilling in.
   # Computed in-memory against the eager-loaded :reviews association
   # (set_component already eager-loads rules → :reviews) so this is
-  # zero additional queries. Top-level only — replies don't represent
-  # new pending work.
+  # zero additional queries. Replies count as comments — the totals
+  # include them, and `pending` includes any reply whose parent is in
+  # the pending set (replies aren't independently triageable, but they
+  # belong to the parent's pending interaction).
   field :comment_summary do |rule, _options|
-    top_level = rule.reviews.select do |r|
-      r.action == 'comment' && r.responding_to_review_id.nil?
-    end
+    comments = rule.reviews.select { |r| r.action == 'comment' }
+    top_level = comments.select { |r| r.responding_to_review_id.nil? }
+    pending_parent_ids = top_level.select { |r| r.triage_status == 'pending' }.to_set(&:id)
+    pending_count = top_level.count { |r| r.triage_status == 'pending' } +
+                    comments.count { |r| pending_parent_ids.include?(r.responding_to_review_id) }
     {
-      pending: top_level.count { |r| r.triage_status == 'pending' },
-      total: top_level.size
+      pending: pending_count,
+      total: comments.size
     }
   end
 
