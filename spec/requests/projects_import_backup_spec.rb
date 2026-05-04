@@ -223,7 +223,7 @@ RSpec.describe 'Project Import Backup' do
       post "/projects/#{project.id}/import_backup",
            params: { file: invalid_file }
 
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(response).to have_http_status(:unprocessable_entity)
       body = response.parsed_body
       expect(body['toast']['title']).to eq('Import failed')
       expect(body['toast']['variant']).to eq('danger')
@@ -237,7 +237,7 @@ RSpec.describe 'Project Import Backup' do
       post "/projects/#{project.id}/import_backup",
            params: { file: uploaded_file }
 
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(response).to have_http_status(:unprocessable_entity)
       body = response.parsed_body
       expect(body['toast']['message']).to match(/already exists/)
     end

@@ -98,7 +98,7 @@ class ProjectsController < ApplicationController
               message: project.errors.full_messages,
               variant: 'danger'
             }
-          }, status: :unprocessable_content
+          }, status: :unprocessable_entity
         end
       end
     end
@@ -123,7 +123,7 @@ class ProjectsController < ApplicationController
           message: @project.errors.full_messages,
           variant: 'danger'
         }
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
     end
   end
 
@@ -150,7 +150,7 @@ class ProjectsController < ApplicationController
               message: @project.errors.full_messages,
               variant: 'danger'
             }
-          }, status: :unprocessable_content
+          }, status: :unprocessable_entity
         end
       end
     end
@@ -284,7 +284,7 @@ class ProjectsController < ApplicationController
           variant: 'danger'
         },
         warnings: result.warnings
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
     end
   end
 
@@ -343,7 +343,7 @@ class ProjectsController < ApplicationController
         },
         warnings: result.warnings,
         project_defaults: project_defaults
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
     end
   end
 
@@ -352,7 +352,7 @@ class ProjectsController < ApplicationController
     unless project_name
       render json: {
         toast: { title: IMPORT_ERROR_TITLE, message: 'Project name is required', variant: 'danger' }
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
       return
     end
 
@@ -392,7 +392,7 @@ class ProjectsController < ApplicationController
           variant: 'danger'
         },
         warnings: result&.warnings || []
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
     end
   end
 

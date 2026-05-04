@@ -45,7 +45,7 @@ RSpec.describe 'Format Handling Across Controllers' do
       it 'returns error JSON on failure' do
         post '/projects', params: { project: { name: '' } }.to_json, headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to include('application/json')
 
         json_response = response.parsed_body

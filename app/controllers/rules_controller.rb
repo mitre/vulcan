@@ -77,7 +77,7 @@ class RulesController < ApplicationController
           message: rule.errors.full_messages,
           variant: 'danger'
         }
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
     end
   end
 
@@ -91,7 +91,7 @@ class RulesController < ApplicationController
           message: @rule.errors.full_messages,
           variant: 'danger'
         }
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
     end
   end
 
@@ -126,7 +126,7 @@ class RulesController < ApplicationController
         message: e.message,
         variant: 'danger'
       }
-    }, status: :unprocessable_content
+    }, status: :unprocessable_entity
   end
 
   def section_locks
@@ -134,7 +134,7 @@ class RulesController < ApplicationController
     locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
     comment = params[:comment]
 
-    return render json: { error: "Invalid section: #{section}" }, status: :unprocessable_content unless RuleConstants::LOCKABLE_SECTION_NAMES.include?(section)
+    return render json: { error: "Invalid section: #{section}" }, status: :unprocessable_entity unless RuleConstants::LOCKABLE_SECTION_NAMES.include?(section)
 
     fields = @rule.locked_fields.dup
     if locked
@@ -155,7 +155,7 @@ class RulesController < ApplicationController
     comment = params[:comment]
 
     invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
-    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_content if invalid.any?
+    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
 
     fields = @rule.locked_fields.dup
     sections.each do |section|

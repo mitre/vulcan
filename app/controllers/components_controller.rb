@@ -112,7 +112,7 @@ class ComponentsController < ApplicationController
             message: component.errors.full_messages,
             variant: 'danger'
           }
-        }, status: :unprocessable_content
+        }, status: :unprocessable_entity
       end
     ensure
       Audited.auditing_enabled = true
@@ -129,7 +129,7 @@ class ComponentsController < ApplicationController
           message: @component.errors.full_messages,
           variant: 'danger'
         }
-      }, status: :unprocessable_content
+      }, status: :unprocessable_entity
     end
   end
 
@@ -160,7 +160,7 @@ class ComponentsController < ApplicationController
         message: 'Could not remove component from project.',
         variant: 'danger'
       }
-    }, status: :unprocessable_content
+    }, status: :unprocessable_entity
   end
 
   def export
@@ -260,7 +260,7 @@ class ComponentsController < ApplicationController
             zip_filename: 'components_inspec.zip'
           )
         else
-          head :unprocessable_content
+          head :unprocessable_entity
         end
       end
       format.json { render json: { status: :ok } }
@@ -279,10 +279,10 @@ class ComponentsController < ApplicationController
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                 .where.not(id: params[:id])
+                          .where.not(id: params[:id])
                           .where(project_id: accessible_project_ids)
                           .or(Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                 .where.not(id: params[:id])
+                                       .where.not(id: params[:id])
                                        .where(released: true))
                           .distinct
                           .order(:project_id)
@@ -351,13 +351,13 @@ class ComponentsController < ApplicationController
   def detect_srg
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
       return
     end
 
     srg_ids = SpreadsheetParser.peek_srg_ids(file)
     if srg_ids.empty?
-      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_content
+      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_entity
       return
     end
 
@@ -367,11 +367,11 @@ class ComponentsController < ApplicationController
 
     if srgs.empty?
       render json: { error: 'Could not identify a matching SRG for the IDs in this spreadsheet' },
-             status: :unprocessable_content
+             status: :unprocessable_entity
     elsif srgs.size > 1
       names = srgs.map { |s| "#{s.title} (#{s.version})" }.join(', ')
       render json: { error: "SRG IDs map to multiple SRGs: #{names}. Please select manually." },
-             status: :unprocessable_content
+             status: :unprocessable_entity
     else
       srg = srgs.first
       render json: { id: srg.id, srg_id: srg.srg_id, title: srg.title, version: srg.version }
@@ -381,13 +381,13 @@ class ComponentsController < ApplicationController
   def preview_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
       return
     end
 
     result = @component.update_from_spreadsheet(file)
     if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_content
+      render json: { error: result[:error] }, status: :unprocessable_entity
     else
       render json: result
     end
@@ -396,7 +396,7 @@ class ComponentsController < ApplicationController
   def apply_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
       return
     end
 
@@ -404,7 +404,7 @@ class ComponentsController < ApplicationController
     if result[:success]
       render json: { toast: "Successfully updated #{result[:count]} rules from spreadsheet." }
     elsif result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_content
+      render json: { error: result[:error] }, status: :unprocessable_entity
     end
   end
 
@@ -477,7 +477,7 @@ class ComponentsController < ApplicationController
       # Return an HTML response with an alert flash message if request format is HTML.
       format.html do
         flash.alert = message
-        redirect_back_or_to(root_path)
+        redirect_back(fallback_location: root_path)
       end
       # Return a JSON response with a toast message if request formt is JSON.
       format.json do
@@ -515,7 +515,7 @@ class ComponentsController < ApplicationController
 
         # If html format is requested, redirect back to default page
         format.html do
-          redirect_back_or_to(root_path)
+          redirect_back(fallback_location: root_path)
         end
         format.json do
           # Render a json response in a toast message format
@@ -545,7 +545,7 @@ class ComponentsController < ApplicationController
     respond_to do |format|
       format.html do
         flash.alert = message
-        redirect_back_or_to(root_path)
+        redirect_back(fallback_location: root_path)
       end
       format.json do
         render json: {
