@@ -13,12 +13,13 @@
 #   docker buildx build --platform linux/amd64,linux/arm64 --target production -t vulcan:prod .
 # =============================================================================
 
+ARG RUBY_VERSION=3.4.9
 ARG NODE_VERSION=24.14.0
 
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM registry.access.redhat.com/ubi9/ruby-33:1 AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
 
 USER 0
 RUN mkdir -p /rails /usr/local/bundle && \
@@ -28,14 +29,24 @@ WORKDIR /rails
 
 # Install base packages.
 # libvips removed — image_processing gem is commented out and ActiveStorage
-# is not used for file attachments. curl, libpq, and libyaml are already
-# present in the UBI Ruby base image, so only postgresql is installed here for
-# db:prepare.
+# is not used for file attachments. Install only the runtime packages here;
+# Ruby itself is compiled in build-base and copied into the final image.
 # check if can del postgres image later on
-RUN dnf install -y \
-      postgresql && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
+RUN microdnf install -y \
+      ca-certificates \
+      curl \
+      findutils \
+      glibc-langpack-en \
+      libffi \
+      libyaml \
+      openssl \
+      postgresql \
+      readline \
+      shadow-utils \
+      tar \
+      xz \
+      zlib && \
+    microdnf clean all
 
 # Install custom SSL certificates if provided (single layer)
 COPY certs/ /etc/pki/ca-trust/source/anchors/
@@ -43,10 +54,15 @@ RUN  update-ca-trust && \
      rm -f /etc/pki/ca-trust/source/anchors/*
 
 # Common environment for all stages
-ENV MALLOC_ARENA_MAX="2" \
+ENV LANG="en_US.UTF-8" \
+    LC_ALL="en_US.UTF-8" \
+    MALLOC_ARENA_MAX="2" \
     NODE_EXTRA_CA_CERTS="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" \
     BUNDLE_USER_HOME="/usr/local/bundle" \
-    BUNDLE_PATH="/usr/local/bundle"
+    BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_BIN="/usr/local/bundle/bin" \
+    GEM_HOME="/usr/local/bundle" \
+    PATH="/usr/local/bundle/bin:/usr/local/bin:${PATH}"
 
 USER 1001
 
@@ -55,14 +71,45 @@ USER 1001
 # =============================================================================
 FROM base AS build-base
 
+ARG RUBY_VERSION
+
 USER 0
 
-# Install packages needed to build gems and node modules
-RUN dnf install -y \
+# Install packages needed to compile Ruby, build gems, and install node modules
+RUN microdnf install -y \
+      autoconf \
+      bison \
+      findutils \
+      gcc \
+      gcc-c++ \
+      gmp-devel \
+      libffi-devel \
+      libyaml-devel \
+      make \
+      openssl-devel \
+      patch \
+      perl \
       postgresql-devel \
-      libyaml-devel && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
+      readline-devel \
+      rust \
+      tar \
+      xz \
+      xz-devel \
+      zlib-devel && \
+    microdnf clean all && \
+    curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
+    tar -xzf /tmp/ruby.tar.gz -C /tmp && \
+    cd /tmp/ruby-${RUBY_VERSION} && \
+    ./configure --prefix=/usr/local \
+      --disable-install-doc \
+      --enable-yjit && \
+    make -j"$(nproc)" && \
+    make install && \
+    gem update --system && \
+    gem install bundler && \
+    rm -rf /tmp/ruby-${RUBY_VERSION} /tmp/ruby.tar.gz && \
+    ruby --version && \
+    bundle --version
 
 # Install Node.js LTS using official binaries
 ARG NODE_VERSION
@@ -185,7 +232,7 @@ ENV RAILS_ENV="production" \
     RAILS_SERVE_STATIC_FILES="true"
 
 # Copy built artifacts from build stage
-COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build /usr/local /usr/local
 COPY --from=build --chmod=755 /rails /rails
 
 # Create non-root user, writable dirs, and strip bundle artifacts in one layer

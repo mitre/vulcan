@@ -12,7 +12,7 @@
 //   bin/vulcan build --push
 //
 // NOTE: RVM sets RUBY_VERSION with a "ruby-" prefix in some environments.
-// The Dockerfile uses a fixed UBI base image, so no Ruby build arg is needed.
+// The Dockerfile uses a fixed UBI minimal base image and builds Ruby from source.
 
 variable "REGISTRY" {
   default = "mitre"
@@ -59,6 +59,7 @@ target "production" {
   platforms = ["linux/amd64"]
 
   args = {
+    RUBY_VERSION = "3.4.9"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
 
@@ -110,6 +111,7 @@ target "dev" {
   platforms = ["linux/amd64"]
 
   args = {
+    RUBY_VERSION = "3.4.9"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
 

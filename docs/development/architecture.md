@@ -172,11 +172,21 @@ See [Authorization Architecture](authorization.md) for details.
 ### Container-based
 ```dockerfile
 # Multi-stage build for optimization
-FROM registry.access.redhat.com/ubi9/ruby-33:1 as builder
-# Build dependencies and assets
 
-FROM registry.access.redhat.com/ubi9/ruby-33:1
-# Runtime with jemalloc for memory optimization
+# Base stage - shared runtime foundation
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
+
+# Build-base stage - compile Ruby 3.4, install build tooling, and install Node.js
+FROM base AS build-base
+
+# Build stage - install gems, build assets, and prepare the app bundle
+FROM build-base AS build
+
+# Development stage - full dev environment with source-built Ruby 3.4
+FROM build-base AS development
+
+# Production stage - minimal runtime with Ruby and app artifacts copied from build
+FROM base AS production
 ```
 
 ### Platform Support
