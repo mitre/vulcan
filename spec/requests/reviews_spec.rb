@@ -952,14 +952,14 @@ RSpec.describe 'Reviews' do
         expect(target_review.adjudicated_by_id).to eq(adm_admin.id)
       end
 
-      it 'is allowed even when the component is in the final (frozen) phase' do
-        component.update_columns(comment_phase: 'final')
+      it 'is allowed even when the component is closed+finalized (frozen)' do
+        component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
         patch "/reviews/#{target_review.id}/admin_withdraw",
               params: { audit_comment: 'PII cleanup post-window' }, as: :json
         expect(response).to have_http_status(:ok)
         expect(target_review.reload.triage_status).to eq('withdrawn')
       ensure
-        component.update_columns(comment_phase: 'open')
+        component.update_columns(comment_phase: 'open', closed_reason: nil)
       end
     end
 
