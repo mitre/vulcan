@@ -173,7 +173,7 @@ module Import
         # the drop-invalid pass — preserves the "WHICH external_ids landed"
         # semantic (an external_id whose row was dropped is not a recovery
         # trail entry).
-        surviving_new_ids = Review.where(id: external_to_new_id.values).pluck(:id).to_set
+        surviving_new_ids = Review.where(id: external_to_new_id.values).ids.to_set
         landed_external_ids = external_to_new_id.select { |_ext, new_id| surviving_new_ids.include?(new_id) }.keys
         return if landed_external_ids.empty?
 

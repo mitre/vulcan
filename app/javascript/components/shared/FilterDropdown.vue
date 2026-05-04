@@ -46,8 +46,7 @@ export default {
     options: {
       type: Array,
       required: true,
-      validator: (arr) =>
-        arr.every((o) => Object.prototype.hasOwnProperty.call(o, "value") && "text" in o),
+      validator: (arr) => arr.every((o) => Object.hasOwn(o, "value") && "text" in o),
     },
     ariaLabel: { type: String, required: true },
     size: { type: String, default: "sm" },

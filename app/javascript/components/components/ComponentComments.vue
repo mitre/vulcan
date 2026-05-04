@@ -301,7 +301,10 @@ export default {
           filterSection: parsed.filterSection ?? fallback.filterSection,
           filterText: parsed.filterText ?? fallback.filterText,
         };
-      } catch (_e) {
+      } catch (e) {
+        // Corrupt or missing storage — log + fall back to defaults.
+        // eslint-disable-next-line no-console
+        console.warn("ComponentComments: filter restore failed", e);
         return fallback;
       }
     },
@@ -315,8 +318,10 @@ export default {
             filterText: this.filterText,
           }),
         );
-      } catch (_e) {
-        // localStorage full or disabled — non-fatal, filters just won't persist
+      } catch (e) {
+        // Non-fatal — storage full or disabled (e.g. private browsing).
+        // eslint-disable-next-line no-console
+        console.warn("ComponentComments: filter persistence failed", e);
       }
     },
     truncate(text, n) {

@@ -67,7 +67,7 @@ class ProjectsController < ApplicationController
     @project.current_user = current_user
     # Batch-load pending-comment counts keyed by component_id so the
     # component cards and the project-level total render without N+1.
-    component_ids = @project.components.pluck(:id)
+    component_ids = @project.components.ids
     pending_comment_counts = Component.pending_comment_counts(component_ids)
     @project_json = ProjectBlueprint.render(
       @project,

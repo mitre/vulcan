@@ -325,7 +325,7 @@ export default {
       this.refreshComponent();
     },
     openCommentsPanel() {
-      window.location.href = `/components/${this.component.id}/triage`;
+      globalThis.location.href = `/components/${this.component.id}/triage`;
     },
     refreshComponent() {
       axios

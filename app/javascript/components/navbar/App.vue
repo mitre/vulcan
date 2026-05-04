@@ -64,10 +64,10 @@
                   {{ userDisplayName }}
                 </span>
               </template>
-              <li v-if="userDisplayName" class="px-3 py-2 text-muted small">
+              <b-dropdown-text v-if="userDisplayName" class="text-muted small">
                 <div class="font-weight-bold text-body">{{ userDisplayName }}</div>
                 <div v-if="current_user && current_user.email">{{ current_user.email }}</div>
-              </li>
+              </b-dropdown-text>
               <b-dropdown-divider v-if="userDisplayName" />
               <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
               <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath">

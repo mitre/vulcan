@@ -94,7 +94,6 @@ describe("DiffViewer", () => {
   describe("filter dropdown migration (Task 28)", () => {
     it("Base/Compare/Theme selectors all render as FilterDropdown — no native <select>", () => {
       wrapper = createWrapper();
-      const filterDropdowns = wrapper.findAllComponents({ name: "FilterDropdown" });
       // Base, Compare (when baseComponent is set), and Theme — Compare may
       // not render until baseComponent is selected, so only base+theme are
       // guaranteed visible at mount with no baseComponent. We assert the

@@ -62,21 +62,6 @@ class User < ApplicationRecord
   # adjudicator attribution across cross-instance archive restores.
   before_destroy :preserve_review_attribution, prepend: true
 
-  def preserve_review_attribution
-    # rubocop:disable Rails/SkipsModelValidations
-    # Intentional: bulk copy from a validated parent (User just passed
-    # destroy validations); per-row Review validation isn't needed since
-    # the values come from the same User instance and we're not changing
-    # any column the validators police. Firing per-row callbacks would
-    # also generate one audit per review, polluting the audit trail with
-    # noise — the User#destroy event itself is the meaningful audit.
-    reviews.update_all(
-      commenter_imported_email: email,
-      commenter_imported_name: name
-    )
-    # rubocop:enable Rails/SkipsModelValidations
-  end
-
   scope :alphabetical, -> { order(:name) }
 
   # Transparent password migration from bcrypt to PBKDF2-SHA512.
@@ -301,6 +286,21 @@ class User < ApplicationRecord
   end
 
   private
+
+  def preserve_review_attribution
+    # rubocop:disable Rails/SkipsModelValidations
+    # Bulk copy from a validated parent: per-row Review validation isn't
+    # needed since the values come from the same User instance, and per-row
+    # callbacks would generate one audit per review. Returning true keeps
+    # the destroy chain explicit (update_all's integer return is truthy in
+    # Ruby, but Sonar S7887 wants the intent unambiguous).
+    reviews.update_all(
+      commenter_imported_email: email,
+      commenter_imported_name: name
+    )
+    # rubocop:enable Rails/SkipsModelValidations
+    true
+  end
 
   # Promotes the first user to admin if VULCAN_FIRST_USER_ADMIN is enabled
   # and no admin users exist yet. This makes Docker deployments functional

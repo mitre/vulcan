@@ -128,9 +128,11 @@ class Project < ApplicationRecord
     scope = scope.where(section: section) if section.present? && section != 'all'
     scope = scope.where(user_id: author_id) if author_id.present?
 
-    case resolved.to_s
-    when 'true'  then scope = scope.where.not(adjudicated_at: nil)
-    when 'false' then scope = scope.where(adjudicated_at: nil)
+    resolved_str = resolved.to_s
+    if resolved_str == 'true'
+      scope = scope.where.not(adjudicated_at: nil)
+    elsif resolved_str == 'false'
+      scope = scope.where(adjudicated_at: nil)
     end
 
     if query.present?
