@@ -82,8 +82,16 @@
              comment is clearly identified rather than looking like missing data. -->
         <SectionLabel :section="value" />
       </template>
-      <template #cell(comment)="{ value }">
-        <span :title="value">{{ truncate(value, 80) }}</span>
+      <template #cell(comment)="{ item, value }">
+        <div :title="value">{{ truncate(value, 80) }}</div>
+        <CommentThread
+          :ref="`thread-${item.id}`"
+          :parent-review-id="item.id"
+          :responses-count="item.responses_count || 0"
+          :can-reply="canReply"
+          class="mt-1"
+          @reply="openReplyComposer(item)"
+        />
       </template>
       <template #cell(created_at)="{ value }">
         {{ friendlyDateTime(value) }}
@@ -157,7 +165,21 @@
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
       @destroyed="onDestroyed"
+      @open-reply-composer="onTriageModalReplyRequested"
       @hidden="selectedRow = null"
+    />
+
+    <!-- Reply composer. Opened when CommentThread (in any row) emits
+         reply, or when CommentTriageModal emits open-reply-composer. The
+         row carries everything we need for the modal's bindings. -->
+    <CommentComposerModal
+      v-if="composerReplyRow"
+      :component-id="composerReplyRow.component_id || componentId"
+      :rule-id="composerReplyRow.rule_id"
+      :rule-displayed-name="composerReplyRow.rule_displayed_name"
+      :reply-to-review-id="composerReplyRow.id"
+      @posted="onComposerPosted"
+      @hidden="onComposerHidden"
     />
   </div>
 </template>
@@ -172,11 +194,20 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
+import CommentThread from "../shared/CommentThread.vue";
 import CommentTriageModal from "./CommentTriageModal.vue";
+import CommentComposerModal from "./CommentComposerModal.vue";
 
 export default {
   name: "ComponentComments",
-  components: { TriageStatusBadge, SectionLabel, FilterDropdown, CommentTriageModal },
+  components: {
+    TriageStatusBadge,
+    SectionLabel,
+    FilterDropdown,
+    CommentThread,
+    CommentTriageModal,
+    CommentComposerModal,
+  },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the
   // navbar pack's FormMixin doesn't reach the consuming pack. The reopen
@@ -227,6 +258,10 @@ export default {
       filterStatus: persisted.filterStatus,
       filterSection: persisted.filterSection,
       selectedRow: null,
+      // Row that the inline reply composer is open against. Null when
+      // the composer is not open. Populated when a row's CommentThread
+      // emits 'reply' (or the triage modal asks for a reply composer).
+      composerReplyRow: null,
       fields,
     };
   },
@@ -236,6 +271,15 @@ export default {
     // authorize_author_project on the /reviews/:id/* endpoints.
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    // Anyone authenticated with project visibility can reply during an
+    // open comment window. Server enforces via reject_if_comments_closed
+    // and authorize_viewer_project; the affordance shows even on closed
+    // components and the resulting click surfaces the rejection toast
+    // rather than silently disabling, matching the never-hide-features
+    // pattern used for SectionCommentIcon.
+    canReply() {
+      return !!this.effectivePermissions;
     },
     // The DISA disposition matrix CSV export is a
     // public-comment-period deliverable. Server enforces author-tier
@@ -431,6 +475,33 @@ export default {
     // refresh the queue so the destroyed row (and its replies) disappear.
     onDestroyed() {
       this.fetch();
+    },
+    // Open the composer in reply mode for `row`. Reached either from the
+    // row's CommentThread (inline) or from the triage modal's Reply button.
+    openReplyComposer(row) {
+      this.composerReplyRow = row;
+      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    },
+    onTriageModalReplyRequested(row) {
+      this.$bvModal.hide("comment-triage-modal");
+      this.openReplyComposer(row);
+    },
+    onComposerPosted() {
+      const id = this.composerReplyRow?.id;
+      this.composerReplyRow = null;
+      // Refresh the row's responses_count + the local thread state. The
+      // bumped count drives the row's CommentThread toggle visibility.
+      this.fetch();
+      if (id) {
+        this.$nextTick(() => {
+          const ref = this.$refs[`thread-${id}`];
+          const thread = Array.isArray(ref) ? ref[0] : ref;
+          thread?.refresh?.();
+        });
+      }
+    },
+    onComposerHidden() {
+      this.composerReplyRow = null;
     },
   },
 };

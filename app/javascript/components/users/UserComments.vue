@@ -56,8 +56,16 @@
         <template #cell(section)="{ value }">
           <SectionLabel :section="value" />
         </template>
-        <template #cell(comment)="{ value }">
-          <span :title="value">{{ truncate(value, 80) }}</span>
+        <template #cell(comment)="{ item, value }">
+          <div :title="value">{{ truncate(value, 80) }}</div>
+          <CommentThread
+            :ref="`thread-${item.id}`"
+            :parent-review-id="item.id"
+            :responses-count="item.responses_count || 0"
+            :can-reply="true"
+            class="mt-1"
+            @reply="openReplyComposer(item)"
+          />
         </template>
         <template #cell(created_at)="{ value }">
           {{ friendlyDateTime(value) }}
@@ -92,6 +100,19 @@
           @input="fetch"
         />
       </div>
+
+      <!-- Reply composer. Bindings derive from the row whose CommentThread
+           emitted reply. componentId/ruleId/ruleDisplayedName come from
+           the row payload (carried in /users/:id/comments). -->
+      <CommentComposerModal
+        v-if="composerReplyRow"
+        :component-id="composerReplyRow.component_id"
+        :rule-id="composerReplyRow.rule_id"
+        :rule-displayed-name="composerReplyRow.rule_displayed_name"
+        :reply-to-review-id="composerReplyRow.id"
+        @posted="onComposerPosted"
+        @hidden="onComposerHidden"
+      />
     </b-card-body>
   </b-card>
 </template>
@@ -104,10 +125,18 @@ import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
+import CommentThread from "../shared/CommentThread.vue";
+import CommentComposerModal from "../components/CommentComposerModal.vue";
 
 export default {
   name: "UserComments",
-  components: { TriageStatusBadge, SectionLabel, FilterDropdown },
+  components: {
+    TriageStatusBadge,
+    SectionLabel,
+    FilterDropdown,
+    CommentThread,
+    CommentComposerModal,
+  },
   mixins: [AlertMixin, DateFormatMixin],
   props: {
     userId: { type: [Number, String], required: true },
@@ -120,6 +149,7 @@ export default {
       perPage: 25,
       loading: false,
       filterStatus: "all",
+      composerReplyRow: null,
       fields: [
         { key: "rule_displayed_name", label: "Rule", sortable: true },
         { key: "component_name", label: "Component / Project", sortable: true },
@@ -160,6 +190,25 @@ export default {
     onFilterChanged() {
       this.page = 1;
       this.fetch();
+    },
+    openReplyComposer(row) {
+      this.composerReplyRow = row;
+      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    },
+    onComposerPosted() {
+      const id = this.composerReplyRow?.id;
+      this.composerReplyRow = null;
+      this.fetch();
+      if (id) {
+        this.$nextTick(() => {
+          const ref = this.$refs[`thread-${id}`];
+          const thread = Array.isArray(ref) ? ref[0] : ref;
+          thread?.refresh?.();
+        });
+      }
+    },
+    onComposerHidden() {
+      this.composerReplyRow = null;
     },
     async fetch() {
       this.loading = true;

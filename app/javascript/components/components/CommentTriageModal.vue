@@ -86,6 +86,18 @@
         {{ review.comment }}
       </blockquote>
 
+      <!-- Reply chain. Lazy-loaded via /reviews/:id/responses on expand.
+           Reply emits open-reply-composer up to the parent table, which
+           closes this modal and opens the composer in reply mode. -->
+      <div class="mb-3">
+        <CommentThread
+          :parent-review-id="review.id"
+          :responses-count="review.responses_count || 0"
+          :can-reply="true"
+          @reply="$emit('open-reply-composer', review)"
+        />
+      </div>
+
       <!-- attribution chain. "Triaged by"
            appears once a triage decision has been made; "Adjudicated by"
            appears once the comment is in a terminal state. The "imported"
@@ -304,6 +316,7 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
+import CommentThread from "../shared/CommentThread.vue";
 import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
 import RulePicker from "./RulePicker.vue";
 
@@ -316,7 +329,7 @@ const TERMINAL_BY_RULE = ["informational", "duplicate", "needs_clarification", "
 
 export default {
   name: "CommentTriageModal",
-  components: { SectionLabel, FilterDropdown, CanonicalCommentPicker, RulePicker },
+  components: { SectionLabel, FilterDropdown, CommentThread, CanonicalCommentPicker, RulePicker },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because the
   // ComponentTriagePage host pack does NOT include FormMixin, so without this the
   // modal's axios.patch calls get rejected at the Rails CSRF middleware (422).
