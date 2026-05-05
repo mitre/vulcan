@@ -42,7 +42,7 @@ RSpec.describe 'Components - detect_srg' do
     context 'when no file provided' do
       it 'returns 422 with error' do
         post '/components/detect_srg'
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['error']).to eq('No file provided')
       end
     end
@@ -52,7 +52,7 @@ RSpec.describe 'Components - detect_srg' do
         upload = csv_upload("Name,Value\nfoo,bar\n")
         post '/components/detect_srg', params: { file: upload }
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['error']).to match(/No SRG IDs found/)
       end
     end
@@ -62,7 +62,7 @@ RSpec.describe 'Components - detect_srg' do
         upload = csv_upload("SRGID,STIGID\nSRG-NONEXISTENT-000001,XX-000001\n")
         post '/components/detect_srg', params: { file: upload }
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['error']).to match(/Could not identify/)
       end
     end
@@ -107,7 +107,7 @@ RSpec.describe 'Components - detect_srg' do
         upload = csv_upload("SRGID,STIGID\n#{rule_a.version},XX-01\n#{rule_b.version},XX-02\n")
         post '/components/detect_srg', params: { file: upload }
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['error']).to match(/multiple SRGs|ambiguous/i)
       end
     end
@@ -121,7 +121,7 @@ RSpec.describe 'Components - detect_srg' do
 
         post '/components/detect_srg', params: { file: upload }
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['error']).to match(/No SRG IDs found/)
 
         bad_file.unlink

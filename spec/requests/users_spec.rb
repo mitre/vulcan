@@ -171,7 +171,7 @@ RSpec.describe 'Users' do
 
       delete "/users/#{user_to_delete.id}", headers: json_headers
 
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(response).to have_http_status(:unprocessable_entity)
       expect(response.content_type).to include('application/json')
       json = response.parsed_body
       expect(json['toast']['title']).to include('Could not remove')
@@ -197,7 +197,7 @@ RSpec.describe 'Users' do
       it 'returns 422 via JSON' do
         put "/users/#{admin_user.id}", params: { user: { admin: false } }.to_json, headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         json = response.parsed_body
         expect(json['toast']['title']).to include('Cannot remove admin')
       end
@@ -215,7 +215,7 @@ RSpec.describe 'Users' do
       it 'returns 422 via JSON' do
         delete "/users/#{admin_user.id}", headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         json = response.parsed_body
         expect(json['toast']['title']).to include('Cannot delete')
       end
@@ -290,7 +290,7 @@ RSpec.describe 'Users' do
         post '/users/admin_create', params: { user: { name: 'Dup', email: admin_user.email } }.to_json,
                                     headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         json = response.parsed_body
         expect(json['toast']['variant']).to eq('danger')
       end
@@ -299,7 +299,7 @@ RSpec.describe 'Users' do
         post '/users/admin_create', params: { user: { name: '', email: 'valid@example.com' } }.to_json,
                                     headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
       end
     end
 
@@ -394,7 +394,7 @@ RSpec.describe 'Users' do
 
         post "/users/#{target_user.id}/send_password_reset", headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         json = response.parsed_body
         expect(json['toast']['title']).to include('SMTP not configured')
       end
@@ -507,7 +507,7 @@ RSpec.describe 'Users' do
              params: { user: { password: '' } }.to_json,
              headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it 'returns 422 for non-compliant password' do
@@ -515,7 +515,7 @@ RSpec.describe 'Users' do
              params: { user: { password: 'short' } }.to_json,
              headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         json = response.parsed_body
         expect(json['toast']['variant']).to eq('danger')
       end

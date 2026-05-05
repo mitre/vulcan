@@ -191,7 +191,7 @@ RSpec.describe 'Stigs' do
 
         delete "/stigs/#{stig2.id}", headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to include(application_json)
         json = response.parsed_body
         expect(json['toast']['title']).to include('Could not remove')

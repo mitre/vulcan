@@ -33,7 +33,7 @@ module BenchmarkCsvExport
       rules_association.eager_load(:disa_rule_descriptions, :checks)
                        .order(:version, :rule_id)
                        .each do |rule|
-                         csv << columns.map { |key| rule.csv_value_for(key) }
+        csv << columns.map { |key| rule.csv_value_for(key) }
       end
     end
   end

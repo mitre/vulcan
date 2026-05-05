@@ -61,7 +61,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   end
 
   def self.latest
-    query = <<~SQL.squish
+    query = <<-SQL.squish
       SELECT id, title, version
       FROM security_requirements_guides
       WHERE version IN (
