@@ -27,13 +27,13 @@
       </div>
 
       <b-form-checkbox
-        v-model="filters.pendingCommentsOnly"
+        v-model="filters.openCommentsOnly"
         size="sm"
         switch
         class="mt-2"
-        data-test="filter-pending-comments-only"
+        data-test="filter-open-comments-only"
       >
-        Pending comments only
+        Open comments only
       </b-form-checkbox>
 
       <hr class="mt-2 mb-2" />
@@ -68,10 +68,10 @@
           </span>
           <span>
             <span
-              v-if="rulePending(rule) > 0"
+              v-if="ruleOpen(rule) > 0"
               v-b-tooltip.hover
-              :title="`${rulePending(rule)} pending comments`"
-              :data-test="`rule-pending-comment-${rule.id}`"
+              :title="`${ruleOpen(rule)} open comments`"
+              :data-test="`rule-open-comment-${rule.id}`"
               class="text-warning mr-1"
             >
               <b-icon icon="chat-left-text" aria-hidden="true" />
@@ -173,10 +173,10 @@
           </span>
           <span>
             <span
-              v-if="rulePending(rule) > 0"
+              v-if="ruleOpen(rule) > 0"
               v-b-tooltip.hover
-              :title="`${rulePending(rule)} pending comments`"
-              :data-test="`rule-pending-comment-${rule.id}`"
+              :title="`${ruleOpen(rule)} open comments`"
+              :data-test="`rule-open-comment-${rule.id}`"
               class="text-warning mr-1"
             >
               <b-icon icon="chat-left-text" aria-hidden="true" />
@@ -558,7 +558,7 @@ export default {
           this.doesRuleHaveFilteredStatus(rule) &&
           this.doesRuleHaveFilteredReviewStatus(rule) &&
           (downcaseSearch.length > 0 || this.listSatisfiedRule(rule)) &&
-          (!this.filters.pendingCommentsOnly || this.rulePending(rule) > 0)
+          (!this.filters.openCommentsOnly || this.ruleOpen(rule) > 0)
         );
       });
 
@@ -575,11 +575,12 @@ export default {
     sortAlsoSatisfies: function (rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
     },
-    // pending comment count for a rule. Reads rule.comment_summary
-    // populated by RuleBlueprint default fields. Returns 0 when missing so
-    // the badge stays hidden for rules without any comments.
-    rulePending: function (rule) {
-      return (rule.comment_summary && rule.comment_summary.pending) || 0;
+    // open comment count for a rule (non-adjudicated, including replies
+    // under open parents). Reads rule.comment_summary populated by
+    // RuleBlueprint default fields. Returns 0 when missing so the badge
+    // stays hidden for rules without any comments.
+    ruleOpen: function (rule) {
+      return (rule.comment_summary && rule.comment_summary.open) || 0;
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;

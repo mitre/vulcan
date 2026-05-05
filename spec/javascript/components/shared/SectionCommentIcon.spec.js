@@ -14,7 +14,7 @@ import SectionCommentIcon from "@/components/shared/SectionCommentIcon.vue";
  *     tooltip — never hide.
  *   - component comment_phase !== 'open' (commentsClosed prop true)
  *     → inactive with "comments are closed" tooltip.
- *   - otherwise → active. Filled glyph + text-primary when pending,
+ *   - otherwise → active. Filled glyph + text-primary when open,
  *     outline glyph + text-info otherwise.
  */
 describe("SectionCommentIcon", () => {
@@ -27,26 +27,26 @@ describe("SectionCommentIcon", () => {
   it("renders an icon with aria-label that includes the section's friendly name", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "check_content", pendingCount: 0 },
+      propsData: { section: "check_content", openCount: 0 },
     });
     const glyph = findGlyph(w);
     expect(glyph.attributes("aria-label")).toMatch(/check/i);
     expect(glyph.attributes("aria-label")).toMatch(/comment/i);
   });
 
-  it("shows a pending count badge when > 0", () => {
+  it("shows a open count badge when > 0", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "fixtext", pendingCount: 3 },
+      propsData: { section: "fixtext", openCount: 3 },
     });
     expect(w.text()).toContain("3");
     expect(w.find("[data-test=count-badge]").exists()).toBe(true);
   });
 
-  it("does NOT show a badge when pendingCount is 0", () => {
+  it("does NOT show a badge when openCount is 0", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "fixtext", pendingCount: 0 },
+      propsData: { section: "fixtext", openCount: 0 },
     });
     expect(w.find("[data-test=count-badge]").exists()).toBe(false);
   });
@@ -54,55 +54,55 @@ describe("SectionCommentIcon", () => {
   it("includes screen-reader-only text describing the count", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "fixtext", pendingCount: 3 },
+      propsData: { section: "fixtext", openCount: 3 },
     });
     const sr = w.find(".sr-only");
     expect(sr.exists()).toBe(true);
-    expect(sr.text()).toMatch(/3 pending/i);
+    expect(sr.text()).toMatch(/3 open/i);
   });
 
   it("emits 'open-composer' with the XCCDF section key when clicked", async () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "check_content", pendingCount: 0 },
+      propsData: { section: "check_content", openCount: 0 },
     });
     // Click the wrapper (matches the @click.stop on the root span).
     await w.find(".section-comment-icon").trigger("click");
     expect(w.emitted("open-composer")).toEqual([["check_content"]]);
   });
 
-  it("uses chat-left-text-fill icon when there are pending comments (visual cue)", () => {
+  it("uses chat-left-text-fill icon when there are open comments (visual cue)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 2 },
+      propsData: { section: "title", openCount: 2 },
     });
     // b-icon renders the icon as SVG markup, not as an HTML attr — assert
     // the computed contract that drives the prop instead.
     expect(w.vm.glyphIcon).toBe("chat-left-text-fill");
   });
 
-  it("uses chat-left-text outline when there are no pending comments", () => {
+  it("uses chat-left-text outline when there are no open comments", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0 },
+      propsData: { section: "title", openCount: 0 },
     });
     expect(w.vm.glyphIcon).toBe("chat-left-text");
   });
 
-  it("applies text-primary + clickable when active with pending comments", () => {
+  it("applies text-primary + clickable when active with open comments", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 2 },
+      propsData: { section: "title", openCount: 2 },
     });
     const glyph = findGlyph(w);
     expect(glyph.classes()).toContain("text-primary");
     expect(glyph.classes()).toContain("clickable");
   });
 
-  it("applies text-info + clickable when active with no pending comments", () => {
+  it("applies text-info + clickable when active with no open comments", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0 },
+      propsData: { section: "title", openCount: 0 },
     });
     const glyph = findGlyph(w);
     expect(glyph.classes()).toContain("text-info");
@@ -114,7 +114,7 @@ describe("SectionCommentIcon", () => {
   it("applies text-muted + opacity-50 when locked=true (no clickable)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0, locked: true },
+      propsData: { section: "title", openCount: 0, locked: true },
     });
     const glyph = findGlyph(w);
     expect(glyph.classes()).toContain("text-muted");
@@ -125,7 +125,7 @@ describe("SectionCommentIcon", () => {
   it("does NOT emit 'open-composer' when clicked while locked", async () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "check_content", pendingCount: 0, locked: true },
+      propsData: { section: "check_content", openCount: 0, locked: true },
     });
     await w.find(".section-comment-icon").trigger("click");
     expect(w.emitted("open-composer")).toBeUndefined();
@@ -138,7 +138,7 @@ describe("SectionCommentIcon", () => {
   it("uses a 'lock' tooltip when locked", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0, locked: true },
+      propsData: { section: "title", openCount: 0, locked: true },
     });
     expect(w.vm.tooltipText).toMatch(/lock/i);
   });
@@ -147,7 +147,7 @@ describe("SectionCommentIcon", () => {
     it("renders inactive (greyed) when commentsClosed=true", () => {
       const w = mount(SectionCommentIcon, {
         localVue,
-        propsData: { section: "title", pendingCount: 0, commentsClosed: true },
+        propsData: { section: "title", openCount: 0, commentsClosed: true },
       });
       const glyph = findGlyph(w);
       expect(glyph.classes()).toContain("text-muted");
@@ -160,7 +160,7 @@ describe("SectionCommentIcon", () => {
         localVue,
         propsData: {
           section: "check_content",
-          pendingCount: 0,
+          openCount: 0,
           commentsClosed: true,
         },
       });
@@ -171,7 +171,7 @@ describe("SectionCommentIcon", () => {
     it("uses a 'not enabled' tooltip when commentsClosed without a reason", () => {
       const w = mount(SectionCommentIcon, {
         localVue,
-        propsData: { section: "title", pendingCount: 0, commentsClosed: true },
+        propsData: { section: "title", openCount: 0, commentsClosed: true },
       });
       expect(w.vm.tooltipText).toMatch(/not enabled/i);
     });
@@ -181,7 +181,7 @@ describe("SectionCommentIcon", () => {
         localVue,
         propsData: {
           section: "title",
-          pendingCount: 0,
+          openCount: 0,
           commentsClosed: true,
           closedReason: "adjudicating",
         },
@@ -192,7 +192,7 @@ describe("SectionCommentIcon", () => {
         localVue,
         propsData: {
           section: "title",
-          pendingCount: 0,
+          openCount: 0,
           commentsClosed: true,
           closedReason: "finalized",
         },
@@ -205,7 +205,7 @@ describe("SectionCommentIcon", () => {
         localVue,
         propsData: {
           section: "title",
-          pendingCount: 0,
+          openCount: 0,
           locked: true,
           commentsClosed: true,
         },
@@ -216,18 +216,18 @@ describe("SectionCommentIcon", () => {
     });
   });
 
-  it("uses 'X pending comments on Section' tooltip when active with pending", () => {
+  it("uses 'X open comments on Section' tooltip when active with open", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "fixtext", pendingCount: 3 },
+      propsData: { section: "fixtext", openCount: 3 },
     });
-    expect(w.vm.tooltipText).toMatch(/3 pending comments on Fix/i);
+    expect(w.vm.tooltipText).toMatch(/3 open comments on Fix/i);
   });
 
-  it("uses 'Comment on Section' tooltip when active with no pending", () => {
+  it("uses 'Comment on Section' tooltip when active with no open", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0 },
+      propsData: { section: "title", openCount: 0 },
     });
     expect(w.vm.tooltipText).toMatch(/Comment on Title/i);
   });
@@ -237,7 +237,7 @@ describe("SectionCommentIcon", () => {
   it("is keyboard-focusable when active (tabindex=0, role=button)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0 },
+      propsData: { section: "title", openCount: 0 },
     });
     const glyph = findGlyph(w);
     expect(glyph.attributes("role")).toBe("button");
@@ -247,7 +247,7 @@ describe("SectionCommentIcon", () => {
   it("is NOT keyboard-focusable when locked (tabindex=-1)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "title", pendingCount: 0, locked: true },
+      propsData: { section: "title", openCount: 0, locked: true },
     });
     expect(findGlyph(w).attributes("tabindex")).toBe("-1");
   });
@@ -255,7 +255,7 @@ describe("SectionCommentIcon", () => {
   it("emits 'open-composer' on Enter keydown when active", async () => {
     const w = mount(SectionCommentIcon, {
       localVue,
-      propsData: { section: "check_content", pendingCount: 0 },
+      propsData: { section: "check_content", openCount: 0 },
     });
     await findGlyph(w).trigger("keydown.enter");
     expect(w.emitted("open-composer")).toEqual([["check_content"]]);

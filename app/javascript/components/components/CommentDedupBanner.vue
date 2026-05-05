@@ -19,6 +19,13 @@
         <div>
           <strong>{{ row.author_name }}</strong>
           <SectionLabel v-if="row.section" :section="row.section" class="badge badge-light ml-1" />
+          <TriageStatusBadge
+            v-if="row.triage_status"
+            :status="row.triage_status"
+            :adjudicated-at="row.adjudicated_at"
+            :duplicate-of-id="row.duplicate_of_review_id"
+            class="ml-1"
+          />
           ({{ relativeTime(row.created_at) }}) — &quot;{{ truncate(row.comment, 100) }}&quot;
         </div>
         <CommentThread
@@ -36,11 +43,12 @@
 import axios from "axios";
 import { sectionLabel } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
+import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import CommentThread from "../shared/CommentThread.vue";
 
 export default {
   name: "CommentDedupBanner",
-  components: { SectionLabel, CommentThread },
+  components: { SectionLabel, TriageStatusBadge, CommentThread },
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], required: true },

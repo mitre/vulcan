@@ -21,8 +21,9 @@ export function getDefaultFilters() {
     nestSatisfiedRulesChecked: true,
     showSRGIdChecked: false,
     sortBySRGIdChecked: true,
-    // comment-aware filter
-    pendingCommentsOnly: false,
+    // comment-aware filter — narrows to rules with open (non-adjudicated)
+    // comments, including replies under open parents.
+    openCommentsOnly: false,
   };
 }
 

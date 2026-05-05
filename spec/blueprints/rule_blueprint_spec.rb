@@ -125,11 +125,10 @@ RSpec.describe 'RuleBlueprint' do
     end
   end
 
-  # comment_summary is the per-rule navigator badge driver.
-  # Replies are comments — totals + pending counts include them, with
-  # `pending` rolling replies up under whichever top-level parent is
-  # still pending triage. Verified at the blueprint layer because the
-  # Vue navigator reads only this field for the badge math.
+  # comment_summary is the per-rule navigator + section-icon badge
+  # driver. Replies count as comments. `open` = non-adjudicated
+  # parents + replies under those open parents. Verified at the
+  # blueprint layer because the Vue navigator reads only this field.
   describe 'comment_summary (replies count as comments)' do
     let_it_be(:commenter) do
       u = create(:user)
@@ -147,13 +146,25 @@ RSpec.describe 'RuleBlueprint' do
       expect(json[:comment_summary]).to include(total: 3)
     end
 
-    it 'rolls replies of a pending parent into the pending count' do
-      pending_parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'pending parent')
+    it 'rolls replies of an open parent into the open count' do
+      open_parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'open parent')
       Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply',
-                     responding_to_review_id: pending_parent.id)
+                     responding_to_review_id: open_parent.id)
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
-      # 1 pending parent + 1 reply = 2 pending interactions
-      expect(json[:comment_summary]).to include(pending: 2, total: 2)
+      # 1 open parent + 1 reply = 2 open interactions
+      expect(json[:comment_summary]).to include(open: 2, total: 2)
+    end
+
+    # "Needs clarification" / "concur" without adjudicate keep the
+    # parent in the open set — the conversation is not yet closed.
+    it 'counts triaged-but-not-adjudicated parents as open' do
+      parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'needs more info')
+      parent.update_columns(triage_status: 'needs_clarification',
+                            triage_set_by_id: commenter.id, triage_set_at: Time.current)
+      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply',
+                     responding_to_review_id: parent.id)
+      json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
+      expect(json[:comment_summary]).to include(open: 2, total: 2)
     end
 
     it 'does NOT count replies whose parent has been adjudicated' do
@@ -162,7 +173,7 @@ RSpec.describe 'RuleBlueprint' do
       Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'late reply',
                      responding_to_review_id: adjudicated.id)
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
-      expect(json[:comment_summary]).to include(pending: 0, total: 2)
+      expect(json[:comment_summary]).to include(open: 0, total: 2)
     end
   end
 

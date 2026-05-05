@@ -15,22 +15,25 @@ class RuleBlueprint < Blueprinter::Base
   fields :rule_id, :title, :version, :status, :rule_severity, :locked,
          :review_requestor_id, :changes_requested
 
-  # per-rule comment summary surfaced on the navigator
-  # so triagers can spot rules with pending comments without drilling in.
-  # Computed in-memory against the eager-loaded :reviews association
-  # (set_component already eager-loads rules → :reviews) so this is
-  # zero additional queries. Replies count as comments — the totals
-  # include them, and `pending` includes any reply whose parent is in
-  # the pending set (replies aren't independently triageable, but they
-  # belong to the parent's pending interaction).
+  # per-rule comment summary surfaced on the navigator + section
+  # icon badges so triagers + commenters can spot rules with active
+  # work without drilling in. Computed in-memory against the eager-
+  # loaded :reviews association (set_component already eager-loads
+  # rules → :reviews) so this is zero additional queries.
+  #
+  # `open` = comments not yet adjudicated (pending OR triaged-but-
+  # not-yet-closed OR needs_clarification). Includes replies under
+  # those open parents — replies are comments. Once a parent is
+  # adjudicated (adjudicated_at set), it and its replies leave the
+  # `open` count.
   field :comment_summary do |rule, _options|
     comments = rule.reviews.select { |r| r.action == 'comment' }
     top_level = comments.select { |r| r.responding_to_review_id.nil? }
-    pending_parent_ids = top_level.select { |r| r.triage_status == 'pending' }.to_set(&:id)
-    pending_count = top_level.count { |r| r.triage_status == 'pending' } +
-                    comments.count { |r| pending_parent_ids.include?(r.responding_to_review_id) }
+    open_parent_ids = top_level.reject { |r| r.adjudicated_at.present? }.to_set(&:id)
+    open_count = open_parent_ids.size +
+                 comments.count { |r| open_parent_ids.include?(r.responding_to_review_id) }
     {
-      pending: pending_count,
+      open: open_count,
       total: comments.size
     }
   end

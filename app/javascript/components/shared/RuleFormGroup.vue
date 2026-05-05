@@ -39,7 +39,7 @@
       <SectionCommentIcon
         v-if="showCommentIcon && xccdfSection"
         :section="xccdfSection"
-        :pending-count="pendingCommentCount"
+        :open-count="openCommentCount"
         :locked="ruleLocked"
         :comments-closed="commentsClosedInjected"
         :closed-reason="closedReasonInjected"
@@ -152,18 +152,19 @@ export default {
     xccdfSection() {
       return this.resolvedSection ? DISPLAY_TO_XCCDF_SECTION[this.resolvedSection] || null : null;
     },
-    // Pending comments scoped to this section. Top-level pendings drive
-    // the badge, and their replies count too — replies are comments. A
-    // reply's `section` column is null (server doesn't ask for it on the
-    // reply form) but it semantically belongs to the parent's section,
-    // so we include any reply whose parent is in the matched set.
-    pendingCommentCount() {
+    // Open comments scoped to this section — non-adjudicated top-level
+    // comments (pending OR triaged-but-not-yet-closed OR needs_clarification)
+    // plus any replies whose parent is in that open set. Replies inherit
+    // the parent's section semantically (server stores null on the reply
+    // row). Once the parent is adjudicated, both it and its replies leave
+    // the count.
+    openCommentCount() {
       if (!this.xccdfSection || !this.ruleReviews || this.ruleReviews.length === 0) return 0;
       const topLevelOnSection = this.ruleReviews.filter(
         (r) =>
           r.action === "comment" &&
           r.responding_to_review_id == null &&
-          r.triage_status === "pending" &&
+          r.adjudicated_at == null &&
           r.section === this.xccdfSection,
       );
       if (topLevelOnSection.length === 0) return 0;
