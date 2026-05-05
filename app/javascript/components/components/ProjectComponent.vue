@@ -132,7 +132,7 @@
 </template>
 
 <script>
-import { computed } from "vue";
+import { ref } from "vue";
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -215,23 +215,23 @@ export default {
     },
   },
   setup(props) {
-    // Use computed to derive rules reactively — toRef on a plain object is not reactive in Vue 2.7
     const componentId = props.initialComponentState.id;
-    const rulesRef = computed(() => props.initialComponentState.rules || []);
+    // Local clone of the rules array so reactivity is owned by Vue (not
+    // the prop). Mutations via this ref reliably propagate through
+    // useRuleSelection → selectedRule → RuleEditor → SectionCommentIcon.
+    // Mirrors the pattern used by Rules.vue in the editor pack.
+    const localRules = ref(structuredClone(props.initialComponentState.rules || []));
 
-    // Use composables
     const { selectedRuleId, openRuleIds, selectedRule, selectRule, deselectRule } =
-      useRuleSelection(rulesRef, componentId, { autoSelectFirst: true });
+      useRuleSelection(localRules, componentId, { autoSelectFirst: true });
 
-    const { filters, counts, setFilter } = useRuleFilters(rulesRef, componentId);
+    const { filters, counts, setFilter } = useRuleFilters(localRules, componentId);
 
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
-    // Backward compatibility aliases
     const handleRuleSelected = selectRule;
     const handleRuleDeselected = deselectRule;
 
-    // Filter update with localStorage persistence
     const updateFilter = (filterName, value) => {
       setFilter(filterName, value);
       localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
@@ -239,6 +239,7 @@ export default {
     };
 
     return {
+      localRules,
       selectedRuleId,
       openRuleIds,
       selectedRule,
@@ -276,7 +277,7 @@ export default {
   },
   computed: {
     rules() {
-      return [...this.component.rules].sort(this.compareRules);
+      return [...this.localRules].sort(this.compareRules);
     },
     breadcrumbs() {
       // Build component name with version (e.g., "Test 2 V1R1")
@@ -346,16 +347,12 @@ export default {
         this.refreshComponent();
         return;
       }
-      // Explicit Accept header — this pack doesn't pull in FormMixin
-      // and esbuild gives each pack its own axios singleton, so the
-      // default Accept (`*/*`) would have Rails respond with HTML and
-      // the splice would write garbage into rules[idx].
       axios
         .get(`/rules/${ruleId}`, { headers: { Accept: "application/json" } })
         .then((response) => {
-          const idx = this.component.rules.findIndex((r) => r.id === ruleId);
+          const idx = this.localRules.findIndex((r) => r.id === ruleId);
           if (idx >= 0) {
-            this.component.rules.splice(idx, 1, response.data);
+            this.localRules.splice(idx, 1, response.data);
           }
         })
         .catch(this.alertOrNotifyResponse);
@@ -370,8 +367,10 @@ export default {
       axios
         .get(`/components/${this.component.id}.json`)
         .then((response) => {
-          // Update component properties in-place for Vue reactivity
           Object.assign(this.component, response.data);
+          if (response.data.rules) {
+            this.localRules = structuredClone(response.data.rules);
+          }
         })
         .catch((error) => {
           this.alertOrNotifyResponse(error);

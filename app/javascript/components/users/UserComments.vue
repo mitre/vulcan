@@ -30,8 +30,9 @@
         :items="rows"
         :fields="fields"
         :busy="loading"
-        sort-by="created_at"
-        :sort-desc="true"
+        :sort-by.sync="sortBy"
+        :sort-desc.sync="sortDesc"
+        primary-key="id"
         hover
         striped
         small
@@ -149,6 +150,10 @@ export default {
       perPage: 25,
       loading: false,
       filterStatus: "all",
+      // .sync-bound to b-table so the active sort-direction arrow renders
+      // when the user clicks a column header.
+      sortBy: "created_at",
+      sortDesc: true,
       composerReplyRow: null,
       fields: [
         { key: "rule_displayed_name", label: "Rule", sortable: true },

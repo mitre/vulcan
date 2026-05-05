@@ -53,8 +53,9 @@
       :items="rows"
       :fields="fields"
       :busy="loading"
-      sort-by="created_at"
-      :sort-desc="true"
+      :sort-by.sync="sortBy"
+      :sort-desc.sync="sortDesc"
+      primary-key="id"
       hover
       striped
       small
@@ -258,6 +259,11 @@ export default {
       filterText: persisted.filterText,
       filterStatus: persisted.filterStatus,
       filterSection: persisted.filterSection,
+      // .sync-bound to b-table so column-header clicks update state and
+      // the active sort-direction arrow renders. BootstrapVue 2 only
+      // shows the arrow when sortBy/sortDesc are controlled.
+      sortBy: "created_at",
+      sortDesc: true,
       selectedRow: null,
       // Row that the inline reply composer is open against. Null when
       // the composer is not open. Populated when a row's CommentThread

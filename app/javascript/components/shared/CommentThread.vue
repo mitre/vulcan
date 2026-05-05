@@ -80,6 +80,7 @@ export default {
       loaded: false,
       loading: false,
       loadError: false,
+      fetchToken: 0,
     };
   },
   computed: {
@@ -132,16 +133,19 @@ export default {
     async fetch() {
       this.loading = true;
       this.loadError = false;
+      const token = ++this.fetchToken;
       try {
         const { data } = await axios.get(`/reviews/${this.parentReviewId}/responses`, {
           headers: { Accept: "application/json" },
         });
+        if (token !== this.fetchToken) return;
         this.replies = data.rows || [];
         this.loaded = true;
       } catch {
+        if (token !== this.fetchToken) return;
         this.loadError = true;
       } finally {
-        this.loading = false;
+        if (token === this.fetchToken) this.loading = false;
       }
     },
     refresh() {
