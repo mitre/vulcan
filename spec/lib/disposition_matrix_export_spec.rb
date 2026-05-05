@@ -52,13 +52,13 @@ RSpec.describe DispositionMatrixExport do
       expect(header_row).to eq(described_class::BASE_HEADERS.join(','))
     end
 
-    it 'returns one row per top-level comment with replies collapsed into Triager Response' do
+    it 'returns one row per top-level comment with replies collapsed into Thread Replies' do
       parsed = CSV.parse(csv, headers: true)
       expect(parsed.length).to eq(1)
       row = parsed.first
       expect(row['Comment ID']).to eq(c1.id.to_s)
       expect(row['Rule']).to eq("#{component.prefix}-#{rule.rule_id}")
-      expect(row['Triager Response']).to include('will fix')
+      expect(row['Thread Replies']).to include('will fix')
       expect(row['Triage Status']).to eq('concur_with_comment')
       expect(row['Adjudicated']).to eq('true')
     end
@@ -189,7 +189,7 @@ RSpec.describe DispositionMatrixExport do
       expect(evil_arr[email_idx]).to start_with("'@")
     end
 
-    it 'defangs each individual reply within the joined Triager Response cell' do
+    it 'defangs each individual reply within the joined Thread Replies cell' do
       parent = Review.create!(rule: component.rules.first, user: commenter,
                               action: 'comment', comment: 'parent question',
                               triage_status: 'pending')
@@ -201,8 +201,8 @@ RSpec.describe DispositionMatrixExport do
                      comment: 'normal reply')
       out = CSV.parse(described_class.generate(component: component), headers: true)
       parent_row = out.find { |r| r['Comment ID'] == parent.id.to_s }
-      expect(parent_row['Triager Response']).to include("'=DANGER_REPLY")
-      expect(parent_row['Triager Response']).to include('normal reply')
+      expect(parent_row['Thread Replies']).to include("'=DANGER_REPLY")
+      expect(parent_row['Thread Replies']).to include('normal reply')
     end
   end
 

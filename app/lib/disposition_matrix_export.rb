@@ -4,17 +4,17 @@ require 'csv'
 
 # DISA disposition matrix CSV export — required deliverable for
 # public-comment review windows. One row per top-level comment, with reply
-# threads collapsed into the Triager Response column. DISA-vocab cell values
+# threads collapsed into the Thread Replies column. DISA-vocab cell values
 # (concur / non_concur / etc.) so the file is consumed as raw data.
 #
 # Email column is opt-in via `include_email: true` and only set by the
 # controller when the requesting user satisfies admin-tier authorization;
 # viewer/author tiers cannot opt in.
-module DispositionMatrixExport
+module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   BASE_HEADERS = [
     'Comment ID', 'Rule', 'SRG ID', 'Section',
     'Commenter Name', 'Comment', 'Posted',
-    'Triage Status', 'Triaged By', 'Triaged At', 'Triager Response',
+    'Triage Status', 'Triaged By', 'Triaged At', 'Thread Replies',
     'Adjudicated', 'Adjudicated By', 'Adjudicated At', 'Duplicate Of'
   ].freeze
 
@@ -76,12 +76,9 @@ module DispositionMatrixExport
   end
 
   def self.build_row(review, component, replies, include_email:)
-    # Defang each reply individually before joining so a malicious reply
-    # is neutralised even when concatenated into the Triager Response cell.
     responses = (replies || [])
                 .sort_by(&:created_at)
-                .map { |x| defang(x.comment.to_s.strip) }
-                .compact_blank
+                .filter_map { |reply| format_reply(reply) }
                 .join("\n---\n")
 
     row = [
@@ -105,6 +102,27 @@ module DispositionMatrixExport
       review.duplicate_of_review_id
     ]
     row
+  end
+
+  def self.format_reply(reply)
+    body = defang(reply.comment.to_s.strip)
+    return nil if body.blank?
+
+    "[#{defang(reply_author_label(reply))} · #{reply.created_at.iso8601}] #{body}"
+  end
+
+  def self.reply_author_label(reply)
+    return reply.user.name if reply.user
+
+    name = reply.commenter_imported_name
+    email = reply.commenter_imported_email
+    return '(unknown)' if name.blank? && email.blank?
+
+    if name.present? && email.present?
+      "#{name} (imported, no account: #{email})"
+    else
+      name.presence || "(imported, no account: #{email})"
+    end
   end
 
   # prefer the resolved User's name; fall
