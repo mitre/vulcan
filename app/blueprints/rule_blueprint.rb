@@ -40,6 +40,7 @@ class RuleBlueprint < Blueprinter::Base
       current = queue.shift
       (children_by_parent[current] || []).each do |child|
         next if visited.include?(child.id)
+
         visited << child.id
         queue << child.id
         open_count += 1
