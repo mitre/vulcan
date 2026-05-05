@@ -147,7 +147,7 @@ RSpec.describe 'RuleBlueprint' do
       expect(json[:comment_summary]).to include(total: 3)
     end
 
-    it "rolls replies of a pending parent into the pending count" do
+    it 'rolls replies of a pending parent into the pending count' do
       pending_parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'pending parent')
       Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply',
                      responding_to_review_id: pending_parent.id)
