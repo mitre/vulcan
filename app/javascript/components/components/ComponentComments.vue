@@ -164,6 +164,7 @@
       :effective-permissions="effectivePermissions"
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
+      @response-posted="onTriageResponsePosted"
       @destroyed="onDestroyed"
       @open-reply-composer="onTriageModalReplyRequested"
       @hidden="selectedRow = null"
@@ -470,6 +471,24 @@ export default {
     },
     onAdjudicated(payload) {
       this.updateRowInPlace(payload);
+    },
+    // Fired after a triage decision that included a response_comment —
+    // server creates a child Review atomically. Bump the parent row's
+    // responses_count so the inline thread badge updates, and refresh
+    // the open thread (responsesCount watcher in CommentThread will fire).
+    onTriageResponsePosted({ parentId }) {
+      const idx = this.rows.findIndex((r) => r.id === parentId);
+      if (idx < 0) return;
+      const row = this.rows[idx];
+      this.rows.splice(idx, 1, {
+        ...row,
+        responses_count: (row.responses_count || 0) + 1,
+      });
+      this.$nextTick(() => {
+        const ref = this.$refs[`thread-${parentId}`];
+        const thread = Array.isArray(ref) ? ref[0] : ref;
+        thread?.refresh?.();
+      });
     },
     // admin hard-delete destroys the review entirely;
     // refresh the queue so the destroyed row (and its replies) disappear.

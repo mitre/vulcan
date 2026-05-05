@@ -619,6 +619,15 @@ export default {
 
         const triageRes = await axios.patch(`/reviews/${this.review.id}/triage`, triagePayload);
         this.$emit("triaged", triageRes.data.review);
+        // Server atomically creates a child Review when response_comment is
+        // supplied. Surface it so the parent table can bump the row's
+        // responses_count + refresh the open thread without a refetch.
+        if (triageRes.data.response_review) {
+          this.$emit("response-posted", {
+            parentId: this.review.id,
+            responseReview: triageRes.data.response_review,
+          });
+        }
 
         // Skip the explicit adjudicate call for statuses that already
         // auto-adjudicated server-side via the triage callback.

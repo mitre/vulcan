@@ -50,7 +50,7 @@ export const TRIAGE_GLYPHS = Object.freeze({
   non_concur: "◑",
   duplicate: "◭",
   informational: "ⓘ",
-  needs_clarification: "⌛",
+  needs_clarification: "?",
   withdrawn: "⊘",
 });
 
