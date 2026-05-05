@@ -167,6 +167,16 @@ RSpec.describe 'RuleBlueprint' do
       expect(json[:comment_summary]).to include(open: 2, total: 2)
     end
 
+    it 'walks transitively for reply-of-reply chains' do
+      parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'parent')
+      reply = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply',
+                             responding_to_review_id: parent.id)
+      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply-of-reply',
+                     responding_to_review_id: reply.id)
+      json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
+      expect(json[:comment_summary]).to include(open: 3, total: 3)
+    end
+
     it 'does NOT count replies whose parent has been adjudicated' do
       adjudicated = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'closed')
       adjudicated.update_columns(triage_status: 'concur', adjudicated_at: Time.current)

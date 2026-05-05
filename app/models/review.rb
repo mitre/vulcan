@@ -160,7 +160,7 @@ class Review < ApplicationRecord
   validate :responding_to_must_be_same_rule
   validate :duplicate_of_must_be_same_component
   validate :duplicate_of_must_not_be_a_duplicate
-  validate :replies_cannot_have_triage_status
+  validate :replies_cannot_have_triage_status, on: %i[create update]
 
   before_save :auto_set_adjudicated_for_terminal_statuses
 

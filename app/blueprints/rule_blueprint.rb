@@ -29,13 +29,24 @@ class RuleBlueprint < Blueprinter::Base
   field :comment_summary do |rule, _options|
     comments = rule.reviews.select { |r| r.action == 'comment' }
     top_level = comments.select { |r| r.responding_to_review_id.nil? }
-    open_parent_ids = top_level.reject { |r| r.adjudicated_at.present? }.to_set(&:id)
-    open_count = open_parent_ids.size +
-                 comments.count { |r| open_parent_ids.include?(r.responding_to_review_id) }
-    {
-      open: open_count,
-      total: comments.size
-    }
+    open_root_ids = top_level.reject { |r| r.adjudicated_at.present? }.map(&:id)
+
+    children_by_parent = comments.reject { |r| r.responding_to_review_id.nil? }
+                                 .group_by(&:responding_to_review_id)
+    open_count = open_root_ids.size
+    queue = open_root_ids.dup
+    visited = Set.new(open_root_ids)
+    until queue.empty?
+      current = queue.shift
+      (children_by_parent[current] || []).each do |child|
+        next if visited.include?(child.id)
+        visited << child.id
+        queue << child.id
+        open_count += 1
+      end
+    end
+
+    { open: open_count, total: comments.size }
   end
 
   # === Navigator view: sidebar list ===
